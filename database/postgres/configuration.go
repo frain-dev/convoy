@@ -10,7 +10,6 @@ import (
 
 const (
 	createConfiguration = `
-	-- configuration.go:createConfiguration
 	INSERT INTO convoy.configurations(
 		id, is_analytics_enabled, is_signup_enabled, 
 		storage_policy_type, on_prem_path, 
@@ -21,7 +20,6 @@ const (
 	`
 
 	fetchConfiguration = `
-	-- project.go:fetchConfiguration
 	SELECT 
 		id,
 		is_analytics_enabled,
@@ -42,7 +40,6 @@ const (
 	`
 
 	updateConfiguration = `
-	-- configuration.go:updateConfiguration
 	UPDATE
 		convoy.configurations
 	SET

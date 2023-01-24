@@ -18,13 +18,11 @@ var (
 
 const (
 	createProject = `
-	-- project.go:createProject
 	INSERT INTO convoy.projects (name, type, logo_url, organisation_id, project_configuration_id)
 	VALUES ($1, $2, $3, $4, $5) RETURNING id;
 	`
 
 	createProjectConfiguration = `
-	-- project.go:createProjectConfiguration
 	INSERT INTO convoy.project_configurations (
 		retention_policy, max_payload_read_size, 
 		replay_attacks_prevention_enabled, 
@@ -40,8 +38,24 @@ const (
 		) RETURNING id;
 	`
 
+	updateProjectConfiguration = `
+	UPDATE convoy.project_configurations SET
+		retention_policy = $2,
+		max_payload_read_size = $3,
+		replay_attacks_prevention_enabled = $4,
+		retention_policy_enabled = $5,
+		ratelimit_count = $6,
+		ratelimit_duration = $7,
+		strategy_type = $8,
+		strategy_duration = $9,
+		strategy_retry_count = $10,
+		signature_header = $11,
+		signature_hash = $12,
+		updated_at = now()
+	WHERE id = $1;
+	`
+
 	fetchProjectById = `
-	-- project.go:fetchProjectById
 	SELECT
 		p.name,
 		p.type,
@@ -68,14 +82,12 @@ const (
 	`
 
 	fetchProjects = `
-	-- project.go:fetchProjects
 	SELECT * FROM convoy.projects
 	WHERE organisation_id = $1
 	ORDER BY id;
 	`
 
 	updateProjectById = `
-	-- project.go:updateProjectById
 	UPDATE convoy.projects SET
 	name = $2, 
 	logo_url = $3,
@@ -84,27 +96,23 @@ const (
 	`
 
 	deleteProject = `
-	-- project.go:deleteProject
 	UPDATE convoy.projects SET 
 	deleted_at = now()
 	WHERE id = $1;
 	`
 
 	deleteProjectEndpoints = `
-	-- project.go:deleteProjectEndpoints
 	UPDATE convoy.endpoints SET 
 	deleted_at = now()
 	WHERE project_id = $1;
 	`
 
 	deleteProjectEvents = `
-	-- project.go:deleteProjectEvents
 	UPDATE convoy.events 
 	SET deleted_at = now() 
 	WHERE project_id = $1;
 	`
 	deleteProjectEndpointSubscriptions = `
-	-- project.go:deleteProjectEndpointSubscriptions
 	UPDATE convoy.subscriptions SET 
 	deleted_at = now()
 	WHERE project_id = $1;
@@ -182,13 +190,18 @@ func (p *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFilt
 	return projects, nil
 }
 
-func (p *projectRepo) UpdateProject(ctx context.Context, o *datastore.Project) error {
-	result, err := p.db.Exec(updateProjectById, o)
+func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Project) error {
+	tx, err := p.db.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
 
-	rowsAffected, err := result.RowsAffected()
+	pRes, err := tx.Exec(updateProjectById, project.UID, project.Name, project.LogoURL)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := pRes.RowsAffected()
 	if err != nil {
 		return err
 	}
@@ -197,7 +210,34 @@ func (p *projectRepo) UpdateProject(ctx context.Context, o *datastore.Project) e
 		return ErrProjectNotUpdated
 	}
 
-	return nil
+	cRes, err := tx.Exec(updateProjectConfiguration,
+		project.UID,
+		project.Config.RetentionPolicy,
+		project.Config.MaxIngestSize,
+		project.Config.ReplayAttacks,
+		project.Config.IsRetentionPolicyEnabled,
+		project.Config.RateLimitCount,
+		project.Config.RateLimitDuration,
+		project.Config.StrategyType,
+		project.Config.StrategyDuration,
+		project.Config.StrategyRetryCount,
+		project.Config.SignatureHeader,
+		project.Config.SignatureHash,
+	)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err = cRes.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected < 1 {
+		return ErrProjectNotUpdated
+	}
+
+	return tx.Commit()
 }
 
 func (p *projectRepo) FetchProjectByID(ctx context.Context, id int) (*datastore.Project, error) {

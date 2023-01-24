@@ -17,19 +17,16 @@ var (
 
 const (
 	createOrganization = `
-	-- organisation.go:createOrganization
 	INSERT INTO convoy.organisations (name, owner_id)
 	VALUES ($1, $2);
 	`
 
 	fetchOrganisation = `
-	-- organisation.go:fetchOrganisation
 	SELECT * FROM convoy.organisations 
 	WHERE $1 = $2;
 	`
 
 	fetchOrganisationsPaginated = `
-	-- organisation.go:fetchOrganisationsPaginated
 	SELECT * FROM convoy.organisations
 	ORDER BY id
 	LIMIT $1
@@ -37,7 +34,6 @@ const (
 	`
 
 	updateOrganizationById = `
-	-- organisation.go:updateOrganizationById
 	UPDATE convoy.organisations SET
 	name = $2,
 	owner_id = $3,
@@ -48,14 +44,12 @@ const (
 	`
 
 	deleteOrganisation = `
-	-- organisation.go:deleteOrganisation
 	UPDATE convoy.organisations SET 
 	deleted_at = now()
 	WHERE id = $1;
 	`
 
 	countOrganizations = `
-	-- organisation.go:countOrganizations
 	SELECT COUNT(id) FROM convoy.organisations;
 	`
 )

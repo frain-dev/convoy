@@ -157,9 +157,9 @@ func (k KeyType) IsValid() bool {
 }
 
 const (
-	DefaultStrategyProvider     = LinearStrategyProvider
-	LinearStrategyProvider      = "linear"
-	ExponentialStrategyProvider = "exponential"
+	DefaultStrategyProvider                      = LinearStrategyProvider
+	LinearStrategyProvider      StrategyProvider = "linear"
+	ExponentialStrategyProvider StrategyProvider = "exponential"
 )
 
 var (
@@ -781,11 +781,11 @@ type StoragePolicyConfiguration struct {
 
 type S3Storage struct {
 	Bucket       null.String `json:"bucket" db:"bucket" valid:"required~please provide a bucket name"`
-	AccessKey    null.String  `json:"access_key,omitempty" db:"access_key" valid:"required~please provide an access key"`
-	SecretKey    null.String  `json:"secret_key,omitempty" db:"secret_key" valid:"required~please provide a secret key"`
-	Region       null.String  `json:"region,omitempty" db:"region"`
-	SessionToken null.String  `json:"session_token" db:"session_token"`
-	Endpoint     null.String  `json:"endpoint,omitempty" db:"endpoint"`
+	AccessKey    null.String `json:"access_key,omitempty" db:"access_key" valid:"required~please provide an access key"`
+	SecretKey    null.String `json:"secret_key,omitempty" db:"secret_key" valid:"required~please provide a secret key"`
+	Region       null.String `json:"region,omitempty" db:"region"`
+	SessionToken null.String `json:"session_token" db:"session_token"`
+	Endpoint     null.String `json:"endpoint,omitempty" db:"endpoint"`
 }
 
 type OnPremStorage struct {
