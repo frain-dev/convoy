@@ -45,6 +45,7 @@ export class CreateProjectComponent implements OnInit {
 	enableMoreConfig = false;
 	confirmModal = false;
 	showNewSignatureModal = false;
+	regeneratingKey = false;
 	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512'];
 	retryLogicTypes = [
@@ -202,6 +203,20 @@ export class CreateProjectComponent implements OnInit {
 			this.isCreatingProject = false;
 		} catch (error) {
 			this.isCreatingProject = false;
+		}
+	}
+
+	async regenerateKey() {
+		this.regeneratingKey = true;
+		try {
+			const response = await this.createProjectService.regenerateKey();
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.regeneratingKey = false;
+			this.apiKey = response.data.key;
+			this.showApiKey = true;
+		} catch (error) {
+			this.regeneratingKey = false;
+			return error;
 		}
 	}
 

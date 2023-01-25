@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -236,6 +237,34 @@ func (ss *SecurityService) GetAPIKeyByID(ctx context.Context, uid string) (*data
 	}
 
 	return apiKey, nil
+}
+
+func (ss *SecurityService) RegenerateProjectAPIKey(ctx context.Context, project *datastore.Project, member *datastore.OrganisationMember) (*datastore.APIKey, string, error) {
+	apiKey, err := ss.apiKeyRepo.FindAPIKeyByProjectID(ctx, project.UID)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to fetch project api key")
+		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch project api key"))
+	}
+
+	err = ss.RevokeAPIKey(ctx, apiKey.UID)
+	if err != nil {
+		return nil, "", err
+	}
+
+	newAPIKey := &models.APIKey{
+		Name: fmt.Sprintf("%s's key", project.Name),
+		Role: models.Role{
+			Type:    auth.RoleAdmin,
+			Project: project.UID,
+		},
+	}
+
+	apiKey, keyString, err := ss.CreateAPIKey(ctx, member, newAPIKey)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return apiKey, keyString, nil
 }
 
 func (ss *SecurityService) UpdateAPIKey(ctx context.Context, uid string, role *auth.Role) (*datastore.APIKey, error) {
