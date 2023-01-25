@@ -485,7 +485,7 @@
 						"type": "integer"
 					},
 					"strategy": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.StrategyProvider"
 					}
 				},
 				"type": "object"
@@ -626,7 +626,7 @@
 						"type": "integer"
 					},
 					"strategy_type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.StrategyProvider"
 					},
 					"versions": {
 						"items": {
@@ -687,7 +687,7 @@
 						"type": "integer"
 					},
 					"type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.StrategyProvider"
 					}
 				},
 				"type": "object"
@@ -830,10 +830,23 @@
 						"type": "integer"
 					},
 					"type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.StrategyProvider"
 					}
 				},
 				"type": "object"
+			},
+			"datastore.StrategyProvider": {
+				"enum": [
+					"linear",
+					"linear",
+					"exponential"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"DefaultStrategyProvider",
+					"LinearStrategyProvider",
+					"ExponentialStrategyProvider"
+				]
 			},
 			"datastore.Subscription": {
 				"properties": {
@@ -1212,7 +1225,7 @@
 						"type": "integer"
 					},
 					"type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.StrategyProvider"
 					}
 				},
 				"type": "object"

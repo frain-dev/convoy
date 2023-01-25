@@ -22,7 +22,7 @@ const (
 	`
 
 	fetchOrganisation = `
-	SELECT * FROM convoy.organisations 
+	SELECT * FROM convoy.organisations
 	WHERE $1 = $2;
 	`
 
@@ -44,7 +44,7 @@ const (
 	`
 
 	deleteOrganisation = `
-	UPDATE convoy.organisations SET 
+	UPDATE convoy.organisations SET
 	deleted_at = now()
 	WHERE id = $1;
 	`
