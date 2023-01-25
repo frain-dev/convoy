@@ -47,14 +47,11 @@ func (c *ConfigService) CreateConfiguration(ctx context.Context, newConfig *mode
 	}
 
 	config := &datastore.Configuration{
-		UID:           uuid.New().String(),
-		StoragePolicy: newConfig.StoragePolicy,
-		CreatedAt:     primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:     primitive.NewDateTimeFromTime(time.Now()),
-	}
-
-	if newConfig.IsAnalyticsEnabled != nil {
-		config.IsAnalyticsEnabled = *newConfig.IsAnalyticsEnabled
+		UID:                uuid.New().String(),
+		StoragePolicy:      newConfig.StoragePolicy,
+		IsAnalyticsEnabled: true,
+		CreatedAt:          primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:          primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	if newConfig.IsSignupEnabled != nil {

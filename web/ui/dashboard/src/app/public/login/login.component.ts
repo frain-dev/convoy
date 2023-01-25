@@ -32,6 +32,7 @@ export class LoginComponent implements OnInit {
 		try {
 			const response: any = await this.loginService.login(this.loginForm.value);
 			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
+			localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
 
 			// get previous location in localstorage
 			const lastLoacation = localStorage.getItem('CONVOY_LAST_AUTH_LOCATION');

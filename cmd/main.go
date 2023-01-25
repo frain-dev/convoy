@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -91,6 +92,28 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 	}
 
 	a.logger.Infof("Created Superuser with username: %s and password: %s", defaultUser.Email, p.Plaintext)
+
+	return nil
+}
+
+func ensureInstanceConfig(ctx context.Context, a *app) error {
+	configRepo := cm.NewConfigRepo(a.store)
+
+	_, err := configRepo.LoadConfiguration(ctx)
+	if err != nil {
+		if errors.Is(err, datastore.ErrConfigNotFound) {
+			a.logger.Info("Creating Instance Config")
+			return configRepo.CreateConfiguration(ctx, &datastore.Configuration{
+				UID:                uuid.New().String(),
+				StoragePolicy:      &datastore.DefaultStoragePolicy,
+				IsAnalyticsEnabled: true,
+				CreatedAt:          primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:          primitive.NewDateTimeFromTime(time.Now()),
+			})
+		}
+
+		return err
+	}
 
 	return nil
 }
@@ -225,7 +248,17 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 		app.limiter = li
 		app.searcher = se
 
-		return ensureDefaultUser(context.Background(), app)
+		err = ensureDefaultUser(context.Background(), app)
+		if err != nil {
+			return err
+		}
+
+		err = ensureInstanceConfig(context.Background(), app)
+		if err != nil {
+			return err
+		}
+
+		return nil
 	}
 }
 

@@ -38,4 +38,19 @@ export class CreateProjectComponentService {
 			}
 		});
 	}
+
+	regenerateKey(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `${this.privateService.urlFactory('org')}/projects/${this.privateService.activeProjectDetails?.uid}/security/keys/regenerate`,
+					method: 'put',
+					body: null
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
 }
