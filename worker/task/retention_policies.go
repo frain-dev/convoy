@@ -28,7 +28,7 @@ func RententionPolicies(instanceConfig config.Configuration, configRepo datastor
 		}
 		collections := []string{"events", "eventdeliveries"}
 
-		objectStoreClient, exportDir, err := NewObjectStoreClient(config)
+		objectStoreClient, exportDir, err := NewObjectStoreClient(getStorageConfig(instanceConfig, config))
 		if err != nil {
 			log.WithError(err)
 			return err
@@ -64,17 +64,17 @@ func RententionPolicies(instanceConfig config.Configuration, configRepo datastor
 	}
 }
 
-func NewObjectStoreClient(config *datastore.Configuration) (objectstore.ObjectStore, string, error) {
-	switch config.StoragePolicy.Type {
+func NewObjectStoreClient(storage *datastore.StoragePolicyConfiguration) (objectstore.ObjectStore, string, error) {
+	switch storage.Type {
 	case datastore.S3:
 		exportDir := convoy.TmpExportDir
 		objectStoreOpts := objectstore.ObjectStoreOptions{
-			Bucket:       config.StoragePolicy.S3.Bucket,
-			Endpoint:     config.StoragePolicy.S3.Endpoint,
-			AccessKey:    config.StoragePolicy.S3.AccessKey,
-			SecretKey:    config.StoragePolicy.S3.SecretKey,
-			SessionToken: config.StoragePolicy.S3.SessionToken,
-			Region:       config.StoragePolicy.S3.Region,
+			Bucket:       storage.S3.Bucket,
+			Endpoint:     storage.S3.Endpoint,
+			AccessKey:    storage.S3.AccessKey,
+			SecretKey:    storage.S3.SecretKey,
+			SessionToken: storage.S3.SessionToken,
+			Region:       storage.S3.Region,
 		}
 		objectStoreClient, err := objectstore.NewS3Client(objectStoreOpts)
 		if err != nil {
@@ -83,7 +83,7 @@ func NewObjectStoreClient(config *datastore.Configuration) (objectstore.ObjectSt
 		return objectStoreClient, exportDir, nil
 
 	case datastore.OnPrem:
-		exportDir := config.StoragePolicy.OnPrem.Path
+		exportDir := storage.OnPrem.Path
 		objectStoreOpts := objectstore.ObjectStoreOptions{
 			OnPremStorageDir: exportDir,
 		}
@@ -192,4 +192,25 @@ func ExportCollection(ctx context.Context, collection string, uri string, export
 	}
 
 	return nil
+}
+
+func getStorageConfig(cfg config.Configuration, config *datastore.Configuration) *datastore.StoragePolicyConfiguration {
+	if !util.IsStringEmpty(cfg.StoragePolicy.Type) {
+		return &datastore.StoragePolicyConfiguration{
+			Type: datastore.StorageType(cfg.StoragePolicy.Type),
+			S3: &datastore.S3Storage{
+				Bucket:       cfg.StoragePolicy.S3.Bucket,
+				AccessKey:    cfg.StoragePolicy.S3.AccessKey,
+				SecretKey:    cfg.StoragePolicy.S3.SecretKey,
+				Region:       cfg.StoragePolicy.S3.Region,
+				SessionToken: cfg.StoragePolicy.S3.SessionToken,
+				Endpoint:     cfg.StoragePolicy.S3.Endpoint,
+			},
+			OnPrem: &datastore.OnPremStorage{
+				Path: cfg.StoragePolicy.OnPrem.Path,
+			},
+		}
+	}
+
+	return config.StoragePolicy
 }
