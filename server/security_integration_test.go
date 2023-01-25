@@ -153,6 +153,51 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey() {
 	require.Equal(s.T(), apiKeyResponse.EndpointID, endpoint.UID)
 }
 
+func (s *SecurityIntegrationTestSuite) Test_RegenerateProjectAPIKey() {
+	expectedStatusCode := http.StatusOK
+
+	// Switch to the native realm
+	err := config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
+	require.NoError(s.T(), err)
+
+	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
+	userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
+	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+
+	role := auth.Role{
+		Type:    auth.RoleAdmin,
+		Project: s.DefaultProject.UID,
+	}
+
+	// Generate api key for this Project
+	_, keyString, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, uuid.NewString(), "test", "api", "")
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/security/keys/regenerate", s.DefaultOrg.UID, s.DefaultProject.UID)
+
+	req := createRequest(http.MethodPut, url, "", nil)
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var apiKeyResponse models.APIKeyResponse
+	parseResponse(s.T(), w.Result(), &apiKeyResponse)
+	require.NotEmpty(s.T(), apiKeyResponse.Key)
+	require.NotEqual(s.T(), apiKeyResponse.Key, keyString)
+
+	dbAPIKey, err := apiRepo.FindAPIKeyByProjectID(context.Background(), s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), apiKeyResponse.UID, dbAPIKey.UID)
+}
+
 func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey_RedirectToProjects() {
 	expectedStatusCode := http.StatusTemporaryRedirect
 
