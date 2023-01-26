@@ -332,7 +332,7 @@ definitions:
       retry_limit:
         type: integer
       strategy:
-        type: string
+        $ref: '#/definitions/datastore.StrategyProvider'
     type: object
   datastore.Organisation:
     properties:
@@ -424,7 +424,7 @@ definitions:
       strategy_retry_count:
         type: integer
       strategy_type:
-        type: string
+        $ref: '#/definitions/datastore.StrategyProvider'
       versions:
         items:
           $ref: '#/definitions/datastore.SignatureVersion'
@@ -464,7 +464,7 @@ definitions:
       retry_count:
         type: integer
       type:
-        type: string
+        $ref: '#/definitions/datastore.StrategyProvider'
     type: object
   datastore.Secret:
     properties:
@@ -561,8 +561,18 @@ definitions:
       retry_count:
         type: integer
       type:
-        type: string
+        $ref: '#/definitions/datastore.StrategyProvider'
     type: object
+  datastore.StrategyProvider:
+    enum:
+    - linear
+    - linear
+    - exponential
+    type: string
+    x-enum-varnames:
+    - DefaultStrategyProvider
+    - LinearStrategyProvider
+    - ExponentialStrategyProvider
   datastore.Subscription:
     properties:
       alert_config:
@@ -818,7 +828,7 @@ definitions:
       retry_count:
         type: integer
       type:
-        type: string
+        $ref: '#/definitions/datastore.StrategyProvider'
     type: object
   models.Source:
     properties:

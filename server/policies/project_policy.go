@@ -43,7 +43,7 @@ func (pp *ProjectPolicy) Get(ctx context.Context, project *datastore.Project) er
 		}
 
 		// API Key
-		if apiKey.Role.Project != project.UID {
+		if apiKey.RoleProject != project.UID {
 			return ErrNotAllowed
 		}
 

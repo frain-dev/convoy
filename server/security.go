@@ -48,8 +48,8 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 		APIKey: models.APIKey{
 			Name: apiKey.Name,
 			Role: models.Role{
-				Type:    apiKey.Role.Type,
-				Project: apiKey.Role.Project,
+				Type:    apiKey.RoleType,
+				Project: apiKey.RoleProject,
 			},
 			Type:      apiKey.Type,
 			ExpiresAt: apiKey.ExpiresAt.Time(),
@@ -88,8 +88,8 @@ func (a *ApplicationHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http
 		APIKey: models.APIKey{
 			Name: apiKey.Name,
 			Role: models.Role{
-				Type:    apiKey.Role.Type,
-				Project: apiKey.Role.Project,
+				Type:    apiKey.RoleType,
+				Project: apiKey.RoleProject,
 			},
 			Type:      apiKey.Type,
 			ExpiresAt: apiKey.ExpiresAt.Time(),
@@ -160,9 +160,13 @@ func (a *ApplicationHandler) CreateEndpointAPIKey(w http.ResponseWriter, r *http
 	}
 
 	resp := models.PortalAPIKeyResponse{
-		Key:        key,
-		Url:        baseUrl,
-		Role:       apiKey.Role,
+		Key: key,
+		Url: baseUrl,
+		Role: auth.Role{
+			Type:     apiKey.RoleType,
+			Project:  apiKey.RoleProject,
+			Endpoint: apiKey.RoleEndpoint,
+		},
 		ProjectID:  project.UID,
 		EndpointID: endpoint.UID,
 		Type:       string(apiKey.Type),
@@ -235,7 +239,7 @@ func (a *ApplicationHandler) RevokeEndpointAPIKey(w http.ResponseWriter, r *http
 		return
 	}
 
-	if key.Role.Project != project.UID || key.Role.Endpoint != endpoint.UID {
+	if key.RoleProject != project.UID || key.RoleEndpoint != endpoint.UID {
 		_ = render.Render(w, r, util.NewErrorResponse(datastore.ErrNotAuthorisedToAccessDocument.Error(), http.StatusForbidden))
 		return
 	}
@@ -258,9 +262,13 @@ func (a *ApplicationHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	resp := models.APIKeyByIDResponse{
-		UID:       apiKey.UID,
-		Name:      apiKey.Name,
-		Role:      apiKey.Role,
+		UID:  apiKey.UID,
+		Name: apiKey.Name,
+		Role: auth.Role{
+			Type:     apiKey.RoleType,
+			Project:  apiKey.RoleProject,
+			Endpoint: apiKey.RoleEndpoint,
+		},
 		Type:      apiKey.Type,
 		ExpiresAt: apiKey.ExpiresAt,
 		UpdatedAt: apiKey.UpdatedAt,
@@ -289,9 +297,13 @@ func (a *ApplicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 	}
 
 	resp := models.APIKeyByIDResponse{
-		UID:       apiKey.UID,
-		Name:      apiKey.Name,
-		Role:      apiKey.Role,
+		UID:  apiKey.UID,
+		Name: apiKey.Name,
+		Role: auth.Role{
+			Type:     apiKey.RoleType,
+			Project:  apiKey.RoleProject,
+			Endpoint: apiKey.RoleEndpoint,
+		},
 		Type:      apiKey.Type,
 		ExpiresAt: apiKey.ExpiresAt,
 		UpdatedAt: apiKey.UpdatedAt,
@@ -338,9 +350,13 @@ func apiKeyByIDResponse(apiKeys []datastore.APIKey) []models.APIKeyByIDResponse 
 
 	for _, apiKey := range apiKeys {
 		resp := models.APIKeyByIDResponse{
-			UID:       apiKey.UID,
-			Name:      apiKey.Name,
-			Role:      apiKey.Role,
+			UID:  apiKey.UID,
+			Name: apiKey.Name,
+			Role: auth.Role{
+				Type:     apiKey.RoleType,
+				Project:  apiKey.RoleProject,
+				Endpoint: apiKey.RoleEndpoint,
+			},
 			Type:      apiKey.Type,
 			ExpiresAt: apiKey.ExpiresAt,
 			UpdatedAt: apiKey.UpdatedAt,

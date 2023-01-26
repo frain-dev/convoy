@@ -58,12 +58,10 @@ func addRunCommand() *cobra.Command {
 				return
 			}
 
-			// fmt.Printf("org id: %+v\n", orgs[0].UID)
-			// fmt.Printf("pageable: %+v\n", pageable)
-
 			p := postgres.NewProjectRepo(db.GetDB())
 			err = p.UpdateProject(cmd.Context(), &datastore.Project{
-				Name:           "CCC",
+				UID:            "1",
+				Name:           "xxx-swer",
 				Type:           datastore.IncomingProject,
 				OrganisationID: orgs[0].UID,
 				Config: &datastore.ProjectConfig{
@@ -74,7 +72,7 @@ func addRunCommand() *cobra.Command {
 					StrategyRetryCount: 10,
 					SignatureHeader:    config.DefaultSignatureHeader,
 					SignatureHash:      "SHA256",
-					RetentionPolicy:    "300d",
+					RetentionPolicy:    "5d",
 				},
 			})
 			if err != nil {
@@ -82,13 +80,21 @@ func addRunCommand() *cobra.Command {
 				return
 			}
 
+			// proj, err := p.FetchProjectByID(cmd.Context(), 1)
+			// if err != nil {
+			// 	fmt.Printf("err: %+v", err)
+			// 	return
+			// }
+			// fmt.Printf("\n%+v\n", proj)
+			// fmt.Printf("\n%+v\n", proj.Config)
+
 			// c := postgres.NewConfigRepo(db.GetDB())
 			// err = c.UpdateConfiguration(cmd.Context(), &datastore.Configuration{
 			// 	UID:                "default",
 			// 	IsAnalyticsEnabled: true,
 			// 	IsSignupEnabled:    true,
 			// 	StoragePolicy: &datastore.StoragePolicyConfiguration{
-			// 		Type: datastore.S3,
+			// 		Type: datastore.OnPrem,
 			// 		S3: &datastore.S3Storage{
 			// 			Bucket:       null.NewString("Bucket", true),
 			// 			AccessKey:    null.NewString("AccessKey", true),
@@ -97,7 +103,7 @@ func addRunCommand() *cobra.Command {
 			// 			SessionToken: null.NewString("SessionToken", true),
 			// 			Endpoint:     null.NewString("Endpoint", true),
 			// 		},
-			// 		// OnPrem: datastore.DefaultStoragePolicy.OnPrem,
+			// 		OnPrem: datastore.DefaultStoragePolicy.OnPrem,
 			// 	},
 			// })
 			// if err != nil {
@@ -114,6 +120,7 @@ func addRunCommand() *cobra.Command {
 			// fmt.Printf("config: %+v\n", cfg.StoragePolicy.OnPrem)
 			// fmt.Printf("config: %+v\n", cfg.StoragePolicy.S3)
 
+			// projects, err := p.LoadProjects(cmd.Context(), &datastore.ProjectFilter{OrgID: "1"})
 			// for _, v := range projects {
 			// 	fmt.Printf("Proj: %+v\n", v)
 			// }
