@@ -51,8 +51,8 @@ const (
 		strategy_retry_count = $10,
 		signature_header = $11,
 		signature_hash = $12,
-		updated_at = now()
-	WHERE id = $1;
+		updated_at = now(),
+	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	fetchProjectById = `
@@ -78,13 +78,14 @@ const (
 	FROM convoy.projects p
 	LEFT JOIN convoy.project_configurations c
 		ON p.project_configuration_id = c.id
-	WHERE p.id = $1;
+	WHERE p.id = $1 AND deleted_at IS NULL;
 	`
 
 	fetchProjects = `
 	SELECT * FROM convoy.projects
 	WHERE organisation_id = $1
-	ORDER BY id;
+	ORDER BY id
+	WHERE deleted_at IS NULL;
 	`
 
 	updateProjectById = `
@@ -92,30 +93,30 @@ const (
 	name = $2, 
 	logo_url = $3,
 	updated_at = now()
-	WHERE id = $1;
+	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	deleteProject = `
 	UPDATE convoy.projects SET 
 	deleted_at = now()
-	WHERE id = $1;
+	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	deleteProjectEndpoints = `
 	UPDATE convoy.endpoints SET 
 	deleted_at = now()
-	WHERE project_id = $1;
+	WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 
 	deleteProjectEvents = `
 	UPDATE convoy.events 
 	SET deleted_at = now() 
-	WHERE project_id = $1;
+	WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 	deleteProjectEndpointSubscriptions = `
 	UPDATE convoy.subscriptions SET 
 	deleted_at = now()
-	WHERE project_id = $1;
+	WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 )
 

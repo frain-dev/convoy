@@ -23,14 +23,15 @@ const (
 
 	fetchOrganisation = `
 	SELECT * FROM convoy.organisations 
-	WHERE $1 = $2;
+	WHERE $1 = $2 AND deleted_at IS NULL;
 	`
 
 	fetchOrganisationsPaginated = `
 	SELECT * FROM convoy.organisations
 	ORDER BY id
 	LIMIT $1
-	OFFSET $2;
+	OFFSET $2
+	WHERE deleted_at IS NULL;
 	`
 
 	updateOrganizationById = `
@@ -40,17 +41,17 @@ const (
 	custom_domain = $4,
 	assigned_domain = $5
 	updated_at = now()
-	WHERE id = $1;
+	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	deleteOrganisation = `
 	UPDATE convoy.organisations SET 
 	deleted_at = now()
-	WHERE id = $1;
+	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	countOrganizations = `
-	SELECT COUNT(id) FROM convoy.organisations;
+	SELECT COUNT(id) FROM convoy.organisations WHERE deleted_at IS NULL;
 	`
 )
 
