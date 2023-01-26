@@ -110,7 +110,7 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 
 func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID string, id string) (*datastore.PortalLink, error) {
 	var portalLink *datastore.PortalLink
-	err := p.db.QueryRowx(fetchPortalLinkById, id, projectID).StructScan(&portalLink)
+	err := p.db.QueryRowxContext(ctx, fetchPortalLinkById, id, projectID).StructScan(&portalLink)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID strin
 
 func (p *portalLinkRepo) FindPortalLinkByToken(ctx context.Context, token string) (*datastore.PortalLink, error) {
 	var portalLink *datastore.PortalLink
-	err := p.db.QueryRowx(fetchPortalLinkByToken, token).StructScan(&portalLink)
+	err := p.db.QueryRowxContext(ctx, fetchPortalLinkByToken, token).StructScan(&portalLink)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 	}
 
 	var count int
-	err = p.db.Get(&count, countPortalLinks)
+	err = p.db.GetContext(ctx, &count, countPortalLinks)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -162,7 +162,7 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 		TotalPage: int64(math.Ceil(float64(count) / float64(pageable.PerPage))),
 	}
 
-	return portalLinks, pagination, nil
+	return portalLinks, pagination, rows.Close()
 }
 
 func (p *portalLinkRepo) RevokePortalLink(ctx context.Context, projectID string, id string) error {
