@@ -152,7 +152,7 @@ func (a *apiKeyRepo) RevokeAPIKeys(ctx context.Context, ids []string) error {
 
 func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
 	skip := (pageable.Page - 1) * pageable.PerPage
-	rows, err := a.db.Queryx(fetchAPIKeysPaginated, pageable.PerPage, skip)
+	rows, err := a.db.QueryxContext(ctx, fetchAPIKeysPaginated, pageable.PerPage, skip)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}

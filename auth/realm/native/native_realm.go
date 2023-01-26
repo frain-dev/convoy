@@ -67,8 +67,12 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	authUser := &auth.AuthenticatedUser{
 		AuthenticatedByRealm: n.GetName(),
 		Credential:           *cred,
-		Role:                 apiKey.Role,
-		APIKey:               apiKey,
+		Role: auth.Role{
+			Type:     apiKey.RoleType,
+			Project:  apiKey.RoleProject,
+			Endpoint: apiKey.RoleEndpoint,
+		},
+		APIKey: apiKey,
 	}
 
 	if apiKey.Type == datastore.PersonalKey {

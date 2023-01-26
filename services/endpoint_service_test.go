@@ -5,6 +5,9 @@ import (
 	"errors"
 	"net/http"
 	"testing"
+	"time"
+
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -23,11 +26,11 @@ func stripVariableFields(t *testing.T, obj string, v interface{}) {
 			for i := range g.Config.Signature.Versions {
 				v := &g.Config.Signature.Versions[i]
 				v.UID = ""
-				v.CreatedAt = 0
+				v.CreatedAt = time.Time{}
 			}
 		}
 		g.UID = ""
-		g.CreatedAt, g.UpdatedAt, g.DeletedAt = 0, 0, nil
+		g.CreatedAt, g.UpdatedAt, g.DeletedAt = time.Time{}, time.Time{}, null.Time{}
 	case "endpoint":
 		e := v.(*datastore.Endpoint)
 
@@ -51,7 +54,7 @@ func stripVariableFields(t *testing.T, obj string, v interface{}) {
 	case "organisation":
 		a := v.(*datastore.Organisation)
 		a.UID = ""
-		a.CreatedAt, a.UpdatedAt = 0, 0
+		a.CreatedAt, a.UpdatedAt = time.Time{}, time.Time{}
 	case "organisation_member":
 		a := v.(*datastore.OrganisationMember)
 		a.UID = ""
