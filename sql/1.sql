@@ -167,17 +167,16 @@ CREATE TABLE IF NOT EXISTS convoy.portal_links (
 	id BIGSERIAL PRIMARY KEY,
 
 	project_id BIGINT NOT NULL REFERENCES convoy.projects (id),
-
-	invitee_email TEXT NOT NULL,
+	
+	name TEXT NOT NULL,
 	token TEXT NOT NULL,
-	role TEXT NOT NULL,
-	status TEXT NOT NULL,
-
+	endpoints TEXT[] NOT NULL,
+	
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	expires_at TIMESTAMPTZ NOT NULL,
 	deleted_at TIMESTAMPTZ
 );
+
 
 CREATE TABLE IF NOT EXISTS convoy.subscription_filters (
 	id BIGSERIAL PRIMARY KEY,

@@ -1144,10 +1144,10 @@
 			"models.PortalLinkResponse": {
 				"properties": {
 					"created_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"deleted_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"endpoint_count": {
 						"type": "integer"
@@ -1177,7 +1177,7 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"url": {
 						"type": "string"

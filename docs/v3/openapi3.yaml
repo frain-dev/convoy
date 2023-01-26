@@ -775,9 +775,9 @@ components:
     models.PortalLinkResponse:
       properties:
         created_at:
-          type: integer
+          type: string
         deleted_at:
-          type: integer
+          type: string
         endpoint_count:
           type: integer
         endpoints:
@@ -797,7 +797,7 @@ components:
         uid:
           type: string
         updated_at:
-          type: integer
+          type: string
         url:
           type: string
       type: object

@@ -135,7 +135,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, o *datastore.Project) e
 	}
 
 	var id int
-	err = tx.QueryRowx(createProjectConfiguration,
+	err = tx.QueryRowxContext(ctx, createProjectConfiguration,
 		o.Config.RetentionPolicy,
 		o.Config.MaxIngestSize,
 		o.Config.ReplayAttacks,
@@ -153,7 +153,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, o *datastore.Project) e
 		return err
 	}
 
-	proResult, err := tx.Exec(createProject, o.Name, o.Type, o.LogoURL, o.OrganisationID, id)
+	proResult, err := tx.ExecContext(ctx, createProject, o.Name, o.Type, o.LogoURL, o.OrganisationID, id)
 	if err != nil {
 		return err
 	}
@@ -261,22 +261,22 @@ func (p *projectRepo) DeleteProject(ctx context.Context, id string) error {
 		return err
 	}
 
-	_, err = tx.Exec(deleteProject, id)
+	_, err = tx.ExecContext(ctx, deleteProject, id)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(deleteProjectEndpoints, id)
+	_, err = tx.ExecContext(ctx, deleteProjectEndpoints, id)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(deleteProjectEvents, id)
+	_, err = tx.ExecContext(ctx, deleteProjectEvents, id)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(deleteProjectEndpointSubscriptions, id)
+	_, err = tx.ExecContext(ctx, deleteProjectEndpointSubscriptions, id)
 	if err != nil {
 		return err
 	}

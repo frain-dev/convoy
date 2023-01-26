@@ -25,7 +25,7 @@ func NewPortalLinkRepo(store datastore.Store) datastore.PortalLinkRepository {
 
 func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore.PortalLink) error {
 	ctx = p.setCollectionInContext(ctx)
-	portal.ID = primitive.NewObjectID()
+	// portal.ID = primitive.NewObjectID()
 
 	err := p.store.Save(ctx, portal, nil)
 	return err
