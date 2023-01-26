@@ -115,7 +115,7 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 		TotalPage: int64(math.Ceil(float64(count) / float64(pageable.PerPage))),
 	}
 
-	return organizations, pagination, nil
+	return organizations, pagination, rows.Close()
 }
 
 func (o *orgRepo) UpdateOrganisation(ctx context.Context, org *datastore.Organisation) error {

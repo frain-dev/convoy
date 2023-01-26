@@ -55,7 +55,7 @@ func (db *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgI
 func (db *orgInviteRepo) UpdateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {
 	ctx = db.setCollectionInContext(ctx)
 
-	iv.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+	iv.UpdatedAt = time.Now()
 	update := bson.M{
 		"$set": bson.M{
 			"role":       iv.Role,

@@ -128,6 +128,7 @@ func NewProjectRepo(db *sqlx.DB) datastore.ProjectRepository {
 	return &projectRepo{db: db}
 }
 
+// TODO (raymond): add implementation for setting project secrets
 func (p *projectRepo) CreateProject(ctx context.Context, o *datastore.Project) error {
 	tx, err := p.db.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -171,7 +172,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, o *datastore.Project) e
 }
 
 func (p *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFilter) ([]*datastore.Project, error) {
-	rows, err := p.db.Queryx(fetchProjects, f.OrgID)
+	rows, err := p.db.QueryxContext(ctx, fetchProjects, f.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -188,16 +189,17 @@ func (p *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFilt
 		projects = append(projects, &proj)
 	}
 
-	return projects, nil
+	return projects, rows.Close()
 }
 
+// TODO (raymond): add implementation for rotating project secrets
 func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Project) error {
 	tx, err := p.db.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
 
-	pRes, err := tx.Exec(updateProjectById, project.UID, project.Name, project.LogoURL)
+	pRes, err := tx.ExecContext(ctx, updateProjectById, project.UID, project.Name, project.LogoURL)
 	if err != nil {
 		return err
 	}
@@ -211,7 +213,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		return ErrProjectNotUpdated
 	}
 
-	cRes, err := tx.Exec(updateProjectConfiguration,
+	cRes, err := tx.ExecContext(ctx, updateProjectConfiguration,
 		project.UID,
 		project.Config.RetentionPolicy,
 		project.Config.MaxIngestSize,
@@ -243,7 +245,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 
 func (p *projectRepo) FetchProjectByID(ctx context.Context, id int) (*datastore.Project, error) {
 	var project datastore.Project
-	err := p.db.Get(&project, fetchProjectById, id)
+	err := p.db.GetContext(ctx, &project, fetchProjectById, id)
 	if err != nil {
 		return nil, err
 	}
@@ -252,6 +254,7 @@ func (p *projectRepo) FetchProjectByID(ctx context.Context, id int) (*datastore.
 }
 
 func (p *projectRepo) FillProjectsStatistics(ctx context.Context, project *datastore.Project) error {
+	// TODO (raymond): add implementation
 	return nil
 }
 
