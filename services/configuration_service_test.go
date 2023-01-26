@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"testing"
 
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/server/models"
@@ -42,7 +44,7 @@ func TestConfigService_CreateConfiguration(t *testing.T) {
 				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), IsSignupEnabled: boolPtr(true), StoragePolicy: &datastore.StoragePolicyConfiguration{
 					Type: datastore.OnPrem,
 					OnPrem: &datastore.OnPremStorage{
-						Path: "/tmp/",
+						Path: null.NewString("/tmp/", true),
 					},
 				}},
 			},
@@ -60,7 +62,7 @@ func TestConfigService_CreateConfiguration(t *testing.T) {
 				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), StoragePolicy: &datastore.StoragePolicyConfiguration{
 					Type: datastore.S3,
 					S3: &datastore.S3Storage{
-						Bucket: "my-bucket",
+						Bucket: null.NewString("my-bucket", true),
 					},
 				}},
 			},
@@ -116,14 +118,14 @@ func TestConfigService_UpdateConfiguration(t *testing.T) {
 				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), StoragePolicy: &datastore.StoragePolicyConfiguration{
 					Type: datastore.OnPrem,
 					OnPrem: &datastore.OnPremStorage{
-						Path: "/tmp/",
+						Path: null.NewString("/tmp/", true),
 					},
 				}},
 			},
 			wantConfig: &datastore.Configuration{IsAnalyticsEnabled: true, StoragePolicy: &datastore.StoragePolicyConfiguration{
 				Type: datastore.OnPrem,
 				OnPrem: &datastore.OnPremStorage{
-					Path: "/tmp/",
+					Path: null.NewString("/tmp/", true),
 				},
 			}},
 			dbFn: func(c *ConfigService) {
@@ -131,7 +133,7 @@ func TestConfigService_UpdateConfiguration(t *testing.T) {
 				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{IsAnalyticsEnabled: true, StoragePolicy: &datastore.StoragePolicyConfiguration{
 					Type: datastore.OnPrem,
 					OnPrem: &datastore.OnPremStorage{
-						Path: "/tmp/",
+						Path: null.NewString("/tmp/", true),
 					},
 				}}, nil)
 				co.EXPECT().UpdateConfiguration(gomock.Any(), gomock.Any()).Times(1).Return(nil)

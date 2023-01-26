@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -57,7 +59,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 					UID:       uuid.NewString(),
 					Hash:      "SHA256",
 					Encoding:  datastore.HexEncoding,
-					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+					CreatedAt: time.Now(),
 				},
 			},
 		},
@@ -66,7 +68,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 			Duration:   20,
 			RetryCount: 4,
 		},
-		RetentionPolicy: "72h",
+		RetentionPolicy:          "72h",
 		RateLimit:                &datastore.DefaultRateLimitConfig,
 		ReplayAttacks:            true,
 		IsRetentionPolicyEnabled: true,
@@ -106,7 +108,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	// check the number of retained events on projects
 	p, err := r.ConvoyApp.projectRepo.FetchProjectByID(context.Background(), project.UID)
 	require.NoError(r.T(), err)
-	require.Equal(r.T(), p.Metadata.RetainedEvents, 1)
+	require.Equal(r.T(), p.RetainedEvents, 1)
 }
 
 func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Documents() {
@@ -123,7 +125,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 					UID:       uuid.NewString(),
 					Hash:      "SHA256",
 					Encoding:  datastore.HexEncoding,
-					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+					CreatedAt: time.Now(),
 				},
 			},
 		},
@@ -132,9 +134,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 			Duration:   20,
 			RetryCount: 4,
 		},
-		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Policy: "72h",
-		},
+		RetentionPolicy:          "72h",
 		RateLimit:                &datastore.DefaultRateLimitConfig,
 		ReplayAttacks:            true,
 		IsRetentionPolicyEnabled: true,
@@ -282,7 +282,7 @@ func seedEventDelivery(store datastore.Store, eventID string, endpointID string,
 
 func seedConfiguration(store datastore.Store) (*datastore.Configuration, error) {
 	defaultStorage := &datastore.DefaultStoragePolicy
-	defaultStorage.OnPrem.Path = "/tmp/convoy/export/"
+	defaultStorage.OnPrem.Path = null.NewString("/tmp/convoy/export/", true)
 
 	config := &datastore.Configuration{
 		UID:                uuid.NewString(),

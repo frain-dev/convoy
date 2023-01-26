@@ -163,10 +163,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Header: "X-Convoy-Signature",
 								Versions: []datastore.SignatureVersion{
 									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
 									},
 								},
 							},
@@ -258,10 +257,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
 									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
 									},
 								},
 							},
@@ -352,10 +350,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
 									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
 									},
 								},
 							},
@@ -446,10 +443,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
 									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
 									},
 								},
 							},
@@ -540,10 +536,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
 									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
 									},
 								},
 							},
@@ -634,10 +629,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
 									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
 									},
 								},
 							},
@@ -729,10 +723,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
 									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
 									},
 								},
 							},
@@ -829,10 +822,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Header: "X-Convoy-Signature",
 								Versions: []datastore.SignatureVersion{
 									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
 									},
 								},
 							},

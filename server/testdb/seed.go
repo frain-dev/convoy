@@ -118,16 +118,16 @@ func SeedDefaultProject(store datastore.Store, orgID string) (*datastore.Project
 						UID:       uuid.NewString(),
 						Hash:      "SHA256",
 						Encoding:  datastore.HexEncoding,
-						CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+						CreatedAt: time.Now(),
 					},
 				},
 			},
-			ReplayAttacks: false,
+			ReplayAttacks:     false,
+			RateLimitCount:    convoy.RATE_LIMIT,
+			RateLimitDuration: convoy.RATE_LIMIT_DURATION,
 		},
-		RateLimit:         convoy.RATE_LIMIT,
-		RateLimitDuration: convoy.RATE_LIMIT_DURATION,
-		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	// Seed Data.
@@ -176,8 +176,8 @@ func SeedDefaultOrganisation(store datastore.Store, user *datastore.User) (*data
 		UID:       uuid.NewString(),
 		OwnerID:   user.UID,
 		Name:      "default-org",
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	// Seed Data.
@@ -268,16 +268,18 @@ func SeedAPIKey(store datastore.Store, role auth.Role, uid, name, keyType, userI
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
 	apiKey := &datastore.APIKey{
-		UID:       uid,
-		MaskID:    maskID,
-		Name:      name,
-		UserID:    userID,
-		Type:      datastore.KeyType(keyType),
-		Role:      role,
-		Hash:      encodedKey,
-		Salt:      salt,
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UID:          uid,
+		MaskID:       maskID,
+		Name:         name,
+		UserID:       userID,
+		Type:         datastore.KeyType(keyType),
+		RoleType:     role.Type,
+		RoleProject:  role.Project,
+		RoleEndpoint: role.Endpoint,
+		Hash:         encodedKey,
+		Salt:         salt,
+		CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	apiRepo := cm.NewApiKeyRepo(store)
@@ -302,8 +304,8 @@ func SeedProject(store datastore.Store, uid, name, orgID string, projectType dat
 		OrganisationID:    orgID,
 		RateLimit:         convoy.RATE_LIMIT,
 		RateLimitDuration: convoy.RATE_LIMIT_DURATION,
-		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
 	}
 
 	// Seed Data.
@@ -384,8 +386,8 @@ func SeedOrganisation(store datastore.Store, uid, ownerID, name string) (*datast
 		UID:       uid,
 		OwnerID:   ownerID,
 		Name:      name,
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	// Seed Data.
@@ -409,8 +411,8 @@ func SeedMultipleOrganisations(store datastore.Store, ownerID string, num int) (
 			UID:       uid,
 			OwnerID:   ownerID,
 			Name:      fmt.Sprintf("TestOrg-%s", uid),
-			CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-			UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
 		orgs = append(orgs, org)
 
