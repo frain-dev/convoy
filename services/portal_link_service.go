@@ -12,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var ErrInvalidEndpoints = errors.New("endpoints cannot be empty")
@@ -50,8 +49,8 @@ func (p *PortalLinkService) CreatePortalLink(ctx context.Context, portal *models
 		Name:      portal.Name,
 		Token:     uniuri.NewLen(24),
 		Endpoints: portal.Endpoints,
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	err := p.portalLinkRepo.CreatePortalLink(ctx, portalLink)

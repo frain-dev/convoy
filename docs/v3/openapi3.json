@@ -485,7 +485,7 @@
 						"type": "integer"
 					},
 					"strategy": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.StrategyProvider"
 					}
 				},
 				"type": "object"
@@ -626,7 +626,7 @@
 						"type": "integer"
 					},
 					"strategy_type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.StrategyProvider"
 					},
 					"versions": {
 						"items": {
@@ -687,7 +687,7 @@
 						"type": "integer"
 					},
 					"type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.StrategyProvider"
 					}
 				},
 				"type": "object"
@@ -830,10 +830,23 @@
 						"type": "integer"
 					},
 					"type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.StrategyProvider"
 					}
 				},
 				"type": "object"
+			},
+			"datastore.StrategyProvider": {
+				"enum": [
+					"linear",
+					"linear",
+					"exponential"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"DefaultStrategyProvider",
+					"LinearStrategyProvider",
+					"ExponentialStrategyProvider"
+				]
 			},
 			"datastore.Subscription": {
 				"properties": {
@@ -1131,10 +1144,10 @@
 			"models.PortalLinkResponse": {
 				"properties": {
 					"created_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"deleted_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"endpoint_count": {
 						"type": "integer"
@@ -1164,7 +1177,7 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"url": {
 						"type": "string"
@@ -1212,7 +1225,7 @@
 						"type": "integer"
 					},
 					"type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.StrategyProvider"
 					}
 				},
 				"type": "object"

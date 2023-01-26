@@ -860,17 +860,16 @@ type OrganisationInvite struct {
 }
 
 type PortalLink struct {
-	ID                primitive.ObjectID `json:"-" bson:"_id"`
-	UID               string             `json:"uid" bson:"uid"`
-	Name              string             `json:"name" bson:"name"`
-	ProjectID         string             `json:"project_id" bson:"project_id"`
-	Token             string             `json:"-" bson:"token"`
-	Endpoints         []string           `json:"endpoints" bson:"endpoints"`
-	EndpointsMetadata []Endpoint         `json:"endpoints_metadata" bson:"endpoints_metadata"`
+	UID               string     `json:"uid" db:"uid"`
+	Name              string     `json:"name" db:"name"`
+	ProjectID         string     `json:"project_id" db:"project_id"`
+	Token             string     `json:"-" db:"token"`
+	Endpoints         []string   `json:"endpoints" db:"endpoints"`
+	EndpointsMetadata []Endpoint `json:"endpoints_metadata" db:"endpoints_metadata"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at,omitempty" swaggertype:"string"`
 }
 
 // Deprecated
