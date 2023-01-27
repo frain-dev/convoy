@@ -143,16 +143,16 @@ func addRunCommand() *cobra.Command {
 				EmailVerificationExpiresAt: time.Now(),
 			}
 
-			err = u.CreateUser(ctx, user)
-			if err != nil {
-				log.Fatal("create user", err)
-			}
-
-			user.FirstName = "jjj"
-			err = u.UpdateUser(ctx, user)
-			if err != nil {
-				log.Fatal("update user", err)
-			}
+			//err = u.CreateUser(ctx, user)
+			//if err != nil {
+			//	log.Fatal("create user", err)
+			//}
+			//
+			//user.FirstName = "jjj"
+			//err = u.UpdateUser(ctx, user)
+			//if err != nil {
+			//	log.Fatal("update user", err)
+			//}
 
 			dbUser, err := u.FindUserByID(ctx, "1")
 			if err != nil {

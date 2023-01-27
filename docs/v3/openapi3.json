@@ -940,6 +940,7 @@
 						"type": "string"
 					},
 					"uid": {
+						"description": "ID                         primitive.ObjectID `json:\"-\" bson:\"_id\"`",
 						"type": "string"
 					},
 					"updated_at": {

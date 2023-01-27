@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -34,7 +35,7 @@ const (
 
 	fetchUsers = `
 	SELECT * FROM convoy.users
-	WHERE $1 = $2 AND deleted_at IS NULL;
+	WHERE %s = $1 AND deleted_at IS NULL;
 	`
 
 	fetchUsersPaginated = `
@@ -106,7 +107,7 @@ func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
 
 func (u *userRepo) FindUserByEmail(ctx context.Context, email string) (*datastore.User, error) {
 	user := &datastore.User{}
-	err := u.db.QueryRowxContext(ctx, fetchUsers, "email", email).StructScan(user)
+	err := u.db.QueryRowxContext(ctx, fmt.Sprintf(fetchUsers, "email"), email).StructScan(user)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +117,7 @@ func (u *userRepo) FindUserByEmail(ctx context.Context, email string) (*datastor
 
 func (u *userRepo) FindUserByID(ctx context.Context, id string) (*datastore.User, error) {
 	user := &datastore.User{}
-	err := u.db.QueryRowxContext(ctx, fetchUsers, "id", id).StructScan(user)
+	err := u.db.QueryRowxContext(ctx, fmt.Sprintf(fetchUsers, "id"), id).StructScan(user)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +127,7 @@ func (u *userRepo) FindUserByID(ctx context.Context, id string) (*datastore.User
 
 func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastore.User, error) {
 	user := &datastore.User{}
-	err := u.db.QueryRowxContext(ctx, fetchUsers, "reset_password_token", token).StructScan(user)
+	err := u.db.QueryRowxContext(ctx, fmt.Sprintf(fetchUsers, "reset_password_token"), token).StructScan(user)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +137,7 @@ func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastor
 
 func (u *userRepo) FindUserByEmailVerificationToken(ctx context.Context, token string) (*datastore.User, error) {
 	user := &datastore.User{}
-	err := u.db.QueryRowxContext(ctx, fetchUsers, "email_verification_token", token).StructScan(user)
+	err := u.db.QueryRowxContext(ctx, fmt.Sprintf(fetchUsers, "email_verification_token"), token).StructScan(user)
 	if err != nil {
 		return nil, err
 	}

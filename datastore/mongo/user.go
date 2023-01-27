@@ -24,7 +24,6 @@ func NewUserRepo(store datastore.Store) datastore.UserRepository {
 
 func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
 	ctx = u.setCollectionInContext(ctx)
-	user.ID = primitive.NewObjectID()
 	user.ResetPasswordToken = uuid.NewString()
 
 	err := u.store.Save(ctx, user, nil)
