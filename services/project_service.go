@@ -92,8 +92,8 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		APIKey: models.APIKey{
 			Name: apiKey.Name,
 			Role: models.Role{
-				Type:    apiKey.RoleType,
-				Project: apiKey.RoleProject,
+				Type:    apiKey.Role.Type,
+				Project: apiKey.Role.Project,
 			},
 			Type:      apiKey.Type,
 			ExpiresAt: apiKey.ExpiresAt.Time(),

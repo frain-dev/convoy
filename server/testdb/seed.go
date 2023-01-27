@@ -268,18 +268,16 @@ func SeedAPIKey(store datastore.Store, role auth.Role, uid, name, keyType, userI
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
 	apiKey := &datastore.APIKey{
-		UID:          uid,
-		MaskID:       maskID,
-		Name:         name,
-		UserID:       userID,
-		Type:         datastore.KeyType(keyType),
-		RoleType:     role.Type,
-		RoleProject:  role.Project,
-		RoleEndpoint: role.Endpoint,
-		Hash:         encodedKey,
-		Salt:         salt,
-		CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
+		UID:       uid,
+		MaskID:    maskID,
+		Name:      name,
+		UserID:    userID,
+		Type:      datastore.KeyType(keyType),
+		Role:      role,
+		Hash:      encodedKey,
+		Salt:      salt,
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	apiRepo := cm.NewApiKeyRepo(store)

@@ -622,21 +622,19 @@ type CLIMetadata struct {
 }
 
 type APIKey struct {
-	ID           primitive.ObjectID  `json:"-" bson:"_id"`
-	UID          string              `json:"uid" bson:"uid"`
-	MaskID       string              `json:"mask_id,omitempty" bson:"mask_id"`
-	Name         string              `json:"name" bson:"name"`
-	RoleType     auth.RoleType       `json:"role_type" bson:"role_type"`
-	RoleProject  string              `json:"role_project" bson:"role_project"`
-	RoleEndpoint string              `json:"role_endpoint" bson:"role_endpoint"`
-	Hash         string              `json:"hash,omitempty" bson:"hash"`
-	Salt         string              `json:"salt,omitempty" bson:"salt"`
-	Type         KeyType             `json:"key_type" bson:"key_type"`
-	UserID       string              `json:"user_id" bson:"user_id"`
-	ExpiresAt    primitive.DateTime  `json:"expires_at,omitempty" bson:"expires_at,omitempty"`
-	CreatedAt    primitive.DateTime  `json:"created_at,omitempty" bson:"created_at"`
-	UpdatedAt    primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at"`
-	DeletedAt    *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
+	ID        primitive.ObjectID  `json:"-" bson:"_id"`
+	UID       string              `json:"uid" db:"uid"`
+	MaskID    string              `json:"mask_id,omitempty" db:"mask_id"`
+	Name      string              `json:"name" db:"name"`
+	Role      auth.Role           `json:"role" db:"role"`
+	Hash      string              `json:"hash,omitempty" db:"hash"`
+	Salt      string              `json:"salt,omitempty" db:"salt"`
+	Type      KeyType             `json:"key_type" db:"key_type"`
+	UserID    string              `json:"user_id" db:"user_id"`
+	ExpiresAt primitive.DateTime  `json:"expires_at,omitempty" db:"expires_at"`
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty" db:"created_at"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" db:"updated_at"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" db:"deleted_at"`
 }
 
 type Subscription struct {

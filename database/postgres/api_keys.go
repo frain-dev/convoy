@@ -25,7 +25,20 @@ const (
 	`
 
 	fetchAPIKey = `
-	SELECT * FROM convoy.api_keys
+	SELECT
+	    name,
+	    key_type,
+	    mask_id,
+	    role_type as "role.type",
+	    role_project as "role.project",
+	    role_endpoint as "role.endpoint",
+	    hash,
+	    salt,
+	    user_id,
+	    created_at,
+	    updated_at,
+	    expires_at
+	FROM convoy.api_keys
 	WHERE $1 = $2 AND deleted_at IS NULL;
 	`
 
@@ -63,7 +76,7 @@ func NewAPIKeyRepo(db *sqlx.DB) datastore.APIKeyRepository {
 func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) error {
 	result, err := a.db.ExecContext(
 		ctx, createAPIKey, key.Name, key.Type, key.MaskID,
-		key.RoleType, key.RoleProject, key.RoleEndpoint, key.Hash,
+		key.Role.Type, key.Role.Project, key.Role.Endpoint, key.Hash,
 		key.Salt, key.UserID, key.ExpiresAt,
 	)
 	if err != nil {
@@ -84,7 +97,7 @@ func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) er
 
 func (a *apiKeyRepo) UpdateAPIKey(ctx context.Context, key *datastore.APIKey) error {
 	result, err := a.db.ExecContext(
-		ctx, updateAPIKeyById, key.UID, key.RoleType, key.RoleProject, key.RoleEndpoint,
+		ctx, updateAPIKeyById, key.UID, key.Role.Type, key.Role.Project, key.Role.Endpoint,
 	)
 	if err != nil {
 		return err

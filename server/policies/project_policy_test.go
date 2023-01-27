@@ -213,8 +213,8 @@ func Test_ProjectPolicy_Update(t *testing.T) {
 					name: "should_allow_when_apikey_has_access_to_project",
 					authCtx: &auth.AuthenticatedUser{
 						APIKey: &datastore.APIKey{
-							UID:         "randomstring",
-							RoleProject: "project-uid",
+							UID:  "randomstring",
+							Role: auth.Role{Project: "project-uid"},
 						},
 					},
 					wantErr:       false,
@@ -430,8 +430,8 @@ func Test_ProjectPolicy_Delete(t *testing.T) {
 					name: "should_allow_when_apikey_has_access_to_project",
 					authCtx: &auth.AuthenticatedUser{
 						APIKey: &datastore.APIKey{
-							UID:         "randomstring",
-							RoleProject: "project-uid",
+							UID:  "randomstring",
+							Role: auth.Role{Project: "project-uid"},
 						},
 					},
 					wantErr:       false,
