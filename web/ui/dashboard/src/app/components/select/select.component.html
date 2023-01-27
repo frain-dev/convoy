@@ -57,7 +57,7 @@
 
 	<div dropdownOptions class="py-20px pl-20px w-full max-h-[300px] scroll-m-0 scroll-auto">
 		<ul>
-			<ng-container v-if="searchable">
+			<ng-container *ngIf="searchable">
 				<li>
 					<div class="my-10px mr-20px border border-primary-400 h-36px px-14px rounded-[10px] flex items-center bg-white-100">
 						<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px w-14px" />
