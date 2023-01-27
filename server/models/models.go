@@ -120,6 +120,7 @@ type SourceResponse struct {
 	Verifier       *datastore.VerifierConfig `json:"verifier"`
 	Provider       datastore.SourceProvider  `json:"provider"`
 	ProviderConfig *datastore.ProviderConfig `json:"provider_config"`
+	PubSub         *datastore.PubSubConfig   `json:"pub_sub"`
 
 	CreatedAt primitive.DateTime  `json:"created_at,omitempty"`
 	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty"`
@@ -219,6 +220,7 @@ type UpdateSource struct {
 	IsDisabled     *bool                    `json:"is_disabled"`
 	ForwardHeaders []string                 `json:"forward_headers"`
 	Verifier       datastore.VerifierConfig `json:"verifier"`
+	PubSub         *datastore.PubSubConfig  `json:"pub_sub"`
 }
 
 type Event struct {

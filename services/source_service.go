@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	"encoding/json"
 	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -50,12 +50,10 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("Invalid verifier config for basic auth"))
 	}
 
-	if newSource.PubSub.Type == datastore.SqsPubSub && newSource.PubSub.Sqs == nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("Invalid pub sub config for sqs"))
-	}
-
-	if newSource.PubSub.Type == datastore.GooglePubSub && newSource.PubSub.Google == nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("Invalid pub sub config for sqs"))
+	if newSource.Type == datastore.PubSubSource {
+		if err := pubsub.Validate(&newSource.PubSub); err != nil {
+			return nil, util.NewServiceError(http.StatusBadRequest, err)
+		}
 	}
 
 	source := &datastore.Source{
@@ -66,24 +64,13 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		Type:      newSource.Type,
 		Provider:  newSource.Provider,
 		Verifier:  &newSource.Verifier,
+		PubSub:    &newSource.PubSub,
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	if source.Provider == datastore.TwitterSourceProvider {
 		source.ProviderConfig = &datastore.ProviderConfig{Twitter: &datastore.TwitterProviderConfig{}}
-	}
-
-	if !util.IsStringEmpty(string(newSource.PubSub.Type)) {
-		if newSource.PubSub.Type == datastore.GooglePubSub {
-			serviceAccount, err := json.Marshal(newSource.PubSub.Google.ServiceAccount)
-			if err != nil {
-				return nil, util.NewServiceError(http.StatusBadRequest, err)
-			}
-
-			newSource.PubSub.Google.Credentials = serviceAccount
-		}
-		source.PubSubConfig = &newSource.PubSub
 	}
 
 	err := s.sourceRepo.CreateSource(ctx, source)
@@ -141,8 +128,18 @@ func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Project, 
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("Invalid verifier config for basic auth"))
 	}
 
+	if sourceUpdate.Type == datastore.PubSubSource {
+		if err := pubsub.Validate(sourceUpdate.PubSub); err != nil {
+			return nil, util.NewServiceError(http.StatusBadRequest, err)
+		}
+	}
+
 	if sourceUpdate.ForwardHeaders != nil {
 		source.ForwardHeaders = sourceUpdate.ForwardHeaders
+	}
+
+	if sourceUpdate.PubSub != nil {
+		source.PubSub = sourceUpdate.PubSub
 	}
 
 	err := s.sourceRepo.UpdateSource(ctx, g.UID, source)

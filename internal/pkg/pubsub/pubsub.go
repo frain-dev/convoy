@@ -29,10 +29,11 @@ type PubSub interface {
 }
 
 type Source struct {
-	// The pub sub client
+	// The pub sub client.
 	client PubSub
 
-	// An identifier for the source config
+	// This is an identifier for the source config used to
+	// track if an existing source config has been changed.
 	hash string
 }
 
@@ -60,10 +61,10 @@ func NewSourcePool(queue queue.Queuer, store datastore.Store) *SourcePool {
 func (s *SourcePool) Insert(source *datastore.Source) error {
 	// Make sure the source doesn't already exists in the source
 	// pool. If it does, ensure the hash hasn't changed
-	sour, exists := s.sources[source.UID]
+	existingSource, exists := s.sources[source.UID]
 	if exists {
 		// The source config has changed
-		if s.hash(source) != sour.hash {
+		if s.hash(source) != existingSource.hash {
 			s.Remove(source.UID)
 			return s.insert(source)
 		}
@@ -148,7 +149,6 @@ func (s *SourcePool) handler(source *datastore.Source, msg string) error {
 
 	var endpoints []string
 
-	//fan out here
 	if !util.IsStringEmpty(ev.OwnerID) {
 		ownerIdEndpoints, err := s.endpointRepo.FindEndpointsByOwnerID(context.Background(), source.ProjectID, ev.OwnerID)
 		if err != nil {
@@ -211,29 +211,29 @@ func (s *SourcePool) handler(source *datastore.Source, msg string) error {
 func (s *SourcePool) hash(source *datastore.Source) string {
 	var hash string
 
-	if source.PubSubConfig.Type == datastore.SqsPubSub {
-		sq := source.PubSubConfig.Sqs
-		hash = fmt.Sprintf("%s,%s,%s,%s,%v", sq.AccessKeyID, sq.SecretKey, sq.DefaultRegion, sq.QueueName, source.PubSubConfig.Workers)
+	if source.PubSub.Type == datastore.SqsPubSub {
+		sq := source.PubSub.Sqs
+		hash = fmt.Sprintf("%s,%s,%s,%s,%v", sq.AccessKeyID, sq.SecretKey, sq.DefaultRegion, sq.QueueName, source.PubSub.Workers)
 	}
 
-	if source.PubSubConfig.Type == datastore.GooglePubSub {
-		gq := source.PubSubConfig.Google
-		hash = fmt.Sprintf("%s,%s,%s,%v", gq.Credentials, gq.ProjectID, gq.SubscriptionID, source.PubSubConfig.Workers)
+	if source.PubSub.Type == datastore.GooglePubSub {
+		gq := source.PubSub.Google
+		hash = fmt.Sprintf("%s,%s,%s,%v", gq.ServiceAccount, gq.ProjectID, gq.SubscriptionID, source.PubSub.Workers)
 	}
 
 	return base64.StdEncoding.EncodeToString([]byte(hash))
 }
 
 func NewPubSub(source *datastore.Source, handler datastore.PubSubHandler) (PubSub, error) {
-	if source.PubSubConfig.Type == datastore.SqsPubSub {
+	if source.PubSub.Type == datastore.SqsPubSub {
 		return sqs.New(source, handler), nil
 	}
 
-	if source.PubSubConfig.Type == datastore.GooglePubSub {
+	if source.PubSub.Type == datastore.GooglePubSub {
 		return google.New(source, handler), nil
 	}
 
-	return nil, fmt.Errorf("pub sub type %s is not supported", source.PubSubConfig.Type)
+	return nil, fmt.Errorf("pub sub type %s is not supported", source.PubSub.Type)
 }
 
 func getCustomHeaders(customHeaders map[string]string) httpheader.HTTPHeader {

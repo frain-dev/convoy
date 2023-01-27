@@ -647,7 +647,7 @@ type Source struct {
 	Verifier       *VerifierConfig    `json:"verifier" bson:"verifier"`
 	ProviderConfig *ProviderConfig    `json:"provider_config" bson:"provider_config"`
 	ForwardHeaders []string           `json:"forward_headers" bson:"forward_headers"`
-	PubSubConfig   *PubSubConfig      `json:"pub_sub_config" bson:"pub_sub_config"`
+	PubSub         *PubSubConfig      `json:"pub_sub" bson:"pub_sub"`
 
 	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
 	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
@@ -655,8 +655,8 @@ type Source struct {
 }
 
 type PubSubConfig struct {
-	Type    PubSubType          `json:"type" bson:"type" valid:"supported_pub_sub~unsupported pub sub type"`
-	Workers int                 `json:"workers" bson:"workers" valid:"required"`
+	Type    PubSubType          `json:"type" bson:"type"`
+	Workers int                 `json:"workers" bson:"workers"`
 	Sqs     *SQSPubSubConfig    `json:"sqs" bson:"sqs"`
 	Google  *GooglePubSubConfig `json:"google" bson:"google"`
 }
@@ -669,20 +669,8 @@ type SQSPubSubConfig struct {
 }
 
 type GooglePubSubConfig struct {
-	ServiceAccount struct {
-		Type         string `json:"type"`
-		ProjectID    string `json:"project_id"`
-		PrivateKeyID string `json:"private_key_id"`
-		PrivateKey   string `json:"private_key"`
-		ClientEmail  string `json:"client_email"`
-		ClientID     string `json:"client_id"`
-		AuthUri      string `json:"auth_uri"`
-		TokenUri     string `json:"token_uri"`
-		AuthProvider string `json:"auth_provider_x509_cert_url"`
-		Client       string `json:"client_x509_cert_url"`
-	} `json:"service_account" bson:"-"`
 	SubscriptionID string `json:"subscription_id" bson:"subscription_id"`
-	Credentials    []byte `json:"credentails" bson:"credentials"`
+	ServiceAccount []byte `json:"service_account" bson:"service_account"`
 	ProjectID      string `json:"project_id" bson:"project_id"`
 }
 

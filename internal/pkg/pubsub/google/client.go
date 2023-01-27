@@ -2,6 +2,8 @@ package google
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"cloud.google.com/go/pubsub"
 	"github.com/frain-dev/convoy/datastore"
@@ -9,8 +11,10 @@ import (
 	"google.golang.org/api/option"
 )
 
+var ErrInvalidCredentials = errors.New("your google pub/sub credentials are invalid. please verify you're providing the correct credentials")
+
 type Google struct {
-	cfg     *datastore.GooglePubSubConfig
+	Cfg     *datastore.GooglePubSubConfig
 	source  *datastore.Source
 	workers int
 	ctx     context.Context
@@ -22,11 +26,11 @@ func New(source *datastore.Source, handler datastore.PubSubHandler) *Google {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Google{
-		cfg:     source.PubSubConfig.Google,
+		Cfg:     source.PubSub.Google,
 		source:  source,
 		ctx:     ctx,
 		cancel:  cancel,
-		workers: source.PubSubConfig.Workers,
+		workers: source.PubSub.Workers,
 		handler: handler,
 	}
 }
@@ -39,8 +43,33 @@ func (g *Google) Stop() {
 	g.cancel()
 }
 
+// Verify ensures the pub sub credentials are valid
+func (g *Google) Verify() error {
+	ctx := context.Background()
+
+	client, err := pubsub.NewClient(ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
+	if err != nil {
+		log.WithError(err).Error("failed to create new pubsub client")
+		return ErrInvalidCredentials
+	}
+
+	defer client.Close()
+
+	exists, err := client.Subscription(g.Cfg.SubscriptionID).Exists(ctx)
+	if err != nil {
+		log.WithError(err).Error("failed to find subscription")
+		return ErrInvalidCredentials
+	}
+
+	if !exists {
+		return fmt.Errorf("subscription ID with name %s does not exist", g.Cfg.SubscriptionID)
+	}
+
+	return nil
+}
+
 func (g *Google) Consume() {
-	client, err := pubsub.NewClient(context.Background(), g.cfg.ProjectID, option.WithCredentialsJSON(g.cfg.Credentials))
+	client, err := pubsub.NewClient(context.Background(), g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
 
 	if err != nil {
 		log.WithError(err).Error("failed to create new pubsub client")
@@ -48,7 +77,7 @@ func (g *Google) Consume() {
 
 	defer client.Close()
 
-	sub := client.Subscription(g.cfg.SubscriptionID)
+	sub := client.Subscription(g.Cfg.SubscriptionID)
 
 	// To enable concurrency settings
 	sub.ReceiveSettings.Synchronous = false

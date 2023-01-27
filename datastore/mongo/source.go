@@ -42,6 +42,7 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectId string, source 
 			"verifier":        source.Verifier,
 			"updated_at":      primitive.NewDateTimeFromTime(time.Now()),
 			"provider_config": source.ProviderConfig,
+			"pub_sub":         source.PubSub,
 		},
 	}
 
