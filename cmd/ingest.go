@@ -5,6 +5,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/spf13/cobra"
@@ -19,7 +20,10 @@ func addIngestCommand(a *app) *cobra.Command {
 		Use:   "ingest",
 		Short: "Ingest webhook events from Pub/Sub streams",
 		Run: func(cmd *cobra.Command, args []string) {
-			sourcePool := pubsub.NewSourcePool(a.queue, a.store)
+			sourceRepo := mongo.NewSourceRepo(a.store)
+			endpointRepo := mongo.NewEndpointRepo(a.store)
+
+			sourcePool := pubsub.NewSourcePool(a.queue, sourceRepo, endpointRepo)
 			ticker := time.NewTicker(1 * time.Minute)
 			exit = make(chan os.Signal)
 

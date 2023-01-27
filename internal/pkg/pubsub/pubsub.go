@@ -10,7 +10,6 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/google"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/sqs"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -41,54 +40,41 @@ type SourcePool struct {
 	queue        queue.Queuer
 	sourceRepo   datastore.SourceRepository
 	endpointRepo datastore.EndpointRepository
-	store        datastore.Store
 	sources      map[string]*Source
 }
 
-func NewSourcePool(queue queue.Queuer, store datastore.Store) *SourcePool {
-	sourceRepo := mongo.NewSourceRepo(store)
-	endpointRepo := mongo.NewEndpointRepo(store)
-
+func NewSourcePool(queue queue.Queuer, sourceRepo datastore.SourceRepository, endpointRepo datastore.EndpointRepository) *SourcePool {
 	return &SourcePool{
 		queue:        queue,
-		store:        store,
 		sourceRepo:   sourceRepo,
 		endpointRepo: endpointRepo,
 		sources:      make(map[string]*Source),
 	}
 }
 
-func (s *SourcePool) Insert(source *datastore.Source) error {
-	// Make sure the source doesn't already exists in the source
-	// pool. If it does, ensure the hash hasn't changed
+func (s *SourcePool) Insert(source *datastore.Source, client PubSub) {
 	existingSource, exists := s.sources[source.UID]
-	if exists {
-		// The source config has changed
-		if s.hash(source) != existingSource.hash {
-			s.Remove(source.UID)
-			return s.insert(source)
-		}
-
-		return nil
+	if !exists {
+		s.insert(source, client)
+		return
 	}
 
-	return s.insert(source)
+	// The source config has changed
+	if s.hash(source) != existingSource.hash {
+		s.Remove(source.UID)
+		s.insert(source, client)
+	}
 }
 
-func (s *SourcePool) insert(source *datastore.Source) error {
-	client, err := NewPubSub(source, s.handler)
-	if err != nil {
-		return err
-	}
-
+func (s *SourcePool) insert(source *datastore.Source, client PubSub) {
 	client.Start()
+
 	sourceSteam := &Source{
 		client: client,
 		hash:   s.hash(source),
 	}
 
 	s.sources[source.UID] = sourceSteam
-	return nil
 }
 
 func (s *SourcePool) Remove(sourceId string) {
@@ -123,11 +109,13 @@ func (s *SourcePool) FetchSources(page int) error {
 	}
 
 	for _, source := range sources {
-		err := s.Insert(&source)
+		client, err := NewPubSub(&source, s.handler)
 		if err != nil {
-			log.WithError(err).Error("failed to insert pub sub source")
+			log.WithError(err).Error("failed to create pub sub client")
 			continue
 		}
+
+		s.Insert(&source, client)
 	}
 
 	page += 1
