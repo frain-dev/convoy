@@ -42,10 +42,8 @@ const (
 
 	fetchPortalLinksPaginated = `
 	SELECT * FROM convoy.portal_links
-	ORDER BY id
-	LIMIT $1
-	OFFSET $2
-	WHERE project_id = $3 AND deleted_at IS NULL;
+	WHERE project_id = $3 AND deleted_at IS NULL
+	ORDER BY id LIMIT $1 OFFSET $2
 	`
 
 	countPortalLinks = `

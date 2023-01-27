@@ -10,7 +10,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -26,7 +25,7 @@ func NewOrgMemberRepo(store datastore.Store) datastore.OrganisationMemberReposit
 
 func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
 	ctx = o.setCollectionInContext(ctx)
-	member.ID = primitive.NewObjectID()
+	// member.ID = primitive.NewObjectID()
 	return o.store.Save(ctx, member, nil)
 }
 
@@ -132,7 +131,7 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 
 func (o *orgMemberRepo) UpdateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
 	ctx = o.setCollectionInContext(ctx)
-	member.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+	member.UpdatedAt = time.Now()
 
 	update := bson.M{
 		"$set": bson.M{
@@ -148,7 +147,7 @@ func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid, orgID
 	ctx = o.setCollectionInContext(ctx)
 	update := bson.M{
 		"$set": bson.M{
-			"deleted_at": primitive.NewDateTimeFromTime(time.Now()),
+			"deleted_at": time.Now(),
 		},
 	}
 
@@ -276,7 +275,7 @@ func (o *orgMemberRepo) fillOrgMemberUserMetadata(ctx context.Context, members [
 	}
 
 	for i := range members {
-		members[i].UserMetadata = metaMap[members[i].UserID]
+		members[i].UserMetadata = *metaMap[members[i].UserID]
 	}
 
 	return nil
