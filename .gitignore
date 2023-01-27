@@ -20,7 +20,7 @@
 /data/mongo/
 .DS_Store
 *.db
-./pgdata
+pgdata
 
 # ui depencencies
 **/node_modules
