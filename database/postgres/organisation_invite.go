@@ -66,8 +66,8 @@ const (
 		role_project as "role.project",
 		role_endpoint as "role.endpoint"
 	FROM convoy.organisation_invites
+	WHERE organisation_id = $3 AND status = $4 AND deleted_at IS NULL
 	ORDER BY id LIMIT $1 OFFSET $2
-	WHERE organisation_id = $3 AND status = $4 AND deleted_at IS NULL;
 	`
 
 	countOrganisationInvites = `

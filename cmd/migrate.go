@@ -58,27 +58,27 @@ func addRunCommand() *cobra.Command {
 				return
 			}
 
-			p := postgres.NewProjectRepo(db.GetDB())
-			err = p.UpdateProject(cmd.Context(), &datastore.Project{
-				UID:            "1",
-				Name:           "xxx-swer",
-				Type:           datastore.IncomingProject,
-				OrganisationID: orgs[0].UID,
-				Config: &datastore.ProjectConfig{
-					RateLimitCount:     1000,
-					RateLimitDuration:  60,
-					StrategyType:       datastore.ExponentialStrategyProvider,
-					StrategyDuration:   100,
-					StrategyRetryCount: 10,
-					SignatureHeader:    config.DefaultSignatureHeader,
-					SignatureHash:      "SHA256",
-					RetentionPolicy:    "5d",
-				},
-			})
-			if err != nil {
-				fmt.Printf("err: %+v", err)
-				return
-			}
+			// p := postgres.NewProjectRepo(db.GetDB())
+			// err = p.UpdateProject(cmd.Context(), &datastore.Project{
+			// 	UID:            "1",
+			// 	Name:           "xxx-swer",
+			// 	Type:           datastore.IncomingProject,
+			// 	OrganisationID: orgs[0].UID,
+			// 	Config: &datastore.ProjectConfig{
+			// 		RateLimitCount:     1000,
+			// 		RateLimitDuration:  60,
+			// 		StrategyType:       datastore.ExponentialStrategyProvider,
+			// 		StrategyDuration:   100,
+			// 		StrategyRetryCount: 10,
+			// 		SignatureHeader:    config.DefaultSignatureHeader,
+			// 		SignatureHash:      "SHA256",
+			// 		RetentionPolicy:    "5d",
+			// 	},
+			// })
+			// if err != nil {
+			// 	fmt.Printf("err: %+v", err)
+			// 	return
+			// }
 
 			// proj, err := p.FetchProjectByID(cmd.Context(), 1)
 			// if err != nil {
@@ -121,9 +121,9 @@ func addRunCommand() *cobra.Command {
 			// fmt.Printf("config: %+v\n", cfg.StoragePolicy.S3)
 
 			// projects, err := p.LoadProjects(cmd.Context(), &datastore.ProjectFilter{OrgID: "1"})
-			// for _, v := range projects {
-			// 	fmt.Printf("Proj: %+v\n", v)
-			// }
+			for _, v := range orgs {
+				fmt.Printf("Proj: %+v\n", v)
+			}
 		},
 	}
 
