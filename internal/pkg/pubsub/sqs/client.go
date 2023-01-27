@@ -116,16 +116,17 @@ func (s *Sqs) Consume() {
 
 				if err := s.handler(s.source, *m.Body); err != nil {
 					log.WithError(err).Error("failed to write message to create event queue")
+				} else {
+					_, err = svc.DeleteMessage(&sqs.DeleteMessageInput{
+						QueueUrl:      queueURL,
+						ReceiptHandle: m.ReceiptHandle,
+					})
+
+					if err != nil {
+						log.WithError(err).Error("failed to delete message")
+					}
 				}
 
-				_, err = svc.DeleteMessage(&sqs.DeleteMessageInput{
-					QueueUrl:      queueURL,
-					ReceiptHandle: m.ReceiptHandle,
-				})
-
-				if err != nil {
-					log.WithError(err).Error("failed to delete message")
-				}
 			}(message)
 
 			wg.Wait()

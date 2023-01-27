@@ -83,15 +83,13 @@ func (g *Google) Consume() {
 	sub.ReceiveSettings.Synchronous = false
 	// NumGoroutines determines the number of goroutines sub.Receive will spawn to pull messages
 	sub.ReceiveSettings.NumGoroutines = g.workers
-	// MaxOutstandingMessages limits the number of concurrent handlers of messages
-	sub.ReceiveSettings.MaxOutstandingMessages = 8
 
 	err = sub.Receive(g.ctx, func(ctx context.Context, m *pubsub.Message) {
 		if err := g.handler(g.source, string(m.Data)); err != nil {
 			log.WithError(err).Error("failed to write message to create event queue - google pub sub")
+		} else {
+			m.Ack()
 		}
-
-		m.Ack()
 	})
 
 	if err != nil {
