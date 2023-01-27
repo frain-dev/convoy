@@ -29,7 +29,7 @@ const (
          email_verification_token=$8,
          reset_password_expires_at=$9,
          email_verification_expires_at=$10
-    WHERE uid = $1 AND deleted_at IS NULL ;
+    WHERE id = $1 AND deleted_at IS NULL ;
     `
 
 	fetchUsers = `
@@ -64,7 +64,7 @@ func NewUserRepo(db *sqlx.DB) datastore.UserRepository {
 
 func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
 	result, err := u.db.ExecContext(
-		ctx, createUser, user.FirstName, user.LastName, user.Email, user.Password, user.ResetPasswordToken,
+		ctx, createUser, user.FirstName, user.LastName, user.Email, user.Password, user.EmailVerified, user.ResetPasswordToken,
 		user.EmailVerificationToken, user.ResetPasswordExpiresAt, user.EmailVerificationExpiresAt,
 	)
 	if err != nil {
@@ -85,7 +85,7 @@ func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
 
 func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
 	result, err := u.db.Exec(
-		updateUser, user.UID, user.FirstName, user.LastName, user.Email, user.Password, user.ResetPasswordToken,
+		updateUser, user.UID, user.FirstName, user.LastName, user.Email, user.Password, user.EmailVerified, user.ResetPasswordToken,
 		user.EmailVerificationToken, user.ResetPasswordExpiresAt, user.EmailVerificationExpiresAt,
 	)
 	if err != nil {
@@ -105,7 +105,7 @@ func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
 }
 
 func (u *userRepo) FindUserByEmail(ctx context.Context, email string) (*datastore.User, error) {
-	var user *datastore.User
+	user := &datastore.User{}
 	err := u.db.QueryRowxContext(ctx, fetchUsers, "email", email).StructScan(user)
 	if err != nil {
 		return nil, err
@@ -115,7 +115,7 @@ func (u *userRepo) FindUserByEmail(ctx context.Context, email string) (*datastor
 }
 
 func (u *userRepo) FindUserByID(ctx context.Context, id string) (*datastore.User, error) {
-	var user *datastore.User
+	user := &datastore.User{}
 	err := u.db.QueryRowxContext(ctx, fetchUsers, "id", id).StructScan(user)
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (u *userRepo) FindUserByID(ctx context.Context, id string) (*datastore.User
 }
 
 func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastore.User, error) {
-	var user *datastore.User
+	user := &datastore.User{}
 	err := u.db.QueryRowxContext(ctx, fetchUsers, "reset_password_token", token).StructScan(user)
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastor
 }
 
 func (u *userRepo) FindUserByEmailVerificationToken(ctx context.Context, token string) (*datastore.User, error) {
-	var user *datastore.User
+	user := &datastore.User{}
 	err := u.db.QueryRowxContext(ctx, fetchUsers, "email_verification_token", token).StructScan(user)
 	if err != nil {
 		return nil, err
@@ -146,7 +146,7 @@ func (u *userRepo) FindUserByEmailVerificationToken(ctx context.Context, token s
 
 func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.User, datastore.PaginationData, error) {
 	skip := (pageable.Page - 1) * pageable.PerPage
-	rows, err := u.db.QueryxContext(ctx, fetchUsers, pageable.PerPage, skip)
+	rows, err := u.db.QueryxContext(ctx, fetchUsersPaginated, pageable.PerPage, skip)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}

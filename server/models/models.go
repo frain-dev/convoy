@@ -146,9 +146,8 @@ type LoginUserResponse struct {
 	Token         Token  `json:"token"`
 	EmailVerified bool   `json:"email_verified"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
+	CreatedAt time.Time `json:"created_at,omitempty" bson:"created_at"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" bson:"updated_at"`
 }
 
 type UserInviteTokenResponse struct {
