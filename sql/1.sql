@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS convoy.users (
 
 	first_name TEXT NOT NULL,
 	last_name TEXT NOT NULL,
-	role TEXT NOT NULL,
+-- 	role TEXT NOT NULL,
 	email TEXT NOT NULL,
 	password TEXT NOT NULL,
 	email_verified BOOL NOT NULL,
@@ -167,11 +167,11 @@ CREATE TABLE IF NOT EXISTS convoy.portal_links (
 	id BIGSERIAL PRIMARY KEY,
 
 	project_id BIGINT NOT NULL REFERENCES convoy.projects (id),
-	
+
 	name TEXT NOT NULL,
 	token TEXT NOT NULL,
 	endpoints TEXT[] NOT NULL,
-	
+
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	deleted_at TIMESTAMPTZ
