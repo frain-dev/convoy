@@ -57,7 +57,16 @@
 
 	<div dropdownOptions class="py-20px pl-20px w-full max-h-[300px] scroll-m-0 scroll-auto">
 		<ul>
+			<ng-container v-if="searchable">
+				<li>
+					<div class="my-10px mr-20px border border-primary-400 h-36px px-14px rounded-[10px] flex items-center bg-white-100">
+						<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px w-14px" />
+						<input type="search" placeholder="Search here" class="w-full outline-none text-12" #searchFilter />
+					</div>
+				</li>
+			</ng-container>
 			<li class="text-14 text-grey-20">Select</li>
+
 			<ng-container *ngIf="multiple">
 				<li *ngFor="let option of options" class="list-none py-10px border-b border-grey-20">
 					<button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
