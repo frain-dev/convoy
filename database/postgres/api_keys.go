@@ -47,9 +47,9 @@ const (
 )
 
 var (
-	ErrAPIKeyNotCreated = errors.New("organization could not be created")
-	ErrAPIKeyNotUpdated = errors.New("organization could not be updated")
-	ErrAPIKeyNotRevoked = errors.New("organization could not be revoked")
+	ErrAPIKeyNotCreated = errors.New("api key could not be created")
+	ErrAPIKeyNotUpdated = errors.New("api key could not be updated")
+	ErrAPIKeyNotRevoked = errors.New("api key could not be revoked")
 )
 
 type apiKeyRepo struct {
