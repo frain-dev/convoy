@@ -21,7 +21,7 @@ const (
 	role_project=$3,
 	role_endpoint=$4,
 	updated_at = now()
-	WHERE id = $1;
+	WHERE id = $1 AND deleted_at IS NULL ;
 	`
 
 	fetchAPIKey = `
@@ -61,8 +61,8 @@ func NewAPIKeyRepo(db *sqlx.DB) datastore.APIKeyRepository {
 }
 
 func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) error {
-	result, err := a.db.Exec(
-		createAPIKey, key.Name, key.Type, key.MaskID,
+	result, err := a.db.ExecContext(
+		ctx, createAPIKey, key.Name, key.Type, key.MaskID,
 		key.RoleType, key.RoleProject, key.RoleEndpoint, key.Hash,
 		key.Salt, key.UserID, key.ExpiresAt,
 	)

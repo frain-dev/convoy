@@ -29,7 +29,7 @@ const (
          email_verification_token=$8,
          reset_password_expires_at=$9,
          email_verification_expires_at=$10
-    WHERE uid = $1
+    WHERE uid = $1 AND deleted_at IS NULL ;
     `
 
 	fetchUsers = `
@@ -52,7 +52,6 @@ const (
 var (
 	ErrUserNotCreated = errors.New("user could not be created")
 	ErrUserNotUpdated = errors.New("user could not be updated")
-	ErrUserNotRevoked = errors.New("user could not be revoked")
 )
 
 type userRepo struct {
@@ -64,8 +63,8 @@ func NewUserRepo(db *sqlx.DB) datastore.UserRepository {
 }
 
 func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
-	result, err := u.db.Exec(
-		createUser, user.FirstName, user.LastName, user.Email, user.Password, user.ResetPasswordToken,
+	result, err := u.db.ExecContext(
+		ctx, createUser, user.FirstName, user.LastName, user.Email, user.Password, user.ResetPasswordToken,
 		user.EmailVerificationToken, user.ResetPasswordExpiresAt, user.EmailVerificationExpiresAt,
 	)
 	if err != nil {
