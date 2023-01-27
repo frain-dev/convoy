@@ -633,8 +633,6 @@ definitions:
         type: string
       reset_password_expires_at:
         type: string
-      role:
-        $ref: '#/definitions/auth.Role'
       uid:
         type: string
       updated_at:

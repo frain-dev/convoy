@@ -689,7 +689,6 @@ type User struct {
 	Email                      string              `json:"email" bson:"email"`
 	EmailVerified              bool                `json:"email_verified" bson:"email_verified"`
 	Password                   string              `json:"-" bson:"password"`
-	Role                       auth.Role           `json:"role" bson:"role"`
 	ResetPasswordToken         string              `json:"-" bson:"reset_password_token"`
 	EmailVerificationToken     string              `json:"-" bson:"email_verification_token"`
 	CreatedAt                  primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
