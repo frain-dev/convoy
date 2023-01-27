@@ -11,8 +11,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type OrganisationMemberService struct {
@@ -35,8 +33,8 @@ func (om *OrganisationMemberService) CreateOrganisationMember(ctx context.Contex
 		OrganisationID: org.UID,
 		UserID:         user.UID,
 		Role:           *role,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	err = om.orgMemberRepo.CreateOrganisationMember(ctx, member)
@@ -55,7 +53,7 @@ func (om *OrganisationMemberService) UpdateOrganisationMember(ctx context.Contex
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	organisationMember.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+	organisationMember.UpdatedAt = time.Now()
 	organisationMember.Role = *role
 	err = om.orgMemberRepo.UpdateOrganisationMember(ctx, organisationMember)
 	if err != nil {
