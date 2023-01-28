@@ -27,12 +27,21 @@ const (
 
 	fetchAPIKey = `
 	SELECT
-	    *,
+	    id,
+		name,
+	    key_type,
+	    mask_id,
 	    role_type as "role.type",
 	    role_project as "role.project",
 	    role_endpoint as "role.endpoint",
+	    hash,
+	    salt,
+	    user_id,
+	    created_at,
+	    updated_at,
+	    expires_at
 	FROM convoy.api_keys
-	WHERE %s = $2 AND deleted_at IS NULL;
+	WHERE %s = $1 AND deleted_at IS NULL;
 	`
 
 	deleteAPIKeys = `
@@ -108,7 +117,7 @@ func (a *apiKeyRepo) UpdateAPIKey(ctx context.Context, key *datastore.APIKey) er
 }
 
 func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, id string) (*datastore.APIKey, error) {
-	var apiKey *datastore.APIKey
+	apiKey := &datastore.APIKey{}
 	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "id"), id).StructScan(apiKey)
 	if err != nil {
 		return nil, err
@@ -118,7 +127,7 @@ func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, id string) (*datastore.
 }
 
 func (a *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
-	var apiKey *datastore.APIKey
+	apiKey := &datastore.APIKey{}
 	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "mask_id"), maskID).StructScan(apiKey)
 	if err != nil {
 		return nil, err
@@ -128,7 +137,7 @@ func (a *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*da
 }
 
 func (a *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
-	var apiKey *datastore.APIKey
+	apiKey := &datastore.APIKey{}
 	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "hash"), hash).StructScan(apiKey)
 	if err != nil {
 		return nil, err
