@@ -794,15 +794,14 @@ type OnPremStorage struct {
 }
 
 type OrganisationMember struct {
-	ID             primitive.ObjectID  `json:"-" bson:"_id"`
-	UID            string              `json:"uid" bson:"uid"`
-	OrganisationID string              `json:"organisation_id" bson:"organisation_id"`
-	UserID         string              `json:"user_id" bson:"user_id"`
-	Role           auth.Role           `json:"role" bson:"role"`
-	UserMetadata   *UserMetadata       `json:"user_metadata" bson:"-"`
-	CreatedAt      primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt      primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt      *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	UID            string       `json:"uid" db:"id"`
+	OrganisationID string       `json:"organisation_id" db:"organisation_id"`
+	UserID         string       `json:"user_id" db:"user_id"`
+	Role           auth.Role    `json:"role" db:"role"`
+	UserMetadata   UserMetadata `json:"user_metadata" db:"user_metadata"`
+	CreatedAt      time.Time    `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      time.Time    `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      null.Time    `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type Device struct {
@@ -827,10 +826,10 @@ const (
 )
 
 type UserMetadata struct {
-	UserID    string `json:"-" bson:"user_id"`
-	FirstName string `json:"first_name" bson:"first_name"`
-	LastName  string `json:"last_name" bson:"last_name"`
-	Email     string `json:"email" bson:"email"`
+	UserID    string `json:"-" db:"user_id"`
+	FirstName string `json:"first_name" db:"first_name"`
+	LastName  string `json:"last_name" db:"last_name"`
+	Email     string `json:"email" db:"email"`
 }
 
 type InviteStatus string
@@ -847,21 +846,20 @@ func (i InviteStatus) String() string {
 }
 
 type OrganisationInvite struct {
-	ID             primitive.ObjectID `json:"-" bson:"_id"`
-	UID            string             `json:"uid" bson:"uid"`
-	OrganisationID string             `json:"organisation_id" bson:"organisation_id"`
-	InviteeEmail   string             `json:"invitee_email" bson:"invitee_email"`
-	Token          string             `json:"token" bson:"token"`
-	Role           auth.Role          `json:"role" bson:"role"`
-	Status         InviteStatus       `json:"status" bson:"status"`
-	ExpiresAt      time.Time          `json:"-" bson:"expires_at"`
-	CreatedAt      time.Time          `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt      time.Time          `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt      null.Time          `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	UID            string       `json:"uid" db:"id"`
+	OrganisationID string       `json:"organisation_id" db:"organisation_id"`
+	InviteeEmail   string       `json:"invitee_email" db:"invitee_email"`
+	Token          string       `json:"token" db:"token"`
+	Role           auth.Role    `json:"role" db:"role"`
+	Status         InviteStatus `json:"status" db:"status"`
+	ExpiresAt      time.Time    `json:"-" db:"expires_at"`
+	CreatedAt      time.Time    `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      time.Time    `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      null.Time    `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type PortalLink struct {
-	UID               string     `json:"uid" db:"uid"`
+	UID               string     `json:"uid" db:"id"`
 	Name              string     `json:"name" db:"name"`
 	ProjectID         string     `json:"project_id" db:"project_id"`
 	Token             string     `json:"-" db:"token"`

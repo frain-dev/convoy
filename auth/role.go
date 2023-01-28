@@ -7,9 +7,9 @@ import (
 // Role represents the permission a user is given, if the Type is RoleSuperUser,
 // Then the user will have access to everything regardless of the value of Project.
 type Role struct {
-	Type     RoleType `json:"type"`
-	Project  string   `json:"project"`
-	Endpoint string   `json:"endpoint,omitempty"`
+	Type     RoleType `json:"type" db:"type"`
+	Project  string   `json:"project" db:"project"`
+	Endpoint string   `json:"endpoint,omitempty" db:"endpoint"`
 }
 
 type RoleType string

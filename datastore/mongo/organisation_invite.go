@@ -25,7 +25,7 @@ func NewOrgInviteRepo(store datastore.Store) datastore.OrganisationInviteReposit
 
 func (db *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {
 	ctx = db.setCollectionInContext(ctx)
-	iv.ID = primitive.NewObjectID()
+	// iv.ID = primitive.NewObjectID()
 	return db.store.Save(ctx, iv, nil)
 }
 
