@@ -26,18 +26,10 @@ const (
 
 	fetchAPIKey = `
 	SELECT
-	    name,
-	    key_type,
-	    mask_id,
+	    *,
 	    role_type as "role.type",
 	    role_project as "role.project",
 	    role_endpoint as "role.endpoint",
-	    hash,
-	    salt,
-	    user_id,
-	    created_at,
-	    updated_at,
-	    expires_at
 	FROM convoy.api_keys
 	WHERE $1 = $2 AND deleted_at IS NULL;
 	`
