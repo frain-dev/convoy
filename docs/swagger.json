@@ -6950,10 +6950,8 @@
                 "reset_password_expires_at": {
                     "type": "string"
                 },
-                "role": {
-                    "$ref": "#/definitions/auth.Role"
-                },
                 "uid": {
+                    "description": "ID                         primitive.ObjectID `json:\"-\" bson:\"_id\"`",
                     "type": "string"
                 },
                 "updated_at": {
