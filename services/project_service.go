@@ -51,7 +51,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 	if newProject.Config == nil {
 		config = &datastore.DefaultProjectConfig
 	} else {
-		checkSignatureVersions(newProject.Config.Signature.Versions)
+		checkSignatureVersions(newProject.Config.SignatureVersions)
 	}
 
 	project := &datastore.Project{
@@ -119,7 +119,7 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 
 	if update.Config != nil {
 		project.Config = update.Config
-		checkSignatureVersions(project.Config.Signature.Versions)
+		checkSignatureVersions(project.Config.SignatureVersions)
 	}
 
 	if !util.IsStringEmpty(update.LogoURL) {

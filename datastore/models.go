@@ -174,7 +174,7 @@ var (
 		ReplayAttacks:            false,
 		IsRetentionPolicyEnabled: false,
 		SignatureHeader:          "X-Convoy-Signature",
-		Versions: []SignatureVersion{
+		SignatureVersions: []SignatureVersion{
 			{
 				UID:       uuid.NewString(),
 				Hash:      "SHA256",
@@ -298,7 +298,6 @@ var (
 )
 
 type Project struct {
-	// ID              primitive.ObjectID `json:"-" bson:"_id"`
 	UID             string             `json:"uid" db:"id"`
 	Name            string             `json:"name" db:"name"`
 	LogoURL         string             `json:"logo_url" db:"logo_url"`
@@ -320,22 +319,18 @@ type ProjectMetadata struct {
 }
 
 type ProjectConfig struct {
-	RetentionPolicy string `json:"retention_policy" db:"retention_policy" valid:"required~please provide a valid retention policy"`
-
-	RateLimitCount    int `json:"ratelimit.count" db:"ratelimit_count"`
-	RateLimitDuration int `json:"ratelimit.duration" db:"ratelimit_duration"`
-
-	StrategyType       StrategyProvider `json:"strategy_type" db:"strategy_type" valid:"optional~please provide a valid strategy type, in(linear|exponential)~unsupported strategy type"`
-	StrategyDuration   uint64           `json:"strategy_duration" db:"strategy_duration" valid:"optional~please provide a valid duration in seconds,int"`
-	StrategyRetryCount uint64           `json:"strategy_retry_count" db:"strategy_retry_count" valid:"optional~please provide a valid retry count,int"`
-
-	SignatureHeader config.SignatureHeaderProvider `json:"hsignature_header" db:"signature_header" valid:"required~please provide a valid signature header"`
-	SignatureHash   string                         `json:"-" db:"signature_hash"`
-	Versions        []SignatureVersion             `json:"versions" bson:"versions"`
-
-	MaxIngestSize            uint64 `json:"max_payload_read_size" db:"max_payload_read_size"`
-	ReplayAttacks            bool   `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
-	IsRetentionPolicyEnabled bool   `json:"retention_policy_enabled" db:"retention_policy_enabled"`
+	RetentionPolicy          string                         `json:"retention_policy" db:"retention_policy" valid:"required~please provide a valid retention policy"`
+	RateLimitCount           int                            `json:"ratelimit.count" db:"ratelimit_count"`
+	RateLimitDuration        int                            `json:"ratelimit.duration" db:"ratelimit_duration"`
+	StrategyType             StrategyProvider               `json:"strategy_type" db:"strategy_type" valid:"optional~please provide a valid strategy type, in(linear|exponential)~unsupported strategy type"`
+	StrategyDuration         uint64                         `json:"strategy_duration" db:"strategy_duration" valid:"optional~please provide a valid duration in seconds,int"`
+	StrategyRetryCount       uint64                         `json:"strategy_retry_count" db:"strategy_retry_count" valid:"optional~please provide a valid retry count,int"`
+	SignatureHeader          config.SignatureHeaderProvider `json:"signature_header" db:"signature_header" valid:"required~please provide a valid signature header"`
+	SignatureVersions        []SignatureVersion             `json:"versions" db:"-"`
+	Versions                 []byte                         `json:"-" db:"signature_versions"`
+	MaxIngestSize            uint64                         `json:"max_payload_read_size" db:"max_payload_read_size"`
+	ReplayAttacks            bool                           `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
+	IsRetentionPolicyEnabled bool                           `json:"retention_policy_enabled" db:"retention_policy_enabled"`
 
 	// old fields
 	RateLimit *RateLimitConfiguration `json:"ratelimit"`
@@ -363,10 +358,10 @@ type SignatureConfiguration struct {
 }
 
 type SignatureVersion struct {
-	UID       string       `json:"uid" bson:"uid"`
+	UID       string       `json:"uid" db:"id"`
 	Hash      string       `json:"hash,omitempty" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
-	Encoding  EncodingType `json:"encoding" bson:"encoding" valid:"required~please provide a valid signature header"`
-	CreatedAt time.Time    `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	Encoding  EncodingType `json:"encoding" db:"encoding" valid:"required~please provide a valid signature header"`
+	CreatedAt time.Time    `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 }
 
 type RetentionPolicyConfiguration struct {
