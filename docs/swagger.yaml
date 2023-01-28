@@ -390,15 +390,12 @@ definitions:
       type:
         $ref: '#/definitions/datastore.ProjectType'
       uid:
-        description: ID              primitive.ObjectID `json:"-" bson:"_id"`
         type: string
       updated_at:
         type: string
     type: object
   datastore.ProjectConfig:
     properties:
-      hsignature_header:
-        $ref: '#/definitions/config.SignatureHeaderProvider'
       max_payload_read_size:
         type: integer
       ratelimit:
@@ -417,6 +414,8 @@ definitions:
         type: boolean
       signature:
         $ref: '#/definitions/datastore.SignatureConfiguration'
+      signature_header:
+        $ref: '#/definitions/config.SignatureHeaderProvider'
       strategy:
         $ref: '#/definitions/datastore.StrategyConfiguration'
       strategy_duration:

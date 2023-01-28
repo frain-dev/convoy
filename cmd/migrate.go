@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"time"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
@@ -141,7 +142,7 @@ func addRunCommand() *cobra.Command {
 			// }
 
 			// u := postgres.NewUserRepo(db.GetDB())
-			// ctx := context.Background()
+			ctx := context.Background()
 			// user := &datastore.User{
 			// 	UID:                        "1",
 			// 	FirstName:                  "Daniel",
@@ -157,10 +158,10 @@ func addRunCommand() *cobra.Command {
 			// 	EmailVerificationExpiresAt: time.Now(),
 			// }
 
-			err = u.CreateUser(ctx, user)
-			if err != nil {
-				log.Fatal("create user", err)
-			}
+			//err = u.CreateUser(ctx, user)
+			//if err != nil {
+			//	log.Fatal("create user", err)
+			//}
 			////
 			////user.FirstName = "jjj"
 			////err = u.UpdateUser(ctx, user)

@@ -6584,7 +6584,6 @@
                     "$ref": "#/definitions/datastore.ProjectType"
                 },
                 "uid": {
-                    "description": "ID              primitive.ObjectID `json:\"-\" bson:\"_id\"`",
                     "type": "string"
                 },
                 "updated_at": {
@@ -6595,9 +6594,6 @@
         "datastore.ProjectConfig": {
             "type": "object",
             "properties": {
-                "hsignature_header": {
-                    "$ref": "#/definitions/config.SignatureHeaderProvider"
-                },
                 "max_payload_read_size": {
                     "type": "integer"
                 },
@@ -6626,6 +6622,9 @@
                 },
                 "signature": {
                     "$ref": "#/definitions/datastore.SignatureConfiguration"
+                },
+                "signature_header": {
+                    "$ref": "#/definitions/config.SignatureHeaderProvider"
                 },
                 "strategy": {
                     "$ref": "#/definitions/datastore.StrategyConfiguration"
