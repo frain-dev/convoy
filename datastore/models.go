@@ -622,19 +622,19 @@ type CLIMetadata struct {
 }
 
 type APIKey struct {
-	ID        primitive.ObjectID  `json:"-" bson:"_id"`
-	UID       string              `json:"uid" db:"uid"`
-	MaskID    string              `json:"mask_id,omitempty" db:"mask_id"`
-	Name      string              `json:"name" db:"name"`
-	Role      auth.Role           `json:"role" db:"role"`
-	Hash      string              `json:"hash,omitempty" db:"hash"`
-	Salt      string              `json:"salt,omitempty" db:"salt"`
-	Type      KeyType             `json:"key_type" db:"key_type"`
-	UserID    string              `json:"user_id" db:"user_id"`
-	ExpiresAt primitive.DateTime  `json:"expires_at,omitempty" db:"expires_at"`
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" db:"created_at"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" db:"updated_at"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" db:"deleted_at"`
+	// ID        primitive.ObjectID  `json:"-" bson:"_id"`
+	UID       string    `json:"uid" db:"id"`
+	MaskID    string    `json:"mask_id,omitempty" db:"mask_id"`
+	Name      string    `json:"name" db:"name"`
+	Role      auth.Role `json:"role" db:"role"`
+	Hash      string    `json:"hash,omitempty" db:"hash"`
+	Salt      string    `json:"salt,omitempty" db:"salt"`
+	Type      KeyType   `json:"key_type" db:"key_type"`
+	UserID    string    `json:"user_id" db:"user_id"`
+	ExpiresAt time.Time `json:"expires_at,omitempty" db:"expires_at"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at"`
 }
 
 type Subscription struct {

@@ -301,7 +301,7 @@ CREATE TABLE IF NOT EXISTS convoy.api_keys (
 	hash TEXT NOT NULL,
 	salt TEXT NOT NULL,
 
-	user_id BIGINT NOT NULL REFERENCES convoy.users (id),
+	user_id BIGINT REFERENCES convoy.users (id),
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,

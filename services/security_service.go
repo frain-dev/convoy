@@ -17,7 +17,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/xdg-go/pbkdf2"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type SecurityService struct {
@@ -86,12 +85,12 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 		Role:      *role,
 		Hash:      encodedKey,
 		Salt:      salt,
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	if newApiKey.ExpiresAt != (time.Time{}) {
-		apiKey.ExpiresAt = primitive.NewDateTimeFromTime(newApiKey.ExpiresAt)
+		apiKey.ExpiresAt = newApiKey.ExpiresAt
 	}
 
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)
@@ -130,9 +129,9 @@ func (ss *SecurityService) CreatePersonalAPIKey(ctx context.Context, user *datas
 		UserID:    user.UID,
 		Hash:      encodedKey,
 		Salt:      salt,
-		ExpiresAt: primitive.NewDateTimeFromTime(expiresAt),
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		ExpiresAt: expiresAt,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)
@@ -204,9 +203,9 @@ func (ss *SecurityService) CreateEndpointAPIKey(ctx context.Context, d *models.C
 		Role:      role,
 		Hash:      encodedKey,
 		Salt:      salt,
-		ExpiresAt: primitive.NewDateTimeFromTime(expiresAt),
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		ExpiresAt: expiresAt,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)

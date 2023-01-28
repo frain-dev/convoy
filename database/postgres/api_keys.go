@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -31,7 +32,7 @@ const (
 	    role_project as "role.project",
 	    role_endpoint as "role.endpoint",
 	FROM convoy.api_keys
-	WHERE $1 = $2 AND deleted_at IS NULL;
+	WHERE %s = $2 AND deleted_at IS NULL;
 	`
 
 	deleteAPIKeys = `
@@ -42,7 +43,7 @@ const (
 
 	fetchAPIKeysPaginated = `
 	SELECT * FROM convoy.api_keys
-	WHERE deleted_at IS NULL 
+	WHERE deleted_at IS NULL
 	ORDER BY id LIMIT $1 OFFSET $2;
 	`
 	countAPIKeys = `
@@ -108,7 +109,7 @@ func (a *apiKeyRepo) UpdateAPIKey(ctx context.Context, key *datastore.APIKey) er
 
 func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, id string) (*datastore.APIKey, error) {
 	var apiKey *datastore.APIKey
-	err := a.db.QueryRowxContext(ctx, fetchAPIKey, "id", id).StructScan(apiKey)
+	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "id"), id).StructScan(apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +119,7 @@ func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, id string) (*datastore.
 
 func (a *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
 	var apiKey *datastore.APIKey
-	err := a.db.QueryRowxContext(ctx, fetchAPIKey, "mask_id", maskID).StructScan(apiKey)
+	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "mask_id"), maskID).StructScan(apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +129,7 @@ func (a *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*da
 
 func (a *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
 	var apiKey *datastore.APIKey
-	err := a.db.QueryRowxContext(ctx, fetchAPIKey, "hash", hash).StructScan(apiKey)
+	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "hash"), hash).StructScan(apiKey)
 	if err != nil {
 		return nil, err
 	}

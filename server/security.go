@@ -52,10 +52,10 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 				Project: apiKey.Role.Project,
 			},
 			Type:      apiKey.Type,
-			ExpiresAt: apiKey.ExpiresAt.Time(),
+			ExpiresAt: apiKey.ExpiresAt,
 		},
 		UID:       apiKey.UID,
-		CreatedAt: apiKey.CreatedAt.Time(),
+		CreatedAt: apiKey.CreatedAt,
 		Key:       keyString,
 	}
 
@@ -92,11 +92,11 @@ func (a *ApplicationHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http
 				Project: apiKey.Role.Project,
 			},
 			Type:      apiKey.Type,
-			ExpiresAt: apiKey.ExpiresAt.Time(),
+			ExpiresAt: apiKey.ExpiresAt,
 		},
 		UserID:    apiKey.UserID,
 		UID:       apiKey.UID,
-		CreatedAt: apiKey.CreatedAt.Time(),
+		CreatedAt: apiKey.CreatedAt,
 		Key:       keyString,
 	}
 

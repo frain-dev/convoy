@@ -96,10 +96,10 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 				Project: apiKey.Role.Project,
 			},
 			Type:      apiKey.Type,
-			ExpiresAt: apiKey.ExpiresAt.Time(),
+			ExpiresAt: apiKey.ExpiresAt,
 		},
 		UID:       apiKey.UID,
-		CreatedAt: apiKey.CreatedAt.Time(),
+		CreatedAt: apiKey.CreatedAt,
 		Key:       keyString,
 	}
 
