@@ -19,8 +19,6 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type UserService struct {
@@ -103,9 +101,9 @@ func (u *UserService) RegisterUser(ctx context.Context, baseURL string, data *mo
 		Email:                      data.Email,
 		Password:                   string(p.Hash),
 		EmailVerificationToken:     uuid.NewString(),
-		CreatedAt:                  primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:                  primitive.NewDateTimeFromTime(time.Now()),
-		EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 2)),
+		CreatedAt:                  time.Now(),
+		UpdatedAt:                  time.Now(),
+		EmailVerificationExpiresAt: time.Now().Add(time.Hour * 2),
 	}
 
 	err = u.userRepo.CreateUser(ctx, user)
@@ -146,12 +144,11 @@ func (u *UserService) ResendEmailVerificationToken(ctx context.Context, baseURL 
 		return util.NewServiceError(http.StatusBadRequest, errors.New("user email already verified"))
 	}
 
-	now := primitive.NewDateTimeFromTime(time.Now())
-	if user.EmailVerificationExpiresAt > now {
+	if user.EmailVerificationExpiresAt.After(time.Now()) {
 		return util.NewServiceError(http.StatusBadRequest, errors.New("old verification token is still valid"))
 	}
 
-	user.EmailVerificationExpiresAt = primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 2))
+	user.EmailVerificationExpiresAt = time.Now().Add(time.Hour * 2)
 	user.EmailVerificationToken = uuid.NewString()
 
 	err := u.userRepo.UpdateUser(ctx, user)
@@ -230,7 +227,7 @@ func (u *UserService) sendUserVerificationEmail(ctx context.Context, baseURL str
 			"email_verification_url": fmt.Sprintf("%s/verify-email?token=%s", baseURL, user.EmailVerificationToken),
 			"recipient_name":         user.FirstName,
 			"email":                  user.Email,
-			"expires_at":             user.EmailVerificationExpiresAt.Time().String(),
+			"expires_at":             user.EmailVerificationExpiresAt.String(),
 		},
 	}
 
@@ -266,8 +263,7 @@ func (u *UserService) VerifyEmail(ctx context.Context, token string) error {
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
 
-	now := primitive.NewDateTimeFromTime(time.Now())
-	if now > user.EmailVerificationExpiresAt {
+	if time.Now().After(user.EmailVerificationExpiresAt) {
 		return util.NewServiceError(http.StatusBadRequest, errors.New("email verification token has expired"))
 	}
 
@@ -392,7 +388,7 @@ func (u *UserService) GeneratePasswordResetToken(ctx context.Context, baseURL st
 	}
 	resetToken := uuid.NewString()
 	user.ResetPasswordToken = resetToken
-	user.ResetPasswordExpiresAt = primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 2))
+	user.ResetPasswordExpiresAt = time.Now().Add(time.Hour * 2)
 	err = u.userRepo.UpdateUser(ctx, user)
 	if err != nil {
 		return util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while updating user"))
@@ -412,7 +408,7 @@ func (u *UserService) sendPasswordResetEmail(ctx context.Context, baseURL string
 		Params: map[string]string{
 			"password_reset_url": fmt.Sprintf("%s/reset-password?token=%s", baseURL, token),
 			"recipient_name":     user.FirstName,
-			"expires_at":         user.ResetPasswordExpiresAt.Time().String(),
+			"expires_at":         user.ResetPasswordExpiresAt.String(),
 		},
 	}
 
@@ -427,10 +423,11 @@ func (u *UserService) ResetPassword(ctx context.Context, token string, data *mod
 		}
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
-	now := primitive.NewDateTimeFromTime(time.Now())
-	if now > user.ResetPasswordExpiresAt {
+
+	if time.Now().After(user.ResetPasswordExpiresAt) {
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("password reset token has expired"))
 	}
+
 	if data.Password != data.PasswordConfirmation {
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("password confirmation doesn't match password"))
 	}

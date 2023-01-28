@@ -20,7 +20,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/google/uuid"
 	"github.com/newrelic/go-agent/v3/newrelic"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -81,8 +80,8 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 		Email:         "superuser@default.com",
 		Password:      string(p.Hash),
 		EmailVerified: true,
-		CreatedAt:     primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:     primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 
 	err = userRepo.CreateUser(ctx, defaultUser)

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
@@ -42,43 +44,42 @@ func addRunCommand() *cobra.Command {
 				log.Fatal(err)
 			}
 
-			o := postgres.NewOrgRepo(db.GetDB())
-			// _ = o.CreateOrganisation(cmd.Context(), &datastore.Organisation{
-			// 	OwnerID: "xxx",
-			// 	Name:    "123",
-			// })
-
-			orgs, _, err := o.LoadOrganisationsPaged(cmd.Context(), datastore.Pageable{
-				Page:    1,
-				PerPage: 10,
-			})
-
-			if err != nil {
-				fmt.Printf("orgs: %+v", err)
-				return
-			}
-
-			// p := postgres.NewProjectRepo(db.GetDB())
-			// err = p.UpdateProject(cmd.Context(), &datastore.Project{
-			// 	UID:            "1",
-			// 	Name:           "xxx-swer",
-			// 	Type:           datastore.IncomingProject,
-			// 	OrganisationID: orgs[0].UID,
-			// 	Config: &datastore.ProjectConfig{
-			// 		RateLimitCount:     1000,
-			// 		RateLimitDuration:  60,
-			// 		StrategyType:       datastore.ExponentialStrategyProvider,
-			// 		StrategyDuration:   100,
-			// 		StrategyRetryCount: 10,
-			// 		SignatureHeader:    config.DefaultSignatureHeader,
-			// 		SignatureHash:      "SHA256",
-			// 		RetentionPolicy:    "5d",
-			// 	},
-			// })
-			// if err != nil {
-			// 	fmt.Printf("err: %+v", err)
-			// 	return
-			// }
+			//o := postgres.NewOrgRepo(db.GetDB())
+			//_ = o.CreateOrganisation(cmd.Context(), &datastore.Organisation{
+			//	OwnerID: "xxx",
+			//	Name:    "123",
+			//})
+			//
+			//orgs, _, err := o.LoadOrganisationsPaged(cmd.Context(), datastore.Pageable{
+			//	Page:    1,
+			//	PerPage: 10,
+			//})
+			//if err != nil {
+			//	fmt.Printf("orgs: %+v", err)
+			//	return
+			//}
+			//
+			//p := postgres.NewProjectRepo(db.GetDB())
+			//err = p.UpdateProject(cmd.Context(), &datastore.Project{
+			//	UID:            "1",
+			//	Name:           "xxx-swer",
+			//	Type:           datastore.IncomingProject,
+			//	OrganisationID: orgs[0].UID,
+			//	Config: &datastore.ProjectConfig{
+			//		RateLimitCount:     1000,
+			//		RateLimitDuration:  60,
+			//		StrategyType:       datastore.ExponentialStrategyProvider,
+			//		StrategyDuration:   100,
+			//		StrategyRetryCount: 10,
+			//		SignatureHeader:    config.DefaultSignatureHeader,
+			//		SignatureHash:      "SHA256",
+			//		RetentionPolicy:    "5d",
+			//	},
+			//})
+			//if err != nil {
+			//	fmt.Printf("err: %+v", err)
+			//	return
+			//}
 
 			// proj, err := p.FetchProjectByID(cmd.Context(), 1)
 			// if err != nil {
@@ -121,9 +122,45 @@ func addRunCommand() *cobra.Command {
 			// fmt.Printf("config: %+v\n", cfg.StoragePolicy.S3)
 
 			// projects, err := p.LoadProjects(cmd.Context(), &datastore.ProjectFilter{OrgID: "1"})
-			for _, v := range orgs {
-				fmt.Printf("Proj: %+v\n", v)
+			// for _, v := range projects {
+			// 	fmt.Printf("Proj: %+v\n", v)
+			// }
+
+			u := postgres.NewUserRepo(db.GetDB())
+			ctx := context.Background()
+			user := &datastore.User{
+				UID:                        "1",
+				FirstName:                  "Daniel",
+				LastName:                   "O.J",
+				Email:                      "danvixent@gmail.com",
+				EmailVerified:              true,
+				Password:                   "32322",
+				ResetPasswordToken:         "vvv",
+				EmailVerificationToken:     "vvvc",
+				CreatedAt:                  time.Now(),
+				UpdatedAt:                  time.Now(),
+				ResetPasswordExpiresAt:     time.Now(),
+				EmailVerificationExpiresAt: time.Now(),
 			}
+
+			//err = u.CreateUser(ctx, user)
+			//if err != nil {
+			//	log.Fatal("create user", err)
+			//}
+			//
+			//user.FirstName = "jjj"
+			//err = u.UpdateUser(ctx, user)
+			//if err != nil {
+			//	log.Fatal("update user", err)
+			//}
+
+			dbUser, err := u.FindUserByID(ctx, "1")
+			if err != nil {
+				log.Fatal("find user", err)
+			}
+
+			fmt.Printf("%+v\n=====\n", user)
+			fmt.Printf("%+v\n======\n", dbUser)
 		},
 	}
 

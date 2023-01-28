@@ -19,8 +19,6 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type OrganisationInviteService struct {
@@ -205,9 +203,8 @@ func (ois *OrganisationInviteService) createNewUser(ctx context.Context, newUser
 		LastName:  newUser.LastName,
 		Email:     email,
 		Password:  string(p.Hash),
-		// Role:          newUser.Role, // TODO(all): this role field shouldn't be in user.
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	err = ois.userRepo.CreateUser(ctx, user)

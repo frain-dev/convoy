@@ -633,9 +633,8 @@ components:
           type: string
         reset_password_expires_at:
           type: string
-        role:
-          $ref: '#/components/schemas/auth.Role'
         uid:
+          description: ID                         primitive.ObjectID `json:"-" bson:"_id"`
           type: string
         updated_at:
           type: string
