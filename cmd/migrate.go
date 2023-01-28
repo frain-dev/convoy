@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"time"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
@@ -48,50 +47,61 @@ func addRunCommand() *cobra.Command {
 				log.Fatal(err)
 			}
 
-			//o := postgres.NewOrgRepo(db.GetDB())
+			// o := postgres.NewOrgRepo(db.GetDB())
 			//_ = o.CreateOrganisation(cmd.Context(), &datastore.Organisation{
 			//	OwnerID: "xxx",
 			//	Name:    "123",
 			//})
 			//
-			//orgs, _, err := o.LoadOrganisationsPaged(cmd.Context(), datastore.Pageable{
-			//	Page:    1,
-			//	PerPage: 10,
-			//})
-			//if err != nil {
-			//	fmt.Printf("orgs: %+v", err)
-			//	return
-			//}
-			//
-			//p := postgres.NewProjectRepo(db.GetDB())
-			//err = p.UpdateProject(cmd.Context(), &datastore.Project{
-			//	UID:            "1",
-			//	Name:           "xxx-swer",
-			//	Type:           datastore.IncomingProject,
-			//	OrganisationID: orgs[0].UID,
-			//	Config: &datastore.ProjectConfig{
-			//		RateLimitCount:     1000,
-			//		RateLimitDuration:  60,
-			//		StrategyType:       datastore.ExponentialStrategyProvider,
-			//		StrategyDuration:   100,
-			//		StrategyRetryCount: 10,
-			//		SignatureHeader:    config.DefaultSignatureHeader,
-			//		SignatureHash:      "SHA256",
-			//		RetentionPolicy:    "5d",
-			//	},
-			//})
-			//if err != nil {
-			//	fmt.Printf("err: %+v", err)
-			//	return
-			//}
-
-			// proj, err := p.FetchProjectByID(cmd.Context(), 1)
+			// orgs, _, err := o.LoadOrganisationsPaged(cmd.Context(), datastore.Pageable{
+			// 	Page:    1,
+			// 	PerPage: 10,
+			// })
 			// if err != nil {
-			// 	fmt.Printf("err: %+v", err)
+			// 	fmt.Printf("orgs: %+v", err)
 			// 	return
 			// }
-			// fmt.Printf("\n%+v\n", proj)
-			// fmt.Printf("\n%+v\n", proj.Config)
+			//
+			p := postgres.NewProjectRepo(db.GetDB())
+			err = p.UpdateProject(cmd.Context(), &datastore.Project{
+				UID:             "9",
+				Name:            "mob psycho",
+				Type:            datastore.OutgoingProject,
+				OrganisationID:  "1",
+				ProjectConfigID: "1",
+				Config: &datastore.ProjectConfig{
+					RateLimitCount:     1000,
+					RateLimitDuration:  60,
+					StrategyType:       datastore.ExponentialStrategyProvider,
+					StrategyDuration:   100,
+					StrategyRetryCount: 10,
+					SignatureHeader:    config.DefaultSignatureHeader,
+					RetentionPolicy:    "500d",
+					SignatureVersions: []datastore.SignatureVersion{
+						{
+							Hash:     "SHA256",
+							Encoding: datastore.HexEncoding,
+						},
+						{
+							Hash:     "SHA512",
+							Encoding: datastore.Base64Encoding,
+						},
+					},
+				},
+			})
+			if err != nil {
+				fmt.Printf("err: %+v", err)
+				return
+			}
+
+			proj, err := p.FetchProjectByID(cmd.Context(), 9)
+			if err != nil {
+				fmt.Printf("err: %+v", err)
+				return
+			}
+			fmt.Printf("\n%+v\n", proj)
+			fmt.Printf("\n%+v\n", proj.Config)
+			fmt.Printf("\n%+v\n", proj.Config.SignatureVersions)
 
 			// c := postgres.NewConfigRepo(db.GetDB())
 			// err = c.UpdateConfiguration(cmd.Context(), &datastore.Configuration{
@@ -130,22 +140,22 @@ func addRunCommand() *cobra.Command {
 			// 	fmt.Printf("Proj: %+v\n", v)
 			// }
 
-			u := postgres.NewUserRepo(db.GetDB())
-			ctx := context.Background()
-			user := &datastore.User{
-				UID:                        "1",
-				FirstName:                  "Daniel",
-				LastName:                   "O.J",
-				Email:                      "danvixent@gmail.com",
-				EmailVerified:              true,
-				Password:                   "32322",
-				ResetPasswordToken:         "vvv",
-				EmailVerificationToken:     "vvvc",
-				CreatedAt:                  time.Now(),
-				UpdatedAt:                  time.Now(),
-				ResetPasswordExpiresAt:     time.Now(),
-				EmailVerificationExpiresAt: time.Now(),
-			}
+			// u := postgres.NewUserRepo(db.GetDB())
+			// ctx := context.Background()
+			// user := &datastore.User{
+			// 	UID:                        "1",
+			// 	FirstName:                  "Daniel",
+			// 	LastName:                   "O.J",
+			// 	Email:                      "danvixent@gmail.com",
+			// 	EmailVerified:              true,
+			// 	Password:                   "32322",
+			// 	ResetPasswordToken:         "vvv",
+			// 	EmailVerificationToken:     "vvvc",
+			// 	CreatedAt:                  time.Now(),
+			// 	UpdatedAt:                  time.Now(),
+			// 	ResetPasswordExpiresAt:     time.Now(),
+			// 	EmailVerificationExpiresAt: time.Now(),
+			// }
 
 			err = u.CreateUser(ctx, user)
 			if err != nil {

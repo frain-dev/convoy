@@ -22,8 +22,8 @@ CREATE TABLE IF NOT EXISTS convoy.users (
 	email TEXT NOT NULL,
 	password TEXT NOT NULL,
 	email_verified BOOL NOT NULL,
-	reset_password_token TEXT NOT NULL,
-	email_verification_token TEXT NOT NULL,
+	reset_password_token TEXT,
+	email_verification_token TEXT,
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -35,7 +35,9 @@ CREATE TABLE IF NOT EXISTS convoy.users (
 CREATE TABLE IF NOT EXISTS convoy.organisation_members (
 	id BIGSERIAL PRIMARY KEY,
 
-	role TEXT NOT NULL,
+	role_type TEXT NOT NULL,
+	role_project TEXT NOT NULL,
+	role_endpoint TEXT NOT NULL,
 	user_id BIGINT NOT NULL REFERENCES convoy.users (id),
 	organisation_id BIGINT NOT NULL REFERENCES convoy.organisations (id),
 
@@ -61,7 +63,7 @@ CREATE TABLE IF NOT EXISTS convoy.project_configurations (
 	strategy_retry_count INTEGER NOT NULL,
 
 	signature_header TEXT NOT NULL,
-	signature_hash TEXT,
+	signature_versions JSONB NOT NULL,
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -82,16 +84,6 @@ CREATE TABLE IF NOT EXISTS convoy.projects (
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	deleted_at TIMESTAMPTZ
-);
-
-CREATE TABLE IF NOT EXISTS convoy.project_signatures (
-	id BIGSERIAL PRIMARY KEY,
-
-	hash TEXT NOT NULL,
-	encoding TEXT NOT NULL,
-	config_id BIGINT NOT NULL REFERENCES convoy.project_configurations (id),
-
-	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS convoy.endpoints (
@@ -153,7 +145,9 @@ CREATE TABLE IF NOT EXISTS convoy.organisation_invites (
 	organisation_id BIGINT NOT NULL REFERENCES convoy.organisations (id),
 	invitee_email TEXT NOT NULL,
 	token TEXT NOT NULL,
-	role TEXT NOT NULL,
+	role_type TEXT NOT NULL,
+	role_project TEXT NOT NULL,
+	role_endpoint TEXT NOT NULL,
 	status TEXT NOT NULL,
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -175,7 +169,6 @@ CREATE TABLE IF NOT EXISTS convoy.portal_links (
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	deleted_at TIMESTAMPTZ
 );
-
 
 CREATE TABLE IF NOT EXISTS convoy.subscription_filters (
 	id BIGSERIAL PRIMARY KEY,
