@@ -244,6 +244,7 @@ CREATE TABLE IF NOT EXISTS convoy.source_verifiers (
 	api_key_header_value TEXT,
 
 	hmac_hash TEXT,
+    hmac_header TEXT,
 	hmac_secret TEXT,
 	hmac_encoding TEXT,
 

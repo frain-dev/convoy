@@ -6796,6 +6796,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/datastore.SourceType"
                 },
                 "uid": {
+                    "description": "ID             primitive.ObjectID ` + "`" + `json:\"-\" bson:\"_id\"` + "`" + `",
                     "type": "string"
                 },
                 "updated_at": {

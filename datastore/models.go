@@ -657,21 +657,21 @@ type Subscription struct {
 }
 
 type Source struct {
-	ID             primitive.ObjectID `json:"-" bson:"_id"`
-	UID            string             `json:"uid" bson:"uid"`
-	ProjectID      string             `json:"project_id" bson:"project_id"`
-	MaskID         string             `json:"mask_id" bson:"mask_id"`
-	Name           string             `json:"name" bson:"name"`
-	Type           SourceType         `json:"type" bson:"type"`
-	Provider       SourceProvider     `json:"provider" bson:"provider"`
-	IsDisabled     bool               `json:"is_disabled" bson:"is_disabled"`
-	Verifier       *VerifierConfig    `json:"verifier" bson:"verifier"`
-	ProviderConfig *ProviderConfig    `json:"provider_config" bson:"provider_config"`
-	ForwardHeaders []string           `json:"forward_headers" bson:"forward_headers"`
+	// ID             primitive.ObjectID `json:"-" bson:"_id"`
+	UID            string          `json:"uid" db:"uid"`
+	ProjectID      string          `json:"project_id" db:"project_id"`
+	MaskID         string          `json:"mask_id" db:"mask_id"`
+	Name           string          `json:"name" db:"name"`
+	Type           SourceType      `json:"type" db:"type"`
+	Provider       SourceProvider  `json:"provider" db:"provider"`
+	IsDisabled     bool            `json:"is_disabled" db:"is_disabled"`
+	Verifier       *VerifierConfig `json:"verifier" db:"verifier"`
+	ProviderConfig *ProviderConfig `json:"provider_config" db:"provider_config"`
+	ForwardHeaders []string        `json:"forward_headers" db:"forward_headers"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type User struct {
