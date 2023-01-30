@@ -390,15 +390,12 @@ components:
         type:
           $ref: '#/components/schemas/datastore.ProjectType'
         uid:
-          description: ID              primitive.ObjectID `json:"-" bson:"_id"`
           type: string
         updated_at:
           type: string
       type: object
     datastore.ProjectConfig:
       properties:
-        hsignature_header:
-          $ref: '#/components/schemas/config.SignatureHeaderProvider'
         max_payload_read_size:
           type: integer
         ratelimit:
@@ -417,6 +414,8 @@ components:
           type: boolean
         signature:
           $ref: '#/components/schemas/datastore.SignatureConfiguration'
+        signature_header:
+          $ref: '#/components/schemas/config.SignatureHeaderProvider'
         strategy:
           $ref: '#/components/schemas/datastore.StrategyConfiguration'
         strategy_duration:
@@ -526,6 +525,7 @@ components:
         type:
           $ref: '#/components/schemas/datastore.SourceType'
         uid:
+          description: ID             primitive.ObjectID `json:"-" bson:"_id"`
           type: string
         updated_at:
           type: string
