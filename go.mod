@@ -3,7 +3,6 @@ module github.com/frain-dev/convoy
 go 1.16
 
 require (
-	github.com/Masterminds/squirrel v1.5.3
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go v1.34.28
 	github.com/cip8/autoname v1.0.1
