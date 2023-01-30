@@ -24,7 +24,6 @@ func NewSourceRepo(store datastore.Store) datastore.SourceRepository {
 
 func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source) error {
 	ctx = s.setCollectionInContext(ctx)
-	source.ID = primitive.NewObjectID()
 
 	err := s.store.Save(ctx, source, nil)
 	return err

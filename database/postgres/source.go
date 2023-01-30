@@ -107,7 +107,6 @@ var (
 	ErrSourceNotCreated         = errors.New("source could not be created")
 	ErrSourceVerifierNotCreated = errors.New("source verifier could not be created")
 	ErrSourceNotUpdated         = errors.New("source could not be updated")
-	ErrSourceNotRevoked         = errors.New("source could not be revoked")
 )
 
 type sourceRepo struct {
@@ -291,7 +290,7 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 	}
 
 	var count int
-	err = a.db.Get(&count, countSources)
+	err = s.db.Get(&count, countSources)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}

@@ -6,7 +6,6 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -119,9 +118,9 @@ type SourceResponse struct {
 	Provider       datastore.SourceProvider  `json:"provider"`
 	ProviderConfig *datastore.ProviderConfig `json:"provider_config"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	DeletedAt null.Time `json:"deleted_at,omitempty"`
 }
 
 type LoginUser struct {

@@ -1251,10 +1251,10 @@
 			"models.SourceResponse": {
 				"properties": {
 					"created_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"deleted_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"is_disabled": {
 						"type": "boolean"
@@ -1281,7 +1281,7 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"url": {
 						"type": "string"

@@ -845,9 +845,9 @@ components:
     models.SourceResponse:
       properties:
         created_at:
-          type: integer
+          type: string
         deleted_at:
-          type: integer
+          type: string
         is_disabled:
           type: boolean
         mask_id:
@@ -865,7 +865,7 @@ components:
         uid:
           type: string
         updated_at:
-          type: integer
+          type: string
         url:
           type: string
         verifier:
