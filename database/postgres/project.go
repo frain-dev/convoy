@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/datastore"
 )
@@ -19,13 +20,13 @@ var (
 
 const (
 	createProject = `
-	INSERT INTO convoy.projects (name, type, logo_url, organisation_id, project_configuration_id)
-	VALUES ($1, $2, $3, $4, $5) RETURNING id;
+	INSERT INTO convoy.projects (id, name, type, logo_url, organisation_id, project_configuration_id)
+	VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;
 	`
 
 	createProjectConfiguration = `
 	INSERT INTO convoy.project_configurations (
-		retention_policy, max_payload_read_size, 
+		id, retention_policy, max_payload_read_size, 
 		replay_attacks_prevention_enabled, 
 		retention_policy_enabled, ratelimit_count, 
 		ratelimit_duration, strategy_type, 
@@ -34,7 +35,7 @@ const (
 	  ) 
 	  VALUES 
 		(
-		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
 		) RETURNING id;
 	`
 
@@ -142,6 +143,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, o *datastore.Project) e
 
 	var config_id int
 	err = tx.QueryRowxContext(ctx, createProjectConfiguration,
+		ulid.Make().String(),
 		o.Config.RetentionPolicy,
 		o.Config.MaxIngestSize,
 		o.Config.ReplayAttacks,
@@ -159,7 +161,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, o *datastore.Project) e
 		return err
 	}
 
-	proResult, err := tx.ExecContext(ctx, createProject, o.Name, o.Type, o.LogoURL, o.OrganisationID, config_id)
+	proResult, err := tx.ExecContext(ctx, ulid.Make().String(), createProject, o.Name, o.Type, o.LogoURL, o.OrganisationID, config_id)
 	if err != nil {
 		return err
 	}
@@ -252,7 +254,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 	return tx.Commit()
 }
 
-func (p *projectRepo) FetchProjectByID(ctx context.Context, id int) (*datastore.Project, error) {
+func (p *projectRepo) FetchProjectByID(ctx context.Context, id string) (*datastore.Project, error) {
 	var project datastore.Project
 	err := p.db.GetContext(ctx, &project, fetchProjectById, id)
 	if err != nil {

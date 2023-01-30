@@ -19,7 +19,7 @@ func New(d database.Database) *Migrator {
 }
 
 func (m *Migrator) Up() error {
-	_, err := migrate.ExecMax(m.dbx.DB, "postgres", m.src, migrate.Up, 1)
+	_, err := migrate.Exec(m.dbx.DB, "postgres", m.src, migrate.Up)
 	if err != nil {
 		return err
 	}

@@ -345,7 +345,6 @@ definitions:
       deleted_at:
         type: string
       id:
-        description: ID             primitive.ObjectID  `json:"-" bson:"_id"`
         type: string
       name:
         type: string
@@ -633,7 +632,6 @@ definitions:
       reset_password_expires_at:
         type: string
       uid:
-        description: ID                         primitive.ObjectID `json:"-" bson:"_id"`
         type: string
       updated_at:
         type: string

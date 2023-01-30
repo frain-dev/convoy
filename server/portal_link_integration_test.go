@@ -113,7 +113,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_PortalLinkNotFou
 	portalLinkID := "123"
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/portal-links/%s", s.DefaultProject.ID, portalLinkID)
+	url := fmt.Sprintf("/api/v1/projects/%s/portal-links/%s", s.DefaultProject.UID, portalLinkID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 

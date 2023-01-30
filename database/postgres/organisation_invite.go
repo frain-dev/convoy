@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
+	"github.com/oklog/ulid/v2"
 )
 
 var (
@@ -17,8 +18,8 @@ var (
 
 const (
 	createOrganisationInvite = `
-	INSERT INTO convoy.organisation_invites (organisation_id, invitee_email, token, role_type, 
-	role_project, role_endpoint, status, expires_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
+	INSERT INTO convoy.organisation_invites (id, organisation_id, invitee_email, token, role_type, role_project, role_endpoint, status, expires_at) 
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
 	`
 
 	updateOrganisationInvite = `
@@ -92,6 +93,7 @@ func NewOrgInviteRepo(db *sqlx.DB) datastore.OrganisationInviteRepository {
 
 func (i *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {
 	r, err := i.db.ExecContext(ctx, createOrganisationInvite,
+		ulid.Make().String(),
 		iv.OrganisationID,
 		iv.InviteeEmail,
 		iv.Token,
