@@ -156,8 +156,8 @@ func SeedDefaultUser(store datastore.Store) (*datastore.User, error) {
 		LastName:  "default",
 		Email:     "default@user.com",
 		Password:  string(p.Hash),
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	// Seed Data.
@@ -192,8 +192,8 @@ func SeedDefaultOrganisation(store datastore.Store, user *datastore.User) (*data
 		OrganisationID: defaultOrg.UID,
 		UserID:         user.UID,
 		Role:           auth.Role{Type: auth.RoleSuperUser},
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	orgMemberRepo := cm.NewOrgMemberRepo(store)
@@ -212,8 +212,8 @@ func SeedOrganisationMember(store datastore.Store, org *datastore.Organisation, 
 		OrganisationID: org.UID,
 		UserID:         user.UID,
 		Role:           *role,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	orgMemberRepo := cm.NewOrgMemberRepo(store)
@@ -226,9 +226,9 @@ func SeedOrganisationMember(store datastore.Store, org *datastore.Organisation, 
 }
 
 // seed organisation invite
-func SeedOrganisationInvite(store datastore.Store, org *datastore.Organisation, email string, role *auth.Role, expiry primitive.DateTime, status datastore.InviteStatus) (*datastore.OrganisationInvite, error) {
-	if expiry == 0 {
-		expiry = primitive.NewDateTimeFromTime(time.Now())
+func SeedOrganisationInvite(store datastore.Store, org *datastore.Organisation, email string, role *auth.Role, expiry time.Time, status datastore.InviteStatus) (*datastore.OrganisationInvite, error) {
+	if expiry == (time.Time{}) {
+		expiry = time.Now()
 	}
 
 	iv := &datastore.OrganisationInvite{
@@ -239,8 +239,8 @@ func SeedOrganisationInvite(store datastore.Store, org *datastore.Organisation, 
 		Token:          uniuri.NewLen(64),
 		ExpiresAt:      expiry,
 		Status:         status,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	orgInviteRepo := cm.NewOrgInviteRepo(store)
@@ -268,18 +268,16 @@ func SeedAPIKey(store datastore.Store, role auth.Role, uid, name, keyType, userI
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
 	apiKey := &datastore.APIKey{
-		UID:          uid,
-		MaskID:       maskID,
-		Name:         name,
-		UserID:       userID,
-		Type:         datastore.KeyType(keyType),
-		RoleType:     role.Type,
-		RoleProject:  role.Project,
-		RoleEndpoint: role.Endpoint,
-		Hash:         encodedKey,
-		Salt:         salt,
-		CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
+		UID:       uid,
+		MaskID:    maskID,
+		Name:      name,
+		UserID:    userID,
+		Type:      datastore.KeyType(keyType),
+		Role:      role,
+		Hash:      encodedKey,
+		Salt:      salt,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	apiRepo := cm.NewApiKeyRepo(store)

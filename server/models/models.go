@@ -76,14 +76,13 @@ type UpdateOrganisationMember struct {
 }
 
 type APIKeyByIDResponse struct {
-	UID       string             `json:"uid"`
-	Name      string             `json:"name"`
-	Role      auth.Role          `json:"role"`
-	Type      datastore.KeyType  `json:"key_type"`
-	ExpiresAt primitive.DateTime `json:"expires_at,omitempty"`
-	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
+	UID       string            `json:"uid"`
+	Name      string            `json:"name"`
+	Role      auth.Role         `json:"role"`
+	Type      datastore.KeyType `json:"key_type"`
+	ExpiresAt time.Time         `json:"expires_at,omitempty"`
+	CreatedAt time.Time         `json:"created_at,omitempty"`
+	UpdatedAt time.Time         `json:"updated_at,omitempty"`
 }
 
 type APIKeyResponse struct {

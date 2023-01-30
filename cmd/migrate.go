@@ -1,16 +1,22 @@
 package main
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
+	"time"
 
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/migrator"
 	"github.com/frain-dev/convoy/pkg/log"
-
+	"github.com/frain-dev/convoy/util"
 	"github.com/spf13/cobra"
+	"github.com/xdg-go/pbkdf2"
 )
 
 func addMigrateCommand(a *app) *cobra.Command {
@@ -136,7 +142,7 @@ func addRunCommand() *cobra.Command {
 			// }
 
 			// u := postgres.NewUserRepo(db.GetDB())
-			// ctx := context.Background()
+			ctx := context.Background()
 			// user := &datastore.User{
 			// 	UID:                        "1",
 			// 	FirstName:                  "Daniel",
@@ -156,20 +162,74 @@ func addRunCommand() *cobra.Command {
 			//if err != nil {
 			//	log.Fatal("create user", err)
 			//}
+			////
+			////user.FirstName = "jjj"
+			////err = u.UpdateUser(ctx, user)
+			////if err != nil {
+			////	log.Fatal("update user", err)
+			////}
 			//
-			//user.FirstName = "jjj"
-			//err = u.UpdateUser(ctx, user)
+			//dbUser, err := u.FindUserByID(ctx, "1")
 			//if err != nil {
-			//	log.Fatal("update user", err)
+			//	log.Fatal("find user", err)
 			//}
+			//
+			//fmt.Printf("%+v\n=====\n", user)
+			//fmt.Printf("%+v\n======\n", dbUser)
 
-			// dbUser, err := u.FindUserByID(ctx, "1")
-			// if err != nil {
-			// 	log.Fatal("find user", err)
-			// }
+			ap := postgres.NewAPIKeyRepo(db.GetDB())
+			maskID, key := util.GenerateAPIKey()
 
-			// fmt.Printf("%+v\n=====\n", user)
-			// fmt.Printf("%+v\n======\n", dbUser)
+			salt, err := util.GenerateSecret()
+			if err != nil {
+				log.Fatal("failed to generate salt", err)
+			}
+
+			dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
+			encodedKey := base64.URLEncoding.EncodeToString(dk)
+
+			apiKey := &datastore.APIKey{
+				UID:    "1",
+				MaskID: maskID,
+				Name:   "oll",
+				Type:   datastore.ProjectKey, // TODO: this should be set to datastore.ProjectKey
+				Role: auth.Role{
+					Type:     auth.RoleAdmin,
+					Project:  "123444",
+					Endpoint: "dvdvdv",
+				},
+				UserID:    "1",
+				Hash:      encodedKey,
+				Salt:      salt,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+
+			err = ap.CreateAPIKey(ctx, apiKey)
+			if err != nil {
+				log.Fatal("create api key", err)
+			}
+
+			apiKey.Role = auth.Role{
+				Type:     auth.RoleSuperUser,
+				Project:  "fhfhf",
+				Endpoint: "ffdsfds",
+			}
+
+			err = ap.UpdateAPIKey(ctx, apiKey)
+			if err != nil {
+				log.Fatal("update api key", err)
+			}
+
+			dbkey, err := ap.FindAPIKeyByID(ctx, apiKey.UID)
+			if err != nil {
+				log.Fatal("update api key", err)
+			}
+
+			fmt.Printf("%+v\n=====\n", apiKey)
+			fmt.Printf("%+v\n======\n", dbkey)
+
+			fmt.Println((*apiKey) == (*dbkey))
 		},
 	}
 

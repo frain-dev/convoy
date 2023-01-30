@@ -17,7 +17,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/xdg-go/pbkdf2"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type SecurityService struct {
@@ -79,21 +78,19 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
 	apiKey := &datastore.APIKey{
-		UID:          uuid.New().String(),
-		MaskID:       maskID,
-		Name:         newApiKey.Name,
-		Type:         newApiKey.Type, // TODO: this should be set to datastore.ProjectKey
-		RoleType:     role.Type,
-		RoleProject:  role.Project,
-		RoleEndpoint: role.Endpoint,
-		Hash:         encodedKey,
-		Salt:         salt,
-		CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
+		UID:       uuid.New().String(),
+		MaskID:    maskID,
+		Name:      newApiKey.Name,
+		Type:      newApiKey.Type, // TODO: this should be set to datastore.ProjectKey
+		Role:      *role,
+		Hash:      encodedKey,
+		Salt:      salt,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	if newApiKey.ExpiresAt != (time.Time{}) {
-		apiKey.ExpiresAt = primitive.NewDateTimeFromTime(newApiKey.ExpiresAt)
+		apiKey.ExpiresAt = newApiKey.ExpiresAt
 	}
 
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)
@@ -132,9 +129,9 @@ func (ss *SecurityService) CreatePersonalAPIKey(ctx context.Context, user *datas
 		UserID:    user.UID,
 		Hash:      encodedKey,
 		Salt:      salt,
-		ExpiresAt: primitive.NewDateTimeFromTime(expiresAt),
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		ExpiresAt: expiresAt,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)
@@ -199,18 +196,16 @@ func (ss *SecurityService) CreateEndpointAPIKey(ctx context.Context, d *models.C
 	}
 
 	apiKey := &datastore.APIKey{
-		UID:          uuid.New().String(),
-		MaskID:       maskID,
-		Name:         d.Name,
-		Type:         d.KeyType,
-		RoleType:     role.Type,
-		RoleProject:  role.Project,
-		RoleEndpoint: role.Endpoint,
-		Hash:         encodedKey,
-		Salt:         salt,
-		ExpiresAt:    primitive.NewDateTimeFromTime(expiresAt),
-		CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
+		UID:       uuid.New().String(),
+		MaskID:    maskID,
+		Name:      d.Name,
+		Type:      d.KeyType,
+		Role:      role,
+		Hash:      encodedKey,
+		Salt:      salt,
+		ExpiresAt: expiresAt,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)
@@ -276,9 +271,7 @@ func (ss *SecurityService) UpdateAPIKey(ctx context.Context, uid string, role *a
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch api key"))
 	}
 
-	apiKey.RoleType = role.Type
-	apiKey.RoleProject = role.Project
-	apiKey.RoleEndpoint = role.Endpoint
+	apiKey.Role = *role
 	err = ss.apiKeyRepo.UpdateAPIKey(ctx, apiKey)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to update api key")
