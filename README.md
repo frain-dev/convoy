@@ -40,11 +40,8 @@ There are several ways to get started using Convoy.
 ### Option 2: Convoy Cloud
 Get started with our free Cloud version -- Sign up for [Convoy Cloud](https://dashboard.getconvoy.io/signup) account 
 
-### Option 3: Build from source
-To build Convoy from source code, you need:
-* Go [version 1.16 or greater](https://golang.org/doc/install).
-* NodeJS [version 14.17 or greater](https://nodejs.org).
-* Npm [version 6 or greater](https://npmjs.com).
+### Option 3: Deploy Locally
+To do this make sure you have [Docker 20+](https://docs.docker.com/desktop/) installed.
 
 ```bash
 # Get the code
