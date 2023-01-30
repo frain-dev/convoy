@@ -8,15 +8,16 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
+	"github.com/oklog/ulid/v2"
 )
 
 const (
 	createUser = `
     INSERT INTO convoy.users (
-         first_name,last_name,email,password,
-         email_verified,reset_password_token, email_verification_token,
-         reset_password_expires_at,email_verification_expires_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+		id,first_name,last_name,email,password,
+        email_verified,reset_password_token, email_verification_token,
+        reset_password_expires_at,email_verification_expires_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
     `
 
 	updateUser = `
@@ -64,9 +65,18 @@ func NewUserRepo(db *sqlx.DB) datastore.UserRepository {
 }
 
 func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
-	result, err := u.db.ExecContext(
-		ctx, createUser, user.FirstName, user.LastName, user.Email, user.Password, user.EmailVerified, user.ResetPasswordToken,
-		user.EmailVerificationToken, user.ResetPasswordExpiresAt, user.EmailVerificationExpiresAt,
+	result, err := u.db.ExecContext(ctx,
+		createUser,
+		ulid.Make().String(),
+		user.FirstName,
+		user.LastName,
+		user.Email,
+		user.Password,
+		user.EmailVerified,
+		user.ResetPasswordToken,
+		user.EmailVerificationToken,
+		user.ResetPasswordExpiresAt,
+		user.EmailVerificationExpiresAt,
 	)
 	if err != nil {
 		return err

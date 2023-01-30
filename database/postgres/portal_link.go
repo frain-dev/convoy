@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
+	"github.com/oklog/ulid/v2"
 )
 
 var (
@@ -17,8 +18,8 @@ var (
 
 const (
 	createPortalLink = `
-	INSERT INTO convoy.portal_links (project_id, name, token, endpoints)
-	VALUES ($1, $2, $3, $4);
+	INSERT INTO convoy.portal_links (id, project_id, name, token, endpoints)
+	VALUES ($1, $2, $3, $4, $5);
 	`
 
 	updatePortalLink = `
@@ -67,6 +68,7 @@ func NewPortalLinkRepo(db *sqlx.DB) datastore.PortalLinkRepository {
 
 func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore.PortalLink) error {
 	r, err := p.db.ExecContext(ctx, createPortalLink,
+		ulid.Make().String(),
 		portal.ProjectID,
 		portal.Name,
 		portal.Token,

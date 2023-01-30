@@ -1,11 +1,11 @@
 -- +migrate Up
 CREATE SCHEMA IF NOT EXISTS convoy;
 
-CREATE TABLE IF NOT EXISTS convoy.organisations (
-	id BIGSERIAL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS convoy."organisations" (
+	id CHAR(26) PRIMARY KEY,
 
 	name TEXT NOT NULL,
-	owner_id TEXT NOT NULL,
+	owner_id TEXT CHAR(26) NOT NULL REFERENCES convoy.users (id),
 	custom_domain TEXT,
 	assigned_domain TEXT,
 
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS convoy.organisations (
 );
 
 CREATE TABLE IF NOT EXISTS convoy.users (
-	id BIGSERIAL PRIMARY KEY,
+	id CHAR(26) PRIMARY KEY,
 
 	first_name TEXT NOT NULL,
 	last_name TEXT NOT NULL,
@@ -33,13 +33,13 @@ CREATE TABLE IF NOT EXISTS convoy.users (
 );
 
 CREATE TABLE IF NOT EXISTS convoy.organisation_members (
-	id BIGSERIAL PRIMARY KEY,
+	id CHAR(26) PRIMARY KEY,
 
 	role_type TEXT NOT NULL,
 	role_project TEXT NOT NULL,
 	role_endpoint TEXT NOT NULL,
-	user_id BIGINT NOT NULL REFERENCES convoy.users (id),
-	organisation_id BIGINT NOT NULL REFERENCES convoy.organisations (id),
+	user_id CHAR(26) NOT NULL REFERENCES convoy.users (id),
+	organisation_id CHAR(26) NOT NULL REFERENCES convoy.organisations (id),
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS convoy.organisation_members (
 );
 
 CREATE TABLE IF NOT EXISTS convoy.project_configurations (
-	id BIGSERIAL PRIMARY KEY,
+	id CHAR(26) PRIMARY KEY,
 
 	retention_policy TEXT NOT NULL,
 	max_payload_read_size INTEGER NOT NULL,
@@ -71,15 +71,15 @@ CREATE TABLE IF NOT EXISTS convoy.project_configurations (
 );
 
 CREATE TABLE IF NOT EXISTS convoy.projects (
-	id BIGSERIAL PRIMARY KEY,
+	id CHAR(26) PRIMARY KEY,
 
 	name TEXT NOT NULL,
 	type TEXT NOT NULL,
 	logo_url TEXT,
 	retained_events INTEGER DEFAULT 0,
 
-	organisation_id BIGINT NOT NULL REFERENCES convoy.organisations (id),
-	project_configuration_id BIGINT NOT NULL REFERENCES convoy.project_configurations (id),
+	organisation_id CHAR(26) NOT NULL REFERENCES convoy.organisations (id),
+	project_configuration_id CHAR(26) NOT NULL REFERENCES convoy.project_configurations (id),
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS convoy.projects (
 );
 
 CREATE TABLE IF NOT EXISTS convoy.endpoints (
-	id BIGSERIAL PRIMARY KEY,
+	id CHAR(26) PRIMARY KEY,
 
 	title TEXT NOT NULL,
 	status TEXT NOT NULL,
@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS convoy.endpoints (
 	support_email TEXT,
 	app_id TEXT,
 
-	project_id BIGINT NOT NULL REFERENCES convoy.projects (id),
+	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
 
 	authentication_type TEXT,
 	authentication_type_api_key_header_name TEXT,
@@ -115,10 +115,10 @@ CREATE TABLE IF NOT EXISTS convoy.endpoints (
 );
 
 CREATE TABLE IF NOT EXISTS convoy.endpoint_secrets (
-	id BIGSERIAL PRIMARY KEY,
+	id CHAR(26) PRIMARY KEY,
 
 	value TEXT NOT NULL,
-	endpoint_id BIGINT NOT NULL REFERENCES convoy.endpoints (id),
+	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id),
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -127,9 +127,9 @@ CREATE TABLE IF NOT EXISTS convoy.endpoint_secrets (
 );
 
 CREATE TABLE IF NOT EXISTS convoy.applications (
-	id BIGSERIAL PRIMARY KEY,
+	id CHAR(26) PRIMARY KEY,
 
-	project_id BIGINT NOT NULL REFERENCES convoy.projects (id),
+	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
 	title TEXT NOT NULL,
 	support_email TEXT,
 	slack_webhook_url TEXT,
@@ -140,9 +140,9 @@ CREATE TABLE IF NOT EXISTS convoy.applications (
 );
 
 CREATE TABLE IF NOT EXISTS convoy.organisation_invites (
-	id BIGSERIAL PRIMARY KEY,
+	id CHAR(26) PRIMARY KEY,
 
-	organisation_id BIGINT NOT NULL REFERENCES convoy.organisations (id),
+	organisation_id CHAR(26) NOT NULL REFERENCES convoy.organisations (id),
 	invitee_email TEXT NOT NULL,
 	token TEXT NOT NULL,
 	role_type TEXT NOT NULL,
@@ -157,9 +157,9 @@ CREATE TABLE IF NOT EXISTS convoy.organisation_invites (
 );
 
 CREATE TABLE IF NOT EXISTS convoy.portal_links (
-	id BIGSERIAL PRIMARY KEY,
+	id CHAR(26) PRIMARY KEY,
 
-	project_id BIGINT NOT NULL REFERENCES convoy.projects (id),
+	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
 
 	name TEXT NOT NULL,
 	token TEXT NOT NULL,
@@ -171,16 +171,16 @@ CREATE TABLE IF NOT EXISTS convoy.portal_links (
 );
 
 CREATE TABLE IF NOT EXISTS convoy.subscription_filters (
-	id BIGSERIAL PRIMARY KEY,
+	id CHAR(26) PRIMARY KEY,
 	invitee_email JSONB NOT NULL,
 	deleted_at TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS convoy.devices (
-	id BIGSERIAL PRIMARY KEY,
+	id CHAR(26) PRIMARY KEY,
 
-	project_id BIGINT NOT NULL REFERENCES convoy.projects (id),
-	endpoint_id BIGINT NOT NULL REFERENCES convoy.endpoints (id),
+	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
+	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id),
 
 	host_name TEXT NOT NULL,
 	token TEXT NOT NULL,
@@ -216,7 +216,7 @@ CREATE TABLE IF NOT EXISTS convoy.configurations (
 );
 
 CREATE TABLE IF NOT EXISTS convoy.sources (
-	id BIGSERIAL PRIMARY KEY,
+	id CHAR(26) PRIMARY KEY,
 
 	name TEXT NOT NULL,
 	type TEXT NOT NULL,
@@ -225,7 +225,7 @@ CREATE TABLE IF NOT EXISTS convoy.sources (
 	is_disabled BOOLEAN NOT NULL,
 	forward_headers TEXT[],
 
-	project_id BIGINT NOT NULL REFERENCES convoy.projects (id),
+	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -233,7 +233,7 @@ CREATE TABLE IF NOT EXISTS convoy.sources (
 );
 
 CREATE TABLE IF NOT EXISTS convoy.source_verifiers (
-	id BIGSERIAL PRIMARY KEY,
+	id CHAR(26) PRIMARY KEY,
 
 	type TEXT NOT NULL,
 
@@ -250,19 +250,19 @@ CREATE TABLE IF NOT EXISTS convoy.source_verifiers (
 
 	twitter_crc_verified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
-	source_id BIGINT NOT NULL REFERENCES convoy.sources (id)
+	source_id CHAR(26) NOT NULL REFERENCES convoy.sources (id)
 );
 
 CREATE TABLE IF NOT EXISTS convoy.subscriptions (
-	id BIGSERIAL PRIMARY KEY,
+	id CHAR(26) PRIMARY KEY,
 
 	name TEXT NOT NULL,
 	type TEXT NOT NULL,
 
-	project_id BIGINT NOT NULL REFERENCES convoy.projects (id),
-	endpoint_id BIGINT NOT NULL REFERENCES convoy.endpoints (id),
-	device_id BIGINT NOT NULL REFERENCES convoy.devices (id),
-	source_id BIGINT NOT NULL REFERENCES convoy.sources (id),
+	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
+	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id),
+	device_id CHAR(26) NOT NULL REFERENCES convoy.devices (id),
+	source_id CHAR(26) NOT NULL REFERENCES convoy.sources (id),
 
 	alert_config_count INTEGER NOT NULL,
 	alert_config_threshold TEXT NOT NULL,
@@ -284,7 +284,7 @@ CREATE TABLE IF NOT EXISTS convoy.subscriptions (
 );
 
 CREATE TABLE IF NOT EXISTS convoy.api_keys (
-	id BIGSERIAL PRIMARY KEY,
+	id CHAR(26) PRIMARY KEY,
 
 	name TEXT NOT NULL,
 	key_type TEXT NOT NULL,
@@ -295,7 +295,7 @@ CREATE TABLE IF NOT EXISTS convoy.api_keys (
 	hash TEXT NOT NULL,
 	salt TEXT NOT NULL,
 
-	user_id BIGINT REFERENCES convoy.users (id),
+	user_id CHAR(26) REFERENCES convoy.users (id),
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -304,13 +304,13 @@ CREATE TABLE IF NOT EXISTS convoy.api_keys (
 );
 
 CREATE TABLE IF NOT EXISTS convoy.events (
-	id BIGSERIAL PRIMARY KEY,
+	id CHAR(26) PRIMARY KEY,
 
 	event_type TEXT NOT NULL,
 	endpoints TEXT[] NOT NULL,
 
-	project_id BIGINT NOT NULL REFERENCES convoy.projects (id),
-	source_id BIGINT NOT NULL REFERENCES convoy.sources (id),
+	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
+	source_id CHAR(26) NOT NULL REFERENCES convoy.sources (id),
 
 	headers JSONB NOT NULL,
 
@@ -322,18 +322,18 @@ CREATE TABLE IF NOT EXISTS convoy.events (
 	deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE IF NOT EXISTS convoy.event_eliveries (
-	id BIGSERIAL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS convoy.event_deliveries (
+	id CHAR(26) PRIMARY KEY,
 
 	name TEXT NOT NULL,
 	status TEXT NOT NULL,
 	description TEXT NOT NULL,
 
-	project_id BIGINT NOT NULL REFERENCES convoy.projects (id),
-	endpoint_id BIGINT NOT NULL REFERENCES convoy.endpoints (id),
-	event_id BIGINT NOT NULL REFERENCES convoy.events (id),
-	device_id BIGINT NOT NULL REFERENCES convoy.devices (id),
-	subscription_id BIGINT NOT NULL REFERENCES convoy.subscriptions (id),
+	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
+	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id),
+	event_id CHAR(26) NOT NULL REFERENCES convoy.events (id),
+	device_id CHAR(26) NOT NULL REFERENCES convoy.devices (id),
+	subscription_id CHAR(26) NOT NULL REFERENCES convoy.subscriptions (id),
 
 	headers JSONB NOT NULL,
 
@@ -355,7 +355,7 @@ CREATE TABLE IF NOT EXISTS convoy.event_eliveries (
 );
 
 CREATE TABLE IF NOT EXISTS convoy.delivery_attempts (
-	id BIGSERIAL PRIMARY KEY,
+	id CHAR(26) PRIMARY KEY,
 
 	msg_id TEXT NOT NULL,
 	url TEXT NOT NULL,
@@ -370,8 +370,8 @@ CREATE TABLE IF NOT EXISTS convoy.delivery_attempts (
 	request_http_header JSONB NOT NULL,
 	response_http_header JSONB NOT NULL,
 
-	event_elivery_id BIGINT NOT NULL REFERENCES convoy.event_eliveries (id),
-	endpoint_id BIGINT NOT NULL REFERENCES convoy.endpoints (id),
+	event_elivery_id CHAR(26) NOT NULL REFERENCES convoy.event_deliveries (id),
+	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id),
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -380,4 +380,4 @@ CREATE TABLE IF NOT EXISTS convoy.delivery_attempts (
 );
 
 -- +migrate Down
--- DROP SCHEMA convoy CASCADE;
+DROP SCHEMA convoy CASCADE;

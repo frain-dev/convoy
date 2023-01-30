@@ -41,6 +41,7 @@ require (
 	github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.1
 	github.com/newrelic/go-agent/v3/integrations/nrmongo v1.0.2
 	github.com/newrelic/go-agent/v3/integrations/nrredis-v8 v1.0.0
+	github.com/oklog/ulid/v2 v2.1.0
 	github.com/onsi/gomega v1.19.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0

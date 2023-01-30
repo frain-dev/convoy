@@ -271,13 +271,7 @@ func (m *Middleware) RequirePortalLink() func(next http.Handler) http.Handler {
 			}
 
 			if project == nil {
-				id, err := strconv.Atoi(projectID)
-				if err != nil {
-					_ = render.Render(w, r, util.NewErrorResponse("failed to parse project id", http.StatusNotFound))
-					return
-				}
-
-				project, err = m.projectRepo.FetchProjectByID(r.Context(), id)
+				project, err = m.projectRepo.FetchProjectByID(r.Context(), projectID)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse("failed to fetch project by id", http.StatusNotFound))
 					return
@@ -605,13 +599,7 @@ func (m *Middleware) RequireProject() func(next http.Handler) http.Handler {
 				}
 
 				if project == nil {
-					id, err := strconv.Atoi(projectID)
-					if err != nil {
-						_ = render.Render(w, r, util.NewErrorResponse("failed to parse project id", http.StatusNotFound))
-						return
-					}
-
-					project, err = m.projectRepo.FetchProjectByID(r.Context(), id)
+					project, err = m.projectRepo.FetchProjectByID(r.Context(), projectID)
 					if err != nil {
 						_ = render.Render(w, r, util.NewErrorResponse("failed to fetch project by id", http.StatusNotFound))
 						return

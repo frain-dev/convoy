@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/signature"
@@ -60,12 +59,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*ed.Metadata).NextDuration(ed.Metadata.NumTrials)
 
-		id, err := strconv.Atoi(endpoint.ProjectID)
-		if err != nil {
-			return &EndpointError{Err: err, delay: delayDuration}
-		}
-
-		p, err := projectRepo.FetchProjectByID(context.Background(), id)
+		p, err := projectRepo.FetchProjectByID(context.Background(), endpoint.ProjectID)
 		if err != nil {
 			log.WithError(err).Error("could not find error")
 			return &EndpointError{Err: err, delay: delayDuration}
