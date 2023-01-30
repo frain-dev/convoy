@@ -3,12 +3,60 @@ package postgres
 import (
 	"context"
 	"errors"
-	"time"
 
-	sq "github.com/Masterminds/squirrel"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 	"gopkg.in/guregu/null.v4"
+)
+
+const (
+	createConfiguration = `
+	INSERT INTO convoy.configurations(
+		id, is_analytics_enabled, is_signup_enabled, 
+		storage_policy_type, on_prem_path, 
+		s3_bucket, s3_access_key, s3_secret_key, 
+		s3_region, s3_session_token, s3_endpoint
+	  ) 
+	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
+	`
+
+	fetchConfiguration = `
+	SELECT 
+		id,
+		is_analytics_enabled,
+		is_signup_enabled,
+		storage_policy_type AS "storage_policy.type",
+		on_prem_path AS "storage_policy.on_prem.path",
+		s3_bucket AS "storage_policy.s3.bucket",
+		s3_access_key AS "storage_policy.s3.access_key",
+		s3_secret_key AS "storage_policy.s3.secret_key",
+		s3_region AS "storage_policy.s3.region",
+		s3_session_token AS "storage_policy.s3.session_token",
+		s3_endpoint AS "storage_policy.s3.endpoint",
+		created_at,
+		updated_at,
+		deleted_at
+	FROM convoy.configurations
+	WHERE id = 'default';
+	`
+
+	updateConfiguration = `
+	UPDATE
+		convoy.configurations
+	SET
+		is_analytics_enabled = $1,
+		is_signup_enabled = $2,
+		storage_policy_type = $3,
+		on_prem_path = $4,
+		s3_bucket = $5,
+		s3_access_key = $6,
+		s3_secret_key = $7,
+		s3_region = $8,
+		s3_session_token = $9, 
+		s3_endpoint = $10,
+		updated_at = now()
+	WHERE id = 'default';
+	`
 )
 
 type configRepo struct {
@@ -35,37 +83,24 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 		}
 	}
 
-	query := sq.Insert("convoy.configurations").
-		Columns("id", "is_analytics_enabled",
-			"is_signup_enabled", "storage_policy_type",
-			"on_prem_path", "s3_bucket", "s3_access_key",
-			"s3_secret_key", "s3_region",
-			"s3_session_token", "s3_endpoint").
-		Values(config.UID,
-			config.IsAnalyticsEnabled,
-			config.IsSignupEnabled,
-			config.StoragePolicy.Type,
-			config.StoragePolicy.OnPrem.Path,
-			config.StoragePolicy.S3.Bucket,
-			config.StoragePolicy.S3.AccessKey,
-			config.StoragePolicy.S3.SecretKey,
-			config.StoragePolicy.S3.Region,
-			config.StoragePolicy.S3.SessionToken,
-			config.StoragePolicy.S3.Endpoint).
-		Suffix("RETURNING id").
-		PlaceholderFormat(sq.Dollar)
-
-	sql, vals, err := query.ToSql()
+	r, err := c.db.ExecContext(ctx, createConfiguration,
+		"default",
+		config.IsAnalyticsEnabled,
+		config.IsSignupEnabled,
+		config.StoragePolicy.Type,
+		config.StoragePolicy.OnPrem.Path,
+		config.StoragePolicy.S3.Bucket,
+		config.StoragePolicy.S3.AccessKey,
+		config.StoragePolicy.S3.SecretKey,
+		config.StoragePolicy.S3.Region,
+		config.StoragePolicy.S3.SessionToken,
+		config.StoragePolicy.S3.Endpoint,
+	)
 	if err != nil {
 		return err
 	}
 
-	result, err := c.db.ExecContext(ctx, sql, vals...)
-	if err != nil {
-		return err
-	}
-
-	nRows, err := result.RowsAffected()
+	nRows, err := r.RowsAffected()
 	if err != nil {
 		return err
 	}
@@ -78,27 +113,8 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 }
 
 func (c *configRepo) LoadConfiguration(ctx context.Context) (*datastore.Configuration, error) {
-	query := sq.Select(
-		"id",
-		"is_analytics_enabled",
-		"is_signup_enabled",
-		`storage_policy_type AS "storage_policy.type"`,
-		`on_prem_path AS "storage_policy.on_prem.path"`,
-		`s3_bucket AS "storage_policy.s3.bucket"`,
-		`s3_access_key AS "storage_policy.s3.access_key"`,
-		`s3_secret_key AS "storage_policy.s3.secret_key"`,
-		`s3_region AS "storage_policy.s3.region"`,
-		`s3_session_token AS "storage_policy.s3.session_token"`,
-		`s3_endpoint AS "storage_policy.s3.endpoint"`,
-	).From("convoy.configurations").Where("id = 'default'")
-
-	sql, _, err := query.ToSql()
-	if err != nil {
-		return nil, err
-	}
-
 	var config datastore.Configuration
-	err = c.db.GetContext(ctx, &config, sql)
+	err := c.db.GetContext(ctx, &config, fetchConfiguration)
 	if err != nil {
 		return nil, err
 	}
@@ -122,27 +138,19 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 		}
 	}
 
-	query := sq.Update("convoy.configurations").
-		Set("is_analytics_enabled", cfg.IsAnalyticsEnabled).
-		Set("is_signup_enabled", cfg.IsSignupEnabled).
-		Set("storage_policy_type", cfg.StoragePolicy.Type).
-		Set("on_prem_path", cfg.StoragePolicy.OnPrem.Path).
-		Set("s3_bucket", cfg.StoragePolicy.S3.Bucket).
-		Set("s3_access_key", cfg.StoragePolicy.S3.AccessKey).
-		Set("s3_secret_key", cfg.StoragePolicy.S3.SecretKey).
-		Set("s3_region", cfg.StoragePolicy.S3.Region).
-		Set("s3_session_token", cfg.StoragePolicy.S3.SessionToken).
-		Set("s3_endpoint", cfg.StoragePolicy.S3.Endpoint).
-		Set("updated_at", time.Now()).
-		Where("id = 'default'").
-		PlaceholderFormat(sq.Dollar)
+	result, err := c.db.ExecContext(ctx, updateConfiguration,
+		cfg.IsAnalyticsEnabled,
+		cfg.IsSignupEnabled,
+		cfg.StoragePolicy.Type,
+		cfg.StoragePolicy.OnPrem.Path,
+		cfg.StoragePolicy.S3.Bucket,
+		cfg.StoragePolicy.S3.AccessKey,
+		cfg.StoragePolicy.S3.SecretKey,
+		cfg.StoragePolicy.S3.Region,
+		cfg.StoragePolicy.S3.SessionToken,
+		cfg.StoragePolicy.S3.Endpoint,
+	)
 
-	sql, vals, err := query.ToSql()
-	if err != nil {
-		return err
-	}
-
-	result, err := c.db.ExecContext(ctx, sql, vals...)
 	if err != nil {
 		return err
 	}
