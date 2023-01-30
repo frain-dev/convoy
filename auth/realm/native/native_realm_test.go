@@ -7,14 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/util"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestNativeRealm_Authenticate(t *testing.T) {
@@ -41,14 +40,16 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 				apiKeyRepo.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
-					UID:         "abcd",
-					RoleType:    auth.RoleAdmin,
-					RoleProject: "paystack",
-					MaskID:      "DkwB9HnZxy4DqZMi",
-					Hash:        "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
-					Salt:        "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt:   0,
-					CreatedAt:   0,
+					UID: "abcd",
+					Role: auth.Role{
+						Type:    auth.RoleAdmin,
+						Project: "paystack",
+					},
+					MaskID:    "DkwB9HnZxy4DqZMi",
+					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
+					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
+					ExpiresAt: time.Time{},
+					CreatedAt: time.Time{},
 				}, nil)
 			},
 			want: &auth.AuthenticatedUser{
@@ -62,14 +63,16 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					Project: "paystack",
 				},
 				APIKey: &datastore.APIKey{
-					UID:         "abcd",
-					RoleType:    auth.RoleAdmin,
-					RoleProject: "paystack",
-					MaskID:      "DkwB9HnZxy4DqZMi",
-					Hash:        "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
-					Salt:        "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt:   0,
-					CreatedAt:   0,
+					UID: "abcd",
+					Role: auth.Role{
+						Type:    auth.RoleAdmin,
+						Project: "paystack",
+					},
+					MaskID:    "DkwB9HnZxy4DqZMi",
+					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
+					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
+					ExpiresAt: time.Time{},
+					CreatedAt: time.Time{},
 				},
 			},
 			wantErr: false,
@@ -86,16 +89,18 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 				apiKeyRepo.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
-					UID:         "abcd",
-					RoleType:    auth.RoleAdmin,
-					RoleProject: "paystack",
-					Type:        datastore.PersonalKey,
-					UserID:      "1234",
-					MaskID:      "DkwB9HnZxy4DqZMi",
-					Hash:        "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
-					Salt:        "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt:   0,
-					CreatedAt:   0,
+					UID: "abcd",
+					Role: auth.Role{
+						Type:    auth.RoleAdmin,
+						Project: "paystack",
+					},
+					Type:      datastore.PersonalKey,
+					UserID:    "1234",
+					MaskID:    "DkwB9HnZxy4DqZMi",
+					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
+					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
+					ExpiresAt: time.Time{},
+					CreatedAt: time.Time{},
 				}, nil)
 
 				userRepo.EXPECT().FindUserByID(gomock.Any(), "1234").Times(1).Return(&datastore.User{UID: "1234"}, nil)
@@ -113,16 +118,18 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 				Metadata: &datastore.User{UID: "1234"},
 				User:     &datastore.User{UID: "1234"},
 				APIKey: &datastore.APIKey{
-					UID:         "abcd",
-					RoleType:    auth.RoleAdmin,
-					RoleProject: "paystack",
-					Type:        datastore.PersonalKey,
-					UserID:      "1234",
-					MaskID:      "DkwB9HnZxy4DqZMi",
-					Hash:        "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
-					Salt:        "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt:   0,
-					CreatedAt:   0,
+					UID: "abcd",
+					Role: auth.Role{
+						Type:    auth.RoleAdmin,
+						Project: "paystack",
+					},
+					Type:      datastore.PersonalKey,
+					UserID:    "1234",
+					MaskID:    "DkwB9HnZxy4DqZMi",
+					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
+					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
+					ExpiresAt: time.Time{},
+					CreatedAt: time.Time{},
 				},
 			},
 			wantErr: false,
@@ -139,16 +146,18 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 				apiKeyRepo.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
-					UID:         "abcd",
-					RoleType:    auth.RoleAdmin,
-					RoleProject: "paystack",
-					Type:        datastore.PersonalKey,
-					UserID:      "1234",
-					MaskID:      "DkwB9HnZxy4DqZMi",
-					Hash:        "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
-					Salt:        "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt:   0,
-					CreatedAt:   0,
+					UID: "abcd",
+					Role: auth.Role{
+						Type:    auth.RoleAdmin,
+						Project: "paystack",
+					},
+					Type:      datastore.PersonalKey,
+					UserID:    "1234",
+					MaskID:    "DkwB9HnZxy4DqZMi",
+					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
+					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
+					ExpiresAt: time.Time{},
+					CreatedAt: time.Time{},
 				}, nil)
 
 				userRepo.EXPECT().FindUserByID(gomock.Any(), "1234").Times(1).Return(nil, errors.New("failed"))
@@ -180,15 +189,17 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 				apiKeyRepo.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
-					UID:         "abcd",
-					RoleType:    auth.RoleAdmin,
-					RoleProject: "paystack",
-					MaskID:      "DkwB9HnZxy4DqZMi",
-					Hash:        "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
-					Salt:        "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					DeletedAt:   util.NewDateTime(),
-					ExpiresAt:   0,
-					CreatedAt:   0,
+					UID: "abcd",
+					Role: auth.Role{
+						Type:    auth.RoleAdmin,
+						Project: "paystack",
+					},
+					MaskID:    "DkwB9HnZxy4DqZMi",
+					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
+					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
+					DeletedAt: null.NewTime(time.Now(), true),
+					ExpiresAt: time.Time{},
+					CreatedAt: time.Time{},
 				}, nil)
 			},
 			want:       nil,
@@ -219,15 +230,17 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 				apiKeyRepo.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
-					UID:         "abcd",
-					RoleType:    auth.RoleAdmin,
-					RoleProject: "paystack",
-					MaskID:      "DkwB9HnZxy4DqZMi",
-					Hash:        "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
-					Salt:        "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt:   primitive.NewDateTimeFromTime(time.Now().Add(time.Second * -10)),
-					DeletedAt:   nil,
-					CreatedAt:   0,
+					UID: "abcd",
+					Role: auth.Role{
+						Type:    auth.RoleAdmin,
+						Project: "paystack",
+					},
+					MaskID:    "DkwB9HnZxy4DqZMi",
+					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
+					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
+					ExpiresAt: time.Now().Add(time.Second * -10),
+					DeletedAt: null.Time{},
+					CreatedAt: time.Time{},
 				}, nil)
 			},
 			want:       nil,

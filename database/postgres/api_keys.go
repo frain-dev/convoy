@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -25,8 +26,22 @@ const (
 	`
 
 	fetchAPIKey = `
-	SELECT * FROM convoy.api_keys
-	WHERE $1 = $2 AND deleted_at IS NULL;
+	SELECT
+	    id,
+		name,
+	    key_type,
+	    mask_id,
+	    role_type as "role.type",
+	    role_project as "role.project",
+	    role_endpoint as "role.endpoint",
+	    hash,
+	    salt,
+	    user_id,
+	    created_at,
+	    updated_at,
+	    expires_at
+	FROM convoy.api_keys
+	WHERE %s = $1 AND deleted_at IS NULL;
 	`
 
 	deleteAPIKeys = `
@@ -37,7 +52,7 @@ const (
 
 	fetchAPIKeysPaginated = `
 	SELECT * FROM convoy.api_keys
-	WHERE deleted_at IS NULL 
+	WHERE deleted_at IS NULL
 	ORDER BY id LIMIT $1 OFFSET $2;
 	`
 	countAPIKeys = `
@@ -62,7 +77,7 @@ func NewAPIKeyRepo(db *sqlx.DB) datastore.APIKeyRepository {
 func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) error {
 	result, err := a.db.ExecContext(
 		ctx, createAPIKey, key.Name, key.Type, key.MaskID,
-		key.RoleType, key.RoleProject, key.RoleEndpoint, key.Hash,
+		key.Role.Type, key.Role.Project, key.Role.Endpoint, key.Hash,
 		key.Salt, key.UserID, key.ExpiresAt,
 	)
 	if err != nil {
@@ -83,7 +98,7 @@ func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) er
 
 func (a *apiKeyRepo) UpdateAPIKey(ctx context.Context, key *datastore.APIKey) error {
 	result, err := a.db.ExecContext(
-		ctx, updateAPIKeyById, key.UID, key.RoleType, key.RoleProject, key.RoleEndpoint,
+		ctx, updateAPIKeyById, key.UID, key.Role.Type, key.Role.Project, key.Role.Endpoint,
 	)
 	if err != nil {
 		return err
@@ -102,8 +117,8 @@ func (a *apiKeyRepo) UpdateAPIKey(ctx context.Context, key *datastore.APIKey) er
 }
 
 func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, id string) (*datastore.APIKey, error) {
-	var apiKey *datastore.APIKey
-	err := a.db.QueryRowxContext(ctx, fetchAPIKey, "id", id).StructScan(apiKey)
+	apiKey := &datastore.APIKey{}
+	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "id"), id).StructScan(apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -112,8 +127,8 @@ func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, id string) (*datastore.
 }
 
 func (a *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
-	var apiKey *datastore.APIKey
-	err := a.db.QueryRowxContext(ctx, fetchAPIKey, "mask_id", maskID).StructScan(apiKey)
+	apiKey := &datastore.APIKey{}
+	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "mask_id"), maskID).StructScan(apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -122,8 +137,8 @@ func (a *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*da
 }
 
 func (a *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
-	var apiKey *datastore.APIKey
-	err := a.db.QueryRowxContext(ctx, fetchAPIKey, "hash", hash).StructScan(apiKey)
+	apiKey := &datastore.APIKey{}
+	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "hash"), hash).StructScan(apiKey)
 	if err != nil {
 		return nil, err
 	}

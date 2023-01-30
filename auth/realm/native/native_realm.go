@@ -56,23 +56,19 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	}
 
 	// if the current time is after the specified expiry date then the key has expired
-	if apiKey.ExpiresAt != 0 && time.Now().After(apiKey.ExpiresAt.Time()) {
+	if apiKey.ExpiresAt != (time.Time{}) && time.Now().After(apiKey.ExpiresAt) {
 		return nil, errors.New("api key has expired")
 	}
 
-	if apiKey.DeletedAt != nil {
+	if apiKey.DeletedAt.IsZero() {
 		return nil, errors.New("api key has been revoked")
 	}
 
 	authUser := &auth.AuthenticatedUser{
 		AuthenticatedByRealm: n.GetName(),
 		Credential:           *cred,
-		Role: auth.Role{
-			Type:     apiKey.RoleType,
-			Project:  apiKey.RoleProject,
-			Endpoint: apiKey.RoleEndpoint,
-		},
-		APIKey: apiKey,
+		Role:                 apiKey.Role,
+		APIKey:               apiKey,
 	}
 
 	if apiKey.Type == datastore.PersonalKey {

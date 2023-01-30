@@ -15,7 +15,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func provideOrganisationInviteService(ctrl *gomock.Controller) *OrganisationInviteService {
@@ -171,7 +170,7 @@ func TestOrganisationInviteService_CreateOrganisationMemberInvite(t *testing.T) 
 
 func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T) {
 	ctx := context.Background()
-	expiry := primitive.NewDateTimeFromTime(time.Now().Add(time.Hour))
+	expiry := time.Now().Add(time.Hour)
 
 	type args struct {
 		ctx      context.Context
@@ -316,7 +315,7 @@ func TestOrganisationInviteService_ProcessOrganisationMemberInvite(t *testing.T)
 					&datastore.OrganisationInvite{
 						OrganisationID: "123ab",
 						Status:         datastore.InviteStatusPending,
-						ExpiresAt:      primitive.NewDateTimeFromTime(time.Now().Add(-time.Minute)),
+						ExpiresAt:      time.Now().Add(-time.Minute),
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
 							Type:     auth.RoleAdmin,
@@ -1007,7 +1006,7 @@ func TestOrganisationInviteService_FindUserByInviteToken(t *testing.T) {
 
 func TestOrganisationInviteService_ResendOrganisationMemberInvite(t *testing.T) {
 	ctx := context.Background()
-	expiry := primitive.NewDateTimeFromTime(time.Now().Add(time.Hour))
+	expiry := time.Now().Add(time.Hour)
 	type args struct {
 		ctx     context.Context
 		org     *datastore.Organisation
@@ -1095,7 +1094,7 @@ func TestOrganisationInviteService_ResendOrganisationMemberInvite(t *testing.T) 
 
 func TestOrganisationInviteService_CancelOrganisationMemberInvite(t *testing.T) {
 	ctx := context.Background()
-	expiry := primitive.NewDateTimeFromTime(time.Now().Add(time.Hour))
+	expiry := time.Now().Add(time.Hour)
 	type args struct {
 		ctx  context.Context
 		org  *datastore.Organisation

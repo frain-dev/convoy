@@ -26,7 +26,6 @@ func NewApiKeyRepo(store datastore.Store) datastore.APIKeyRepository {
 func (db *apiKeyRepo) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
 	ctx = db.setCollectionInContext(ctx)
 
-	apiKey.ID = primitive.NewObjectID()
 	if util.IsStringEmpty(apiKey.UID) {
 		apiKey.UID = uuid.New().String()
 	}
