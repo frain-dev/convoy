@@ -7,19 +7,23 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/lib/pq"
+
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 )
 
 const (
 	createSource = `
-    INSERT INTO convoy.sources (name,type,mask_id,provider,is_disabled,forward_headers,project_id)
-    VALUES ($1,$2,$3,$4,$5,$6,$7);
+    INSERT INTO convoy.sources (id,name,type,mask_id,provider,is_disabled,forward_headers,project_id)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
     `
 
 	createSourceVerifier = `
     INSERT INTO convoy.source_verifiers (
-        type,basic_username,basic_password,
+        id,type,basic_username,basic_password,
         api_key_header_name,api_key_header_value,
         hmac_hash,hmac_header,hmac_secret,hmac_encoding,source_id
     )
@@ -34,7 +38,7 @@ const (
 	provider = $5,
 	is_disabled=$6,
 	forward_headers=$7,
-	project_id =$8
+	project_id =$8,
 	updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL ;
 	`
@@ -49,9 +53,8 @@ const (
         hmac_hash=$7,
         hmac_header=$8,
         hmac_secret=$9,
-        hmac_encoding=$10,
-	    updated_at = now()
-	WHERE source_id = $1 AND deleted_at IS NULL ;
+        hmac_encoding=$10
+	WHERE source_id = $1;
 	`
 
 	fetchSource = `
@@ -65,8 +68,8 @@ const (
 		s.forward_headers,
 		s.project_id,
 		sv.type as "verifier.type",
-		sv.basic_username as "verifier.basic.username",
-		sv.basic_password as "verifier.basic.password",
+		sv.basic_username as "verifier.basic_auth.username",
+		sv.basic_password as "verifier.basic_auth.password",
         sv.api_key_header_name as "verifier.api_key.header_name",
         sv.api_key_header_value as "verifier.api_key.header_value",
         sv.hmac_hash as "verifier.hmac.hash",
@@ -74,10 +77,10 @@ const (
         sv.hmac_secret as "verifier.hmac.secret",
         sv.hmac_encoding as "verifier.hmac.encoding",
 		s.created_at,
-		s.updated_at,
+		s.updated_at
 	FROM convoy.sources as s
 	LEFT JOIN convoy.source_verifiers sv
-		ON s.id = s.source_id
+		ON s.id = sv.source_id
 	WHERE %s = $1 AND s.deleted_at IS NULL;
 	`
 
@@ -106,6 +109,7 @@ const (
 var (
 	ErrSourceNotCreated         = errors.New("source could not be created")
 	ErrSourceVerifierNotCreated = errors.New("source verifier could not be created")
+	ErrSourceVerifierNotUpdated = errors.New("source verifier could not be updated")
 	ErrSourceNotUpdated         = errors.New("source could not be updated")
 )
 
@@ -123,9 +127,10 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 		return err
 	}
 
+	source.UID = ulid.Make().String()
 	result1, err := tx.ExecContext(
-		ctx, createSource, source.Name, source.Type, source.MaskID,
-		source.Provider, source.IsDisabled, source.ForwardHeaders, source.ProjectID,
+		ctx, createSource, source.UID, source.Name, source.Type, source.MaskID,
+		source.Provider, source.IsDisabled, pq.Array(source.ForwardHeaders), source.ProjectID,
 	)
 	if err != nil {
 		return err
@@ -138,11 +143,6 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 
 	if rowsAffected < 1 {
 		return ErrSourceNotCreated
-	}
-
-	sourceID, err := result1.LastInsertId()
-	if err != nil {
-		return err
 	}
 
 	var (
@@ -161,8 +161,8 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 	}
 
 	result2, err := tx.ExecContext(
-		ctx, createSourceVerifier, source.Verifier.Type, basic.UserName, basic.Password,
-		apiKey.HeaderName, apiKey.HeaderValue, hmac.Hash, hmac.Header, hmac.Secret, hmac.Encoding, sourceID,
+		ctx, createSourceVerifier, ulid.Make().String(), source.Verifier.Type, basic.UserName, basic.Password,
+		apiKey.HeaderName, apiKey.HeaderValue, hmac.Hash, hmac.Header, hmac.Secret, hmac.Encoding, source.UID,
 	)
 	if err != nil {
 		return err
@@ -231,14 +231,14 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 	}
 
 	if rowsAffected < 1 {
-		return ErrSourceVerifierNotCreated
+		return ErrSourceVerifierNotUpdated
 	}
 
 	return tx.Commit()
 }
 
 func (s *sourceRepo) FindSourceByID(ctx context.Context, projectID string, id string) (*datastore.Source, error) {
-	var source *datastore.Source
+	source := &datastore.Source{}
 	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.id"), id).StructScan(source)
 	if err != nil {
 		return nil, err
@@ -248,7 +248,7 @@ func (s *sourceRepo) FindSourceByID(ctx context.Context, projectID string, id st
 }
 
 func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskID string) (*datastore.Source, error) {
-	var source *datastore.Source
+	source := &datastore.Source{}
 	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.mask_id"), maskID).StructScan(source)
 	if err != nil {
 		return nil, err

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/lib/pq"
+
 	"github.com/google/uuid"
 
 	"github.com/frain-dev/convoy"
@@ -658,7 +660,7 @@ type Subscription struct {
 
 type Source struct {
 	// ID             primitive.ObjectID `json:"-" bson:"_id"`
-	UID            string          `json:"uid" db:"uid"`
+	UID            string          `json:"uid" db:"id"`
 	ProjectID      string          `json:"project_id" db:"project_id"`
 	MaskID         string          `json:"mask_id" db:"mask_id"`
 	Name           string          `json:"name" db:"name"`
@@ -667,7 +669,7 @@ type Source struct {
 	IsDisabled     bool            `json:"is_disabled" db:"is_disabled"`
 	Verifier       *VerifierConfig `json:"verifier" db:"verifier"`
 	ProviderConfig *ProviderConfig `json:"provider_config" db:"provider_config"`
-	ForwardHeaders []string        `json:"forward_headers" db:"forward_headers"`
+	ForwardHeaders pq.StringArray  `json:"forward_headers" db:"forward_headers"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
@@ -720,27 +722,27 @@ type TwitterProviderConfig struct {
 }
 
 type VerifierConfig struct {
-	Type      VerifierType `json:"type,omitempty" bson:"type" valid:"supported_verifier~please provide a valid verifier type,required"`
-	HMac      *HMac        `json:"hmac" bson:"hmac"`
-	BasicAuth *BasicAuth   `json:"basic_auth" bson:"basic_auth"`
-	ApiKey    *ApiKey      `json:"api_key" bson:"api_key"`
+	Type      VerifierType `json:"type,omitempty" db:"type" valid:"supported_verifier~please provide a valid verifier type,required"`
+	HMac      *HMac        `json:"hmac" db:"hmac"`
+	BasicAuth *BasicAuth   `json:"basic_auth" db:"basic_auth"`
+	ApiKey    *ApiKey      `json:"api_key" db:"api_key"`
 }
 
 type HMac struct {
-	Header   string       `json:"header" bson:"header" valid:"required"`
-	Hash     string       `json:"hash" bson:"hash" valid:"supported_hash,required"`
-	Secret   string       `json:"secret" bson:"secret" valid:"required"`
-	Encoding EncodingType `json:"encoding" bson:"encoding" valid:"supported_encoding~please provide a valid encoding type,required"`
+	Header   string       `json:"header" db:"header" valid:"required"`
+	Hash     string       `json:"hash" db:"hash" valid:"supported_hash,required"`
+	Secret   string       `json:"secret" db:"secret" valid:"required"`
+	Encoding EncodingType `json:"encoding" db:"encoding" valid:"supported_encoding~please provide a valid encoding type,required"`
 }
 
 type BasicAuth struct {
-	UserName string `json:"username" bson:"username" valid:"required" `
-	Password string `json:"password" bson:"password" valid:"required"`
+	UserName string `json:"username" db:"username" valid:"required" `
+	Password string `json:"password" db:"password" valid:"required"`
 }
 
 type ApiKey struct {
-	HeaderValue string `json:"header_value" bson:"header_value" valid:"required"`
-	HeaderName  string `json:"header_name" bson:"header_name" valid:"required"`
+	HeaderValue string `json:"header_value" db:"header_value" valid:"required"`
+	HeaderName  string `json:"header_name" db:"header_name" valid:"required"`
 }
 
 type Organisation struct {

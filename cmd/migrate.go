@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"time"
+
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
@@ -63,17 +66,37 @@ func addRunCommand() *cobra.Command {
 				log.Fatal(err)
 			}
 
-			o := postgres.NewOrgRepo(db.GetDB())
-			for i := 1; i <= 1_000; i++ {
-				err = o.CreateOrganisation(cmd.Context(), &datastore.Organisation{
-					UID:     ulid.Make().String(),
-					OwnerID: "yo",
-					Name:    fmt.Sprintf("%v-name", i),
-				})
+			ur := postgres.NewUserRepo(db.GetDB())
+			user := &datastore.User{
+				FirstName:                  "Daniel",
+				LastName:                   "O.J",
+				Email:                      "danvix",
+				EmailVerified:              true,
+				Password:                   "gdffiyrei",
+				ResetPasswordToken:         "bfuyudy",
+				EmailVerificationToken:     "vvfedfef",
+				CreatedAt:                  time.Now(),
+				UpdatedAt:                  time.Now(),
+				DeletedAt:                  null.Time{},
+				ResetPasswordExpiresAt:     time.Time{},
+				EmailVerificationExpiresAt: time.Time{},
+			}
 
-				if err != nil {
-					log.Fatal(err)
-				}
+			err = ur.CreateUser(cmd.Context(), user)
+			if err != nil {
+				log.Fatal("carete user", err)
+			}
+
+			o := postgres.NewOrgRepo(db.GetDB())
+			org := &datastore.Organisation{
+				UID:     ulid.Make().String(),
+				OwnerID: user.UID,
+				Name:    fmt.Sprintf("org-name"),
+			}
+
+			err = o.CreateOrganisation(cmd.Context(), org)
+			if err != nil {
+				log.Fatal("create org", err)
 			}
 
 			// orgs, _, err := o.LoadOrganisationsPaged(cmd.Context(), datastore.Pageable{
@@ -85,37 +108,37 @@ func addRunCommand() *cobra.Command {
 			// 	return
 			// }
 
-			// p := postgres.NewProjectRepo(db.GetDB())
-			// err = p.UpdateProject(cmd.Context(), &datastore.Project{
-			// 	UID:             "9",
-			// 	Name:            "mob psycho",
-			// 	Type:            datastore.OutgoingProject,
-			// 	OrganisationID:  "1",
-			// 	ProjectConfigID: "1",
-			// 	Config: &datastore.ProjectConfig{
-			// 		RateLimitCount:     1000,
-			// 		RateLimitDuration:  60,
-			// 		StrategyType:       datastore.ExponentialStrategyProvider,
-			// 		StrategyDuration:   100,
-			// 		StrategyRetryCount: 10,
-			// 		SignatureHeader:    config.DefaultSignatureHeader,
-			// 		RetentionPolicy:    "500d",
-			// 		SignatureVersions: []datastore.SignatureVersion{
-			// 			{
-			// 				Hash:     "SHA256",
-			// 				Encoding: datastore.HexEncoding,
-			// 			},
-			// 			{
-			// 				Hash:     "SHA512",
-			// 				Encoding: datastore.Base64Encoding,
-			// 			},
-			// 		},
-			// 	},
-			// })
-			// if err != nil {
-			// 	fmt.Printf("err: %+v", err)
-			// 	return
-			// }
+			//p := postgres.NewProjectRepo(db.GetDB())
+			//v := &datastore.Project{
+			//	Name:           "mob psycho",
+			//	Type:           datastore.OutgoingProject,
+			//	OrganisationID: org.UID,
+			//	Config: &datastore.ProjectConfig{
+			//		RateLimitCount:     1000,
+			//		RateLimitDuration:  60,
+			//		StrategyType:       datastore.ExponentialStrategyProvider,
+			//		StrategyDuration:   100,
+			//		StrategyRetryCount: 10,
+			//		SignatureHeader:    config.DefaultSignatureHeader,
+			//		RetentionPolicy:    "500d",
+			//		SignatureVersions: []datastore.SignatureVersion{
+			//			{
+			//				Hash:     "SHA256",
+			//				Encoding: datastore.HexEncoding,
+			//			},
+			//			{
+			//				Hash:     "SHA512",
+			//				Encoding: datastore.Base64Encoding,
+			//			},
+			//		},
+			//	},
+			//}
+			//
+			//err = p.CreateProject(cmd.Context(), v)
+			//if err != nil {
+			//	fmt.Printf("CreateProject: %+v", err)
+			//	return
+			//}
 
 			// proj, err := p.FetchProjectByID(cmd.Context(), 9)
 			// if err != nil {
@@ -125,6 +148,55 @@ func addRunCommand() *cobra.Command {
 			// fmt.Printf("\n%+v\n", proj)
 			// fmt.Printf("\n%+v\n", proj.Config)
 			// fmt.Printf("\n%+v\n", proj.Config.SignatureVersions)
+
+			//source := &datastore.Source{
+			//	ProjectID:  v.UID,
+			//	MaskID:     "refr9439",
+			//	Name:       "test",
+			//	Type:       datastore.HTTPSource,
+			//	Provider:   datastore.GithubSourceProvider,
+			//	IsDisabled: true,
+			//	Verifier: &datastore.VerifierConfig{
+			//		Type: datastore.HMacVerifier,
+			//		HMac: &datastore.HMac{
+			//			Header:   "h_header",
+			//			Hash:     "hashed",
+			//			Secret:   "3232",
+			//			Encoding: datastore.Base64Encoding,
+			//		},
+			//		BasicAuth: nil,
+			//		ApiKey:    nil,
+			//	},
+			//	ProviderConfig: nil,
+			//	ForwardHeaders: []string{"3e2232"},
+			//	CreatedAt:      time.Now(),
+			//	UpdatedAt:      time.Now(),
+			//}
+			//fmt.Println("333")
+			//sr := postgres.NewSourceRepo(db.GetDB())
+			//err = sr.CreateSource(context.Background(), source)
+			//if err != nil {
+			//	log.Fatal("create source ", err)
+			//}
+			//fmt.Println("555")
+			//
+			//dbSource, err := sr.FindSourceByID(context.Background(), "1", source.UID)
+			//if err != nil {
+			//	log.Fatal("find source ", err)
+			//}
+			//
+			//dbSource.MaskID = "47348347387837878"
+			//err = sr.UpdateSource(context.Background(), "", dbSource)
+			//if err != nil {
+			//	log.Fatal("update source ", err)
+			//}
+			//
+			//dbSource3, err := sr.FindSourceByID(context.Background(), "1", source.UID)
+			//if err != nil {
+			//	log.Fatal("find source ", err)
+			//}
+			//
+			//pretty.Pdiff(log.NewLogger(os.Stdout), dbSource, dbSource3)
 
 			// c := postgres.NewConfigRepo(db.GetDB())
 			// err = c.UpdateConfiguration(cmd.Context(), &datastore.Configuration{
