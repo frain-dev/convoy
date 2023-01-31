@@ -675,7 +675,6 @@ type Source struct {
 }
 
 type User struct {
-	// ID                         primitive.ObjectID `json:"-" bson:"_id"`
 	UID                        string    `json:"uid" db:"id"`
 	FirstName                  string    `json:"first_name" db:"first_name"`
 	LastName                   string    `json:"last_name" db:"last_name"`
@@ -745,7 +744,6 @@ type ApiKey struct {
 }
 
 type Organisation struct {
-	// ID             primitive.ObjectID  `json:"-" bson:"_id"`
 	UID            string      `json:"id" db:"id"`
 	OwnerID        string      `json:"" db:"owner_id"`
 	Name           string      `json:"name" db:"name"`

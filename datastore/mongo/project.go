@@ -3,7 +3,6 @@ package mongo
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -82,12 +81,12 @@ func (db *projectRepo) UpdateProject(ctx context.Context, o *datastore.Project) 
 	return err
 }
 
-func (db *projectRepo) FetchProjectByID(ctx context.Context, id int) (*datastore.Project, error) {
+func (db *projectRepo) FetchProjectByID(ctx context.Context, id string) (*datastore.Project, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	project := new(datastore.Project)
 
-	err := db.store.FindByID(ctx, fmt.Sprint(id), nil, project)
+	err := db.store.FindByID(ctx, id, nil, project)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		err = datastore.ErrProjectNotFound
 	}

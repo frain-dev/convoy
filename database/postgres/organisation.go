@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
+	"github.com/oklog/ulid/v2"
 )
 
 var (
@@ -17,8 +18,8 @@ var (
 
 const (
 	createOrganization = `
-	INSERT INTO convoy.organisations (name, owner_id)
-	VALUES ($1, $2);
+	INSERT INTO convoy.organisations (id, name, owner_id)
+	VALUES ($1, $2, $3);
 	`
 
 	fetchOrganisation = `
@@ -62,7 +63,7 @@ func NewOrgRepo(db *sqlx.DB) datastore.OrganisationRepository {
 }
 
 func (o *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organisation) error {
-	result, err := o.db.ExecContext(ctx, createOrganization, org.Name, org.OwnerID)
+	result, err := o.db.ExecContext(ctx, createOrganization, ulid.Make().String(), org.Name, org.OwnerID)
 	if err != nil {
 		return err
 	}

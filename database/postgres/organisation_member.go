@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
+	"github.com/oklog/ulid/v2"
 )
 
 var (
@@ -17,8 +18,8 @@ var (
 
 const (
 	createOrgMember = `
-	INSERT INTO convoy.organisation_members (organisation_id, user_id, role_type, 
-	role_project, role_endpoint) VALUES ($1, $2, $3);
+	INSERT INTO convoy.organisation_members (id, organisation_id, user_id, role_type, role_project, role_endpoint) 
+	VALUES ($1, $2, $3, $4, $5, $6);
 	`
 
 	updateOrgMember = `
@@ -112,9 +113,12 @@ func NewOrgMemberRepo(db *sqlx.DB) datastore.OrganisationMemberRepository {
 
 func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
 	r, err := o.db.ExecContext(ctx, createOrgMember,
+		ulid.Make().String(),
 		member.OrganisationID,
 		member.UserID,
-		member.Role,
+		member.Role.Type,
+		member.Role.Project,
+		member.Role.Endpoint,
 	)
 	if err != nil {
 		return err

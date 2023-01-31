@@ -8,20 +8,21 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
+	"github.com/oklog/ulid/v2"
 )
 
 const (
 	createAPIKey = `
-    INSERT INTO convoy.api_keys (name,key_type,mask_id,role_type,role_project,role_endpoint,hash,salt,user_id,expires_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10);
+    INSERT INTO convoy.api_keys (id,name,key_type,mask_id,role_type,role_project,role_endpoint,hash,salt,user_id,expires_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11);
     `
 
 	updateAPIKeyById = `
 	UPDATE convoy.api_keys SET
-	role_type= $2,
-	role_project=$3,
-	role_endpoint=$4,
-	updated_at = now()
+		role_type= $2,
+		role_project=$3,
+		role_endpoint=$4,
+		updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL ;
 	`
 
@@ -76,7 +77,7 @@ func NewAPIKeyRepo(db *sqlx.DB) datastore.APIKeyRepository {
 
 func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) error {
 	result, err := a.db.ExecContext(
-		ctx, createAPIKey, key.Name, key.Type, key.MaskID,
+		ctx, ulid.Make().String(), createAPIKey, key.Name, key.Type, key.MaskID,
 		key.Role.Type, key.Role.Project, key.Role.Endpoint, key.Hash,
 		key.Salt, key.UserID, key.ExpiresAt,
 	)
