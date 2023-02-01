@@ -1,35 +1,35 @@
 -- +migrate Up
 CREATE SCHEMA IF NOT EXISTS convoy;
 
+CREATE TABLE IF NOT EXISTS convoy.users (
+    id CHAR(26) PRIMARY KEY,
+
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    password TEXT NOT NULL,
+    email_verified BOOL NOT NULL,
+    reset_password_token TEXT,
+    email_verification_token TEXT,
+
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMPTZ,
+    reset_password_expires_at TIMESTAMPTZ,
+    email_verification_expires_at TIMESTAMPTZ
+);
+
 CREATE TABLE IF NOT EXISTS convoy."organisations" (
 	id CHAR(26) PRIMARY KEY,
 
 	name TEXT NOT NULL,
-	owner_id TEXT CHAR(26) NOT NULL REFERENCES convoy.users (id),
+	owner_id CHAR(26) NOT NULL REFERENCES convoy.users (id),
 	custom_domain TEXT,
 	assigned_domain TEXT,
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	deleted_at TIMESTAMPTZ NULL
-);
-
-CREATE TABLE IF NOT EXISTS convoy.users (
-	id CHAR(26) PRIMARY KEY,
-
-	first_name TEXT NOT NULL,
-	last_name TEXT NOT NULL,
-	email TEXT NOT NULL,
-	password TEXT NOT NULL,
-	email_verified BOOL NOT NULL,
-	reset_password_token TEXT,
-	email_verification_token TEXT,
-
-	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	deleted_at TIMESTAMPTZ,
-	reset_password_expires_at TIMESTAMPTZ,
-	email_verification_expires_at TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS convoy.organisation_members (

@@ -14,7 +14,6 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type SourceService struct {
@@ -57,8 +56,8 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		Type:      newSource.Type,
 		Provider:  newSource.Provider,
 		Verifier:  &newSource.Verifier,
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	if source.Provider == datastore.TwitterSourceProvider {

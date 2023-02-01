@@ -36,7 +36,7 @@ func MonitorTwitterSources(store datastore.Store, queue queue.Queuer) func(conte
 			crcExpiry := time.Now().Add(time.Hour * -2)
 
 			// the source needs to have been created at least one hour ago
-			if now.After(source.CreatedAt.Time().Add(time.Hour)) {
+			if now.After(source.CreatedAt.Add(time.Hour)) {
 				// the crc verified at timestamp must not be less than two hours ago
 				if crcExpiry.After(source.ProviderConfig.Twitter.CrcVerifiedAt.Time()) {
 					subscriptions, err := subRepo.FindSubscriptionsBySourceIDs(ctx, source.ProjectID, source.UID)

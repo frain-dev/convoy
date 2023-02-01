@@ -23,7 +23,7 @@ const (
 	`
 
 	fetchOrganisation = `
-	SELECT * FROM convoy.organisations 
+	SELECT * FROM convoy.organisations
 	WHERE $1 = $2 AND deleted_at IS NULL;
 	`
 
@@ -44,7 +44,7 @@ const (
 	`
 
 	deleteOrganisation = `
-	UPDATE convoy.organisations SET 
+	UPDATE convoy.organisations SET
 	deleted_at = now()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -63,7 +63,8 @@ func NewOrgRepo(db *sqlx.DB) datastore.OrganisationRepository {
 }
 
 func (o *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organisation) error {
-	result, err := o.db.ExecContext(ctx, createOrganization, ulid.Make().String(), org.Name, org.OwnerID)
+	org.UID = ulid.Make().String()
+	result, err := o.db.ExecContext(ctx, createOrganization, org.UID, org.Name, org.OwnerID)
 	if err != nil {
 		return err
 	}

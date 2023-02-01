@@ -65,9 +65,11 @@ func NewUserRepo(db *sqlx.DB) datastore.UserRepository {
 }
 
 func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
+	user.UID = ulid.Make().String()
+
 	result, err := u.db.ExecContext(ctx,
 		createUser,
-		ulid.Make().String(),
+		user.UID,
 		user.FirstName,
 		user.LastName,
 		user.Email,

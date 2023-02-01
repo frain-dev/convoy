@@ -26,14 +26,14 @@ const (
 
 	createProjectConfiguration = `
 	INSERT INTO convoy.project_configurations (
-		id, retention_policy, max_payload_read_size, 
-		replay_attacks_prevention_enabled, 
-		retention_policy_enabled, ratelimit_count, 
-		ratelimit_duration, strategy_type, 
-		strategy_duration, strategy_retry_count, 
+		id, retention_policy, max_payload_read_size,
+		replay_attacks_prevention_enabled,
+		retention_policy_enabled, ratelimit_count,
+		ratelimit_duration, strategy_type,
+		strategy_duration, strategy_retry_count,
 		signature_header, signature_versions
-	  ) 
-	  VALUES 
+	  )
+	  VALUES
 		(
 		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
 		) RETURNING id;
@@ -72,7 +72,7 @@ const (
 		c.strategy_type as "config.strategy_type",
 		c.strategy_duration as "config.strategy_duration",
 		c.strategy_retry_count as "config.strategy_retry_count",
-		c.signature_header as "config.signature_header",	
+		c.signature_header as "config.signature_header",
 		c.signature_versions as "config.signature_versions",
 		p.created_at,
 		p.updated_at,
@@ -92,31 +92,31 @@ const (
 
 	updateProjectById = `
 	UPDATE convoy.projects SET
-	name = $2, 
+	name = $2,
 	logo_url = $3,
 	updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	deleteProject = `
-	UPDATE convoy.projects SET 
+	UPDATE convoy.projects SET
 	deleted_at = now()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	deleteProjectEndpoints = `
-	UPDATE convoy.endpoints SET 
+	UPDATE convoy.endpoints SET
 	deleted_at = now()
 	WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 
 	deleteProjectEvents = `
-	UPDATE convoy.events 
-	SET deleted_at = now() 
+	UPDATE convoy.events
+	SET deleted_at = now()
 	WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 	deleteProjectEndpointSubscriptions = `
-	UPDATE convoy.subscriptions SET 
+	UPDATE convoy.subscriptions SET
 	deleted_at = now()
 	WHERE project_id = $1 AND deleted_at IS NULL;
 	`
@@ -141,7 +141,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, o *datastore.Project) e
 		return err
 	}
 
-	var config_id int
+	var config_id string
 	err = tx.QueryRowxContext(ctx, createProjectConfiguration,
 		ulid.Make().String(),
 		o.Config.RetentionPolicy,
@@ -161,7 +161,8 @@ func (p *projectRepo) CreateProject(ctx context.Context, o *datastore.Project) e
 		return err
 	}
 
-	proResult, err := tx.ExecContext(ctx, ulid.Make().String(), createProject, o.Name, o.Type, o.LogoURL, o.OrganisationID, config_id)
+	o.UID = ulid.Make().String()
+	proResult, err := tx.ExecContext(ctx, createProject, o.UID, o.Name, o.Type, o.LogoURL, o.OrganisationID, config_id)
 	if err != nil {
 		return err
 	}
