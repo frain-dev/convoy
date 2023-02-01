@@ -15,7 +15,7 @@ export class CreateSourceComponent implements OnInit {
 	sourceForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		is_disabled: [true, Validators.required],
-		type: ['http', Validators.required],
+		type: ['', Validators.required],
 		verifier: this.formBuilder.group({
 			api_key: this.formBuilder.group({
 				header_name: ['', Validators.required],
@@ -32,12 +32,31 @@ export class CreateSourceComponent implements OnInit {
 				secret: ['', Validators.required]
 			}),
 			type: ['', Validators.required]
+		}),
+		pub_sub: this.formBuilder.group({
+			type: ['', Validators.required],
+			workers: [null, Validators.required],
+			google: this.formBuilder.group({
+				service_account: ['', Validators.required],
+				subscription_id: ['', Validators.required],
+				project_id: ['', Validators.required]
+			}),
+			sqs: this.formBuilder.group({
+				queue_name: ['', Validators.required],
+				access_key_id: ['', Validators.required],
+				secret_key: ['', Validators.required],
+				default_region: ['', Validators.required]
+			})
 		})
 	});
 	sourceTypes = [
 		{ value: 'http', viewValue: 'Ingestion HTTP', description: 'Trigger webhook event from a thirdparty webhook event' },
 		{ value: 'pub_sub', viewValue: 'Pub/Sub (Coming Soon)', description: 'Trigger webhook event from your Pub/Sub messaging system' },
 		{ value: 'db_change_stream', viewValue: 'DB Change Stream (Coming Soon)', description: 'Trigger webhook event from your DB change stream' }
+	];
+	pubSubTypes = [
+		{ value: 'google', viewValue: 'Google Pub/Sub' },
+		{ value: 'sqs', viewValue: 'SQS' }
 	];
 	httpTypes = [
 		{ value: 'noop', viewValue: 'None' },
@@ -54,42 +73,68 @@ export class CreateSourceComponent implements OnInit {
 	isloading = false;
 	confirmModal = false;
 
-	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, private privateService: PrivateService, private route: ActivatedRoute, private router: Router) {}
+	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router) {}
 
 	ngOnInit(): void {
 		this.action === 'update' ? this.getSourceDetails() : this.getSources();
+		this.privateService.activeProjectDetails?.type === 'incoming' ? this.sourceForm.patchValue({ type: 'http' }) : this.sourceForm.patchValue({ type: 'pub_sub' });
 	}
 
 	async getSourceDetails() {
 		try {
 			const response = await this.createSourceService.getSourceDetails(this.sourceId);
+			const { data } = response;
 			const sourceProvider = response.data?.provider;
 			this.sourceForm.patchValue(response.data);
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
-
+			if (this.privateService.activeProjectDetails?.type === 'outgoing' && data.pub_sub.type === 'google')
+				this.sourceForm.patchValue({
+					pub_sub: {
+						google: {
+							service_account: atob(data.pub_sub.google.service_account)
+						}
+					}
+				});
 			return;
 		} catch (error) {
 			return error;
 		}
 	}
 
-	async saveSource() {
-		const verifierType = this.sourceForm.get('verifier.type')?.value;
-		const verifier = this.isCustomSource(verifierType) ? 'hmac' : verifierType;
+	checkSourceSetup() {
+		if (this.privateService.activeProjectDetails?.type === 'incoming') {
+			delete this.sourceForm.value.pub_sub;
+			const verifierType = this.sourceForm.get('verifier.type')?.value;
+			const verifier = this.isCustomSource(verifierType) ? 'hmac' : verifierType;
 
-		if (this.sourceForm.get('verifier.type')?.value === 'github') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'hex', header: 'X-Hub-Signature-256', hash: 'SHA256' });
-		if (this.sourceForm.get('verifier.type')?.value === 'shopify') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'base64', header: 'X-Shopify-Hmac-SHA256', hash: 'SHA256' });
-		if (this.sourceForm.get('verifier.type')?.value === 'twitter') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'base64', header: 'X-Twitter-Webhooks-Signature', hash: 'SHA256' });
+			if (this.sourceForm.get('verifier.type')?.value === 'github') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'hex', header: 'X-Hub-Signature-256', hash: 'SHA256' });
+			if (this.sourceForm.get('verifier.type')?.value === 'shopify') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'base64', header: 'X-Shopify-Hmac-SHA256', hash: 'SHA256' });
+			if (this.sourceForm.get('verifier.type')?.value === 'twitter') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'base64', header: 'X-Twitter-Webhooks-Signature', hash: 'SHA256' });
+
+			return {
+				...this.sourceForm.value,
+				provider: this.isCustomSource(verifierType) ? verifierType : '',
+				verifier: {
+					type: verifier,
+					[verifier]: { ...this.sourceForm.get('verifier.' + verifier)?.value }
+				}
+			};
+		} else {
+			delete this.sourceForm.value.verifier;
+			const pubSubType = this.sourceForm.get('pub_sub.type')?.value;
+			if (pubSubType === 'google') {
+				delete this.sourceForm.value.pub_sub.sqs;
+				this.sourceForm.value.pub_sub.google.service_account = btoa(this.sourceForm.value.pub_sub.google.service_account);
+			} else delete this.sourceForm.value.pub_sub.google;
+
+			return { ...this.sourceForm.value };
+		}
+	}
+
+	async saveSource() {
+		const sourceData = this.checkSourceSetup();
 
 		if (!this.isSourceFormValid()) return this.sourceForm.markAllAsTouched();
-		const sourceData = {
-			...this.sourceForm.value,
-			provider: this.isCustomSource(verifierType) ? verifierType : '',
-			verifier: {
-				type: verifier,
-				[verifier]: { ...this.sourceForm.get('verifier.' + verifier)?.value }
-			}
-		};
 
 		this.isloading = true;
 		try {
@@ -124,13 +169,21 @@ export class CreateSourceComponent implements OnInit {
 	isSourceFormValid(): boolean {
 		if (this.sourceForm.get('name')?.invalid || this.sourceForm.get('type')?.invalid) return false;
 
-		if (this.sourceForm.get('verifier')?.value.type === 'noop') return true;
+		if (this.privateService.activeProjectDetails?.type === 'incoming') {
+			if (this.sourceForm.get('verifier')?.value.type === 'noop') return true;
 
-		if (this.sourceForm.get('verifier')?.value.type === 'api_key' && this.sourceForm.get('verifier.api_key')?.valid) return true;
+			if (this.sourceForm.get('verifier')?.value.type === 'api_key' && this.sourceForm.get('verifier.api_key')?.valid) return true;
 
-		if (this.sourceForm.get('verifier')?.value.type === 'basic_auth' && this.sourceForm.get('verifier.basic_auth')?.valid) return true;
+			if (this.sourceForm.get('verifier')?.value.type === 'basic_auth' && this.sourceForm.get('verifier.basic_auth')?.valid) return true;
 
-		if ((this.sourceForm.get('verifier')?.value.type === 'hmac' || this.isCustomSource(this.sourceForm.get('verifier.type')?.value)) && this.sourceForm.get('verifier.hmac')?.valid) return true;
+			if ((this.sourceForm.get('verifier')?.value.type === 'hmac' || this.isCustomSource(this.sourceForm.get('verifier.type')?.value)) && this.sourceForm.get('verifier.hmac')?.valid) return true;
+		}
+
+		if (this.privateService.activeProjectDetails?.type === 'outgoing') {
+			if (this.sourceForm.get('pub_sub')?.value.type === 'google' && this.sourceForm.get('pub_sub.google')?.valid && this.sourceForm.get('pub_sub.workers')?.valid) return true;
+
+			if (this.sourceForm.get('pub_sub')?.value.type === 'sqs' && this.sourceForm.get('pub_sub.sqs')?.valid && this.sourceForm.get('pub_sub.workers')?.valid) return true;
+		}
 
 		return false;
 	}
