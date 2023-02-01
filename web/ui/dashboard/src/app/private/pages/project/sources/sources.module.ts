@@ -14,6 +14,7 @@ import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { SourceValueModule } from 'src/app/pipes/source-value/source-value.module';
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
+import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 
 const routes: Routes = [{ path: '', component: SourcesComponent }];
 
@@ -38,7 +39,9 @@ const routes: Routes = [{ path: '', component: SourcesComponent }];
 		ModalComponent,
 		CopyButtonComponent,
 		SourceValueModule,
-		CopyButtonComponent
+		CopyButtonComponent,
+        DropdownComponent,
+        DropdownOptionDirective
 	]
 })
 export class SourcesModule {}
