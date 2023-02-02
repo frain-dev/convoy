@@ -17,7 +17,7 @@
 				<convoy-radio *ngFor="let pubSubType of pubSubTypes" formControlName="type" [label]="pubSubType.viewValue" [_name]="pubSubType.value" [value]="pubSubType.value" [_id]="pubSubType.value" [checked]="sourceForm.value.pub_sub.type === pubSubType.value"></convoy-radio>
 			</div>
 			<convoy-input-field class="mt-24px">
-				<label for="workers" required="true" convoy-label required="true">Workers</label>
+				<label for="workers" required="true" convoy-label required="true" tooltip="This specifies the number of consumers you want polling messages from your queue.">Workers</label>
 				<input type="number" id="workers" convoy-input autocomplete="workers" formControlName="workers" placeholder="Workers" />
 				<convoy-input-error *ngIf="sourceForm.get('pub_sub.workers')?.touched && sourceForm.get('pub_sub.workers')?.invalid">Enter number of workers</convoy-input-error>
 			</convoy-input-field>
@@ -28,7 +28,15 @@
 
 			<div formGroupName="google">
 				<convoy-input-field>
-					<label for="service_account" required="true" convoy-label required="true">Service Account</label>
+					<label
+						for="service_account"
+						required="true"
+						convoy-label
+						required="true"
+						tooltip="Service accounts provide a way to manage authentication into your Google Pub/Sub. Paste your service account details here."
+					>
+						Service Account
+					</label>
 					<textarea
 						id="service_account"
 						formControlName="service_account"
