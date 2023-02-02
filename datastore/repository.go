@@ -101,7 +101,7 @@ type SubscriptionRepository interface {
 	LoadSubscriptionsPaged(context.Context, string, *FilterBy, Pageable) ([]Subscription, PaginationData, error)
 	DeleteSubscription(context.Context, string, *Subscription) error
 	FindSubscriptionByID(context.Context, string, string) (*Subscription, error)
-	FindSubscriptionsByEventType(context.Context, string, string, EventType) ([]Subscription, error)
+	// FindSubscriptionsByEventType(context.Context, string, string, EventType) ([]Subscription, error)
 	FindSubscriptionsBySourceIDs(context.Context, string, string) ([]Subscription, error)
 	FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]Subscription, error)
 	FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string) (*Subscription, error)

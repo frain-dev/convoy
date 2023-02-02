@@ -30,7 +30,6 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		return datastore.ErrNotAuthorisedToAccessDocument
 	}
 
-	subscription.ID = primitive.NewObjectID()
 	return s.store.Save(ctx, subscription, nil)
 }
 
