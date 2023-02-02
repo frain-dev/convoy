@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
 import { CreateSourceService } from './create-source.service';
 
@@ -73,7 +74,7 @@ export class CreateSourceComponent implements OnInit {
 	isloading = false;
 	confirmModal = false;
 
-	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router) {}
+	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
 
 	ngOnInit(): void {
 		this.action === 'update' ? this.getSourceDetails() : this.getSources();
@@ -124,16 +125,32 @@ export class CreateSourceComponent implements OnInit {
 			const pubSubType = this.sourceForm.get('pub_sub.type')?.value;
 			if (pubSubType === 'google') {
 				delete this.sourceForm.value.pub_sub.sqs;
-				this.sourceForm.value.pub_sub.google.service_account = btoa(this.sourceForm.value.pub_sub.google.service_account);
 			} else delete this.sourceForm.value.pub_sub.google;
-
-			return { ...this.sourceForm.value };
+			return this.sourceForm.value;
 		}
+	}
+
+	parseJsonFile(event: any) {
+		const fileReader = new FileReader();
+		fileReader.readAsText(event, 'UTF-8');
+		fileReader.onload = () => {
+			if (fileReader.result)
+				this.sourceForm.patchValue({
+					pub_sub: {
+						google: {
+							service_account: btoa(fileReader.result.toString())
+						}
+					}
+				});
+		};
+		fileReader.onerror = error => {
+			this.generalService.showNotification({ message: 'Please upload a JSON file', style: 'warning' });
+			console.log(error);
+		};
 	}
 
 	async saveSource() {
 		const sourceData = this.checkSourceSetup();
-
 		if (!this.isSourceFormValid()) return this.sourceForm.markAllAsTouched();
 
 		this.isloading = true;

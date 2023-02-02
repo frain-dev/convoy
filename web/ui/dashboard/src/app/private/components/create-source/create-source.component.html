@@ -27,47 +27,6 @@
 			<h2 class="font-semibold mb-20px">Configure Google Pub/Sub</h2>
 
 			<div formGroupName="google">
-				<convoy-input-field>
-					<label
-						for="service_account"
-						required="true"
-						convoy-label
-						required="true"
-						tooltip="Service accounts provide a way to manage authentication into your Google Pub/Sub. Paste your service account details here."
-					>
-						Service Account
-					</label>
-					<textarea
-						id="service_account"
-						formControlName="service_account"
-						required
-						cols="5"
-						class="
-							transition-all
-							duration-[.3s]
-							w-full
-							font-medium
-							text-14
-							placeholder:text-grey-40
-							text-grey-100
-							border border-primary-500
-							valid:border-primary-500
-							disabled:border-primary-500
-							disabled:bg-[#F7F9FC]
-							hover:bg-primary-500
-							hover:border-grey-20
-							focus:border-primary-100
-							focus:bg-white-100
-							outline-none
-							rounded-4px
-							placeholder:opacity-[.48]
-							bg-[#F7F9FC]
-							py-12px
-							px-16px
-						"
-					></textarea>
-					<convoy-input-error *ngIf="sourceForm.get('pub_sub.google.service_account')?.touched && sourceForm.get('pub_sub.google.service_account')?.invalid">Enter service account</convoy-input-error>
-				</convoy-input-field>
 				<div class="grid grid-cols-2 gap-6">
 					<convoy-input-field>
 						<label for="project_id" required="true" convoy-label required="true">Project ID</label>
@@ -80,6 +39,16 @@
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.google.subscription_id')?.touched && sourceForm.get('pub_sub.google.subscription_id')?.invalid">Enter your subscription ID</convoy-input-error>
 					</convoy-input-field>
 				</div>
+				<convoy-input-field>
+					<label for="service_account" required="true" convoy-label required="true" tooltip="Service accounts provide a way to manage authentication into your Google Pub/Sub.">Service Account</label>
+					<convoy-file-input (selectedFile)="parseJsonFile($event)" (deleteFile)="sourceForm.value.pub_sub.google.service_account = null">
+						<p class="text-center text-12 text-grey-60 max-w-[186px] mx-auto">
+							<span class="text-primary-100 font-bold">Click to {{ action === 'update' ? 'update' : 'upload' }}</span>
+							or drag and drop JSON (max 5kb)
+						</p>
+					</convoy-file-input>
+					<convoy-input-error *ngIf="sourceForm.get('pub_sub.google.service_account')?.touched && sourceForm.get('pub_sub.google.service_account')?.invalid">Enter service account</convoy-input-error>
+				</convoy-input-field>
 			</div>
 		</convoy-card>
 
