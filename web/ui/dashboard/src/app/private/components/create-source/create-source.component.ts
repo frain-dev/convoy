@@ -84,18 +84,9 @@ export class CreateSourceComponent implements OnInit {
 	async getSourceDetails() {
 		try {
 			const response = await this.createSourceService.getSourceDetails(this.sourceId);
-			const { data } = response;
 			const sourceProvider = response.data?.provider;
 			this.sourceForm.patchValue(response.data);
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
-			if (this.privateService.activeProjectDetails?.type === 'outgoing' && data.pub_sub.type === 'google')
-				this.sourceForm.patchValue({
-					pub_sub: {
-						google: {
-							service_account: atob(data.pub_sub.google.service_account)
-						}
-					}
-				});
 			return;
 		} catch (error) {
 			return error;
