@@ -41,7 +41,7 @@
 				</div>
 				<convoy-input-field>
 					<label for="service_account" required="true" convoy-label required="true" tooltip="Service accounts provide a way to manage authentication into your Google Pub/Sub.">Service Account</label>
-					<convoy-file-input (selectedFile)="parseJsonFile($event)" (deleteFile)="sourceForm.value.pub_sub.google.service_account = null">
+					<convoy-file-input (selectedFile)="parseJsonFile($event)" (deleteFile)="deleteJsonFile()">
 						<p class="text-center text-12 text-grey-60 max-w-[186px] mx-auto">
 							<span class="text-primary-100 font-bold">Click to {{ action === 'update' ? 'update' : 'upload' }}</span>
 							or drag and drop JSON (max 5kb)

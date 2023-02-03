@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { SOURCE } from 'src/app/models/group.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
 import { CreateSourceService } from './create-source.service';
@@ -73,7 +74,7 @@ export class CreateSourceComponent implements OnInit {
 	sourceId = this.route.snapshot.params.id;
 	isloading = false;
 	confirmModal = false;
-
+	sourceDetails!: SOURCE;
 	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
 
 	ngOnInit(): void {
@@ -84,6 +85,7 @@ export class CreateSourceComponent implements OnInit {
 	async getSourceDetails() {
 		try {
 			const response = await this.createSourceService.getSourceDetails(this.sourceId);
+			this.sourceDetails = response.data;
 			const sourceProvider = response.data?.provider;
 			this.sourceForm.patchValue(response.data);
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
@@ -138,6 +140,18 @@ export class CreateSourceComponent implements OnInit {
 			this.generalService.showNotification({ message: 'Please upload a JSON file', style: 'warning' });
 			console.log(error);
 		};
+	}
+
+	deleteJsonFile() {
+		if (this.action === 'create') this.sourceForm.value.pub_sub.google.service_account = null;
+		else
+			this.sourceForm.patchValue({
+				pub_sub: {
+					google: {
+						service_account: this.sourceDetails.pub_sub.google.service_account
+					}
+				}
+			});
 	}
 
 	async saveSource() {
