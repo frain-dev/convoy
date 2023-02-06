@@ -2,16 +2,17 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
-	"github.com/lib/pq"
 )
 
 var (
 	ErrDeviceNotCreated = errors.New("device could not be created")
+	ErrDeviceNotFound   = errors.New("device not found")
 	ErrDeviceNotUpdated = errors.New("device could not be updated")
 	ErrDeviceNotDeleted = errors.New("device could not be deleted")
 )
@@ -56,8 +57,14 @@ const (
 
 	fetchDevicesPaginated = `
 	SELECT count(*) OVER(), * FROM convoy.devices
-	WHERE project_id = $3 AND (endpoint_id = $4 OR $4 = '') AND (endpoint_id IN $5 OR $5 = '{}' ) AND deleted_at IS NULL
+	WHERE project_id = $3 AND (endpoint_id = $4 OR $4 = '') AND deleted_at IS NULL
 	ORDER BY id LIMIT $1 OFFSET $2;
+	`
+
+	fetchDevicesPaginatedFilterByEndpoints = `
+	SELECT count(*) OVER(), * FROM convoy.devices
+	WHERE endpoint_id IN (?) AND project_id =? AND deleted_at IS NULL
+	ORDER BY id LIMIT ? OFFSET ?;
 	`
 )
 
@@ -165,7 +172,11 @@ func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, endpointID, p
 func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, endpointID, projectID string) (*datastore.Device, error) {
 	device := &datastore.Device{}
 	err := d.db.QueryRowxContext(ctx, fetchDeviceById, uid, projectID, endpointID).StructScan(device)
+
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrDeviceNotFound
+		}
 		return nil, err
 	}
 
@@ -174,9 +185,12 @@ func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, endpointID
 
 func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName string, endpointID, projectID string) (*datastore.Device, error) {
 	device := &datastore.Device{}
-
 	err := d.db.QueryRowxContext(ctx, fetchDeviceByHostName, hostName, projectID, endpointID).StructScan(device)
+
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrDeviceNotFound
+		}
 		return nil, err
 	}
 
@@ -184,7 +198,23 @@ func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName string,
 }
 
 func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, projectID string, filter *datastore.ApiKeyFilter, pageable datastore.Pageable) ([]datastore.Device, datastore.PaginationData, error) {
-	rows, err := d.db.QueryxContext(ctx, fetchDevicesPaginated, pageable.Limit(), pageable.Offset(), projectID, filter.EndpointID, pq.Array(filter.EndpointIDs))
+	var query string
+	var args []interface{}
+	var err error
+
+	if len(filter.EndpointIDs) > 0 {
+		query, args, err = sqlx.In(fetchDevicesPaginatedFilterByEndpoints, filter.EndpointIDs, projectID, pageable.Limit(), pageable.Offset())
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		query = d.db.Rebind(query)
+	} else {
+		query = fetchDevicesPaginated
+		args = []interface{}{pageable.Limit(), pageable.Offset(), projectID, filter.EndpointID}
+	}
+
+	rows, err := d.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}

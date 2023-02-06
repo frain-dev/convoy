@@ -187,9 +187,9 @@ func login(ctx context.Context, project *datastore.Project, endpoint *datastore.
 				UID:        uuid.NewString(),
 				HostName:   loginRequest.HostName,
 				Status:     datastore.DeviceStatusOffline,
-				LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
-				CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
+				LastSeenAt: time.Now(),
+				CreatedAt:  time.Now(),
+				UpdatedAt:  time.Now(),
 			}
 
 			err = repo.DeviceRepo.CreateDevice(ctx, device)
