@@ -71,6 +71,37 @@ export class CreateSourceComponent implements OnInit {
 	];
 	encodings = ['base64', 'hex'];
 	hashAlgorithms = ['SHA256', 'SHA512'];
+	AWSregions = [
+		{ uid: 'us-east-2', name: 'US East (Ohio)' },
+		{ uid: 'us-east-1', name: 'US East (N. Virginia)' },
+		{ uid: 'us-west-1', name: 'US West (N. California)' },
+		{ uid: 'us-west-2', name: 'US West (Oregon)' },
+		{ uid: 'af-south-1', name: 'Africa (Cape Town)' },
+		{ uid: 'ap-east-1', name: 'Asia Pacific (Hong Kong)' },
+		{ uid: 'ap-south-2', name: 'Asia Pacific (Hyderabad)' },
+		{ uid: 'ap-southeast-3', name: 'Asia Pacific (Jakarta)' },
+		{ uid: 'ap-southeast-4', name: 'Asia Pacific (Melbourne)' },
+		{ uid: 'ap-south-1', name: 'Asia Pacific (Mumbai)' },
+		{ uid: 'ap-northeast-3', name: 'Asia Pacific (Osaka)' },
+		{ uid: 'ap-northeast-2', name: 'Asia Pacific (Seoul)' },
+		{ uid: 'ap-southeast-1', name: 'Asia Pacific (Singapore)' },
+		{ uid: 'ap-southeast-2', name: 'Asia Pacific (Sydney)' },
+		{ uid: 'ap-northeast-1', name: 'Asia Pacific (Tokyo)' },
+		{ uid: 'ca-central-1', name: 'Canada (Central)' },
+		{ uid: 'eu-central-1', name: 'Europe (Frankfurt)' },
+		{ uid: 'eu-west-1', name: 'Europe (Ireland)' },
+		{ uid: 'eu-west-2', name: 'Europe (London)' },
+		{ uid: 'eu-south-1', name: 'Europe (Milan)' },
+		{ uid: 'eu-west-3', name: 'Europe (Paris)' },
+		{ uid: 'eu-south-2', name: 'Europe (Spain)' },
+		{ uid: 'eu-north-1', name: 'Europe (Stockholm)' },
+		{ uid: 'eu-central-2', name: 'Europe (Zurich)' },
+		{ uid: 'me-south-1', name: 'Middle East (Bahrain)' },
+		{ uid: 'me-central-1', name: 'Middle East (UAE)' },
+		{ uid: 'sa-east-1', name: 'South America (São Paulo)' },
+		{ uid: 'us-gov-east-1', name: 'AWS GovCloud (US-East)' },
+		{ uid: 'us-gov-west-1', name: 'AWS GovCloud (US-West)' }
+	];
 	sourceId = this.route.snapshot.params.id;
 	isloading = false;
 	confirmModal = false;
@@ -218,5 +249,9 @@ export class CreateSourceComponent implements OnInit {
 	isNewProjectRoute(): boolean {
 		if (this.router.url == '/projects/new') return true;
 		return false;
+	}
+
+	setRegionValue(value: any) {
+		this.sourceForm.get('pub_sub.sqs')?.patchValue({ default_region: value });
 	}
 }

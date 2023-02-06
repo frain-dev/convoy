@@ -40,6 +40,7 @@
 				flex-wrap
 			"
 		>
+			<span *ngIf="!selectedValue || selectedOptions.length === 0" class="text-grey-20">{{ placeholder }}</span>
 			<span *ngIf="!multiple">{{ selectedValue?.name || selectedValue }}</span>
 			<ng-container *ngIf="multiple">
 				<div *ngFor="let option of selectedOptions" class="border border-grey-10 bg-grey-10 px-4px font-medium text-12 mr-1 mb-1 rounded-4px flex items-center">
