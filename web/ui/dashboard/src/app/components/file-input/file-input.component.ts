@@ -1,5 +1,6 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { GeneralService } from 'src/app/services/general/general.service';
 
 @Component({
 	selector: 'convoy-file-input',
@@ -12,13 +13,18 @@ export class FileInputComponent implements OnInit {
 	file: any;
 	@Output('selectedFile') selectedFile = new EventEmitter();
 	@Output('deleteFile') deleteFile = new EventEmitter();
-	constructor() {}
+	constructor(private generalService: GeneralService) {}
 
 	ngOnInit(): void {}
 
 	parseFile(event: any) {
-		this.file = event.target.files[0];
-		this.selectedFile.emit(this.file);
+		const fileDetails = event.target.files[0];
+		if (fileDetails.size > 5000 || fileDetails.type !== 'application/json') {
+			this.generalService.showNotification({ message: 'Please uplaed a JSON file not larger than 5kb', style: 'warning' });
+			return;
+		}
+		this.selectedFile.emit(fileDetails);
+		this.file = fileDetails;
 	}
 
 	fileSize(size: number) {
