@@ -275,7 +275,7 @@ CREATE TABLE IF NOT EXISTS convoy.subscriptions (
 	filter_config_filter_headers JSONB NOT NULL,
 	filter_config_filter_body JSONB NOT NULL,
 
-	rate_limit_config_type INTEGER NOT NULL,
+	rate_limit_config_count INTEGER NOT NULL,
 	rate_limit_config_duration INTEGER NOT NULL,
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
