@@ -574,6 +574,21 @@ func (m *Middleware) GetDefaultProject(r *http.Request, projectRepo datastore.Pr
 	return projects[0], err
 }
 
+func (m *Middleware) RequirePersonalAccessToken() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := GetAuthUserFromContext(r.Context())
+			_, ok := authUser.User.(*datastore.User)
+
+			if authUser.AuthenticatedByRealm == auth.NativeRealmName && ok {
+				next.ServeHTTP(w, r)
+			}
+
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusBadRequest))
+		})
+	}
+}
+
 func (m *Middleware) RequireProject() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

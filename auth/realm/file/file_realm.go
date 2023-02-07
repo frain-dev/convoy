@@ -25,7 +25,7 @@ type FileRealm struct {
 }
 
 func (r *FileRealm) GetName() string {
-	return "file_realm"
+	return auth.FileRealmName
 }
 
 func (r *FileRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*auth.AuthenticatedUser, error) {

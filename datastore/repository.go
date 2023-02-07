@@ -135,6 +135,7 @@ type UserRepository interface {
 	FindUserByID(context.Context, string) (*User, error)
 	FindUserByToken(context.Context, string) (*User, error)
 	FindUserByEmailVerificationToken(ctx context.Context, token string) (*User, error)
+	FindUserProjects(ctx context.Context, token string) ([]Project, error)
 	LoadUsersPaged(context.Context, Pageable) ([]User, PaginationData, error)
 }
 
