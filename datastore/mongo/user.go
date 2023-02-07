@@ -134,44 +134,45 @@ func (u *userRepo) FindUserByEmailVerificationToken(ctx context.Context, token s
 }
 
 func (u *userRepo) FindUserProjects(ctx context.Context, userID string) ([]datastore.Project, error) {
-	matchStage := bson.D{
-		{
-			Key: "$match",
-			Value: bson.D{
-				{Key: "deleted_at", Value: nil},
-			},
-		},
-	}
-
-	orgMemberStage := bson.D{
-		{
-			Key: "$lookup",
-			Value: bson.D{
-				{Key: "from", Value: datastore.OrganisationMembersCollection},
-				{Key: "localField", Value: "uid"},
-				{Key: "foreignField", Value: "user_id"},
-				{
-					Key: "pipeline",
-					Value: bson.A{
-						bson.D{
-							{
-								Key: "$project",
-								Value: bson.D{
-									{Key: "uid", Value: 1},
-									{Key: "title", Value: 1},
-									{Key: "project_id", Value: 1},
-									{Key: "support_email", Value: 1},
-									{Key: "target_url", Value: 1},
-									{Key: "secrets", Value: 1},
-								},
-							},
-						},
-					},
-				},
-				{Key: "as", Value: "endpoint_metadata"},
-			},
-		},
-	}
+	//matchStage := bson.D{
+	//	{
+	//		Key: "$match",
+	//		Value: bson.D{
+	//			{Key: "deleted_at", Value: nil},
+	//		},
+	//	},
+	//}
+	//
+	//orgMemberStage := bson.D{
+	//	{
+	//		Key: "$lookup",
+	//		Value: bson.D{
+	//			{Key: "from", Value: datastore.OrganisationMembersCollection},
+	//			{Key: "localField", Value: "uid"},
+	//			{Key: "foreignField", Value: "user_id"},
+	//			{
+	//				Key: "pipeline",
+	//				Value: bson.A{
+	//					bson.D{
+	//						{
+	//							Key: "$project",
+	//							Value: bson.D{
+	//								{Key: "uid", Value: 1},
+	//								{Key: "title", Value: 1},
+	//								{Key: "project_id", Value: 1},
+	//								{Key: "support_email", Value: 1},
+	//								{Key: "target_url", Value: 1},
+	//								{Key: "secrets", Value: 1},
+	//							},
+	//						},
+	//					},
+	//				},
+	//			},
+	//			{Key: "as", Value: "endpoint_metadata"},
+	//		},
+	//	},
+	//}
+	return []datastore.Project{}, nil
 }
 
 func (db *userRepo) setCollectionInContext(ctx context.Context) context.Context {
