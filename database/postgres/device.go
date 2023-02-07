@@ -62,7 +62,7 @@ const (
 	`
 
 	fetchDevicesPaginatedFilterByEndpoints = `
-	SELECT count(*) OVER(), * FROM convoy.devices
+	SELECT count(*) as count OVER(), * FROM convoy.devices
 	WHERE endpoint_id IN (?) AND project_id =? AND deleted_at IS NULL
 	ORDER BY id LIMIT ? OFFSET ?;
 	`
@@ -222,29 +222,22 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, projectID string, fil
 	totalRecords := 0
 	var devices []datastore.Device
 	for rows.Next() {
-		var device datastore.Device
+		var data CountWithData
 
-		args := []interface{}{
-			&totalRecords,
-			&device.UID,
-			&device.ProjectID,
-			&device.EndpointID,
-			&device.HostName,
-			&device.Status,
-			&device.LastSeenAt,
-			&device.CreatedAt,
-			&device.UpdatedAt,
-			&device.DeletedAt,
-		}
-
-		err = rows.Scan(args...)
+		err = rows.StructScan(&data)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 
-		devices = append(devices, device)
+		devices = append(devices, data.Device)
+		totalRecords = data.Count
 	}
 
 	pagination := calculatePaginationData(totalRecords, pageable.Page, pageable.PerPage)
 	return devices, pagination, nil
+}
+
+type CountWithData struct {
+	Count int
+	datastore.Device
 }
