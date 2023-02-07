@@ -5,11 +5,9 @@ import (
 	"errors"
 	"time"
 
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"github.com/frain-dev/convoy/datastore"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -26,7 +24,7 @@ func NewDeviceRepository(store datastore.Store) datastore.DeviceRepository {
 func (d *deviceRepo) CreateDevice(ctx context.Context, device *datastore.Device) error {
 	ctx = d.setCollectionInContext(ctx)
 
-	device.ID = primitive.NewObjectID()
+	// device.ID = primitive.NewObjectID()
 	return d.store.Save(ctx, device, nil)
 }
 
@@ -42,7 +40,7 @@ func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device,
 		filter["endpoint_id"] = endpointID
 	}
 
-	device.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+	device.UpdatedAt = time.Now()
 
 	update := bson.M{
 		"$set": bson.M{
@@ -69,8 +67,8 @@ func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore
 	}
 
 	device.Status = status
-	device.LastSeenAt = primitive.NewDateTimeFromTime(time.Now())
-	device.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+	device.LastSeenAt = time.Now()
+	device.UpdatedAt = time.Now()
 
 	update := bson.M{
 		"$set": device,
