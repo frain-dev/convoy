@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS convoy.users (
     email_verification_expires_at TIMESTAMPTZ
 );
 
-CREATE TABLE IF NOT EXISTS convoy."organisations" (
+CREATE TABLE IF NOT EXISTS convoy.organisations (
 	id CHAR(26) PRIMARY KEY,
 
 	name TEXT NOT NULL,
@@ -91,9 +91,9 @@ CREATE TABLE IF NOT EXISTS convoy.endpoints (
 
 	title TEXT NOT NULL,
 	status TEXT NOT NULL,
-	owner_id TEXT NOT NULL,
+	owner_id TEXT,
 	target_url TEXT NOT NULL,
-	description TEXT NOT NULL,
+	description TEXT,
 	http_timeout TEXT NOT NULL,
 	rate_limit INTEGER NOT NULL,
 	rate_limit_duration TEXT NOT NULL,
