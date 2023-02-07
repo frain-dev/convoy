@@ -162,7 +162,7 @@ func (c *Client) GoOffline() {
 
 func (c *Client) IsOnline() bool {
 	c.lock.RLock()
-	lastSeen := c.Device.LastSeenAt.Time()
+	lastSeen := c.Device.LastSeenAt
 	c.lock.RUnlock()
 
 	since := time.Since(lastSeen)

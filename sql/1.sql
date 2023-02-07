@@ -183,7 +183,6 @@ CREATE TABLE IF NOT EXISTS convoy.devices (
 	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id),
 
 	host_name TEXT NOT NULL,
-	token TEXT NOT NULL,
 	status TEXT NOT NULL,
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
