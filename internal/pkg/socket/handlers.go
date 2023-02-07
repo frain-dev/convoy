@@ -67,9 +67,6 @@ func BuildRoutes(h *Hub, r *Repo, m *m.Middleware) http.Handler {
 		streamRouter.Use(
 			m.RequireAuth(),
 			m.RequirePersonalAccessToken(),
-			m.RequireProject(),
-			// m.RequireEndpointID(),
-			// m.RequireAppPortalApplication(),
 		)
 
 		streamRouter.Get("/listen", ListenHandler(h, r))
