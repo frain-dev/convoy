@@ -94,6 +94,21 @@ func (mr *MockAPIKeyRepositoryMockRecorder) FindAPIKeyByMaskID(arg0, arg1 interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAPIKeyByMaskID", reflect.TypeOf((*MockAPIKeyRepository)(nil).FindAPIKeyByMaskID), arg0, arg1)
 }
 
+// FindAPIKeyByProjectID mocks base method.
+func (m *MockAPIKeyRepository) FindAPIKeyByProjectID(arg0 context.Context, arg1 string) (*datastore.APIKey, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindAPIKeyByProjectID", arg0, arg1)
+	ret0, _ := ret[0].(*datastore.APIKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindAPIKeyByProjectID indicates an expected call of FindAPIKeyByProjectID.
+func (mr *MockAPIKeyRepositoryMockRecorder) FindAPIKeyByProjectID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAPIKeyByProjectID", reflect.TypeOf((*MockAPIKeyRepository)(nil).FindAPIKeyByProjectID), arg0, arg1)
+}
+
 // LoadAPIKeysPaged mocks base method.
 func (m *MockAPIKeyRepository) LoadAPIKeysPaged(arg0 context.Context, arg1 *datastore.ApiKeyFilter, arg2 *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()

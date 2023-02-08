@@ -5,16 +5,15 @@
 - Website: https://getconvoy.io
 - Forum: [Github Discussions](https://github.com/frain-dev/convoy/discussions)
 - Documentation: [getconvoy.io/docs](https://getconvoy.io/docs)
-- Download: [getconvoy.io/download](https://getconvoy.io/download)
-- Announcement: [Medium](https://medium.com/frain-technologies/tagged/convoy)
-- Slack: [Slack](https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ)
+- Deploy: [Install Convoy](https://getconvoy.io/docs/deploy/install-convoy)
+- Slack: [Join the Community](https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ)
 
 
-Convoy is a fast & secure webhooks proxy. It enables you to receive webhook events from providers and publish them to users.. To get started download the [openapi spec](https://github.com/frain-dev/convoy/blob/main/docs/v3/openapi3.yaml) into Postman or Insomnia.
+[Convoy](https://getconvoy.io) is the Fastest Webhooks Gateway developers use to securely ingest, persist, debug, deliver and manage millions of events reliably with rich features such as retries, rate limiting, static ips, circuit breaking, rolling secrets and more. It was built for Engineers that value efficiency in their workflow, to get started download the [openapi spec](https://github.com/frain-dev/convoy/blob/main/docs/v3/openapi3.yaml) into Postman or Insomnia. Convoy is [FREE for developers](https://getconvoy.io/blog/Convoy-Webhooks-is-free-for-developers) forever.
 
 Convoy provides several key features:
 
-- **Webhooks Proxy:** Convoy acts as webhooks proxy/gateway that lives at the edge of your network to stream webhooks from your micoservices, and send them out to your users as well as receive webhooks from your providers and route them to the required services. With this your internal systems are never exposed to the public internet.
+- **Webhooks Gateway:** As a webhooks gateway, Convoy lives at the edge of your network to stream webhooks from your micoservices, and send them out to your users as well as receive webhooks from your providers and route them to the required services. With this your internal systems are never exposed to the public internet.
 
 - **Scalability:** Convoy acts as a dedicated message queue for webhooks, and was designed to be horizontally scalable. It includes several components like the `api server`, `workers`, `scheduler`, and `socket server` which can be scaled independently to fit the need.
 
@@ -41,11 +40,8 @@ There are several ways to get started using Convoy.
 ### Option 2: Convoy Cloud
 Get started with our free Cloud version -- Sign up for [Convoy Cloud](https://dashboard.getconvoy.io/signup) account 
 
-### Option 3: Build from source
-To build Convoy from source code, you need:
-* Go [version 1.16 or greater](https://golang.org/doc/install).
-* NodeJS [version 14.17 or greater](https://nodejs.org).
-* Npm [version 6 or greater](https://npmjs.com).
+### Option 3: Deploy Locally
+To do this make sure you have [Docker 20+](https://docs.docker.com/desktop/) installed.
 
 ```bash
 # Get the code
