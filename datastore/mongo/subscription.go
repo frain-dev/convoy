@@ -253,12 +253,13 @@ func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, pr
 	return subscriptions, err
 }
 
-func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, projectID, deviceID string) (*datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, projectID, deviceID string, subType datastore.SubscriptionType) (*datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
 
 	filter := bson.M{
 		"device_id":  deviceID,
 		"project_id": projectID,
+		"type":       subType,
 	}
 
 	subscription := &datastore.Subscription{}

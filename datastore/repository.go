@@ -73,7 +73,7 @@ type OrganisationInviteRepository interface {
 type OrganisationMemberRepository interface {
 	LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable Pageable) ([]*OrganisationMember, PaginationData, error)
 	LoadUserOrganisationsPaged(ctx context.Context, userID string, pageable Pageable) ([]Organisation, PaginationData, error)
-	FindUserProjects(ctx context.Context, token string) ([]Project, error)
+	FindUserProjects(ctx context.Context, userID string) ([]Project, error)
 	CreateOrganisationMember(ctx context.Context, member *OrganisationMember) error
 	UpdateOrganisationMember(ctx context.Context, member *OrganisationMember) error
 	DeleteOrganisationMember(ctx context.Context, memberID string, orgID string) error
@@ -106,7 +106,7 @@ type SubscriptionRepository interface {
 	FindSubscriptionsByEventType(context.Context, string, string, EventType) ([]Subscription, error)
 	FindSubscriptionsBySourceID(context.Context, string, string, SubscriptionType) ([]Subscription, error)
 	FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]Subscription, error)
-	FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string) (*Subscription, error)
+	FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string, subscriptionType SubscriptionType) (*Subscription, error)
 	TestSubscriptionFilter(ctx context.Context, payload map[string]interface{}, filter map[string]interface{}) (bool, error)
 }
 

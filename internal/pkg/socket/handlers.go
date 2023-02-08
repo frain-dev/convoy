@@ -31,7 +31,6 @@ type ListenRequest struct {
 
 type LoginRequest struct {
 	HostName string `json:"host_name" valid:"required~please provide a hostname"`
-	DeviceID string `json:"device_id"`
 }
 
 type LoginResponse struct {
@@ -105,8 +104,6 @@ func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 			return
 		}
 
-		fmt.Println("ddddd", listenRequest.SourceID)
-
 		fmt.Printf("Listener connected for device %s with hostname %s\n", device.UID, device.HostName)
 		NewClient(conn, device, listenRequest.SourceID, repo.DeviceRepo, repo.EventDeliveryRepo)
 	}
@@ -162,21 +159,19 @@ func login(ctx context.Context, loginRequest *LoginRequest, repo *Repo, user *da
 		if err != nil {
 			log.WithError(err).Error("failed to find device for this hostname, will create new device")
 
-			if err == datastore.ErrDeviceNotFound {
-				device = &datastore.Device{
-					UID:       uuid.NewString(),
-					ProjectID: project.UID,
-					HostName:  loginRequest.HostName,
-					Status:    datastore.DeviceStatusOffline,
-					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-					UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				}
+			device = &datastore.Device{
+				UID:       uuid.NewString(),
+				ProjectID: project.UID,
+				HostName:  loginRequest.HostName,
+				Status:    datastore.DeviceStatusOffline,
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+			}
 
-				err = repo.DeviceRepo.CreateDevice(ctx, device)
-				if err != nil {
-					log.WithError(err).Error("failed to create new device")
-					return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create new device"))
-				}
+			err = repo.DeviceRepo.CreateDevice(ctx, device)
+			if err != nil {
+				log.WithError(err).Error("failed to create new device")
+				return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create new device"))
 			}
 		}
 
@@ -223,7 +218,7 @@ func listen(ctx context.Context, listenRequest *ListenRequest, r *Repo) (*datast
 		}
 	}
 
-	sub, err := r.SubscriptionRepo.FindSubscriptionByDeviceID(ctx, project.UID, device.UID)
+	sub, err := r.SubscriptionRepo.FindSubscriptionByDeviceID(ctx, project.UID, device.UID, datastore.SubscriptionTypeCLI)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 			s := &datastore.Subscription{
@@ -231,7 +226,6 @@ func listen(ctx context.Context, listenRequest *ListenRequest, r *Repo) (*datast
 				Name:         fmt.Sprintf("%s-subscription", device.HostName),
 				Type:         datastore.SubscriptionTypeCLI,
 				ProjectID:    project.UID,
-				SourceID:     listenRequest.SourceID,
 				DeviceID:     device.UID,
 				FilterConfig: &datastore.FilterConfiguration{EventTypes: []string{"*"}},
 				CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
@@ -249,7 +243,6 @@ func listen(ctx context.Context, listenRequest *ListenRequest, r *Repo) (*datast
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	sub.SourceID = listenRequest.SourceID
 	sub.AlertConfig = &datastore.DefaultAlertConfig
 	sub.RetryConfig = &datastore.DefaultRetryConfig
 	err = r.SubscriptionRepo.UpdateSubscription(ctx, project.UID, sub)
