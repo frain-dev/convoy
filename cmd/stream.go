@@ -19,7 +19,7 @@ func addStreamCommand(a *app) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "stream",
-		Short: "Start a websocket server to pipe events to another convoy instance",
+		Short: "Start a websocket server to pipe events to a convoy cli instance",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := config.Get()
 			if err != nil {
