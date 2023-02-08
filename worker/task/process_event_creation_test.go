@@ -363,6 +363,8 @@ func TestProcessEventCreated(t *testing.T) {
 				s.EXPECT().FindSubscriptionsBySourceID(gomock.Any(), "project-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
 				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
 
+				s.EXPECT().FindCLISubscriptions(gomock.Any(), "project-id-1").Times(1).Return([]datastore.Subscription{}, nil)
+
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
 
