@@ -271,20 +271,24 @@ func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, proje
 	return subscription, nil
 }
 
-func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, projectID string, sourceId string, subType datastore.SubscriptionType) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, projectID string, sourceId string) ([]datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
 
 	filter := bson.M{"project_id": projectID, "source_id": sourceId}
 
-	if subType != "" {
-		filter = bson.M{
-			"project_id": projectID,
-			"$or": []interface{}{
-				bson.D{{Key: "source_id", Value: sourceId}},
-				bson.D{{Key: "type", Value: subType}},
-			},
-		}
+	subscriptions := make([]datastore.Subscription, 0)
+	_, err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)
+	if err != nil {
+		return nil, err
 	}
+
+	return subscriptions, nil
+}
+
+func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID string) ([]datastore.Subscription, error) {
+	ctx = s.setCollectionInContext(ctx)
+
+	filter := bson.M{"project_id": projectID, "type": datastore.SubscriptionTypeCLI}
 
 	subscriptions := make([]datastore.Subscription, 0)
 	_, err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)

@@ -237,9 +237,9 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 			subscriptions = append(subscriptions, subs...)
 		}
 	} else if project.Type == datastore.IncomingProject {
-		subs, err := subRepo.FindSubscriptionsBySourceID(ctx, project.UID, event.SourceID, datastore.SubscriptionTypeCLI)
+		subs, err := subRepo.FindSubscriptionsBySourceID(ctx, project.UID, event.SourceID)
 		if err != nil {
-			log.Errorf("error fetching subscriptions for this source %s", err)
+			log.WithError(err).Error("error fetching subscriptions for this source")
 			return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
 		}
 
@@ -247,6 +247,14 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 		if err != nil {
 			return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
 		}
+
+		cliSubs, err := subRepo.FindCLISubscriptions(ctx, project.UID)
+		if err != nil {
+			log.WithError(err).Error("error fetching cli subscriptions for this project")
+			return subscriptions, &EndpointError{Err: errors.New("error fetching cli subscriptions for this project"), delay: 10 * time.Second}
+		}
+
+		subscriptions = append(subscriptions, cliSubs...)
 	}
 
 	return subscriptions, nil

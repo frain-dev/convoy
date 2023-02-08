@@ -37,6 +37,7 @@ func provideArgs(ctrl *gomock.Controller) *args {
 	queue := mocks.NewMockQueuer(ctrl)
 	search := mocks.NewMockSearcher(ctrl)
 	projectRepo := mocks.NewMockProjectRepository(ctrl)
+	deviceRepo := mocks.NewMockDeviceRepository(ctrl)
 	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
@@ -44,6 +45,7 @@ func provideArgs(ctrl *gomock.Controller) *args {
 
 	return &args{
 		endpointRepo:      endpointRepo,
+		deviceRepo:        deviceRepo,
 		eventRepo:         eventRepo,
 		projectRepo:       projectRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
@@ -266,8 +268,27 @@ func TestProcessEventCreated(t *testing.T) {
 						},
 					},
 				}
-				s.EXPECT().FindSubscriptionsBySourceID(gomock.Any(), "project-id-1", "source-id-1", datastore.SubscriptionTypeCLI).Times(1).Return(subscriptions, nil)
+				s.EXPECT().FindSubscriptionsBySourceID(gomock.Any(), "project-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
+				s.EXPECT().FindCLISubscriptions(gomock.Any(), "project-id-1").Times(1).Return(
+					[]datastore.Subscription{
+						{
+							UID:       "33232",
+							DeviceID:  "334",
+							ProjectID: "project-id-1",
+							Type:      datastore.SubscriptionTypeCLI,
+						},
+					}, nil)
 				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
+
+				d, _ := args.deviceRepo.(*mocks.MockDeviceRepository)
+				d.EXPECT().FetchDeviceByID(gomock.Any(), "334", "", "project-id-1").Times(2).Return(
+					&datastore.Device{
+						UID:       "334",
+						ProjectID: "project-id-1",
+						HostName:  "host",
+						Status:    datastore.DeviceStatusOnline,
+					}, nil,
+				)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
@@ -278,7 +299,7 @@ func TestProcessEventCreated(t *testing.T) {
 					Times(1).Return(endpoint, nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(2).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
@@ -339,7 +360,7 @@ func TestProcessEventCreated(t *testing.T) {
 						},
 					},
 				}
-				s.EXPECT().FindSubscriptionsBySourceID(gomock.Any(), "project-id-1", "source-id-1", datastore.SubscriptionTypeCLI).Times(1).Return(subscriptions, nil)
+				s.EXPECT().FindSubscriptionsBySourceID(gomock.Any(), "project-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
 				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
