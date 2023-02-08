@@ -200,6 +200,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 			subs, err := subRepo.FindSubscriptionsByEndpointID(ctx, project.UID, endpoint.UID)
 			if err != nil {
+				log.Errorf("Failed to find subscription by endpoint %s", err)
 				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
 			}
 
@@ -219,6 +220,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 			subs, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs)
 			if err != nil {
+				log.Errorf("Failed to match subscription filter %s", err)
 				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
 			}
 

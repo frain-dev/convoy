@@ -57,7 +57,6 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 			"filter_config.filter":      subscription.FilterConfig.Filter,
 			"alert_config":              subscription.AlertConfig,
 			"retry_config":              subscription.RetryConfig,
-			"disable_endpoint":          subscription.DisableEndpoint,
 			"rate_limit_config":         subscription.RateLimitConfig,
 		},
 	}

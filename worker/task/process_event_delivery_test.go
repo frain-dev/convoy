@@ -175,8 +175,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -193,97 +192,6 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				httpmock.RegisterResponder("POST", "https://google.com",
 					httpmock.NewStringResponder(400, ``))
-
-				return func() {
-					httpmock.DeactivateAndReset()
-				}
-			},
-		},
-		{
-			name:          "Max retries reached - do not disable subscription - failed",
-			cfgPath:       "./testdata/Config/basic-convoy.json",
-			expectedError: nil,
-			msg: &datastore.EventDelivery{
-				UID: "",
-			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Endpoint{
-						ProjectID: "123",
-						Secrets: []datastore.Secret{
-							{Value: "secret"},
-						},
-						RateLimit:         10,
-						RateLimitDuration: "1m",
-						Status:            datastore.ActiveEndpointStatus,
-					}, nil)
-				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(&datastore.Subscription{}, nil)
-
-				m.EXPECT().
-					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.EventDelivery{
-						Metadata: &datastore.Metadata{
-							Data:            []byte(`{"event": "invoice.completed"}`),
-							Raw:             `{"event": "invoice.completed"}`,
-							NumTrials:       2,
-							RetryLimit:      3,
-							IntervalSeconds: 20,
-						},
-						Status: datastore.ScheduledEventStatus,
-					}, nil).Times(1)
-
-				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
-					Limit:     redis_rate.PerMinute(10),
-					Allowed:   10,
-					Remaining: 10,
-				}, nil).Times(1)
-
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
-					Limit:     redis_rate.PerMinute(10),
-					Allowed:   10,
-					Remaining: 10,
-				}, nil).Times(1)
-
-				o.EXPECT().
-					FetchProjectByID(gomock.Any(), gomock.Any()).
-					Return(&datastore.Project{
-						LogoURL: "",
-						Config: &datastore.ProjectConfig{
-							Signature: &datastore.SignatureConfiguration{
-								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
-								Versions: []datastore.SignatureVersion{
-									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
-									},
-								},
-							},
-							Strategy: &datastore.StrategyConfiguration{
-								Type:       datastore.LinearStrategyProvider,
-								Duration:   60,
-								RetryCount: 1,
-							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: false,
-						},
-					}, nil).Times(1)
-
-				m.EXPECT().
-					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil).Times(1)
-
-				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil).Times(1)
-			},
-			nFn: func() func() {
-				httpmock.Activate()
-
-				httpmock.RegisterResponder("POST", "https://google.com",
-					httpmock.NewStringResponder(200, ``))
 
 				return func() {
 					httpmock.DeactivateAndReset()
@@ -362,8 +270,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -387,7 +294,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			},
 		},
 		{
-			name:          "Manual retry - no disable endpoint - failed",
+			name:          "Manual retry - disable endpoint - failed",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
 			msg: &datastore.EventDelivery{
@@ -406,6 +313,10 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{}, nil)
+
+				a.EXPECT().
+					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.InactiveEndpointStatus).
+					Return(nil).Times(1)
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
@@ -453,8 +364,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: false,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -548,8 +458,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -573,7 +482,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			},
 		},
 		{
-			name:          "Manual retry - no disable endpoint - success",
+			name:          "Manual retry - disable endpoint - success",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
 			msg: &datastore.EventDelivery{
@@ -618,6 +527,10 @@ func TestProcessEventDelivery(t *testing.T) {
 					Remaining: 10,
 				}, nil).Times(1)
 
+				a.EXPECT().
+					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.InactiveEndpointStatus).
+					Return(nil).Times(1)
+
 				o.EXPECT().
 					FetchProjectByID(gomock.Any(), gomock.Any()).
 					Return(&datastore.Project{
@@ -639,8 +552,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: false,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -734,8 +646,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -830,8 +741,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -931,8 +841,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -1038,15 +947,11 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 					Count:    100,
 					Duration: 1,
 				},
-				DisableEndpoint: func(b bool) *bool {
-					return &b
-				}(true),
 			},
 			project: &datastore.Project{
 				Config: &datastore.ProjectConfig{
-					Strategy:        &datastore.DefaultStrategyConfig,
-					RateLimit:       &datastore.DefaultRateLimitConfig,
-					DisableEndpoint: false,
+					Strategy:  &datastore.DefaultStrategyConfig,
+					RateLimit: &datastore.DefaultRateLimitConfig,
 				},
 			},
 			wantRetryConfig: &datastore.StrategyConfiguration{
@@ -1075,7 +980,6 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 						Count:    100,
 						Duration: 10,
 					},
-					DisableEndpoint: false,
 				},
 			},
 			wantRetryConfig: &datastore.StrategyConfiguration{
@@ -1111,9 +1015,6 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 				assert.Equal(t, tc.wantRateLimitConfig.Count, rlc.Count)
 				assert.Equal(t, tc.wantRateLimitConfig.Duration, rlc.Duration)
 			}
-
-			disableEndpoint := evConfig.disableEndpoint()
-			assert.Equal(t, tc.wantDisableEndpoint, disableEndpoint)
 		})
 	}
 }

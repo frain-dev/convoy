@@ -5,7 +5,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -94,72 +93,49 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	err := endpointRepo.CreateEndpoint(ctx, endpoint, endpoint.ProjectID)
 	require.NoError(s.T(), err)
 
-	events := []datastore.Event{
+	eventDeliveries := []datastore.EventDelivery{
 		{
-			UID:              uuid.New().String(),
-			EventType:        "*",
-			MatchedEndpoints: 1,
-			Data:             json.RawMessage(`{"data":"12345"}`),
-			ProjectID:        s.DefaultProject.UID,
-			Endpoints:        []string{endpoint.UID},
-			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
+			UID:        uuid.New().String(),
+			ProjectID:  s.DefaultProject.UID,
+			EndpointID: endpoint.UID,
+			CreatedAt:  primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt:  primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
 		},
 		{
-			UID:              uuid.New().String(),
-			EventType:        "*",
-			MatchedEndpoints: 1,
-			Data:             json.RawMessage(`{"data":"12345"}`),
-			ProjectID:        s.DefaultProject.UID,
-			Endpoints:        []string{endpoint.UID},
-			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
+			UID:       uuid.New().String(),
+			ProjectID: s.DefaultProject.UID,
+			CreatedAt: primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt: primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
 		},
 		{
-			UID:              uuid.New().String(),
-			EventType:        "*",
-			MatchedEndpoints: 1,
-			Data:             json.RawMessage(`{"data":"12345"}`),
-			ProjectID:        s.DefaultProject.UID,
-			Endpoints:        []string{endpoint.UID},
-			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UID:       uuid.New().String(),
+			ProjectID: s.DefaultProject.UID,
+			CreatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 		},
 		{
-			UID:              uuid.New().String(),
-			EventType:        "*",
-			MatchedEndpoints: 1,
-			Data:             json.RawMessage(`{"data":"12345"}`),
-			ProjectID:        s.DefaultProject.UID,
-			Endpoints:        []string{endpoint.UID},
-			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UID:       uuid.New().String(),
+			ProjectID: s.DefaultProject.UID,
+			CreatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 		},
 		{
-			UID:              uuid.New().String(),
-			EventType:        "*",
-			MatchedEndpoints: 1,
-			Data:             json.RawMessage(`{"data":"12345"}`),
-			ProjectID:        s.DefaultProject.UID,
-			Endpoints:        []string{endpoint.UID},
-			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UID:       uuid.New().String(),
+			ProjectID: s.DefaultProject.UID,
+			CreatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 		},
 		{
-			UID:              uuid.New().String(),
-			EventType:        "*",
-			MatchedEndpoints: 1,
-			Data:             json.RawMessage(`{"data":"12345"}`),
-			ProjectID:        s.DefaultProject.UID,
-			Endpoints:        []string{endpoint.UID},
-			CreatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:        primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UID:       uuid.New().String(),
+			ProjectID: s.DefaultProject.UID,
+			CreatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UpdatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
 		},
 	}
 
-	eventRepo := cm.NewEventRepository(s.ConvoyApp.A.Store)
-	for i := range events {
-		err = eventRepo.CreateEvent(ctx, &events[i])
+	eventDelivery := cm.NewEventDeliveryRepository(s.ConvoyApp.A.Store)
+	for i := range eventDeliveries {
+		err = eventDelivery.CreateEventDelivery(ctx, &eventDeliveries[i])
 		require.NoError(s.T(), err)
 	}
 

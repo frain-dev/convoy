@@ -398,8 +398,6 @@ components:
       type: object
     datastore.ProjectConfig:
       properties:
-        disable_endpoint:
-          type: boolean
         is_retention_policy_enabled:
           type: boolean
         max_payload_read_size:
@@ -570,8 +568,6 @@ components:
           type: string
         device_id:
           type: string
-        disable_endpoint:
-          type: boolean
         endpoint_metadata:
           $ref: '#/components/schemas/datastore.Endpoint'
         filter_config:
@@ -870,8 +866,6 @@ components:
         app_id:
           description: Deprecated but necessary for backward compatibility
           type: string
-        disable_endpoint:
-          type: boolean
         endpoint_id:
           type: string
         filter_config:

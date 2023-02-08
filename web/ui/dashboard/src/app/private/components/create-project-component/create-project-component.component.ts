@@ -32,7 +32,6 @@ export class CreateProjectComponent implements OnInit {
 			retention_policy: this.formBuilder.group({
 				policy: ['30d']
 			}),
-			disable_endpoint: [true],
 			is_retention_policy_enabled: [true]
 		}),
 		type: [null, Validators.required]
@@ -46,6 +45,7 @@ export class CreateProjectComponent implements OnInit {
 	enableMoreConfig = false;
 	confirmModal = false;
 	showNewSignatureModal = false;
+	regeneratingKey = false;
 	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512'];
 	retryLogicTypes = [
@@ -206,6 +206,20 @@ export class CreateProjectComponent implements OnInit {
 		}
 	}
 
+	async regenerateKey() {
+		this.regeneratingKey = true;
+		try {
+			const response = await this.createProjectService.regenerateKey();
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.regeneratingKey = false;
+			this.apiKey = response.data.key;
+			this.showApiKey = true;
+		} catch (error) {
+			this.regeneratingKey = false;
+			return error;
+		}
+	}
+
 	async createNewSignature(i: number) {
 		if (this.newSignatureForm.invalid) return this.newSignatureForm.markAllAsTouched();
 
@@ -224,7 +238,6 @@ export class CreateProjectComponent implements OnInit {
 			if (configKeyValues.every(item => item === null)) delete this.projectForm.value.config[configKey];
 		});
 
-		if (this.projectForm.value.config.disable_endpoint === null) delete this.projectForm.value.config.disable_endpoint;
 		if (this.projectForm.value.config.is_retention_policy_enabled === null) delete this.projectForm.value.config.is_retention_policy_enabled;
 	}
 

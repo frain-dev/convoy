@@ -92,8 +92,6 @@
 
 		<app-create-organisation *ngIf="showAddOrganisationModal" (closeModal)="closeAddOrganisationModal($event)"></app-create-organisation>
 
-		<app-add-analytics *ngIf="showAddAnalytics" [authDetails]="authDetails()" (closeModal)="showAddAnalytics = false"></app-add-analytics>
-
 		<convoy-verify-email *ngIf="showVerifyEmailModal" (closeModal)="showVerifyEmailModal = false"></convoy-verify-email>
 
 		<router-outlet></router-outlet>

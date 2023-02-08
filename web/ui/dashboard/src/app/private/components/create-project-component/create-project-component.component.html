@@ -14,6 +14,15 @@
 				<span class="text-16 text-grey-60 font-normal">{{ projectDetails?.uid }}</span>
 				<convoy-copy-button [text]="projectDetails?.uid || ''" notificationText="Project ID has been copied to you clipboard."></convoy-copy-button>
 			</div>
+
+			<div class="flex justify-end mt-24px">
+				<button convoy-button color="primary" fill="outline" size="sm" type="button" (click)="regenerateKey()" [disabled]="regeneratingKey">
+					<svg width="16" height="16" class="mr-8px" [ngClass]="{ 'animate-spin-slow': regeneratingKey }">
+						<use xlink:href="#refresh-icon"></use>
+					</svg>
+					Regenerate API Key
+				</button>
+			</div>
 		</ng-container>
 		<h3 class="mt-24px mb-16px font-semibold">Project type</h3>
 		<div class="project-types grid grid-cols-2 gap-24px">
@@ -100,20 +109,19 @@
 						</convoy-input-field>
 					</div>
 
-					<h3 class="mt-24px mb-16px font-semibold">Disable Failing Endpoints</h3>
-					<div class="grid grid-cols-2 gap-24px">
-						<convoy-radio formControlName="disable_endpoint" description="Endpoints would be disabled automatically when they are failing." label="True" _name="disable_endpoint" [value]="true" _id="true"></convoy-radio>
-						<convoy-radio formControlName="disable_endpoint" description="Endpoints are not automatically disabled when they are failing." label="False" _name="disable_endpoint" [value]="false" _id="false"></convoy-radio>
+					<div class="flex justify-between items-center mt-48px mb-16px">
+						<h3 class="font-semibold">Enable Retention Policy</h3>
+						<convoy-toggle label="Enabled" name="is_retention_policy_enabled" formControlName="is_retention_policy_enabled" className="!mb-0"></convoy-toggle>
 					</div>
-
-					<h3 class="mt-48px mb-16px font-semibold">Data Retention</h3>
-					<div formGroupName="retention_policy">
-						<convoy-input-field>
-							<label for="policy" convoy-label tooltip="This is the interval at which events would be reviewed and retained for this project.">Retention Period</label>
-							<input id="policy" convoy-input autocomplete="policy" formControlName="policy" placeholder="e.g. 72h" />
-							<convoy-input-error *ngIf="projectForm.get('config.retention_policy.policy')?.touched && projectForm.get('config.retention_policy.policy')?.invalid">Enter retention policy value</convoy-input-error>
-						</convoy-input-field>
-					</div>
+					<ng-container *ngIf="projectForm.get('config.is_retention_policy_enabled')?.value">
+						<div formGroupName="retention_policy">
+							<convoy-input-field>
+								<label for="policy" convoy-label tooltip="This is the interval at which events would be reviewed and retained for this project.">Retention Period</label>
+								<input id="policy" convoy-input autocomplete="policy" formControlName="policy" placeholder="e.g. 72h" />
+								<convoy-input-error *ngIf="projectForm.get('config.retention_policy.policy')?.touched && projectForm.get('config.retention_policy.policy')?.invalid">Enter retention policy value</convoy-input-error>
+							</convoy-input-field>
+						</div>
+					</ng-container>
 				</div>
 			</div>
 		</div>
@@ -194,7 +202,7 @@
 	description="Your API Key has also been created. Please copy this key and save it somewhere safe."
 	[token]="apiKey"
 	notificationText="API key has been copied to your clipboard."
-	(closeModal)="onAction.emit({ action: 'createProject', data: projectDetails })"
+	(closeModal)="action === 'update' ? (showApiKey = false) : onAction.emit({ action: 'createProject', data: projectDetails })"
 ></convoy-token-modal>
 
 <convoy-confirmation-modal *ngIf="confirmModal" (confirmAction)="router.navigateByUrl('/')" (closeModal)="confirmModal = false"></convoy-confirmation-modal>

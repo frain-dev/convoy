@@ -65,8 +65,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 							Count:    1000,
 							Duration: 60,
 						},
-						DisableEndpoint: true,
-						ReplayAttacks:   true,
+						ReplayAttacks: true,
 					},
 				},
 				org: &datastore.Organisation{UID: "1234"},
@@ -107,7 +106,6 @@ func TestProjectService_CreateProject(t *testing.T) {
 						Duration: 60,
 					},
 					RetentionPolicy: &datastore.DefaultRetentionPolicy,
-					DisableEndpoint: true,
 					ReplayAttacks:   true,
 				},
 			},
@@ -136,8 +134,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 							Count:    1000,
 							Duration: 60,
 						},
-						DisableEndpoint: true,
-						ReplayAttacks:   true,
+						ReplayAttacks: true,
 					},
 				},
 				org: &datastore.Organisation{UID: "1234"},
@@ -178,7 +175,6 @@ func TestProjectService_CreateProject(t *testing.T) {
 						Duration: 60,
 					},
 					RetentionPolicy: &datastore.DefaultRetentionPolicy,
-					DisableEndpoint: true,
 					ReplayAttacks:   true,
 				},
 			},
@@ -231,7 +227,6 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Strategy:        &datastore.DefaultStrategyConfig,
 					RateLimit:       &datastore.DefaultRateLimitConfig,
 					RetentionPolicy: &datastore.DefaultRetentionPolicy,
-					DisableEndpoint: false,
 					ReplayAttacks:   false,
 				},
 			},
@@ -282,7 +277,6 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Strategy:        &datastore.DefaultStrategyConfig,
 					RateLimit:       &datastore.DefaultRateLimitConfig,
 					RetentionPolicy: &datastore.DefaultRetentionPolicy,
-					DisableEndpoint: false,
 					ReplayAttacks:   false,
 				},
 			},
@@ -305,8 +299,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 							Duration:   20,
 							RetryCount: 4,
 						},
-						DisableEndpoint: true,
-						ReplayAttacks:   true,
+						ReplayAttacks: true,
 					},
 				},
 				org:    &datastore.Organisation{UID: "1234"},
@@ -369,8 +362,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 							Duration:   20,
 							RetryCount: 4,
 						},
-						DisableEndpoint: true,
-						ReplayAttacks:   true,
+						ReplayAttacks: true,
 					},
 				},
 				org:    &datastore.Organisation{UID: "1234"},
@@ -462,9 +454,8 @@ func TestProjectService_UpdateProject(t *testing.T) {
 							Duration:   20,
 							RetryCount: 4,
 						},
-						RateLimit:       &datastore.DefaultRateLimitConfig,
-						DisableEndpoint: true,
-						ReplayAttacks:   true,
+						RateLimit:     &datastore.DefaultRateLimitConfig,
+						ReplayAttacks: true,
 					},
 				},
 				update: &models.UpdateProject{
@@ -479,9 +470,8 @@ func TestProjectService_UpdateProject(t *testing.T) {
 							Duration:   20,
 							RetryCount: 4,
 						},
-						RateLimit:       &datastore.DefaultRateLimitConfig,
-						DisableEndpoint: true,
-						ReplayAttacks:   true,
+						RateLimit:     &datastore.DefaultRateLimitConfig,
+						ReplayAttacks: true,
 					},
 				},
 			},
@@ -499,9 +489,8 @@ func TestProjectService_UpdateProject(t *testing.T) {
 						Duration:   20,
 						RetryCount: 4,
 					},
-					RateLimit:       &datastore.DefaultRateLimitConfig,
-					DisableEndpoint: true,
-					ReplayAttacks:   true,
+					RateLimit:     &datastore.DefaultRateLimitConfig,
+					ReplayAttacks: true,
 				},
 			},
 			dbFn: func(gs *ProjectService) {
@@ -529,8 +518,7 @@ func TestProjectService_UpdateProject(t *testing.T) {
 							Duration:   20,
 							RetryCount: 4,
 						},
-						DisableEndpoint: true,
-						ReplayAttacks:   true,
+						ReplayAttacks: true,
 					},
 				},
 			},
@@ -555,8 +543,7 @@ func TestProjectService_UpdateProject(t *testing.T) {
 							Duration:   20,
 							RetryCount: 4,
 						},
-						DisableEndpoint: true,
-						ReplayAttacks:   true,
+						ReplayAttacks: true,
 					},
 				},
 			},
@@ -629,16 +616,12 @@ func TestProjectService_GetProjects(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, projects []*datastore.Project) error {
-					projects[0].Statistics = &datastore.ProjectStatistics{
+				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
+					project.Statistics = &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
 
-					projects[1].Statistics = &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
-					}
 					return nil
 				})
 			},
@@ -674,16 +657,12 @@ func TestProjectService_GetProjects(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, projects []*datastore.Project) error {
-					projects[0].Statistics = &datastore.ProjectStatistics{
+				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
+					project.Statistics = &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
 
-					projects[1].Statistics = &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
-					}
 					return nil
 				})
 			},
@@ -719,16 +698,12 @@ func TestProjectService_GetProjects(t *testing.T) {
 					{UID: "abc"},
 				}, nil)
 
-				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, projects []*datastore.Project) error {
-					projects[0].Statistics = &datastore.ProjectStatistics{
+				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
+					project.Statistics = &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
 
-					projects[1].Statistics = &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
-					}
 					return nil
 				})
 			},
@@ -816,8 +791,8 @@ func TestProjectService_FillProjectStatistics(t *testing.T) {
 			},
 			dbFn: func(gs *ProjectService) {
 				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
-				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, projects []*datastore.Project) error {
-					projects[0].Statistics = &datastore.ProjectStatistics{
+				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
+					project.Statistics = &datastore.ProjectStatistics{
 						MessagesSent: 1,
 						TotalApps:    1,
 					}
