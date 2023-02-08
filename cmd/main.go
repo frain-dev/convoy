@@ -96,17 +96,26 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 	return nil
 }
 
-func ensureInstanceConfig(ctx context.Context, a *app) error {
+func ensureInstanceConfig(ctx context.Context, a *app, cfg config.Configuration) error {
 	configRepo := cm.NewConfigRepo(a.store)
 
-	_, err := configRepo.LoadConfiguration(ctx)
+	s3 := datastore.S3Storage(cfg.StoragePolicy.S3)
+	onPrem := datastore.OnPremStorage(cfg.StoragePolicy.OnPrem)
+	storagePolicy := &datastore.StoragePolicyConfiguration{
+		Type:   datastore.StorageType(cfg.StoragePolicy.Type),
+		S3:     &s3,
+		OnPrem: &onPrem,
+	}
+
+	config, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {
 		if errors.Is(err, datastore.ErrConfigNotFound) {
 			a.logger.Info("Creating Instance Config")
 			return configRepo.CreateConfiguration(ctx, &datastore.Configuration{
 				UID:                uuid.New().String(),
-				StoragePolicy:      &datastore.DefaultStoragePolicy,
-				IsAnalyticsEnabled: true,
+				StoragePolicy:      storagePolicy,
+				IsAnalyticsEnabled: cfg.Analytics.IsEnabled,
+				IsSignupEnabled:    cfg.Auth.IsSignupEnabled,
 				CreatedAt:          primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:          primitive.NewDateTimeFromTime(time.Now()),
 			})
@@ -115,7 +124,12 @@ func ensureInstanceConfig(ctx context.Context, a *app) error {
 		return err
 	}
 
-	return nil
+	config.StoragePolicy = storagePolicy
+	config.IsSignupEnabled = cfg.Auth.IsSignupEnabled
+	config.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
+	config.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+
+	return configRepo.UpdateConfiguration(ctx, config)
 }
 
 type app struct {
@@ -253,7 +267,7 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 			return err
 		}
 
-		err = ensureInstanceConfig(context.Background(), app)
+		err = ensureInstanceConfig(context.Background(), app, cfg)
 		if err != nil {
 			return err
 		}
