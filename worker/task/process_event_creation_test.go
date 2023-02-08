@@ -266,7 +266,7 @@ func TestProcessEventCreated(t *testing.T) {
 						},
 					},
 				}
-				s.EXPECT().FindSubscriptionsBySourceIDs(gomock.Any(), "project-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
+				s.EXPECT().FindSubscriptionsBySourceID(gomock.Any(), "project-id-1", "source-id-1", datastore.SubscriptionTypeCLI).Times(1).Return(subscriptions, nil)
 				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
@@ -339,7 +339,7 @@ func TestProcessEventCreated(t *testing.T) {
 						},
 					},
 				}
-				s.EXPECT().FindSubscriptionsBySourceIDs(gomock.Any(), "project-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
+				s.EXPECT().FindSubscriptionsBySourceID(gomock.Any(), "project-id-1", "source-id-1", datastore.SubscriptionTypeCLI).Times(1).Return(subscriptions, nil)
 				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
@@ -486,10 +486,12 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$eq": 10,
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$eq": 10,
+								},
+							},
 						},
 					},
 				},
@@ -528,10 +530,12 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$neq": 10,
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$neq": 10,
+								},
+							},
 						},
 					},
 				},
@@ -558,20 +562,24 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$gte": 10,
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$gte": 10,
+								},
+							},
 						},
 					},
 				},
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$gt": 10,
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$gt": 10,
+								},
+							},
 						},
 					},
 				},
@@ -597,20 +605,24 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$lte": 10,
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$lte": 10,
+								},
+							},
 						},
 					},
 				},
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$lt": 10,
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$lt": 10,
+								},
+							},
 						},
 					},
 				},
@@ -640,30 +652,36 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$in": []int{10, 1},
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$in": []int{10, 1},
+								},
+							},
 						},
 					},
 				},
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$in": []int{10, 1},
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$in": []int{10, 1},
+								},
+							},
 						},
 					},
 				},
 				{
 					UID: "12345",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$gt": 10,
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$gt": 10,
+								},
+							},
 						},
 					},
 				},
@@ -690,10 +708,12 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"event.action": map[string]interface{}{
-								"$nin": []string{"update", "delete"},
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"event.action": map[string]interface{}{
+									"$nin": []string{"update", "delete"},
+								},
+							},
 						},
 					},
 				},
