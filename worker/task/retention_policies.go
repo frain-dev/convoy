@@ -28,7 +28,7 @@ func RententionPolicies(instanceConfig config.Configuration, configRepo datastor
 		}
 		collections := []string{"events", "eventdeliveries"}
 
-		objectStoreClient, exportDir, err := NewObjectStoreClient(getStorageConfig(instanceConfig, config))
+		objectStoreClient, exportDir, err := NewObjectStoreClient(config.StoragePolicy)
 		if err != nil {
 			log.WithError(err)
 			return err
@@ -192,25 +192,4 @@ func ExportCollection(ctx context.Context, collection string, uri string, export
 	}
 
 	return nil
-}
-
-func getStorageConfig(cfg config.Configuration, config *datastore.Configuration) *datastore.StoragePolicyConfiguration {
-	if !util.IsStringEmpty(cfg.StoragePolicy.Type) {
-		return &datastore.StoragePolicyConfiguration{
-			Type: datastore.StorageType(cfg.StoragePolicy.Type),
-			S3: &datastore.S3Storage{
-				Bucket:       cfg.StoragePolicy.S3.Bucket,
-				AccessKey:    cfg.StoragePolicy.S3.AccessKey,
-				SecretKey:    cfg.StoragePolicy.S3.SecretKey,
-				Region:       cfg.StoragePolicy.S3.Region,
-				SessionToken: cfg.StoragePolicy.S3.SessionToken,
-				Endpoint:     cfg.StoragePolicy.S3.Endpoint,
-			},
-			OnPrem: &datastore.OnPremStorage{
-				Path: cfg.StoragePolicy.OnPrem.Path,
-			},
-		}
-	}
-
-	return config.StoragePolicy
 }
