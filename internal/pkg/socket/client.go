@@ -27,9 +27,8 @@ var (
 
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
-	// EventTypes        []string
-	// device id of the cli client
 	deviceID          string
+	sourceID          string
 	Device            *datastore.Device
 	deviceRepo        datastore.DeviceRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
@@ -40,11 +39,12 @@ type Client struct {
 	lock sync.RWMutex // protect Device from data race
 }
 
-func NewClient(conn WebSocketConnection, device *datastore.Device, events []string, deviceRepo datastore.DeviceRepository, eventDeliveryRepo datastore.EventDeliveryRepository) {
+func NewClient(conn WebSocketConnection, device *datastore.Device, sourceID string, deviceRepo datastore.DeviceRepository, eventDeliveryRepo datastore.EventDeliveryRepository) {
 	client := &Client{
 		conn:              conn,
 		Device:            device,
 		deviceID:          device.UID,
+		sourceID:          sourceID,
 		deviceRepo:        deviceRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
 	}

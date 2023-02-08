@@ -25,13 +25,13 @@ type ListenRequest struct {
 	HostName  string `json:"host_name" valid:"required~please provide a hostname"`
 	ProjectID string `json:"project_id" valid:"required~please provide a project id"`
 	DeviceID  string `json:"device_id" valid:"required~please provide a device id"`
-	SourceID  string `json:"source_id" valid:"required~please provide a source id"`
+	SourceID  string `json:"source_id"`
 	// EventTypes []string `json:"event_types"`
 }
 
 type LoginRequest struct {
 	HostName string `json:"host_name" valid:"required~please provide a hostname"`
-	DeviceID string `json:"device_id" valid:"required~please provide a device id"`
+	DeviceID string `json:"device_id"`
 }
 
 type LoginResponse struct {
@@ -45,13 +45,13 @@ type ProjectDevice struct {
 }
 
 type Repo struct {
-	userRepo          datastore.UserRepository
-	projectRepo       datastore.ProjectRepository
-	DeviceRepo        datastore.DeviceRepository
-	SourceRepo        datastore.SourceRepository
-	EndpointRepo      datastore.EndpointRepository
-	SubscriptionRepo  datastore.SubscriptionRepository
-	EventDeliveryRepo datastore.EventDeliveryRepository
+	OrgMemberRepository datastore.OrganisationMemberRepository
+	ProjectRepo         datastore.ProjectRepository
+	DeviceRepo          datastore.DeviceRepository
+	SourceRepo          datastore.SourceRepository
+	EndpointRepo        datastore.EndpointRepository
+	SubscriptionRepo    datastore.SubscriptionRepository
+	EventDeliveryRepo   datastore.EventDeliveryRepository
 }
 
 var ug = websocket.Upgrader{
@@ -105,7 +105,10 @@ func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 			return
 		}
 
-		NewClient(conn, device, nil, repo.DeviceRepo, repo.EventDeliveryRepo)
+		fmt.Println("ddddd", listenRequest.SourceID)
+
+		fmt.Printf("Listener connected for device %s with hostname %s\n", device.UID, device.HostName)
+		NewClient(conn, device, listenRequest.SourceID, repo.DeviceRepo, repo.EventDeliveryRepo)
 	}
 }
 
@@ -132,12 +135,12 @@ func LoginHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 			return
 		}
 
-		respondWithData(w, http.StatusOK, lr)
+		respondWithData(w, lr)
 	}
 }
 
 func login(ctx context.Context, loginRequest *LoginRequest, repo *Repo, user *datastore.User) (*LoginResponse, error) {
-	projects, err := repo.userRepo.FindUserProjects(ctx, user.UID)
+	projects, err := repo.OrgMemberRepository.FindUserProjects(ctx, user.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to find user projects")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find user projects"))
@@ -187,7 +190,7 @@ func login(ctx context.Context, loginRequest *LoginRequest, repo *Repo, user *da
 }
 
 func listen(ctx context.Context, listenRequest *ListenRequest, r *Repo) (*datastore.Device, error) {
-	project, err := r.projectRepo.FetchProjectByID(ctx, listenRequest.ProjectID)
+	project, err := r.ProjectRepo.FetchProjectByID(ctx, listenRequest.ProjectID)
 	if err != nil {
 		log.WithError(err).Error("failed to find project")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find project"))
@@ -202,10 +205,22 @@ func listen(ctx context.Context, listenRequest *ListenRequest, r *Repo) (*datast
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	source, err := r.SourceRepo.FindSourceByID(ctx, device.ProjectID, listenRequest.SourceID)
-	if err != nil {
-		log.WithError(err).Error("failed to find source")
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find source"))
+	if device.Status != datastore.DeviceStatusOnline {
+		device.Status = datastore.DeviceStatusOnline
+		err = r.DeviceRepo.UpdateDevice(ctx, device, "", project.UID)
+		if err != nil {
+			log.WithError(err).Error("failed to update device to online")
+			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update device to online"))
+		}
+
+	}
+
+	if !util.IsStringEmpty(listenRequest.SourceID) {
+		_, err = r.SourceRepo.FindSourceByID(ctx, device.ProjectID, listenRequest.SourceID)
+		if err != nil {
+			log.WithError(err).Error("failed to find source")
+			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find source"))
+		}
 	}
 
 	sub, err := r.SubscriptionRepo.FindSubscriptionByDeviceID(ctx, project.UID, device.UID)
@@ -216,7 +231,7 @@ func listen(ctx context.Context, listenRequest *ListenRequest, r *Repo) (*datast
 				Name:         fmt.Sprintf("%s-subscription", device.HostName),
 				Type:         datastore.SubscriptionTypeCLI,
 				ProjectID:    project.UID,
-				SourceID:     source.UID,
+				SourceID:     listenRequest.SourceID,
 				DeviceID:     device.UID,
 				FilterConfig: &datastore.FilterConfiguration{EventTypes: []string{"*"}},
 				CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
@@ -254,7 +269,7 @@ func respond(w http.ResponseWriter, code int, msg string) {
 	}
 }
 
-func respondWithData(w http.ResponseWriter, code int, v interface{}) {
+func respondWithData(w http.ResponseWriter, v interface{}) {
 	data, err := json.Marshal(v)
 	if err != nil {
 		log.WithError(err).Error("failed to marshal data")
@@ -263,7 +278,6 @@ func respondWithData(w http.ResponseWriter, code int, v interface{}) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
 	_, err = w.Write(data)
 	if err != nil {
 		log.WithError(err).Error("failed to write response data")

@@ -64,6 +64,9 @@
 					},
 					"host_name": {
 						"type": "string"
+					},
+					"source_id": {
+						"type": "string"
 					}
 				},
 				"type": "object"

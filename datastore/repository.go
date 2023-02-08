@@ -73,6 +73,7 @@ type OrganisationInviteRepository interface {
 type OrganisationMemberRepository interface {
 	LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable Pageable) ([]*OrganisationMember, PaginationData, error)
 	LoadUserOrganisationsPaged(ctx context.Context, userID string, pageable Pageable) ([]Organisation, PaginationData, error)
+	FindUserProjects(ctx context.Context, token string) ([]Project, error)
 	CreateOrganisationMember(ctx context.Context, member *OrganisationMember) error
 	UpdateOrganisationMember(ctx context.Context, member *OrganisationMember) error
 	DeleteOrganisationMember(ctx context.Context, memberID string, orgID string) error
@@ -103,7 +104,7 @@ type SubscriptionRepository interface {
 	DeleteSubscription(context.Context, string, *Subscription) error
 	FindSubscriptionByID(context.Context, string, string) (*Subscription, error)
 	FindSubscriptionsByEventType(context.Context, string, string, EventType) ([]Subscription, error)
-	FindSubscriptionsBySourceIDs(context.Context, string, string) ([]Subscription, error)
+	FindSubscriptionsBySourceID(context.Context, string, string, SubscriptionType) ([]Subscription, error)
 	FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]Subscription, error)
 	FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string) (*Subscription, error)
 	TestSubscriptionFilter(ctx context.Context, payload map[string]interface{}, filter map[string]interface{}) (bool, error)
@@ -135,7 +136,6 @@ type UserRepository interface {
 	FindUserByID(context.Context, string) (*User, error)
 	FindUserByToken(context.Context, string) (*User, error)
 	FindUserByEmailVerificationToken(ctx context.Context, token string) (*User, error)
-	FindUserProjects(ctx context.Context, token string) ([]Project, error)
 	LoadUsersPaged(context.Context, Pageable) ([]User, PaginationData, error)
 }
 

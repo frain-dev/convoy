@@ -125,7 +125,17 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			}
 
 			if s.Type == datastore.SubscriptionTypeCLI {
-				eventDelivery.CLIMetadata = &datastore.CLIMetadata{EventType: string(event.EventType)}
+				device, err := deviceRepo.FetchDeviceByID(ctx, s.DeviceID, "", project.UID)
+				if err != nil {
+					log.WithError(err).Error("failed to fetch device")
+					return &EndpointError{Err: err, delay: 10 * time.Second}
+				}
+
+				eventDelivery.CLIMetadata = &datastore.CLIMetadata{
+					EventType: string(event.EventType),
+					HostName:  device.HostName,
+					SourceID:  event.SourceID,
+				}
 			}
 
 			err = eventDeliveryRepo.CreateEventDelivery(ctx, eventDelivery)
@@ -225,7 +235,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 			subscriptions = append(subscriptions, subs...)
 		}
 	} else if project.Type == datastore.IncomingProject {
-		subs, err := subRepo.FindSubscriptionsBySourceIDs(ctx, project.UID, event.SourceID)
+		subs, err := subRepo.FindSubscriptionsBySourceID(ctx, project.UID, event.SourceID, datastore.SubscriptionTypeCLI)
 		if err != nil {
 			log.Errorf("error fetching subscriptions for this source %s", err)
 			return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}

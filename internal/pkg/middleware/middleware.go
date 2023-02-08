@@ -582,6 +582,7 @@ func (m *Middleware) RequirePersonalAccessToken() func(next http.Handler) http.H
 
 			if authUser.AuthenticatedByRealm == auth.NativeRealmName && ok {
 				next.ServeHTTP(w, r)
+				return
 			}
 
 			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusBadRequest))

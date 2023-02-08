@@ -28,6 +28,8 @@ func addStreamCommand(a *app) *cobra.Command {
 			}
 
 			endpointRepo := cm.NewEndpointRepo(a.store)
+			userRepo := cm.NewUserRepo(a.store)
+			orgMemberRepo := cm.NewOrgMemberRepo(a.store)
 			eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store)
 			sourceRepo := cm.NewSourceRepo(a.store)
 			subRepo := cm.NewSubscriptionRepo(a.store)
@@ -40,18 +42,20 @@ func addStreamCommand(a *app) *cobra.Command {
 				Native: config.NativeRealmOptions{Enabled: true},
 			}
 
-			err = realm_chain.Init(authCfg, apiKeyRepo, nil, nil)
+			err = realm_chain.Init(authCfg, apiKeyRepo, userRepo, nil)
 			if err != nil {
 				a.logger.WithError(err).Fatal("failed to initialize realm chain")
 				return err
 			}
 
 			r := &socket.Repo{
-				EndpointRepo:      endpointRepo,
-				DeviceRepo:        deviceRepo,
-				SubscriptionRepo:  subRepo,
-				SourceRepo:        sourceRepo,
-				EventDeliveryRepo: eventDeliveryRepo,
+				OrgMemberRepository: orgMemberRepo,
+				ProjectRepo:         projectRepo,
+				EndpointRepo:        endpointRepo,
+				DeviceRepo:          deviceRepo,
+				SubscriptionRepo:    subRepo,
+				SourceRepo:          sourceRepo,
+				EventDeliveryRepo:   eventDeliveryRepo,
 			}
 
 			h := socket.NewHub()
@@ -67,6 +71,7 @@ func addStreamCommand(a *app) *cobra.Command {
 			lo.SetLevel(lvl)
 
 			m := convoyMiddleware.NewMiddleware(&convoyMiddleware.CreateMiddleware{
+				UserRepo:     userRepo,
 				EndpointRepo: endpointRepo,
 				ProjectRepo:  projectRepo,
 				Cache:        a.cache,
@@ -85,7 +90,7 @@ func addStreamCommand(a *app) *cobra.Command {
 
 			srv.SetHandler(handler)
 
-			a.logger.Infof("Stream server running on port %v", socketPort)
+			log.Infof("Stream server running on port %v", socketPort)
 			srv.Listen()
 
 			return nil
