@@ -250,30 +250,29 @@ const (
 type EndpointStatus string
 
 type Endpoint struct {
-	ID                 primitive.ObjectID `json:"-" bson:"_id"`
-	UID                string             `json:"uid" bson:"uid"`
-	ProjectID          string             `json:"project_id" bson:"project_id"`
-	OwnerID            string             `json:"owner_id,omitempty" bson:"owner_id"`
-	TargetURL          string             `json:"target_url" bson:"target_url"`
-	Title              string             `json:"title" bson:"title"`
-	Secrets            []Secret           `json:"secrets" bson:"secrets"`
-	AdvancedSignatures bool               `json:"advanced_signatures" bson:"advanced_signatures"`
-	Description        string             `json:"description" bson:"description"`
-	SlackWebhookURL    string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
-	SupportEmail       string             `json:"support_email,omitempty" bson:"support_email"`
-	AppID              string             `json:"-" bson:"app_id"` // Deprecated but necessary for backward compatibility
+	UID                string   `json:"uid" db:"uid"`
+	ProjectID          string   `json:"project_id" db:"project_id"`
+	OwnerID            string   `json:"owner_id,omitempty" db:"owner_id"`
+	TargetURL          string   `json:"target_url" db:"target_url"`
+	Title              string   `json:"title" db:"title"`
+	Secrets            []Secret `json:"secrets" db:"secrets"`
+	AdvancedSignatures bool     `json:"advanced_signatures" db:"advanced_signatures"`
+	Description        string   `json:"description" db:"description"`
+	SlackWebhookURL    string   `json:"slack_webhook_url,omitempty" db:"slack_webhook_url"`
+	SupportEmail       string   `json:"support_email,omitempty" db:"support_email"`
+	AppID              string   `json:"-" db:"app_id"` // Deprecated but necessary for backward compatibility
 
-	HttpTimeout string         `json:"http_timeout" bson:"http_timeout"`
-	RateLimit   int            `json:"rate_limit" bson:"rate_limit"`
-	Events      int64          `json:"events,omitempty" bson:"-"`
-	Status      EndpointStatus `json:"status" bson:"status"`
+	HttpTimeout string         `json:"http_timeout" db:"http_timeout"`
+	RateLimit   int            `json:"rate_limit" db:"rate_limit"`
+	Events      int64          `json:"events,omitempty" db:"-"`
+	Status      EndpointStatus `json:"status" db:"status"`
 
-	RateLimitDuration string                  `json:"rate_limit_duration" bson:"rate_limit_duration"`
-	Authentication    *EndpointAuthentication `json:"authentication" bson:"authentication"`
+	RateLimitDuration string                  `json:"rate_limit_duration" db:"rate_limit_duration"`
+	Authentication    *EndpointAuthentication `json:"authentication" db:"authentication"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 func (e *Endpoint) GetActiveSecretIndex() (int, error) {
@@ -286,13 +285,13 @@ func (e *Endpoint) GetActiveSecretIndex() (int, error) {
 }
 
 type Secret struct {
-	UID   string `json:"uid" bson:"uid"`
-	Value string `json:"value" bson:"value"`
+	UID   string `json:"uid" db:"id"`
+	Value string `json:"value" db:"value"`
 
-	ExpiresAt primitive.DateTime  `json:"expires_at,omitempty" bson:"expires_at,omitempty" swaggertype:"string"`
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	ExpiresAt primitive.DateTime  `json:"expires_at,omitempty" db:"expires_at,omitempty" swaggertype:"string"`
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type EndpointAuthentication struct {

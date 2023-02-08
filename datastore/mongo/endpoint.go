@@ -28,7 +28,7 @@ func NewEndpointRepo(store datastore.Store) datastore.EndpointRepository {
 func (db *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ctx = db.setCollectionInContext(ctx)
 
-	endpoint.ID = primitive.NewObjectID()
+	// endpoint.ID = primitive.NewObjectID()
 	if util.IsStringEmpty(endpoint.UID) {
 		endpoint.UID = uuid.New().String()
 	}
@@ -296,7 +296,7 @@ func (db *endpointRepo) SearchEndpointsByProjectId(ctx context.Context, projectI
 	return endpoints, nil
 }
 
-func (db *endpointRepo) ExpireSecret(ctx context.Context, projectID, endpointID string, secrets []datastore.Secret) error {
+func (db *endpointRepo) ExpireSecret(ctx context.Context, projectID, endpointID string, expiredSecret, newSecret datastore.Secret) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	filter := bson.M{
@@ -306,7 +306,7 @@ func (db *endpointRepo) ExpireSecret(ctx context.Context, projectID, endpointID 
 
 	update := bson.M{
 		"$set": bson.M{
-			"secrets":    secrets,
+			// "secrets":    secrets,
 			"updated_at": primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}

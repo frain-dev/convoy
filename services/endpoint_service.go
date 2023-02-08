@@ -301,7 +301,7 @@ func (a *EndpointService) ExpireSecret(ctx context.Context, s *models.ExpireSecr
 	secrets := append(endpoint.Secrets, sc)
 	endpoint.Secrets = secrets
 
-	err = a.endpointRepo.ExpireSecret(ctx, endpoint.ProjectID, endpoint.UID, secrets)
+	err = a.endpointRepo.ExpireSecret(ctx, endpoint.ProjectID, endpoint.UID, secret, sc)
 	if err != nil {
 		log.Errorf("Error occurred expiring secret %s", err)
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to expire endpoint secret"))

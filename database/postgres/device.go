@@ -222,7 +222,7 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, projectID string, fil
 	totalRecords := 0
 	var devices []datastore.Device
 	for rows.Next() {
-		var data CountWithData
+		var data DevicePaginated
 
 		err = rows.StructScan(&data)
 		if err != nil {
@@ -237,7 +237,7 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, projectID string, fil
 	return devices, pagination, nil
 }
 
-type CountWithData struct {
+type DevicePaginated struct {
 	Count int
 	datastore.Device
 }
