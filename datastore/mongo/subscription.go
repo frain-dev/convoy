@@ -280,8 +280,8 @@ func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, proj
 		filter = bson.M{
 			"project_id": projectID,
 			"$or": []interface{}{
-				bson.D{{"source_id", sourceId}},
-				bson.D{{"type", subType}},
+				bson.D{{Key: "source_id", Value: sourceId}},
+				bson.D{{Key: "type", Value: subType}},
 			},
 		}
 	}
