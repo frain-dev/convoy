@@ -8,10 +8,11 @@ import { SelectComponent } from 'src/app/components/select/select.component';
 import { RadioComponent } from 'src/app/components/radio/radio.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
+import { FileInputComponent } from 'src/app/components/file-input/file-input.component';
 
 @NgModule({
 	declarations: [CreateSourceComponent],
-	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, SelectComponent, RadioComponent, CardComponent, ConfirmationModalComponent, InputFieldDirective, InputErrorComponent, InputDirective, LabelComponent],
+	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, SelectComponent, RadioComponent, CardComponent, ConfirmationModalComponent, InputFieldDirective, InputErrorComponent, InputDirective, LabelComponent, FileInputComponent],
 	exports: [CreateSourceComponent]
 })
 export class CreateSourceModule {}
