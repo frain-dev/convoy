@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/util"
 	"github.com/hibiken/asynq"
 )
 
@@ -27,14 +26,7 @@ func ExpireSecret(a datastore.EndpointRepository) func(ctx context.Context, t *a
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		for _, secret := range endpoint.Secrets {
-			if secret.UID == payload.SecretID && secret.DeletedAt == nil {
-				secret.DeletedAt = util.NewDateTime()
-				break
-			}
-		}
-
-		err = a.UpdateEndpoint(ctx, endpoint, endpoint.ProjectID)
+		err = a.DeleteSecret(ctx, endpoint, payload.SecretID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}

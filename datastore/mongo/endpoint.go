@@ -99,7 +99,7 @@ func (db *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID st
 func (db *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ctx = db.setCollectionInContext(ctx)
 
-	endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+	endpoint.UpdatedAt = time.Now()
 
 	update := bson.M{
 		"$set": bson.M{
@@ -337,6 +337,10 @@ func (db *endpointRepo) deleteEndpoint(ctx context.Context, endpoint *datastore.
 		return err
 	}
 
+	return nil
+}
+
+func (db *endpointRepo) DeleteSecret(ctx context.Context, endpoint *datastore.Endpoint, secretID string) error {
 	return nil
 }
 

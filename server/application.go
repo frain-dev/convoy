@@ -15,7 +15,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
@@ -49,8 +48,8 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		SlackWebhookURL: newApp.SlackWebhookURl,
 		Status:          datastore.ActiveEndpointStatus,
 		AppID:           uid,
-		CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}
 
 	if newApp.IsDisabled {
@@ -290,16 +289,16 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 				{
 					UID:       uuid.NewString(),
 					Value:     sc,
-					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-					UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
 				},
 			}
 		} else {
 			endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
 				UID:       uuid.NewString(),
 				Value:     req.Secret,
-				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
 			})
 		}
 
@@ -307,7 +306,7 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		endpoint.TargetURL = req.URL
 		endpoint.RateLimit = req.RateLimit
 		endpoint.RateLimitDuration = duration.String()
-		endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+		endpoint.UpdatedAt = time.Now()
 		auth, err := services.ValidateEndpointAuthentication(req.Authentication)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))

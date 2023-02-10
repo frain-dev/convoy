@@ -276,7 +276,7 @@ func newSignature(endpoint *datastore.Endpoint, g *datastore.Project, data json.
 		}
 
 		for _, sc := range endpoint.Secrets {
-			if sc.DeletedAt == nil {
+			if sc.DeletedAt.IsZero() {
 				// the secret has not been expired
 				scheme.Secret = append(scheme.Secret, sc.Value)
 			}

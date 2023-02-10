@@ -7,13 +7,13 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
-	"github.com/oklog/ulid/v2"
 )
 
 var (
-	ErrEndpointNotCreated = errors.New("endpoint could not be created")
-	ErrEndpointNotFound   = errors.New("endpoint not found")
-	ErrEndpointNotUpdated = errors.New("endpoint could not be updated")
+	ErrEndpointNotCreated       = errors.New("endpoint could not be created")
+	ErrEndpointNotFound         = errors.New("endpoint not found")
+	ErrEndpointNotUpdated       = errors.New("endpoint could not be updated")
+	ErrEndpointSecretNotDeleted = errors.New("endpoint secret could not be deleted")
 )
 
 const (
@@ -22,58 +22,58 @@ const (
 		id, title, status, owner_id, target_url, description, http_timeout, 
 		rate_limit, rate_limit_duration, advanced_signatures, slack_webhook_url,
 		support_email, app_id, project_id, authentication_type, authentication_type_api_key_header_name,
-		authentication_type_api_key_header_value RETURNING id;
+		authentication_type_api_key_header_value
 	)
 	VALUES 
 	  (
 		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
 		$14, $15, $16, $17
-	  ) RETURNING id;
+	  );
 	`
 
 	createEndpointSecret = `
-	INSERT INTO convoy.endpoint_secrets (id, value, expires_at, endpoint_id)
-	VALUES ($1, $2, $3, $4) RETURNING id;
+	INSERT INTO convoy.endpoint_secrets (id, value, endpoint_id)
+	VALUES ($1, $2, $3) RETURNING id;
 	`
 
 	baseEndpointFetch = `
-	SELECT * from convoy.endpoints as e
-	LEFT JOIN convoy.endpoint_secrets as es ON
+	SELECT e.id AS "endpoint.id", e.title AS "endpoint.title", e.status AS "endpoint.status", e.owner_id AS "endpoint.owner_id",
+	e.target_url AS "endpoint.target_url", e.description AS "endpoint.description", e.http_timeout AS "endpoint.http_timeout", e.rate_limit AS "endpoint.rate_limit",
+	e.rate_limit_duration AS "endpoint.rate_limit_duration", e.advanced_signatures AS "endpoint.advanced_signatures", e.slack_webhook_url AS "endpoint.slack_webhook_url",
+	e.support_email AS "endpoint.support_email", e.app_id AS "endpoint.app_id", e.project_id AS "endpoint.project_id",
+	e.authentication_type AS "endpoint.authentication.type",
+	e.authentication_type_api_key_header_name AS "endpoint.authentication.api_key.header_name",
+	e.authentication_type_api_key_header_value AS "endpoint.authentication.api_key.header_value",
+	e.created_at AS "endpoint.created_at", e.updated_at AS "endpoint.updated_at",
+	es.id AS "secret.id", es.value AS "secret.value", es.created_at AS "secret.created_at",
+	es.updated_at AS "secret.updated_at", es.expires_at AS "secret.expires_at"
+	from convoy.endpoints AS e LEFT JOIN convoy.endpoint_secrets AS es ON
 	e.id = es.endpoint_id
 	`
 
-	fetchEndpointById = baseEndpointFetch + `WHERE e.id = $1 AND e.deleted_at IS NULL;`
+	fetchEndpointById = baseEndpointFetch + `WHERE e.id = $1 AND e.deleted_at IS NULL AND es.deleted_at IS NULL;`
 
-	fetchEndpointsById = baseEndpointFetch + `WHERE e.id IN (?) AND e.deleted_at IS NULL;`
+	fetchEndpointsById = baseEndpointFetch + `WHERE e.id IN (?) AND e.deleted_at IS NULL AND es.deleted_at IS NULL;`
 
-	fetchEndpointsByAppId = baseEndpointFetch + `WHERE e.app_id = $1 AND e.deleted_at IS NULL;`
+	fetchEndpointsByAppId = baseEndpointFetch + `WHERE e.app_id = $1 AND e.deleted_at IS NULL AND es.deleted_at IS NULL;`
 
-	fetchEndpointsByOwnerId = baseEndpointFetch + `WHERE e.project_id = $1 AND e.owner_id = $2 AND e.deleted_at IS NULL;`
+	fetchEndpointsByOwnerId = baseEndpointFetch + `WHERE e.project_id = $1 AND e.owner_id = $2 AND e.deleted_at IS NULL AND es.deleted_at IS NULL;`
 
 	updateEndpoint = `
 	UPDATE convoy.endpoints SET 
-	title = $3,
-	status = $4,
-	owner_id = $5,
-	target_url = $6,
-	description = $7,
-	http_timeout = $8,
-	rate_limit = $9,
-	rate_limit_duration = $10,
-	advanced_signatures = $11,
-	slack_webhook_url = $12,
-	support_email = $13,
-	app_id = $14,
-	authentication_type = $15,
-	authentication_type_api_key_header_name = $16,
+	title = $3, status = $4, owner_id = $5,
+	target_url = $6, description = $7, http_timeout = $8,
+	rate_limit = $9, rate_limit_duration = $10, advanced_signatures = $11,
+	slack_webhook_url = $12, support_email = $13, app_id = $14,
+	authentication_type = $15, authentication_type_api_key_header_name = $16,
 	authentication_type_api_key_header_value = $17,
 	updated_at = now()
 	WHERE id = $1 AND project_id = $2 AND deleted_at is NULL;
 	`
 
 	updateEndpointStatus = `
-	UPDATE convoy.endpoints SET
-	status = $3 WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
+	UPDATE convoy.endpoints SET status = $3 
+	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	deleteEndpoint = `
@@ -97,15 +97,34 @@ const (
 	`
 
 	fetchEndpointsPaginated = `
-	SELECT count(*) as count OVER() * from convoy.endpoints as e 
-	LEFT JOIN convoy.endpoint_secrets as es ON e.id = es.endpoint_id
-	WHERE e.project_id = $3 AND (e.title = $4 OR $4 = '') AND e.deleted_at IS NULL
-	ORDER BY id LIMIT = $1 OFFSET = $2;
+	SELECT e.id AS "endpoint.id", e.title AS "endpoint.title", e.status AS "endpoint.status", e.owner_id AS "endpoint.owner_id",
+	e.target_url AS "endpoint.target_url", e.description AS "endpoint.description", e.http_timeout AS "endpoint.http_timeout", e.rate_limit AS "endpoint.rate_limit",
+	e.rate_limit_duration AS "endpoint.rate_limit_duration", e.advanced_signatures AS "endpoint.advanced_signatures", e.slack_webhook_url AS "endpoint.slack_webhook_url",
+	e.support_email AS "endpoint.support_email", e.app_id AS "endpoint.app_id", e.project_id AS "endpoint.project_id",
+	e.authentication_type AS "endpoint.authentication.type",
+	e.authentication_type_api_key_header_name AS "endpoint.authentication.api_key.header_name",
+	e.authentication_type_api_key_header_value AS "endpoint.authentication.api_key.header_value",
+	e.created_at AS "endpoint.created_at", e.updated_at AS "endpoint.updated_at",
+	es.id AS "secret.id", es.value AS "secret.value", es.created_at AS "secret.created_at",
+	es.updated_at AS "secret.updated_at", es.expires_at AS "secret.expires_at"
+	from convoy.endpoints AS e LEFT JOIN convoy.endpoint_secrets AS es ON
+	e.id = es.endpoint_id AND e.project_id = $3 AND (e.title = $4 OR $4 = '')
+	WHERE e.deleted_at IS NULL AND es.deleted_at IS NULL
+	ORDER BY e.id LIMIT $1 OFFSET $2;
 	`
 
 	expireEndpointSecret = `
 	UPDATE convoy.endpoint_secrets SET expires_at = $3
 	WHERE id = $1 AND endpoint_id = $2 AND deleted_at IS NULL;
+	`
+
+	deleteEndpointSecret = `
+	UPDATE convoy.endpoint_secrets SET deleted_at = now()
+	WHERE id = $1 AND endpoint_id = $2 AND deleted_at is NULL;
+	`
+
+	countEndpoints = `
+	SELECT count(id) from convoy.endpoints WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 )
 
@@ -123,23 +142,22 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 
-	var endpointID string
+	ac := endpoint.GetAuthConfig()
 	args := []interface{}{
-		ulid.Make().String(), endpoint.Title, endpoint.Status, endpoint.OwnerID, endpoint.TargetURL,
+		endpoint.UID, endpoint.Title, endpoint.Status, endpoint.OwnerID, endpoint.TargetURL,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail, endpoint.AppID,
-		endpoint.ProjectID, endpoint.Authentication.Type, endpoint.Authentication.ApiKey.HeaderName,
-		endpoint.Authentication.ApiKey.HeaderValue,
+		endpoint.ProjectID, ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue,
 	}
 
-	err = tx.QueryRowxContext(ctx, createEndpoint, args...).Scan(&endpointID)
+	_, err = tx.ExecContext(ctx, createEndpoint, args...)
 	if err != nil {
 		return err
 	}
 
 	//fetch the most recent secret
 	secret := endpoint.Secrets[len(endpoint.Secrets)-1]
-	endpointResult, err := tx.ExecContext(ctx, createEndpointSecret, ulid.Make().String, secret.Value, secret.ExpiresAt, endpointID)
+	endpointResult, err := tx.ExecContext(ctx, createEndpointSecret, secret.UID, secret.Value, endpoint.UID)
 	if err != nil {
 		return err
 	}
@@ -157,17 +175,31 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 }
 
 func (e *endpointRepo) FindEndpointByID(ctx context.Context, id string) (*datastore.Endpoint, error) {
-	endpoint := &datastore.Endpoint{}
-	err := e.db.QueryRowxContext(ctx, fetchEndpointById, id).StructScan(endpoint)
-
+	rows, err := e.db.QueryxContext(ctx, fetchEndpointById, id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrEndpointNotFound
-		}
-
 		return nil, err
 	}
 
+	var endpoint *datastore.Endpoint
+	var data EndpointSecret
+	secrets := make([]datastore.Secret, 0)
+	for rows.Next() {
+		err = rows.StructScan(&data)
+		if err != nil {
+			return nil, err
+		}
+
+		secrets = append(secrets, data.Secret)
+		endpoint = &data.Endpoint
+	}
+
+	// We're doing this because QueryxContext doesn't return an
+	// error if the row is empty
+	if endpoint == nil {
+		return nil, ErrEndpointNotFound
+	}
+
+	endpoint.Secrets = secrets
 	return endpoint, nil
 }
 
@@ -183,19 +215,7 @@ func (e *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string) ([]d
 		return nil, err
 	}
 
-	var endpoints []datastore.Endpoint
-	for rows.Next() {
-		var endpoint datastore.Endpoint
-
-		err = rows.StructScan(&endpoint)
-		if err != nil {
-			return nil, err
-		}
-
-		endpoints = append(endpoints, endpoint)
-	}
-
-	return endpoints, nil
+	return e.baseFetch(rows)
 }
 
 func (e *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID string) ([]datastore.Endpoint, error) {
@@ -204,19 +224,7 @@ func (e *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID string) (
 		return nil, err
 	}
 
-	var endpoints []datastore.Endpoint
-	for rows.Next() {
-		var endpoint datastore.Endpoint
-
-		err = rows.StructScan(&endpoint)
-		if err != nil {
-			return nil, err
-		}
-
-		endpoints = append(endpoints, endpoint)
-	}
-
-	return endpoints, nil
+	return e.baseFetch(rows)
 }
 
 func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]datastore.Endpoint, error) {
@@ -225,28 +233,16 @@ func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID str
 		return nil, err
 	}
 
-	var endpoints []datastore.Endpoint
-	for rows.Next() {
-		var endpoint datastore.Endpoint
-
-		err = rows.StructScan(&endpoint)
-		if err != nil {
-			return nil, err
-		}
-
-		endpoints = append(endpoints, endpoint)
-	}
-
-	return endpoints, nil
+	return e.baseFetch(rows)
 }
 
 func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
+	ac := endpoint.GetAuthConfig()
 	args := []interface{}{
-		endpoint.Title, endpoint.Status, endpoint.OwnerID, endpoint.TargetURL,
+		endpoint.UID, projectID, endpoint.Title, endpoint.Status, endpoint.OwnerID, endpoint.TargetURL,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail, endpoint.AppID,
-		endpoint.ProjectID, endpoint.Authentication.Type, endpoint.Authentication.ApiKey.HeaderName,
-		endpoint.Authentication.ApiKey.HeaderValue,
+		ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue,
 	}
 
 	r, err := e.db.ExecContext(ctx, updateEndpoint, args...)
@@ -325,21 +321,36 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 		return nil, datastore.PaginationData{}, err
 	}
 
-	totalRecords := 0
-	var endpoints []datastore.Endpoint
+	endpointMap := make(map[string]*datastore.Endpoint, 0)
 	for rows.Next() {
 		var data EndpointPaginated
 
-		err = rows.StructScan(&data)
+		err := rows.StructScan(&data)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 
-		endpoints = append(endpoints, data.Endpoint)
-		totalRecords = data.Count
+		endpoint, exists := endpointMap[data.Endpoint.UID]
+		if exists {
+			endpoint.Secrets = append(endpoint.Secrets, data.Secret)
+		} else {
+			e := data.Endpoint
+			e.Secrets = []datastore.Secret{data.Secret}
+			endpointMap[e.UID] = &e
+		}
 	}
 
-	pagination := calculatePaginationData(totalRecords, pageable.Page, pageable.PerPage)
+	var endpoints []datastore.Endpoint
+	for _, endpoint := range endpointMap {
+		endpoints = append(endpoints, *endpoint)
+	}
+	var count int
+	err = e.db.Get(&count, countEndpoints, projectId)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
 	return endpoints, pagination, nil
 }
 
@@ -354,16 +365,65 @@ func (e *endpointRepo) ExpireSecret(ctx context.Context, projectID string, endpo
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, createEndpointSecret, ulid.Make().String(), newSecret.Value, newSecret.ExpiresAt, endpointID)
+	_, err = tx.ExecContext(ctx, createEndpointSecret, newSecret.UID, newSecret.Value, endpointID)
 	if err != nil {
 		return err
 	}
 
-
 	return tx.Commit()
 }
 
+func (e *endpointRepo) DeleteSecret(ctx context.Context, endpoint *datastore.Endpoint, secretID string) error {
+	r, err := e.db.ExecContext(ctx, deleteEndpointSecret, secretID, endpoint.UID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := r.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected < 1 {
+		return ErrEndpointSecretNotDeleted
+	}
+
+	return nil
+}
+
+func (e *endpointRepo) baseFetch(rows *sqlx.Rows) ([]datastore.Endpoint, error) {
+	endpointMap := make(map[string]*datastore.Endpoint, 0)
+	for rows.Next() {
+		var data EndpointSecret
+
+		err := rows.StructScan(&data)
+		if err != nil {
+			return nil, err
+		}
+
+		endpoint, exists := endpointMap[data.Endpoint.UID]
+		if exists {
+			endpoint.Secrets = append(endpoint.Secrets, data.Secret)
+		} else {
+			e := data.Endpoint
+			e.Secrets = []datastore.Secret{data.Secret}
+			endpointMap[e.UID] = &e
+		}
+	}
+
+	var endpoints []datastore.Endpoint
+	for _, endpoint := range endpointMap {
+		endpoints = append(endpoints, *endpoint)
+	}
+
+	return endpoints, nil
+}
+
 type EndpointPaginated struct {
-	Count int
-	datastore.Endpoint
+	EndpointSecret
+}
+
+type EndpointSecret struct {
+	Endpoint datastore.Endpoint `json:"endpoint"`
+	Secret   datastore.Secret   `db:"secret"`
 }

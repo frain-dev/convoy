@@ -250,7 +250,7 @@ const (
 type EndpointStatus string
 
 type Endpoint struct {
-	UID                string   `json:"uid" db:"uid"`
+	UID                string   `json:"uid" db:"id"`
 	ProjectID          string   `json:"project_id" db:"project_id"`
 	OwnerID            string   `json:"owner_id,omitempty" db:"owner_id"`
 	TargetURL          string   `json:"target_url" db:"target_url"`
@@ -270,14 +270,24 @@ type Endpoint struct {
 	RateLimitDuration string                  `json:"rate_limit_duration" db:"rate_limit_duration"`
 	Authentication    *EndpointAuthentication `json:"authentication" db:"authentication"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+func (e *Endpoint) GetAuthConfig() EndpointAuthentication {
+	if e.Authentication != nil {
+		if e.Authentication.ApiKey != nil {
+			return *e.Authentication
+		}
+	}
+
+	return EndpointAuthentication{ApiKey: &ApiKey{}}
 }
 
 func (e *Endpoint) GetActiveSecretIndex() (int, error) {
 	for idx, secret := range e.Secrets {
-		if secret.ExpiresAt == 0 {
+		if secret.ExpiresAt.IsZero() {
 			return idx, nil
 		}
 	}
@@ -288,15 +298,15 @@ type Secret struct {
 	UID   string `json:"uid" db:"id"`
 	Value string `json:"value" db:"value"`
 
-	ExpiresAt primitive.DateTime  `json:"expires_at,omitempty" db:"expires_at,omitempty" swaggertype:"string"`
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	ExpiresAt null.Time `json:"expires_at,omitempty" db:"expires_at,omitempty" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type EndpointAuthentication struct {
-	Type   EndpointAuthenticationType `json:"type,omitempty" bson:"type" valid:"optional,in(api_key)~unsupported authentication type"`
-	ApiKey *ApiKey                    `json:"api_key" bson:"api_key"`
+	Type   EndpointAuthenticationType `json:"type,omitempty" db:"type" valid:"optional,in(api_key)~unsupported authentication type"`
+	ApiKey *ApiKey                    `json:"api_key" db:"api_key"`
 }
 
 var (
@@ -900,39 +910,39 @@ type PortalLink struct {
 
 // Deprecated
 type Application struct {
-	ID              primitive.ObjectID `json:"-" bson:"_id"`
-	UID             string             `json:"uid" bson:"uid"`
-	ProjectID       string             `json:"project_id" bson:"project_id"`
-	Title           string             `json:"name" bson:"title"`
-	SupportEmail    string             `json:"support_email,omitempty" bson:"support_email"`
-	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
-	IsDisabled      bool               `json:"is_disabled,omitempty" bson:"is_disabled"`
+	ID              primitive.ObjectID `json:"-" db:"_id"`
+	UID             string             `json:"uid" db:"uid"`
+	ProjectID       string             `json:"project_id" db:"project_id"`
+	Title           string             `json:"name" db:"title"`
+	SupportEmail    string             `json:"support_email,omitempty" db:"support_email"`
+	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" db:"slack_webhook_url"`
+	IsDisabled      bool               `json:"is_disabled,omitempty" db:"is_disabled"`
 
-	Endpoints []DeprecatedEndpoint `json:"endpoints,omitempty" bson:"endpoints"`
-	CreatedAt primitive.DateTime   `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime   `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime  `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+	Endpoints []DeprecatedEndpoint `json:"endpoints,omitempty" db:"endpoints"`
+	CreatedAt time.Time            `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time            `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time            `json:"deleted_at,omitempty" db:"deleted_at,omitempty" swaggertype:"string"`
 
-	Events int64 `json:"events,omitempty" bson:"-"`
+	Events int64 `json:"events,omitempty" db:"-"`
 }
 
 // Deprecated
 type DeprecatedEndpoint struct {
-	UID                string   `json:"uid" bson:"uid"`
-	TargetURL          string   `json:"target_url" bson:"target_url"`
-	Description        string   `json:"description" bson:"description"`
-	Secret             string   `json:"-" bson:"secret"`
-	Secrets            []Secret `json:"secrets" bson:"secrets"`
-	AdvancedSignatures bool     `json:"advanced_signatures" bson:"advanced_signatures"`
+	UID                string   `json:"uid" db:"uid"`
+	TargetURL          string   `json:"target_url" db:"target_url"`
+	Description        string   `json:"description" db:"description"`
+	Secret             string   `json:"-" db:"secret"`
+	Secrets            []Secret `json:"secrets" db:"secrets"`
+	AdvancedSignatures bool     `json:"advanced_signatures" db:"advanced_signatures"`
 
-	HttpTimeout       string                  `json:"http_timeout" bson:"http_timeout"`
-	RateLimit         int                     `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string                  `json:"rate_limit_duration" bson:"rate_limit_duration"`
-	Authentication    *EndpointAuthentication `json:"authentication" bson:"authentication"`
+	HttpTimeout       string                  `json:"http_timeout" db:"http_timeout"`
+	RateLimit         int                     `json:"rate_limit" db:"rate_limit"`
+	RateLimitDuration string                  `json:"rate_limit_duration" db:"rate_limit_duration"`
+	Authentication    *EndpointAuthentication `json:"authentication" db:"authentication,omitempty"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at,omitempty" swaggertype:"string"`
 }
 
 type Password struct {
