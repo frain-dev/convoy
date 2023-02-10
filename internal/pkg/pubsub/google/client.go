@@ -20,9 +20,10 @@ type Google struct {
 	ctx     context.Context
 	cancel  context.CancelFunc
 	handler datastore.PubSubHandler
+	log     log.StdLogger
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler) *Google {
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) *Google {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Google{
@@ -32,6 +33,7 @@ func New(source *datastore.Source, handler datastore.PubSubHandler) *Google {
 		cancel:  cancel,
 		workers: source.PubSub.Workers,
 		handler: handler,
+		log:     log,
 	}
 }
 
@@ -72,7 +74,7 @@ func (g *Google) Consume() {
 	client, err := pubsub.NewClient(context.Background(), g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
 
 	if err != nil {
-		log.WithError(err).Error("failed to create new pubsub client")
+		g.log.WithError(err).Error("failed to create new pubsub client")
 	}
 
 	defer client.Close()
@@ -86,14 +88,14 @@ func (g *Google) Consume() {
 
 	err = sub.Receive(g.ctx, func(ctx context.Context, m *pubsub.Message) {
 		if err := g.handler(g.source, string(m.Data)); err != nil {
-			log.WithError(err).Error("failed to write message to create event queue - google pub sub")
+			g.log.WithError(err).Error("failed to write message to create event queue - google pub sub")
 		} else {
 			m.Ack()
 		}
 	})
 
 	if err != nil {
-		log.WithError(err).Error("sub receive error")
+		g.log.WithError(err).Error("subscription receive error - google pub sub")
 		return
 	}
 }

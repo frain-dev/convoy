@@ -20,15 +20,17 @@ type Sqs struct {
 	workers int
 	done    chan struct{}
 	handler datastore.PubSubHandler
+	log     log.StdLogger
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler) *Sqs {
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) *Sqs {
 	return &Sqs{
 		Cfg:     source.PubSub.Sqs,
 		source:  source,
 		workers: source.PubSub.Workers,
 		done:    make(chan struct{}),
 		handler: handler,
+		log:     log,
 	}
 }
 
@@ -88,7 +90,7 @@ func (s *Sqs) Consume() {
 	})
 
 	if err != nil {
-		log.WithError(err).Error("failed to fetch queue url - sqs")
+		s.log.WithError(err).Error("failed to fetch queue url - sqs")
 	}
 
 	queueURL := url.QueueUrl
@@ -105,7 +107,7 @@ func (s *Sqs) Consume() {
 		})
 
 		if err != nil {
-			log.WithError(err).Error("failed to fetch message - sqs")
+			s.log.WithError(err).Error("failed to fetch message - sqs")
 		}
 
 		var wg sync.WaitGroup
@@ -115,7 +117,7 @@ func (s *Sqs) Consume() {
 				defer wg.Done()
 
 				if err := s.handler(s.source, *m.Body); err != nil {
-					log.WithError(err).Error("failed to write message to create event queue")
+					s.log.WithError(err).Error("failed to write message to create event queue")
 				} else {
 					_, err = svc.DeleteMessage(&sqs.DeleteMessageInput{
 						QueueUrl:      queueURL,
@@ -123,7 +125,7 @@ func (s *Sqs) Consume() {
 					})
 
 					if err != nil {
-						log.WithError(err).Error("failed to delete message")
+						s.log.WithError(err).Error("failed to delete message")
 					}
 				}
 
