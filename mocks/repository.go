@@ -1493,6 +1493,21 @@ func (mr *MockSourceRepositoryMockRecorder) FindSourceByMaskID(ctx, maskID inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSourceByMaskID", reflect.TypeOf((*MockSourceRepository)(nil).FindSourceByMaskID), ctx, maskID)
 }
 
+// FindSourceByName mocks base method.
+func (m *MockSourceRepository) FindSourceByName(ctx context.Context, projectId, name string) (*datastore.Source, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindSourceByName", ctx, projectId, name)
+	ret0, _ := ret[0].(*datastore.Source)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindSourceByName indicates an expected call of FindSourceByName.
+func (mr *MockSourceRepositoryMockRecorder) FindSourceByName(ctx, projectId, name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSourceByName", reflect.TypeOf((*MockSourceRepository)(nil).FindSourceByName), ctx, projectId, name)
+}
+
 // LoadSourcesPaged mocks base method.
 func (m *MockSourceRepository) LoadSourcesPaged(ctx context.Context, projectID string, filter *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()

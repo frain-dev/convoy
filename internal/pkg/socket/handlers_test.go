@@ -56,10 +56,11 @@ func TestHub_listen(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				listenRequest: &ListenRequest{
-					ProjectID: "1234",
-					HostName:  "hostname_1",
-					DeviceID:  "device-id",
-					SourceID:  "source-id",
+					ProjectID:  "1234",
+					HostName:   "hostname_1",
+					DeviceID:   "device-id",
+					SourceID:   "source-id",
+					SourceName: "test_source",
 				},
 			},
 			dbFn: func(h *Repo) {
@@ -88,7 +89,7 @@ func TestHub_listen(t *testing.T) {
 				)
 
 				s, _ := h.SourceRepo.(*mocks.MockSourceRepository)
-				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(
+				s.EXPECT().FindSourceByName(gomock.Any(), gomock.Any(), "test_source").Times(1).Return(
 					&datastore.Source{UID: "1234", ProjectID: "1234"},
 					nil,
 				)
@@ -114,10 +115,11 @@ func TestHub_listen(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				listenRequest: &ListenRequest{
-					ProjectID: "1234",
-					HostName:  "hostname_1",
-					DeviceID:  "device-id",
-					SourceID:  "source-id",
+					ProjectID:  "1234",
+					HostName:   "hostname_1",
+					DeviceID:   "device-id",
+					SourceID:   "source-id",
+					SourceName: "test_source",
 				},
 			},
 			dbFn: func(h *Repo) {
@@ -144,10 +146,11 @@ func TestHub_listen(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				listenRequest: &ListenRequest{
-					ProjectID: "1234",
-					HostName:  "hostname_1",
-					DeviceID:  "device-id",
-					SourceID:  "source-id",
+					ProjectID:  "1234",
+					HostName:   "hostname_1",
+					DeviceID:   "device-id",
+					SourceID:   "source-id",
+					SourceName: "test_source",
 				},
 			},
 			dbFn: func(h *Repo) {
@@ -163,10 +166,11 @@ func TestHub_listen(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				listenRequest: &ListenRequest{
-					ProjectID: "1234",
-					HostName:  "hostname_1",
-					DeviceID:  "device-id",
-					SourceID:  "source-id",
+					ProjectID:  "1234",
+					HostName:   "hostname_1",
+					DeviceID:   "device-id",
+					SourceID:   "source-id",
+					SourceName: "test_source",
 				},
 			},
 			dbFn: func(h *Repo) {
@@ -195,21 +199,22 @@ func TestHub_listen(t *testing.T) {
 				)
 
 				s, _ := h.SourceRepo.(*mocks.MockSourceRepository)
-				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(nil, errors.New("failed to find source"))
+				s.EXPECT().FindSourceByName(gomock.Any(), gomock.Any(), "test_source").Times(1).Return(nil, errors.New("failed to find source"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to find source",
+			wantErrMsg:  "failed to find source by name",
 		},
 		{
 			name: "should_fail_to_find_subscription",
 			args: args{
 				ctx: ctx,
 				listenRequest: &ListenRequest{
-					ProjectID: "1234",
-					HostName:  "hostname_1",
-					DeviceID:  "device-id",
-					SourceID:  "source-id",
+					ProjectID:  "1234",
+					HostName:   "hostname_1",
+					DeviceID:   "device-id",
+					SourceID:   "source-id",
+					SourceName: "test_source",
 				},
 			},
 			dbFn: func(h *Repo) {
@@ -238,7 +243,7 @@ func TestHub_listen(t *testing.T) {
 				)
 
 				s, _ := h.SourceRepo.(*mocks.MockSourceRepository)
-				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(
+				s.EXPECT().FindSourceByName(gomock.Any(), gomock.Any(), "test_source").Times(1).Return(
 					&datastore.Source{UID: "1234", ProjectID: "1234"},
 					nil,
 				)
@@ -256,10 +261,11 @@ func TestHub_listen(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				listenRequest: &ListenRequest{
-					ProjectID: "1234",
-					HostName:  "hostname_1",
-					DeviceID:  "device-id",
-					SourceID:  "source-id",
+					ProjectID:  "1234",
+					HostName:   "hostname_1",
+					DeviceID:   "device-id",
+					SourceID:   "source-id",
+					SourceName: "test_source",
 				},
 			},
 			dbFn: func(h *Repo) {
@@ -286,7 +292,7 @@ func TestHub_listen(t *testing.T) {
 				)
 
 				s, _ := h.SourceRepo.(*mocks.MockSourceRepository)
-				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(
+				s.EXPECT().FindSourceByName(gomock.Any(), gomock.Any(), "test_source").Times(1).Return(
 					&datastore.Source{UID: "1234", ProjectID: "1234"},
 					nil,
 				)
@@ -312,10 +318,11 @@ func TestHub_listen(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				listenRequest: &ListenRequest{
-					ProjectID: "1234",
-					HostName:  "hostname_1",
-					DeviceID:  "device-id",
-					SourceID:  "source-id",
+					ProjectID:  "1234",
+					HostName:   "hostname_1",
+					DeviceID:   "device-id",
+					SourceID:   "source-id",
+					SourceName: "test_source",
 				},
 			},
 			dbFn: func(h *Repo) {
@@ -344,7 +351,7 @@ func TestHub_listen(t *testing.T) {
 				)
 
 				s, _ := h.SourceRepo.(*mocks.MockSourceRepository)
-				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(
+				s.EXPECT().FindSourceByName(gomock.Any(), gomock.Any(), "test_source").Times(1).Return(
 					&datastore.Source{UID: "1234", ProjectID: "1234"},
 					nil,
 				)

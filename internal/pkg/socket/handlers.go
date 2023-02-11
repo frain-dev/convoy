@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -22,10 +23,11 @@ import (
 )
 
 type ListenRequest struct {
-	HostName  string `json:"host_name" valid:"required~please provide a hostname"`
-	ProjectID string `json:"project_id" valid:"required~please provide a project id"`
-	DeviceID  string `json:"device_id" valid:"required~please provide a device id"`
-	SourceID  string `json:"source_id"`
+	HostName   string `json:"host_name" valid:"required~please provide a hostname"`
+	ProjectID  string `json:"project_id" valid:"required~please provide a project id"`
+	DeviceID   string `json:"device_id" valid:"required~please provide a device id"`
+	SourceID   string `json:"-"`
+	SourceName string `json:"source_name"`
 	// EventTypes []string `json:"event_types"`
 }
 
@@ -207,15 +209,17 @@ func listen(ctx context.Context, listenRequest *ListenRequest, r *Repo) (*datast
 			log.WithError(err).Error("failed to update device to online")
 			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update device to online"))
 		}
-
 	}
 
-	if !util.IsStringEmpty(listenRequest.SourceID) {
-		_, err = r.SourceRepo.FindSourceByID(ctx, device.ProjectID, listenRequest.SourceID)
+	if !util.IsStringEmpty(listenRequest.SourceName) {
+		trimmedName := strings.TrimSpace(listenRequest.SourceName)
+		source, err := r.SourceRepo.FindSourceByName(ctx, device.ProjectID, trimmedName)
 		if err != nil {
-			log.WithError(err).Error("failed to find source")
-			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find source"))
+			log.WithError(err).Error("failed to find source by name")
+			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find source by name"))
 		}
+
+		listenRequest.SourceID = source.UID
 	}
 
 	sub, err := r.SubscriptionRepo.FindSubscriptionByDeviceID(ctx, project.UID, device.UID, datastore.SubscriptionTypeCLI)
