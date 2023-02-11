@@ -263,9 +263,9 @@ var Migrations = []*Migration{
 					}
 
 					config = &datastore.ProjectConfig{
-						Signature:       datastore.GetDefaultSignatureConfig(),
-						Strategy:        &datastore.DefaultStrategyConfig,
-						RateLimit:       &datastore.DefaultRateLimitConfig,
+						Signature: datastore.GetDefaultSignatureConfig(),
+						Strategy:  &datastore.DefaultStrategyConfig,
+						RateLimit: &datastore.DefaultRateLimitConfig,
 						// RetentionPolicy: &datastore.DefaultRetentionPolicy,
 					}
 
@@ -347,8 +347,8 @@ var Migrations = []*Migration{
 						endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
 							UID:       uuid.NewString(),
 							Value:     endpoint.Secret,
-							CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-							UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+							CreatedAt: time.Now(),
+							UpdatedAt: time.Now(),
 						})
 						endpoint.AdvancedSignatures = false
 					}
@@ -837,7 +837,7 @@ var Migrations = []*Migration{
 				if len(app.Endpoints) > 0 {
 					for _, e := range app.Endpoints {
 						endpoint := &datastore.Endpoint{
-							ID:                 primitive.NewObjectID(),
+							// ID:                 primitive.NewObjectID(),
 							UID:                e.UID,
 							ProjectID:          app.ProjectID,
 							TargetURL:          e.TargetURL,
@@ -860,7 +860,7 @@ var Migrations = []*Migration{
 					}
 				} else {
 					endpoint := &datastore.Endpoint{
-						ID:              primitive.NewObjectID(),
+						// ID:              primitive.NewObjectID(),
 						UID:             app.UID,
 						ProjectID:       app.ProjectID,
 						Title:           app.Title,

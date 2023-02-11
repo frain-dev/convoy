@@ -89,11 +89,9 @@ type EndpointRepository interface {
 	UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status EndpointStatus) error
 	DeleteEndpoint(ctx context.Context, endpoint *Endpoint) error
 	CountProjectEndpoints(ctx context.Context, projectID string) (int64, error)
-	DeleteProjectEndpoints(context.Context, string) error
 	LoadEndpointsPaged(ctx context.Context, projectID string, query string, pageable Pageable) ([]Endpoint, PaginationData, error)
-	LoadEndpointsPagedByProjectId(ctx context.Context, projectID string, pageable Pageable) ([]Endpoint, PaginationData, error)
-	SearchEndpointsByProjectId(ctx context.Context, projectID string, params SearchParams) ([]Endpoint, error)
-	ExpireSecret(ctx context.Context, projectID string, endpointID string, secrets []Secret) error
+	ExpireSecret(ctx context.Context, projectID string, endpointID string, expiredSecret, newSecret Secret) error
+	DeleteSecret(ctx context.Context, endpoint *Endpoint, secretID string) error
 }
 type SubscriptionRepository interface {
 	CreateSubscription(context.Context, string, *Subscription) error

@@ -16,8 +16,8 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
 )
 
 type EndpointService struct {
@@ -67,7 +67,7 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 	}
 
 	endpoint := &datastore.Endpoint{
-		UID:                uuid.New().String(),
+		UID:                ulid.Make().String(),
 		ProjectID:          projectID,
 		OwnerID:            e.OwnerID,
 		Title:              e.Name,
@@ -81,8 +81,8 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 		AppID:              e.AppID,
 		RateLimitDuration:  duration.String(),
 		Status:             datastore.ActiveEndpointStatus,
-		CreatedAt:          primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:          primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:          time.Now(),
+		UpdatedAt:          time.Now(),
 	}
 
 	if util.IsStringEmpty(endpoint.AppID) {
@@ -97,18 +97,18 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 
 		endpoint.Secrets = []datastore.Secret{
 			{
-				UID:       uuid.NewString(),
+				UID:       ulid.Make().String(),
 				Value:     sc,
-				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
 			},
 		}
 	} else {
 		endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
-			UID:       uuid.NewString(),
+			UID:       ulid.Make().String(),
 			Value:     e.Secret,
-			CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-			UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		})
 	}
 
@@ -237,7 +237,7 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint) (*dat
 
 	endpoint.Authentication = auth
 
-	endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+	endpoint.UpdatedAt = time.Now()
 
 	return endpoint, nil
 }
@@ -250,7 +250,7 @@ func (a *EndpointService) ExpireSecret(ctx context.Context, s *models.ExpireSecr
 	}
 
 	expiresAt := time.Now().Add(time.Hour * time.Duration(s.Expiration))
-	endpoint.Secrets[idx].ExpiresAt = primitive.NewDateTimeFromTime(expiresAt)
+	endpoint.Secrets[idx].ExpiresAt = null.TimeFrom(expiresAt)
 
 	secret := endpoint.Secrets[idx]
 
@@ -292,16 +292,16 @@ func (a *EndpointService) ExpireSecret(ctx context.Context, s *models.ExpireSecr
 	}
 
 	sc := datastore.Secret{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		Value:     newSecret,
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	secrets := append(endpoint.Secrets, sc)
 	endpoint.Secrets = secrets
 
-	err = a.endpointRepo.ExpireSecret(ctx, endpoint.ProjectID, endpoint.UID, secrets)
+	err = a.endpointRepo.ExpireSecret(ctx, endpoint.ProjectID, endpoint.UID, secret, sc)
 	if err != nil {
 		log.Errorf("Error occurred expiring secret %s", err)
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to expire endpoint secret"))
