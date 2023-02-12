@@ -85,32 +85,19 @@ func (s *SourcePool) Insert(source *datastore.Source, handler datastore.PubSubHa
 	if exists {
 		so := &PubSubSource{source: source}
 		// config hasn't changed
-		fmt.Println("existing source hash is", existingSource.hash)
-		fmt.Println("new hash is", so.getHash())
-		
 		if existingSource.hash == so.getHash() {
 			return nil
 		}
 
 		s.Remove(source.UID)
-		sourceClient, err := NewPubSubSource(source, handler, s.log)
-		if err != nil {
-			s.log.WithError(err).Error("failed to create new source client")
-			return err
-		}
-
-		s.sources[source.UID] = sourceClient
-
-	} else {
-		sourceClient, err := NewPubSubSource(source, handler, s.log)
-		if err != nil {
-			s.log.WithError(err).Error("failed to create new source client")
-			return err
-		}
-
-		s.sources[source.UID] = sourceClient
+	}
+	sourceClient, err := NewPubSubSource(source, handler, s.log)
+	if err != nil {
+		s.log.WithError(err).Error("failed to create new source client")
+		return err
 	}
 
+	s.sources[source.UID] = sourceClient
 	return nil
 }
 
