@@ -466,27 +466,27 @@ type EventType string
 
 // Event defines a payload to be sent to an application
 type Event struct {
-	ID               primitive.ObjectID `json:"-" bson:"_id"`
-	UID              string             `json:"uid" bson:"uid"`
-	EventType        EventType          `json:"event_type" bson:"event_type"`
-	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"` // TODO(all) remove this field
+	// ID               primitive.ObjectID `json:"-" db:"_id"`
+	UID              string    `json:"uid" db:"id"`
+	EventType        EventType `json:"event_type" db:"event_type"`
+	MatchedEndpoints int       `json:"matched_endpoints" db:"matched_enpoints"` // TODO(all) remove this field
 
-	SourceID         string                `json:"source_id,omitempty" bson:"source_id"`
-	AppID            string                `json:"app_id,omitempty" bson:"app_id"` // Deprecated
-	ProjectID        string                `json:"project_id,omitempty" bson:"project_id"`
-	Endpoints        []string              `json:"endpoints" bson:"endpoints"`
-	Headers          httpheader.HTTPHeader `json:"headers" bson:"headers"`
-	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" bson:"endpoint_metadata"`
-	Source           *Source               `json:"source_metadata,omitempty" bson:"source_metadata"`
+	SourceID         string                `json:"source_id,omitempty" db:"source_id"`
+	AppID            string                `json:"app_id,omitempty" db:"app_id"` // Deprecated
+	ProjectID        string                `json:"project_id,omitempty" db:"project_id"`
+	Endpoints        []string              `json:"endpoints" db:"endpoints"`
+	Headers          httpheader.HTTPHeader `json:"headers" db:"headers"`
+	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
+	Source           *Source               `json:"source_metadata,omitempty" db:"source_metadata"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data json.RawMessage `json:"data,omitempty" bson:"data"`
-	Raw  string          `json:"raw,omitempty" bson:"raw"`
+	Data json.RawMessage `json:"data,omitempty" db:"data"`
+	Raw  string          `json:"raw,omitempty" db:"raw"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	CreatedAt primitive.DateTime  `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 func (e *Event) GetRawHeaders() map[string]interface{} {

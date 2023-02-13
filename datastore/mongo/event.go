@@ -35,7 +35,7 @@ var (
 func (db *eventRepo) CreateEvent(ctx context.Context, message *datastore.Event) error {
 	ctx = db.setCollectionInContext(ctx)
 
-	message.ID = primitive.NewObjectID()
+	// message.ID = primitive.NewObjectID()
 
 	if util.IsStringEmpty(message.UID) {
 		message.UID = uuid.New().String()
