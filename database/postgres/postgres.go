@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"time"
@@ -31,6 +32,48 @@ func NewDB() (*Postgres, error) {
 
 func (p *Postgres) GetDB() *sqlx.DB {
 	return p.dbx
+}
+
+func (p *Postgres) TruncateTables() error {
+	tables := []string{
+		"convoy.event_deliveries",
+		"convoy.events",
+		"convoy.api_keys",
+		"convoy.subscriptions",
+		"convoy.source_verifiers",
+		"convoy.sources",
+		"convoy.configurations",
+		"convoy.devices",
+		"convoy.subscription_filters",
+		"convoy.portal_links",
+		"convoy.organisation_invites",
+		"convoy.applications",
+		"convoy.endpoint_secrets",
+		"convoy.endpoints",
+		"convoy.projects",
+		"convoy.project_configurations",
+		"convoy.organisation_members",
+		"convoy.organisations",
+		"convoy.users",
+	}
+
+	for _, table := range tables {
+		r, err := p.dbx.ExecContext(context.Background(), fmt.Sprintf("TRUNCATE %s CASCADE", table))
+		if err != nil {
+			return err
+		}
+
+		rowsAffected, err := r.RowsAffected()
+		if err != nil {
+			return err
+		}
+
+		if rowsAffected < 1 {
+			return fmt.Errorf("failed to truncate %s", table)
+		}
+	}
+
+	return nil
 }
 
 // getPrevPage returns calculated value for the prev page
