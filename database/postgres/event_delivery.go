@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/oklog/ulid/v2"
-
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
+	"github.com/oklog/ulid/v2"
 )
 
 type eventDeliveryRepo struct {
@@ -112,9 +112,20 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 		return fmt.Errorf("failed to marshal cli metadata: %v", err)
 	}
 
+	var endpointID *string
+	var deviceID *string
+
+	if !util.IsStringEmpty(delivery.EndpointID) {
+		endpointID = &delivery.EndpointID
+	}
+
+	if !util.IsStringEmpty(delivery.DeviceID) {
+		deviceID = &delivery.DeviceID
+	}
+
 	result, err := e.db.ExecContext(
 		ctx, createEventDelivery, delivery.UID, delivery.ProjectID,
-		delivery.EventID, delivery.EndpointID, delivery.DeviceID,
+		delivery.EventID, endpointID, deviceID,
 		delivery.SubscriptionID, headers, attempts, delivery.Status,
 		metadata, cliMetadata, delivery.Description,
 	)
