@@ -46,9 +46,19 @@ const (
 	AND (ev.source_id = $3 OR $3 = '') AND ev.created_at BETWEEN $4 AND $5 AND ev.deleted_at IS NULL;
 	`
 	baseEventsPaged = `
-	SELECT count(*) AS count, ev.id, ev.project_id, ev.source_id, ev.headers, ev.raw,
-	ev.data, ev.created_at, ev.updated_at, array_to_json(ARRAY_AGG(row_to_json(e.*))) AS endpoint_metadata,
-	COALESCE(s.id, "") AS "source_metadata.id", s.name AS "source_metadata.name"
+	SELECT count(*) OVER(), ev.id, ev.project_id, COALESCE(ev.source_id, '') AS source_id, ev.headers, ev.raw,
+	ev.data, ev.created_at, ev.updated_at, ev.deleted_at, array_to_json(array_agg(json_build_object(
+    'uid', e.id, 
+	'title', e.title, 
+	'project_id', e.project_id, 
+	'support_email', e.support_email,
+	'target_url', e.target_url, 
+	'slack_webhook_url', e.slack_webhook_url, 
+	'created_at', e.created_at, 
+	'updated_at', e.updated_at, 
+	'deleted_at', e.deleted_at))) AS endpoint_metadata,
+	COALESCE(s.id, '') AS "source_metadata.id",
+	COALESCE(s.name, '') AS "source_metadata.name"
 	FROM convoy.events AS ev 
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
 	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
@@ -181,13 +191,11 @@ func (e *eventRepo) CountProjectMessages(ctx context.Context, projectID string) 
 func (e *eventRepo) CountEvents(ctx context.Context, filter *datastore.Filter) (int64, error) {
 	var count int64
 	var projectID string
+	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
 
 	if filter.Project != nil {
 		projectID = filter.Project.UID
 	}
-
-	startDate := time.Unix(filter.SearchParams.CreatedAtStart, 0)
-	endDate := time.Unix(filter.SearchParams.CreatedAtEnd, 0)
 
 	err := e.db.QueryRowxContext(ctx, countEvents, projectID, filter.EndpointID, filter.SourceID, startDate, endDate).Scan(&count)
 	if err != nil {
@@ -202,28 +210,26 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 	var args []interface{}
 	var err error
 	var projectID string
+	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
 
 	if filter.Project != nil {
 		projectID = filter.Project.UID
 	}
-
-	startDate := time.Unix(filter.SearchParams.CreatedAtStart, 0)
-	endDate := time.Unix(filter.SearchParams.CreatedAtEnd, 0)
 
 	if !util.IsStringEmpty(filter.EndpointID) {
 		filter.EndpointIDs = append(filter.EndpointIDs, filter.EndpointID)
 	}
 
 	if len(filter.EndpointIDs) > 0 {
-		query, args, err = sqlx.In(fetchEventsPaginatedFilterByEndpoints, filter.EndpointIDs, projectID, filter.SourceID, startDate, endDate, filter.Pageable.Limit(), filter.Pageable.Offset())
+		query, args, err = sqlx.In(fetchEventsPaginatedFilterByEndpoints, filter.EndpointIDs, projectID, projectID, filter.SourceID, filter.SourceID, startDate, endDate, filter.Pageable.Limit(), filter.Pageable.Offset())
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 
 		query = e.db.Rebind(query)
 	} else {
-		query = fetchEventsPaginated
-		args = []interface{}{projectID, filter.SourceID, startDate, endDate, filter.Pageable.Limit(), filter.Pageable.Offset()}
+		query = e.db.Rebind(fetchEventsPaginated)
+		args = []interface{}{projectID, projectID, filter.SourceID, filter.SourceID, startDate, endDate, filter.Pageable.Limit(), filter.Pageable.Offset()}
 	}
 
 	rows, err := e.db.QueryxContext(ctx, query, args...)
@@ -250,7 +256,23 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 }
 
 func (e *eventRepo) DeleteProjectEvents(ctx context.Context, filter *datastore.EventFilter, hardDelete bool) error {
+	query := softDeleteProjectEvents
+	startDate, endDate := getCreatedDateFilter(filter.CreatedAtStart, filter.CreatedAtEnd)
+
+	if hardDelete {
+		query = hardDeleteProjectEvents
+	}
+
+	_, err := e.db.ExecContext(ctx, query, filter.ProjectID, startDate, endDate)
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func getCreatedDateFilter(startDate, endDate int64) (time.Time, time.Time) {
+	return time.Unix(startDate, 0), time.Unix(endDate, 0)
 }
 
 type EventEndpoint struct {
