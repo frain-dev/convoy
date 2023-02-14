@@ -90,7 +90,7 @@ func addStreamCommand(a *app) *cobra.Command {
 
 			srv.SetHandler(handler)
 
-			log.Infof("Stream server running on port %v", socketPort)
+			a.logger.Infof("Stream server running on port %v", socketPort)
 			srv.Listen()
 
 			return nil
