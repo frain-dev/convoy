@@ -606,28 +606,27 @@ type DeliveryAttempt struct {
 	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
 }
 
-// EventDelivery defines a payload to be sent to an application
+// EventDelivery defines a payload to be sent to an endpoint
 type EventDelivery struct {
-	ID             primitive.ObjectID    `json:"-" bson:"_id"`
-	UID            string                `json:"uid" bson:"uid"`
-	ProjectID      string                `json:"project_id,omitempty" bson:"project_id"`
-	EventID        string                `json:"event_id,omitempty" bson:"event_id"`
-	EndpointID     string                `json:"endpoint_id,omitempty" bson:"endpoint_id"`
-	DeviceID       string                `json:"device_id" bson:"device_id"`
-	SubscriptionID string                `json:"subscription_id,omitempty" bson:"subscription_id"`
-	Headers        httpheader.HTTPHeader `json:"headers" bson:"headers"`
+	UID            string                `json:"uid" db:"id"`
+	ProjectID      string                `json:"project_id,omitempty" db:"project_id"`
+	EventID        string                `json:"event_id,omitempty" db:"event_id"`
+	EndpointID     string                `json:"endpoint_id,omitempty" db:"endpoint_id"`
+	DeviceID       string                `json:"device_id" db:"device_id"`
+	SubscriptionID string                `json:"subscription_id,omitempty" db:"subscription_id"`
+	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 
-	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" bson:"endpoint_metadata"`
-	Event    *Event    `json:"event_metadata,omitempty" bson:"event_metadata"`
+	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
+	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`
 
-	DeliveryAttempts []DeliveryAttempt   `json:"-" bson:"attempts"`
-	Status           EventDeliveryStatus `json:"status" bson:"status"`
-	Metadata         *Metadata           `json:"metadata" bson:"metadata"`
-	CLIMetadata      *CLIMetadata        `json:"cli_metadata" bson:"cli_metadata"`
-	Description      string              `json:"description,omitempty" bson:"description"`
-	CreatedAt        primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt        primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt        *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	DeliveryAttempts []DeliveryAttempt   `json:"-" db:"attempts"`
+	Status           EventDeliveryStatus `json:"status" db:"status"`
+	Metadata         *Metadata           `json:"metadata" db:"metadata"`
+	CLIMetadata      *CLIMetadata        `json:"cli_metadata" db:"cli_metadata"`
+	Description      string              `json:"description,omitempty" db:"description"`
+	CreatedAt        time.Time           `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt        time.Time           `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt        null.Time           `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type CLIMetadata struct {
