@@ -50,7 +50,7 @@ const (
 
 	fetchEventDeliveryByID = baseFetchEventDelivery + ` WHERE ed.id = $1 AND ed.deleted_at IS NULL`
 
-	loadEventDeliveriesPaged = baseFetchEventDelivery + ` WHERE (ed.project_id = $1 OR $1 = '') AND (ed.event_id = $2 OR $2 = '') AND (ed.status IN ($3) OR cardinality($3) = 0) AND (ed.endpoint_id IN ($4) OR cardinality($4) = 0) AND ed.created_at >= $5 AND ed.created_at <= $6  AND ed.deleted_at IS NULL`
+	loadEventDeliveriesPaged = baseFetchEventDelivery + ` WHERE (ed.project_id = $1 OR $1 = '') AND (ed.event_id = $2 OR $2 = '') AND (ed.status IN ($3) OR cardinality($3) = 0) AND (ed.endpoint_id IN ($4) OR cardinality($4) = 0) AND ed.created_at >= $5 AND ed.created_at <= $6  AND ed.deleted_at IS NULL LIMIT $7 OFFSET $8`
 
 	fetchEventDeliveries = `
     SELECT * FROM convoy.event_deliveries WHERE %s AND deleted_at IS NULL;
@@ -349,7 +349,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 
 	start := time.Unix(params.CreatedAtStart, 0)
 	end := time.Unix(params.CreatedAtEnd, 0)
-	rows, err := e.db.QueryxContext(ctx, loadEventDeliveriesPaged, projectID, eventID, status, endpointIDs, start, end)
+	rows, err := e.db.QueryxContext(ctx, loadEventDeliveriesPaged, projectID, eventID, status, endpointIDs, start, end, pageable.PerPage, getSkip(pageable.Page, pageable.PerPage))
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}

@@ -92,6 +92,17 @@ func getPrevPage(page int) int {
 	return prev
 }
 
+// getSkip returns calculated skip value for the query
+func getSkip(page, limit int) int {
+	skip := (page - 1) * limit
+
+	if skip <= 0 {
+		skip = 0
+	}
+
+	return skip
+}
+
 func calculatePaginationData(count, page, perPage int) datastore.PaginationData {
 	return datastore.PaginationData{
 		Total:     int64(count),
