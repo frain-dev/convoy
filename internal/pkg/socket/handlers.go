@@ -231,7 +231,8 @@ func listen(ctx context.Context, listenRequest *ListenRequest, r *Repo) (*datast
 				Type:         datastore.SubscriptionTypeCLI,
 				ProjectID:    project.UID,
 				DeviceID:     device.UID,
-				FilterConfig: &datastore.FilterConfiguration{EventTypes: []string{"*"}},
+				SourceID:     listenRequest.SourceID,
+				FilterConfig: &datastore.FilterConfiguration{EventTypes: []string{"*"}, Filter: datastore.FilterSchema{}},
 				CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
 			}
