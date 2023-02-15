@@ -222,7 +222,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 	}
 
 	var count int
-	err = s.db.Get(&count, countSubscriptions, projectID)
+	err = s.db.Get(&count, countSubscriptions, projectID) // TODO: count with filter
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
