@@ -267,21 +267,21 @@ func TestProcessEventCreated(t *testing.T) {
 							EventTypes: []string{"*"},
 						},
 					},
+					{
+						UID:       "33232",
+						DeviceID:  "334",
+						ProjectID: "project-id-1",
+						FilterConfig: &datastore.FilterConfiguration{
+							Filter: datastore.FilterSchema{},
+						},
+						Type: datastore.SubscriptionTypeCLI,
+					},
 				}
 				s.EXPECT().FindSubscriptionsBySourceID(gomock.Any(), "project-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
-				s.EXPECT().FindCLISubscriptions(gomock.Any(), "project-id-1").Times(1).Return(
-					[]datastore.Subscription{
-						{
-							UID:       "33232",
-							DeviceID:  "334",
-							ProjectID: "project-id-1",
-							Type:      datastore.SubscriptionTypeCLI,
-						},
-					}, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(4).Return(true, nil)
 
 				d, _ := args.deviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "334", "", "project-id-1").Times(2).Return(
+				d.EXPECT().FetchDeviceByID(gomock.Any(), "334", "", "project-id-1").Times(1).Return(
 					&datastore.Device{
 						UID:       "334",
 						ProjectID: "project-id-1",
@@ -362,8 +362,6 @@ func TestProcessEventCreated(t *testing.T) {
 				}
 				s.EXPECT().FindSubscriptionsBySourceID(gomock.Any(), "project-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
 				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
-
-				s.EXPECT().FindCLISubscriptions(gomock.Any(), "project-id-1").Times(1).Return([]datastore.Subscription{}, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
