@@ -103,6 +103,6 @@ func (g *Google) Consume() {
 
 func (g *Google) handleError() {
 	if err := recover(); err != nil {
-		g.log.WithError(fmt.Errorf("sourceID: %s, Errror: %s", g.source.UID, err)).Error("googlw pubsub source crashed")
+		g.log.WithError(fmt.Errorf("sourceID: %s, Errror: %s", g.source.UID, err)).Error("google pubsub source crashed")
 	}
 }

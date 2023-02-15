@@ -1,7 +1,6 @@
 package pubsub
 
 import (
-	"fmt"
 	"io"
 	"testing"
 
@@ -65,8 +64,6 @@ func TestPubSub_InsertSource_NewConfig(t *testing.T) {
 			AccessKeyID: "random-access-key-id",
 		},
 	}
-
-	fmt.Printf("sourcePool >>>> %+v\n", sourcePool.sources[uid].source.PubSub.Sqs)
 
 	client.EXPECT().Stop()
 	client.EXPECT().Start()
