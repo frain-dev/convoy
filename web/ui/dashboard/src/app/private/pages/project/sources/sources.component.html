@@ -52,8 +52,6 @@
 	imgSrc="/assets/img/new-empty-state.png"
 	heading="Create your first source"
 	description="Sources are how your webhook events are routed into the Convoy."
-	buttonText="Create Source"
-	(onAction)="router.navigate(['./new'])"
 	className="min-h-[65vh] mt-16px"
 	id="sources-empty-state"
 	*ngIf="!isLoadingSources && sources?.content?.length == 0"
