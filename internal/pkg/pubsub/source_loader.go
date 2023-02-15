@@ -87,10 +87,13 @@ func (s *SourceLoader) fetchSources(page int) error {
 	}
 
 	for _, source := range sources {
-		err := s.sourcePool.Insert(&source, s.handler)
+		ps, err := NewPubSubSource(&source, s.handler, s.log)
+
 		if err != nil {
-			s.log.WithError(err).Error("failed to insert source inside source pool")
+			s.log.WithError(err).Error("failed to create pub sub source")
 		}
+		
+		s.sourcePool.Insert(ps)
 	}
 
 	page += 1

@@ -37,9 +37,11 @@ func NewPubSubSource(source *datastore.Source, handler datastore.PubSubHandler, 
 
 	pubSubSource := &PubSubSource{client: client, source: source}
 	pubSubSource.hash = pubSubSource.getHash()
-
-	client.Start()
 	return pubSubSource, nil
+}
+
+func (p *PubSubSource) Start() {
+	p.client.Start()
 }
 
 func (p *PubSubSource) Stop() {
@@ -79,7 +81,8 @@ func NewSourcePool(log log.StdLogger) *SourcePool {
 	}
 }
 
-func (s *SourcePool) Insert(source *datastore.Source, handler datastore.PubSubHandler) error {
+func (s *SourcePool) Insert(ps *PubSubSource) error {
+	source := ps.source
 	existingSource, exists := s.sources[source.UID]
 
 	if exists {
@@ -91,13 +94,9 @@ func (s *SourcePool) Insert(source *datastore.Source, handler datastore.PubSubHa
 
 		s.Remove(source.UID)
 	}
-	sourceClient, err := NewPubSubSource(source, handler, s.log)
-	if err != nil {
-		s.log.WithError(err).Error("failed to create new source client")
-		return err
-	}
 
-	s.sources[source.UID] = sourceClient
+	ps.Start()
+	s.sources[source.UID] = ps
 	return nil
 }
 
