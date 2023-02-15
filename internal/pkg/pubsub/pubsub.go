@@ -81,7 +81,7 @@ func NewSourcePool(log log.StdLogger) *SourcePool {
 	}
 }
 
-func (s *SourcePool) Insert(ps *PubSubSource) error {
+func (s *SourcePool) Insert(ps *PubSubSource) {
 	source := ps.source
 	existingSource, exists := s.sources[source.UID]
 
@@ -89,7 +89,7 @@ func (s *SourcePool) Insert(ps *PubSubSource) error {
 		so := &PubSubSource{source: source}
 		// config hasn't changed
 		if existingSource.hash == so.getHash() {
-			return nil
+			return
 		}
 
 		s.Remove(source.UID)
@@ -97,7 +97,6 @@ func (s *SourcePool) Insert(ps *PubSubSource) error {
 
 	ps.Start()
 	s.sources[source.UID] = ps
-	return nil
 }
 
 func (s *SourcePool) Remove(sourceId string) {
