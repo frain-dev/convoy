@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
+	"gopkg.in/guregu/null.v4"
 )
 
 var (
@@ -43,29 +45,23 @@ const (
 	LEFT JOIN convoy.events_endpoints ee on ee.event_id = ev.id 
 	LEFT JOIN convoy.endpoints e on ee.endpoint_id = e.id
 	WHERE (ev.project_id = $1 OR $1 = '') AND (e.id = $2 OR $2 = '' ) 
-	AND (ev.source_id = $3 OR $3 = '') AND ev.created_at BETWEEN $4 AND $5 AND ev.deleted_at IS NULL;
+	AND (ev.source_id = $3 OR $3 = '') AND ev.created_at >= $4 AND ev.created_at <= $5 AND ev.deleted_at IS NULL;
 	`
+
 	baseEventsPaged = `
-	SELECT count(*) OVER(), ev.id, ev.project_id, COALESCE(ev.source_id, '') AS source_id, ev.headers, ev.raw,
-	ev.data, ev.created_at, ev.updated_at, ev.deleted_at, array_to_json(array_agg(json_build_object(
-    'uid', e.id, 
-	'title', e.title, 
-	'project_id', e.project_id, 
-	'support_email', e.support_email,
-	'target_url', e.target_url, 
-	'slack_webhook_url', e.slack_webhook_url, 
-	'created_at', e.created_at, 
-	'updated_at', e.updated_at, 
-	'deleted_at', e.deleted_at))) AS endpoint_metadata,
-	COALESCE(s.id, '') AS "source_metadata.id",
-	COALESCE(s.name, '') AS "source_metadata.name"
-	FROM convoy.events AS ev 
+	SELECT ev.id,
+	ev.project_id, ev.source_id, ev.headers, ev.raw,
+	ev.data, ev.created_at, ev.updated_at, ev.deleted_at,
+	e.id AS "endpoint.id", e.title AS "endpoint.title", 
+	e.project_id AS "endpoint.project_id", e.support_email AS "endpoint.support_email", 
+	e.target_url AS "endpoint.target_url", s.id AS "source.id", 
+	s.name AS "source.name" FROM convoy.events AS ev
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
 	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
 	WHERE ev.deleted_at IS NULL
 	`
-	baseWhere = `AND (ev.project_id = ? OR ? = '') AND (ev.source_id = ? OR ? = '') AND ev.created_at BETWEEN ? AND ? GROUP BY ev.id, s.id LIMIT ? OFFSET ?`
+	baseWhere = `AND (ev.project_id = ? OR ? = '') AND (ev.source_id = ? OR ? = '') AND ev.created_at >= ? AND ev.created_at <= ? GROUP BY ev.id, s.id, e.id LIMIT ? OFFSET ?`
 
 	fetchEventsPaginatedFilterByEndpoints = baseEventsPaged + `AND e.id IN (?)` + baseWhere
 
@@ -73,12 +69,12 @@ const (
 
 	softDeleteProjectEvents = `
 	UPDATE convoy.events SET deleted_at = now()
-	WHERE project_id = $1 AND created_at BETWEEN $2 AND $3 
+	WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3 
 	AND deleted_at IS NULL
 	`
 	hardDeleteProjectEvents = `
 	DELETE from convoy.events WHERE project_id = $1 AND created_at
-	BETWEEN $2 AND $3 AND deleted_at IS NULL
+	>= $2 AND created_at <= $3 AND deleted_at IS NULL
 	`
 )
 
@@ -237,7 +233,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 		return nil, datastore.PaginationData{}, err
 	}
 
-	totalRecords := 0
+	eventMap := make(map[string]*datastore.Event)
 	var events []datastore.Event
 	for rows.Next() {
 		var data EventPaginated
@@ -247,11 +243,43 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 			return nil, datastore.PaginationData{}, err
 		}
 
-		events = append(events, data.Event)
-		totalRecords = data.Count
+		record, exists := eventMap[data.UID]
+		if exists {
+			endpoint := data.Endpoint
+			if !util.IsStringEmpty(endpoint.UID.String) {
+				record.EndpointMetadata = append(record.EndpointMetadata, getEventEndpoint(endpoint))
+			}
+
+		} else {
+			event := getEvent(data)
+			endpoint := data.Endpoint
+			if !util.IsStringEmpty(endpoint.UID.String) {
+				event.EndpointMetadata = append(event.EndpointMetadata, getEventEndpoint(endpoint))
+			}
+
+			source := data.Source
+			if !util.IsStringEmpty(source.UID.String) {
+				event.Source = &datastore.Source{
+					UID:  source.UID.String,
+					Name: source.Name.String,
+				}
+			}
+
+			eventMap[event.UID] = event
+		}
 	}
 
-	pagination := calculatePaginationData(totalRecords, filter.Pageable.Page, filter.Pageable.PerPage)
+	var count int
+	err = e.db.Get(&count, countProjectMessages, projectID)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	for _, event := range eventMap {
+		events = append(events, *event)
+	}
+
+	pagination := calculatePaginationData(count, filter.Pageable.Page, filter.Pageable.PerPage)
 	return events, pagination, nil
 }
 
@@ -275,12 +303,63 @@ func getCreatedDateFilter(startDate, endDate int64) (time.Time, time.Time) {
 	return time.Unix(startDate, 0), time.Unix(endDate, 0)
 }
 
+func getEvent(data EventPaginated) *datastore.Event {
+	return &datastore.Event{
+		UID:              data.UID,
+		EventType:        datastore.EventType(data.EventType),
+		SourceID:         data.SourceID.String,
+		AppID:            data.AppID,
+		ProjectID:        data.ProjectID,
+		Headers:          data.Headers,
+		Data:             data.Data,
+		Raw:              data.Raw,
+		EndpointMetadata: []*datastore.Endpoint{},
+		CreatedAt:        data.CreatedAt,
+		UpdatedAt:        data.UpdatedAt,
+	}
+}
+
+func getEventEndpoint(endpoint *Endpoint) *datastore.Endpoint {
+	return &datastore.Endpoint{
+		UID:          endpoint.UID.String,
+		Title:        endpoint.Title.String,
+		ProjectID:    endpoint.ProjectID.String,
+		SupportEmail: endpoint.SupportEmail.String,
+		TargetURL:    endpoint.TargetUrl.String,
+	}
+}
+
 type EventEndpoint struct {
 	EventID    string `db:"event_id"`
 	EndpointID string `db:"endpoint_id"`
 }
 
 type EventPaginated struct {
-	Count int
-	datastore.Event
+	Count     int
+	UID       string                `db:"id"`
+	EventType string                `db:"event_type"`
+	SourceID  null.String           `db:"source_id"`
+	AppID     string                `db:"app_id"`
+	ProjectID string                `db:"project_id"`
+	Headers   httpheader.HTTPHeader `db:"headers"`
+	Data      json.RawMessage       `db:"data"`
+	Raw       string                `db:"raw"`
+	CreatedAt time.Time             `db:"created_at"`
+	UpdatedAt time.Time             `db:"updated_at"`
+	DeletedAt null.Time             `db:"deleted_at"`
+	Endpoint  *Endpoint             `db:"endpoint"`
+	Source    *Source               `db:"source"`
+}
+
+type Endpoint struct {
+	UID          null.String `db:"id"`
+	Title        null.String `db:"title"`
+	ProjectID    null.String `db:"project_id"`
+	SupportEmail null.String `db:"support_email"`
+	TargetUrl    null.String `db:"target_url"`
+}
+
+type Source struct {
+	UID  null.String `db:"id"`
+	Name null.String `db:"name"`
 }

@@ -5,7 +5,6 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -476,7 +475,7 @@ type Event struct {
 	ProjectID        string                `json:"project_id,omitempty" db:"project_id"`
 	Endpoints        []string              `json:"endpoints" db:"endpoints"`
 	Headers          httpheader.HTTPHeader `json:"headers" db:"headers"`
-	EndpointMetadata EndpointMetadata      `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
+	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Source           *Source               `json:"source_metadata,omitempty" db:"source_metadata"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
@@ -487,28 +486,6 @@ type Event struct {
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
-}
-
-type EndpointMetadata []*Endpoint
-
-func (e *EndpointMetadata) Scan(value interface{}) error {
-	b, ok := value.([]byte)
-	if !ok {
-		return fmt.Errorf("unsupported value type %T", value)
-	}
-
-	var endpoints []*Endpoint
-	if err := json.Unmarshal(b, &endpoints); err != nil {
-		return err
-	}
-
-	// This a hack to ensure we can return an empty array
-	if len(endpoints) > 0 && endpoints[0].UID == "" {
-		endpoints = make([]*Endpoint, 0)
-	}
-
-	*e = EndpointMetadata(endpoints)
-	return nil
 }
 
 func (e *Event) GetRawHeaders() map[string]interface{} {
