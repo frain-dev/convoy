@@ -168,15 +168,6 @@ func (c *Client) IsOnline() bool {
 	return since < maxDeviceLastSeenDuration
 }
 
-//func (c *Client) HasEventType(evType string) bool {
-//	for _, eventType := range c.EventTypes {
-//		if evType == eventType || eventType == "*" {
-//			return true
-//		}
-//	}
-//	return false
-//}
-
 func (c *Client) parseTime(message string) (time.Time, error) {
 	var since time.Time = time.Now()
 	var err error
