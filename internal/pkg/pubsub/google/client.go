@@ -78,6 +78,7 @@ func (g *Google) Consume() {
 	}
 
 	defer client.Close()
+	defer g.handleError()
 
 	sub := client.Subscription(g.Cfg.SubscriptionID)
 
@@ -97,5 +98,11 @@ func (g *Google) Consume() {
 	if err != nil {
 		g.log.WithError(err).Error("subscription receive error - google pub sub")
 		return
+	}
+}
+
+func (g *Google) handleError() {
+	if err := recover(); err != nil {
+		g.log.WithError(fmt.Errorf("sourceID: %s, Errror: %s", g.source.UID, err)).Error("googlw pubsub source crashed")
 	}
 }

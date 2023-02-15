@@ -107,7 +107,9 @@ func TestSourceLoader_FetchSources(t *testing.T) {
 				tc.dbFn(sourceLoader)
 			}
 
-			sourceLoader.fetchSources(tc.page)
+			err := sourceLoader.fetchSources(tc.page)
+
+			require.Nil(t, err)
 			require.Equal(t, tc.expectedPubSource, len(sourceLoader.sourcePool.sources))
 		})
 	}

@@ -92,7 +92,7 @@ func (s *SourceLoader) fetchSources(page int) error {
 		if err != nil {
 			s.log.WithError(err).Error("failed to create pub sub source")
 		}
-		
+
 		s.sourcePool.Insert(ps)
 	}
 

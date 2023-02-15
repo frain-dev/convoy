@@ -2,6 +2,7 @@ package sqs
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -80,6 +81,8 @@ func (s *Sqs) Consume() {
 		Credentials: credentials.NewStaticCredentials(s.Cfg.AccessKeyID, s.Cfg.SecretKey, ""),
 	})
 
+	defer s.handleError()
+
 	if err != nil {
 		log.WithError(err).Error("failed to create new session - sqs")
 	}
@@ -116,6 +119,8 @@ func (s *Sqs) Consume() {
 			go func(m *sqs.Message) {
 				defer wg.Done()
 
+				defer s.handleError()
+
 				if err := s.handler(s.source, *m.Body); err != nil {
 					s.log.WithError(err).Error("failed to write message to create event queue")
 				} else {
@@ -138,4 +143,10 @@ func (s *Sqs) Consume() {
 
 func (s *Sqs) Stop() {
 	close(s.done)
+}
+
+func (s *Sqs) handleError() {
+	if err := recover(); err != nil {
+		s.log.WithError(fmt.Errorf("sourceID: %s, Errror: %s", s.source.UID, err)).Error("sqs pubsub source crashed")
+	}
 }
