@@ -125,15 +125,8 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			}
 
 			if s.Type == datastore.SubscriptionTypeCLI {
-				device, err := deviceRepo.FetchDeviceByID(ctx, s.DeviceID, "", project.UID)
-				if err != nil {
-					log.WithError(err).Error("failed to fetch device")
-					return &EndpointError{Err: err, delay: 10 * time.Second}
-				}
-
 				eventDelivery.CLIMetadata = &datastore.CLIMetadata{
 					EventType: string(event.EventType),
-					HostName:  device.HostName,
 					SourceID:  event.SourceID,
 				}
 			}
@@ -247,14 +240,6 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 		if err != nil {
 			return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
 		}
-
-		cliSubs, err := subRepo.FindCLISubscriptions(ctx, project.UID)
-		if err != nil {
-			log.WithError(err).Error("error fetching cli subscriptions for this project")
-			return subscriptions, &EndpointError{Err: errors.New("error fetching cli subscriptions for this project"), delay: 10 * time.Second}
-		}
-
-		subscriptions = append(subscriptions, cliSubs...)
 	}
 
 	return subscriptions, nil
