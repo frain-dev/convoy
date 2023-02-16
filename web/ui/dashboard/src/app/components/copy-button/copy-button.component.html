@@ -1,9 +1,8 @@
 <div [class]="class">
 	<button convoy-button fill="text" type="button" size="sm" (click)="copyText($event)" class="relative">
 		<svg width="14" height="14" [attr.height]="size === 'sm' ? '14' : '16'" [attr.width]="size === 'sm' ? '14' : '16'" [class]="size === 'sm' ? 'fill-grey-40' : 'fill-primary-100'">
-			<use xlink:href="#copy-icon"></use>
+			<use xlink:href="#copy-alt"></use>
 		</svg>
-		<!-- Testing if this is neccessary -->
-		<!-- <small class="absolute left-20px" *ngIf="textCopied">copied</small> -->
+		<ng-content></ng-content>
 	</button>
 </div>
