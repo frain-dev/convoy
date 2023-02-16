@@ -35,11 +35,6 @@ export class ProjectComponent implements OnInit {
 			name: 'Portal Links',
 			icon: 'portal',
 			route: '/portal-links'
-		},
-		{
-			name: 'Events Log',
-			icon: 'logs',
-			route: '/event-logs'
 		}
 	];
 	shouldShowFullSideBar = true;
