@@ -85,5 +85,5 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 }
 
 func (n *NativeRealm) GetName() string {
-	return "native_realm"
+	return auth.NativeRealmName
 }
