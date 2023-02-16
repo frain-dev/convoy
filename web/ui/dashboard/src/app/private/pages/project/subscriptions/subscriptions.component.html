@@ -39,21 +39,23 @@
 
 <div *ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length">
 	<div class="flex flex-wrap gap-24px" *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
-		<convoy-card className="py-20px" class="w-full max-w-[348px] cursor-pointer" *ngFor="let subscription of subscriptions?.content; let i = index" [id]="'app' + i" [routerLink]="['./']" [queryParams]="{ id: subscription.uid }">
+		<div convoy-card class="py-20px transition-all outline-none w-full max-w-[356px] cursor-pointer" hover="true" *ngFor="let subscription of subscriptions?.content; let i = index" [id]="'app' + i" [routerLink]="['./']" [queryParams]="{ id: subscription.uid }">
 			<div class="px-24px pb-12px border-b border-b-grey-10 flex items-center justify-between">
 				<div class="w-114px">
-					<div class="text-grey-40 text-10 mb-4px">{{ subscription.source_metadata.provider || (subscription.source_metadata.verifier.type | sourceValue: 'verifier') }}</div>
-					<div class="text-14 font-medium text-grey-60">{{ subscription.source_metadata.name }}</div>
+					<div class="text-grey-40 text-10 mb-4px">{{ subscription.source_metadata.provider || (subscription.source_metadata.verifier.type | sourceValue: 'verifier') }} Source</div>
+					<div class="text-14 font-medium text-grey-60 overflow-hidden" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical">{{ subscription.source_metadata.name }}</div>
 				</div>
-				<svg width="50" height="9" viewBox="0 0 50 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-					<path
-						d="M0.647711 3.89014C0.451813 4.08191 0.450731 4.39849 0.645295 4.59724L3.81589 7.83601C4.01046 8.03476 4.32699 8.04041 4.52289 7.84864C4.71878 7.65686 4.71987 7.34028 4.5253 7.14154L1.70699 4.26262L4.54464 1.48471C4.74054 1.29294 4.74162 0.976359 4.54705 0.777611C4.35249 0.578864 4.03596 0.573212 3.84006 0.764986L0.647711 3.89014ZM29.3523 5.10986C29.5482 4.91809 29.5493 4.60151 29.3547 4.40276L26.1841 1.16399C25.9895 0.96524 25.673 0.959588 25.4771 1.15136C25.2812 1.34314 25.2801 1.65972 25.4747 1.85846L28.293 4.73738L25.4554 7.51529C25.2595 7.70706 25.2584 8.02364 25.4529 8.22239C25.6475 8.42114 25.964 8.42679 26.1599 8.23501L29.3523 5.10986ZM0.998291 4.75L28.9983 5.25L29.0017 4.25L1.00171 3.75L0.998291 4.75Z"
-						fill="#E8E8E9"
-					/>
-				</svg>
+				<div class="flex items-center justify-center">
+					<svg width="30" height="9" viewBox="0 0 30 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path
+							d="M0.647711 3.89014C0.451813 4.08191 0.450731 4.39849 0.645295 4.59724L3.81589 7.83601C4.01046 8.03476 4.32699 8.04041 4.52289 7.84864C4.71878 7.65686 4.71987 7.34028 4.5253 7.14154L1.70699 4.26262L4.54464 1.48471C4.74054 1.29294 4.74162 0.976359 4.54705 0.777611C4.35249 0.578864 4.03596 0.573212 3.84006 0.764986L0.647711 3.89014ZM29.3523 5.10986C29.5482 4.91809 29.5493 4.60151 29.3547 4.40276L26.1841 1.16399C25.9895 0.96524 25.673 0.959588 25.4771 1.15136C25.2812 1.34314 25.2801 1.65972 25.4747 1.85846L28.293 4.73738L25.4554 7.51529C25.2595 7.70706 25.2584 8.02364 25.4529 8.22239C25.6475 8.42114 25.964 8.42679 26.1599 8.23501L29.3523 5.10986ZM0.998291 4.75L28.9983 5.25L29.0017 4.25L1.00171 3.75L0.998291 4.75Z"
+							fill="#E8E8E9"
+						/>
+					</svg>
+				</div>
 				<div class="text-right w-114px">
 					<div class="text-grey-40 text-10 mb-4px">Endpoint</div>
-					<div class="text-14 font-medium text-grey-60">{{ subscription.endpoint_metadata?.title }}</div>
+					<div class="text-14 font-medium text-grey-60 overflow-hidden" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical">{{ subscription.endpoint_metadata?.title }}</div>
 				</div>
 			</div>
 
@@ -77,7 +79,7 @@
 					<div class="text-10 font-medium">Retry</div>
 				</div>
 			</div>
-		</convoy-card>
+		</div>
 	</div>
 
 	<ng-container *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
