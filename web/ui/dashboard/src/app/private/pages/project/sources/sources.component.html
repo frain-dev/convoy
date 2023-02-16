@@ -237,7 +237,9 @@
 					<use xlink:href="#delete-icon"></use>
 				</svg>
 			</button>
-			<button convoy-button size="sm" class="ml-24px" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/sources/' + activeSource?.uid">
+
+			<button convoy-button size="sm" class="ml-24px" [routerLink]="'./' + activeSource?.uid">
+
 				Edit Source
 				<svg width="18" height="18" class="ml-8px fill-white-100">
 					<use xlink:href="#edit-icon"></use>
@@ -246,4 +248,5 @@
 		</div>
 	</div>
 </div>
+
 <app-delete-modal *ngIf="showDeleteSourceModal" [isLoading]="isDeletingSource" [deleteText]="'delete “' + activeSource?.name + '”'" (closeModal)="showDeleteSourceModal = false" (deleteData)="deleteSource()"></app-delete-modal>
