@@ -62,6 +62,12 @@ export class CreateSubscriptionComponent implements OnInit {
 	showError = false;
 	confirmModal = false;
 
+	configurations = [
+		{ uid: 'filter', name: 'Filter', show: false },
+		{ uid: 'retry-config', name: 'Retry Logic', show: false },
+		{ uid: 'alert-config', name: 'Alert Rule', show: false }
+	];
+
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, private formatSeconds: FormatSecondsPipe) {}
 
 	async ngOnInit() {
@@ -74,6 +80,16 @@ export class CreateSubscriptionComponent implements OnInit {
 		this.isLoadingForm = true;
 		await Promise.all([this.getPortalProject(), this.getEndpoints(), this.getSources(), this.getGetProjectDetails(), this.getSubscriptionDetails()]);
 		this.isLoadingForm = false;
+	}
+
+	toggleConfigForm(configValue: string) {
+		this.configurations.forEach(config => {
+			if (config.uid === configValue) config.show = !config.show;
+		});
+	}
+
+	showConfig(configValue: string): boolean {
+		return this.configurations.find(config => config.uid === configValue)?.show || false;
 	}
 
 	async getPortalProject() {
@@ -160,6 +176,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async onCreateEndpoint(newEndpoint: ENDPOINT) {
+		await this.getEndpoints();
 		this.subscriptionForm.patchValue({ endpoint_id: newEndpoint.uid });
 	}
 
