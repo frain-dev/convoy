@@ -9,7 +9,7 @@ import (
 type NoopRealm struct{}
 
 func (n NoopRealm) GetName() string {
-	return "noop_realm"
+	return auth.NoopRealmName
 }
 
 var authUser = &auth.AuthenticatedUser{

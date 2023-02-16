@@ -585,7 +585,7 @@ type EventDelivery struct {
 
 type CLIMetadata struct {
 	EventType string `json:"event_type" bson:"event_type"`
-	HostName  string `json:"host_name,omitempty" bson:"-"`
+	SourceID  string `json:"source_id" bson:"source_id"`
 }
 
 type APIKey struct {
