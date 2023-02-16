@@ -12,7 +12,7 @@ export class ProjectComponent implements OnInit {
 	screenWidth = window.innerWidth;
 	sideBarItems = [
 		{
-			name: 'Events',
+			name: 'Event Deliveries',
 			icon: 'events',
 			route: '/events'
 		},
