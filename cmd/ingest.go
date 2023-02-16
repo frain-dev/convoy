@@ -9,6 +9,7 @@ import (
 )
 
 func addIngestCommand(a *app) *cobra.Command {
+	var interval int
 	cmd := &cobra.Command{
 		Use:   "ingest",
 		Short: "Ingest webhook events from Pub/Sub streams",
@@ -35,11 +36,12 @@ func addIngestCommand(a *app) *cobra.Command {
 			sourcePool := pubsub.NewSourcePool(lo)
 			sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, a.queue, sourcePool, lo)
 
-			sourceLoader.Run()
+			sourceLoader.Run(interval)
 
 			return nil
 		},
 	}
 
+	cmd.Flags().IntVar(&interval, "interval", 300, "the time interval, measured in seconds, at which the database should be polled for new pub sub sources")
 	return cmd
 }

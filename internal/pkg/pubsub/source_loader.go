@@ -41,8 +41,8 @@ func NewSourceLoader(endpointRepo datastore.EndpointRepository, sourceRepo datas
 	}
 }
 
-func (s *SourceLoader) Run() {
-	ticker := time.NewTicker(10 * time.Second)
+func (s *SourceLoader) Run(interval int) {
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 	exit := make(chan os.Signal, 1)
 
 	signal.Notify(exit, os.Interrupt)
