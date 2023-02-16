@@ -153,11 +153,11 @@
 
 			<div class="flex items-center">
 				<ng-container *ngFor="let config of configurations">
-					<button *ngIf="!config.show" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" class="mr-24px" (click)="toggleConfigForm(config.uid)">
-						<img [src]="'assets/img/svg/' + config.uid + '-icon.svg'" class="mr-10px" [alt]="config.uid" />
-
+					<button *ngIf="!config.show" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" class="mr-24px font-normal" (click)="toggleConfigForm(config.uid)">
 						{{ config.name }}
-						<img src="assets/img/svg/plus-icon.svg" class="ml-24px" alt="plus icon" />
+						<svg width="12" height="12" class="ml-8px fill-grey-60">
+							<use xlink:href="#add-icon" width="12" height="12"></use>
+						</svg>
 					</button>
 				</ng-container>
 			</div>
