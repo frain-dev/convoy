@@ -2,14 +2,17 @@ import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-	selector: 'convoy-card',
+	selector: 'convoy-card, [convoy-card]',
 	standalone: true,
 	imports: [CommonModule],
-	templateUrl: './card.component.html',
-	styleUrls: ['./card.component.scss']
+	host: { class: 'rounded-8px', '[class]': 'classes' },
+	template: `
+		<ng-content></ng-content>
+	`
 })
 export class CardComponent implements OnInit {
 	@Input('className') class!: string;
+	@Input('hover') hover: 'true' | 'false' = 'false';
 	@Input('color') color: 'default' | 'danger' = 'default';
 
 	constructor() {}
@@ -21,6 +24,6 @@ export class CardComponent implements OnInit {
 			default: 'bg-[#fff] border border-grey-10',
 			danger: 'bg-danger-500 border border-danger-200'
 		};
-		return `${colors[this.color]} ${this.class}`;
+		return `${colors[this.color]} ${this.class} ${this.hover === 'true' ? 'focus:shadow-sm hover:shadow-sm focus-visible:shadow-sm hover:border-grey-20 focus:border-grey-20 focus-visible:border-grey-20' : ''} block`;
 	}
 }
