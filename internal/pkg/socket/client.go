@@ -27,9 +27,8 @@ var (
 
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
-	// device id of the cli client
 	deviceID          string
-	EventTypes        []string
+	sourceID          string
 	Device            *datastore.Device
 	deviceRepo        datastore.DeviceRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
@@ -40,12 +39,12 @@ type Client struct {
 	lock sync.RWMutex // protect Device from data race
 }
 
-func NewClient(conn WebSocketConnection, device *datastore.Device, events []string, deviceRepo datastore.DeviceRepository, eventDeliveryRepo datastore.EventDeliveryRepository) {
+func NewClient(conn WebSocketConnection, device *datastore.Device, sourceID string, deviceRepo datastore.DeviceRepository, eventDeliveryRepo datastore.EventDeliveryRepository) {
 	client := &Client{
 		conn:              conn,
 		Device:            device,
-		EventTypes:        events,
 		deviceID:          device.UID,
+		sourceID:          sourceID,
 		deviceRepo:        deviceRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
 	}
@@ -167,15 +166,6 @@ func (c *Client) IsOnline() bool {
 
 	since := time.Since(lastSeen)
 	return since < maxDeviceLastSeenDuration
-}
-
-func (c *Client) HasEventType(evType string) bool {
-	for _, eventType := range c.EventTypes {
-		if evType == eventType || eventType == "*" {
-			return true
-		}
-	}
-	return false
 }
 
 func (c *Client) parseTime(message string) (time.Time, error) {
