@@ -75,7 +75,7 @@ export class CreateEndpointComponent implements OnInit {
 			this.onAction.emit({ action: this.endpointUid && this.editMode ? 'update' : 'save', data: response.data });
 			this.addNewEndpointForm.reset();
 			this.savingEndpoint = false;
-			return;
+			return response;
 		} catch {
 			this.savingEndpoint = false;
 			return;

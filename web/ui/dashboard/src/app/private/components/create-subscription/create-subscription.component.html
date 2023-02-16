@@ -7,10 +7,11 @@
 			<input type="text" id="subscription-name" convoy-input autocomplete="subscription-name" formControlName="name" placeholder="e.g paystack-live" />
 			<convoy-input-error *ngIf="subscriptionForm.get('name')?.touched && subscriptionForm.get('name')?.invalid">Enter new subscription name</convoy-input-error>
 		</convoy-input-field>
+
 		<div class="border-t border-grey-20 pt-24px mt-24px">
 			<h3 class="font-semibold mb-24px">Set Configurations</h3>
 
-			<ng-container *ngIf="showConfig('retry-config')">
+			<ng-container *ngIf="showConfig('retry_config')">
 				<div class="flex justify-between items-center mb-16px">
 					<p class="text-14 font-medium text-grey-60 flex items-center">
 						Retry Logic
@@ -19,7 +20,7 @@
 							before the next retry attempt.
 						</convoy-tooltip>
 					</p>
-					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('retry-config')">
+					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('retry_config')">
 						<img src="assets/img/svg/delete-icon.svg" alt="plus icon" />
 					</button>
 				</div>
@@ -80,11 +81,11 @@
 				</div>
 			</ng-container>
 
-			<ng-container *ngIf="showConfig('filter')">
+			<ng-container *ngIf="showConfig('filter_config')">
 				<div class="border border-grey-20 rounded-4px p-16px mb-24px">
 					<div class="flex justify-between items-center mb-14px">
 						<h4 class="text-grey-60 font-medium">Events Filter</h4>
-						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('filter')">
+						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('filter_config')">
 							<img src="assets/img/svg/delete-icon.svg" alt="delete icon" />
 						</button>
 					</div>
@@ -136,15 +137,16 @@
 					[required]="true"
 					(selectedOption)="subscriptionForm.patchValue({ source_id: $event })"
 				></convoy-select>
-				<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateSourceModal = true">
+				<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateSourceModal = true; subscriptionForm.patchValue({ source_id: null })">
 					<svg width="20" height="20" class="mr-8px" fill="currentColor">
 						<use xlink:href="#plus-icon"></use>
 					</svg>
 					Create New Source
 				</button>
 			</convoy-card>
+
 			<convoy-create-source *ngIf="showCreateSourceModal" (onAction)="$event?.action === 'close' ? (showCreateSourceModal = false) : onCreateSource($event.data); showCreateSourceModal = false">
-				<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateSourceModal = false">
+				<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateSourceModal = false; subscriptionForm.patchValue({ source_id: null })">
 					<svg width="20" height="20" class="mr-8px" fill="currentColor">
 						<use xlink:href="#plus-icon"></use>
 					</svg>
@@ -167,15 +169,16 @@
 				(selectedOption)="subscriptionForm.patchValue({ endpoint_id: $event })"
 				[required]="true"
 			></convoy-select>
-			<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateEndpointModal = true" *ngIf="!token">
+			<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateEndpointModal = true; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">
 				<svg width="20" height="20" class="mr-8px" fill="currentColor">
 					<use xlink:href="#plus-icon"></use>
 				</svg>
 				Create New Endpoint
 			</button>
 		</convoy-card>
+
 		<convoy-create-endpoint *ngIf="showCreateEndpointModal" (onAction)="$event.action === 'close' ? (showCreateEndpointModal = false) : onCreateEndpoint($event.data); showCreateEndpointModal = false">
-			<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateEndpointModal = false" *ngIf="!token">
+			<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateEndpointModal = false; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">
 				<svg width="20" height="20" class="mr-8px" fill="currentColor">
 					<use xlink:href="#plus-icon"></use>
 				</svg>
