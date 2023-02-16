@@ -12,18 +12,20 @@ import (
 	"strings"
 )
 
-var ErrAlgoNotFound = errors.New("Algorithm not found")
-var ErrInvalidIP = errors.New("Source IP not supported")
-var ErrCannotReadRequestBody = errors.New("Failed to read request body")
-var ErrHashDoesNotMatch = errors.New("Invalid Signature - Hash does not match")
-var ErrCannotDecodeHexEncodedMACHeader = errors.New("Cannot decode hex encoded MAC header")
-var ErrCannotDecodeBase64EncodedMACHeader = errors.New("Cannot decode base64 encoded MAC header")
-var ErrSignatureCannotBeEmpty = errors.New("Signature cannot be empty")
-var ErrAuthHeader = errors.New("Invalid Authorization header")
-var ErrAuthHeaderCannotBeEmpty = errors.New("Auth header cannot be empty")
-var ErrInvalidHeaderStructure = errors.New("Invalid header structure")
-var ErrInvalidAuthLength = errors.New("Invalid Basic Auth Length")
-var ErrInvalidEncoding = errors.New("Invalid header encoding")
+var (
+	ErrAlgoNotFound                       = errors.New("Algorithm not found")
+	ErrInvalidIP                          = errors.New("Source IP not supported")
+	ErrCannotReadRequestBody              = errors.New("Failed to read request body")
+	ErrHashDoesNotMatch                   = errors.New("Invalid Signature - Hash does not match")
+	ErrCannotDecodeHexEncodedMACHeader    = errors.New("Cannot decode hex encoded MAC header")
+	ErrCannotDecodeBase64EncodedMACHeader = errors.New("Cannot decode base64 encoded MAC header")
+	ErrSignatureCannotBeEmpty             = errors.New("Signature cannot be empty")
+	ErrAuthHeader                         = errors.New("Invalid Authorization header")
+	ErrAuthHeaderCannotBeEmpty            = errors.New("Auth header cannot be empty")
+	ErrInvalidHeaderStructure             = errors.New("Invalid header structure")
+	ErrInvalidAuthLength                  = errors.New("Invalid Basic Auth Length")
+	ErrInvalidEncoding                    = errors.New("Invalid header encoding")
+)
 
 type Verifier interface {
 	VerifyRequest(r *http.Request, payload []byte) error
@@ -207,7 +209,12 @@ func (gV *GithubVerifier) VerifyRequest(r *http.Request, payload []byte) error {
 }
 
 func (gV *GithubVerifier) getSignature(sig string) string {
-	return strings.Split(sig, "sha256=")[1]
+	values := strings.Split(sig, "sha256=")
+	if len(values) < 2 {
+		return ""
+	}
+
+	return values[1]
 }
 
 type ShopifyVerifier struct {

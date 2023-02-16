@@ -130,6 +130,99 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 	return organisations, datastore.PaginationData{}, nil
 }
 
+func (o *orgMemberRepo) FindUserProjects(ctx context.Context, userID string) ([]datastore.Project, error) {
+	ctx = o.setCollectionInContext(ctx)
+
+	matchStage1 := bson.D{
+		{
+			Key: "$match",
+			Value: bson.D{
+				{Key: "user_id", Value: userID},
+				{Key: "deleted_at", Value: nil},
+			},
+		},
+	}
+
+	lookupStage := bson.D{
+		{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: datastore.OrganisationCollection},
+			{Key: "localField", Value: "organisation_id"},
+			{Key: "foreignField", Value: "uid"},
+			{Key: "as", Value: "organisations"},
+		}},
+	}
+
+	unwindStage := bson.D{
+		{Key: "$unwind", Value: "$organisations"},
+	}
+
+	replaceRootStage := bson.D{
+		{
+			Key: "$replaceRoot",
+			Value: bson.D{
+				{Key: "newRoot", Value: "$organisations"},
+			},
+		},
+	}
+
+	matchStage2 := bson.D{
+		{
+			Key: "$match",
+			Value: bson.D{
+				{Key: "deleted_at", Value: nil},
+			},
+		},
+	}
+
+	projectLookupStage := bson.D{
+		{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: datastore.ProjectsCollection},
+			{Key: "localField", Value: "uid"},
+			{Key: "foreignField", Value: "organisation_id"},
+			{Key: "as", Value: "projects"},
+		}},
+	}
+
+	projectUnwindStage := bson.D{
+		{Key: "$unwind", Value: "$projects"},
+	}
+
+	projectReplaceRootStage := bson.D{
+		{
+			Key: "$replaceRoot",
+			Value: bson.D{
+				{Key: "newRoot", Value: "$projects"},
+			},
+		},
+	}
+
+	matchStage3 := bson.D{
+		{
+			Key: "$match",
+			Value: bson.D{
+				{Key: "deleted_at", Value: nil},
+				{Key: "type", Value: datastore.IncomingProject},
+			},
+		},
+	}
+
+	pipeline := mongo.Pipeline{
+		matchStage1, lookupStage, unwindStage,
+		replaceRootStage, matchStage2, projectLookupStage,
+		projectUnwindStage, projectReplaceRootStage, matchStage3,
+	}
+
+	projects := make([]datastore.Project, 0)
+
+	err := o.store.Aggregate(ctx, pipeline, &projects, false)
+	if err != nil {
+		log.WithError(err).Error("failed to run user project aggregation")
+		return nil, err
+	}
+
+	return projects, nil
+}
+
 func (o *orgMemberRepo) UpdateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
 	ctx = o.setCollectionInContext(ctx)
 	member.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())

@@ -255,7 +255,7 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 	subscription := &datastore.Subscription{
 		UID:       uuid.NewString(),
 		Name:      "test_subscription",
-		Type:      datastore.SubscriptionTypeAPI,
+		Type:      datastore.SubscriptionTypeCLI,
 		SourceID:  "source-id-1",
 		DeviceID:  "device-id-1",
 		ProjectID: "project-id-1",
@@ -263,7 +263,7 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 	require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.ProjectID, subscription))
 
 	// Fetch sub again
-	sub, err := subRepo.FindSubscriptionByDeviceID(context.Background(), "project-id-1", "device-id-1")
+	sub, err := subRepo.FindSubscriptionByDeviceID(context.Background(), "project-id-1", "device-id-1", datastore.SubscriptionTypeCLI)
 	require.NoError(t, err)
 
 	require.NotEmpty(t, sub.UID)
