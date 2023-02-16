@@ -20,14 +20,18 @@ func provideRepo(ctrl *gomock.Controller) *Repo {
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
 	deviceRepo := mocks.NewMockDeviceRepository(ctrl)
+	projectRepo := mocks.NewMockProjectRepository(ctrl)
+	orgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 
 	return &Repo{
-		EndpointRepo:      endpointRepo,
-		DeviceRepo:        deviceRepo,
-		SubscriptionRepo:  subRepo,
-		SourceRepo:        sourceRepo,
-		EventDeliveryRepo: eventDeliveryRepo,
+		ProjectRepo:         projectRepo,
+		OrgMemberRepository: orgMemberRepo,
+		EndpointRepo:        endpointRepo,
+		DeviceRepo:          deviceRepo,
+		SubscriptionRepo:    subRepo,
+		SourceRepo:          sourceRepo,
+		EventDeliveryRepo:   eventDeliveryRepo,
 	}
 }
 
@@ -36,8 +40,6 @@ func TestHub_listen(t *testing.T) {
 	lastSeen := primitive.NewDateTimeFromTime(time.Now().Add(-time.Minute))
 	type args struct {
 		ctx           context.Context
-		project       *datastore.Project
-		endpoint      *datastore.Endpoint
 		listenRequest *ListenRequest
 	}
 	tests := []struct {
@@ -52,19 +54,29 @@ func TestHub_listen(t *testing.T) {
 		{
 			name: "should_listen_successfully",
 			args: args{
-				ctx:      ctx,
-				project:  &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
-				endpoint: &datastore.Endpoint{UID: "abc"},
+				ctx: ctx,
 				listenRequest: &ListenRequest{
-					HostName:   "",
+					ProjectID:  "1234",
+					HostName:   "hostname_1",
 					DeviceID:   "device-id",
 					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
+					SourceName: "test_source",
 				},
 			},
 			dbFn: func(h *Repo) {
+				p := h.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), "1234").Times(1).Return(
+					&datastore.Project{
+						UID:            "1234",
+						Name:           "test",
+						OrganisationID: "abc",
+						Type:           datastore.IncomingProject,
+					},
+					nil,
+				)
+
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
+				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:        "device-id",
 						ProjectID:  "1234",
@@ -77,7 +89,7 @@ func TestHub_listen(t *testing.T) {
 				)
 
 				s, _ := h.SourceRepo.(*mocks.MockSourceRepository)
-				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(
+				s.EXPECT().FindSourceByName(gomock.Any(), gomock.Any(), "test_source").Times(1).Return(
 					&datastore.Source{UID: "1234", ProjectID: "1234"},
 					nil,
 				)
@@ -85,7 +97,7 @@ func TestHub_listen(t *testing.T) {
 				sub, _ := h.SubscriptionRepo.(*mocks.MockSubscriptionRepository)
 				sub.EXPECT().UpdateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id").
+				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id", datastore.SubscriptionTypeCLI).
 					Times(1).Return(&datastore.Subscription{}, nil)
 			},
 			want: &datastore.Device{
@@ -99,138 +111,82 @@ func TestHub_listen(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_error_for_wrong_device_project_id",
-			args: args{
-				ctx:      ctx,
-				project:  &datastore.Project{UID: "1234"},
-				endpoint: &datastore.Endpoint{UID: "abc"},
-				listenRequest: &ListenRequest{
-					HostName:   "",
-					DeviceID:   "device-id",
-					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
-				},
-			},
-			dbFn: func(h *Repo) {
-				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
-					&datastore.Device{
-						UID:        "device-id",
-						ProjectID:  "2",
-						EndpointID: "abc",
-						HostName:   "",
-						Status:     datastore.DeviceStatusOnline,
-						LastSeenAt: lastSeen,
-					},
-					nil,
-				)
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusUnauthorized,
-			wantErrMsg:  "this device cannot access this project",
-		},
-		{
-			name: "should_error_for_wrong_device_app_id",
-			args: args{
-				ctx:      ctx,
-				project:  &datastore.Project{UID: "1234"},
-				endpoint: &datastore.Endpoint{UID: "abc"},
-				listenRequest: &ListenRequest{
-					HostName:   "",
-					DeviceID:   "device-id",
-					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
-				},
-			},
-			dbFn: func(h *Repo) {
-				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
-					&datastore.Device{
-						UID:        "device-id",
-						ProjectID:  "1234",
-						EndpointID: "abcd",
-						HostName:   "",
-						Status:     datastore.DeviceStatusOnline,
-						LastSeenAt: lastSeen,
-					},
-					nil,
-				)
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusUnauthorized,
-			wantErrMsg:  "this device cannot access this application",
-		},
-		{
 			name: "should_fail_to_find_device",
 			args: args{
-				ctx:      ctx,
-				project:  &datastore.Project{UID: "1234"},
-				endpoint: &datastore.Endpoint{UID: "abc"},
+				ctx: ctx,
 				listenRequest: &ListenRequest{
-					HostName:   "",
+					ProjectID:  "1234",
+					HostName:   "hostname_1",
 					DeviceID:   "device-id",
 					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
+					SourceName: "test_source",
 				},
 			},
 			dbFn: func(h *Repo) {
+				p := h.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), "1234").Times(1).Return(
+					&datastore.Project{
+						UID:            "1234",
+						Name:           "test",
+						OrganisationID: "abc",
+						Type:           datastore.IncomingProject,
+					},
+					nil,
+				)
+
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(nil, errors.New("device not found"))
+				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "", "1234").Times(1).Return(nil, errors.New("device not found"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "device not found",
 		},
 		{
-			name: "should_fail_to_find_source",
+			name: "should_fail_to_find_project",
 			args: args{
-				ctx:      ctx,
-				project:  &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
-				endpoint: &datastore.Endpoint{UID: "abc"},
+				ctx: ctx,
 				listenRequest: &ListenRequest{
-					HostName:   "",
+					ProjectID:  "1234",
+					HostName:   "hostname_1",
 					DeviceID:   "device-id",
 					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
+					SourceName: "test_source",
 				},
 			},
 			dbFn: func(h *Repo) {
-				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
-					&datastore.Device{
-						UID:        "device-id",
-						ProjectID:  "1234",
-						EndpointID: "abc",
-						HostName:   "",
-						Status:     datastore.DeviceStatusOnline,
-						LastSeenAt: lastSeen,
-					},
-					nil,
-				)
-
-				s, _ := h.SourceRepo.(*mocks.MockSourceRepository)
-				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(nil, errors.New("failed to find source"))
+				p := h.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), "1234").Times(1).Return(nil, errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to find source",
+			wantErrMsg:  "failed to find project",
 		},
 		{
-			name: "should_error_for_wrong_source_project_id",
+			name: "should_fail_to_find_source",
 			args: args{
-				ctx:      ctx,
-				project:  &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
-				endpoint: &datastore.Endpoint{UID: "abc"},
+				ctx: ctx,
 				listenRequest: &ListenRequest{
-					HostName:   "",
+					ProjectID:  "1234",
+					HostName:   "hostname_1",
 					DeviceID:   "device-id",
 					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
+					SourceName: "test_source",
 				},
 			},
 			dbFn: func(h *Repo) {
+				p := h.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), "1234").Times(1).Return(
+					&datastore.Project{
+						UID:            "1234",
+						Name:           "test",
+						OrganisationID: "abc",
+						Type:           datastore.IncomingProject,
+					},
+					nil,
+				)
+
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
+				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:        "device-id",
 						ProjectID:  "1234",
@@ -243,32 +199,38 @@ func TestHub_listen(t *testing.T) {
 				)
 
 				s, _ := h.SourceRepo.(*mocks.MockSourceRepository)
-				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(
-					&datastore.Source{UID: "1234", ProjectID: "ref"},
-					nil,
-				)
+				s.EXPECT().FindSourceByName(gomock.Any(), gomock.Any(), "test_source").Times(1).Return(nil, errors.New("failed to find source"))
 			},
 			wantErr:     true,
-			wantErrCode: http.StatusUnauthorized,
-			wantErrMsg:  "this device cannot access this source",
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to find source by name",
 		},
-
 		{
 			name: "should_fail_to_find_subscription",
 			args: args{
-				ctx:      ctx,
-				project:  &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
-				endpoint: &datastore.Endpoint{UID: "abc"},
+				ctx: ctx,
 				listenRequest: &ListenRequest{
-					HostName:   "",
+					ProjectID:  "1234",
+					HostName:   "hostname_1",
 					DeviceID:   "device-id",
 					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
+					SourceName: "test_source",
 				},
 			},
 			dbFn: func(h *Repo) {
+				p := h.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), "1234").Times(1).Return(
+					&datastore.Project{
+						UID:            "1234",
+						Name:           "test",
+						OrganisationID: "abc",
+						Type:           datastore.IncomingProject,
+					},
+					nil,
+				)
+
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
+				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:        "device-id",
 						ProjectID:  "1234",
@@ -281,13 +243,13 @@ func TestHub_listen(t *testing.T) {
 				)
 
 				s, _ := h.SourceRepo.(*mocks.MockSourceRepository)
-				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(
+				s.EXPECT().FindSourceByName(gomock.Any(), gomock.Any(), "test_source").Times(1).Return(
 					&datastore.Source{UID: "1234", ProjectID: "1234"},
 					nil,
 				)
 
 				sub, _ := h.SubscriptionRepo.(*mocks.MockSubscriptionRepository)
-				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id").
+				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id", datastore.SubscriptionTypeCLI).
 					Times(1).Return(nil, errors.New("failed to find subscription by id"))
 			},
 			wantErr:     true,
@@ -297,19 +259,28 @@ func TestHub_listen(t *testing.T) {
 		{
 			name: "should_create_new_subscription_and_listen_successfully",
 			args: args{
-				ctx:      ctx,
-				project:  &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
-				endpoint: &datastore.Endpoint{UID: "abc"},
+				ctx: ctx,
 				listenRequest: &ListenRequest{
-					HostName:   "",
+					ProjectID:  "1234",
+					HostName:   "hostname_1",
 					DeviceID:   "device-id",
 					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
+					SourceName: "test_source",
 				},
 			},
 			dbFn: func(h *Repo) {
+				p := h.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), "1234").Times(1).Return(
+					&datastore.Project{
+						UID:            "1234",
+						Name:           "test",
+						OrganisationID: "abc",
+						Type:           datastore.IncomingProject,
+					},
+					nil,
+				)
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
+				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:        "device-id",
 						ProjectID:  "1234",
@@ -321,14 +292,14 @@ func TestHub_listen(t *testing.T) {
 				)
 
 				s, _ := h.SourceRepo.(*mocks.MockSourceRepository)
-				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(
+				s.EXPECT().FindSourceByName(gomock.Any(), gomock.Any(), "test_source").Times(1).Return(
 					&datastore.Source{UID: "1234", ProjectID: "1234"},
 					nil,
 				)
 
 				sub, _ := h.SubscriptionRepo.(*mocks.MockSubscriptionRepository)
 
-				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id").
+				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id", datastore.SubscriptionTypeCLI).
 					Times(1).Return(nil, datastore.ErrSubscriptionNotFound)
 
 				sub.EXPECT().CreateSubscription(gomock.Any(), "1234", gomock.Any()).Times(1).Return(nil)
@@ -345,19 +316,29 @@ func TestHub_listen(t *testing.T) {
 		{
 			name: "should_fail_to_create_new_subscription",
 			args: args{
-				ctx:      ctx,
-				project:  &datastore.Project{UID: "1234", Type: datastore.IncomingProject},
-				endpoint: &datastore.Endpoint{UID: "abc"},
+				ctx: ctx,
 				listenRequest: &ListenRequest{
-					HostName:   "",
+					ProjectID:  "1234",
+					HostName:   "hostname_1",
 					DeviceID:   "device-id",
 					SourceID:   "source-id",
-					EventTypes: []string{"charge.success"},
+					SourceName: "test_source",
 				},
 			},
 			dbFn: func(h *Repo) {
+				p := h.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), "1234").Times(1).Return(
+					&datastore.Project{
+						UID:            "1234",
+						Name:           "test",
+						OrganisationID: "abc",
+						Type:           datastore.IncomingProject,
+					},
+					nil,
+				)
+
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
+				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "", "1234").Times(1).Return(
 					&datastore.Device{
 						UID:        "device-id",
 						ProjectID:  "1234",
@@ -370,13 +351,13 @@ func TestHub_listen(t *testing.T) {
 				)
 
 				s, _ := h.SourceRepo.(*mocks.MockSourceRepository)
-				s.EXPECT().FindSourceByID(gomock.Any(), gomock.Any(), "source-id").Times(1).Return(
+				s.EXPECT().FindSourceByName(gomock.Any(), gomock.Any(), "test_source").Times(1).Return(
 					&datastore.Source{UID: "1234", ProjectID: "1234"},
 					nil,
 				)
 
 				sub, _ := h.SubscriptionRepo.(*mocks.MockSubscriptionRepository)
-				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id").
+				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id", datastore.SubscriptionTypeCLI).
 					Times(1).Return(nil, datastore.ErrSubscriptionNotFound)
 
 				sub.EXPECT().CreateSubscription(gomock.Any(), "1234", gomock.Any()).Times(1).Return(errors.New("failed to create new subscription"))
@@ -403,9 +384,7 @@ func TestHub_listen(t *testing.T) {
 				tt.dbFn(r)
 			}
 
-			h := NewHub()
-
-			device, err := listen(tt.args.ctx, tt.args.project, tt.args.endpoint, tt.args.listenRequest, h, r)
+			device, err := listen(tt.args.ctx, tt.args.listenRequest, r)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -424,258 +403,120 @@ func TestHub_login(t *testing.T) {
 
 	type args struct {
 		ctx          context.Context
-		project      *datastore.Project
-		endpoint     *datastore.Endpoint
+		user         *datastore.User
 		loginRequest *LoginRequest
 	}
 	tests := []struct {
 		name        string
 		args        args
 		dbFn        func(h *Repo)
-		want        *datastore.Device
-		checkData   bool
+		want        *LoginResponse
+		stripData   bool
 		wantErr     bool
 		wantErrCode int
 		wantErrMsg  string
 	}{
 		{
-			name: "should_create_new_device_and_login_successfully",
+			name: "should_fail_to_find_user_projects",
 			args: args{
-				ctx:      ctx,
-				project:  &datastore.Project{UID: "1234"},
-				endpoint: &datastore.Endpoint{UID: "abc"},
+				ctx:  ctx,
+				user: &datastore.User{UID: "abc", FirstName: "Daniel", LastName: "O.J"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",
-					DeviceID: "",
 				},
 			},
 			dbFn: func(h *Repo) {
+				o := h.OrgMemberRepository.(*mocks.MockOrganisationMemberRepository)
+				o.EXPECT().FindUserProjects(gomock.Any(), "abc").Times(1).Return(nil, errors.New("failed"))
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to find user projects",
+		},
+		{
+			name: "should_create_new_device_and_login_successfully",
+			args: args{
+				ctx:  ctx,
+				user: &datastore.User{UID: "abc", FirstName: "Daniel", LastName: "O.J"},
+				loginRequest: &LoginRequest{
+					HostName: "hostname_1",
+				},
+			},
+			dbFn: func(h *Repo) {
+				o := h.OrgMemberRepository.(*mocks.MockOrganisationMemberRepository)
+				o.EXPECT().FindUserProjects(gomock.Any(), "abc").Times(1).Return(
+					[]datastore.Project{
+						{UID: "project_1", Name: "test_project_1", Type: datastore.IncomingProject},
+						{UID: "project_2", Name: "test_project_2", Type: datastore.IncomingProject},
+					},
+					nil,
+				)
+
 				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByHostName(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				d.EXPECT().FetchDeviceByHostName(gomock.Any(), "hostname_1", "", "project_1").Times(1).Return(nil, datastore.ErrDeviceNotFound)
+
+				d.EXPECT().FetchDeviceByHostName(gomock.Any(), "hostname_1", "", "project_2").Times(1).Return(
+					&datastore.Device{
+						UID:       "222",
+						ProjectID: "project_2",
+						HostName:  "hostname_1",
+						Status:    datastore.DeviceStatusOffline,
+					}, nil,
+				)
 
 				d.EXPECT().CreateDevice(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
-			want: &datastore.Device{
-				ProjectID:  "1234",
-				EndpointID: "abc",
-				HostName:   "hostname_1",
-				Status:     datastore.DeviceStatusOffline,
+			want: &LoginResponse{
+				UserName: "Daniel O.J",
+				Projects: []ProjectDevice{
+					{
+						Project: &datastore.Project{UID: "project_1", Name: "test_project_1", Type: datastore.IncomingProject},
+						Device: &datastore.Device{
+							ProjectID: "project_1",
+							HostName:  "hostname_1",
+							Status:    datastore.DeviceStatusOffline,
+						},
+					},
+					{
+						Project: &datastore.Project{UID: "project_2", Name: "test_project_2", Type: datastore.IncomingProject},
+						Device: &datastore.Device{
+							ProjectID: "project_2",
+							HostName:  "hostname_1",
+							Status:    datastore.DeviceStatusOffline,
+						},
+					},
+				},
 			},
-			wantErr: false,
+			stripData: true,
+			wantErr:   false,
 		},
 		{
-			name: "should_fail_to_create_new_device",
+			name: "should_fail_to_create_device",
 			args: args{
-				ctx:      ctx,
-				project:  &datastore.Project{UID: "1234"},
-				endpoint: &datastore.Endpoint{UID: "abc"},
+				ctx:  ctx,
+				user: &datastore.User{UID: "abc", FirstName: "Daniel", LastName: "O.J"},
 				loginRequest: &LoginRequest{
 					HostName: "hostname_1",
-					DeviceID: "",
 				},
 			},
 			dbFn: func(h *Repo) {
-				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByHostName(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				o := h.OrgMemberRepository.(*mocks.MockOrganisationMemberRepository)
+				o.EXPECT().FindUserProjects(gomock.Any(), "abc").Times(1).Return(
+					[]datastore.Project{
+						{UID: "project_1", Name: "test_project_1", Type: datastore.IncomingProject},
+						{UID: "project_2", Name: "test_project_2", Type: datastore.IncomingProject},
+					},
+					nil,
+				)
 
-				d.EXPECT().CreateDevice(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed to create new device"))
+				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
+				d.EXPECT().FetchDeviceByHostName(gomock.Any(), "hostname_1", "", "project_1").Times(1).Return(nil, datastore.ErrDeviceNotFound)
+
+				d.EXPECT().CreateDevice(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "failed to create new device",
-		},
-		{
-			name: "should_login_with_existing_device_successfully",
-			args: args{
-				ctx:      ctx,
-				project:  &datastore.Project{UID: "1234"},
-				endpoint: &datastore.Endpoint{UID: "abc"},
-				loginRequest: &LoginRequest{
-					HostName: "hostname_1",
-					DeviceID: "device-id",
-				},
-			},
-			dbFn: func(h *Repo) {
-				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
-					&datastore.Device{
-						UID:        "device-id",
-						ProjectID:  "1234",
-						EndpointID: "abc",
-						HostName:   "hostname_1",
-						Status:     datastore.DeviceStatusOffline,
-						LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
-					},
-					nil,
-				)
-			},
-			want: &datastore.Device{
-				ProjectID:  "1234",
-				EndpointID: "abc",
-				HostName:   "hostname_1",
-				Status:     datastore.DeviceStatusOffline,
-			},
-			wantErr: false,
-		},
-		{
-			name: "should_fail_to_find_device",
-			args: args{
-				ctx:      ctx,
-				project:  &datastore.Project{UID: "1234"},
-				endpoint: &datastore.Endpoint{UID: "abc"},
-				loginRequest: &LoginRequest{
-					HostName: "hostname_1",
-					DeviceID: "device-id",
-				},
-			},
-			dbFn: func(h *Repo) {
-				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).
-					Return(nil, errors.New("failed to find device by id"))
-			},
-			want: &datastore.Device{
-				ProjectID:  "1234",
-				EndpointID: "abc",
-				HostName:   "hostname_1",
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to find device by id",
-		},
-		{
-			name: "should_error_for_wrong_device_project_id",
-			args: args{
-				ctx:      ctx,
-				project:  &datastore.Project{UID: "1234"},
-				endpoint: &datastore.Endpoint{UID: "abc"},
-				loginRequest: &LoginRequest{
-					HostName: "hostname_1",
-					DeviceID: "device-id",
-				},
-			},
-			dbFn: func(h *Repo) {
-				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
-					&datastore.Device{
-						UID:        "device-id",
-						ProjectID:  "123",
-						EndpointID: "abc",
-						HostName:   "hostname_1",
-						Status:     datastore.DeviceStatusOnline,
-						LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
-					},
-					nil,
-				)
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusUnauthorized,
-			wantErrMsg:  "this device cannot access this project",
-		},
-		{
-			name: "should_error_for_wrong_device_app_id",
-			args: args{
-				ctx:      ctx,
-				project:  &datastore.Project{UID: "1234"},
-				endpoint: &datastore.Endpoint{UID: "abc"},
-				loginRequest: &LoginRequest{
-					HostName: "hostname_1",
-					DeviceID: "device-id",
-				},
-			},
-			dbFn: func(h *Repo) {
-				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
-					&datastore.Device{
-						UID:        "device-id",
-						ProjectID:  "1234",
-						EndpointID: "abcd",
-						HostName:   "hostname_1",
-						Status:     datastore.DeviceStatusOnline,
-						LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
-					},
-					nil,
-				)
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusUnauthorized,
-			wantErrMsg:  "this device cannot access this application",
-		},
-		{
-			name: "should_login_with_existing_device_and_update_device_status_successfully",
-			args: args{
-				ctx:      ctx,
-				project:  &datastore.Project{UID: "1234"},
-				endpoint: &datastore.Endpoint{UID: "abc"},
-				loginRequest: &LoginRequest{
-					HostName: "hostname_1",
-					DeviceID: "device-id",
-				},
-			},
-			dbFn: func(h *Repo) {
-				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
-					&datastore.Device{
-						UID:        "device-id",
-						ProjectID:  "1234",
-						EndpointID: "abc",
-						HostName:   "hostname_1",
-						Status:     datastore.DeviceStatusOnline,
-						LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
-					},
-					nil,
-				)
-				d.EXPECT().UpdateDevice(gomock.Any(), &datastore.Device{
-					UID:        "device-id",
-					ProjectID:  "1234",
-					EndpointID: "abc",
-					HostName:   "hostname_1",
-					Status:     datastore.DeviceStatusOffline,
-					LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
-				}, "abc", "1234").Times(1).Return(nil)
-			},
-			want: &datastore.Device{
-				ProjectID:  "1234",
-				EndpointID: "abc",
-				HostName:   "hostname_1",
-			},
-			wantErr: false,
-		},
-		{
-			name: "should_fail_to_update_device_status",
-			args: args{
-				ctx:      ctx,
-				project:  &datastore.Project{UID: "1234"},
-				endpoint: &datastore.Endpoint{UID: "abc"},
-				loginRequest: &LoginRequest{
-					HostName: "hostname_1",
-					DeviceID: "device-id",
-				},
-			},
-			dbFn: func(h *Repo) {
-				d := h.DeviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-id", "abc", "1234").Times(1).Return(
-					&datastore.Device{
-						UID:        "device-id",
-						ProjectID:  "1234",
-						EndpointID: "abc",
-						HostName:   "hostname_1",
-						Status:     datastore.DeviceStatusOnline,
-						LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
-					},
-					nil,
-				)
-				d.EXPECT().UpdateDevice(gomock.Any(), &datastore.Device{
-					UID:        "device-id",
-					ProjectID:  "1234",
-					EndpointID: "abc",
-					HostName:   "hostname_1",
-					Status:     datastore.DeviceStatusOffline,
-					LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
-				}, "abc", "1234").Times(1).Return(errors.New("failed to update device to online"))
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to update device to online",
 		},
 	}
 	for _, tt := range tests {
@@ -687,9 +528,7 @@ func TestHub_login(t *testing.T) {
 				tt.dbFn(r)
 			}
 
-			h := NewHub()
-
-			device, err := login(tt.args.ctx, tt.args.project, tt.args.endpoint, tt.args.loginRequest, h, r)
+			loginResponse, err := login(tt.args.ctx, tt.args.loginRequest, r, tt.args.user)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -698,11 +537,36 @@ func TestHub_login(t *testing.T) {
 			}
 
 			require.Nil(t, err)
-			require.NotEmpty(t, device.UID)
-			require.Equal(t, tt.want.EndpointID, device.EndpointID)
-			require.Equal(t, tt.want.ProjectID, device.ProjectID)
-			require.Equal(t, datastore.DeviceStatusOffline, device.Status)
-			require.Equal(t, tt.want.HostName, device.HostName)
+			if tt.stripData {
+				for i := range loginResponse.Projects {
+					stripVariableFields(t, "device", loginResponse.Projects[i].Device)
+				}
+			}
+
+			require.Equal(t, tt.want, loginResponse)
 		})
+	}
+}
+
+func stripVariableFields(t *testing.T, obj string, v interface{}) {
+	switch obj {
+	case "project":
+		g := v.(*datastore.Project)
+		if g.Config != nil {
+			for i := range g.Config.Signature.Versions {
+				v := &g.Config.Signature.Versions[i]
+				v.UID = ""
+				v.CreatedAt = 0
+			}
+		}
+		g.UID = ""
+		g.CreatedAt, g.UpdatedAt, g.DeletedAt = 0, 0, nil
+	case "device":
+		d := v.(*datastore.Device)
+		d.UID = ""
+		d.CreatedAt, d.UpdatedAt, d.DeletedAt = 0, 0, nil
+	default:
+		t.Errorf("invalid data body - %v of type %T", obj, obj)
+		t.FailNow()
 	}
 }

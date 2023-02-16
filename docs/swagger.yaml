@@ -40,7 +40,7 @@ definitions:
     properties:
       event_type:
         type: string
-      host_name:
+      source_id:
         type: string
     type: object
   datastore.DeliveryAttempt:
