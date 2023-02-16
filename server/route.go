@@ -126,8 +126,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 			r.Route("/projects", func(projectRouter chi.Router) {
 				projectRouter.Use(a.M.RejectAppPortalKey())
-				// projectWithAuthUserRouter routes require a Personal API Key or JWT Token to work
 
+				// These routes require a Personal API Key or JWT Token to work
 				projectRouter.With(
 					a.M.RequireAuthUserMetadata(),
 					a.M.RequireOrganisation(),
@@ -368,6 +368,10 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						projectSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Get("/", a.GetProject)
 						projectSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", a.UpdateProject)
 						projectSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", a.DeleteProject)
+
+						projectSubRouter.Route("/security/keys", func(projectKeySubRouter chi.Router) {
+							projectKeySubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/regenerate", a.RegenerateProjectAPIKey)
+						})
 
 						projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
 							endpointSubRouter.Post("/", a.CreateEndpoint)

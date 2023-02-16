@@ -72,7 +72,8 @@ func newAnalytics(Repo *Repo, cfg config.Configuration) (*Analytics, error) {
 		return nil, err
 	}
 
-	if !config.IsAnalyticsEnabled {
+	isEnabled := config.IsAnalyticsEnabled
+	if !isEnabled {
 		return nil, nil
 	}
 
@@ -97,7 +98,9 @@ func TrackDailyAnalytics(store datastore.Store, cfg config.Configuration) func(c
 			return nil
 		}
 
-		a.trackDailyAnalytics()
+		if a != nil {
+			a.trackDailyAnalytics()
+		}
 
 		return nil
 	}

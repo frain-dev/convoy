@@ -98,10 +98,11 @@
                 </div>
                 <h3>Hi there</h3>
                 <p>
-                    You have been invited to {{ .inviter_name }}'s team , you can accept it through the link below.
+                    You have been invited to {{ .inviter_name }}'s team , you can accept it by clicking the button or copying the link into your browser.
                 </p>
 
                 <p><a href={{ .invite_url }}>InviteURL</a></p>
+                <p> Link: {{ .invite_url }} </p>
 
                 <p>
                     <strong>Important:</strong> This invite link will expire at {{ .expires_at }}.

@@ -7,7 +7,7 @@
 
 				<convoy-input-field>
 					<label for="link-name" convoy-label required="true">Link Name</label>
-					<input id="link-name" convoy-input autocomplete="name" formControlName="name" placeholder="Link name" [readonly]="portalLink"/>
+					<input id="link-name" convoy-input autocomplete="name" formControlName="name" placeholder="Link name" [readonly]="portalLink" />
 				</convoy-input-field>
 
 				<div [ngClass]="{ 'pointer-events-none': portalLink }">
@@ -18,8 +18,10 @@
 						[options]="endpoints"
 						[required]="true"
 						[multiple]="true"
+						[searchable]="true"
 						errorMessage="Endpoints is required"
 						className="mb-24px"
+						(searchString)="getEndpoints($event)"
 						(selectedOption)="portalLinkForm.patchValue({ endpoints: $event })"
 					></convoy-select>
 				</div>
