@@ -63,6 +63,20 @@ func (s *sourceRepo) FindSourceByID(ctx context.Context, projectId string, id st
 	return source, err
 }
 
+func (s *sourceRepo) FindSourceByName(ctx context.Context, projectId string, name string) (*datastore.Source, error) {
+	ctx = s.setCollectionInContext(ctx)
+	source := &datastore.Source{}
+
+	filter := bson.M{"name": name, "project_id": projectId}
+
+	err := s.store.FindOne(ctx, filter, nil, source)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return source, datastore.ErrSourceNotFound
+	}
+
+	return source, err
+}
+
 func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskId string) (*datastore.Source, error) {
 	ctx = s.setCollectionInContext(ctx)
 	source := &datastore.Source{}
