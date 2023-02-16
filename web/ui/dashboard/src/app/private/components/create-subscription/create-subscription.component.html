@@ -7,10 +7,11 @@
 			<input type="text" id="subscription-name" convoy-input autocomplete="subscription-name" formControlName="name" placeholder="e.g paystack-live" />
 			<convoy-input-error *ngIf="subscriptionForm.get('name')?.touched && subscriptionForm.get('name')?.invalid">Enter new subscription name</convoy-input-error>
 		</convoy-input-field>
+
 		<div class="border-t border-grey-20 pt-24px mt-24px">
 			<h3 class="font-semibold mb-24px">Set Configurations</h3>
 
-			<ng-container *ngIf="showConfig('events')">
+            <ng-container *ngIf="showConfig('events')">
 				<div *ngIf="projectType === 'outgoing' || token">
 					<div class="flex justify-between items-center mb-16px">
 						<p class="text-14 font-medium text-grey-60 flex items-center">
@@ -106,11 +107,11 @@
 				</div>
 			</ng-container>
 
-			<ng-container *ngIf="showConfig('filter')">
+			<ng-container *ngIf="showConfig('filter_config')">
 				<div class="border border-grey-20 rounded-4px p-16px mb-24px">
 					<div class="flex justify-between items-center mb-14px">
 						<h4 class="text-grey-60 font-medium">Events Filter</h4>
-						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('filter')">
+						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('filter_config')">
 							<img src="assets/img/svg/delete-icon.svg" alt="delete icon" />
 						</button>
 					</div>
@@ -134,7 +135,7 @@
 
 			<div class="flex items-center">
 				<ng-container *ngFor="let config of configurations">
-					<button *ngIf="!config.show" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" class="mr-24px" (click)="toggleConfigForm(config.uid)">
+					<button *ngIf="!config.show" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" class="mr-24px font-medium" (click)="toggleConfigForm(config.uid)">
 						{{ config.name }}
 						<img src="assets/img/svg/plus-icon.svg" class="ml-24px" alt="plus icon" />
 					</button>
@@ -160,15 +161,18 @@
 					[required]="true"
 					(selectedOption)="subscriptionForm.patchValue({ source_id: $event })"
 				></convoy-select>
-				<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateSourceForm = true">
+
+				<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateSourceForm = true; subscriptionForm.patchValue({ source_id: null })">
 					<svg width="20" height="20" class="mr-8px" fill="currentColor">
 						<use xlink:href="#plus-icon"></use>
 					</svg>
 					Create New Source
 				</button>
 			</convoy-card>
+
+
 			<convoy-create-source *ngIf="showCreateSourceForm" (onAction)="$event?.action === 'close' ? (showCreateSourceForm = false) : onCreateSource($event.data); showCreateSourceForm = false">
-				<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateSourceForm = false">
+				<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateSourceForm = false; subscriptionForm.patchValue({ source_id: null })">
 					<svg width="20" height="20" class="mr-8px" fill="currentColor">
 						<use xlink:href="#plus-icon"></use>
 					</svg>
@@ -191,15 +195,18 @@
 				(selectedOption)="subscriptionForm.patchValue({ endpoint_id: $event })"
 				[required]="true"
 			></convoy-select>
-			<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateEndpointForm = true" *ngIf="!token">
+
+			<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateEndpointForm = true; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">
 				<svg width="20" height="20" class="mr-8px" fill="currentColor">
 					<use xlink:href="#plus-icon"></use>
 				</svg>
 				Create New Endpoint
 			</button>
 		</convoy-card>
+
+
 		<convoy-create-endpoint *ngIf="showCreateEndpointForm" (onAction)="$event.action === 'close' ? (showCreateEndpointForm = false) : onCreateEndpoint($event.data); showCreateEndpointForm = false">
-			<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateEndpointForm = false" *ngIf="!token">
+			<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateEndpointForm = false; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">
 				<svg width="20" height="20" class="mr-8px" fill="currentColor">
 					<use xlink:href="#plus-icon"></use>
 				</svg>

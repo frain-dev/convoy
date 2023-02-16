@@ -29,10 +29,6 @@ export class CreateSubscriptionComponent implements OnInit {
 		source_id: [''],
 		endpoint_id: [null, Validators.required],
 		group_id: [null, Validators.required],
-		alert_config: this.formBuilder.group({
-			threshold: [],
-			count: []
-		}),
 		retry_config: this.formBuilder.group({
 			type: [],
 			retry_count: [],
@@ -51,9 +47,8 @@ export class CreateSubscriptionComponent implements OnInit {
 	apps!: APP[];
 	sources!: SOURCE[];
 	endPoints: ENDPOINT[] = [];
-	showCreateAppModal = false;
-	showCreateSourceModal = false;
-	showCreateEndpointModal = false;
+	showCreateSourceForm = false;
+	showCreateEndpointForm = false;
 	enableMoreConfig = false;
 	showFilterForm = false;
 	retryLogicTypes = [
@@ -71,29 +66,32 @@ export class CreateSubscriptionComponent implements OnInit {
 	confirmModal = false;
 
 	configurations = [
-		{ uid: 'filter', name: 'Filter', show: false },
-		{ uid: 'retry-config', name: 'Retry Logic', show: false },
-		{ uid: 'alert-config', name: 'Alert Rule', show: false }
+		{ uid: 'filter_config', name: 'Filter', show: false },
+		{ uid: 'retry_config', name: 'Retry Logic', show: false },
+		{ uid: 'events', name: 'Event Types', show: false }
 	];
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, private formatSeconds: FormatSecondsPipe) {}
 
 	async ngOnInit() {
+		this.isLoadingForm = true;
+		await Promise.all([this.getPortalProject(), this.getEndpoints(), this.getSources(), this.getGetProjectDetails(), this.getSubscriptionDetails()]);
+		this.isLoadingForm = false;
+
 		// add required validation on source input for incoming projects
 		if (this.projectType === 'incoming') {
 			this.subscriptionForm.get('source_id')?.addValidators(Validators.required);
 			this.subscriptionForm.get('source_id')?.updateValueAndValidity();
+			this.configurations.splice(2, 1);
 		}
-
-		this.isLoadingForm = true;
-		await Promise.all([this.getPortalProject(), this.getEndpoints(), this.getSources(), this.getGetProjectDetails(), this.getSubscriptionDetails()]);
-		this.isLoadingForm = false;
 	}
 
 	toggleConfigForm(configValue: string) {
 		this.configurations.forEach(config => {
 			if (config.uid === configValue) config.show = !config.show;
 		});
+
+		this.onToggleConfig();
 	}
 
 	showConfig(configValue: string): boolean {
@@ -188,32 +186,33 @@ export class CreateSubscriptionComponent implements OnInit {
 		this.subscriptionForm.patchValue({ endpoint_id: newEndpoint.uid });
 	}
 
-	onToggleMoreConfig() {
-		const alertControls = Object.keys((this.subscriptionForm.get('alert_config') as FormGroup).controls);
+	onToggleConfig() {
 		const retryControls = Object.keys((this.subscriptionForm.get('retry_config') as FormGroup).controls);
 
-		if (this.enableMoreConfig) {
-			alertControls.forEach(key => this.subscriptionForm.get(`alert_config.${key}`)?.setValidators(Validators.required));
-			alertControls.forEach(key => this.subscriptionForm.get(`alert_config.${key}`)?.updateValueAndValidity());
-
+		if (this.showConfig('retry_config')) {
 			retryControls.forEach(key => this.subscriptionForm.get(`retry_config.${key}`)?.setValidators(Validators.required));
 			retryControls.forEach(key => this.subscriptionForm.get(`retry_config.${key}`)?.updateValueAndValidity());
 		} else {
-			alertControls.forEach(key => this.subscriptionForm.get(`alert_config.${key}`)?.removeValidators(Validators.required));
-			alertControls.forEach(key => this.subscriptionForm.get(`alert_config.${key}`)?.updateValueAndValidity());
-
 			retryControls.forEach(key => this.subscriptionForm.get(`retry_config.${key}`)?.removeValidators(Validators.required));
 			retryControls.forEach(key => this.subscriptionForm.get(`retry_config.${key}`)?.updateValueAndValidity());
 		}
 	}
 
 	async saveSubscription() {
-		if (this.showAction === 'false') {
-			if (this.showCreateEndpointModal) this.createEndpointForm.saveEndpoint();
-			if (this.showCreateSourceModal) this.createSourceForm.saveSource();
-		}
+		this.isCreatingSubscription = true;
 
-		if (this.createSubscriptionService.subscriptionData) this.subscriptionForm.patchValue(this.createSubscriptionService.subscriptionData);
+		if (this.showCreateEndpointForm) {
+			const endpointDetails = await this.createEndpointForm.saveEndpoint();
+			this.subscriptionForm.patchValue({
+				endpoint_id: endpointDetails?.data.uid
+			});
+		}
+		if (this.showCreateSourceForm) {
+			const sourceDetails = await this.createSourceForm.saveSource();
+			this.subscriptionForm.patchValue({
+				source_id: sourceDetails?.data.uid
+			});
+		}
 
 		this.subscriptionForm.patchValue({
 			filter_config: { event_types: this.eventTags.length > 0 ? this.eventTags : ['*'] }
@@ -221,24 +220,14 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		if (this.subscriptionForm.invalid) return this.subscriptionForm.markAllAsTouched();
 
-		const subscription = this.subscriptionForm.value;
-		if (this.projectType === 'outgoing') delete subscription.source_id;
-		if (!this.enableMoreConfig) {
-			delete subscription.alert_config;
-			delete subscription.retry_config;
-		} else {
-			const alertConfigThreshold = this.subscriptionForm.get('alert_config.threshold');
-			const retryDuration = this.subscriptionForm.get('retry_config.duration');
+		const subscriptionData = structuredClone(this.subscriptionForm.value);
 
-			alertConfigThreshold?.patchValue(alertConfigThreshold?.value + 's');
-			retryDuration?.patchValue(retryDuration?.value + 's');
-		}
-
-		this.isCreatingSubscription = true;
+		const retryDuration = this.subscriptionForm.get('retry_config.duration');
+		this.configurations[1].show ? (subscriptionData.retry_config.duration = retryDuration?.value + 's') : delete subscriptionData.retry_config;
 
 		try {
 			const response =
-				this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.subscriptionId, token: this.token }) : await this.createSubscriptionService.createSubscription(this.subscriptionForm.value, this.token);
+				this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.subscriptionId, token: this.token }) : await this.createSubscriptionService.createSubscription(subscriptionData, this.token);
 			this.isCreatingSubscription = false;
 			this.onAction.emit({ data: response.data, action: this.action == 'update' ? 'update' : 'create' });
 		} catch (error) {

@@ -205,6 +205,7 @@ export class CreateSourceComponent implements OnInit {
 			this.isloading = false;
 			this.onAction.emit({ action: this.action, data: response.data });
 			document.getElementById('configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
+			return response;
 		} catch (error) {
 			this.isloading = false;
 		}
