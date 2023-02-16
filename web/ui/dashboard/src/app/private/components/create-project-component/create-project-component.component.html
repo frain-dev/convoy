@@ -152,13 +152,15 @@
 			</div>
 
 			<div class="flex items-center">
-				<ng-container *ngFor="let config of configurations">
-					<button *ngIf="!config.show" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" class="mr-24px" (click)="toggleConfigForm(config.uid)">
-						<img [src]="'assets/img/svg/' + config.uid + '-icon.svg'" class="mr-10px" [alt]="config.uid" />
+				<ng-container *ngFor="let config of configurations; let i = index">
+					<ng-container *ngIf="!config.show">
+						<button *ngIf="i < 3 || this.projectForm.controls['type'].value === 'outgoing'" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" class="mr-24px" (click)="toggleConfigForm(config.uid)">
+							<img [src]="'assets/img/svg/' + config.uid + '-icon.svg'" class="mr-10px" [alt]="config.uid" />
 
-						{{ config.name }}
-						<img src="assets/img/svg/plus-icon.svg" class="ml-24px" alt="plus icon" />
-					</button>
+							{{ config.name }}
+							<img src="assets/img/svg/plus-icon.svg" class="ml-24px" alt="plus icon" />
+						</button>
+					</ng-container>
 				</ng-container>
 			</div>
 		</div>
