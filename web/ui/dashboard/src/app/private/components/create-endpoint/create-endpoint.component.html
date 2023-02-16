@@ -1,5 +1,5 @@
-<div>
-	<convoy-card className="p-24px mt-40px">
+<div [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'">
+	<convoy-card className="p-24px">
 		<form [formGroup]="addNewEndpointForm">
 			<convoy-input-field>
 				<label for="name" convoy-label required="true">Endpoint Name</label>
@@ -82,14 +82,15 @@
 					</button>
 				</ng-container>
 			</div>
-
-			<div class="empty:hidden">
-				<ng-content></ng-content>
-			</div>
 		</form>
+
+		<div class="empty:hidden">
+			<ng-content></ng-content>
+		</div>
+		<div *ngIf="savingEndpoint" convoy-form-loader></div>
 	</convoy-card>
 
-	<div class="flex justify-end mt-40px mb-60px">
+	<div class="flex justify-end mt-40px mb-60px" [ngClass]="{ hidden: showAction === 'false' }">
 		<button convoy-button fill="outline" class="mr-24px" (click)="cancel()">Discard</button>
 		<button convoy-button *ngIf="!editMode" [disabled]="savingEndpoint" (click)="saveEndpoint()">
 			{{ savingEndpoint ? 'Creating Endpoint..' : 'Create Endpoint' }}
