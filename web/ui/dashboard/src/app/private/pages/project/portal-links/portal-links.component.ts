@@ -19,6 +19,7 @@ import { FormsModule } from '@angular/forms';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
+import { ModalComponent } from 'src/app/components/modal/modal.component';
 
 @Component({
 	selector: 'convoy-portal-links',
@@ -41,7 +42,8 @@ import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'r
 		CreatePortalLinkComponent,
 		ListItemComponent,
 		CopyButtonComponent,
-		DeleteModalComponent
+		DeleteModalComponent,
+		ModalComponent
 	],
 	templateUrl: './portal-links.component.html',
 	styleUrls: ['./portal-links.component.scss']
@@ -60,7 +62,7 @@ export class PortalLinksComponent implements OnInit {
 	@ViewChild('linksEndpointFilter', { static: true }) linksEndpointFilter!: ElementRef;
 	linksEndpointFilter$!: Observable<ENDPOINT[]>;
 
-	constructor(public privateService: PrivateService, private router: Router, private portalLinksService: PortalLinksService, private route: ActivatedRoute, private generalService: GeneralService) {
+	constructor(public privateService: PrivateService, public router: Router, private portalLinksService: PortalLinksService, private route: ActivatedRoute, private generalService: GeneralService) {
 		this.route.queryParams.subscribe(params => (this.activeLink = this.portalLinks?.content.find(link => link.uid === params?.id)));
 	}
 
