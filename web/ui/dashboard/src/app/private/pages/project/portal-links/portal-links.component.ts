@@ -3,10 +3,8 @@ import { CommonModule } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { CardComponent } from 'src/app/components/card/card.component';
-import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
 import { PAGINATION } from 'src/app/models/global.model';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
-import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CreatePortalLinkComponent } from 'src/app/private/components/create-portal-link/create-portal-link.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
@@ -24,27 +22,7 @@ import { ModalComponent } from 'src/app/components/modal/modal.component';
 @Component({
 	selector: 'convoy-portal-links',
 	standalone: true,
-	imports: [
-		CommonModule,
-		RouterModule,
-		FormsModule,
-		ButtonComponent,
-		DropdownComponent,
-		DropdownOptionDirective,
-		CardComponent,
-		TableLoaderModule,
-		TableComponent,
-		TableHeadComponent,
-		TableRowComponent,
-		TableHeadCellComponent,
-		TableCellComponent,
-		EmptyStateComponent,
-		CreatePortalLinkComponent,
-		ListItemComponent,
-		CopyButtonComponent,
-		DeleteModalComponent,
-		ModalComponent
-	],
+	imports: [CommonModule, RouterModule, FormsModule, ButtonComponent, DropdownComponent, DropdownOptionDirective, CardComponent, EmptyStateComponent, CreatePortalLinkComponent, ListItemComponent, CopyButtonComponent, DeleteModalComponent, ModalComponent],
 	templateUrl: './portal-links.component.html',
 	styleUrls: ['./portal-links.component.scss']
 })
