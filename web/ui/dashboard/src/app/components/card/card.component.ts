@@ -24,6 +24,6 @@ export class CardComponent implements OnInit {
 			default: 'bg-[#fff] border border-grey-10',
 			danger: 'bg-danger-500 border border-danger-200'
 		};
-		return `${colors[this.color]} ${this.class} ${this.hover === 'true' ? 'focus:shadow-sm hover:shadow-sm focus-visible:shadow-sm hover:border-grey-20 focus:border-grey-20 focus-visible:border-grey-20' : ''} block`;
+		return `${colors[this.color]} ${this.class} ${this.hover === 'true' ? 'focus:shadow-sm hover:shadow-sm focus-visible:shadow-sm hover:border-grey-20 focus:border-grey-20 focus-visible:border-grey-20 outline-none' : ''} block`;
 	}
 }
