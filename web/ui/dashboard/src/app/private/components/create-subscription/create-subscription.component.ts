@@ -1,10 +1,12 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/endpoint.model';
 import { SOURCE } from 'src/app/models/group.model';
 import { FormatSecondsPipe } from 'src/app/pipes/formatSeconds/format-seconds.pipe';
 import { PrivateService } from '../../private.service';
+import { CreateEndpointComponent } from '../create-endpoint/create-endpoint.component';
+import { CreateSourceComponent } from '../create-source/create-source.component';
 import { CreateSubscriptionService } from './create-subscription.service';
 
 @Component({
@@ -14,6 +16,13 @@ import { CreateSubscriptionService } from './create-subscription.service';
 	providers: [FormatSecondsPipe]
 })
 export class CreateSubscriptionComponent implements OnInit {
+	@Output() onAction = new EventEmitter();
+	@Input('action') action: 'update' | 'create' = 'create';
+	@Input('showAction') showAction: 'true' | 'false' = 'false';
+	@Input('subscriptionData') subscriptionData: any;
+
+	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
+	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;
 	subscriptionForm: FormGroup = this.formBuilder.group({
 		name: [null, Validators.required],
 		type: [null, Validators.required],
@@ -52,8 +61,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		{ uid: 'exponential', name: 'Exponential time backoff' }
 	];
 	isCreatingSubscription = false;
-	@Output() onAction = new EventEmitter();
-	@Input('action') action: 'update' | 'create' = 'create';
+
 	projectType!: 'incoming' | 'outgoing';
 	isLoadingForm = true;
 	subscriptionId = this.route.snapshot.params.id;
@@ -200,6 +208,13 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async saveSubscription() {
+		if (this.showAction === 'false') {
+			if (this.showCreateEndpointModal) this.createEndpointForm.saveEndpoint();
+			if (this.showCreateSourceModal) this.createSourceForm.saveSource();
+		}
+
+		if (this.createSubscriptionService.subscriptionData) this.subscriptionForm.patchValue(this.createSubscriptionService.subscriptionData);
+
 		this.subscriptionForm.patchValue({
 			filter_config: { event_types: this.eventTags.length > 0 ? this.eventTags : ['*'] }
 		});
@@ -279,11 +294,6 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	goToSubsriptionsPage() {
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions');
-	}
-
-	isNewProjectRoute(): boolean {
-		if (this.router.url == '/projects/new') return true;
-		return false;
 	}
 
 	setupFilter() {
