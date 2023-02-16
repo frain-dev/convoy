@@ -193,7 +193,7 @@ export class CreateProjectComponent implements OnInit {
 			projectFormModal?.scroll({ top: 0, behavior: 'smooth' });
 			this.isCreatingProject = false;
 			this.projectForm.reset();
-			this.privateService.activeProjectDetails = response.data.group;
+			this.privateService.activeProjectDetails = response.data.project;
 			this.privateService.getProjects();
 			this.apiKey = response.data.api_key.key;
 			this.projectDetails = response.data.project;
