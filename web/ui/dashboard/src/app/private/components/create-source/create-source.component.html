@@ -1,114 +1,123 @@
-<form class="pb-40px mt-40px" [formGroup]="sourceForm" (ngSubmit)="saveSource()">
-	<convoy-card className="p-24px">
-		<h2 class="mb-12px font-semibold">Source name</h2>
+<form class="pb-40px" [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'" [formGroup]="sourceForm" (ngSubmit)="saveSource()">
+	<convoy-card className="p-24px relative">
+		<h4 class="font-medium mb-20px">Pre-configured Sources</h4>
+		<ul class="flex flex-row w-full mb-20px">
+			<li *ngFor="let source of preConfiguredSources" class="list-none mr-40px last-of-type:mr-0">
+				<button
+					convoy-button
+					texture="light"
+					size="sm"
+					color="grey"
+					fill="outline"
+					type="button"
+					class="w-60px h-60px"
+					[ngClass]="{ '!border-solid !border !border-primary-100': sourceForm.value.verifier.type === source }"
+					(click)="sourceForm.get('verifier.type')?.patchValue(source)"
+				>
+					<img [src]="'/assets/img/' + source + '.png'" [alt]="source + '-icon'" />
+				</button>
+			</li>
+		</ul>
+		<hr class="border-grey-20 border-t mb-26px" />
 
 		<convoy-input-field>
 			<label for="source-name" required="true" convoy-label required="true">Source name</label>
 			<input type="text" id="source-name" convoy-input autocomplete="source-name" formControlName="name" placeholder="Enter source name" />
 			<convoy-input-error *ngIf="sourceForm.get('name')?.touched && sourceForm.get('name')?.invalid">Enter new source name</convoy-input-error>
 		</convoy-input-field>
+
+		<div formGroupName="verifier">
+			<convoy-select label="Source Verification" name="type" formControlName="type" [options]="sourceVerifications" errorMessage="Select source verification" [required]="true" (selectedOption)="sourceForm.get('verifier.type')?.patchValue($event)"></convoy-select>
+
+			<div formGroupName="hmac" *ngIf="sourceForm.value.verifier.type === 'hmac' || isCustomSource(sourceForm.value.verifier.type)" class="mt-40px">
+				<h3 class="font-semibold mb-20px capitalize">
+					<span *ngIf="isCustomSource(sourceForm.value.verifier.type)">{{ sourceForm.value.verifier.type }} Credentials</span>
+					<span *ngIf="sourceForm.value.verifier.type === 'hmac'">Configure HMAC</span>
+				</h3>
+				<div class="grid grid-cols-2 gap-6">
+					<convoy-select
+						*ngIf="sourceForm.value.verifier.type === 'hmac'"
+						label="Encoding"
+						name="encoding"
+						formControlName="encoding"
+						[options]="encodings"
+						errorMessage="Select encoding type"
+						[required]="true"
+						className="mb-0"
+						(selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ encoding: $event })"
+					></convoy-select>
+					<convoy-select
+						*ngIf="sourceForm.value.verifier.type === 'hmac'"
+						label="Hash Algorithm"
+						name="hash"
+						formControlName="hash"
+						[options]="hashAlgorithms"
+						errorMessage="Select algorithm type"
+						[required]="true"
+						className="mb-0"
+						(selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ hash: $event })"
+					></convoy-select>
+
+					<convoy-input-field *ngIf="sourceForm.value.verifier.type === 'hmac'">
+						<label for="header" required="true" convoy-label required="true">Header Value</label>
+						<input type="text" id="header" convoy-input autocomplete="header" formControlName="header" placeholder="Key goes here" />
+						<convoy-input-error *ngIf="sourceForm.get('hmac.header')?.touched && sourceForm.get('hmac.header')?.invalid">Enter header key</convoy-input-error>
+					</convoy-input-field>
+
+					<convoy-input-field>
+						<label for="secret" required="true" convoy-label required="true">Webhook signing secret</label>
+						<input type="text" id="secret" convoy-input autocomplete="secret" formControlName="secret" placeholder="Secret goes here" />
+						<convoy-input-error *ngIf="sourceForm.get('hmac.secret')?.touched && sourceForm.get('hmac.secret')?.invalid">Enter webhook signing secret</convoy-input-error>
+					</convoy-input-field>
+				</div>
+			</div>
+
+			<div formGroupName="basic_auth" *ngIf="sourceForm.value.verifier.type === 'basic_auth'" class="mt-40px">
+				<h3 class="font-semibold mb-20px">Configure Basic Auth</h3>
+
+				<div class="grid grid-cols-2 gap-6">
+					<convoy-input-field>
+						<label for="username" required="true" convoy-label required="true">Username</label>
+						<input type="text" id="username" convoy-input autocomplete="username" formControlName="username" placeholder="Name goes here" />
+						<convoy-input-error *ngIf="sourceForm.get('basic_auth.username')?.touched && sourceForm.get('basic_auth.username')?.invalid">Enter basic auth username</convoy-input-error>
+					</convoy-input-field>
+					<convoy-input-field>
+						<label for="password" required="true" convoy-label required="true">Password</label>
+						<input type="text" id="password" convoy-input autocomplete="password" formControlName="password" placeholder="*******" />
+						<convoy-input-error *ngIf="sourceForm.get('basic_auth.password')?.touched && sourceForm.get('basic_auth.password')?.invalid">Enter basic auth password</convoy-input-error>
+					</convoy-input-field>
+				</div>
+			</div>
+
+			<div formGroupName="api_key" *ngIf="sourceForm.value.verifier.type === 'api_key'" class="mt-40px">
+				<h3 class="font-semibold mb-20px">Configure API Key</h3>
+
+				<div class="grid grid-cols-2 gap-6">
+					<convoy-input-field>
+						<label for="header_name" required="true" convoy-label required="true">Header Name</label>
+						<input type="text" id="header_name" convoy-input autocomplete="header_name" formControlName="header_name" placeholder="Header Name" />
+						<convoy-input-error *ngIf="sourceForm.get('verifier.header_name')?.touched && sourceForm.get('verifier.header_name')?.invalid">Enter api key header</convoy-input-error>
+					</convoy-input-field>
+					<convoy-input-field>
+						<label for="header_value" required="true" convoy-label required="true">Header Value</label>
+						<input type="text" id="header_value" convoy-input autocomplete="header_value" formControlName="header_value" placeholder="Key goes here" />
+						<convoy-input-error *ngIf="sourceForm.get('verifier.header_value')?.touched && sourceForm.get('verifier.header_value')?.invalid">Enter api key header value</convoy-input-error>
+					</convoy-input-field>
+				</div>
+			</div>
+		</div>
+
+		<div class="empty:hidden">
+			<ng-content></ng-content>
+		</div>
+
+		<div *ngIf="isloading" convoy-form-loader [loading]="!sourceCreated"></div>
 	</convoy-card>
 
-	<div formGroupName="verifier">
-		<convoy-card className="p-24px mt-24px" *ngIf="sourceForm.value.type === 'http'">
-			<h2 class="font-semibold mb-12px">Select Ingester HTTP type</h2>
-			<div class="grid grid-cols-2 gap-6">
-				<convoy-radio
-					*ngFor="let httpType of httpTypes"
-					formControlName="type"
-					tooltipContent="This is a tip to help you accomplish a task."
-					[label]="httpType.viewValue"
-					[_name]="httpType.value"
-					[value]="httpType.value"
-					[_id]="httpType.value"
-					[checked]="sourceForm.value.verifier.type === httpType.value"
-				></convoy-radio>
-			</div>
-		</convoy-card>
-
-		<convoy-card className="p-24px mt-24px" *ngIf="sourceForm.value.verifier.type === 'api_key'" formGroupName="api_key">
-			<h2 class="font-semibold mb-20px">Configure API Key</h2>
-
-			<div class="grid grid-cols-2 gap-6">
-				<convoy-input-field>
-					<label for="header_name" required="true" convoy-label required="true">Header Name</label>
-					<input type="text" id="header_name" convoy-input autocomplete="header_name" formControlName="header_name" placeholder="Header Name" />
-					<convoy-input-error *ngIf="sourceForm.get('verifier.header_name')?.touched && sourceForm.get('verifier.header_name')?.invalid">Enter api key header</convoy-input-error>
-				</convoy-input-field>
-				<convoy-input-field>
-					<label for="header_value" required="true" convoy-label required="true">Header Value</label>
-					<input type="text" id="header_value" convoy-input autocomplete="header_value" formControlName="header_value" placeholder="Key goes here" />
-					<convoy-input-error *ngIf="sourceForm.get('verifier.header_value')?.touched && sourceForm.get('verifier.header_value')?.invalid">Enter api key header value</convoy-input-error>
-				</convoy-input-field>
-			</div>
-		</convoy-card>
-
-		<convoy-card className="p-24px mt-24px" *ngIf="sourceForm.value.verifier.type === 'hmac' || isCustomSource(sourceForm.value.verifier.type)" formGroupName="hmac">
-			<h2 class="font-semibold mb-20px" *ngIf="sourceForm.value.verifier.type === 'hmac'">Configure HMAC</h2>
-			<h2 class="font-semibold mb-20px" *ngIf="sourceForm.value.verifier.type === 'github'">Github Credentials</h2>
-			<h2 class="font-semibold mb-20px" *ngIf="sourceForm.value.verifier.type === 'twitter'">Twitter Credentials</h2>
-			<h2 class="font-semibold mb-20px" *ngIf="sourceForm.value.verifier.type === 'shopify'">Shopify Credentials</h2>
-
-			<div class="grid grid-cols-2 gap-6">
-				<convoy-select
-					*ngIf="sourceForm.value.verifier.type === 'hmac'"
-					label="Encoding"
-					name="encoding"
-					formControlName="encoding"
-					[options]="encodings"
-					errorMessage="Select encoding type"
-					[required]="true"
-					className="mb-0"
-					(selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ encoding: $event })"
-				></convoy-select>
-				<convoy-select
-					*ngIf="sourceForm.value.verifier.type === 'hmac'"
-					label="Hash Algorithm"
-					name="hash"
-					formControlName="hash"
-					[options]="hashAlgorithms"
-					errorMessage="Select algorithm type"
-					[required]="true"
-					className="mb-0"
-					(selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ hash: $event })"
-				></convoy-select>
-
-				<convoy-input-field *ngIf="sourceForm.value.verifier.type === 'hmac'">
-					<label for="header" required="true" convoy-label required="true">Header Value</label>
-					<input type="text" id="header" convoy-input autocomplete="header" formControlName="header" placeholder="Key goes here" />
-					<convoy-input-error *ngIf="sourceForm.get('hmac.header')?.touched && sourceForm.get('hmac.header')?.invalid">Enter header key</convoy-input-error>
-				</convoy-input-field>
-
-				<convoy-input-field>
-					<label for="secret" required="true" convoy-label required="true">Webhook signing secret</label>
-					<input type="text" id="secret" convoy-input autocomplete="secret" formControlName="secret" placeholder="Secret goes here" />
-					<convoy-input-error *ngIf="sourceForm.get('hmac.secret')?.touched && sourceForm.get('hmac.secret')?.invalid">Enter webhook signing secret</convoy-input-error>
-				</convoy-input-field>
-			</div>
-		</convoy-card>
-
-		<convoy-card className="p-24px mt-24px" *ngIf="sourceForm.value.verifier.type === 'basic_auth'" formGroupName="basic_auth">
-			<h2 class="font-semibold mb-20px">Configure Basic Auth</h2>
-
-			<div class="grid grid-cols-2 gap-6">
-				<convoy-input-field>
-					<label for="username" required="true" convoy-label required="true">Username</label>
-					<input type="text" id="username" convoy-input autocomplete="username" formControlName="username" placeholder="Name goes here" />
-					<convoy-input-error *ngIf="sourceForm.get('basic_auth.username')?.touched && sourceForm.get('basic_auth.username')?.invalid">Enter basic auth username</convoy-input-error>
-				</convoy-input-field>
-				<convoy-input-field>
-					<label for="password" required="true" convoy-label required="true">Password</label>
-					<input type="text" id="password" convoy-input autocomplete="password" formControlName="password" placeholder="*******" />
-					<convoy-input-error *ngIf="sourceForm.get('basic_auth.password')?.touched && sourceForm.get('basic_auth.password')?.invalid">Enter basic auth password</convoy-input-error>
-				</convoy-input-field>
-			</div>
-		</convoy-card>
-	</div>
-
-	<div class="flex justify-end mt-32px">
+	<div class="flex justify-end mt-32px" [ngClass]="{ hidden: showAction === 'false' }">
 		<button convoy-button fill="outline" type="button" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" (click)="cancel()">Cancel</button>
 		<button convoy-button [disabled]="isloading">
-			{{ isNewProjectRoute() ? 'Save and Proceed' : action === 'update' ? 'Update Source' : 'Create Source' }}
+			{{ action === 'update' ? 'Update Source' : 'Create Source' }}
 			<svg width="24" height="24" class="ml-8px fill-white-100">
 				<use xlink:href="#arrow-right-icon"></use>
 			</svg>
