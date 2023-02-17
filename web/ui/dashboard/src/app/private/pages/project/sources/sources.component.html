@@ -30,7 +30,7 @@
 
 	<ng-container *ngIf="!isLoadingSources && sources?.content?.length">
 		<div class="flex flex-wrap gap-24px">
-			<convoy-card className="py-20px" class="w-full max-w-[348px] cursor-pointer" *ngFor="let source of sources?.content; let i = index" [id]="'app' + i" [routerLink]="['./']" [queryParams]="{ id: source.uid }">
+			<convoy-card className="py-20px" hover="true" class="w-full max-w-[348px] cursor-pointer" *ngFor="let source of sources?.content; let i = index" [id]="'app' + i" [routerLink]="['./']" [queryParams]="{ id: source.uid }">
 				<div class="px-24px pb-12px border-b border-b-grey-10">
 					<div class="text-grey-40 text-10 mb-4px">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</div>
 					<div class="flex justify-between items-center">
