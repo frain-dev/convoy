@@ -151,7 +151,7 @@
 
 <div convoy-modal *ngIf="shouldShowCreateSourceModal || shouldShowUpdateSourceModal" position="full" [id]="'sourceForm'" [title]="shouldShowUpdateSourceModal ? 'Update Source' : 'Create source'" (closeModal)="closeCreateSourceModal({ action: 'close' })">
 	<ng-container modalBody>
-		<convoy-create-source (onAction)="closeCreateSourceModal($event)" [action]="shouldShowUpdateSourceModal ? 'update' : 'create'"></convoy-create-source>
+		<convoy-create-source showAction="true" (onAction)="closeCreateSourceModal($event)" [action]="shouldShowUpdateSourceModal ? 'update' : 'create'"></convoy-create-source>
 	</ng-container>
 </div>
 
@@ -237,7 +237,9 @@
 					<use xlink:href="#delete-icon"></use>
 				</svg>
 			</button>
+
 			<button convoy-button size="sm" class="ml-24px" [routerLink]="'./' + activeSource?.uid">
+
 				Edit Source
 				<svg width="18" height="18" class="ml-8px fill-white-100">
 					<use xlink:href="#edit-icon"></use>

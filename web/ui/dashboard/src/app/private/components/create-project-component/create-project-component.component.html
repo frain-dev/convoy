@@ -40,13 +40,13 @@
 
 			<div formGroupName="config">
 				<ng-container *ngIf="showConfig('signature')">
-					<div class="flex justify-between items-center">
-						<p class="mb-16px text-14 font-medium text-grey-60 flex items-center">
+					<div class="flex justify-between items-center mb-24px">
+						<p class="text-14 font-medium text-grey-60 flex items-center">
 							Signature Details
 							<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 						</p>
-						<button class="" type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
-							<img src="assets/img/svg/delete-icon.svg" class="ml-8px" alt="plus icon" />
+						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
+							<img src="assets/img/svg/delete-icon.svg" alt="plus icon" />
 						</button>
 					</div>
 					<div formGroupName="signature" class="mb-24px" [ngClass]="{ 'grid grid-cols-2 gap-x-24px': action === 'create' }">
@@ -73,16 +73,16 @@
 				</ng-container>
 
 				<ng-container *ngIf="showConfig('retry-config')">
-					<div class="flex justify-between items-center">
-						<p class="mb-16px flex items-center text-14 font-medium text-grey-60">
+					<div class="flex justify-between items-center mb-24px">
+						<p class="flex items-center text-14 font-medium text-grey-60">
 							Retry Logic
 							<convoy-tooltip size="sm" position="right" class="ml-4px">
 								These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time before the next retry
 								attempt.
 							</convoy-tooltip>
 						</p>
-						<button class="" type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('retry-config')">
-							<img src="assets/img/svg/delete-icon.svg" class="ml-8px" alt="plus icon" />
+						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('retry-config')">
+							<img src="assets/img/svg/delete-icon.svg" alt="plus icon" />
 						</button>
 					</div>
 					<div class="grid grid-cols-2 gap-x-24px" formGroupName="strategy">
@@ -104,13 +104,13 @@
 				</ng-container>
 
 				<ng-container *ngIf="showConfig('rate-limit')">
-					<div class="flex justify-between items-center">
-						<p class="mb-16px flex items-center text-14 font-medium text-grey-60">
+					<div class="flex justify-between items-center mb-24px">
+						<p class="flex items-center text-14 font-medium text-grey-60">
 							Rate Limit Parameters
 							<convoy-tooltip size="sm" position="right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
 						</p>
-						<button class="" type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('rate-limit')">
-							<img src="assets/img/svg/delete-icon.svg" class="ml-8px" alt="plus icon" />
+						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('rate-limit')">
+							<img src="assets/img/svg/delete-icon.svg" alt="plus icon" />
 						</button>
 					</div>
 
@@ -132,10 +132,10 @@
 				</ng-container>
 
 				<ng-container *ngIf="showConfig('retention')">
-					<div class="flex justify-between items-center mb-16px">
+					<div class="flex justify-between items-center mb-24px">
 						<p class="text-14 font-medium text-grey-60">Retention Policy</p>
-						<button class="" type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('retention')">
-							<img src="assets/img/svg/delete-icon.svg" class="ml-8px" alt="plus icon" />
+						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('retention')">
+							<img src="assets/img/svg/delete-icon.svg" alt="plus icon" />
 						</button>
 						<!-- <convoy-toggle label="Enabled" name="is_retention_policy_enabled" formControlName="is_retention_policy_enabled" className="!mb-0"></convoy-toggle> -->
 					</div>
