@@ -52,6 +52,7 @@ export class CreateEndpointComponent implements OnInit {
 		{ uid: 'auth', name: 'Authentication', show: false },
 		{ uid: 'signature', name: 'Signature Format', show: false }
 	];
+	endpointCreated: boolean = false;
 
 	constructor(private formBuilder: FormBuilder, private generalService: GeneralService, private createEndpointService: CreateEndpointService, private route: ActivatedRoute, private privateService: PrivateService, private router: Router) {}
 
@@ -74,9 +75,10 @@ export class CreateEndpointComponent implements OnInit {
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.onAction.emit({ action: this.endpointUid && this.editMode ? 'update' : 'save', data: response.data });
 			this.addNewEndpointForm.reset();
-			this.savingEndpoint = false;
+			this.endpointCreated = true;
 			return response;
 		} catch {
+			this.endpointCreated = false;
 			this.savingEndpoint = false;
 			return;
 		}

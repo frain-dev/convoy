@@ -67,6 +67,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		{ uid: 'retry_config', name: 'Retry Logic', show: false },
 		{ uid: 'events', name: 'Event Types', show: false }
 	];
+	createdSubscription = false;
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, private formatSeconds: FormatSecondsPipe) {}
 
@@ -177,38 +178,43 @@ export class CreateSubscriptionComponent implements OnInit {
 	async saveSubscription() {
 		this.isCreatingSubscription = true;
 
-		if (this.showCreateEndpointForm) {
-			const endpointDetails = await this.createEndpointForm.saveEndpoint();
-			this.subscriptionForm.patchValue({
-				endpoint_id: endpointDetails?.data.uid
-			});
-		}
-		if (this.showCreateSourceForm) {
-			const sourceDetails = await this.createSourceForm.saveSource();
-			this.subscriptionForm.patchValue({
-				source_id: sourceDetails?.data.uid
-			});
+		// if subscription service has subscription data, use it to update subscription form, else, create endpoint and source
+		if (this.createSubscriptionService.subscriptionData) {
+			this.subscriptionForm.patchValue(this.createSubscriptionService.subscriptionData);
+		} else {
+			// trigger create endpoint and source together
+			const [endpointDetails, sourceDetails] = await Promise.allSettled([
+				this.showCreateEndpointForm && !this.createEndpointForm.endpointCreated ? this.createEndpointForm.saveEndpoint() : false,
+				this.showCreateSourceForm && !this.createSourceForm.sourceCreated ? this.createSourceForm.saveSource() : false
+			]);
+			if (endpointDetails.status === 'fulfilled' && typeof endpointDetails.value !== 'boolean') this.subscriptionForm.patchValue({ endpoint_id: endpointDetails.value?.data.uid });
+			if (sourceDetails.status === 'fulfilled' && typeof sourceDetails.value !== 'boolean') this.subscriptionForm.patchValue({ source_id: sourceDetails.value?.data.uid });
 		}
 
+		// set filter config
 		this.subscriptionForm.patchValue({
 			filter_config: { event_types: this.eventTags.length > 0 ? this.eventTags : ['*'] }
 		});
 
-		if (this.createSubscriptionService.subscriptionData) this.subscriptionForm.patchValue(this.createSubscriptionService.subscriptionData);
+		// check subscription form validation
+		if (this.subscriptionForm.invalid) {
+			this.isCreatingSubscription = false;
+			return this.subscriptionForm.markAllAsTouched();
+		}
 
-		if (this.subscriptionForm.invalid) return this.subscriptionForm.markAllAsTouched();
-
+		// check if configs are added, else delete the properties
 		const subscriptionData = structuredClone(this.subscriptionForm.value);
-
 		const retryDuration = this.subscriptionForm.get('retry_config.duration');
 		this.configurations[1].show ? (subscriptionData.retry_config.duration = retryDuration?.value + 's') : delete subscriptionData.retry_config;
 
+		// create subscription
 		try {
 			const response =
 				this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.subscriptionId, token: this.token }) : await this.createSubscriptionService.createSubscription(subscriptionData, this.token);
-			this.isCreatingSubscription = false;
 			this.onAction.emit({ data: response.data, action: this.action == 'update' ? 'update' : 'create' });
+			this.createdSubscription = true;
 		} catch (error) {
+			this.createdSubscription = false;
 			this.isCreatingSubscription = false;
 		}
 	}

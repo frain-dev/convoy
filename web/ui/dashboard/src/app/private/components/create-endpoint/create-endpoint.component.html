@@ -13,11 +13,16 @@
 				<convoy-input-error *ngIf="addNewEndpointForm.get('url')?.touched && addNewEndpointForm.get('url')?.invalid">Endpoint URL is required</convoy-input-error>
 			</convoy-input-field>
 
+			<hr class="border-grey-10 mb-24px" />
+			<h2 class="text-16 font-semibold mb-16px">Set Configurations</h2>
+
 			<ng-container *ngIf="showConfig('alert-config')">
 				<div class="flex justify-between items-center mb-16px">
 					<p class="text-14 font-medium text-grey-60 flex items-center">Alert Configuration</p>
 					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('alert-config')">
-						<img src="assets/img/svg/delete-icon.svg" alt="plus icon" />
+						<svg width="16" height="16" class="fill-grey-60">
+							<use xlink:href="#delete-icon"></use>
+						</svg>
 					</button>
 				</div>
 				<div class="grid grid-cols-2 gap-24px">
@@ -40,7 +45,9 @@
 						<convoy-tooltip size="sm" position="right" class="ml-4px">You can set your provided endpoint authentication is any is required</convoy-tooltip>
 					</p>
 					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('auth')">
-						<img src="assets/img/svg/delete-icon.svg" alt="plus icon" />
+						<svg width="16" height="16" class="fill-grey-60">
+							<use xlink:href="#delete-icon"></use>
+						</svg>
 					</button>
 				</div>
 				<ng-container formGroupName="authentication">
@@ -64,7 +71,9 @@
 						<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your signature format for your project.</convoy-tooltip>
 					</p>
 					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
-						<img src="assets/img/svg/delete-icon.svg" alt="plus icon" />
+						<svg width="16" height="16" class="fill-grey-60">
+							<use xlink:href="#delete-icon"></use>
+						</svg>
 					</button>
 				</div>
 				<div class="grid grid-cols-2 gap-6 mb-50px">
@@ -75,7 +84,7 @@
 
 			<div class="flex items-center">
 				<ng-container *ngFor="let config of configurations">
-					<button *ngIf="!config.show" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" class="mr-24px" (click)="toggleConfigForm(config.uid)">
+					<button *ngIf="!config.show" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" class="mr-24px font-normal" (click)="toggleConfigForm(config.uid)">
 						{{ config.name }}
 						<img src="assets/img/svg/plus-icon.svg" class="ml-24px" alt="plus icon" />
 					</button>
@@ -86,7 +95,7 @@
 		<div class="empty:hidden">
 			<ng-content></ng-content>
 		</div>
-		<div *ngIf="savingEndpoint" convoy-form-loader></div>
+		<div *ngIf="savingEndpoint" convoy-form-loader [loading]="!endpointCreated"></div>
 	</convoy-card>
 
 	<div class="flex justify-end mt-40px mb-60px" [ngClass]="{ hidden: showAction === 'false' }">

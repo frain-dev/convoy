@@ -11,7 +11,7 @@
 		<div class="border-t border-grey-20 pt-24px mt-24px">
 			<h3 class="font-semibold mb-24px">Set Configurations</h3>
 
-            <ng-container *ngIf="showConfig('events')">
+			<ng-container *ngIf="showConfig('events')">
 				<div *ngIf="projectType === 'outgoing' || token">
 					<div class="flex justify-between items-center mb-16px">
 						<p class="text-14 font-medium text-grey-60 flex items-center">
@@ -79,34 +79,6 @@
 				</div>
 			</ng-container>
 
-			<ng-container *ngIf="showConfig('alert_config')">
-				<div class="flex justify-between items-center mb-16px">
-					<p class="text-14 font-medium text-grey-60 flex items-center">
-						Alert Rule
-						<convoy-tooltip position="right" size="sm" class="ml-4px">This specifies the frequency at which notifications(emails, slack messages) would be sent when something happens to your subscirption.</convoy-tooltip>
-					</p>
-					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('alert_config')">
-						<img src="assets/img/svg/delete-icon.svg" alt="plus icon" />
-					</button>
-				</div>
-
-				<div class="grid grid-cols-2 gap-6" formGroupName="alert_config">
-					<convoy-input-field>
-						<label for="alert-config-time" convoy-label>Time</label>
-						<div class="relative">
-							<input type="number" id="alert-config-time" convoy-input autocomplete="alert-config-time" formControlName="threshold" placeholder="e.g 30" />
-							<div class="absolute top-[50%] right-14px text-16 text-grey-100 opacity-40 translate-y-[-50%]">sec</div>
-						</div>
-						<convoy-input-error *ngIf="subscriptionForm.get('alert_config.threshold')?.touched && subscriptionForm.get('alert_config.threshold')?.invalid">Enter error alert threshold</convoy-input-error>
-					</convoy-input-field>
-					<convoy-input-field>
-						<label for="alert-config-count" convoy-label>Limit</label>
-						<input type="number" id="alert-config-count" convoy-input autocomplete="alert-config-count" formControlName="count" placeholder="e.g 5" />
-						<convoy-input-error *ngIf="subscriptionForm.get('alert_config.count')?.touched && subscriptionForm.get('alert_config.count')?.invalid">Enter error alert limit</convoy-input-error>
-					</convoy-input-field>
-				</div>
-			</ng-container>
-
 			<ng-container *ngIf="showConfig('filter_config')">
 				<div class="border border-grey-20 rounded-4px p-16px mb-24px">
 					<div class="flex justify-between items-center mb-14px">
@@ -170,8 +142,7 @@
 				</button>
 			</convoy-card>
 
-
-			<convoy-create-source *ngIf="showCreateSourceForm" (onAction)="$event?.action === 'close' ? (showCreateSourceForm = false) : onCreateSource($event.data); showCreateSourceForm = false">
+			<convoy-create-source *ngIf="showCreateSourceForm" (onAction)="$event?.action === 'close' ? (showCreateSourceForm = false) : onCreateSource($event.data)">
 				<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateSourceForm = false; subscriptionForm.patchValue({ source_id: null })">
 					<svg width="20" height="20" class="mr-8px" fill="currentColor">
 						<use xlink:href="#plus-icon"></use>
@@ -204,8 +175,7 @@
 			</button>
 		</convoy-card>
 
-
-		<convoy-create-endpoint *ngIf="showCreateEndpointForm" (onAction)="$event.action === 'close' ? (showCreateEndpointForm = false) : onCreateEndpoint($event.data); showCreateEndpointForm = false">
+		<convoy-create-endpoint *ngIf="showCreateEndpointForm" (onAction)="$event.action === 'close' ? (showCreateEndpointForm = false) : onCreateEndpoint($event.data)">
 			<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateEndpointForm = false; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">
 				<svg width="20" height="20" class="mr-8px" fill="currentColor">
 					<use xlink:href="#plus-icon"></use>

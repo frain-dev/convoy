@@ -13,7 +13,7 @@
 						type="button"
 						class="w-60px h-60px"
 						[ngClass]="{ '!border-solid !border !border-primary-100': sourceForm.value.verifier.type === source }"
-						(click)="sourceForm.get('verifier.type')?.patchValue(source)"
+						(click)="sourceForm.get('verifier.type')?.patchValue(source); sourceForm.get('name')?.patchValue(source.charAt(0).toUpperCase() + source.slice(1) + ' Source')"
 					>
 						<img [src]="'/assets/img/' + source + '.png'" [alt]="source + '-icon'" />
 					</button>
@@ -191,7 +191,7 @@
 			<ng-content></ng-content>
 		</div>
 
-		<div *ngIf="isloading" convoy-form-loader></div>
+		<div *ngIf="isloading" convoy-form-loader [loading]="!sourceCreated"></div>
 	</convoy-card>
 
 	<div class="flex justify-end mt-32px" [ngClass]="{ hidden: showAction === 'false' }">

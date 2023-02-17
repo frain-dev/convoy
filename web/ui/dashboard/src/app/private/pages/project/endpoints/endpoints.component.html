@@ -59,7 +59,7 @@
 						</td>
 						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]">{{ endpoint.events || 0 }}</td>
 						<td convoy-table-cell>
-							<button convoy-button size="xs" [routerLink]="['../events']" [relativeTo]="route" [queryParams]="{ linksEndpoint: endpoint.uid }" texture="light">
+							<button convoy-button size="sm" [routerLink]="['../events']" [relativeTo]="route" [queryParams]="{ linksEndpoint: endpoint.uid }" texture="light">
 								<img src="/assets/img/view-events-icon.svg" class="w-14px mr-10px" alt="view events icon" />
 								View Events
 							</button>
