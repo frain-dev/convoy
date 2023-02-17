@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -48,24 +49,36 @@ const (
 	AND (ev.source_id = $3 OR $3 = '') AND ev.created_at >= $4 AND ev.created_at <= $5 AND ev.deleted_at IS NULL;
 	`
 
+	baseEventsCount = `
+	WITH table_count AS (
+		SELECT count(distinct(ev.id)) as count
+		FROM convoy.events ev LEFT JOIN convoy.events_endpoints
+		ee ON ee.event_id = ev.id 
+		WHERE ev.deleted_at IS NULL
+		%s
+	)
+	`
+
 	baseEventsPaged = `
-	SELECT ev.id,
+	SELECT table_count.count, ev.id,
 	ev.project_id, ev.source_id, ev.headers, ev.raw,
 	ev.data, ev.created_at, ev.updated_at, ev.deleted_at,
-	e.id AS "endpoint.id", e.title AS "endpoint.title", 
-	e.project_id AS "endpoint.project_id", e.support_email AS "endpoint.support_email", 
-	e.target_url AS "endpoint.target_url", s.id AS "source.id", 
-	s.name AS "source.name" FROM convoy.events AS ev
+	e.id AS "endpoint.id", e.title AS "endpoint.title",
+	e.project_id AS "endpoint.project_id", e.support_email AS "endpoint.support_email",
+	e.target_url AS "endpoint.target_url", s.id AS "source.id",
+	s.name AS "source.name" FROM table_count, convoy.events AS ev
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
 	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
 	WHERE ev.deleted_at IS NULL
+	%s
 	`
-	baseWhere = `AND (ev.project_id = ? OR ? = '') AND (ev.source_id = ? OR ? = '') AND ev.created_at >= ? AND ev.created_at <= ? GROUP BY ev.id, s.id, e.id LIMIT ? OFFSET ?`
 
-	fetchEventsPaginatedFilterByEndpoints = baseEventsPaged + `AND e.id IN (?)` + baseWhere
+	filterWithEndpoints = `AND ee.endpoint_id IN (?) AND (ev.project_id = ? OR ? = '') AND (ev.source_id = ? OR ? = '') AND ev.created_at >= ? AND ev.created_at <= ?`
 
-	fetchEventsPaginated = baseEventsPaged + baseWhere
+	filterWithoutEndpoints = `AND (ev.project_id = ? OR ? = '') AND (ev.source_id = ? OR ? = '') AND ev.created_at >= ? AND ev.created_at <= ?`
+
+	paginateQuery = `LIMIT ? OFFSET ?`
 
 	softDeleteProjectEvents = `
 	UPDATE convoy.events SET deleted_at = now()
@@ -202,12 +215,11 @@ func (e *eventRepo) CountEvents(ctx context.Context, filter *datastore.Filter) (
 }
 
 func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
-	var query string
-	var args []interface{}
+	var query, projectID string
 	var err error
-	var projectID string
-	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
+	var args []interface{}
 
+	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
 	if filter.Project != nil {
 		projectID = filter.Project.UID
 	}
@@ -217,15 +229,23 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 	}
 
 	if len(filter.EndpointIDs) > 0 {
-		query, args, err = sqlx.In(fetchEventsPaginatedFilterByEndpoints, filter.EndpointIDs, projectID, projectID, filter.SourceID, filter.SourceID, startDate, endDate, filter.Pageable.Limit(), filter.Pageable.Offset())
+		q := fmt.Sprintf(baseEventsCount, filterWithEndpoints) + fmt.Sprintf(baseEventsPaged, filterWithEndpoints) + paginateQuery
+		args = []interface{}{filter.EndpointIDs, projectID, projectID, filter.SourceID, filter.SourceID, startDate, endDate}
+		args = append(args, args...)
+		args = append(args, filter.Pageable.Limit(), filter.Pageable.Offset())
+
+		query, args, err = sqlx.In(q, args...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 
 		query = e.db.Rebind(query)
 	} else {
-		query = e.db.Rebind(fetchEventsPaginated)
-		args = []interface{}{projectID, projectID, filter.SourceID, filter.SourceID, startDate, endDate, filter.Pageable.Limit(), filter.Pageable.Offset()}
+		q := fmt.Sprintf(baseEventsCount, filterWithoutEndpoints) + fmt.Sprintf(baseEventsPaged, filterWithoutEndpoints) + paginateQuery
+		query = e.db.Rebind(q)
+		args = []interface{}{projectID, projectID, filter.SourceID, filter.SourceID, startDate, endDate}
+		args = append(args, args...)
+		args = append(args, filter.Pageable.Limit(), filter.Pageable.Offset())
 	}
 
 	rows, err := e.db.QueryxContext(ctx, query, args...)
@@ -233,6 +253,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 		return nil, datastore.PaginationData{}, err
 	}
 
+	count := 0
 	eventMap := make(map[string]*datastore.Event)
 	var events []datastore.Event
 	for rows.Next() {
@@ -267,12 +288,8 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 
 			eventMap[event.UID] = event
 		}
-	}
 
-	var count int
-	err = e.db.Get(&count, countProjectMessages, projectID)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
+		count = data.Count
 	}
 
 	for _, event := range eventMap {
@@ -335,7 +352,7 @@ type EventEndpoint struct {
 }
 
 type EventPaginated struct {
-	Count     int
+	Count     int                   `db:"count"`
 	UID       string                `db:"id"`
 	EventType string                `db:"event_type"`
 	SourceID  null.String           `db:"source_id"`
