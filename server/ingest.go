@@ -19,7 +19,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
@@ -134,8 +133,8 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		Raw:       string(payload),
 		Data:      payload,
 		Headers:   httpheader.HTTPHeader(r.Header),
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	createEvent := task.CreateEvent{
