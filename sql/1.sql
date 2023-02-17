@@ -46,25 +46,8 @@ CREATE TABLE IF NOT EXISTS convoy.organisation_members (
 	deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE IF NOT EXISTS convoy.projects (
-	id CHAR(26) PRIMARY KEY,
-
-	name TEXT NOT NULL,
-	type TEXT NOT NULL,
-	logo_url TEXT,
-	retained_events INTEGER DEFAULT 0,
-
-	organisation_id CHAR(26) NOT NULL REFERENCES convoy.organisations (id),
-
-	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	deleted_at TIMESTAMPTZ
-);
-
 CREATE TABLE IF NOT EXISTS convoy.project_configurations (
 	id CHAR(26) PRIMARY KEY,
-
-	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
 
 	retention_policy TEXT NOT NULL,
 	max_payload_read_size INTEGER NOT NULL,
@@ -86,6 +69,23 @@ CREATE TABLE IF NOT EXISTS convoy.project_configurations (
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	deleted_at TIMESTAMPTZ
 );
+
+CREATE TABLE IF NOT EXISTS convoy.projects (
+	id CHAR(26) PRIMARY KEY,
+
+	name TEXT NOT NULL,
+	type TEXT NOT NULL,
+	logo_url TEXT,
+	retained_events INTEGER DEFAULT 0,
+
+	organisation_id CHAR(26) NOT NULL REFERENCES convoy.organisations (id),
+	project_configuration_id CHAR(26) NOT NULL REFERENCES convoy.project_configurations (id),
+
+	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+	deleted_at TIMESTAMPTZ
+);
+
 
 CREATE TABLE IF NOT EXISTS convoy.endpoints (
 	id CHAR(26) PRIMARY KEY,

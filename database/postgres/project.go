@@ -20,13 +20,13 @@ var (
 
 const (
 	createProject = `
-	INSERT INTO convoy.projects (id, name, type, logo_url, organisation_id)
-	VALUES ($1, $2, $3, $4, $5);
+	INSERT INTO convoy.projects (id, name, type, logo_url, organisation_id, project_configuration_id)
+	VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;
 	`
 
 	createProjectConfiguration = `
 	INSERT INTO convoy.project_configurations (
-		id, project_id, retention_policy, max_payload_read_size,
+		id, retention_policy, max_payload_read_size,
 		replay_attacks_prevention_enabled,
 		retention_policy_enabled, ratelimit_count,
 		ratelimit_duration, strategy_type,
@@ -35,7 +35,7 @@ const (
 	  )
 	  VALUES
 		(
-		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
 		) RETURNING id;
 	`
 
@@ -53,7 +53,7 @@ const (
 		signature_header = $11,
 		signature_versions = $12,
 		updated_at = now()
-	WHERE project_id = $1 AND deleted_at IS NULL;
+	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	fetchProjectById = `
@@ -79,7 +79,7 @@ const (
 		p.deleted_at
 	FROM convoy.projects p
 	LEFT JOIN convoy.project_configurations c
-		ON p.id = c.project_id
+		ON p.project_configuration_id = c.id
 	WHERE p.id = $1 AND p.deleted_at IS NULL;
 	`
 
@@ -152,19 +152,14 @@ func (p *projectRepo) CreateProject(ctx context.Context, o *datastore.Project) e
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, createProject, o.UID, o.Name, o.Type, o.LogoURL, o.OrganisationID)
-	if err != nil {
-		return err
-	}
-
 	signatureVersions, err := json.Marshal(o.Config.SignatureVersions)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, createProjectConfiguration,
+	var config_id string
+	err = tx.QueryRowxContext(ctx, createProjectConfiguration,
 		ulid.Make().String(),
-		o.UID,
 		o.Config.RetentionPolicy,
 		o.Config.MaxIngestSize,
 		o.Config.ReplayAttacks,
@@ -176,9 +171,25 @@ func (p *projectRepo) CreateProject(ctx context.Context, o *datastore.Project) e
 		o.Config.StrategyRetryCount,
 		o.Config.SignatureHeader,
 		signatureVersions,
-	)
+	).Scan(&config_id)
+
 	if err != nil {
 		return err
+	}
+
+	o.UID = ulid.Make().String()
+	proResult, err := tx.ExecContext(ctx, createProject, o.UID, o.Name, o.Type, o.LogoURL, o.OrganisationID, config_id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := proResult.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected < 1 {
+		return ErrProjectNotCreated
 	}
 
 	return tx.Commit()
@@ -231,7 +242,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 	}
 
 	cRes, err := tx.ExecContext(ctx, updateProjectConfiguration,
-		project.UID,
+		project.ProjectConfigID,
 		project.Config.RetentionPolicy,
 		project.Config.MaxIngestSize,
 		project.Config.ReplayAttacks,
@@ -284,8 +295,7 @@ func (p *projectRepo) FillProjectsStatistics(ctx context.Context, project *datas
 	if err != nil {
 		return err
 	}
-
-
+	
 	project.Statistics = &stats
 	return nil
 }
