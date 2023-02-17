@@ -12,7 +12,7 @@
 			<h3 class="font-semibold mb-24px">Set Configurations</h3>
 
 			<ng-container *ngIf="showConfig('events')">
-				<div *ngIf="projectType === 'outgoing' || token">
+				<div *ngIf="projectType === 'outgoing' || token" class="mb-24px">
 					<div class="flex justify-between items-center mb-16px">
 						<p class="text-14 font-medium text-grey-60 flex items-center">
 							Event Types
@@ -22,7 +22,9 @@
 							</convoy-tooltip>
 						</p>
 						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('events')">
-							<img src="assets/img/svg/delete-icon.svg" alt="plus icon" />
+							<svg width="16" height="16" class="fill-grey-60">
+								<use xlink:href="#delete-icon"></use>
+							</svg>
 						</button>
 					</div>
 					<label class="w-full text-12 text-grey-40" for="tagInput">Event Types</label>
@@ -47,7 +49,9 @@
 						</convoy-tooltip>
 					</p>
 					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('retry_config')">
-						<img src="assets/img/svg/delete-icon.svg" alt="plus icon" />
+						<svg width="16" height="16" class="fill-grey-60">
+							<use xlink:href="#delete-icon"></use>
+						</svg>
 					</button>
 				</div>
 
@@ -84,7 +88,9 @@
 					<div class="flex justify-between items-center mb-14px">
 						<h4 class="text-grey-60 font-medium">Events Filter</h4>
 						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('filter_config')">
-							<img src="assets/img/svg/delete-icon.svg" alt="delete icon" />
+							<svg width="16" height="16" class="fill-grey-60">
+								<use xlink:href="#delete-icon"></use>
+							</svg>
 						</button>
 					</div>
 

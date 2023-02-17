@@ -13,7 +13,7 @@
 <div class="flex justify-between items-end mt-24px border-b border-b-grey-10 pb-20px mb-24px">
 	<div>
 		<h1 class="text-24 font-bold text-grey-80">Subscriptions</h1>
-		<p class="text-grey-60 text-14 mt-6px">List of your source to endpoint connections</p>
+		<p class="text-grey-60 text-14 mt-6px max-w-2xl">On Convoy, endpoints are subscribed to listen to events from a source along with configurations like retries and event filters. This page list all your existing subscritions</p>
 	</div>
 	<button convoy-button size="sm" routerLink="./new">Create a subscription</button>
 </div>
@@ -40,21 +40,21 @@
 <div *ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length">
 	<div class="flex flex-wrap gap-24px" *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
 		<div convoy-card class="pt-10px transition-all w-full max-w-[356px] cursor-pointer" hover="true" *ngFor="let subscription of subscriptions?.content; let i = index" [routerLink]="['./']" [queryParams]="{ id: subscription.uid }">
-			<div class="w-full text-10 text-grey-60 font-normal px-24px border-b border-b-grey-10 pb-10px">Z{{ subscription.name }}</div>
+			<div class="w-full text-12 text-grey-60 font-medium px-24px border-b border-b-grey-10 pb-10px">Z{{ subscription.name }}</div>
 			<div class="flex items-center justify-between pt-24px px-24px">
-				<div class="w-114px pb-10px mb-10px">
+				<div class="w-114px mb-24px">
 					<div class="text-grey-40 text-10 mb-4px">{{ subscription.source_metadata.provider || (subscription.source_metadata.verifier.type | sourceValue: 'verifier') }} Source</div>
 					<div class="text-14 font-medium text-grey-60 overflow-hidden" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical">{{ subscription.source_metadata.name }}</div>
 				</div>
-				<div class="flex items-center justify-center">
-					<svg width="30" height="9" viewBox="0 0 30 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<div class="flex items-center justify-center mb-24px">
+					<svg width="29" height="9" viewBox="0 0 29 9" fill="none" xmlns="http://www.w3.org/2000/svg">
 						<path
-							d="M0.647711 3.89014C0.451813 4.08191 0.450731 4.39849 0.645295 4.59724L3.81589 7.83601C4.01046 8.03476 4.32699 8.04041 4.52289 7.84864C4.71878 7.65686 4.71987 7.34028 4.5253 7.14154L1.70699 4.26262L4.54464 1.48471C4.74054 1.29294 4.74162 0.976359 4.54705 0.777611C4.35249 0.578864 4.03596 0.573212 3.84006 0.764986L0.647711 3.89014ZM29.3523 5.10986C29.5482 4.91809 29.5493 4.60151 29.3547 4.40276L26.1841 1.16399C25.9895 0.96524 25.673 0.959588 25.4771 1.15136C25.2812 1.34314 25.2801 1.65972 25.4747 1.85846L28.293 4.73738L25.4554 7.51529C25.2595 7.70706 25.2584 8.02364 25.4529 8.22239C25.6475 8.42114 25.964 8.42679 26.1599 8.23501L29.3523 5.10986ZM0.998291 4.75L28.9983 5.25L29.0017 4.25L1.00171 3.75L0.998291 4.75Z"
-							fill="#E8E8E9"
+							d="M0.146447 4.14645C-0.0488155 4.34171 -0.0488155 4.65829 0.146447 4.85355L3.32843 8.03553C3.52369 8.2308 3.84027 8.2308 4.03553 8.03553C4.2308 7.84027 4.2308 7.52369 4.03553 7.32843L1.20711 4.5L4.03553 1.67157C4.2308 1.47631 4.2308 1.15973 4.03553 0.964466C3.84027 0.769204 3.52369 0.769204 3.32843 0.964466L0.146447 4.14645ZM28.8536 4.85355C29.0488 4.65829 29.0488 4.34171 28.8536 4.14645L25.6716 0.964466C25.4763 0.769204 25.1597 0.769204 24.9645 0.964466C24.7692 1.15973 24.7692 1.47631 24.9645 1.67157L27.7929 4.5L24.9645 7.32843C24.7692 7.52369 24.7692 7.84027 24.9645 8.03553C25.1597 8.2308 25.4763 8.2308 25.6716 8.03553L28.8536 4.85355ZM0.5 5H28.5V4H0.5V5Z"
+							fill="#737A91"
 						/>
 					</svg>
 				</div>
-				<div class="text-right w-114px pb-10px mb-10px">
+				<div class="text-right w-114px mb-24px">
 					<div class="text-grey-40 text-10 mb-4px">Endpoint</div>
 					<div class="text-14 font-medium text-grey-60 overflow-hidden" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical">{{ subscription.endpoint_metadata?.title }}</div>
 				</div>
