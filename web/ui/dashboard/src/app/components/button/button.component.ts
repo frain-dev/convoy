@@ -17,14 +17,14 @@ export class ButtonComponent implements OnInit {
 	@Input('color') color: 'primary' | 'success' | 'warning' | 'danger' | 'grey' | 'transparent' = 'primary';
 	@Input('texture') texture: 'deep' | 'light' = 'deep';
 	@Input('index') tabIndex = 0;
-	buttonSizes = { xs: 'py-[1px] px-8px  text-12', sm: `py-6px px-16px text-12`, md: `py-10px px-36px text-14`, lg: `py-10px px-36px w-full text-14` };
+	buttonSizes = { xs: 'p-4px text-12', sm: `py-6px px-16px text-12`, md: `py-10px px-36px text-14`, lg: `py-10px px-36px w-full text-14` };
 
 	constructor() {}
 
 	ngOnInit(): void {}
 
 	get classes(): string {
-		const colorLevel = this.texture == 'deep' ? '100' : '500';
+		const colorLevel = this.texture == 'deep' ? '100' : this.color == 'grey' ? '20' : '500';
 		const buttonTypes = {
 			default: `bg-${this.color}-${colorLevel} text-${this.texture == 'deep' ? 'white' : this.color}-100 border-none rounded-8px`,
 			outline: `border rounded-[10px] border-${this.color}-${colorLevel} text-${this.color}-100`,

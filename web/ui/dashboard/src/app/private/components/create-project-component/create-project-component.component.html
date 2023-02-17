@@ -24,6 +24,7 @@
 				</button>
 			</div>
 		</ng-container>
+
 		<h3 class="mt-24px mb-16px font-semibold">Project type</h3>
 		<div class="project-types grid grid-cols-2 gap-24px">
 			<convoy-radio formControlName="type" description="Create an incoming webhooks project to proxy events from third-party providers to your endpoints" label="Incoming webhooks" _name="type" value="incoming" _id="incoming"></convoy-radio>
@@ -34,16 +35,21 @@
 			<span>Please select a project type</span>
 		</div>
 
-		<div class="border border-grey-20 p-16px mt-20px">
-			<convoy-toggle label="Add more configurations" (onChange)="toggleMoreConfig($event)" [isChecked]="enableMoreConfig" className="w-full justify-between !mb-0"></convoy-toggle>
+		<div class="border-t border-grey-20 pt-24px mt-24px">
+			<h3 class="font-semibold mb-24px">Set Configurations</h3>
 
-			<div [hidden]="!enableMoreConfig">
-				<div formGroupName="config">
-					<h3 class="mt-24px mb-16px font-semibold flex items-center">
-						Signature Details
-						<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
-					</h3>
-					<div formGroupName="signature" [ngClass]="{ 'grid grid-cols-2 gap-x-24px': action === 'create' }">
+			<div formGroupName="config">
+				<ng-container *ngIf="showConfig('signature')">
+					<div class="flex justify-between items-center mb-24px">
+						<p class="text-14 font-medium text-grey-60 flex items-center">
+							Signature Details
+							<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
+						</p>
+						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
+							<img src="assets/img/svg/delete-icon.svg" alt="plus icon" />
+						</button>
+					</div>
+					<div formGroupName="signature" class="mb-24px" [ngClass]="{ 'grid grid-cols-2 gap-x-24px': action === 'create' }">
 						<convoy-input-field>
 							<label for="header" required="true" convoy-label>Header</label>
 							<input type="text" id="header" convoy-input autocomplete="header" formControlName="header" placeholder="X-Convoy-Signature" />
@@ -64,14 +70,21 @@
 							<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" [required]="true" (selectedOption)="newSignatureForm.patchValue({ hash: $event })"></convoy-select>
 						</ng-container>
 					</div>
+				</ng-container>
 
-					<h3 class="mt-48px mb-16px flex items-center font-semibold">
-						Retry Logic
-						<convoy-tooltip size="sm" position="right" class="ml-4px">
-							These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time before the next retry
-							attempt.
-						</convoy-tooltip>
-					</h3>
+				<ng-container *ngIf="showConfig('retry-config')">
+					<div class="flex justify-between items-center mb-24px">
+						<p class="flex items-center text-14 font-medium text-grey-60">
+							Retry Logic
+							<convoy-tooltip size="sm" position="right" class="ml-4px">
+								These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time before the next retry
+								attempt.
+							</convoy-tooltip>
+						</p>
+						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('retry-config')">
+							<img src="assets/img/svg/delete-icon.svg" alt="plus icon" />
+						</button>
+					</div>
 					<div class="grid grid-cols-2 gap-x-24px" formGroupName="strategy">
 						<convoy-select label="Mechanism" name="type" formControlName="type" [options]="retryLogicTypes" errorMessage="Please select a retry logic mechanism" (selectedOption)="projectForm.get('config.strategy')?.patchValue({ type: $event })"></convoy-select>
 						<convoy-input-field>
@@ -88,11 +101,19 @@
 							<convoy-input-error *ngIf="projectForm.get('config.strategy.retry_count')?.touched && projectForm.get('config.strategy.retry_count')?.invalid">Please enter a retry limit</convoy-input-error>
 						</convoy-input-field>
 					</div>
+				</ng-container>
 
-					<h3 class="mt-24px mb-16px flex items-center font-semibold">
-						Rate Limit Parameters
-						<convoy-tooltip size="sm" position="right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
-					</h3>
+				<ng-container *ngIf="showConfig('rate-limit')">
+					<div class="flex justify-between items-center mb-24px">
+						<p class="flex items-center text-14 font-medium text-grey-60">
+							Rate Limit Parameters
+							<convoy-tooltip size="sm" position="right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
+						</p>
+						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('rate-limit')">
+							<img src="assets/img/svg/delete-icon.svg" alt="plus icon" />
+						</button>
+					</div>
+
 					<div class="grid grid-cols-2 gap-24px" formGroupName="ratelimit">
 						<convoy-input-field>
 							<label for="rate-limit-duration" convoy-label>Duration</label>
@@ -108,10 +129,15 @@
 							<convoy-input-error *ngIf="projectForm.get('config.ratelimit.count')?.touched && projectForm.get('config.ratelimit.count')?.invalid">Please enter a rate limit</convoy-input-error>
 						</convoy-input-field>
 					</div>
+				</ng-container>
 
-					<div class="flex justify-between items-center mt-48px mb-16px">
-						<h3 class="font-semibold">Enable Retention Policy</h3>
-						<convoy-toggle label="Enabled" name="is_retention_policy_enabled" formControlName="is_retention_policy_enabled" className="!mb-0"></convoy-toggle>
+				<ng-container *ngIf="showConfig('retention')">
+					<div class="flex justify-between items-center mb-24px">
+						<p class="text-14 font-medium text-grey-60">Retention Policy</p>
+						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('retention')">
+							<img src="assets/img/svg/delete-icon.svg" alt="plus icon" />
+						</button>
+						<!-- <convoy-toggle label="Enabled" name="is_retention_policy_enabled" formControlName="is_retention_policy_enabled" className="!mb-0"></convoy-toggle> -->
 					</div>
 					<ng-container *ngIf="projectForm.get('config.is_retention_policy_enabled')?.value">
 						<div formGroupName="retention_policy">
@@ -122,20 +148,33 @@
 							</convoy-input-field>
 						</div>
 					</ng-container>
-				</div>
+				</ng-container>
+			</div>
+
+			<div class="flex items-center">
+				<ng-container *ngFor="let config of configurations; let i = index">
+					<ng-container *ngIf="!config.show">
+						<button *ngIf="i < 3 || this.projectForm.controls['type'].value === 'outgoing'" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" class="mr-24px" (click)="toggleConfigForm(config.uid)">
+							{{ config.name }}
+							<svg width="12" height="12" class="ml-8px fill-grey-60">
+                <use xlink:href="#add-icon" width="12" height="12"></use>
+              </svg>
+						</button>
+					</ng-container>
+				</ng-container>
 			</div>
 		</div>
-
-		<div class="flex justify-end mt-48px">
-			<button convoy-button fill="outline" *ngIf="action !== 'update'" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" type="button" (click)="cancel()">Cancel</button>
-			<button convoy-button [disabled]="isCreatingProject">
-				{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
-				<svg width="24" height="24" class="ml-8px fill-white-100">
-					<use xlink:href="#arrow-right-icon"></use>
-				</svg>
-			</button>
-		</div>
 	</convoy-card>
+
+	<div class="flex justify-end mt-48px">
+		<button convoy-button fill="outline" *ngIf="action !== 'update'" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" type="button" (click)="cancel()">Cancel</button>
+		<button convoy-button [disabled]="isCreatingProject">
+			{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
+			<svg width="24" height="24" class="ml-8px fill-white-100">
+				<use xlink:href="#arrow-right-icon"></use>
+			</svg>
+		</button>
+	</div>
 
 	<ng-container *ngIf="action === 'update'">
 		<div class="flex items-center justify-between mt-52px mb-20px">

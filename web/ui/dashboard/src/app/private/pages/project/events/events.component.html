@@ -25,7 +25,7 @@
 						<use xlink:href="#arrow-right-icon"></use>
 					</svg>
 				</button>
-				<button convoy-button *ngIf="!isProjectConfigurationComplete" class="mt-22px" (click)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails?.uid + '/configure')">Complete project setup</button>
+				<button convoy-button *ngIf="!isProjectConfigurationComplete" class="mt-22px" (click)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails?.uid + '/setup')">Complete project setup</button>
 			</div>
 		</convoy-empty-state>
 	</ng-container>

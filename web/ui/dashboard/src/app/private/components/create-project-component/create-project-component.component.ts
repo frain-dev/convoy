@@ -57,6 +57,12 @@ export class CreateProjectComponent implements OnInit {
 	@Input('action') action: 'create' | 'update' = 'create';
 	projectDetails?: GROUP;
 	signatureVersions!: { date: string; content: VERSIONS[] }[];
+	configurations = [
+		{ uid: 'retry-config', name: 'Retry Config', show: false },
+		{ uid: 'rate-limit', name: 'Rate Limit', show: false },
+		{ uid: 'retention', name: 'Retention Policy', show: false },
+		{ uid: 'signature', name: 'Signature Format', show: false }
+	];
 
 	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router) {}
 
@@ -122,6 +128,16 @@ export class CreateProjectComponent implements OnInit {
 		}
 	}
 
+	toggleConfigForm(configValue: string) {
+		this.configurations.forEach(config => {
+			if (config.uid === configValue) config.show = !config.show;
+		});
+	}
+
+	showConfig(configValue: string): boolean {
+		return this.configurations.find(config => config.uid === configValue)?.show || false;
+	}
+
 	async getProjectDetails() {
 		this.enableMoreConfig = true;
 		try {
@@ -177,7 +193,7 @@ export class CreateProjectComponent implements OnInit {
 			projectFormModal?.scroll({ top: 0, behavior: 'smooth' });
 			this.isCreatingProject = false;
 			this.projectForm.reset();
-			this.privateService.activeProjectDetails = response.data.group;
+			this.privateService.activeProjectDetails = response.data.project;
 			this.privateService.getProjects();
 			this.apiKey = response.data.api_key.key;
 			this.projectDetails = response.data.project;
