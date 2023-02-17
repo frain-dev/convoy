@@ -120,6 +120,16 @@ const (
 	deleted_at = now()
 	WHERE project_id = $1 AND deleted_at IS NULL;
 	`
+
+	projectStatistics = `
+	WITH events AS (
+		SELECT count(*) from convoy.events ev WHERE ev.project_id = $1 AND ev.deleted_at IS NULL
+	), endpoints AS (
+		SELECT count(*) from convoy.endpoints e WHERE e.project_id = $1 AND e.deleted_at IS NULL
+	)
+
+	SELECT events.count AS messages_sent, endpoints.count AS total_endpoints from events, endpoints;
+	`
 )
 
 type projectRepo struct {
@@ -274,7 +284,13 @@ func (p *projectRepo) FetchProjectByID(ctx context.Context, id string) (*datasto
 }
 
 func (p *projectRepo) FillProjectsStatistics(ctx context.Context, project *datastore.Project) error {
-	// TODO (raymond): add implementation
+	var stats datastore.ProjectStatistics
+	err := p.db.Get(&stats, projectStatistics, project.UID)
+	if err != nil {
+		return err
+	}
+
+	project.Statistics = &stats
 	return nil
 }
 

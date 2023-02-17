@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS convoy.projects (
 	deleted_at TIMESTAMPTZ
 );
 
+
 CREATE TABLE IF NOT EXISTS convoy.endpoints (
 	id CHAR(26) PRIMARY KEY,
 
@@ -306,10 +307,9 @@ CREATE TABLE IF NOT EXISTS convoy.events (
 	id CHAR(26) PRIMARY KEY,
 
 	event_type TEXT NOT NULL,
-	endpoints TEXT[] NOT NULL,
 
 	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
-	source_id CHAR(26) NOT NULL REFERENCES convoy.sources (id),
+	source_id CHAR(26) REFERENCES convoy.sources (id),
 
 	headers JSONB NOT NULL,
 
@@ -319,6 +319,11 @@ CREATE TABLE IF NOT EXISTS convoy.events (
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	deleted_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS convoy.events_endpoints (
+	event_id CHAR(26) NOT NULL REFERENCES convoy.events (id),
+	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id)
 );
 
 CREATE TABLE IF NOT EXISTS convoy.event_deliveries (

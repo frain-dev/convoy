@@ -19,8 +19,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/google/uuid"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var (
@@ -417,8 +415,8 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 		Data:      newMessage.Data,
 		Raw:       newMessage.Raw,
 		Headers:   e.getCustomHeaders(newMessage.CustomHeaders),
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 		Endpoints: endpointIDs,
 		ProjectID: g.UID,
 	}
