@@ -13,7 +13,7 @@
 <div class="flex justify-between items-end mt-24px border-b border-b-grey-10 pb-20px mb-24px">
 	<div>
 		<h1 class="text-24 font-bold text-grey-80">Sources</h1>
-		<p class="text-grey-60 text-14 mt-6px">List of your Pub/Sub services, configured to trigger webhook events to your endpoints.</p>
+		<p class="text-grey-60 text-14 mt-6px max-w-2xl">Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints</p>
 	</div>
 	<button convoy-button size="sm" routerLink="./new">Connect a source</button>
 </div>
@@ -239,7 +239,6 @@
 			</button>
 
 			<button convoy-button size="sm" class="ml-24px" [routerLink]="'./' + activeSource?.uid">
-
 				Edit Source
 				<svg width="18" height="18" class="ml-8px fill-white-100">
 					<use xlink:href="#edit-icon"></use>
