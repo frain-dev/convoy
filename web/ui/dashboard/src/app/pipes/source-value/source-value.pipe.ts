@@ -17,12 +17,20 @@ export class SourceValuePipe implements PipeTransform {
 		{ value: 'noop', viewValue: 'None' }
 	];
 
-	transform(value: string, type: 'sourceType' | 'verifier'): string {
+	pubSubTypes = [
+		{ value: 'google', viewValue: 'Google Pub/Sub' },
+		{ value: 'sqs', viewValue: 'AWS SQS' }
+	];
+
+	transform(value: string, type: 'sourceType' | 'verifier' | 'pub_sub'): string {
 		if (type === 'sourceType') {
 			return this.sourceTypes.find(source => source.value === value)?.viewValue || '-';
 		}
 		if (type === 'verifier') {
 			return this.httpTypes.find(source => source.value === value)?.viewValue || '-';
+		}
+		if (type === 'pub_sub') {
+			return this.pubSubTypes.find(source => source.value === value)?.viewValue || '-';
 		}
 
 		return '-';

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, forwardRef, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, forwardRef, Input, OnInit, Optional, Output } from '@angular/core';
 import { ControlContainer, ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
 
 @Component({
@@ -25,7 +25,7 @@ export class ToggleComponent implements OnInit, ControlValueAccessor {
 	@Output('onChange') onChange = new EventEmitter<any>();
 	control!: any;
 
-	constructor(private controlContainer: ControlContainer) {}
+	constructor(@Optional() private controlContainer: ControlContainer) {}
 
 	ngOnInit(): void {
 		if (this.formControlName) {

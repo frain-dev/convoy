@@ -96,15 +96,17 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	setDisabledState() {}
 
 	ngAfterViewInit() {
-		fromEvent<any>(this.searchFilter?.nativeElement, 'keyup')
-			.pipe(
-				map(event => event.target.value),
-				startWith(''),
-				debounceTime(500),
-				distinctUntilChanged()
-			)
-			.subscribe(searchString => {
-				this.searchString.emit(searchString);
-			});
+		if (this.searchable) {
+			fromEvent<any>(this.searchFilter?.nativeElement, 'keyup')
+				.pipe(
+					map(event => event.target.value),
+					startWith(''),
+					debounceTime(500),
+					distinctUntilChanged()
+				)
+				.subscribe(searchString => {
+					this.searchString.emit(searchString);
+				});
+		}
 	}
 }
