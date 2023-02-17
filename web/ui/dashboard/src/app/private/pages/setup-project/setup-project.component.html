@@ -7,20 +7,20 @@
 			<p class="text-14 text-grey-60 mt-6px max-w-[634px]">
 				A source on Convoy represents your event senders, the providers and services you’ll like to receive events from. On creating a source, you’ll get a unique URL to listen to event into Convoy which can then be routed to any endpoint of choice
 			</p>
-			<convoy-create-source (onAction)="$event?.action == 'close' ? cancel() : onCreateSource($event.data)"></convoy-create-source>
+			<convoy-create-source></convoy-create-source>
 		</ng-container>
 
 		<h3 class="font-semibold mt-40px">Create your first endpoint</h3>
 		<p class="text-14 text-grey-60 mt-6px max-w-[634px]">HTTP Endpoint is the destination of events from your sources. Create an endpoint to receive events from the above created source.</p>
-		<convoy-create-endpoint (onAction)="$event?.action == 'close' ? cancel() : onCreateEndpoint($event.data)">
-			<convoy-toggle label="Automatically subscribe endpoint to all events sent?" className="mt-24px" (onChange)="toggleAutomaticSubscription($event)" [isChecked]="automaticSubscription"></convoy-toggle>
+		<convoy-create-endpoint>
+			<convoy-toggle label="Automatically subscribe endpoint to all events sent?" className="mt-24px" (onChange)="automaticSubscription = !automaticSubscription" [isChecked]="automaticSubscription"></convoy-toggle>
 		</convoy-create-endpoint>
 
 		<div [ngClass]="{ 'h-0 invisible': automaticSubscription }">
 			<h3 class="font-semibold mt-60px">Create your first subscription</h3>
 			<p class="text-14 text-grey-60 mt-6px max-w-[634px]">Subscriptions enable you to subscribe endpoints to events from any source, with extra configurations like event filters and notifications</p>
 
-			<convoy-create-subscription [subscriptionData]="subscriptionData" (onAction)="onProjectOnboardingComplete()"></convoy-create-subscription>
+			<convoy-create-subscription (onAction)="onProjectOnboardingComplete()"></convoy-create-subscription>
 		</div>
 
 		<div class="flex justify-end mt-32px">

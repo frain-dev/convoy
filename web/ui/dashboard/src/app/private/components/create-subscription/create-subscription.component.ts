@@ -19,16 +19,13 @@ export class CreateSubscriptionComponent implements OnInit {
 	@Output() onAction = new EventEmitter();
 	@Input('action') action: 'update' | 'create' = 'create';
 	@Input('showAction') showAction: 'true' | 'false' = 'false';
-	@Input('subscriptionData') subscriptionData: any;
 
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
 	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;
 	subscriptionForm: FormGroup = this.formBuilder.group({
 		name: [null, Validators.required],
-		type: [null, Validators.required],
 		source_id: [''],
 		endpoint_id: [null, Validators.required],
-		group_id: [null, Validators.required],
 		retry_config: this.formBuilder.group({
 			type: [],
 			retry_count: [],
@@ -75,7 +72,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
-		await Promise.all([this.getPortalProject(), this.getEndpoints(), this.getSources(), this.getGetProjectDetails(), this.getSubscriptionDetails()]);
+		await Promise.all([this.getEndpoints(), this.getSources(), this.getGetProjectDetails(), this.getSubscriptionDetails()]);
 		this.isLoadingForm = false;
 
 		// add required validation on source input for incoming projects
@@ -96,23 +93,6 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	showConfig(configValue: string): boolean {
 		return this.configurations.find(config => config.uid === configValue)?.show || false;
-	}
-
-	async getPortalProject() {
-		if (!this.token) return;
-		this.isLoadingPortalProject = true;
-
-		try {
-			const response = await this.createSubscriptionService.getPortalProject(this.token);
-			this.subscriptionForm.patchValue({ group_id: response.data.uid, type: 'outgoing' });
-			this.isLoadingPortalProject = false;
-			this.showError = false;
-			return;
-		} catch (error) {
-			this.isLoadingPortalProject = false;
-			this.showError = true;
-			return error;
-		}
 	}
 
 	async getSubscriptionDetails() {
@@ -165,10 +145,6 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		try {
 			const response = await this.privateService.getProjectDetails();
-			this.subscriptionForm.patchValue({
-				group_id: response.data.uid,
-				type: response.data.type
-			});
 			this.projectType = response.data.type;
 			return;
 		} catch (error) {
@@ -217,6 +193,8 @@ export class CreateSubscriptionComponent implements OnInit {
 		this.subscriptionForm.patchValue({
 			filter_config: { event_types: this.eventTags.length > 0 ? this.eventTags : ['*'] }
 		});
+
+		if (this.createSubscriptionService.subscriptionData) this.subscriptionForm.patchValue(this.createSubscriptionService.subscriptionData);
 
 		if (this.subscriptionForm.invalid) return this.subscriptionForm.markAllAsTouched();
 

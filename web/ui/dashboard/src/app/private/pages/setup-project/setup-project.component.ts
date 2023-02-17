@@ -69,7 +69,7 @@ export class SetupProjectComponent implements OnInit {
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid);
 	}
 
-	toggleActiveStage(stageDetails: { project: STAGES; prevStage?: STAGES }) {
+	async toggleActiveStage(stageDetails: { project: STAGES; prevStage?: STAGES }) {
 		this.projectStage = stageDetails.project;
 		this.projectStages.forEach(item => {
 			if (item.id === stageDetails.project) item.currentStage = 'current';
@@ -77,40 +77,35 @@ export class SetupProjectComponent implements OnInit {
 		});
 		switch (stageDetails.project) {
 			case 'createSource':
-				this.createSourceForm.saveSource();
+				await this.createSource();
 				break;
 			case 'createEndpoint':
-				this.createEndpointForm.saveEndpoint();
+				await this.createEndpoint();
 				break;
 			case 'createSubscription':
-				if (this.automaticSubscription) this.subscriptionData = { ...this.subscriptionData, name: `${this.newEndpoint.title}${this.newSource ? ' - ' + this.newSource.name : ''}`, type: 'noop' };
-				this.subscriptionService.subscriptionData = this.subscriptionData;
-				this.createSubscriptionForm.saveSubscription();
+				if (this.automaticSubscription) this.subscriptionService.subscriptionData = { ...this.subscriptionService.subscriptionData, name: `${this.newEndpoint.title}${this.newSource ? ' - ' + this.newSource.name : ''}` };
+				await this.createSubscriptionForm.saveSubscription();
 				break;
 			default:
 				break;
 		}
 	}
 
-	onCreateSource(newSource: SOURCE) {
-		this.newSource = newSource;
-		this.subscriptionData = { source_id: this.newSource.uid };
-		this.subscriptionService.subscriptionData = this.subscriptionData;
-		this.toggleActiveStage({ project: 'createEndpoint', prevStage: 'createSource' });
-	}
-
-	onCreateEndpoint(newEndpoint: ENDPOINT) {
-		this.newEndpoint = newEndpoint;
-		this.subscriptionData = { ...this.subscriptionData, endpoint_id: this.newEndpoint.uid };
-		this.subscriptionService.subscriptionData = this.subscriptionData;
+	async createEndpoint() {
+		const newEndpoint = await this.createEndpointForm.saveEndpoint();
+		this.newEndpoint = newEndpoint?.data;
+		this.subscriptionService.subscriptionData = { ...this.subscriptionService.subscriptionData, endpoint_id: newEndpoint?.data.uid };
 		this.toggleActiveStage({ project: 'createSubscription', prevStage: 'createEndpoint' });
 	}
 
-	toggleAutomaticSubscription(event: any) {
-		this.automaticSubscription = !this.automaticSubscription;
+	async createSource() {
+		const newSource = await this.createSourceForm.saveSource();
+		this.newSource = newSource?.data;
+		this.subscriptionService.subscriptionData = { source_id: newSource?.data.uid };
+		this.toggleActiveStage({ project: 'createEndpoint', prevStage: 'createSource' });
 	}
 
-	saveProjectConfig() {
-		this.projectType === 'incoming' ? this.createSourceForm.saveSource() : this.createEndpointForm.saveEndpoint();
+	async saveProjectConfig() {
+		this.projectType === 'incoming' ? await this.createSource() : await this.createEndpoint();
 	}
 }
