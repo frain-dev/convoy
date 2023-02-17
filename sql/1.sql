@@ -215,6 +215,7 @@ CREATE TABLE IF NOT EXISTS convoy.configurations (
 	deleted_at TIMESTAMPTZ
 );
 
+-- // TODO(all): add source_verifier_id to source table
 CREATE TABLE IF NOT EXISTS convoy.sources (
 	id CHAR(26) PRIMARY KEY,
 
@@ -260,9 +261,9 @@ CREATE TABLE IF NOT EXISTS convoy.subscriptions (
 	type TEXT NOT NULL,
 
 	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
-	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id),
-	device_id CHAR(26) NOT NULL REFERENCES convoy.devices (id),
-	source_id CHAR(26) NOT NULL REFERENCES convoy.sources (id),
+	endpoint_id CHAR(26) REFERENCES convoy.endpoints (id),
+	device_id CHAR(26) REFERENCES convoy.devices (id),
+	source_id CHAR(26) REFERENCES convoy.sources (id),
 
 	alert_config_count INTEGER NOT NULL,
 	alert_config_threshold TEXT NOT NULL,
