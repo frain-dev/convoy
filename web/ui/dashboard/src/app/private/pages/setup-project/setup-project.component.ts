@@ -17,8 +17,6 @@ import { CreateSubscriptionComponent } from '../../components/create-subscriptio
 import { CreateSubscriptionService } from '../../components/create-subscription/create-subscription.service';
 import { LoaderModule } from '../../components/loader/loader.module';
 
-export type STAGES = 'createSource' | 'createEndpoint' | 'createSubscription';
-
 @Component({
 	selector: 'convoy-setup-project',
 	standalone: true,
@@ -30,14 +28,9 @@ export class SetupProjectComponent implements OnInit {
 	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
 	@ViewChild(CreateSubscriptionComponent) createSubscriptionForm!: CreateSubscriptionComponent;
-	projectStage: STAGES = 'createSource';
 	activeProjectId = this.route.snapshot.params.id;
 	projectType: 'incoming' | 'outgoing' = 'outgoing';
-	projectStages = [
-		{ projectStage: 'Create Source', currentStage: 'pending', id: 'createSource' },
-		{ projectStage: 'Create Endpoint', currentStage: 'pending', id: 'createEndpoint' },
-		{ projectStage: 'Subscribe Endpoint', currentStage: 'pending', id: 'createSubscription' }
-	];
+
 	newSource!: SOURCE;
 	newEndpoint!: ENDPOINT;
 	automaticSubscription = true;
@@ -56,7 +49,6 @@ export class SetupProjectComponent implements OnInit {
 
 		if (this.privateService.activeProjectDetails?.uid) {
 			this.projectType = this.privateService.activeProjectDetails?.type;
-			if (this.projectType === 'outgoing') this.projectStage = 'createEndpoint';
 		}
 	}
 
@@ -69,43 +61,22 @@ export class SetupProjectComponent implements OnInit {
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid);
 	}
 
-	async toggleActiveStage(stageDetails: { project: STAGES; prevStage?: STAGES }) {
-		this.projectStage = stageDetails.project;
-		this.projectStages.forEach(item => {
-			if (item.id === stageDetails.project) item.currentStage = 'current';
-			if (item.id === stageDetails.prevStage) item.currentStage = 'done';
-		});
-		switch (stageDetails.project) {
-			case 'createSource':
-				await this.createSource();
-				break;
-			case 'createEndpoint':
-				await this.createEndpoint();
-				break;
-			case 'createSubscription':
-				if (this.automaticSubscription) this.subscriptionService.subscriptionData = { ...this.subscriptionService.subscriptionData, name: `${this.newEndpoint.title}${this.newSource ? ' - ' + this.newSource.name : ''}` };
-				await this.createSubscriptionForm.saveSubscription();
-				break;
-			default:
-				break;
-		}
-	}
-
-	async createEndpoint() {
-		const newEndpoint = await this.createEndpointForm.saveEndpoint();
-		this.newEndpoint = newEndpoint?.data;
-		this.subscriptionService.subscriptionData = { ...this.subscriptionService.subscriptionData, endpoint_id: newEndpoint?.data.uid };
-		this.toggleActiveStage({ project: 'createSubscription', prevStage: 'createEndpoint' });
-	}
-
-	async createSource() {
-		const newSource = await this.createSourceForm.saveSource();
-		this.newSource = newSource?.data;
-		this.subscriptionService.subscriptionData = { source_id: newSource?.data.uid };
-		this.toggleActiveStage({ project: 'createEndpoint', prevStage: 'createSource' });
-	}
-
 	async saveProjectConfig() {
-		this.projectType === 'incoming' ? await this.createSource() : await this.createEndpoint();
+		const [sourceDetails, endpointDetails] = await Promise.allSettled([
+			this.projectType === 'incoming' && !this.createSourceForm.sourceCreated ? this.createSourceForm.saveSource() : false,
+			!this.createEndpointForm.endpointCreated ? this.createEndpointForm.saveEndpoint() : false
+		]);
+
+		if (sourceDetails.status === 'fulfilled' && typeof sourceDetails.value !== 'boolean') {
+			this.newSource = sourceDetails.value?.data;
+			this.subscriptionService.subscriptionData = { source_id: sourceDetails.value?.data.uid };
+		}
+		if (endpointDetails.status === 'fulfilled' && typeof endpointDetails.value !== 'boolean') {
+			this.newEndpoint = endpointDetails.value?.data;
+			this.subscriptionService.subscriptionData = { ...this.subscriptionService.subscriptionData, endpoint_id: endpointDetails.value?.data.uid };
+		}
+
+		if (this.automaticSubscription) this.subscriptionService.subscriptionData = { ...this.subscriptionService.subscriptionData, name: `${this.newEndpoint.title}${this.newSource ? ' - ' + this.newSource.name : ''}` };
+		await this.createSubscriptionForm.saveSubscription();
 	}
 }
