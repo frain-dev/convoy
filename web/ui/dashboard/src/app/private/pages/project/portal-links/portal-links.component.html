@@ -76,19 +76,19 @@
 		<div convoy-card hover="true" class="w-full max-w-[348px] cursor-pointer pt-20px" *ngFor="let link of portalLinks?.content; let i = index" [id]="'portal-link' + i" [routerLink]="['./']" [queryParams]="{ id: link.uid }">
 			<div class="px-24px pb-12px border-b border-b-grey-10">
 				<div class="flex justify-between items-center">
-					<div class="text-14 font-medium">{{ link.name }}</div>
+					<div class="text-14 font-medium overflow-hidden max-w-[260px] text-ellipsis whitespace-nowrap">{{ link.name }}</div>
 					<svg width="18" height="18" class="fill-grey-60">
 						<use xlink:href="#arrow-right-icon"></use>
 					</svg>
 				</div>
 			</div>
 			<div class="mx-24px flex justify-between items-center">
-				<div class="mb-20px mt-12px">
+				<div class="mb-24px mt-12px">
 					<span class="text-12 font-medium">{{ link.endpoint_count }}</span>
 					<span class="text-12 text-grey-40 pl-8px">Endpoint(s)</span>
 				</div>
-				<div class="bg-grey-10 w-2px min-h-[56px]"></div>
-				<convoy-copy-button [text]="link.url" size="md" className="ml-2px mb-20px mt-12px flex items-center" notificationText="URL has been copied to clipboard"><span class="text-12 ml-8px font-medium">Copy URL</span></convoy-copy-button>
+				<div class="bg-grey-10 w-2px min-h-[60px]"></div>
+				<convoy-copy-button [text]="link.url" size="md" className="ml-2px mb-20px mt-12px flex items-center" notificationText="URL has been copied to clipboard"><span class="text-12 ml-8px font-medium">Copy Portal Link</span></convoy-copy-button>
 			</div>
 		</div>
 	</div>
