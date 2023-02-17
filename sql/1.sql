@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS convoy.projects (
 	deleted_at TIMESTAMPTZ
 );
 
+
 CREATE TABLE IF NOT EXISTS convoy.endpoints (
 	id CHAR(26) PRIMARY KEY,
 

@@ -388,9 +388,9 @@ type RetentionPolicyConfiguration struct {
 }
 
 type ProjectStatistics struct {
-	ProjectID    string `json:"-" bson:"project_id"`
-	MessagesSent int64  `json:"messages_sent" bson:"messages_sent"`
-	TotalApps    int64  `json:"total_endpoints" bson:"total_endpoints"`
+	ProjectID    string `json:"-" db:"-"`
+	MessagesSent int64  `json:"messages_sent" db:"messages_sent"`
+	TotalApps    int64  `json:"total_endpoints" db:"total_endpoints"`
 }
 
 type ProjectFilter struct {
