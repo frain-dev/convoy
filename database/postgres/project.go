@@ -104,12 +104,6 @@ const (
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
-	deleteProjectConfiguration = `
-	UPDATE convoy.project_configurations SET 
-	deleted_at = now()
-	WHERE project_id = $1 AND deleted_at IS NULL;
-	`
-
 	deleteProjectEndpoints = `
 	UPDATE convoy.endpoints SET
 	deleted_at = now()
@@ -295,7 +289,7 @@ func (p *projectRepo) FillProjectsStatistics(ctx context.Context, project *datas
 	if err != nil {
 		return err
 	}
-	
+
 	project.Statistics = &stats
 	return nil
 }
@@ -307,11 +301,6 @@ func (p *projectRepo) DeleteProject(ctx context.Context, id string) error {
 	}
 
 	_, err = tx.ExecContext(ctx, deleteProject, id)
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.ExecContext(ctx, deleteProjectConfiguration, id)
 	if err != nil {
 		return err
 	}
