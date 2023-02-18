@@ -251,6 +251,19 @@ func addRunCommand() *cobra.Command {
 				}
 			}
 
+			params := datastore.SearchParams{
+				CreatedAtStart: time.Date(2020, 0, 0, 0, 0, 0, 0, time.UTC).Unix(),
+				CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
+			}
+
+			intervals, err := edRepo.LoadEventDeliveriesIntervals(context.Background(), "01GSJ4033W1V3Y4SREXTYREXRY", params, datastore.Yearly, 1)
+			if err != nil {
+				fmt.Printf("LoadEventDeliveriesIntervals: %+v", err)
+				return
+			}
+
+			fmt.Printf("intervals %+v", intervals)
+
 			// proj, err := p.FetchProjectByID(cmd.Context(), 9)
 			// if err != nil {
 			// 	fmt.Printf("err: %+v", err)
