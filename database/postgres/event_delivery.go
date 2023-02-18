@@ -9,9 +9,11 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
 )
 
 type eventDeliveryRepo struct {
@@ -27,8 +29,8 @@ var (
 
 const (
 	createEventDelivery = `
-    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12);
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,created_at,updated_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14);
     `
 
 	baseFetchEventDelivery = `
@@ -41,8 +43,7 @@ const (
         ep.target_url as "endpoint_metadata.target_url",
         ev.id as "event_metadata.id",
         ev.event_type as "event_metadata.event_type",
-        d.id as "device_metadata.id",
-        d.host_name as "device_metadata.host_name",
+        d.host_name as "cli_metadata.host_name",
     FROM convoy.event_deliveries ed LEFT JOIN convoy.endpoints ep
     ON ed.endpoint_id = ep.id LEFT JOIN convoy.events ev ON ed.event_id = ev.id
     LEFT JOIN convoy.devices d ON ed.device_id = d.id
@@ -51,6 +52,24 @@ const (
 	fetchEventDeliveryByID = baseFetchEventDelivery + ` WHERE ed.id = $1 AND ed.deleted_at IS NULL`
 
 	loadEventDeliveriesPaged = baseFetchEventDelivery + ` WHERE (ed.project_id = $1 OR $1 = '') AND (ed.event_id = $2 OR $2 = '') AND (ed.status IN ($3) OR cardinality($3) = 0) AND (ed.endpoint_id IN ($4) OR cardinality($4) = 0) AND ed.created_at >= $5 AND ed.created_at <= $6  AND ed.deleted_at IS NULL LIMIT $7 OFFSET $8`
+
+	loadEventDeliveriesIntervals = `
+    SELECT
+        to_char(date_trunc('%s', created_at), '%s') as "data.total_time",
+        extract(%s from created_at) as "data.index",
+        count(*) as count
+        FROM
+            convoy.event_deliveries
+        WHERE
+        project_id = $1 AND
+        deleted_at IS NULL AND
+        created_at >= $2 AND
+        created_at <= $3
+    GROUP BY
+        total_time, index
+    ORDER BY
+        total_time ASC;
+    `
 
 	fetchEventDeliveries = `
     SELECT * FROM convoy.event_deliveries WHERE %s AND deleted_at IS NULL;
@@ -127,7 +146,7 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 		ctx, createEventDelivery, delivery.UID, delivery.ProjectID,
 		delivery.EventID, endpointID, deviceID,
 		delivery.SubscriptionID, headers, attempts, delivery.Status,
-		metadata, cliMetadata, delivery.Description,
+		metadata, cliMetadata, delivery.Description, delivery.CreatedAt, delivery.UpdatedAt,
 	)
 	if err != nil {
 		return err
@@ -345,7 +364,7 @@ func (e *eventDeliveryRepo) DeleteProjectEventDeliveries(ctx context.Context, fi
 }
 
 func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
-	eventDeliveries := make([]datastore.EventDelivery, 0)
+	eventDeliveriesP := make([]EventDeliveryPaginated, 0)
 
 	start := time.Unix(params.CreatedAtStart, 0)
 	end := time.Unix(params.CreatedAtEnd, 0)
@@ -354,20 +373,138 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		return nil, datastore.PaginationData{}, err
 	}
 
-	var ed datastore.EventDelivery
+	var ed EventDeliveryPaginated
 	for rows.Next() {
 		err = rows.StructScan(&ed)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 
-		eventDeliveries = append(eventDeliveries, ed)
+		eventDeliveriesP = append(eventDeliveriesP, ed)
+	}
+
+	eventDeliveries := make([]datastore.EventDelivery, 0, len(eventDeliveriesP))
+
+	for i := range eventDeliveriesP {
+		ev := &eventDeliveriesP[i]
+		eventDeliveries = append(eventDeliveries, datastore.EventDelivery{
+			UID:            ev.UID,
+			ProjectID:      ev.ProjectID,
+			EventID:        ev.EventID,
+			EndpointID:     ev.EndpointID,
+			DeviceID:       ev.DeviceID,
+			SubscriptionID: ev.SubscriptionID,
+			Headers:        ev.Headers,
+			Endpoint: &datastore.Endpoint{
+				UID:          ev.Endpoint.UID.ValueOrZero(),
+				ProjectID:    ev.Endpoint.ProjectID.ValueOrZero(),
+				TargetURL:    ev.Endpoint.TargetURL.ValueOrZero(),
+				Title:        ev.Endpoint.Title.ValueOrZero(),
+				SupportEmail: ev.Endpoint.SupportEmail.ValueOrZero(),
+			},
+			Event:            &datastore.Event{EventType: datastore.EventType(ev.Event.EventType.ValueOrZero())},
+			DeliveryAttempts: ev.DeliveryAttempts,
+			Status:           ev.Status,
+			Metadata:         ev.Metadata,
+			CLIMetadata: &datastore.CLIMetadata{
+				HostName: ev.CLIMetadata.HostName.ValueOrZero(),
+			},
+			Description: ev.Description,
+			CreatedAt:   ev.CreatedAt,
+			UpdatedAt:   ev.UpdatedAt,
+			DeletedAt:   ev.DeletedAt,
+		})
 	}
 
 	return eventDeliveries, datastore.PaginationData{}, nil
 }
 
-func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, s string, params datastore.SearchParams, period datastore.Period, i int) ([]datastore.EventInterval, error) {
-	// TODO implement me
-	panic("implement me")
+const (
+	dailyIntervalFormat   = "yyyy-mm-dd"          // 1 day
+	weeklyIntervalFormat  = monthlyIntervalFormat // 1 week
+	monthlyIntervalFormat = "yyyy-mm"             // 1 month
+	yearlyIntervalFormat  = "yyyy"                // 1 month
+)
+
+func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, i int) ([]datastore.EventInterval, error) {
+	intervals := make([]datastore.EventInterval, 0)
+
+	start := time.Unix(params.CreatedAtStart, 0)
+	end := time.Unix(params.CreatedAtEnd, 0)
+
+	var timeComponent string
+	var format string
+	switch period {
+	case datastore.Daily:
+		timeComponent = "day"
+		format = dailyIntervalFormat
+	case datastore.Weekly:
+		timeComponent = "week"
+		format = weeklyIntervalFormat
+	case datastore.Monthly:
+		timeComponent = "month"
+		format = monthlyIntervalFormat
+	case datastore.Yearly:
+		timeComponent = "year"
+		format = yearlyIntervalFormat
+	default:
+		return nil, errors.New("specified data cannot be generated for period")
+	}
+
+	q := fmt.Sprintf(loadEventDeliveriesIntervals, timeComponent, format, timeComponent)
+	rows, err := e.db.QueryxContext(ctx, q, projectID, start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	var interval datastore.EventInterval
+	for rows.Next() {
+		err = rows.StructScan(&interval)
+		if err != nil {
+			return nil, err
+		}
+
+		intervals = append(intervals, interval)
+	}
+
+	return intervals, nil
+}
+
+type EndpointMetadata struct {
+	UID          null.String `db:"id"`
+	Title        null.String `db:"title"`
+	TargetURL    null.String `db:"target_url"`
+	ProjectID    null.String `db:"project_id"`
+	SupportEmail null.String `db:"support_email"`
+}
+
+type EventMetadata struct {
+	UID       null.String ` db:"id"`
+	EventType null.String `db:"event_type"`
+}
+
+type CLIMetadata struct {
+	HostName null.String `db:"host_name"`
+}
+
+type EventDeliveryPaginated struct {
+	UID            string                `json:"uid" db:"id"`
+	ProjectID      string                `json:"project_id,omitempty" db:"project_id"`
+	EventID        string                `json:"event_id,omitempty" db:"event_id"`
+	EndpointID     string                `json:"endpoint_id,omitempty" db:"endpoint_id"`
+	DeviceID       string                `json:"device_id" db:"device_id"`
+	SubscriptionID string                `json:"subscription_id,omitempty" db:"subscription_id"`
+	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
+
+	Endpoint *EndpointMetadata `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
+	Event    *EventMetadata    `json:"event_metadata,omitempty" db:"event_metadata"`
+
+	DeliveryAttempts []datastore.DeliveryAttempt   `json:"-" db:"attempts"`
+	Status           datastore.EventDeliveryStatus `json:"status" db:"status"`
+	Metadata         *datastore.Metadata           `json:"metadata" db:"metadata"`
+	CLIMetadata      *CLIMetadata                  `json:"cli_metadata" db:"cli_metadata"`
+	Description      string                        `json:"description,omitempty" db:"description"`
+	CreatedAt        time.Time                     `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt        time.Time                     `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt        null.Time                     `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }

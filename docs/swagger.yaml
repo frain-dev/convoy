@@ -321,7 +321,7 @@ definitions:
       interval_seconds:
         type: integer
       next_send_time:
-        type: integer
+        type: string
       num_trials:
         description: |-
           NumTrials: number of times we have tried to deliver this Event to

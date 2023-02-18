@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 )
@@ -19,12 +21,12 @@ var (
 const (
 	createEndpoint = `
 	INSERT INTO convoy.endpoints (
-		id, title, status, owner_id, target_url, description, http_timeout, 
+		id, title, status, owner_id, target_url, description, http_timeout,
 		rate_limit, rate_limit_duration, advanced_signatures, slack_webhook_url,
 		support_email, app_id, project_id, authentication_type, authentication_type_api_key_header_name,
 		authentication_type_api_key_header_value
 	)
-	VALUES 
+	VALUES
 	  (
 		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
 		$14, $15, $16, $17
@@ -60,7 +62,7 @@ const (
 	fetchEndpointsByOwnerId = baseEndpointFetch + `WHERE e.project_id = $1 AND e.owner_id = $2 AND e.deleted_at IS NULL AND es.deleted_at IS NULL;`
 
 	updateEndpoint = `
-	UPDATE convoy.endpoints SET 
+	UPDATE convoy.endpoints SET
 	title = $3, status = $4, owner_id = $5,
 	target_url = $6, description = $7, http_timeout = $8,
 	rate_limit = $9, rate_limit_duration = $10, advanced_signatures = $11,
@@ -72,7 +74,7 @@ const (
 	`
 
 	updateEndpointStatus = `
-	UPDATE convoy.endpoints SET status = $3 
+	UPDATE convoy.endpoints SET status = $3
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
@@ -92,7 +94,7 @@ const (
 	`
 
 	countProjectEndpoints = `
-	SELECT count(*) as count from convoy.endpoints 
+	SELECT count(*) as count from convoy.endpoints
 	WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 
@@ -142,6 +144,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 
+	endpoint.UID = ulid.Make().String()
 	ac := endpoint.GetAuthConfig()
 	args := []interface{}{
 		endpoint.UID, endpoint.Title, endpoint.Status, endpoint.OwnerID, endpoint.TargetURL,
@@ -155,7 +158,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 
-	//fetch the most recent secret
+	// fetch the most recent secret
 	secret := endpoint.Secrets[len(endpoint.Secrets)-1]
 	endpointResult, err := tx.ExecContext(ctx, createEndpointSecret, secret.UID, secret.Value, endpoint.UID)
 	if err != nil {
