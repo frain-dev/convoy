@@ -330,7 +330,6 @@ CREATE TABLE IF NOT EXISTS convoy.events_endpoints (
 CREATE TABLE IF NOT EXISTS convoy.event_deliveries (
 	id CHAR(26) PRIMARY KEY,
 
-	name TEXT NOT NULL,
 	status TEXT NOT NULL,
 	description TEXT NOT NULL,
 

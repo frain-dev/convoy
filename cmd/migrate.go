@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"gopkg.in/guregu/null.v4"
@@ -108,37 +110,146 @@ func addRunCommand() *cobra.Command {
 			// 	return
 			// }
 
-			//p := postgres.NewProjectRepo(db.GetDB())
-			//v := &datastore.Project{
-			//	Name:           "mob psycho",
-			//	Type:           datastore.OutgoingProject,
-			//	OrganisationID: org.UID,
-			//	Config: &datastore.ProjectConfig{
-			//		RateLimitCount:     1000,
-			//		RateLimitDuration:  60,
-			//		StrategyType:       datastore.ExponentialStrategyProvider,
-			//		StrategyDuration:   100,
-			//		StrategyRetryCount: 10,
-			//		SignatureHeader:    config.DefaultSignatureHeader,
-			//		RetentionPolicy:    "500d",
-			//		SignatureVersions: []datastore.SignatureVersion{
-			//			{
-			//				Hash:     "SHA256",
-			//				Encoding: datastore.HexEncoding,
-			//			},
-			//			{
-			//				Hash:     "SHA512",
-			//				Encoding: datastore.Base64Encoding,
-			//			},
-			//		},
-			//	},
-			//}
-			//
-			//err = p.CreateProject(cmd.Context(), v)
-			//if err != nil {
-			//	fmt.Printf("CreateProject: %+v", err)
-			//	return
-			//}
+			p := postgres.NewProjectRepo(db.GetDB())
+			proj := &datastore.Project{
+				Name:           "mob psycho",
+				Type:           datastore.OutgoingProject,
+				OrganisationID: org.UID,
+				Config: &datastore.ProjectConfig{
+					RateLimitCount:     1000,
+					RateLimitDuration:  60,
+					StrategyType:       datastore.ExponentialStrategyProvider,
+					StrategyDuration:   100,
+					StrategyRetryCount: 10,
+					SignatureHeader:    config.DefaultSignatureHeader,
+					RetentionPolicy:    "500d",
+					SignatureVersions: []datastore.SignatureVersion{
+						{
+							Hash:     "SHA256",
+							Encoding: datastore.HexEncoding,
+						},
+						{
+							Hash:     "SHA512",
+							Encoding: datastore.Base64Encoding,
+						},
+					},
+				},
+			}
+
+			err = p.CreateProject(cmd.Context(), proj)
+			if err != nil {
+				fmt.Printf("CreateProject: %+v", err)
+				return
+			}
+
+			endpoint := &datastore.Endpoint{
+				ProjectID: proj.UID,
+				OwnerID:   "owner1",
+				TargetURL: "http://localhost",
+				Title:     "test_endpoint",
+				Secrets: []datastore.Secret{
+					{
+						UID:       ulid.Make().String(),
+						Value:     "secret1",
+						CreatedAt: time.Now(),
+						UpdatedAt: time.Now(),
+					},
+				},
+				Description:       "testing",
+				HttpTimeout:       "10s",
+				RateLimit:         100,
+				Status:            datastore.ActiveEndpointStatus,
+				RateLimitDuration: "3s",
+				CreatedAt:         time.Now(),
+				UpdatedAt:         time.Now(),
+			}
+
+			endpointRepo := postgres.NewEndpointRepo(db.GetDB())
+			err = endpointRepo.CreateEndpoint(context.Background(), endpoint, proj.UID)
+			if err != nil {
+				fmt.Printf("CreateEndpoint: %+v", err)
+				return
+			}
+
+			s := postgres.NewSubscriptionRepo(db.GetDB())
+			sub := &datastore.Subscription{
+				Name:        "test_sub",
+				Type:        datastore.SubscriptionTypeAPI,
+				ProjectID:   proj.UID,
+				EndpointID:  endpoint.UID,
+				AlertConfig: &datastore.DefaultAlertConfig,
+				RetryConfig: &datastore.DefaultRetryConfig,
+				FilterConfig: &datastore.FilterConfiguration{
+					EventTypes: []string{"*"},
+					Filter:     datastore.FilterSchema{},
+				},
+				RateLimitConfig: &datastore.DefaultRateLimitConfig,
+				CreatedAt:       time.Now(),
+				UpdatedAt:       time.Now(),
+			}
+
+			err = s.CreateSubscription(context.Background(), proj.UID, sub)
+			if err != nil {
+				fmt.Printf("CreateSubscription: %+v", err)
+				return
+			}
+
+			e := postgres.NewEventRepo(db.GetDB())
+			event := &datastore.Event{
+				EventType: "*",
+				ProjectID: proj.UID,
+				Endpoints: []string{endpoint.UID},
+				Data:      []byte(`{"ref":"terf"}`),
+				Raw:       `{"ref":"terf"}`,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+
+			err = e.CreateEvent(context.Background(), event)
+			if err != nil {
+				fmt.Printf("CreateEvent: %+v", err)
+				return
+			}
+
+			now := time.Now()
+			edRepo := postgres.NewEventDeliveryRepo(db.GetDB())
+
+			for i := 0; i < 500; i++ {
+
+				n := rand.Intn(200)
+				now = now.Add(-time.Hour * 24)
+
+				for j := 0; j < n; j++ {
+
+					delivery := &datastore.EventDelivery{
+						ProjectID:      proj.UID,
+						EventID:        event.UID,
+						EndpointID:     endpoint.UID,
+						SubscriptionID: sub.UID,
+						Status:         datastore.SuccessEventStatus,
+						Metadata: &datastore.Metadata{
+							Data:            event.Data,
+							Raw:             event.Raw,
+							Strategy:        sub.RetryConfig.Type,
+							NextSendTime:    time.Now(),
+							NumTrials:       1,
+							IntervalSeconds: 2,
+							RetryLimit:      2,
+						},
+						Description: "ccc",
+						CreatedAt:   now,
+						UpdatedAt:   now,
+					}
+
+					fmt.Println("now", now.Format(time.RFC3339))
+
+					err = edRepo.CreateEventDelivery(context.Background(), delivery)
+					if err != nil {
+						fmt.Printf("CreateEventDelivery: %+v", err)
+						return
+					}
+				}
+			}
 
 			// proj, err := p.FetchProjectByID(cmd.Context(), 9)
 			// if err != nil {
