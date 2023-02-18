@@ -58,18 +58,9 @@ func (p *Postgres) TruncateTables() error {
 	}
 
 	for _, table := range tables {
-		r, err := p.dbx.ExecContext(context.Background(), fmt.Sprintf("TRUNCATE %s CASCADE", table))
+		_, err := p.dbx.ExecContext(context.Background(), fmt.Sprintf("TRUNCATE %s CASCADE;", table))
 		if err != nil {
 			return err
-		}
-
-		rowsAffected, err := r.RowsAffected()
-		if err != nil {
-			return err
-		}
-
-		if rowsAffected < 1 {
-			return fmt.Errorf("failed to truncate %s", table)
 		}
 	}
 

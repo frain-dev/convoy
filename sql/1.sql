@@ -16,7 +16,9 @@ CREATE TABLE IF NOT EXISTS convoy.users (
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMPTZ,
     reset_password_expires_at TIMESTAMPTZ,
-    email_verification_expires_at TIMESTAMPTZ
+    email_verification_expires_at TIMESTAMPTZ,
+
+    CONSTRAINT users_email_key UNIQUE NULLS NOT DISTINCT (email, deleted_at)
 );
 
 CREATE TABLE IF NOT EXISTS convoy.organisations (
