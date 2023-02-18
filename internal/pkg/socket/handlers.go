@@ -17,8 +17,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ListenRequest struct {
@@ -254,8 +252,8 @@ func listen(ctx context.Context, project *datastore.Project, endpoint *datastore
 				SourceID:     listenRequest.SourceID,
 				DeviceID:     device.UID,
 				FilterConfig: &datastore.FilterConfiguration{EventTypes: []string{"*"}},
-				CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
+				CreatedAt:    time.Now(),
+				UpdatedAt:    time.Now(),
 			}
 
 			err = r.SubscriptionRepo.CreateSubscription(ctx, project.UID, s)

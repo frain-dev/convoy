@@ -25,9 +25,9 @@ type EventDeliveryRepository interface {
 	FindDiscardedEventDeliveries(ctx context.Context, appId, deviceId string, searchParams SearchParams) ([]EventDelivery, error)
 
 	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, DeliveryAttempt) error
-	CountEventDeliveries(context.Context, string, []string, string, []EventDeliveryStatus, SearchParams) (int64, error)
+	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
 	DeleteProjectEventDeliveries(ctx context.Context, filter *EventDeliveryFilter, hardDelete bool) error
-	LoadEventDeliveriesPaged(context.Context, string, []string, string, []EventDeliveryStatus, SearchParams, Pageable) ([]EventDelivery, PaginationData, error)
+	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable) ([]EventDelivery, PaginationData, error)
 	LoadEventDeliveriesIntervals(context.Context, string, SearchParams, Period, int) ([]EventInterval, error)
 }
 

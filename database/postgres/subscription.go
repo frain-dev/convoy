@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/frain-dev/convoy/util"
+
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -130,10 +132,23 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		return err
 	}
 
+	var endpointID, sourceID, deviceID *string
+	if !util.IsStringEmpty(subscription.EndpointID) {
+		endpointID = &subscription.EndpointID
+	}
+
+	if !util.IsStringEmpty(subscription.SourceID) {
+		sourceID = &subscription.SourceID
+	}
+
+	if !util.IsStringEmpty(subscription.DeviceID) {
+		deviceID = &subscription.DeviceID
+	}
+
 	result, err := s.db.ExecContext(
 		ctx, createSubscription, subscription.UID,
 		subscription.Name, subscription.Type, subscription.ProjectID,
-		subscription.EndpointID, subscription.DeviceID, subscription.SourceID,
+		endpointID, deviceID, sourceID,
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
 		fc.EventTypes, filterHeaders, filterBody, rlc.Count, rlc.Duration,
 	)
@@ -222,7 +237,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 	}
 
 	var count int
-	err = s.db.Get(&count, countSubscriptions, projectID)
+	err = s.db.Get(&count, countSubscriptions, projectID) // TODO: count with filter
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}

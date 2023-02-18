@@ -12,8 +12,6 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var (
@@ -79,8 +77,8 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, project *da
 		FilterConfig:    newSubscription.FilterConfig,
 		RateLimitConfig: newSubscription.RateLimitConfig,
 
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	if subscription.FilterConfig == nil {

@@ -39,7 +39,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		return datastore.ErrNotAuthorisedToAccessDocument
 	}
 
-	subscription.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+	subscription.UpdatedAt = time.Now()
 
 	filter := bson.M{
 		"uid":        subscription.UID,

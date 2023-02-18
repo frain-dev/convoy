@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"time"
@@ -33,6 +34,48 @@ func (p *Postgres) GetDB() *sqlx.DB {
 	return p.dbx
 }
 
+func (p *Postgres) TruncateTables() error {
+	tables := []string{
+		"convoy.event_deliveries",
+		"convoy.events",
+		"convoy.api_keys",
+		"convoy.subscriptions",
+		"convoy.source_verifiers",
+		"convoy.sources",
+		"convoy.configurations",
+		"convoy.devices",
+		"convoy.subscription_filters",
+		"convoy.portal_links",
+		"convoy.organisation_invites",
+		"convoy.applications",
+		"convoy.endpoint_secrets",
+		"convoy.endpoints",
+		"convoy.projects",
+		"convoy.project_configurations",
+		"convoy.organisation_members",
+		"convoy.organisations",
+		"convoy.users",
+	}
+
+	for _, table := range tables {
+		r, err := p.dbx.ExecContext(context.Background(), fmt.Sprintf("TRUNCATE %s CASCADE", table))
+		if err != nil {
+			return err
+		}
+
+		rowsAffected, err := r.RowsAffected()
+		if err != nil {
+			return err
+		}
+
+		if rowsAffected < 1 {
+			return fmt.Errorf("failed to truncate %s", table)
+		}
+	}
+
+	return nil
+}
+
 // getPrevPage returns calculated value for the prev page
 func getPrevPage(page int) int {
 	if page == 0 {
@@ -47,6 +90,17 @@ func getPrevPage(page int) int {
 	}
 
 	return prev
+}
+
+// getSkip returns calculated skip value for the query
+func getSkip(page, limit int) int {
+	skip := (page - 1) * limit
+
+	if skip <= 0 {
+		skip = 0
+	}
+
+	return skip
 }
 
 func calculatePaginationData(count, page, perPage int) datastore.PaginationData {

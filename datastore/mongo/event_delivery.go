@@ -28,7 +28,6 @@ func NewEventDeliveryRepository(store datastore.Store) datastore.EventDeliveryRe
 func (db *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery) error {
 	ctx = db.setCollectionInContext(ctx)
 
-	eventDelivery.ID = primitive.NewObjectID()
 	if util.IsStringEmpty(eventDelivery.UID) {
 		eventDelivery.UID = uuid.New().String()
 	}
