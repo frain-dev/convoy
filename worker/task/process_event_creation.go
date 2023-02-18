@@ -16,8 +16,6 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type CreateEvent struct {
@@ -105,7 +103,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 				Raw:             event.Raw,
 				IntervalSeconds: rc.Duration,
 				Strategy:        rc.Type,
-				NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
+				NextSendTime:    time.Now(),
 			}
 
 			eventDelivery := &datastore.EventDelivery{
@@ -120,8 +118,8 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 
 				Status:           getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},
-				CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:        primitive.NewDateTimeFromTime(time.Now()),
+				CreatedAt:        time.Now(),
+				UpdatedAt:        time.Now(),
 			}
 
 			if s.Type == datastore.SubscriptionTypeCLI {
@@ -317,7 +315,7 @@ func generateSubscription(project *datastore.Project, endpoint *datastore.Endpoi
 		Type:         datastore.SubscriptionTypeAPI,
 		EndpointID:   endpoint.UID,
 		FilterConfig: &datastore.FilterConfiguration{EventTypes: []string{"*"}},
-		CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	}
 }

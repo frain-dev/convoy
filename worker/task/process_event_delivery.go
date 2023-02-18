@@ -187,7 +187,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			ed.Status = datastore.RetryEventStatus
 
 			nextTime := time.Now().Add(delayDuration)
-			ed.Metadata.NextSendTime = primitive.NewDateTimeFromTime(nextTime)
+			ed.Metadata.NextSendTime = nextTime
 			attempts := ed.Metadata.NumTrials + 1
 
 			log.Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", ed.UID, nextTime.Format(time.ANSIC), ed.Metadata.Strategy, ed.Metadata.IntervalSeconds, attempts, ed.Metadata.RetryLimit)

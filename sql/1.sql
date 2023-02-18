@@ -16,7 +16,9 @@ CREATE TABLE IF NOT EXISTS convoy.users (
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMPTZ,
     reset_password_expires_at TIMESTAMPTZ,
-    email_verification_expires_at TIMESTAMPTZ
+    email_verification_expires_at TIMESTAMPTZ,
+
+    CONSTRAINT users_email_key UNIQUE NULLS NOT DISTINCT (email, deleted_at)
 );
 
 CREATE TABLE IF NOT EXISTS convoy.organisations (
@@ -85,6 +87,7 @@ CREATE TABLE IF NOT EXISTS convoy.projects (
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	deleted_at TIMESTAMPTZ
 );
+
 
 CREATE TABLE IF NOT EXISTS convoy.endpoints (
 	id CHAR(26) PRIMARY KEY,
@@ -214,6 +217,7 @@ CREATE TABLE IF NOT EXISTS convoy.configurations (
 	deleted_at TIMESTAMPTZ
 );
 
+-- // TODO(all): add source_verifier_id to source table
 CREATE TABLE IF NOT EXISTS convoy.sources (
 	id CHAR(26) PRIMARY KEY,
 
@@ -259,9 +263,9 @@ CREATE TABLE IF NOT EXISTS convoy.subscriptions (
 	type TEXT NOT NULL,
 
 	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
-	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id),
-	device_id CHAR(26) NOT NULL REFERENCES convoy.devices (id),
-	source_id CHAR(26) NOT NULL REFERENCES convoy.sources (id),
+	endpoint_id CHAR(26) REFERENCES convoy.endpoints (id),
+	device_id CHAR(26) REFERENCES convoy.devices (id),
+	source_id CHAR(26) REFERENCES convoy.sources (id),
 
 	alert_config_count INTEGER NOT NULL,
 	alert_config_threshold TEXT NOT NULL,
@@ -306,10 +310,9 @@ CREATE TABLE IF NOT EXISTS convoy.events (
 	id CHAR(26) PRIMARY KEY,
 
 	event_type TEXT NOT NULL,
-	endpoints TEXT[] NOT NULL,
 
 	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
-	source_id CHAR(26) NOT NULL REFERENCES convoy.sources (id),
+	source_id CHAR(26) REFERENCES convoy.sources (id),
 
 	headers JSONB NOT NULL,
 
@@ -319,62 +322,33 @@ CREATE TABLE IF NOT EXISTS convoy.events (
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	deleted_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS convoy.events_endpoints (
+	event_id CHAR(26) NOT NULL REFERENCES convoy.events (id),
+	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id)
 );
 
 CREATE TABLE IF NOT EXISTS convoy.event_deliveries (
 	id CHAR(26) PRIMARY KEY,
 
-	name TEXT NOT NULL,
 	status TEXT NOT NULL,
 	description TEXT NOT NULL,
 
 	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
-	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id),
+	endpoint_id CHAR(26) REFERENCES convoy.endpoints (id),
 	event_id CHAR(26) NOT NULL REFERENCES convoy.events (id),
-	device_id CHAR(26) NOT NULL REFERENCES convoy.devices (id),
+	device_id CHAR(26) REFERENCES convoy.devices (id),
 	subscription_id CHAR(26) NOT NULL REFERENCES convoy.subscriptions (id),
 
 	headers JSONB NOT NULL,
+    attempts JSONB,
 
-	raw TEXT NOT NULL,
-	data BYTEA NOT NULL,
-	strategy TEXT NOT NULL,
-
-	next_send_time TIMESTAMPTZ NOT NULL,
-	num_trials INTEGER DEFAULT 0,
-	interval_seconds INTEGER DEFAULT 0,
-	retry_limit INTEGER DEFAULT 0,
-
-	cli_event_type TEXT,
-	cli_host_name TEXT,
+    metadata JSONB NOT NULL,
+    cli_metadata JSONB,
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	deleted_at TIMESTAMPTZ
-);
-
-CREATE TABLE IF NOT EXISTS convoy.delivery_attempts (
-	id CHAR(26) PRIMARY KEY,
-
-	msg_id TEXT NOT NULL,
-	url TEXT NOT NULL,
-	method TEXT NOT NULL,
-	api_version TEXT NOT NULL,
-	ip_address TEXT NOT NULL,
-	http_status TEXT NOT NULL,
-	response_data TEXT NOT NULL,
-	error TEXT NOT NULL,
-	status TEXT NOT NULL,
-
-	request_http_header JSONB NOT NULL,
-	response_http_header JSONB NOT NULL,
-
-	event_elivery_id CHAR(26) NOT NULL REFERENCES convoy.event_deliveries (id),
-	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id),
-
-	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	expires_at TIMESTAMPTZ NOT NULL,
 	deleted_at TIMESTAMPTZ
 );
 

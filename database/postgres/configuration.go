@@ -2,11 +2,16 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 	"gopkg.in/guregu/null.v4"
+)
+
+var (
+	ErrConfigNotFound = errors.New("config not found")
 )
 
 const (
@@ -37,25 +42,25 @@ const (
 		updated_at,
 		deleted_at
 	FROM convoy.configurations
-	WHERE id = 'default';
+	WHERE deleted_at IS NULL LIMIT 1;
 	`
 
 	updateConfiguration = `
 	UPDATE
 		convoy.configurations
 	SET
-		is_analytics_enabled = $1,
-		is_signup_enabled = $2,
-		storage_policy_type = $3,
-		on_prem_path = $4,
-		s3_bucket = $5,
-		s3_access_key = $6,
-		s3_secret_key = $7,
-		s3_region = $8,
-		s3_session_token = $9, 
-		s3_endpoint = $10,
+		is_analytics_enabled = $2,
+		is_signup_enabled = $3,
+		storage_policy_type = $4,
+		on_prem_path = $5,
+		s3_bucket = $6,
+		s3_access_key = $7,
+		s3_secret_key = $8,
+		s3_region = $9,
+		s3_session_token = $10, 
+		s3_endpoint = $11,
 		updated_at = now()
-	WHERE id = 'default';
+	WHERE id = $1 AND deleted_at IS NULL;
 	`
 )
 
@@ -84,7 +89,7 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 	}
 
 	r, err := c.db.ExecContext(ctx, createConfiguration,
-		"default",
+		config.UID,
 		config.IsAnalyticsEnabled,
 		config.IsSignupEnabled,
 		config.StoragePolicy.Type,
@@ -113,13 +118,16 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 }
 
 func (c *configRepo) LoadConfiguration(ctx context.Context) (*datastore.Configuration, error) {
-	var config datastore.Configuration
-	err := c.db.GetContext(ctx, &config, fetchConfiguration)
+	config := &datastore.Configuration{}
+	err := c.db.QueryRowxContext(ctx, fetchConfiguration).StructScan(config)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrConfigNotFound
+		}
 		return nil, err
 	}
 
-	return &config, nil
+	return config, nil
 }
 
 func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Configuration) error {
@@ -139,6 +147,7 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 	}
 
 	result, err := c.db.ExecContext(ctx, updateConfiguration,
+		cfg.UID,
 		cfg.IsAnalyticsEnabled,
 		cfg.IsSignupEnabled,
 		cfg.StoragePolicy.Type,
