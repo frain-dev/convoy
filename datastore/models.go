@@ -552,7 +552,7 @@ type Metadata struct {
 	Raw      string           `json:"raw" bson:"raw"`
 	Strategy StrategyProvider `json:"strategy" bson:"strategy"`
 
-	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
+	NextSendTime time.Time `json:"next_send_time" bson:"next_send_time"`
 
 	// NumTrials: number of times we have tried to deliver this Event to
 	// an application
@@ -574,13 +574,13 @@ func (em Metadata) Value() (driver.Value, error) {
 }
 
 type EventIntervalData struct {
-	Interval int64  `json:"index" bson:"index"`
-	Time     string `json:"date" bson:"total_time"`
+	Interval int64  `json:"index" db:"index"`
+	Time     string `json:"date" db:"total_time"`
 }
 
 type EventInterval struct {
-	Data  EventIntervalData `json:"data" bson:"_id"`
-	Count uint64            `json:"count" bson:"count"`
+	Data  EventIntervalData `json:"data" db:"data"`
+	Count uint64            `json:"count" db:"count"`
 }
 
 type DeliveryAttempt struct {
@@ -667,9 +667,9 @@ type Subscription struct {
 	FilterConfig    *FilterConfiguration    `json:"filter_config,omitempty" db:"filter_config,omitempty"`
 	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty" db:"rate_limit_config,omitempty"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 // For DB access
@@ -747,8 +747,8 @@ type AlertConfiguration struct {
 }
 
 type FilterConfiguration struct {
-	EventTypes []string     `json:"event_types" bson:"event_types,omitempty"`
-	Filter     FilterSchema `json:"filter" bson:"filter"`
+	EventTypes pq.StringArray `json:"event_types" bson:"event_types,omitempty"`
+	Filter     FilterSchema   `json:"filter" bson:"filter"`
 }
 
 type FilterSchema struct {
