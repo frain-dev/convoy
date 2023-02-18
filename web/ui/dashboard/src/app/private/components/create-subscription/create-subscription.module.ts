@@ -16,6 +16,7 @@ import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-m
 import { FormatSecondsPipe } from 'src/app/pipes/formatSeconds/format-seconds.pipe';
 import { CreateSubscriptionFilterComponent } from '../create-subscription-filter/create-subscription-filter.component';
 import { CreateEndpointComponent } from '../create-endpoint/create-endpoint.component';
+import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.component';
 
 @NgModule({
 	declarations: [CreateSubscriptionComponent],
@@ -38,7 +39,8 @@ import { CreateEndpointComponent } from '../create-endpoint/create-endpoint.comp
 		InputFieldDirective,
 		InputErrorComponent,
 		InputDirective,
-		LabelComponent
+		LabelComponent,
+        FormLoaderComponent
 	],
 	exports: [CreateSubscriptionComponent]
 })

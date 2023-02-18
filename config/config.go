@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/kelseyhightower/envconfig"
 )
@@ -46,6 +47,18 @@ var DefaultConfiguration = Configuration{
 	},
 	Logger: LoggerConfiguration{
 		Level: "error",
+	},
+	Analytics: AnalyticsConfiguration{
+		IsEnabled: true,
+	},
+	StoragePolicy: StoragePolicyConfiguration{
+		Type: "on-prem",
+		OnPrem: OnPremStorage{
+			Path: convoy.DefaultOnPremDir,
+		},
+	},
+	Auth: AuthConfiguration{
+		IsSignupEnabled: true,
 	},
 }
 
@@ -88,9 +101,10 @@ type FileRealmOption struct {
 }
 
 type AuthConfiguration struct {
-	File   FileRealmOption    `json:"file"`
-	Native NativeRealmOptions `json:"native"`
-	Jwt    JwtRealmOptions    `json:"jwt"`
+	File            FileRealmOption    `json:"file"`
+	Native          NativeRealmOptions `json:"native"`
+	Jwt             JwtRealmOptions    `json:"jwt"`
+	IsSignupEnabled bool               `json:"is_signup_enabled"`
 }
 
 type NativeRealmOptions struct {
@@ -169,7 +183,7 @@ type FliptConfiguration struct {
 }
 
 type AnalyticsConfiguration struct {
-	IsEnabled *bool `json:"enabled" envconfig:"CONVOY_ANALYTICS_ENABLED"`
+	IsEnabled bool `json:"enabled" envconfig:"CONVOY_ANALYTICS_ENABLED"`
 }
 
 type StoragePolicyConfiguration struct {

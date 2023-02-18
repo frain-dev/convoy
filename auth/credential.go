@@ -2,9 +2,7 @@ package auth
 
 import "errors"
 
-var (
-	ErrCredentialNotFound = errors.New("credential not found")
-)
+var ErrCredentialNotFound = errors.New("credential not found")
 
 type AuthenticatedUser struct {
 	AuthenticatedByRealm string      `json:"-"` // Name of realm that authenticated this user
@@ -35,6 +33,13 @@ const (
 	CredentialTypeBasic  = CredentialType("BASIC")
 	CredentialTypeAPIKey = CredentialType("BEARER")
 	CredentialTypeJWT    = CredentialType("JWT")
+)
+
+const (
+	NativeRealmName = "native_realm"
+	JWTRealmName    = "jwt"
+	FileRealmName   = "file_realm"
+	NoopRealmName   = "noop_realm"
 )
 
 func (c CredentialType) String() string {

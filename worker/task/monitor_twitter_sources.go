@@ -39,7 +39,7 @@ func MonitorTwitterSources(store datastore.Store, queue queue.Queuer) func(conte
 			if now.After(source.CreatedAt.Time().Add(time.Hour)) {
 				// the crc verified at timestamp must not be less than two hours ago
 				if crcExpiry.After(source.ProviderConfig.Twitter.CrcVerifiedAt.Time()) {
-					subscriptions, err := subRepo.FindSubscriptionsBySourceIDs(ctx, source.ProjectID, source.UID)
+					subscriptions, err := subRepo.FindSubscriptionsBySourceID(ctx, source.ProjectID, source.UID)
 					if err != nil {
 						log.Error("Failed to load sources paged")
 						return err

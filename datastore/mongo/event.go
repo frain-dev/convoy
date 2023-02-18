@@ -180,8 +180,8 @@ func (db *eventRepo) LoadEventsPaged(ctx context.Context, f *datastore.Filter) (
 	pipeline := mongo.Pipeline{
 		matchStage,
 		sortStage,
-		limitStage,
 		skipStage,
+		limitStage,
 		endpointLookupStage,
 		sourceLookupStage,
 		unwindSourceStage,

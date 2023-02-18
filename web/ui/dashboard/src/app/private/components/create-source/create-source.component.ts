@@ -13,6 +13,7 @@ import { CreateSourceService } from './create-source.service';
 })
 export class CreateSourceComponent implements OnInit {
 	@Input('action') action: 'update' | 'create' = 'create';
+	@Input('showAction') showAction: 'true' | 'false' = 'false';
 	@Output() onAction = new EventEmitter<any>();
 	sourceForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
@@ -71,6 +72,7 @@ export class CreateSourceComponent implements OnInit {
 	];
 	encodings = ['base64', 'hex'];
 	hashAlgorithms = ['SHA256', 'SHA512'];
+
 	AWSregions = [
 		{ uid: 'us-east-2', name: 'US East (Ohio)' },
 		{ uid: 'us-east-1', name: 'US East (N. Virginia)' },
@@ -102,14 +104,27 @@ export class CreateSourceComponent implements OnInit {
 		{ uid: 'us-gov-east-1', name: 'AWS GovCloud (US-East)' },
 		{ uid: 'us-gov-west-1', name: 'AWS GovCloud (US-West)' }
 	];
+
+	preConfiguredSources: ['github', 'shopify', 'twitter'] = ['github', 'shopify', 'twitter'];
+	sourceVerifications = [
+		{ uid: 'noop', name: 'None' },
+		{ uid: 'hmac', name: 'HMAC' },
+		{ uid: 'basic_auth', name: 'Basic Auth' },
+		{ uid: 'api_key', name: 'API Key' },
+		{ uid: 'github', name: 'Github' },
+		{ uid: 'twitter', name: 'Twitter' },
+		{ uid: 'shopify', name: 'Shopify' }
+	];
 	sourceId = this.route.snapshot.params.id;
 	isloading = false;
 	confirmModal = false;
 	sourceDetails!: SOURCE;
+	sourceCreated: boolean = false;
+
 	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
 
 	ngOnInit(): void {
-		this.action === 'update' ? this.getSourceDetails() : this.getSources();
+		if (this.action === 'update') this.getSourceDetails();
 		this.privateService.activeProjectDetails?.type === 'incoming' ? this.sourceForm.patchValue({ type: 'http' }) : this.sourceForm.patchValue({ type: 'pub_sub' });
 	}
 
@@ -135,7 +150,6 @@ export class CreateSourceComponent implements OnInit {
 			if (this.sourceForm.get('verifier.type')?.value === 'github') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'hex', header: 'X-Hub-Signature-256', hash: 'SHA256' });
 			if (this.sourceForm.get('verifier.type')?.value === 'shopify') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'base64', header: 'X-Shopify-Hmac-SHA256', hash: 'SHA256' });
 			if (this.sourceForm.get('verifier.type')?.value === 'twitter') this.sourceForm.get('verifier.hmac')?.patchValue({ encoding: 'base64', header: 'X-Twitter-Webhooks-Signature', hash: 'SHA256' });
-
 			return {
 				...this.sourceForm.value,
 				provider: this.isCustomSource(verifierType) ? verifierType : '',
@@ -188,14 +202,15 @@ export class CreateSourceComponent implements OnInit {
 	async saveSource() {
 		const sourceData = this.checkSourceSetup();
 		if (!this.isSourceFormValid()) return this.sourceForm.markAllAsTouched();
-
 		this.isloading = true;
 		try {
 			const response = this.action === 'update' ? await this.createSourceService.updateSource({ data: sourceData, id: this.sourceId }) : await this.createSourceService.createSource({ sourceData });
-			this.isloading = false;
 			this.onAction.emit({ action: this.action, data: response.data });
 			document.getElementById('configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
+			this.sourceCreated = true;
+			return response;
 		} catch (error) {
+			this.sourceCreated = false;
 			this.isloading = false;
 		}
 	}
@@ -228,7 +243,6 @@ export class CreateSourceComponent implements OnInit {
 			if (this.sourceForm.get('verifier')?.value.type === 'api_key' && this.sourceForm.get('verifier.api_key')?.valid) return true;
 
 			if (this.sourceForm.get('verifier')?.value.type === 'basic_auth' && this.sourceForm.get('verifier.basic_auth')?.valid) return true;
-
 			if ((this.sourceForm.get('verifier')?.value.type === 'hmac' || this.isCustomSource(this.sourceForm.get('verifier.type')?.value)) && this.sourceForm.get('verifier.hmac')?.valid) return true;
 		}
 
@@ -244,11 +258,6 @@ export class CreateSourceComponent implements OnInit {
 	cancel() {
 		document.getElementById(this.router.url.includes('/configure') ? 'configureProjectForm' : 'sourceForm')?.scroll({ top: 0, behavior: 'smooth' });
 		this.confirmModal = true;
-	}
-
-	isNewProjectRoute(): boolean {
-		if (this.router.url == '/projects/new') return true;
-		return false;
 	}
 
 	setRegionValue(value: any) {
