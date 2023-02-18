@@ -2,9 +2,11 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
@@ -81,6 +83,9 @@ func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
 		user.EmailVerificationExpiresAt,
 	)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate") {
+			return datastore.ErrDuplicateEmail
+		}
 		return err
 	}
 
@@ -121,6 +126,9 @@ func (u *userRepo) FindUserByEmail(ctx context.Context, email string) (*datastor
 	user := &datastore.User{}
 	err := u.db.QueryRowxContext(ctx, fmt.Sprintf(fetchUsers, "email"), email).StructScan(user)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrUserNotFound
+		}
 		return nil, err
 	}
 
@@ -131,6 +139,9 @@ func (u *userRepo) FindUserByID(ctx context.Context, id string) (*datastore.User
 	user := &datastore.User{}
 	err := u.db.QueryRowxContext(ctx, fmt.Sprintf(fetchUsers, "id"), id).StructScan(user)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrUserNotFound
+		}
 		return nil, err
 	}
 
@@ -141,6 +152,9 @@ func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastor
 	user := &datastore.User{}
 	err := u.db.QueryRowxContext(ctx, fmt.Sprintf(fetchUsers, "reset_password_token"), token).StructScan(user)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrUserNotFound
+		}
 		return nil, err
 	}
 
@@ -151,6 +165,9 @@ func (u *userRepo) FindUserByEmailVerificationToken(ctx context.Context, token s
 	user := &datastore.User{}
 	err := u.db.QueryRowxContext(ctx, fmt.Sprintf(fetchUsers, "email_verification_token"), token).StructScan(user)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrUserNotFound
+		}
 		return nil, err
 	}
 
@@ -158,16 +175,21 @@ func (u *userRepo) FindUserByEmailVerificationToken(ctx context.Context, token s
 }
 
 func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.User, datastore.PaginationData, error) {
-	skip := (pageable.Page - 1) * pageable.PerPage
+	skip := getSkip(pageable.Page, pageable.PerPage)
 	rows, err := u.db.QueryxContext(ctx, fetchUsersPaginated, pageable.PerPage, skip)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
 
 	var users []datastore.User
-	err = rows.StructScan(&users)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
+	var user datastore.User
+	for rows.Next() {
+		err = rows.StructScan(&user)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		users = append(users, user)
 	}
 
 	var count int
