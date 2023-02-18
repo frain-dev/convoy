@@ -8,6 +8,7 @@ import { PrivateService } from '../../private.service';
 })
 export class CreateSubscriptionService {
 	constructor(private http: HttpService, private privateService: PrivateService) {}
+    subscriptionData: any;
 
 	createSubscription(requestDetails: any, token?: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {

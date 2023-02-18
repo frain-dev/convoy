@@ -10,6 +10,13 @@
 	<span class="text-primary-100 font-medium">Portal Links</span>
 </div>
 
+<div class="flex justify-between items-end mt-24px border-b border-b-grey-10 pb-20px mb-24px">
+	<div>
+		<h1 class="text-24 font-bold text-grey-80">Portal Links</h1>
+		<p class="text-grey-60 text-14 mt-6px max-w-3xl">Portals links allows you to view and debug webhook events sent to selected endpoints on a streamlined dashboard. On a portal page only events sent to the endpoints you've selected will be shown.</p>
+	</div>
+</div>
+
 <div class="flex items-center justify-between my-26px">
 	<div class="flex items-center">
 		<!-- not available yet  -->
@@ -55,55 +62,51 @@
 </div>
 
 <!-- loader  -->
-<convoy-card *ngIf="isLoadingPortalLinks">
-	<convoy-table-loader id="events_loader_loader" [withDate]="false" [tableHead]="linksTableHead"></convoy-table-loader>
-</convoy-card>
+<div class="flex flex-wrap gap-24px" *ngIf="isLoadingPortalLinks">
+	<div class="bg-grey-10 rounded-8px animate-pulse w-348px h-108px"></div>
+	<div class="bg-grey-10 rounded-8px animate-pulse w-348px h-108px"></div>
+	<div class="bg-grey-10 rounded-8px animate-pulse w-348px h-108px"></div>
+	<div class="bg-grey-10 rounded-8px animate-pulse w-348px h-108px"></div>
+	<div class="bg-grey-10 rounded-8px animate-pulse w-348px h-108px"></div>
+	<div class="bg-grey-10 rounded-8px animate-pulse w-348px h-108px"></div>
+</div>
 
-<!-- table data  -->
-<div class="min-h-[70vh] overflow-y-auto overflow-x-auto min-w-[485px] w-full flex" *ngIf="!isLoadingPortalLinks && portalLinks?.content?.length">
-	<convoy-card [class]="activeLink?.uid ? ' w-[calc(100%-382px)] desktop:w-0 desktop:hidden transition-all duration-200 min-h-[70vh]' : ' w-full transition-all duration-200 min-h-[70vh]'">
-		<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container">
-			<table convoy-table>
-				<thead convoy-table-head>
-					<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of linksTableHead; let i = index">{{ head }}</th>
-				</thead>
-				<tbody>
-					<tr convoy-table-row *ngFor="let link of portalLinks?.content; let i = index" [id]="'portalLink' + i" [routerLink]="['./']" [queryParams]="{ id: link.uid }" [active]="link.uid === activeLink?.uid">
-						<td convoy-table-cell class="pl-20px">
-							{{ link.name || 'Linkname' }}
-						</td>
-						<td convoy-table-cell>
-							<span class="w-100px">{{ link.endpoint_count | number }}</span>
-						</td>
-						<td convoy-table-cell>
-							<div class="flex items-center">
-								<span class="w-250px overflow-hidden overflow-ellipsis mr-6px">{{ link.url }}</span>
-								<convoy-copy-button [text]="link.url" notificationText="URL has been copied to clipboard!"></convoy-copy-button>
-							</div>
-						</td>
-						<td convoy-table-cell>{{ link.created_at | date: 'mediumDate' }}</td>
-						<td convoy-table-cell>
-							<button convoy-button fill="clear" class="!p-0" size="sm">
-								<img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px h-16px" alt="arrow right" />
-							</button>
-						</td>
-					</tr>
-				</tbody>
-			</table>
+<ng-container *ngIf="!isLoadingPortalLinks && portalLinks?.content?.length">
+	<div class="flex flex-wrap gap-24px">
+		<div convoy-card hover="true" class="w-full max-w-[348px] cursor-pointer pt-20px" *ngFor="let link of portalLinks?.content; let i = index" [id]="'portal-link' + i" [routerLink]="['./']" [queryParams]="{ id: link.uid }">
+			<div class="px-24px pb-12px border-b border-b-grey-10">
+				<div class="flex justify-between items-center">
+					<div class="text-14 font-medium overflow-hidden max-w-[260px] text-ellipsis whitespace-nowrap">{{ link.name }}</div>
+					<svg width="18" height="18" class="fill-grey-60">
+						<use xlink:href="#arrow-right-icon"></use>
+					</svg>
+				</div>
+			</div>
+			<div class="mx-24px flex justify-between items-center">
+				<div class="mb-24px mt-12px">
+					<span class="text-12 font-medium">{{ link.endpoint_count }}</span>
+					<span class="text-12 text-grey-40 pl-8px">Endpoint(s)</span>
+				</div>
+				<div class="bg-grey-10 w-2px min-h-[60px]"></div>
+				<convoy-copy-button [text]="link.url" size="md" className="ml-2px mb-20px mt-12px flex items-center" notificationText="URL has been copied to clipboard"><span class="text-12 ml-8px font-medium">Copy Portal Link</span></convoy-copy-button>
+			</div>
 		</div>
-	</convoy-card>
+	</div>
+</ng-container>
 
-	<convoy-card className="h-full min-h-[70vh] w-full max-w-[382px] min-w-[350px] ml-16px first-letter:border-l border-l-grey-10 transition-all duration-200 desktop:max-w-none desktop:border-none" *ngIf="activeLink?.uid">
-		<div class="flex items-center justify-between pt-16px px-16px mb-20px">
-			<h2 class="text-16 font-bold underline text-primary-100 flex items-center">
-				<a [href]="activeLink?.url" target="_blank">{{ activeLink?.name || '' }}</a>
-				<img src="/assets/img/arrow-up-right.svg" class="w-16px ml-4px" alt="link out" />
-			</h2>
-			<a class="w-32px h-32px flex items-center justify-center rounded-[6px] bg-primary-500" [routerLink]="['./']" [queryParams]="{}" tabindex="0">
-				<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
-			</a>
-		</div>
+<!-- empty state  -->
+<convoy-empty-state
+	*ngIf="!isLoadingPortalLinks && portalLinks?.content?.length === 0"
+	imgSrc="/assets/img/new-empty-state.png"
+	description="Portal Links enable you create customer-facing dashboards for your user endpoints. You can link a portal link to more than one endpoint at a time."
+	buttonText="Create Portal Link"
+	className="min-h-[65vh] mt-16px"
+	id="links-empty-state"
+	(onAction)="openCreateLinkModal()"
+></convoy-empty-state>
 
+<div convoy-modal *ngIf="activeLink?.uid" position="right" [id]="'source-details'" [title]="activeLink?.name || 'Portal Link Details'" (closeModal)="router.navigate([], { queryParams: {} })">
+	<ng-container modalBody>
 		<ul>
 			<li convoy-list-item class="p-0" *ngFor="let endpoint of activeLink?.endpoints_metadata">
 				<div class="w-1/2 text-14 font-medium">{{ endpoint?.title }}</div>
@@ -127,53 +130,7 @@
 				</svg>
 			</button>
 		</div>
-	</convoy-card>
-</div>
-
-<!-- empty state  -->
-<convoy-empty-state
-	*ngIf="!isLoadingPortalLinks && portalLinks?.content?.length === 0"
-	imgSrc="/assets/img/new-empty-state.png"
-	description="Portal Links enable you create customer-facing dashboards for your user endpoints. You can link a portal link to more than one endpoint at a time."
-	buttonText="Create Portal Link"
-	className="min-h-[65vh] mt-16px"
-	id="links-empty-state"
-	(onAction)="openCreateLinkModal()"
-></convoy-empty-state>
-
-<!-- pagination links  -->
-<div class="flex items-center mt-16px" *ngIf="!isLoadingPortalLinks && portalLinks?.content?.length">
-	<button
-		convoy-button
-		fill="outline"
-		size="sm"
-		class="pl-4px pr-16px py-4px border-primary-300"
-		routerLink="./"
-		[queryParams]="{ page: portalLinks?.pagination?.prev || 0 }"
-		[disabled]="portalLinks?.pagination?.prev === 0"
-		(click)="getPortalLinks({ page: portalLinks?.pagination?.prev })"
-	>
-		<svg width="24" height="24" class="mr-8px fill-primary-100">
-			<use xlink:href="#arrow-left-icon"></use>
-		</svg>
-		Previous
-	</button>
-
-	<button
-		convoy-button
-		fill="outline"
-		size="sm"
-		class="pr-4px pl-16px py-4px border-primary-300 ml-16px"
-		routerLink="./"
-		[queryParams]="{ page: portalLinks?.pagination?.next }"
-		[disabled]="portalLinks?.pagination?.next === 0"
-		(click)="getPortalLinks({ page: portalLinks?.pagination?.next })"
-	>
-		Next
-		<svg width="24" height="24" class="ml-8px fill-primary-100">
-			<use xlink:href="#arrow-right-icon"></use>
-		</svg>
-	</button>
+	</ng-container>
 </div>
 
 <convoy-create-portal-link *ngIf="showCreatePortalLinkModal || showEditPortalLinkModal"></convoy-create-portal-link>

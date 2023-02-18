@@ -73,10 +73,6 @@ func newAnalytics(Repo *Repo, cfg config.Configuration) (*Analytics, error) {
 	}
 
 	isEnabled := config.IsAnalyticsEnabled
-	if cfg.Analytics.IsEnabled != nil {
-		isEnabled = *cfg.Analytics.IsEnabled
-	}
-
 	if !isEnabled {
 		return nil, nil
 	}

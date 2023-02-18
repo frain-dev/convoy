@@ -10,6 +10,13 @@
 	<span class="text-primary-100 font-medium">Endpoints</span>
 </div>
 
+<div class="flex justify-between items-end mt-24px border-b border-b-grey-10 pb-20px mb-24px">
+	<div>
+		<h1 class="text-24 font-bold text-grey-80">Endpoints</h1>
+		<p class="text-grey-60 text-14 mt-6px max-w-2xl">Endpoints are receivers, they recieve the webhook events from sources it is subscribed to</p>
+	</div>
+</div>
+
 <div class="flex items-center justify-between mb-24px mt-18px">
 	<div class="flex items-center">
 		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100">
@@ -59,7 +66,7 @@
 						</td>
 						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]">{{ endpoint.events || 0 }}</td>
 						<td convoy-table-cell>
-							<button convoy-button size="xs" [routerLink]="['../events']" [relativeTo]="route" [queryParams]="{ linksEndpoint: endpoint.uid }" texture="light">
+							<button convoy-button size="sm" [routerLink]="['../events']" [relativeTo]="route" [queryParams]="{ linksEndpoint: endpoint.uid }" texture="light">
 								<img src="/assets/img/view-events-icon.svg" class="w-14px mr-10px" alt="view events icon" />
 								View Events
 							</button>
@@ -117,6 +124,6 @@
 
 <div convoy-modal *ngIf="showCreateEndpointModal || showEditEndpointModal" position="full" [title]="showEditEndpointModal ? 'Edit Endpoint' : 'Create Endpoint'" (closeModal)="cancel()">
 	<ng-container modalBody>
-		<convoy-create-endpoint (onAction)="$event.action === 'close' ? cancel() : getEndpoints(); cancel()" [editMode]="showEditEndpointModal"></convoy-create-endpoint>
+		<convoy-create-endpoint showAction="true" (onAction)="$event.action === 'close' ? cancel() : getEndpoints(); cancel()" [editMode]="showEditEndpointModal"></convoy-create-endpoint>
 	</ng-container>
 </div>

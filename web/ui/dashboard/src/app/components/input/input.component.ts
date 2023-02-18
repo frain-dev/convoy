@@ -7,7 +7,7 @@ import { TooltipComponent } from '../tooltip/tooltip.component';
 	selector: '[convoy-input]',
 	standalone: true,
 	host: {
-		class: 'transition-all duration-[.3s] w-full font-light text-14 placeholder:text-grey-40 text-grey-100 border border-primary-500 valid:border-primary-500 disabled:border-primary-500 disabled:bg-[#F7F9FC] hover:bg-primary-500 hover:border-grey-20 focus:border-primary-100 focus:bg-white-100 outline-none rounded-4px placeholder:opacity-[.48] bg-[#F7F9FC] py-12px px-16px appearance-none',
+		class: 'transition-all duration-[.3s] w-full font-normal text-14 placeholder:text-grey-40 text-grey-100 border border-primary-500 valid:border-primary-500 disabled:border-primary-500 disabled:bg-[#F7F9FC] hover:bg-primary-500 hover:border-grey-20 focus:border-primary-100 focus:bg-white-100 outline-none rounded-4px placeholder:opacity-[.48] bg-[#F7F9FC] py-12px px-16px appearance-none',
 		'[ngClass]': "{ 'pointer-events-none': readonly, 'appearance-none': type !== 'password' }"
 	}
 })
@@ -78,7 +78,7 @@ export class InputErrorComponent implements OnInit {
 			<ng-content></ng-content>
 			<convoy-tooltip *ngIf="tooltip" class="ml-4px" size="sm">{{ tooltip }}</convoy-tooltip>
 		</div>
-		<span *ngIf="required === 'true'" class="text-10 bg-grey-10 rounded-4px px-1 font-normal">required</span>
+		<span *ngIf="required === 'true'" class="text-10 bg-grey-10 rounded-4px px-1 font-medium">required</span>
 	`,
 	styleUrls: ['./input.component.scss']
 })

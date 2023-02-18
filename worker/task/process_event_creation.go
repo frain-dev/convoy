@@ -125,7 +125,10 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			}
 
 			if s.Type == datastore.SubscriptionTypeCLI {
-				eventDelivery.CLIMetadata = &datastore.CLIMetadata{EventType: string(event.EventType)}
+				eventDelivery.CLIMetadata = &datastore.CLIMetadata{
+					EventType: string(event.EventType),
+					SourceID:  event.SourceID,
+				}
 			}
 
 			err = eventDeliveryRepo.CreateEventDelivery(ctx, eventDelivery)
@@ -200,6 +203,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 			subs, err := subRepo.FindSubscriptionsByEndpointID(ctx, project.UID, endpoint.UID)
 			if err != nil {
+				log.Errorf("Failed to find subscription by endpoint %s", err)
 				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
 			}
 
@@ -219,15 +223,16 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 			subs, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs)
 			if err != nil {
+				log.Errorf("Failed to match subscription filter %s", err)
 				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
 			}
 
 			subscriptions = append(subscriptions, subs...)
 		}
 	} else if project.Type == datastore.IncomingProject {
-		subs, err := subRepo.FindSubscriptionsBySourceIDs(ctx, project.UID, event.SourceID)
+		subs, err := subRepo.FindSubscriptionsBySourceID(ctx, project.UID, event.SourceID)
 		if err != nil {
-			log.Errorf("error fetching subscriptions for this source %s", err)
+			log.WithError(err).Error("error fetching subscriptions for this source")
 			return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
 		}
 
@@ -293,7 +298,7 @@ func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscri
 			return datastore.DiscardedEventStatus
 		}
 	case datastore.SubscriptionTypeCLI:
-		device, err := deviceRepo.FetchDeviceByID(ctx, subscription.DeviceID, endpoint.UID, endpoint.ProjectID)
+		device, err := deviceRepo.FetchDeviceByID(ctx, subscription.DeviceID, "", subscription.ProjectID)
 		if err != nil {
 			log.WithError(err).Error("an error occurred fetching the subscription's device")
 			return datastore.DiscardedEventStatus

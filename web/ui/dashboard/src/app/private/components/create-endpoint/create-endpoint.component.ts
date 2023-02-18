@@ -11,16 +11,18 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { CreateEndpointService } from './create-endpoint.service';
 import { PrivateService } from '../../private.service';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
+import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.component';
 
 @Component({
 	selector: 'convoy-create-endpoint',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, ButtonComponent, RadioComponent, TooltipComponent, CardComponent, ToggleComponent],
+	imports: [CommonModule, ReactiveFormsModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, ButtonComponent, RadioComponent, TooltipComponent, CardComponent, ToggleComponent, FormLoaderComponent],
 	templateUrl: './create-endpoint.component.html',
 	styleUrls: ['./create-endpoint.component.scss']
 })
 export class CreateEndpointComponent implements OnInit {
 	@Input('editMode') editMode = false;
+	@Input('showAction') showAction: 'true' | 'false' = 'false';
 	@Output() onAction = new EventEmitter<any>();
 	savingEndpoint = false;
 	isLoadingEndpointDetails = false;
@@ -32,7 +34,7 @@ export class CreateEndpointComponent implements OnInit {
 		url: ['', Validators.required],
 		secret: [null],
 		http_timeout: [null],
-		description: ['', Validators.required],
+		description: [null],
 		authentication: this.formBuilder.group({
 			type: ['api_key'],
 			api_key: this.formBuilder.group({
@@ -45,16 +47,22 @@ export class CreateEndpointComponent implements OnInit {
 	token: string = this.route.snapshot.params.token;
 	endpointUid: string = this.route.snapshot.params.id;
 	enableMoreConfig = false;
+	configurations = [
+		{ uid: 'alert-config', name: 'Alert Configuration', show: false },
+		{ uid: 'auth', name: 'Authentication', show: false },
+		{ uid: 'signature', name: 'Signature Format', show: false }
+	];
+	endpointCreated: boolean = false;
 
 	constructor(private formBuilder: FormBuilder, private generalService: GeneralService, private createEndpointService: CreateEndpointService, private route: ActivatedRoute, private privateService: PrivateService, private router: Router) {}
 
 	ngOnInit() {
-		if (!this.editMode) this.getEndpoints();
 		if (this.endpointUid && this.editMode) this.getEndpointDetails();
 	}
 
 	async saveEndpoint() {
-		if (this.addNewEndpointForm.invalid) return this.addNewEndpointForm.markAsTouched();
+		if (this.addNewEndpointForm.invalid) return this.addNewEndpointForm.markAllAsTouched();
+
 		this.savingEndpoint = true;
 
 		if (!this.addNewEndpointForm.value.authentication.api_key.header_name && !this.addNewEndpointForm.value.authentication.api_key.header_value) delete this.addNewEndpointForm.value.authentication;
@@ -67,9 +75,10 @@ export class CreateEndpointComponent implements OnInit {
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.onAction.emit({ action: this.endpointUid && this.editMode ? 'update' : 'save', data: response.data });
 			this.addNewEndpointForm.reset();
-			this.savingEndpoint = false;
-			return;
+			this.endpointCreated = true;
+			return response;
 		} catch {
+			this.endpointCreated = false;
 			this.savingEndpoint = false;
 			return;
 		}
@@ -86,6 +95,10 @@ export class CreateEndpointComponent implements OnInit {
 				name: endpointDetails.title,
 				url: endpointDetails.target_url
 			});
+
+			if (endpointDetails.support_email) this.toggleConfigForm('alert-config');
+			if (this.addNewEndpointForm.get('authentication.api_key')?.valid) this.toggleConfigForm('auth');
+
 			this.isLoadingEndpointDetails = false;
 		} catch {
 			this.isLoadingEndpointDetails = false;
@@ -102,6 +115,16 @@ export class CreateEndpointComponent implements OnInit {
 		} catch {
 			this.isLoadingEndpoints = false;
 		}
+	}
+
+	toggleConfigForm(configValue: string) {
+		this.configurations.forEach(config => {
+			if (config.uid === configValue) config.show = !config.show;
+		});
+	}
+
+	showConfig(configValue: string): boolean {
+		return this.configurations.find(config => config.uid === configValue)?.show || false;
 	}
 
 	cancel() {
