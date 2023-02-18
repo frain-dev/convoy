@@ -114,8 +114,6 @@
 	imgSrc="/assets/img/new-empty-state.png"
 	heading="Create your first webhook subscription"
 	description="Webhook subscriptions lets you define the source of your webhook and the destination where any webhook event should be sent. It is what allows Convoy to identify and proxy your webhooks."
-	buttonText="Create Subscription"
-	(onAction)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails?.uid + '/subscriptions/new')"
 	className="min-h-[65vh] mt-16px"
 	id="subscriptions-empty-state"
 	*ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length === 0"
