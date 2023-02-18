@@ -23,7 +23,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sebdah/goldie/v2"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type DashboardIntegrationTestSuite struct {
@@ -85,8 +84,8 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 		ProjectID:    s.DefaultProject.UID,
 		Title:        "test-app",
 		SupportEmail: "test@suport.com",
-		CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	}
 
 	endpointRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
@@ -98,38 +97,38 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			UID:        uuid.New().String(),
 			ProjectID:  s.DefaultProject.UID,
 			EndpointID: endpoint.UID,
-			CreatedAt:  primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:  primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
+			CreatedAt:  time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC),
+			UpdatedAt:  time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC),
 		},
 		{
 			UID:       uuid.New().String(),
 			ProjectID: s.DefaultProject.UID,
-			CreatedAt: primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt: primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
+			CreatedAt: time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC),
+			UpdatedAt: time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC),
 		},
 		{
 			UID:       uuid.New().String(),
 			ProjectID: s.DefaultProject.UID,
-			CreatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			CreatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+			UpdatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 		},
 		{
 			UID:       uuid.New().String(),
 			ProjectID: s.DefaultProject.UID,
-			CreatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			CreatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+			UpdatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 		},
 		{
 			UID:       uuid.New().String(),
 			ProjectID: s.DefaultProject.UID,
-			CreatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			CreatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+			UpdatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 		},
 		{
 			UID:       uuid.New().String(),
 			ProjectID: s.DefaultProject.UID,
-			CreatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			CreatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+			UpdatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 		},
 	}
 
