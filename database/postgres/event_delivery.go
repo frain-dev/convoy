@@ -66,9 +66,9 @@ const (
         created_at >= $2 AND
         created_at <= $3
     GROUP BY
-        total_time, index
+        "data.total_time", "data.index"
     ORDER BY
-        total_time ASC;
+        "data.total_time" ASC;
     `
 
 	fetchEventDeliveries = `
