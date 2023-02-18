@@ -202,8 +202,9 @@ func (m *Middleware) RequireEndpoint() func(next http.Handler) http.Handler {
 				return
 			}
 
+			project := GetProjectFromContext(r.Context())
 			if endpoint == nil {
-				endpoint, err = m.endpointRepo.FindEndpointByID(r.Context(), endpointID)
+				endpoint, err = m.endpointRepo.FindEndpointByID(r.Context(), endpointID, project.UID)
 				if err != nil {
 					if errors.Is(err, datastore.ErrEndpointNotFound) {
 						event = err.Error()
@@ -1055,8 +1056,9 @@ func (m *Middleware) RequireApp() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			appID := chi.URLParam(r, "appID")
+			project := GetProjectFromContext(r.Context())
 
-			endpoints, err := m.endpointRepo.FindEndpointsByAppID(r.Context(), appID)
+			endpoints, err := m.endpointRepo.FindEndpointsByAppID(r.Context(), appID, project.UID)
 			if err != nil {
 				_ = render.Render(w, r, util.NewErrorResponse("an error occurred while retrieving app details", http.StatusBadRequest))
 				return

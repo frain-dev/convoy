@@ -182,10 +182,11 @@ func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 
 func (a *ApplicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
 	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+	project := m.GetProjectFromContext(r.Context())
 
 	endpoints := m.GetEndpointsFromContext(r.Context())
 	for _, endpoint := range endpoints {
-		err := endpointRepo.DeleteEndpoint(r.Context(), &endpoint)
+		err := endpointRepo.DeleteEndpoint(r.Context(), &endpoint, project.UID)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
@@ -355,6 +356,7 @@ func (a *ApplicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 
 func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint := m.GetEndpointFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	endpointService := createEndpointService(a)
 
 	req := struct {
@@ -395,7 +397,7 @@ func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 		Authentication:     req.Authentication,
 	}
 
-	endpoint, err = endpointService.UpdateEndpoint(r.Context(), e, endpoint)
+	endpoint, err = endpointService.UpdateEndpoint(r.Context(), e, endpoint, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -407,9 +409,10 @@ func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 
 func (a *ApplicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint := m.GetEndpointFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	es := createEndpointService(a)
 
-	err := es.DeleteEndpoint(r.Context(), endpoint)
+	err := es.DeleteEndpoint(r.Context(), endpoint, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return

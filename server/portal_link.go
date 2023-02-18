@@ -237,9 +237,10 @@ func (a *ApplicationHandler) CreatePortalLinkEndpoint(w http.ResponseWriter, r *
 // @Router /portal/endpoints [get]
 func (a *ApplicationHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *http.Request) {
 	portalLink := m.GetPortalLinkFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 
 	portalLinkService := createPortalLinkService(a)
-	endpoints, err := portalLinkService.GetPortalLinkEndpoints(r.Context(), portalLink)
+	endpoints, err := portalLinkService.GetPortalLinkEndpoints(r.Context(), portalLink, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

@@ -133,7 +133,7 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 	return endpoint, nil
 }
 
-func (a *EndpointService) UpdateEndpoint(ctx context.Context, e models.UpdateEndpoint, endpoint *datastore.Endpoint) (*datastore.Endpoint, error) {
+func (a *EndpointService) UpdateEndpoint(ctx context.Context, e models.UpdateEndpoint, endpoint *datastore.Endpoint, project *datastore.Project) (*datastore.Endpoint, error) {
 	if err := util.Validate(e); err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -145,7 +145,7 @@ func (a *EndpointService) UpdateEndpoint(ctx context.Context, e models.UpdateEnd
 
 	e.URL = url
 
-	endpoint, err = a.endpointRepo.FindEndpointByID(ctx, endpoint.UID)
+	endpoint, err = a.endpointRepo.FindEndpointByID(ctx, endpoint.UID, project.UID)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -169,8 +169,8 @@ func (a *EndpointService) UpdateEndpoint(ctx context.Context, e models.UpdateEnd
 	return endpoint, nil
 }
 
-func (a *EndpointService) DeleteEndpoint(ctx context.Context, e *datastore.Endpoint) error {
-	err := a.endpointRepo.DeleteEndpoint(ctx, e)
+func (a *EndpointService) DeleteEndpoint(ctx context.Context, e *datastore.Endpoint, project *datastore.Project) error {
+	err := a.endpointRepo.DeleteEndpoint(ctx, e, project.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to delete endpoint")
 		return util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while deleting endpoint"))
@@ -242,7 +242,7 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint) (*dat
 	return endpoint, nil
 }
 
-func (a *EndpointService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, endpoint *datastore.Endpoint) (*datastore.Endpoint, error) {
+func (a *EndpointService) ExpireSecret(ctx context.Context, s *models.ExpireSecret, endpoint *datastore.Endpoint, project *datastore.Project) (*datastore.Endpoint, error) {
 	// Expire current secret.
 	idx, err := endpoint.GetActiveSecretIndex()
 	if err != nil {
@@ -258,9 +258,11 @@ func (a *EndpointService) ExpireSecret(ctx context.Context, s *models.ExpireSecr
 	body := struct {
 		EndpointID string `json:"endpoint_id"`
 		SecretID   string `json:"secret_id"`
+		ProjectID  string `json:"project_id"`
 	}{
 		EndpointID: endpoint.UID,
 		SecretID:   secret.UID,
+		ProjectID:  project.UID,
 	}
 
 	jobByte, err := json.Marshal(body)
@@ -301,7 +303,7 @@ func (a *EndpointService) ExpireSecret(ctx context.Context, s *models.ExpireSecr
 	secrets := append(endpoint.Secrets, sc)
 	endpoint.Secrets = secrets
 
-	err = a.endpointRepo.ExpireSecret(ctx, endpoint.ProjectID, endpoint.UID, secret, sc)
+	err = a.endpointRepo.ExpireSecret(ctx, project.UID, endpoint.UID, secret, sc)
 	if err != nil {
 		log.Errorf("Error occurred expiring secret %s", err)
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to expire endpoint secret"))
@@ -316,8 +318,8 @@ func (a *EndpointService) ExpireSecret(ctx context.Context, s *models.ExpireSecr
 	return endpoint, nil
 }
 
-func (s *EndpointService) ToggleEndpointStatus(ctx context.Context, groupId string, endpointId string) (*datastore.Endpoint, error) {
-	endpoint, err := s.endpointRepo.FindEndpointByID(ctx, endpointId)
+func (s *EndpointService) ToggleEndpointStatus(ctx context.Context, projectID string, endpointId string) (*datastore.Endpoint, error) {
+	endpoint, err := s.endpointRepo.FindEndpointByID(ctx, endpointId, projectID)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrSubscriptionNotFound.Error())
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)
@@ -334,7 +336,7 @@ func (s *EndpointService) ToggleEndpointStatus(ctx context.Context, groupId stri
 		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("unknown endpoint status: %s", endpoint.Status))
 	}
 
-	err = s.endpointRepo.UpdateEndpointStatus(ctx, groupId, endpoint.UID, endpoint.Status)
+	err = s.endpointRepo.UpdateEndpointStatus(ctx, projectID, endpoint.UID, endpoint.Status)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to update endpoint status")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update endpoint status"))

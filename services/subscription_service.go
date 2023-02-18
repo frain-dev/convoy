@@ -43,7 +43,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, project *da
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	endpoint, err := s.findEndpoint(ctx, newSubscription.AppID, newSubscription.EndpointID)
+	endpoint, err := s.findEndpoint(ctx, newSubscription.AppID, newSubscription.EndpointID, project)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to find endpoint by id")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find endpoint by id"))
@@ -269,7 +269,7 @@ func (s *SubcriptionService) FindSubscriptionByID(ctx context.Context, project *
 	}
 
 	if sub.EndpointID != "" {
-		endpoint, err := s.endpointRepo.FindEndpointByID(ctx, sub.EndpointID)
+		endpoint, err := s.endpointRepo.FindEndpointByID(ctx, sub.EndpointID, project.UID)
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error("failed to find subscription app endpoint")
 			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find subscription app endpoint"))
@@ -295,9 +295,9 @@ func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter 
 	return subscriptions, paginatedData, nil
 }
 
-func (s *SubcriptionService) findEndpoint(ctx context.Context, appID, endpointID string) (*datastore.Endpoint, error) {
+func (s *SubcriptionService) findEndpoint(ctx context.Context, appID, endpointID string, project *datastore.Project) (*datastore.Endpoint, error) {
 	if !util.IsStringEmpty(appID) {
-		endpoints, err := s.endpointRepo.FindEndpointsByAppID(ctx, appID)
+		endpoints, err := s.endpointRepo.FindEndpointsByAppID(ctx, appID, project.UID)
 		if err != nil {
 			return nil, err
 		}
@@ -315,7 +315,7 @@ func (s *SubcriptionService) findEndpoint(ctx context.Context, appID, endpointID
 		return nil, datastore.ErrEndpointNotFound
 	}
 
-	endpoint, err := s.endpointRepo.FindEndpointByID(ctx, endpointID)
+	endpoint, err := s.endpointRepo.FindEndpointByID(ctx, endpointID, project.UID)
 	if err != nil {
 		return nil, datastore.ErrEndpointNotFound
 	}

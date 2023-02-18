@@ -36,7 +36,7 @@ func (db *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.
 	return db.store.Save(ctx, endpoint, nil)
 }
 
-func (db *endpointRepo) FindEndpointByID(ctx context.Context, id string) (*datastore.Endpoint, error) {
+func (db *endpointRepo) FindEndpointByID(ctx context.Context, id, projectID string) (*datastore.Endpoint, error) {
 	ctx = db.setCollectionInContext(ctx)
 	endpoint := &datastore.Endpoint{}
 
@@ -63,7 +63,7 @@ func (db *endpointRepo) FindEndpointByID(ctx context.Context, id string) (*datas
 	return endpoint, err
 }
 
-func (db *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string) ([]datastore.Endpoint, error) {
+func (db *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string, projectID string) ([]datastore.Endpoint, error) {
 	ctx = db.setCollectionInContext(ctx)
 
 	endpoints := make([]datastore.Endpoint, 0)
@@ -138,7 +138,7 @@ func (db *endpointRepo) UpdateEndpointStatus(ctx context.Context, groupID, endpo
 	return db.store.UpdateOne(ctx, filter, update)
 }
 
-func (db *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.Endpoint) error {
+func (db *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ctx = db.setCollectionInContext(ctx)
 
 	updateAsDeleted := bson.M{
@@ -314,7 +314,7 @@ func (db *endpointRepo) ExpireSecret(ctx context.Context, projectID, endpointID 
 	return db.store.UpdateOne(ctx, filter, update)
 }
 
-func (db *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID string) ([]datastore.Endpoint, error) {
+func (db *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID, projectID string) ([]datastore.Endpoint, error) {
 	ctx = db.setCollectionInContext(ctx)
 	endpoints := make([]datastore.Endpoint, 0)
 
@@ -340,7 +340,7 @@ func (db *endpointRepo) deleteEndpoint(ctx context.Context, endpoint *datastore.
 	return nil
 }
 
-func (db *endpointRepo) DeleteSecret(ctx context.Context, endpoint *datastore.Endpoint, secretID string) error {
+func (db *endpointRepo) DeleteSecret(ctx context.Context, endpoint *datastore.Endpoint, secretID, projectID string) error {
 	return nil
 }
 

@@ -47,7 +47,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		endpoint, err := endpointRepo.FindEndpointByID(context.Background(), ed.EndpointID)
+		endpoint, err := endpointRepo.FindEndpointByID(context.Background(), ed.EndpointID, ed.ProjectID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}

@@ -78,7 +78,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			headers := event.Headers
 
 			if s.Type == datastore.SubscriptionTypeAPI {
-				endpoint, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID)
+				endpoint, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID, project.UID)
 				if err != nil {
 					log.Errorf("Error fetching endpoint %s", err)
 					return &EndpointError{Err: err, delay: 10 * time.Second}
@@ -187,7 +187,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 			// cache miss, load from db
 			if endpoint == nil {
-				endpoint, err = endpointRepo.FindEndpointByID(ctx, endpointID)
+				endpoint, err = endpointRepo.FindEndpointByID(ctx, endpointID, project.UID)
 				if err != nil {
 					return subscriptions, &EndpointError{Err: err, delay: 10 * time.Second}
 				}
