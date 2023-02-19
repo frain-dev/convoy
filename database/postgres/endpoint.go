@@ -53,11 +53,11 @@ const (
 	e.id = es.endpoint_id
 	`
 
-	fetchEndpointById = baseEndpointFetch + `WHERE e.id = $1 AND e.deleted_at IS NULL AND es.deleted_at IS NULL;`
+	fetchEndpointById = baseEndpointFetch + `WHERE e.id = $1 AND e.project_id = $2 AND e.deleted_at IS NULL AND es.deleted_at IS NULL;`
 
-	fetchEndpointsById = baseEndpointFetch + `WHERE e.id IN (?) AND e.deleted_at IS NULL AND es.deleted_at IS NULL;`
+	fetchEndpointsById = baseEndpointFetch + `WHERE e.id IN (?) AND e.project_id = ? AND e.deleted_at IS NULL AND es.deleted_at IS NULL;`
 
-	fetchEndpointsByAppId = baseEndpointFetch + `WHERE e.app_id = $1 AND e.deleted_at IS NULL AND es.deleted_at IS NULL;`
+	fetchEndpointsByAppId = baseEndpointFetch + `WHERE e.app_id = $1 AND e.project_id = $2 AND e.deleted_at IS NULL AND es.deleted_at IS NULL;`
 
 	fetchEndpointsByOwnerId = baseEndpointFetch + `WHERE e.project_id = $1 AND e.owner_id = $2 AND e.deleted_at IS NULL AND es.deleted_at IS NULL;`
 
@@ -80,17 +80,20 @@ const (
 
 	deleteEndpoint = `
 	UPDATE convoy.endpoints SET deleted_at = now()
-	WHERE id = $1 AND deleted_at IS NULL;
+	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	deleteEndpointSecrets = `
-	UPDATE convoy.endpoint_secrets SET deleted_at = now()
-	WHERE endpoint_id = $1 AND deleted_at IS NULL;
+	UPDATE convoy.endpoint_secrets AS es 
+	SET deleted_at = now()
+	FROM convoy.endpoints AS e
+	WHERE es.endpoint_id = $1 AND e.project_id = $2
+	AND es.endpoint_id = e.id AND es.deleted_at IS NULL;
 	`
 
 	deleteEndpointSubscriptions = `
 	UPDATE convoy.subscriptions SET deleted_at = now()
-	WHERE endpoint_id = $1 AND deleted_at IS NULL;
+	WHERE endpoint_id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	countProjectEndpoints = `
@@ -116,13 +119,17 @@ const (
 	`
 
 	expireEndpointSecret = `
-	UPDATE convoy.endpoint_secrets SET expires_at = $3
-	WHERE id = $1 AND endpoint_id = $2 AND deleted_at IS NULL;
+	UPDATE convoy.endpoint_secrets SET expires_at = $4
+	FROM convoy.endpoint_secrets es LEFT JOIN convoy.endpoints e
+	ON es.endpoint_id = e.id WHERE es.id = $1 AND es.endpoint_id = $2 AND e.project_id = $3 AND es.deleted_at IS NULL;
 	`
 
 	deleteEndpointSecret = `
-	UPDATE convoy.endpoint_secrets SET deleted_at = now()
-	WHERE id = $1 AND endpoint_id = $2 AND deleted_at is NULL;
+	UPDATE convoy.endpoint_secrets AS es 
+	SET deleted_at = now()
+	FROM convoy.endpoints AS e
+	WHERE es.id = $1 AND es.endpoint_id = $2 AND e.project_id = $3
+	AND es.endpoint_id = e.id AND es.deleted_at IS NULL;
 	`
 
 	countEndpoints = `
@@ -150,7 +157,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		endpoint.UID, endpoint.Title, endpoint.Status, endpoint.OwnerID, endpoint.TargetURL,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail, endpoint.AppID,
-		endpoint.ProjectID, ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue,
+		projectID, ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue,
 	}
 
 	_, err = tx.ExecContext(ctx, createEndpoint, args...)
@@ -158,27 +165,29 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 
-	// fetch the most recent secret
-	secret := endpoint.Secrets[len(endpoint.Secrets)-1]
-	endpointResult, err := tx.ExecContext(ctx, createEndpointSecret, secret.UID, secret.Value, endpoint.UID)
-	if err != nil {
-		return err
-	}
+	//fetch the most recent secret
+	if len(endpoint.Secrets) > 0 {
+		secret := endpoint.Secrets[len(endpoint.Secrets)-1]
+		endpointResult, err := tx.ExecContext(ctx, createEndpointSecret, secret.UID, secret.Value, endpoint.UID)
+		if err != nil {
+			return err
+		}
 
-	rowsAffected, err := endpointResult.RowsAffected()
-	if err != nil {
-		return err
-	}
+		rowsAffected, err := endpointResult.RowsAffected()
+		if err != nil {
+			return err
+		}
 
-	if rowsAffected < 1 {
-		return ErrEndpointNotCreated
+		if rowsAffected < 1 {
+			return ErrEndpointNotCreated
+		}
 	}
 
 	return tx.Commit()
 }
 
-func (e *endpointRepo) FindEndpointByID(ctx context.Context, id string) (*datastore.Endpoint, error) {
-	rows, err := e.db.QueryxContext(ctx, fetchEndpointById, id)
+func (e *endpointRepo) FindEndpointByID(ctx context.Context, id, projectID string) (*datastore.Endpoint, error) {
+	rows, err := e.db.QueryxContext(ctx, fetchEndpointById, id, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -206,8 +215,8 @@ func (e *endpointRepo) FindEndpointByID(ctx context.Context, id string) (*datast
 	return endpoint, nil
 }
 
-func (e *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string) ([]datastore.Endpoint, error) {
-	query, args, err := sqlx.In(fetchEndpointsById, ids)
+func (e *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string, projectID string) ([]datastore.Endpoint, error) {
+	query, args, err := sqlx.In(fetchEndpointsById, ids, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -221,8 +230,8 @@ func (e *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string) ([]d
 	return e.baseFetch(rows)
 }
 
-func (e *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID string) ([]datastore.Endpoint, error) {
-	rows, err := e.db.QueryxContext(ctx, fetchEndpointsByAppId, appID)
+func (e *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID, projectID string) ([]datastore.Endpoint, error) {
+	rows, err := e.db.QueryxContext(ctx, fetchEndpointsByAppId, appID, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -283,23 +292,23 @@ func (e *endpointRepo) UpdateEndpointStatus(ctx context.Context, projectID strin
 	return nil
 }
 
-func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.Endpoint) error {
+func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	tx, err := e.db.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, deleteEndpoint, endpoint.UID)
+	_, err = tx.ExecContext(ctx, deleteEndpoint, endpoint.UID, projectID)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, deleteEndpointSecrets, endpoint.UID)
+	_, err = tx.ExecContext(ctx, deleteEndpointSecrets, endpoint.UID, projectID)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, deleteEndpointSubscriptions, endpoint.UID)
+	_, err = tx.ExecContext(ctx, deleteEndpointSubscriptions, endpoint.UID, projectID)
 	if err != nil {
 		return err
 	}
@@ -363,7 +372,7 @@ func (e *endpointRepo) ExpireSecret(ctx context.Context, projectID string, endpo
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, expireEndpointSecret, expiredSecret.UID, endpointID, expiredSecret.ExpiresAt)
+	_, err = tx.ExecContext(ctx, expireEndpointSecret, expiredSecret.UID, endpointID, projectID, expiredSecret.ExpiresAt)
 	if err != nil {
 		return err
 	}
@@ -376,8 +385,8 @@ func (e *endpointRepo) ExpireSecret(ctx context.Context, projectID string, endpo
 	return tx.Commit()
 }
 
-func (e *endpointRepo) DeleteSecret(ctx context.Context, endpoint *datastore.Endpoint, secretID string) error {
-	r, err := e.db.ExecContext(ctx, deleteEndpointSecret, secretID, endpoint.UID)
+func (e *endpointRepo) DeleteSecret(ctx context.Context, endpoint *datastore.Endpoint, secretID, projectID string) error {
+	r, err := e.db.ExecContext(ctx, deleteEndpointSecret, secretID, endpoint.UID, projectID)
 	if err != nil {
 		return err
 	}

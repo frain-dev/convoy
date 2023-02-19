@@ -46,7 +46,7 @@ func MonitorTwitterSources(store datastore.Store, queue queue.Queuer) func(conte
 					}
 
 					for _, s := range subscriptions {
-						app, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID)
+						app, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID, s.ProjectID)
 						if err != nil {
 							log.Error("Failed to load sources paged")
 							return err

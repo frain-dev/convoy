@@ -68,7 +68,7 @@ func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrInvalidEndpointID)
 	}
 
-	endpoints, err := e.FindEndpoints(ctx, newMessage)
+	endpoints, err := e.FindEndpoints(ctx, newMessage, g)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -325,7 +325,7 @@ func (e *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *da
 		return errors.New("cannot resend event that did not fail previously")
 	}
 
-	endpoint, err := e.endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID)
+	endpoint, err := e.endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, g.UID)
 	if err != nil {
 		return datastore.ErrEndpointNotFound
 	}
@@ -345,7 +345,7 @@ func (e *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *da
 }
 
 func (e *EventService) forceResendEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Project) error {
-	endpoint, err := e.endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID)
+	endpoint, err := e.endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, g.UID)
 	if err != nil {
 		return datastore.ErrEndpointNotFound
 	}
@@ -453,11 +453,11 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 	return event, nil
 }
 
-func (e *EventService) FindEndpoints(ctx context.Context, newMessage *models.Event) ([]datastore.Endpoint, error) {
+func (e *EventService) FindEndpoints(ctx context.Context, newMessage *models.Event, project *datastore.Project) ([]datastore.Endpoint, error) {
 	var endpoints []datastore.Endpoint
 
 	if !util.IsStringEmpty(newMessage.EndpointID) {
-		endpoint, err := e.endpointRepo.FindEndpointByID(ctx, newMessage.EndpointID)
+		endpoint, err := e.endpointRepo.FindEndpointByID(ctx, newMessage.EndpointID, project.UID)
 		if err != nil {
 			return endpoints, err
 		}
@@ -467,7 +467,7 @@ func (e *EventService) FindEndpoints(ctx context.Context, newMessage *models.Eve
 	}
 
 	if !util.IsStringEmpty(newMessage.AppID) {
-		endpoints, err := e.endpointRepo.FindEndpointsByAppID(ctx, newMessage.AppID)
+		endpoints, err := e.endpointRepo.FindEndpointsByAppID(ctx, newMessage.AppID, project.UID)
 		if err != nil {
 			return endpoints, err
 		}

@@ -131,9 +131,10 @@ func (a *ApplicationHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Reque
 	}
 
 	endpoint := m.GetEndpointFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	endpointService := createEndpointService(a)
 
-	endpoint, err = endpointService.UpdateEndpoint(r.Context(), e, endpoint)
+	endpoint, err = endpointService.UpdateEndpoint(r.Context(), e, endpoint, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -157,8 +158,9 @@ func (a *ApplicationHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Reque
 func (a *ApplicationHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint := m.GetEndpointFromContext(r.Context())
 	endpointService := createEndpointService(a)
+	project := m.GetProjectFromContext(r.Context())
 
-	err := endpointService.DeleteEndpoint(r.Context(), endpoint)
+	err := endpointService.DeleteEndpoint(r.Context(), endpoint, project)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to delete endpoint")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -189,9 +191,10 @@ func (a *ApplicationHandler) ExpireSecret(w http.ResponseWriter, r *http.Request
 	}
 
 	endpoint := m.GetEndpointFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	endpointService := createEndpointService(a)
 
-	endpoint, err = endpointService.ExpireSecret(r.Context(), e, endpoint)
+	endpoint, err = endpointService.ExpireSecret(r.Context(), e, endpoint, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

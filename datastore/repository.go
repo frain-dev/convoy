@@ -81,17 +81,17 @@ type OrganisationMemberRepository interface {
 
 type EndpointRepository interface {
 	CreateEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
-	FindEndpointByID(çtx context.Context, id string) (*Endpoint, error)
-	FindEndpointsByID(ctx context.Context, ids []string) ([]Endpoint, error)
-	FindEndpointsByAppID(ctx context.Context, appID string) ([]Endpoint, error)
+	FindEndpointByID(çtx context.Context, id string, projectID string) (*Endpoint, error)
+	FindEndpointsByID(ctx context.Context, ids []string, projectID string) ([]Endpoint, error)
+	FindEndpointsByAppID(ctx context.Context, appID string, projectID string) ([]Endpoint, error)
 	FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]Endpoint, error)
 	UpdateEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
 	UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status EndpointStatus) error
-	DeleteEndpoint(ctx context.Context, endpoint *Endpoint) error
+	DeleteEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
 	CountProjectEndpoints(ctx context.Context, projectID string) (int64, error)
 	LoadEndpointsPaged(ctx context.Context, projectID string, query string, pageable Pageable) ([]Endpoint, PaginationData, error)
 	ExpireSecret(ctx context.Context, projectID string, endpointID string, expiredSecret, newSecret Secret) error
-	DeleteSecret(ctx context.Context, endpoint *Endpoint, secretID string) error
+	DeleteSecret(ctx context.Context, endpoint *Endpoint, secretID string, projectID string) error
 }
 type SubscriptionRepository interface {
 	CreateSubscription(context.Context, string, *Subscription) error
