@@ -35,33 +35,31 @@ func (p *Postgres) GetDB() *sqlx.DB {
 }
 
 func (p *Postgres) TruncateTables() error {
-	tables := []string{
-		"convoy.event_deliveries",
-		"convoy.events",
-		"convoy.api_keys",
-		"convoy.subscriptions",
-		"convoy.source_verifiers",
-		"convoy.sources",
-		"convoy.configurations",
-		"convoy.devices",
-		"convoy.subscription_filters",
-		"convoy.portal_links",
-		"convoy.organisation_invites",
-		"convoy.applications",
-		"convoy.endpoint_secrets",
-		"convoy.endpoints",
-		"convoy.projects",
-		"convoy.project_configurations",
-		"convoy.organisation_members",
-		"convoy.organisations",
-		"convoy.users",
-	}
+	tables := `
+		convoy.event_deliveries,
+		convoy.events,
+		convoy.api_keys,
+		convoy.subscriptions,
+		convoy.source_verifiers,
+		convoy.sources,
+		convoy.configurations,
+		convoy.devices,
+		convoy.subscription_filters,
+		convoy.portal_links,
+		convoy.organisation_invites,
+		convoy.applications,
+		convoy.endpoint_secrets,
+		convoy.endpoints,
+		convoy.projects,
+		convoy.project_configurations,
+		convoy.organisation_members,
+		convoy.organisations,
+		convoy.users
+	`
 
-	for _, table := range tables {
-		_, err := p.dbx.ExecContext(context.Background(), fmt.Sprintf("TRUNCATE %s CASCADE;", table))
-		if err != nil {
-			return err
-		}
+	_, err := p.dbx.ExecContext(context.Background(), fmt.Sprintf("TRUNCATE %s CASCADE;", tables))
+	if err != nil {
+		return err
 	}
 
 	return nil
