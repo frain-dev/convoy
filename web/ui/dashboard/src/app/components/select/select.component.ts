@@ -69,7 +69,7 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	}
 
 	get option(): string {
-		return this.options?.find(item => item.uid === this.value)?.name || this.options?.find(item => item === this.value) || '';
+		return this.options?.find(item => item.uid === this.value)?.name || this.options?.find(item => item.uid === this.value)?.title || this.options?.find(item => item === this.value) || '';
 	}
 
 	registerOnChange() {}
@@ -96,15 +96,17 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	setDisabledState() {}
 
 	ngAfterViewInit() {
-		fromEvent<any>(this.searchFilter?.nativeElement, 'keyup')
-			.pipe(
-				map(event => event.target.value),
-				startWith(''),
-				debounceTime(500),
-				distinctUntilChanged()
-			)
-			.subscribe(searchString => {
-				this.searchString.emit(searchString);
-			});
+		if (this.searchable) {
+			fromEvent<any>(this.searchFilter?.nativeElement, 'keyup')
+				.pipe(
+					map(event => event.target.value),
+					startWith(''),
+					debounceTime(500),
+					distinctUntilChanged()
+				)
+				.subscribe(searchString => {
+					this.searchString.emit(searchString);
+				});
+		}
 	}
 }

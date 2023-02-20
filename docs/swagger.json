@@ -6073,7 +6073,7 @@
                 "event_type": {
                     "type": "string"
                 },
-                "host_name": {
+                "source_id": {
                     "type": "string"
                 }
             }

@@ -1,7 +1,7 @@
 <div class="bg-[#fafafe] min-h-screen overflow-y-auto flex flex-col justify-between">
 	<div class="">
 		<header class="w-full bg-white-100 border-b border-b-grey-10">
-			<div class="flex items-center justify-between w-full max-w-[1376px] m-auto bg-white-100 px-32px py-12px">
+			<div class="flex items-center justify-between w-full max-w-[1440px] m-auto bg-white-100 px-64px py-12px">
 				<div class="flex items-center">
 					<a routerLink="/" rel="noreferrer">
 						<img src="/assets/img/logo.svg" alt="convoy logo" class="w-100px" />
@@ -88,7 +88,7 @@
 			</div>
 		</header>
 
-		<convoy-github-star *ngIf="!isProjectDetailsPage"></convoy-github-star>
+		<convoy-github-star></convoy-github-star>
 
 		<app-create-organisation *ngIf="showAddOrganisationModal" (closeModal)="closeAddOrganisationModal($event)"></app-create-organisation>
 

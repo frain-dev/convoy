@@ -8,13 +8,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/frain-dev/convoy/util"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/util"
 	"github.com/gorilla/websocket"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -57,6 +58,7 @@ type CLIEvent struct {
 	EventType  string `json:"-"`
 	DeviceID   string `json:"-"`
 	EndpointID string `json:"-"`
+	SourceID   string `json:"-"`
 	ProjectID  string `json:"-"`
 }
 
@@ -70,6 +72,14 @@ func NewHub() *Hub {
 		deviceClients:     map[string]*Client{},
 		close:             make(chan struct{}),
 	}
+}
+
+func (h *Hub) Start() {
+	go h.StartRegister()
+	go h.StartUnregister()
+	go h.StartEventWatcher()
+	go h.StartEventSender()
+	go h.StartClientStatusWatcher()
 }
 
 func (h *Hub) StartEventSender() {
@@ -95,14 +105,10 @@ func (h *Hub) StartEventSender() {
 				continue
 			}
 
-			if !util.IsStringEmpty(client.Device.EndpointID) {
-				if client.Device.EndpointID != ev.EndpointID {
+			if !util.IsStringEmpty(client.sourceID) {
+				if client.sourceID != ev.SourceID {
 					continue
 				}
-			}
-
-			if !client.HasEventType(ev.EventType) {
-				continue
 			}
 
 			j, err := json.Marshal(ev)
@@ -144,7 +150,7 @@ func (h *Hub) watchEventDeliveriesCollection() func(doc map[string]interface{}) 
 			return
 		}
 
-		// this isn't a cli event deliery
+		// this isn't a cli event delivery
 		if ed.CLIMetadata == nil {
 			return
 		}
@@ -188,6 +194,7 @@ func (h *Hub) watchEventDeliveriesCollection() func(doc map[string]interface{}) 
 			EventType:  ed.CLIMetadata.EventType,
 			EndpointID: ed.EndpointID,
 			DeviceID:   ed.DeviceID,
+			SourceID:   ed.CLIMetadata.SourceID,
 			ProjectID:  ed.ProjectID,
 		}
 	}

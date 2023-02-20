@@ -111,7 +111,6 @@
 	</div>
 
 	<h3 class="font-semibold mb-8px">Event Delivery Attempts</h3>
-
 	<div *ngFor="let deliveryAttempt of eventDeliveryAtempts; let i = index" class="border-b border-grey-20">
 		<div class="flex justify-between items-center py-18px" (click)="selectedDeliveryAttempt = deliveryAttempt">
 			<div>
@@ -129,27 +128,25 @@
 
 		<div class="transition-all duration-500" [class]="selectedDeliveryAttempt?.uid == deliveryAttempt.uid ? 'h-full' : 'max-h-0 overflow-hidden'">
 			<div class="flex justify-between flex-wrap border-t border-grey-10">
-				<div class="py-32px" [ngClass]="{ 'w-[50%] pr-32px border-r border-grey-10': !shouldRenderSmallSize, 'w-full': shouldRenderSmallSize }">
+				<div class="py-32px" [ngClass]="{ 'w-[50%] pr-32px border-r border-r-grey-10': !shouldRenderSmallSize, 'w-full': shouldRenderSmallSize }">
 					<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>
-					<prism *ngIf="!isloadingDeliveryAttempts" title="Event Payload" language="json" [code]="getCodeSnippetString('event_delivery')"></prism>
+					<prism *ngIf="!isloadingDeliveryAttempts" language="json" title="Request Header" [code]="getCodeSnippetString('req')"></prism>
 				</div>
-
 				<div class="py-32px" [ngClass]="{ 'w-[50%] pl-32px': !shouldRenderSmallSize, 'border-t border-grey-10 w-full': shouldRenderSmallSize }">
 					<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>
-					<prism *ngIf="!isloadingDeliveryAttempts" language="json" title="Response Header" [code]="getCodeSnippetString('res_head')"></prism>
+					<prism *ngIf="!isloadingDeliveryAttempts" title="Event Payload" language="json" [code]="getCodeSnippetString('event_delivery')"></prism>
 				</div>
 			</div>
 
 			<div class="flex justify-between flex-wrap border-t border-grey-10">
-				<div class="py-32px" [ngClass]="{ 'w-[50%] pr-32px border-r border-grey-10': !shouldRenderSmallSize, 'w-full': shouldRenderSmallSize }">
+				<div class="py-32px" [ngClass]="{ 'w-[50%] pr-32px border-r border-r-grey-10': !shouldRenderSmallSize, 'w-full': shouldRenderSmallSize }">
+					<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>
+					<prism *ngIf="!isloadingDeliveryAttempts" language="json" title="Response Header" [code]="getCodeSnippetString('res_head')"></prism>
+				</div>
+				<div class="py-32px" [ngClass]="{ 'w-[50%] pl-32px': !shouldRenderSmallSize, 'border-t border-grey-10 w-full': shouldRenderSmallSize }">
 					<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>
 					<prism *ngIf="selectedDeliveryAttempt?.error && !isloadingDeliveryAttempts" language="json" title="Error" [code]="getCodeSnippetString('error')"></prism>
 					<prism *ngIf="!selectedDeliveryAttempt?.error && !isloadingDeliveryAttempts" language="json" title="Response Body" [code]="getCodeSnippetString('res_body')"></prism>
-				</div>
-
-				<div class="py-32px" [ngClass]="{ 'w-[50%] pl-32px': !shouldRenderSmallSize, 'border-t border-grey-10 w-full': shouldRenderSmallSize }">
-					<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>
-					<prism *ngIf="!isloadingDeliveryAttempts" language="json" title="Request Header" [code]="getCodeSnippetString('req')"></prism>
 				</div>
 			</div>
 		</div>
