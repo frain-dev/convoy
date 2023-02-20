@@ -3,8 +3,8 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
@@ -13,9 +13,10 @@ import (
 )
 
 var (
-	ErrProjectNotCreated = errors.New("project could not be created")
-	ErrProjectNotUpdated = errors.New("project could not be updated")
-	ErrProjectNotDeleted = errors.New("project could not be deleted")
+	ErrProjectConfigNotCreated = errors.New("project config could not be created")
+	ErrProjectNotCreated       = errors.New("project could not be created")
+	ErrProjectNotUpdated       = errors.New("project could not be updated")
+	ErrProjectNotDeleted       = errors.New("project could not be deleted")
 )
 
 const (
@@ -26,7 +27,7 @@ const (
 
 	createProjectConfiguration = `
 	INSERT INTO convoy.project_configurations (
-		id, retention_policy, max_payload_read_size,
+		id, retention_policy_policy, max_payload_read_size,
 		replay_attacks_prevention_enabled,
 		retention_policy_enabled, ratelimit_count,
 		ratelimit_duration, strategy_type,
@@ -36,7 +37,7 @@ const (
 	  VALUES
 		(
 		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
-		) RETURNING id;
+		);
 	`
 
 	updateProjectConfiguration = `
@@ -62,18 +63,19 @@ const (
 		p.name,
 		p.type,
 		p.retained_events,
+		p.logo_url,
 		p.organisation_id,
-		c.retention_policy as "config.retention_policy",
+		c.retention_policy_policy as "config.retention_policy.policy",
 		c.max_payload_read_size as "config.max_payload_read_size",
 		c.replay_attacks_prevention_enabled as "config.replay_attacks_prevention_enabled",
 		c.retention_policy_enabled as "config.retention_policy_enabled",
-		c.ratelimit_count as "config.ratelimit_count",
-		c.ratelimit_duration as "config.ratelimit_duration",
-		c.strategy_type as "config.strategy_type",
-		c.strategy_duration as "config.strategy_duration",
-		c.strategy_retry_count as "config.strategy_retry_count",
-		c.signature_header as "config.signature_header",
-		c.signature_versions as "config.signature_versions",
+		c.ratelimit_count as "config.ratelimit.count",
+		c.ratelimit_duration as "config.ratelimit.duration",
+		c.strategy_type as "config.strategy.type",
+		c.strategy_duration as "config.strategy.duration",
+		c.strategy_retry_count as "config.strategy.retry_count",
+		c.signature_header as "config.signature.header",
+		c.signature_versions as "config.signature.versions",
 		p.created_at,
 		p.updated_at,
 		p.deleted_at
@@ -85,15 +87,15 @@ const (
 
 	fetchProjects = `
 	SELECT * FROM convoy.projects
-	WHERE organisation_id = $1
-	ORDER BY id
-	WHERE deleted_at IS NULL;
+	WHERE organisation_id = $1 AND deleted_at IS NULL
+	ORDER BY id;
 	`
 
 	updateProjectById = `
 	UPDATE convoy.projects SET
 	name = $2,
 	logo_url = $3,
+	retained_events = $4,
 	updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -140,44 +142,50 @@ func NewProjectRepo(db *sqlx.DB) datastore.ProjectRepository {
 	return &projectRepo{db: db}
 }
 
-func (p *projectRepo) CreateProject(ctx context.Context, o *datastore.Project) error {
+func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Project) error {
 	tx, err := p.db.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
 
-	signatureVersions, err := json.Marshal(o.Config.SignatureVersions)
+	configID := ulid.Make().String()
+	result, err := tx.ExecContext(ctx, createProjectConfiguration,
+		configID,
+		project.Config.RetentionPolicy.Policy,
+		project.Config.MaxIngestSize,
+		project.Config.ReplayAttacks,
+		project.Config.IsRetentionPolicyEnabled,
+		project.Config.RateLimit.Count,
+		project.Config.RateLimit.Duration,
+		project.Config.Strategy.Type,
+		project.Config.Strategy.Duration,
+		project.Config.Strategy.RetryCount,
+		project.Config.Signature.Header,
+		project.Config.Signature.Versions,
+	)
 	if err != nil {
 		return err
 	}
 
-	var config_id string
-	err = tx.QueryRowxContext(ctx, createProjectConfiguration,
-		ulid.Make().String(),
-		o.Config.RetentionPolicy,
-		o.Config.MaxIngestSize,
-		o.Config.ReplayAttacks,
-		o.Config.IsRetentionPolicyEnabled,
-		o.Config.RateLimitCount,
-		o.Config.RateLimitDuration,
-		o.Config.StrategyType,
-		o.Config.StrategyDuration,
-		o.Config.StrategyRetryCount,
-		o.Config.SignatureHeader,
-		signatureVersions,
-	).Scan(&config_id)
-
+	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return err
 	}
 
-	o.UID = ulid.Make().String()
-	proResult, err := tx.ExecContext(ctx, createProject, o.UID, o.Name, o.Type, o.LogoURL, o.OrganisationID, config_id)
+	if rowsAffected < 1 {
+		return ErrProjectConfigNotCreated
+	}
+
+	project.UID = ulid.Make().String()
+	proResult, err := tx.ExecContext(ctx, createProject, project.UID, project.Name, project.Type, project.LogoURL, project.OrganisationID, configID)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate") {
+			return datastore.ErrDuplicateProjectName
+		}
 		return err
 	}
 
-	rowsAffected, err := proResult.RowsAffected()
+	rowsAffected, err = proResult.RowsAffected()
 	if err != nil {
 		return err
 	}
@@ -216,7 +224,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		return err
 	}
 
-	pRes, err := tx.ExecContext(ctx, updateProjectById, project.UID, project.Name, project.LogoURL)
+	pRes, err := tx.ExecContext(ctx, updateProjectById, project.UID, project.Name, project.LogoURL, project.RetainedEvents)
 	if err != nil {
 		return err
 	}
@@ -230,24 +238,19 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		return ErrProjectNotUpdated
 	}
 
-	signatureVersions, err := json.Marshal(project.Config.SignatureVersions)
-	if err != nil {
-		return err
-	}
-
 	cRes, err := tx.ExecContext(ctx, updateProjectConfiguration,
 		project.ProjectConfigID,
-		project.Config.RetentionPolicy,
+		project.Config.RetentionPolicy.Policy,
 		project.Config.MaxIngestSize,
 		project.Config.ReplayAttacks,
 		project.Config.IsRetentionPolicyEnabled,
-		project.Config.RateLimitCount,
-		project.Config.RateLimitDuration,
-		project.Config.StrategyType,
-		project.Config.StrategyDuration,
-		project.Config.StrategyRetryCount,
-		project.Config.SignatureHeader,
-		signatureVersions,
+		project.Config.RateLimit.Count,
+		project.Config.RateLimit.Duration,
+		project.Config.Strategy.Type,
+		project.Config.Strategy.Duration,
+		project.Config.Strategy.RetryCount,
+		project.Config.Signature.Header,
+		project.Config.Signature.Versions,
 	)
 	if err != nil {
 		return err
@@ -269,16 +272,11 @@ func (p *projectRepo) FetchProjectByID(ctx context.Context, id string) (*datasto
 	var project datastore.Project
 	err := p.db.GetContext(ctx, &project, fetchProjectById, id)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrProjectNotFound
+		}
 		return nil, err
 	}
-
-	var signatureVersions []datastore.SignatureVersion
-	err = json.Unmarshal(project.Config.Versions, &signatureVersions)
-	if err != nil {
-		return nil, err
-	}
-
-	project.Config.SignatureVersions = signatureVersions
 
 	return &project, nil
 }
