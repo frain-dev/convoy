@@ -71,9 +71,10 @@ func provideEndpointService(ctrl *gomock.Controller) *EndpointService {
 	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
+	projectRepo := mocks.NewMockProjectRepository(ctrl)
 	cache := mocks.NewMockCache(ctrl)
 	queue := mocks.NewMockQueuer(ctrl)
-	return NewEndpointService(endpointRepo, eventRepo, eventDeliveryRepo, cache, queue)
+	return NewEndpointService(projectRepo, endpointRepo, eventRepo, eventDeliveryRepo, cache, queue)
 }
 
 func boolPtr(b bool) *bool {
