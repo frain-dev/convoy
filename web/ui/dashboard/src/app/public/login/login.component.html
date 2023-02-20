@@ -1,35 +1,43 @@
-<div class="min-h-screen flex flex-col items-center justify-center w-full">
-	<img src="/assets/img/logo.svg" alt="convoy logo" class="mb-28px w-130px" />
-	<section class="max-w-[445px] mx-auto my-0 p-24px w-full bg-white-100 shadow-default rounded-8px">
-		<form [formGroup]="loginForm" (ngSubmit)="login()">
-			<div convoy-input-field>
-				<label for="username" convoy-label>Username</label>
-				<input type="text" id="username" convoy-input autocomplete="username" formControlName="username" placeholder="super@default.com" />
-				<convoy-input-error *ngIf="loginForm.controls.username.touched && loginForm.controls.username.invalid">Please enter your username</convoy-input-error>
-			</div>
+<div class="flex w-full">
+	<aside class="bg-secondary min-w-[574px] desktop:w-0 h-screen transition-all duration-300 px-56px pt-44px">
+		<a href="https://getconvoy.io" target="_blank">
+			<img src="/assets/img/svg/white-logo.svg" alt="Convoy Logo" />
+		</a>
+		<h1 class="text-[40px] leading-[52px] text-white-100 font-bold mt-200px mb-24px">Welcome Back</h1>
+		<p class="text-grey-20 text-16 max-w-[300px]">Get back to monitoring your web-hooks with Convoy</p>
+	</aside>
+	<div class="min-h-screen flex flex-col items-center justify-center w-full">
+		<h1 class="text-center font-bold mb-24px">Log in to your workspace</h1>
+		<section convoy-card class="max-w-[494px] mx-auto my-0 shadow-sm p-24px w-full">
+			<form [formGroup]="loginForm" (ngSubmit)="login()">
+				<div convoy-input-field>
+					<label convoy-label for="username" required="true">Email</label>
+					<input type="text" id="username" convoy-input autocomplete="username" formControlName="username" placeholder="super@default.com" />
+					<convoy-input-error *ngIf="loginForm.controls.username.touched && loginForm.controls.username.invalid">Please enter your username</convoy-input-error>
+				</div>
 
-			<div convoy-input-field>
-				<label convoy-label for="password">Password</label>
-				<convoy-password-field>
-					<input [type]="showLoginPassword ? 'text' : 'password'" convoy-input autocomplete="username" formControlName="password" placeholder="super@default.com" id="password" />
-					<button class="bg-transparent w-18px h-18px absolute top-[55%] right-16px border-none translate-x-0 translate-y-[-50%]" type="button" (click)="showLoginPassword = !showLoginPassword">
-						<img class="w-full" [src]="!showLoginPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'" alt="showLoginPassword ? 'hide password icon' : 'view password icon'" />
-					</button>
-				</convoy-password-field>
-				<convoy-input-error *ngIf="loginForm.controls.password.touched && loginForm.controls.password.invalid">Please enter your password</convoy-input-error>
-			</div>
+				<div convoy-input-field>
+					<label convoy-label for="password" required="true">Password</label>
+					<convoy-password-field>
+						<input [type]="showLoginPassword ? 'text' : 'password'" convoy-input autocomplete="username" formControlName="password" placeholder="super@default.com" id="password" />
+						<button class="bg-transparent w-18px h-18px absolute top-[55%] right-16px border-none translate-x-0 translate-y-[-50%]" type="button" (click)="showLoginPassword = !showLoginPassword">
+							<img class="w-full" [src]="!showLoginPassword ? '/assets/img/password-invisible-icon.svg' : '/assets/img/password-visible-icon.svg'" alt="showLoginPassword ? 'hide password icon' : 'view password icon'" />
+						</button>
+					</convoy-password-field>
+					<convoy-input-error *ngIf="loginForm.controls.password.touched && loginForm.controls.password.invalid">Please enter your password</convoy-input-error>
+				</div>
 
-			<div class="flex items-center text-12 mb-20px -mt-18px">
-				Forgot password?
-				<button convoy-button fill="link" type="button" class="px-0 ml-6px" (click)="router.navigateByUrl('/forgot-password')" size="sm">Reset it here</button>
-			</div>
+				<div class="flex items-center text-12 mb-24px -mt-18px">
+					Forgot password?
+					<button convoy-button fill="link" type="button" class="px-0 ml-6px" (click)="router.navigateByUrl('/forgot-password')" size="sm">Reset it here</button>
+				</div>
 
-			<button convoy-button [disabled]="disableLoginBtn" size="lg">
-				<span class="text-14" *ngIf="!disableLoginBtn">Login</span>
-				<img *ngIf="disableLoginBtn" src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
-			</button>
-		</form>
-
-		<button convoy-button fill="link" class="mt-12px w-full" (click)="router.navigateByUrl('/signup')" size="sm">Signup</button>
-	</section>
+				<button convoy-button [disabled]="disableLoginBtn" size="lg">
+					<span class="text-14" *ngIf="!disableLoginBtn">Login</span>
+					<img *ngIf="disableLoginBtn" src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
+				</button>
+			</form>
+			<button convoy-button fill="text" class="mt-38px mb-14px w-full font-semibold" (click)="router.navigateByUrl('/signup')">Don’t have an account? Create one.</button>
+		</section>
+	</div>
 </div>
