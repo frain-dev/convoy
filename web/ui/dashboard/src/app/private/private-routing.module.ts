@@ -20,9 +20,9 @@ const routes: Routes = [
 				path: 'projects/new',
 				loadChildren: () => import('./pages/create-project/create-project.module').then(m => m.CreateProjectModule)
 			},
-			{
-				path: 'projects/:id/configure',
-				loadComponent: () => import('./pages/configure-project/configure-project.component').then(mod => mod.ConfigureProjectComponent)
+            {
+				path: 'projects/:id/setup',
+				loadComponent: () => import('./pages/setup-project/setup-project.component').then(mod => mod.SetupProjectComponent)
 			},
 			{
 				path: 'projects/:id',

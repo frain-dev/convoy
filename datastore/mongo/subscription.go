@@ -253,12 +253,13 @@ func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, pr
 	return subscriptions, err
 }
 
-func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, projectID, deviceID string) (*datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, projectID, deviceID string, subType datastore.SubscriptionType) (*datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
 
 	filter := bson.M{
 		"device_id":  deviceID,
 		"project_id": projectID,
+		"type":       subType,
 	}
 
 	subscription := &datastore.Subscription{}
@@ -270,9 +271,24 @@ func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, proje
 	return subscription, nil
 }
 
-func (s *subscriptionRepo) FindSubscriptionsBySourceIDs(ctx context.Context, projectID string, sourceId string) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, projectID string, sourceId string) ([]datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
+
 	filter := bson.M{"project_id": projectID, "source_id": sourceId}
+
+	subscriptions := make([]datastore.Subscription, 0)
+	_, err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return subscriptions, nil
+}
+
+func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID string) ([]datastore.Subscription, error) {
+	ctx = s.setCollectionInContext(ctx)
+
+	filter := bson.M{"project_id": projectID, "type": datastore.SubscriptionTypeCLI}
 
 	subscriptions := make([]datastore.Subscription, 0)
 	_, err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)
