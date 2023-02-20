@@ -2,12 +2,11 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
-	"math"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
-	"github.com/oklog/ulid/v2"
 )
 
 var (
@@ -25,9 +24,9 @@ const (
 	updateOrgMember = `
 	UPDATE convoy.organisation_members
 	SET
-		role_type = $1,
-		role_project = $2,
-		role_endpoint = $3,
+		role_type = $2,
+		role_project = $3,
+		role_endpoint = $4,
 		updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -41,9 +40,12 @@ const (
 	fetchOrgMemberById = `
 	SELECT
 		o.id as id,
+		o.organisation_id as "organisation_id",
 		o.role_type as "role.type",
 		o.role_project as "role.project",
 		o.role_endpoint as "role.endpoint",
+		u.id as "user_id",
+		u.id as "user_metadata.user_id",
 		u.first_name as "user_metadata.first_name",
 		u.last_name as "user_metadata.last_name",
 		u.email as "user_metadata.email"
@@ -56,9 +58,12 @@ const (
 	fetchOrgMemberByUserId = `
 	SELECT
 		o.id as id,
+		o.organisation_id as "organisation_id",
 		o.role_type as "role.type",
 		o.role_project as "role.project",
 		o.role_endpoint as "role.endpoint",
+		u.id as "user_id",
+		u.id as "user_metadata.user_id",
 		u.first_name as "user_metadata.first_name",
 		u.last_name as "user_metadata.last_name",
 		u.email as "user_metadata.email"
@@ -71,9 +76,12 @@ const (
 	fetchOrganisationMembersPaginated = `
 	SELECT
 		o.id as id,
+		o.organisation_id as "organisation_id",
 		o.role_type as "role.type",
 		o.role_project as "role.project",
 		o.role_endpoint as "role.endpoint",
+		u.id as "user_id",
+		u.id as "user_metadata.user_id",
 		u.first_name as "user_metadata.first_name",
 		u.last_name as "user_metadata.last_name",
 		u.email as "user_metadata.email"
@@ -113,7 +121,7 @@ func NewOrgMemberRepo(db *sqlx.DB) datastore.OrganisationMemberRepository {
 
 func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
 	r, err := o.db.ExecContext(ctx, createOrgMember,
-		ulid.Make().String(),
+		member.UID,
 		member.OrganisationID,
 		member.UserID,
 		member.Role.Type,
@@ -161,16 +169,8 @@ func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organi
 		return nil, datastore.PaginationData{}, err
 	}
 
-	pagination := datastore.PaginationData{
-		Total:     int64(count),
-		Page:      int64(pageable.Page),
-		PerPage:   int64(pageable.PerPage),
-		Prev:      int64(getPrevPage(pageable.Page)),
-		Next:      int64(pageable.Page + 1),
-		TotalPage: int64(math.Ceil(float64(count) / float64(pageable.PerPage))),
-	}
-
-	return members, pagination, rows.Close()
+	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
+	return members, pagination, nil
 }
 
 func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID string, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
@@ -198,21 +198,14 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 		return nil, datastore.PaginationData{}, err
 	}
 
-	pagination := datastore.PaginationData{
-		Total:     int64(count),
-		Page:      int64(pageable.Page),
-		PerPage:   int64(pageable.PerPage),
-		Prev:      int64(getPrevPage(pageable.Page)),
-		Next:      int64(pageable.Page + 1),
-		TotalPage: int64(math.Ceil(float64(count) / float64(pageable.PerPage))),
-	}
-
-	return organisations, pagination, rows.Close()
+	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
+	return organisations, pagination, nil
 }
 
 func (o *orgMemberRepo) UpdateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
 	r, err := o.db.ExecContext(ctx,
 		updateOrgMember,
+		member.UID,
 		member.Role.Type,
 		member.Role.Project,
 		member.Role.Endpoint,
@@ -252,9 +245,12 @@ func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid, orgID
 }
 
 func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, uid, orgID string) (*datastore.OrganisationMember, error) {
-	var member *datastore.OrganisationMember
-	err := o.db.QueryRowxContext(ctx, fetchOrgMemberById, uid, orgID).StructScan(&member)
+	member := &datastore.OrganisationMember{}
+	err := o.db.QueryRowxContext(ctx, fetchOrgMemberById, uid, orgID).StructScan(member)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrOrgMemberNotFound
+		}
 		return nil, err
 	}
 
@@ -262,9 +258,12 @@ func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, uid, or
 }
 
 func (o *orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, userID, orgID string) (*datastore.OrganisationMember, error) {
-	var member *datastore.OrganisationMember
-	err := o.db.QueryRowxContext(ctx, fetchOrgMemberByUserId, userID, orgID).StructScan(&member)
+	member := &datastore.OrganisationMember{}
+	err := o.db.QueryRowxContext(ctx, fetchOrgMemberByUserId, userID, orgID).StructScan(member)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrOrgMemberNotFound
+		}
 		return nil, err
 	}
 
