@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
+import { CardComponent } from 'src/app/components/card/card.component';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { HubspotService } from 'src/app/services/hubspot/hubspot.service';
 import { SignupService } from './signup.service';
@@ -10,7 +11,7 @@ import { SignupService } from './signup.service';
 @Component({
 	selector: 'convoy-signup',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, InputFieldDirective],
+	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, CardComponent, InputFieldDirective],
 	templateUrl: './signup.component.html',
 	styleUrls: ['./signup.component.scss']
 })
@@ -24,6 +25,12 @@ export class SignupComponent implements OnInit {
 		password: ['', Validators.required],
 		org_name: ['', Validators.required]
 	});
+
+	onboardingSteps = [
+		{ icon: 'organisation', step: 'Create your organization' },
+		{ icon: 'team', step: 'Add your team members' },
+		{ icon: 'send', step: 'Start sending out webhook events' }
+	];
 
 	constructor(private formBuilder: FormBuilder, private signupService: SignupService, public router: Router, private hubspotService: HubspotService) {}
 
