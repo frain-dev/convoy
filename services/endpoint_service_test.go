@@ -279,7 +279,7 @@ func TestEndpointService_LoadEndpointsPaged(t *testing.T) {
 
 func TestEndpointService_CreateEndpoint(t *testing.T) {
 	projectID := "1234567890"
-	project := &datastore.Project{UID: projectID}
+	project := &datastore.Project{UID: projectID, Type: datastore.OutgoingProject}
 
 	ctx := context.Background()
 	type args struct {
@@ -313,7 +313,9 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 			},
 			dbFn: func(app *EndpointService) {
 				p, _ := app.projectRepo.(*mocks.MockProjectRepository)
-				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any())
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(project, nil)
 
 				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
@@ -360,7 +362,9 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 			},
 			dbFn: func(app *EndpointService) {
 				p, _ := app.projectRepo.(*mocks.MockProjectRepository)
-				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any())
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(project, nil)
 
 				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
@@ -423,7 +427,9 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 			},
 			dbFn: func(app *EndpointService) {
 				p, _ := app.projectRepo.(*mocks.MockProjectRepository)
-				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any())
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(project, nil)
 
 				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
