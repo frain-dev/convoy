@@ -5,12 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
-	"github.com/oklog/ulid/v2"
 )
 
 const (
@@ -67,8 +65,6 @@ func NewUserRepo(db *sqlx.DB) datastore.UserRepository {
 }
 
 func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
-	user.UID = ulid.Make().String()
-
 	result, err := u.db.ExecContext(ctx,
 		createUser,
 		user.UID,
@@ -198,14 +194,6 @@ func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageab
 		return nil, datastore.PaginationData{}, err
 	}
 
-	pagination := datastore.PaginationData{
-		Total:     int64(count),
-		Page:      int64(pageable.Page),
-		PerPage:   int64(pageable.PerPage),
-		Prev:      int64(getPrevPage(pageable.Page)),
-		Next:      int64(pageable.Page + 1),
-		TotalPage: int64(math.Ceil(float64(count) / float64(pageable.PerPage))),
-	}
-
+	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
 	return users, pagination, nil
 }

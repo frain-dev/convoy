@@ -12,6 +12,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -320,6 +321,7 @@ func Test_UpdateUser(t *testing.T) {
 
 func generateUser(t *testing.T) *datastore.User {
 	return &datastore.User{
+		UID:                        ulid.Make().String(),
 		FirstName:                  "test",
 		LastName:                   "test",
 		Email:                      fmt.Sprintf("%s@test.com", uuid.NewString()),
