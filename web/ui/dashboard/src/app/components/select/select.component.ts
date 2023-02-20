@@ -69,7 +69,7 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	}
 
 	get option(): string {
-		return this.options?.find(item => item.uid === this.value)?.name || this.options?.find(item => item === this.value) || '';
+		return this.options?.find(item => item.uid === this.value)?.name || this.options?.find(item => item.uid === this.value)?.title || this.options?.find(item => item === this.value) || '';
 	}
 
 	registerOnChange() {}
