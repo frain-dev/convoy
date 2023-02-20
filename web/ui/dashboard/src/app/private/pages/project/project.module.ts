@@ -76,7 +76,7 @@ const routes: Routes = [
 				loadComponent: () => import('./portal-links/portal-links.component').then(m => m.PortalLinksComponent)
 			},
 			{
-				path: 'event-logs',
+				path: 'events-log',
 				loadComponent: () => import('./event-logs/event-logs.component').then(m => m.EventLogsComponent)
 			}
 		]
