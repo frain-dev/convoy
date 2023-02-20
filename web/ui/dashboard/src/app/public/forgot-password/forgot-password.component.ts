@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
+import { CardComponent } from 'src/app/components/card/card.component';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ForgotPasswordService } from './forgot-password.service';
@@ -10,7 +11,7 @@ import { ForgotPasswordService } from './forgot-password.service';
 @Component({
 	selector: 'app-forgot-password',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, InputFieldDirective],
+	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, CardComponent, InputFieldDirective],
 	templateUrl: './forgot-password.component.html',
 	styleUrls: ['./forgot-password.component.scss']
 })
@@ -20,6 +21,7 @@ export class ForgotPasswordComponent implements OnInit {
 	});
 	activeState: 'resetPassword' | 'instructionSent' = 'resetPassword';
 	loading: boolean = false;
+	timeLeft = 59;
 	constructor(private formBuilder: FormBuilder, private forgotPasswordService: ForgotPasswordService, private generalService: GeneralService, public router: Router) {}
 
 	ngOnInit(): void {}
@@ -37,9 +39,18 @@ export class ForgotPasswordComponent implements OnInit {
 			const response = await this.forgotPasswordService.forgotPassword(this.forgotPasswordForm.value);
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.activeState = 'instructionSent';
+			this.timeLeft = 59;
+			this.startCountdown();
 			this.loading = false;
 		} catch {
 			this.loading = false;
 		}
+	}
+
+	startCountdown() {
+		const downloadTimer = setInterval(() => {
+			if (this.timeLeft <= 0) clearInterval(downloadTimer);
+			else this.timeLeft -= 1;
+		}, 1000);
 	}
 }
