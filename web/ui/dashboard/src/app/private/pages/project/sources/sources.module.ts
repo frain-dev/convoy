@@ -16,6 +16,7 @@ import { SourceValueModule } from 'src/app/pipes/source-value/source-value.modul
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
+import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 
 const routes: Routes = [{ path: '', component: SourcesComponent }];
 
@@ -41,9 +42,10 @@ const routes: Routes = [{ path: '', component: SourcesComponent }];
 		CopyButtonComponent,
 		SourceValueModule,
 		CopyButtonComponent,
-        DropdownComponent,
+		DropdownComponent,
 		DropdownOptionDirective,
-		SkeletonLoaderComponent
+		SkeletonLoaderComponent,
+		TooltipComponent
 	]
 })
 export class SourcesModule {}
