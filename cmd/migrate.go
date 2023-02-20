@@ -115,25 +115,7 @@ func addRunCommand() *cobra.Command {
 				Name:           "mob psycho",
 				Type:           datastore.OutgoingProject,
 				OrganisationID: org.UID,
-				Config: &datastore.ProjectConfig{
-					RateLimitCount:     1000,
-					RateLimitDuration:  60,
-					StrategyType:       datastore.ExponentialStrategyProvider,
-					StrategyDuration:   100,
-					StrategyRetryCount: 10,
-					SignatureHeader:    config.DefaultSignatureHeader,
-					RetentionPolicy:    "500d",
-					SignatureVersions: []datastore.SignatureVersion{
-						{
-							Hash:     "SHA256",
-							Encoding: datastore.HexEncoding,
-						},
-						{
-							Hash:     "SHA512",
-							Encoding: datastore.Base64Encoding,
-						},
-					},
-				},
+				Config:         &datastore.DefaultProjectConfig,
 			}
 
 			err = p.CreateProject(cmd.Context(), proj)
