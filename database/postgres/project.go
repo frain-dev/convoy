@@ -14,6 +14,7 @@ import (
 
 var (
 	ErrProjectConfigNotCreated = errors.New("project config could not be created")
+	ErrProjectConfigNotUpdated = errors.New("project config could not be updated")
 	ErrProjectNotCreated       = errors.New("project could not be created")
 	ErrProjectNotUpdated       = errors.New("project could not be updated")
 	ErrProjectNotDeleted       = errors.New("project could not be deleted")
@@ -42,7 +43,7 @@ const (
 
 	updateProjectConfiguration = `
 	UPDATE convoy.project_configurations SET
-		retention_policy = $2,
+		retention_policy_policy = $2,
 		max_payload_read_size = $3,
 		replay_attacks_prevention_enabled = $4,
 		retention_policy_enabled = $5,
@@ -65,6 +66,7 @@ const (
 		p.retained_events,
 		p.logo_url,
 		p.organisation_id,
+		p.project_configuration_id,
 		c.retention_policy_policy as "config.retention_policy.policy",
 		c.max_payload_read_size as "config.max_payload_read_size",
 		c.replay_attacks_prevention_enabled as "config.replay_attacks_prevention_enabled",
@@ -177,7 +179,8 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 	}
 
 	project.UID = ulid.Make().String()
-	proResult, err := tx.ExecContext(ctx, createProject, project.UID, project.Name, project.Type, project.LogoURL, project.OrganisationID, configID)
+	project.ProjectConfigID = configID
+	proResult, err := tx.ExecContext(ctx, createProject, project.UID, project.Name, project.Type, project.LogoURL, project.OrganisationID, project.ProjectConfigID)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate") {
 			return datastore.ErrDuplicateProjectName
@@ -262,7 +265,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 	}
 
 	if rowsAffected < 1 {
-		return ErrProjectNotUpdated
+		return nil
 	}
 
 	return tx.Commit()

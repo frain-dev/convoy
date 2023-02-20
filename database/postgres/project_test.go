@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy/pkg/httpheader"
 
 	"github.com/jmoiron/sqlx"
@@ -73,11 +75,14 @@ func Test_CreateProject(t *testing.T) {
 	project := &datastore.Project{
 		Name:           name,
 		OrganisationID: org.UID,
+		Type:           datastore.IncomingProject,
 		Config:         &datastore.DefaultProjectConfig,
 	}
 
 	err := projectRepo.CreateProject(context.Background(), project)
 	require.NoError(t, err)
+	require.NotEmpty(t, project.UID)
+	require.NotEmpty(t, project.ProjectConfigID)
 
 	projectWithExistingName := &datastore.Project{
 		Name:           name,
@@ -106,6 +111,87 @@ func Test_CreateProject(t *testing.T) {
 	// should create project with same name in diff org
 	err = projectRepo.CreateProject(context.Background(), projectInDiffOrg)
 	require.NoError(t, err)
+}
+
+func Test_UpdateProject(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	projectRepo := NewProjectRepo(db)
+
+	org := seedOrg(t, db)
+
+	const name = "test_project"
+
+	project := &datastore.Project{
+		Name:           name,
+		OrganisationID: org.UID,
+		Config:         &datastore.DefaultProjectConfig,
+	}
+
+	err := projectRepo.CreateProject(context.Background(), project)
+	require.NoError(t, err)
+
+	updatedProject := &datastore.Project{
+		UID:             project.UID,
+		Name:            "convoy",
+		LogoURL:         "https:/oilvmm.com",
+		OrganisationID:  project.OrganisationID,
+		ProjectConfigID: project.ProjectConfigID, // TODO(all): if i comment this line this test never exits, weird problem
+		Config: &datastore.ProjectConfig{
+			MaxIngestSize:            8483,
+			ReplayAttacks:            true,
+			IsRetentionPolicyEnabled: true,
+			RetentionPolicy:          &datastore.RetentionPolicyConfiguration{Policy: "99d"},
+			RateLimit: &datastore.RateLimitConfiguration{
+				Count:    8773,
+				Duration: 7766,
+			},
+			Strategy: &datastore.StrategyConfiguration{
+				Type:       datastore.ExponentialStrategyProvider,
+				Duration:   2434,
+				RetryCount: 5737,
+			},
+			Signature: &datastore.SignatureConfiguration{
+				Header: "f888fbfb",
+				Versions: []datastore.SignatureVersion{
+					{
+						UID:       ulid.Make().String(),
+						Hash:      "SHA512",
+						Encoding:  datastore.HexEncoding,
+						CreatedAt: time.Now(),
+					},
+				},
+			},
+		},
+		RetainedEvents: 300,
+	}
+
+	err = projectRepo.UpdateProject(context.Background(), updatedProject)
+	require.NoError(t, err)
+
+	dbProject, err := projectRepo.FetchProjectByID(context.Background(), project.UID)
+	require.NoError(t, err)
+
+	require.NotEmpty(t, dbProject.CreatedAt)
+	require.NotEmpty(t, dbProject.UpdatedAt)
+
+	dbProject.CreatedAt = time.Time{}
+	dbProject.UpdatedAt = time.Time{}
+
+	for i := range dbProject.Config.Signature.Versions {
+		version := &dbProject.Config.Signature.Versions[i]
+		require.NotEmpty(t, version.CreatedAt)
+		version.CreatedAt = time.Time{}
+	}
+
+	for i := range updatedProject.Config.Signature.Versions {
+		version := &updatedProject.Config.Signature.Versions[i]
+		require.NotEmpty(t, version.CreatedAt)
+		version.CreatedAt = time.Time{}
+	}
+
+	require.Equal(t, updatedProject, dbProject)
 }
 
 func Test_LoadProjects(t *testing.T) {

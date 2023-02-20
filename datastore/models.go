@@ -9,14 +9,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/lib/pq"
-
-	"github.com/google/uuid"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/pkg/httpheader"
+	"github.com/lib/pq"
+	"github.com/oklog/ulid/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/guregu/null.v4"
@@ -222,7 +220,7 @@ func GetDefaultSignatureConfig() *SignatureConfiguration {
 		Header: "X-Convoy-Signature",
 		Versions: []SignatureVersion{
 			{
-				UID:       uuid.NewString(),
+				UID:       ulid.Make().String(),
 				Hash:      "SHA256",
 				Encoding:  HexEncoding,
 				CreatedAt: time.Now(),
