@@ -6,12 +6,9 @@ package postgres
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/frain-dev/convoy/auth"
-	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
-	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
@@ -75,15 +72,10 @@ func TestLoadUserOrganisationsPaged(t *testing.T) {
 
 	user := seedUser(t, db)
 	for i := 0; i < 7; i++ {
-		var deletedAt null.Time
-		if i == 6 {
-			deletedAt = null.TimeFrom(time.Now())
-		}
 
 		org := &datastore.Organisation{
-			UID:       uuid.NewString(),
-			OwnerID:   user.UID,
-			DeletedAt: deletedAt,
+			UID:     uuid.NewString(),
+			OwnerID: user.UID,
 		}
 
 		err := orgRepo.CreateOrganisation(context.Background(), org)
@@ -107,7 +99,7 @@ func TestLoadUserOrganisationsPaged(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	require.Equal(t, 6, len(organisations))
+	require.Equal(t, 7, len(organisations))
 }
 
 func TestCreateOrganisationMember(t *testing.T) {
@@ -276,19 +268,4 @@ func TestFetchOrganisationMemberByUserID(t *testing.T) {
 		LastName:  user.LastName,
 		Email:     user.Email,
 	}, member.UserMetadata)
-}
-
-func seedOrg(t *testing.T, db *sqlx.DB) *datastore.Organisation {
-	user := seedUser(t, db)
-
-	org := &datastore.Organisation{
-		UID:     ulid.Make().String(),
-		Name:    "test-org",
-		OwnerID: user.UID,
-	}
-
-	err := NewOrgRepo(db).CreateOrganisation(context.Background(), org)
-	require.NoError(t, err)
-
-	return org
 }
