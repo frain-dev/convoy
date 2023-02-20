@@ -183,7 +183,7 @@
 		</button>
 	</div>
 
-	<ng-container *ngIf="action === 'update'">
+	<ng-container *ngIf="action === 'update' && projectDetails?.type === 'outgoing'">
 		<div class="flex items-center justify-between mt-52px mb-20px">
 			<h5 class="font-medium flex items-center">
 				Signature Format
