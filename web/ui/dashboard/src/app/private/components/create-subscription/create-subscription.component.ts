@@ -73,7 +73,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
-		await Promise.all([this.getEndpoints(), this.getSources(), this.getGetProjectDetails(), this.getSubscriptionDetails()]);
+		await Promise.all([, this.getGetProjectDetails(), this.getSubscriptionDetails()]);
 		this.isLoadingForm = false;
 
 		// add required validation on source input for incoming projects
@@ -97,12 +97,13 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async getSubscriptionDetails() {
+		await Promise.all([this.getEndpoints(), this.getSources()]);
 		if (this.action !== 'update') return;
 
 		try {
 			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId, this.token);
 			this.subscriptionForm.patchValue(response.data);
-			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, endpoint_id: response.data?.endpoint_metadata });
+			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
 			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
 			if (this.token) this.projectType = 'outgoing';
 			if (response.data?.retry_config) {

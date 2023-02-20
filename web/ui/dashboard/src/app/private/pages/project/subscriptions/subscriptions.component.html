@@ -40,7 +40,7 @@
 <div *ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length">
 	<div class="flex flex-wrap gap-24px" *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
 		<div convoy-card class="pt-10px transition-all w-full max-w-[356px] cursor-pointer" hover="true" *ngFor="let subscription of subscriptions?.content; let i = index" [routerLink]="['./']" [queryParams]="{ id: subscription.uid }">
-			<div class="w-full text-12 text-grey-60 font-medium px-24px border-b border-b-grey-10 pb-10px">Z{{ subscription.name }}</div>
+			<div class="w-full text-12 text-grey-60 font-medium px-24px border-b border-b-grey-10 pb-10px">{{ subscription.name }}</div>
 			<div class="flex items-center justify-between pt-24px px-24px">
 				<div class="w-114px mb-24px">
 					<div class="text-grey-40 text-10 mb-4px">{{ subscription.source_metadata.provider || (subscription.source_metadata.verifier.type | sourceValue: 'verifier') }} Source</div>
