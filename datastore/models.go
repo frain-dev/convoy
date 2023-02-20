@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -174,24 +175,13 @@ const (
 
 var (
 	DefaultProjectConfig = ProjectConfig{
-		RateLimitCount:           1000,
-		RateLimitDuration:        60,
-		StrategyType:             DefaultStrategyProvider,
-		StrategyDuration:         100,
-		StrategyRetryCount:       10,
-		RetentionPolicy:          "30d",
+		RetentionPolicy:          &DefaultRetentionPolicy,
 		MaxIngestSize:            config.MaxResponseSizeKb,
 		ReplayAttacks:            false,
 		IsRetentionPolicyEnabled: false,
-		SignatureHeader:          "X-Convoy-Signature",
-		SignatureVersions: []SignatureVersion{
-			{
-				UID:       uuid.NewString(),
-				Hash:      "SHA256",
-				Encoding:  HexEncoding,
-				CreatedAt: time.Now(),
-			},
-		},
+		RateLimit:                &DefaultRateLimitConfig,
+		Strategy:                 &DefaultStrategyConfig,
+		Signature:                GetDefaultSignatureConfig(),
 	}
 
 	DefaultStrategyConfig = StrategyConfiguration{
@@ -337,60 +327,63 @@ type ProjectMetadata struct {
 	RetainedEvents int `json:"retained_events" bson:"retained_events"`
 }
 
-type ProjectConfig struct {
-	RetentionPolicy          string                         `json:"retention_policy" db:"retention_policy" valid:"required~please provide a valid retention policy"`
-	RateLimitCount           int                            `json:"ratelimit.count" db:"ratelimit_count"`
-	RateLimitDuration        int                            `json:"ratelimit.duration" db:"ratelimit_duration"`
-	StrategyType             StrategyProvider               `json:"strategy_type" db:"strategy_type" valid:"optional~please provide a valid strategy type, in(linear|exponential)~unsupported strategy type"`
-	StrategyDuration         uint64                         `json:"strategy_duration" db:"strategy_duration" valid:"optional~please provide a valid duration in seconds,int"`
-	StrategyRetryCount       uint64                         `json:"strategy_retry_count" db:"strategy_retry_count" valid:"optional~please provide a valid retry count,int"`
-	SignatureHeader          config.SignatureHeaderProvider `json:"signature_header" db:"signature_header" valid:"required~please provide a valid signature header"`
-	SignatureVersions        []SignatureVersion             `json:"versions" db:"-"`
-	Versions                 []byte                         `json:"-" db:"signature_versions"`
-	MaxIngestSize            uint64                         `json:"max_payload_read_size" db:"max_payload_read_size"`
-	ReplayAttacks            bool                           `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
-	IsRetentionPolicyEnabled bool                           `json:"retention_policy_enabled" db:"retention_policy_enabled"`
+type SignatureVersions []SignatureVersion
 
-	// old fields
-	RateLimit *RateLimitConfiguration `json:"ratelimit"`
-	Strategy  *StrategyConfiguration  `json:"strategy"`
-	Signature *SignatureConfiguration `json:"signature"`
-	// RetentionPolicy *RetentionPolicyConfiguration `json:"policy" bson:"retention_policy"`
+func (s *SignatureVersions) Scan(v interface{}) error {
+	b, ok := v.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", v)
+	}
+
+	return json.Unmarshal(b, s)
+}
+
+func (s SignatureVersions) Value() (driver.Value, error) {
+	return json.Marshal(s)
+}
+
+type ProjectConfig struct {
+	MaxIngestSize            uint64                        `json:"max_payload_read_size" db:"max_payload_read_size"`
+	ReplayAttacks            bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
+	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
+	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
+	RateLimit                *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
+	Strategy                 *StrategyConfiguration        `json:"strategy" db:"strategy"`
+	Signature                *SignatureConfiguration       `json:"signature" db:"signature"`
 }
 
 type RateLimitConfiguration struct {
-	Count    int    `json:"count" bson:"count"`
-	Duration uint64 `json:"duration" bson:"duration"`
+	Count    int    `json:"count" db:"count"`
+	Duration uint64 `json:"duration" db:"duration"`
 }
 
 type StrategyConfiguration struct {
-	Type       StrategyProvider `json:"type" valid:"optional~please provide a valid strategy type, in(linear|exponential)~unsupported strategy type"`
-	Duration   uint64           `json:"duration" valid:"optional~please provide a valid duration in seconds,int"`
-	RetryCount uint64           `json:"retry_count" valid:"optional~please provide a valid retry count,int"`
+	Type       StrategyProvider `json:"type" db:"type" valid:"optional~please provide a valid strategy type, in(linear|exponential)~unsupported strategy type"`
+	Duration   uint64           `json:"duration" db:"duration" valid:"optional~please provide a valid duration in seconds,int"`
+	RetryCount uint64           `json:"retry_count" db:"retry_count" valid:"optional~please provide a valid retry count,int"`
 }
 
 type SignatureConfiguration struct {
+	Hash     string                         `json:"-" db:"hash"` // Deprecated
 	Header   config.SignatureHeaderProvider `json:"header,omitempty" valid:"required~please provide a valid signature header"`
-	Versions []SignatureVersion             `json:"versions" bson:"versions"`
-
-	Hash string `json:"-" bson:"hash"`
+	Versions SignatureVersions              `json:"versions" db:"versions"`
 }
 
 type SignatureVersion struct {
 	UID       string       `json:"uid" db:"id"`
-	Hash      string       `json:"hash,omitempty" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
+	Hash      string       `json:"hash,omitempty" db:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
 	Encoding  EncodingType `json:"encoding" db:"encoding" valid:"required~please provide a valid signature header"`
-	CreatedAt time.Time    `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	CreatedAt time.Time    `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 }
 
+// Depr
 type RetentionPolicyConfiguration struct {
-	Policy string `json:"policy" valid:"required~please provide a valid retention policy"`
+	Policy string `json:"policy" db:"policy" valid:"required~please provide a valid retention policy"`
 }
 
 type ProjectStatistics struct {
-	ProjectID    string `json:"-" db:"-"`
-	MessagesSent int64  `json:"messages_sent" db:"messages_sent"`
-	TotalApps    int64  `json:"total_endpoints" db:"total_endpoints"`
+	MessagesSent   int64 `json:"messages_sent" db:"messages_sent"`
+	TotalEndpoints int64 `json:"total_endpoints" db:"total_endpoints"`
 }
 
 type ProjectFilter struct {
@@ -662,10 +655,10 @@ type Subscription struct {
 	Endpoint *Endpoint `json:"endpoint_metadata" db:"endpoint_metadata"`
 
 	// subscription config
-	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" db:"alert_config,omitempty"`
-	RetryConfig     *RetryConfiguration     `json:"retry_config,omitempty" db:"retry_config,omitempty"`
-	FilterConfig    *FilterConfiguration    `json:"filter_config,omitempty" db:"filter_config,omitempty"`
-	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty" db:"rate_limit_config,omitempty"`
+	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" db:"alert_config"`
+	RetryConfig     *RetryConfiguration     `json:"retry_config,omitempty" db:"retry_config"`
+	FilterConfig    *FilterConfiguration    `json:"filter_config,omitempty" db:"filter_config"`
+	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty" db:"rate_limit_config"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
@@ -736,24 +729,24 @@ type User struct {
 }
 
 type RetryConfiguration struct {
-	Type       StrategyProvider `json:"type,omitempty" bson:"type,omitempty" valid:"supported_retry_strategy~please provide a valid retry strategy type"`
-	Duration   uint64           `json:"duration,omitempty" bson:"duration,omitempty" valid:"duration~please provide a valid time duration"`
-	RetryCount uint64           `json:"retry_count" bson:"retry_count" valid:"int~please provide a valid retry count"`
+	Type       StrategyProvider `json:"type,omitempty" db:"type" valid:"supported_retry_strategy~please provide a valid retry strategy type"`
+	Duration   uint64           `json:"duration,omitempty" db:"duration" valid:"duration~please provide a valid time duration"`
+	RetryCount uint64           `json:"retry_count" db:"retry_count" valid:"int~please provide a valid retry count"`
 }
 
 type AlertConfiguration struct {
-	Count     int    `json:"count" bson:"count,omitempty"`
-	Threshold string `json:"threshold" bson:"threshold,omitempty" valid:"duration~please provide a valid time duration"`
+	Count     int    `json:"count" db:"count"`
+	Threshold string `json:"threshold" db:"threshold" valid:"duration~please provide a valid time duration"`
 }
 
 type FilterConfiguration struct {
-	EventTypes pq.StringArray `json:"event_types" bson:"event_types,omitempty"`
-	Filter     FilterSchema   `json:"filter" bson:"filter"`
+	EventTypes pq.StringArray `json:"event_types" db:"event_types"`
+	Filter     FilterSchema   `json:"filter" db:"filter"`
 }
 
 type FilterSchema struct {
-	Headers map[string]interface{} `json:"headers" bson:"headers"`
-	Body    map[string]interface{} `json:"body" bson:"body"`
+	Headers map[string]interface{} `json:"headers" db:"headers"`
+	Body    map[string]interface{} `json:"body" db:"body"`
 }
 
 type ProviderConfig struct {

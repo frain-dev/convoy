@@ -45,7 +45,7 @@ func RententionPolicies(instanceConfig config.Configuration, configRepo datastor
 			cfg := p.Config
 			if cfg.IsRetentionPolicyEnabled {
 				//export events collection
-				policy, err := time.ParseDuration(cfg.RetentionPolicy)
+				policy, err := time.ParseDuration(cfg.RetentionPolicy.Policy)
 				if err != nil {
 					return err
 				}

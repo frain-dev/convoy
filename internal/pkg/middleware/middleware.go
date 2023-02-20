@@ -1004,14 +1004,14 @@ func (m *Middleware) RateLimitByProjectID() func(next http.Handler) http.Handler
 
 			var rateLimitDuration time.Duration
 			var err error
-			if project.Config.RateLimitDuration == 0 {
+			if project.Config.RateLimit.Duration == 0 {
 				rateLimitDuration, err = time.ParseDuration(convoy.RATE_LIMIT_DURATION)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse("an error occured parsing rate limit duration", http.StatusBadRequest))
 					return
 				}
 			} else {
-				rateLimitDuration = time.Second * time.Duration(project.Config.RateLimitDuration)
+				rateLimitDuration = time.Second * time.Duration(project.Config.RateLimit.Duration)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse("an error occured parsing rate limit duration", http.StatusBadRequest))
 					return
@@ -1019,10 +1019,10 @@ func (m *Middleware) RateLimitByProjectID() func(next http.Handler) http.Handler
 			}
 
 			var rateLimit int
-			if project.Config.RateLimitCount == 0 {
+			if project.Config.RateLimit.Count == 0 {
 				rateLimit = convoy.RATE_LIMIT
 			} else {
-				rateLimit = project.Config.RateLimitCount
+				rateLimit = project.Config.RateLimit.Count
 			}
 
 			res, err := m.limiter.Allow(r.Context(), project.UID, rateLimit, int(rateLimitDuration))
