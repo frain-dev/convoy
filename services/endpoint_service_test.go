@@ -312,6 +312,9 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 				g: project,
 			},
 			dbFn: func(app *EndpointService) {
+				p, _ := app.projectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any())
+
 				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
@@ -356,6 +359,9 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 				g: project,
 			},
 			dbFn: func(app *EndpointService) {
+				p, _ := app.projectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any())
+
 				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
@@ -416,6 +422,9 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 				g: project,
 			},
 			dbFn: func(app *EndpointService) {
+				p, _ := app.projectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any())
+
 				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
@@ -494,6 +503,9 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 				HttpTimeout:       "20s",
 			},
 			dbFn: func(as *EndpointService) {
+				p, _ := as.projectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any())
+
 				a, _ := as.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.Endpoint{UID: "endpoint2"}, nil)
@@ -521,6 +533,9 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 				endpoint: &datastore.Endpoint{UID: "endpoint1"},
 			},
 			dbFn: func(as *EndpointService) {
+				p, _ := as.projectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any())
+
 				a, _ := as.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.Endpoint{UID: "endpoint1"}, nil)
@@ -544,6 +559,9 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 				endpoint: &datastore.Endpoint{UID: "endpoint1"},
 			},
 			dbFn: func(as *EndpointService) {
+				p, _ := as.projectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any())
+
 				a, _ := as.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.Endpoint{UID: "endpoint1"}, nil)
