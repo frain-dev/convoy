@@ -2,12 +2,12 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"math"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
-	"github.com/oklog/ulid/v2"
 )
 
 var (
@@ -25,19 +25,21 @@ const (
 	updateOrganisationInvite = `
 	UPDATE convoy.organisation_invites
 	SET
-		role_type = $1,
-		role_project = $2,
-		role_endpoint = $3,
-		status = $4,
-		expires_at = $5,
+		role_type = $2,
+		role_project = $3,
+		role_endpoint = $4,
+		status = $5,
+		expires_at = $6,
 		updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	fetchOrganisationInviteById = `
 	SELECT
+	    id, 
 		organisation_id,
 		invitee_email,
+		token,
 		status,
 		role_type as "role.type",
 		role_project as "role.project",
@@ -48,8 +50,10 @@ const (
 
 	fetchOrganisationInviteByToken = `
 	SELECT
+	    id,
 		organisation_id,
 		invitee_email,
+		token,
 		status,
 		role_type as "role.type",
 		role_project as "role.project",
@@ -60,6 +64,7 @@ const (
 
 	fetchOrganisationInvitesPaginated = `
 	SELECT
+	    id, 
 		organisation_id,
 		invitee_email,
 		status,
@@ -79,7 +84,7 @@ const (
 	deleteOrganisationInvite = `
 	UPDATE convoy.organisation_invites SET 
 	deleted_at = now()
-	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
+	WHERE id = $1 AND deleted_at IS NULL;
 	`
 )
 
@@ -93,7 +98,7 @@ func NewOrgInviteRepo(db *sqlx.DB) datastore.OrganisationInviteRepository {
 
 func (i *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {
 	r, err := i.db.ExecContext(ctx, createOrganisationInvite,
-		ulid.Make().String(),
+		iv.UID,
 		iv.OrganisationID,
 		iv.InviteeEmail,
 		iv.Token,
@@ -159,6 +164,7 @@ func (i *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID
 func (i *orgInviteRepo) UpdateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {
 	r, err := i.db.ExecContext(ctx,
 		updateOrganisationInvite,
+		iv.UID,
 		iv.Role.Type,
 		iv.Role.Project,
 		iv.Role.Endpoint,
@@ -200,9 +206,12 @@ func (i *orgInviteRepo) DeleteOrganisationInvite(ctx context.Context, id string)
 }
 
 func (i *orgInviteRepo) FetchOrganisationInviteByID(ctx context.Context, id string) (*datastore.OrganisationInvite, error) {
-	var invite *datastore.OrganisationInvite
-	err := i.db.QueryRowxContext(ctx, fetchOrganisationInviteById, id).StructScan(&invite)
+	invite := &datastore.OrganisationInvite{}
+	err := i.db.QueryRowxContext(ctx, fetchOrganisationInviteById, id).StructScan(invite)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrOrgInviteNotFound
+		}
 		return nil, err
 	}
 
@@ -210,9 +219,12 @@ func (i *orgInviteRepo) FetchOrganisationInviteByID(ctx context.Context, id stri
 }
 
 func (i *orgInviteRepo) FetchOrganisationInviteByToken(ctx context.Context, token string) (*datastore.OrganisationInvite, error) {
-	var invite *datastore.OrganisationInvite
-	err := i.db.QueryRowxContext(ctx, fetchOrganisationInviteByToken, token).StructScan(&invite)
+	invite := &datastore.OrganisationInvite{}
+	err := i.db.QueryRowxContext(ctx, fetchOrganisationInviteByToken, token).StructScan(invite)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrOrgInviteNotFound
+		}
 		return nil, err
 	}
 
