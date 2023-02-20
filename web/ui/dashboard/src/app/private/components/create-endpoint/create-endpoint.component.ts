@@ -54,7 +54,7 @@ export class CreateEndpointComponent implements OnInit {
 	];
 	endpointCreated: boolean = false;
 
-	constructor(private formBuilder: FormBuilder, private generalService: GeneralService, private createEndpointService: CreateEndpointService, private route: ActivatedRoute, private privateService: PrivateService, private router: Router) {}
+	constructor(private formBuilder: FormBuilder, private generalService: GeneralService, private createEndpointService: CreateEndpointService, private route: ActivatedRoute, public privateService: PrivateService, private router: Router) {}
 
 	ngOnInit() {
 		if (this.endpointUid && this.editMode) this.getEndpointDetails();
