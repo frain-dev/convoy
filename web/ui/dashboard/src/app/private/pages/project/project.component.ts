@@ -12,7 +12,7 @@ export class ProjectComponent implements OnInit {
 	screenWidth = window.innerWidth;
 	sideBarItems = [
 		{
-			name: 'Events',
+			name: 'Event Deliveries',
 			icon: 'events',
 			route: '/events'
 		},
@@ -39,7 +39,7 @@ export class ProjectComponent implements OnInit {
 		{
 			name: 'Events Log',
 			icon: 'logs',
-			route: '/event-logs'
+			route: '/events-log'
 		}
 	];
 	shouldShowFullSideBar = true;

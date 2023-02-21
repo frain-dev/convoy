@@ -63,6 +63,21 @@ export interface SOURCE {
 		};
 		type: string;
 	};
+	pub_sub: {
+		google: {
+			service_account: string;
+			subscription_id: string;
+			project_id: string;
+		};
+		sqs: {
+			access_key_id: string;
+			default_region: string;
+			queue_name: string;
+			secret_key: string;
+		};
+		type: string;
+		workers: number;
+	};
 }
 
 export interface VERSIONS {
