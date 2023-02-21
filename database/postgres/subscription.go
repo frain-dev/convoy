@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -49,33 +50,31 @@ const (
 
 	baseFetch = `
     SELECT
-    id,name,type,
-	project_id,endpoint_id,device_id,source_id,
-	alert_config_count as "alert_config.count",
-	alert_config_threshold as "alert_config.threshold",
-	retry_config_type as "retry_config.type",
-	retry_config_duration as "retry_config.duration",
-	retry_config_retry_count as "retry_config.retry_count",
-	filter_config_event_types as "filter_config.event_types",
-	filter_config_filter_headers as "filter_config.filter.headers",
-	filter_config_filter_body as "filter_config.filter.body",
-	rate_limit_config_count as "rate_limit_config.count",
-	rate_limit_config_duration as "rate_limit_config.duration",
+    s.id,s.name,s.type,
+	s.project_id,s.endpoint_id,s.device_id,s.source_id,
+	s.alert_config_count as "alert_config.count",
+	s.alert_config_threshold as "alert_config.threshold",
+	s.retry_config_type as "retry_config.type",
+	s.retry_config_duration as "retry_config.duration",
+	s.retry_config_retry_count as "retry_config.retry_count",
+	s.filter_config_event_types as "filter_config.event_types",
+	s.filter_config_filter_headers as "filter_config.filter.headers",
+	s.filter_config_filter_body as "filter_config.filter.body",
+	s.rate_limit_config_count as "rate_limit_config.count",
+	s.rate_limit_config_duration as "rate_limit_config.duration",
 
 	endpoint_metadata.id as "endpoint_metadata.id",
 	endpoint_metadata.title as "endpoint_metadata.title",
 	endpoint_metadata.project_id as "endpoint_metadata.project_id",
 	endpoint_metadata.support_email as "endpoint_metadata.support_email",
 	endpoint_metadata.target_url as "endpoint_metadata.target_url",
-	endpoint_metadata.secrets as "endpoint_metadata.secrets",
 
 	source_metadata.id as "source_metadata.id",
 	source_metadata.name as "source_metadata.name",
 	source_metadata.type as "source_metadata.type",
 	source_metadata.mask_id as "source_metadata.mask_id",
 	source_metadata.project_id as "source_metadata.project_id",
-	source_metadata.verifier as "source_metadata.verifier",
-	source_metadata.is_disabled as "source_metadata.is_disabled"
+ 	source_metadata.is_disabled as "source_metadata.is_disabled"
 	FROM convoy.subscriptions s LEFT JOIN convoy.endpoints endpoint_metadata
     ON s.endpoint_id = endpoint_metadata.id LEFT JOIN convoy.sources source_metadata
     ON s.source_id = source_metadata.id WHERE s.deleted_at IS NULL `
@@ -275,6 +274,9 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, projectID s
 	subscription := &datastore.Subscription{}
 	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.id", "s.project_id"), subscriptionID, projectID).StructScan(subscription)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrSubscriptionNotFound
+		}
 		return nil, err
 	}
 

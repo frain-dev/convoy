@@ -6597,24 +6597,13 @@
                     "type": "integer"
                 },
                 "ratelimit": {
-                    "description": "old fields",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/datastore.RateLimitConfiguration"
-                        }
-                    ]
-                },
-                "ratelimit.count": {
-                    "type": "integer"
-                },
-                "ratelimit.duration": {
-                    "type": "integer"
+                    "$ref": "#/definitions/datastore.RateLimitConfiguration"
                 },
                 "replay_attacks_prevention_enabled": {
                     "type": "boolean"
                 },
                 "retention_policy": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.RetentionPolicyConfiguration"
                 },
                 "retention_policy_enabled": {
                     "type": "boolean"
@@ -6622,26 +6611,8 @@
                 "signature": {
                     "$ref": "#/definitions/datastore.SignatureConfiguration"
                 },
-                "signature_header": {
-                    "$ref": "#/definitions/config.SignatureHeaderProvider"
-                },
                 "strategy": {
                     "$ref": "#/definitions/datastore.StrategyConfiguration"
-                },
-                "strategy_duration": {
-                    "type": "integer"
-                },
-                "strategy_retry_count": {
-                    "type": "integer"
-                },
-                "strategy_type": {
-                    "$ref": "#/definitions/datastore.StrategyProvider"
-                },
-                "versions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/datastore.SignatureVersion"
-                    }
                 }
             }
         },
@@ -6683,6 +6654,14 @@
                 },
                 "duration": {
                     "type": "integer"
+                }
+            }
+        },
+        "datastore.RetentionPolicyConfiguration": {
+            "type": "object",
+            "properties": {
+                "policy": {
+                    "type": "string"
                 }
             }
         },

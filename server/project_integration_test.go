@@ -95,8 +95,8 @@ func (s *ProjectIntegrationTestSuite) TestGetProject() {
 	parseResponse(s.T(), w.Result(), &respProject)
 	require.Equal(s.T(), project.UID, respProject.UID)
 	require.Equal(s.T(), datastore.ProjectStatistics{
-		MessagesSent: 1,
-		TotalApps:    1,
+		MessagesSent:   1,
+		TotalEndpoints: 1,
 	}, *respProject.Statistics)
 }
 
@@ -274,9 +274,11 @@ func (s *ProjectIntegrationTestSuite) TestCreateProject() {
         },
         "disable_endpoint": false,
         "replay_attacks": false
+        "rate_limit": {
+            "count": 8000,
+            "duration": "5m"
+        },
     },
-    "rate_limit": 5000,
-    "rate_limit_duration": "1m"
 }`
 
 	body := serialize(bodyStr)
@@ -297,8 +299,8 @@ func (s *ProjectIntegrationTestSuite) TestCreateProject() {
 	var respProject models.CreateProjectResponse
 	parseResponse(s.T(), w.Result(), &respProject)
 	require.NotEmpty(s.T(), respProject.Project.UID)
-	require.Equal(s.T(), 5000, respProject.Project.RateLimit)
-	require.Equal(s.T(), "1m", respProject.Project.RateLimitDuration)
+	require.Equal(s.T(), 8000, respProject.Project.Config.RateLimit.Count)
+	require.Equal(s.T(), "5m", respProject.Project.Config.RateLimit.Duration)
 	require.Equal(s.T(), "test-project", respProject.Project.Name)
 	require.Equal(s.T(), "test-project's default key", respProject.APIKey.Name)
 
@@ -327,9 +329,11 @@ func (s *ProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey() {
         },
         "disable_endpoint": false,
         "replay_attacks": false
+        "rate_limit": {
+            "count": 8000,
+            "duration": "5m"
+        },
     },
-    "rate_limit": 5000,
-    "rate_limit_duration": "1m"
 }`
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
@@ -351,8 +355,8 @@ func (s *ProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey() {
 	var respProject models.CreateProjectResponse
 	parseResponse(s.T(), w.Result(), &respProject)
 	require.NotEmpty(s.T(), respProject.Project.UID)
-	require.Equal(s.T(), 5000, respProject.Project.RateLimit)
-	require.Equal(s.T(), "1m", respProject.Project.RateLimitDuration)
+	require.Equal(s.T(), 8000, respProject.Project.Config.RateLimit.Count)
+	require.Equal(s.T(), "5m", respProject.Project.Config.RateLimit.Duration)
 	require.Equal(s.T(), "test-project", respProject.Project.Name)
 	require.Equal(s.T(), "test-project's default key", respProject.APIKey.Name)
 

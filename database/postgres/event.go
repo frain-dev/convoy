@@ -22,7 +22,7 @@ var (
 
 const (
 	createEvent = `
-	INSERT INTO convoy.events (id, event_type, project_id, source_id, headers, raw, data) 
+	INSERT INTO convoy.events (id, event_type, project_id, source_id, headers, raw, data)
 	VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 
@@ -34,7 +34,7 @@ const (
 	SELECT * from convoy.events WHERE id = $1 AND deleted_at is NULL;
 	`
 
-	fetchEventsByIds = ` 
+	fetchEventsByIds = `
 	SELECT * from convoy.events WHERE id IN (?) AND deleted_at IS NULL;
 	`
 
@@ -42,10 +42,10 @@ const (
 	SELECT count(*) from convoy.events WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 	countEvents = `
-	SELECT count(distinct(ev.id)) from convoy.events ev 
-	LEFT JOIN convoy.events_endpoints ee on ee.event_id = ev.id 
+	SELECT count(distinct(ev.id)) from convoy.events ev
+	LEFT JOIN convoy.events_endpoints ee on ee.event_id = ev.id
 	LEFT JOIN convoy.endpoints e on ee.endpoint_id = e.id
-	WHERE (ev.project_id = $1 OR $1 = '') AND (e.id = $2 OR $2 = '' ) 
+	WHERE (ev.project_id = $1 OR $1 = '') AND (e.id = $2 OR $2 = '' )
 	AND (ev.source_id = $3 OR $3 = '') AND ev.created_at >= $4 AND ev.created_at <= $5 AND ev.deleted_at IS NULL;
 	`
 
@@ -53,7 +53,7 @@ const (
 	WITH table_count AS (
 		SELECT count(distinct(ev.id)) as count
 		FROM convoy.events ev LEFT JOIN convoy.events_endpoints
-		ee ON ee.event_id = ev.id 
+		ee ON ee.event_id = ev.id
 		WHERE ev.deleted_at IS NULL
 		%s
 	)
@@ -82,7 +82,7 @@ const (
 
 	softDeleteProjectEvents = `
 	UPDATE convoy.events SET deleted_at = now()
-	WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3 
+	WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3
 	AND deleted_at IS NULL
 	`
 	hardDeleteProjectEvents = `
@@ -111,17 +111,12 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		return err
 	}
 
-	headers, err := json.Marshal(event.Headers)
-	if err != nil {
-		return err
-	}
-
 	_, err = tx.ExecContext(ctx, createEvent,
 		event.UID,
 		event.EventType,
 		event.ProjectID,
 		sourceID,
-		headers,
+		event.Headers,
 		event.Raw,
 		event.Data,
 	)
@@ -148,7 +143,6 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 func (e *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.Event, error) {
 	event := &datastore.Event{}
 	err := e.db.QueryRowxContext(ctx, fetchEventById, id).StructScan(event)
-
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrEventNotFound
