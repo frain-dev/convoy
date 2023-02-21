@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
@@ -25,8 +26,13 @@ func Test_CreateConfiguration(t *testing.T) {
 	newConfig, err := configRepo.LoadConfiguration(context.Background())
 	require.NoError(t, err)
 
-	require.Equal(t, config.UID, newConfig.UID)
-	require.Equal(t, config.IsAnalyticsEnabled, newConfig.IsAnalyticsEnabled)
+	newConfig.CreatedAt = time.Time{}
+	newConfig.UpdatedAt = time.Time{}
+
+	config.CreatedAt = time.Time{}
+	config.UpdatedAt = time.Time{}
+
+	require.Equal(t, config, newConfig)
 }
 
 func Test_LoadConfiguration(t *testing.T) {
@@ -46,7 +52,13 @@ func Test_LoadConfiguration(t *testing.T) {
 	newConfig, err := configRepo.LoadConfiguration(context.Background())
 	require.NoError(t, err)
 
-	require.Equal(t, config.UID, newConfig.UID)
+	newConfig.CreatedAt = time.Time{}
+	newConfig.UpdatedAt = time.Time{}
+
+	config.CreatedAt = time.Time{}
+	config.UpdatedAt = time.Time{}
+
+	require.Equal(t, config, newConfig)
 }
 
 func Test_UpdateConfiguration(t *testing.T) {
@@ -64,8 +76,13 @@ func Test_UpdateConfiguration(t *testing.T) {
 	newConfig, err := configRepo.LoadConfiguration(context.Background())
 	require.NoError(t, err)
 
-	require.Equal(t, config.UID, newConfig.UID)
-	require.Equal(t, config.IsAnalyticsEnabled, newConfig.IsAnalyticsEnabled)
+	newConfig.CreatedAt = time.Time{}
+	newConfig.UpdatedAt = time.Time{}
+
+	config.CreatedAt = time.Time{}
+	config.UpdatedAt = time.Time{}
+
+	require.Equal(t, config, newConfig)
 }
 
 func generateConfig() *datastore.Configuration {
