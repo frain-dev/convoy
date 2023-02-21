@@ -2,11 +2,8 @@ version: "3"
 
 services:
     web:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.8.0
-        entrypoint: [ "/bin/sh" ]
-        command: /start.sh
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.8.2
         volumes:
-            - ./start.sh:/start.sh
             - ./convoy.json:/convoy.json
         restart: on-failure
         ports:
@@ -17,7 +14,7 @@ services:
             - typesense
 
     scheduler:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.8.0
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.8.2
         entrypoint: ["./cmd", "scheduler", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -27,7 +24,7 @@ services:
             - redis_server
 
     worker:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.8.0
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.8.2
         entrypoint: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -40,7 +37,7 @@ services:
       image: mongo:5.0.14
       command: "--replSet localhost"
       restart: always
-      ports: 
+      ports:
         - "27017:27017"
         - "27018:27018"
         - "27019:27019"
