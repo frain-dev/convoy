@@ -20,9 +20,10 @@ func createEndpointService(a *ApplicationHandler) *services.EndpointService {
 	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
 	eventRepo := mongo.NewEventRepository(a.A.Store)
 	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
+	projectRepo := mongo.NewProjectRepo(a.A.Store)
 
 	return services.NewEndpointService(
-		endpointRepo, eventRepo, eventDeliveryRepo, a.A.Cache, a.A.Queue,
+		projectRepo, endpointRepo, eventRepo, eventDeliveryRepo, a.A.Cache, a.A.Queue,
 	)
 }
 
