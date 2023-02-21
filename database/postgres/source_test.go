@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/datastore"
@@ -27,10 +28,13 @@ func Test_CreateSource(t *testing.T) {
 	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
 	require.NoError(t, err)
 
-	require.Equal(t, source.UID, newSource.UID)
-	require.Equal(t, source.Name, newSource.Name)
-	require.Equal(t, source.Verifier.HMac.Secret, newSource.Verifier.HMac.Secret)
-	require.Equal(t, source.MaskID, newSource.MaskID)
+	source.CreatedAt = time.Time{}
+	source.UpdatedAt = time.Time{}
+
+	newSource.CreatedAt = time.Time{}
+	newSource.UpdatedAt = time.Time{}
+
+	require.Equal(t, source, newSource)
 }
 
 func Test_FindSourceByID(t *testing.T) {
@@ -50,7 +54,13 @@ func Test_FindSourceByID(t *testing.T) {
 	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
 	require.NoError(t, err)
 
-	require.Equal(t, source.UID, newSource.UID)
+	source.CreatedAt = time.Time{}
+	source.UpdatedAt = time.Time{}
+
+	newSource.CreatedAt = time.Time{}
+	newSource.UpdatedAt = time.Time{}
+
+	require.Equal(t, source, newSource)
 }
 
 func Test_FindSourceByMaskID(t *testing.T) {
@@ -70,7 +80,13 @@ func Test_FindSourceByMaskID(t *testing.T) {
 	newSource, err := sourceRepo.FindSourceByMaskID(context.Background(), source.MaskID)
 	require.NoError(t, err)
 
-	require.Equal(t, source.MaskID, newSource.MaskID)
+	source.CreatedAt = time.Time{}
+	source.UpdatedAt = time.Time{}
+
+	newSource.CreatedAt = time.Time{}
+	newSource.UpdatedAt = time.Time{}
+
+	require.Equal(t, source, newSource)
 }
 
 func Test_UpdateSource(t *testing.T) {
@@ -90,7 +106,13 @@ func Test_UpdateSource(t *testing.T) {
 	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
 	require.NoError(t, err)
 
-	require.Equal(t, name, newSource.Name)
+	source.CreatedAt = time.Time{}
+	source.UpdatedAt = time.Time{}
+
+	newSource.CreatedAt = time.Time{}
+	newSource.UpdatedAt = time.Time{}
+
+	require.Equal(t, source, newSource)
 }
 
 func Test_DeleteSource(t *testing.T) {
@@ -230,6 +252,8 @@ func generateSource(t *testing.T, db *sqlx.DB) *datastore.Source {
 				Hash:   "SHA512",
 				Secret: "Paystack Secret",
 			},
+			ApiKey:    &datastore.ApiKey{},
+			BasicAuth: &datastore.BasicAuth{},
 		},
 	}
 }

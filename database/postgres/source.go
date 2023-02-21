@@ -127,7 +127,6 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 		return err
 	}
 
-	source.UID = ulid.Make().String()
 	result1, err := tx.ExecContext(
 		ctx, createSource, source.UID, source.Name, source.Type, source.MaskID,
 		source.Provider, source.IsDisabled, pq.Array(source.ForwardHeaders), source.ProjectID,
