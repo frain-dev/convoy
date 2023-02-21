@@ -4,8 +4,10 @@
 - [Enhancement] Improved Project Onboarding #1335
 - [Enhancement] Improved Delivery Attempt Details page #1341
 - [Enhancement] Update Subscriptions Card for Incoming Projects. #1349
-- [Enhancement] Add endpoint count to portal link card #1348
+- [Enhancement] Update portal links design #1348
+- [Enhancement] Improve source, subscription and endpoint forms #1335
 - [Bugfix] Event Log pagination bug #1346
+- [Bugfix] Date picker bug fix #1355
 
 ## 0.8.1
 
