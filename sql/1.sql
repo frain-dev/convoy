@@ -232,7 +232,9 @@ CREATE TABLE IF NOT EXISTS convoy.sources (
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	deleted_at TIMESTAMPTZ
+	deleted_at TIMESTAMPTZ,
+
+	CONSTRAINT sources_mask_id UNIQUE NULLS NOT DISTINCT (mask_id, deleted_at)
 );
 
 CREATE TABLE IF NOT EXISTS convoy.source_verifiers (
@@ -253,7 +255,11 @@ CREATE TABLE IF NOT EXISTS convoy.source_verifiers (
 
 	twitter_crc_verified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
-	source_id CHAR(26) NOT NULL REFERENCES convoy.sources (id)
+	source_id CHAR(26) NOT NULL REFERENCES convoy.sources (id),
+
+	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+	deleted_at TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS convoy.subscriptions (

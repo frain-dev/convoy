@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"math"
 
 	"github.com/lib/pq"
 
@@ -53,7 +52,8 @@ const (
         hmac_hash=$7,
         hmac_header=$8,
         hmac_secret=$9,
-        hmac_encoding=$10
+        hmac_encoding=$10,
+		updated_at = now()
 	WHERE source_id = $1;
 	`
 
@@ -241,6 +241,9 @@ func (s *sourceRepo) FindSourceByID(ctx context.Context, projectID string, id st
 	source := &datastore.Source{}
 	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.id"), id).StructScan(source)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrSourceNotFound
+		}
 		return nil, err
 	}
 
@@ -251,6 +254,9 @@ func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskID string) (*da
 	source := &datastore.Source{}
 	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.mask_id"), maskID).StructScan(source)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrSourceNotFound
+		}
 		return nil, err
 	}
 
@@ -277,16 +283,20 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectID string, id 
 }
 
 func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, filter *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
-	skip := (pageable.Page - 1) * pageable.PerPage
-	rows, err := s.db.QueryxContext(ctx, fetchSourcesPaginated, pageable.PerPage, skip)
+	rows, err := s.db.QueryxContext(ctx, fetchSourcesPaginated, pageable.Limit(), pageable.Offset())
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
 
-	var apiKeys []datastore.Source
-	err = rows.StructScan(&apiKeys)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
+	sources := make([]datastore.Source, 0)
+	var source datastore.Source
+	for rows.Next() {
+		err = rows.StructScan(&source)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		sources = append(sources, source)
 	}
 
 	var count int
@@ -295,14 +305,6 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 		return nil, datastore.PaginationData{}, err
 	}
 
-	pagination := datastore.PaginationData{
-		Total:     int64(count),
-		Page:      int64(pageable.Page),
-		PerPage:   int64(pageable.PerPage),
-		Prev:      int64(getPrevPage(pageable.Page)),
-		Next:      int64(pageable.Page + 1),
-		TotalPage: int64(math.Ceil(float64(count) / float64(pageable.PerPage))),
-	}
-
-	return apiKeys, pagination, nil
+	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
+	return sources, pagination, nil
 }

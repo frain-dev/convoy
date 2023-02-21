@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"math"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
@@ -125,8 +124,7 @@ func (i *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datast
 }
 
 func (i *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID string, inviteStatus datastore.InviteStatus, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
-	skip := (pageable.Page - 1) * pageable.PerPage
-	rows, err := i.db.QueryxContext(ctx, fetchOrganisationInvitesPaginated, pageable.PerPage, skip, orgID, inviteStatus)
+	rows, err := i.db.QueryxContext(ctx, fetchOrganisationInvitesPaginated, pageable.Limit(), pageable.Offset(), orgID, inviteStatus)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -149,15 +147,7 @@ func (i *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID
 		return nil, datastore.PaginationData{}, err
 	}
 
-	pagination := datastore.PaginationData{
-		Total:     int64(count),
-		Page:      int64(pageable.Page),
-		PerPage:   int64(pageable.PerPage),
-		Prev:      int64(getPrevPage(pageable.Page)),
-		Next:      int64(pageable.Page + 1),
-		TotalPage: int64(math.Ceil(float64(count) / float64(pageable.PerPage))),
-	}
-
+	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
 	return invites, pagination, rows.Close()
 }
 
