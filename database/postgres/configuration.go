@@ -10,10 +10,6 @@ import (
 	"gopkg.in/guregu/null.v4"
 )
 
-var (
-	ErrConfigNotFound = errors.New("config not found")
-)
-
 const (
 	createConfiguration = `
 	INSERT INTO convoy.configurations(
@@ -122,7 +118,7 @@ func (c *configRepo) LoadConfiguration(ctx context.Context) (*datastore.Configur
 	err := c.db.QueryRowxContext(ctx, fetchConfiguration).StructScan(config)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrConfigNotFound
+			return nil, datastore.ErrConfigNotFound
 		}
 		return nil, err
 	}
