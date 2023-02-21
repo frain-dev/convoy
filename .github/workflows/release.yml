@@ -55,7 +55,7 @@ jobs:
 
   release-matrix:
     name: Release & Publish Go Binary
-    needs: [build_ui, analyze-tags]
+    needs: [build_ui, analyze-tags, upload_docker_config]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
