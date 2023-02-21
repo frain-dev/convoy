@@ -178,7 +178,6 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 		return ErrProjectConfigNotCreated
 	}
 
-	project.UID = ulid.Make().String()
 	project.ProjectConfigID = configID
 	proResult, err := tx.ExecContext(ctx, createProject, project.UID, project.Name, project.Type, project.LogoURL, project.OrganisationID, project.ProjectConfigID)
 	if err != nil {

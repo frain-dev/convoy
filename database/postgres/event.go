@@ -12,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
-	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -112,7 +111,6 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		return err
 	}
 
-	event.UID = ulid.Make().String()
 	_, err = tx.ExecContext(ctx, createEvent,
 		event.UID,
 		event.EventType,

@@ -29,6 +29,7 @@ func Test_FetchProjectByID(t *testing.T) {
 	projectRepo := NewProjectRepo(db)
 
 	newProject := &datastore.Project{
+		UID:            ulid.Make().String(),
 		Name:           "Yet another project",
 		LogoURL:        "s3.com/dsiuirueiy",
 		OrganisationID: org.UID,
@@ -37,7 +38,6 @@ func Test_FetchProjectByID(t *testing.T) {
 	}
 
 	require.NoError(t, projectRepo.CreateProject(context.Background(), newProject))
-	require.NotEmpty(t, newProject.UID)
 
 	dbProject, err := projectRepo.FetchProjectByID(context.Background(), newProject.UID)
 	require.NoError(t, err)
@@ -73,6 +73,7 @@ func Test_CreateProject(t *testing.T) {
 	const name = "test_project"
 
 	project := &datastore.Project{
+		UID:            ulid.Make().String(),
 		Name:           name,
 		OrganisationID: org.UID,
 		Type:           datastore.IncomingProject,
@@ -81,10 +82,10 @@ func Test_CreateProject(t *testing.T) {
 
 	err := projectRepo.CreateProject(context.Background(), project)
 	require.NoError(t, err)
-	require.NotEmpty(t, project.UID)
 	require.NotEmpty(t, project.ProjectConfigID)
 
 	projectWithExistingName := &datastore.Project{
+		UID:            ulid.Make().String(),
 		Name:           name,
 		OrganisationID: org.UID,
 		Config:         &datastore.DefaultProjectConfig,
@@ -103,6 +104,7 @@ func Test_CreateProject(t *testing.T) {
 	require.NoError(t, err)
 
 	projectInDiffOrg := &datastore.Project{
+		UID:            ulid.Make().String(),
 		Name:           name,
 		OrganisationID: seedOrg(t, db).UID,
 		Config:         &datastore.DefaultProjectConfig,
@@ -124,6 +126,7 @@ func Test_UpdateProject(t *testing.T) {
 	const name = "test_project"
 
 	project := &datastore.Project{
+		UID:            ulid.Make().String(),
 		Name:           name,
 		OrganisationID: org.UID,
 		Config:         &datastore.DefaultProjectConfig,
@@ -203,6 +206,7 @@ func Test_LoadProjects(t *testing.T) {
 
 	for i := 0; i < 3; i++ {
 		project := &datastore.Project{
+			UID:            ulid.Make().String(),
 			Name:           fmt.Sprintf("%s-project", uuid.NewString()),
 			OrganisationID: org.UID,
 			Config:         &datastore.DefaultProjectConfig,
@@ -214,6 +218,7 @@ func Test_LoadProjects(t *testing.T) {
 
 	for i := 0; i < 4; i++ {
 		project := &datastore.Project{
+			UID:            ulid.Make().String(),
 			Name:           fmt.Sprintf("%s-project", uuid.NewString()),
 			OrganisationID: seedOrg(t, db).UID,
 			Config:         &datastore.DefaultProjectConfig,
@@ -237,12 +242,14 @@ func Test_FillProjectStatistics(t *testing.T) {
 	projectRepo := NewProjectRepo(db)
 
 	project1 := &datastore.Project{
+		UID:            ulid.Make().String(),
 		Name:           "project1",
 		Config:         &datastore.DefaultProjectConfig,
 		OrganisationID: org.UID,
 	}
 
 	project2 := &datastore.Project{
+		UID:            ulid.Make().String(),
 		Name:           "project2",
 		Config:         &datastore.DefaultProjectConfig,
 		OrganisationID: org.UID,
@@ -320,6 +327,7 @@ func Test_DeleteProject(t *testing.T) {
 	projectRepo := NewProjectRepo(db)
 
 	project := &datastore.Project{
+		UID:            ulid.Make().String(),
 		Name:           "project",
 		Config:         &datastore.DefaultProjectConfig,
 		OrganisationID: org.UID,
@@ -391,7 +399,7 @@ func seedOrg(t *testing.T, db *sqlx.DB) *datastore.Organisation {
 	user := seedUser(t, db)
 
 	org := &datastore.Organisation{
-		Name:           uuid.NewString() + "-new_org",
+		Name:           ulid.Make().String() + "-new_org",
 		OwnerID:        user.UID,
 		CustomDomain:   null.NewString("https://google.com", true),
 		AssignedDomain: null.NewString("https://google.com", true),
