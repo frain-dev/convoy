@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS convoy.organisation_members (
 CREATE TABLE IF NOT EXISTS convoy.project_configurations (
 	id CHAR(26) PRIMARY KEY,
 
-	retention_policy TEXT NOT NULL,
+	retention_policy_policy TEXT NOT NULL,
 	max_payload_read_size INTEGER NOT NULL,
 
 	replay_attacks_prevention_enabled BOOLEAN NOT NULL,
@@ -85,7 +85,9 @@ CREATE TABLE IF NOT EXISTS convoy.projects (
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	deleted_at TIMESTAMPTZ
+	deleted_at TIMESTAMPTZ,
+
+    CONSTRAINT name_org_id_key UNIQUE NULLS NOT DISTINCT (name, organisation_id, deleted_at)
 );
 
 
@@ -170,12 +172,6 @@ CREATE TABLE IF NOT EXISTS convoy.portal_links (
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	deleted_at TIMESTAMPTZ
-);
-
-CREATE TABLE IF NOT EXISTS convoy.subscription_filters (
-	id CHAR(26) PRIMARY KEY,
-	invitee_email JSONB NOT NULL,
 	deleted_at TIMESTAMPTZ
 );
 

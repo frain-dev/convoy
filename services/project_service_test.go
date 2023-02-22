@@ -606,8 +606,8 @@ func TestProjectService_GetProjects(t *testing.T) {
 
 				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
 					project.Statistics = &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
+						MessagesSent:   1,
+						TotalEndpoints: 1,
 					}
 
 					return nil
@@ -617,15 +617,15 @@ func TestProjectService_GetProjects(t *testing.T) {
 				{
 					UID: "123",
 					Statistics: &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
+						MessagesSent:   1,
+						TotalEndpoints: 1,
 					},
 				},
 				{
 					UID: "abc",
 					Statistics: &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
+						MessagesSent:   1,
+						TotalEndpoints: 1,
 					},
 				},
 			},
@@ -647,8 +647,8 @@ func TestProjectService_GetProjects(t *testing.T) {
 
 				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
 					project.Statistics = &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
+						MessagesSent:   1,
+						TotalEndpoints: 1,
 					}
 
 					return nil
@@ -658,15 +658,15 @@ func TestProjectService_GetProjects(t *testing.T) {
 				{
 					UID: "123",
 					Statistics: &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
+						MessagesSent:   1,
+						TotalEndpoints: 1,
 					},
 				},
 				{
 					UID: "abc",
 					Statistics: &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
+						MessagesSent:   1,
+						TotalEndpoints: 1,
 					},
 				},
 			},
@@ -688,8 +688,8 @@ func TestProjectService_GetProjects(t *testing.T) {
 
 				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
 					project.Statistics = &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
+						MessagesSent:   1,
+						TotalEndpoints: 1,
 					}
 
 					return nil
@@ -699,15 +699,15 @@ func TestProjectService_GetProjects(t *testing.T) {
 				{
 					UID: "123",
 					Statistics: &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
+						MessagesSent:   1,
+						TotalEndpoints: 1,
 					},
 				},
 				{
 					UID: "abc",
 					Statistics: &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
+						MessagesSent:   1,
+						TotalEndpoints: 1,
 					},
 				},
 			},
@@ -781,8 +781,8 @@ func TestProjectService_FillProjectStatistics(t *testing.T) {
 				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
 				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
 					project.Statistics = &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
+						MessagesSent:   1,
+						TotalEndpoints: 1,
 					}
 					return nil
 				})
@@ -790,8 +790,8 @@ func TestProjectService_FillProjectStatistics(t *testing.T) {
 			wantProject: &datastore.Project{
 				UID: "1234",
 				Statistics: &datastore.ProjectStatistics{
-					MessagesSent: 1,
-					TotalApps:    1,
+					MessagesSent:   1,
+					TotalEndpoints: 1,
 				},
 			},
 			wantErr: false,

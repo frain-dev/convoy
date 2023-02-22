@@ -586,24 +586,13 @@
 						"type": "integer"
 					},
 					"ratelimit": {
-						"allOf": [
-							{
-								"$ref": "#/components/schemas/datastore.RateLimitConfiguration"
-							}
-						],
-						"description": "old fields"
-					},
-					"ratelimit.count": {
-						"type": "integer"
-					},
-					"ratelimit.duration": {
-						"type": "integer"
+						"$ref": "#/components/schemas/datastore.RateLimitConfiguration"
 					},
 					"replay_attacks_prevention_enabled": {
 						"type": "boolean"
 					},
 					"retention_policy": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.RetentionPolicyConfiguration"
 					},
 					"retention_policy_enabled": {
 						"type": "boolean"
@@ -611,26 +600,8 @@
 					"signature": {
 						"$ref": "#/components/schemas/datastore.SignatureConfiguration"
 					},
-					"signature_header": {
-						"$ref": "#/components/schemas/config.SignatureHeaderProvider"
-					},
 					"strategy": {
 						"$ref": "#/components/schemas/datastore.StrategyConfiguration"
-					},
-					"strategy_duration": {
-						"type": "integer"
-					},
-					"strategy_retry_count": {
-						"type": "integer"
-					},
-					"strategy_type": {
-						"$ref": "#/components/schemas/datastore.StrategyProvider"
-					},
-					"versions": {
-						"items": {
-							"$ref": "#/components/schemas/datastore.SignatureVersion"
-						},
-						"type": "array"
 					}
 				},
 				"type": "object"
@@ -672,6 +643,14 @@
 					},
 					"duration": {
 						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.RetentionPolicyConfiguration": {
+				"properties": {
+					"policy": {
+						"type": "string"
 					}
 				},
 				"type": "object"
