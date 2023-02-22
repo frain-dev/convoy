@@ -213,24 +213,6 @@ CREATE TABLE IF NOT EXISTS convoy.configurations (
 	deleted_at TIMESTAMPTZ
 );
 
--- // TODO(all): add source_verifier_id to source table
-CREATE TABLE IF NOT EXISTS convoy.sources (
-	id CHAR(26) PRIMARY KEY,
-
-	name TEXT NOT NULL,
-	type TEXT NOT NULL,
-	mask_id TEXT NOT NULL,
-	provider TEXT NOT NULL,
-	is_disabled BOOLEAN NOT NULL,
-	forward_headers TEXT[],
-
-	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
-
-	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	deleted_at TIMESTAMPTZ
-);
-
 CREATE TABLE IF NOT EXISTS convoy.source_verifiers (
 	id CHAR(26) PRIMARY KEY,
 
@@ -249,7 +231,29 @@ CREATE TABLE IF NOT EXISTS convoy.source_verifiers (
 
 	twitter_crc_verified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
-	source_id CHAR(26) NOT NULL REFERENCES convoy.sources (id)
+	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+	deleted_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS convoy.sources (
+	id CHAR(26) PRIMARY KEY,
+
+	name TEXT NOT NULL,
+	type TEXT NOT NULL,
+	mask_id TEXT NOT NULL,
+	provider TEXT NOT NULL,
+	is_disabled BOOLEAN NOT NULL,
+	forward_headers TEXT[],
+
+	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
+	source_verifier_id CHAR(26) REFERENCES convoy.source_verifiers (id),
+
+	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+	deleted_at TIMESTAMPTZ,
+
+	CONSTRAINT sources_mask_id UNIQUE NULLS NOT DISTINCT (mask_id, deleted_at)
 );
 
 CREATE TABLE IF NOT EXISTS convoy.subscriptions (

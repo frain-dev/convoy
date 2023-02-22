@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"math"
 
 	"github.com/lib/pq"
 
@@ -17,17 +16,17 @@ import (
 
 const (
 	createSource = `
-    INSERT INTO convoy.sources (id,name,type,mask_id,provider,is_disabled,forward_headers,project_id)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
+    INSERT INTO convoy.sources (id, source_verifier_id, name,type,mask_id,provider,is_disabled,forward_headers,project_id)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9);
     `
 
 	createSourceVerifier = `
     INSERT INTO convoy.source_verifiers (
         id,type,basic_username,basic_password,
         api_key_header_name,api_key_header_value,
-        hmac_hash,hmac_header,hmac_secret,hmac_encoding,source_id
+        hmac_hash,hmac_header,hmac_secret,hmac_encoding
     )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11);
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10);
     `
 
 	updateSourceById = `
@@ -53,8 +52,9 @@ const (
         hmac_hash=$7,
         hmac_header=$8,
         hmac_secret=$9,
-        hmac_encoding=$10
-	WHERE source_id = $1;
+        hmac_encoding=$10,
+		updated_at = now()
+	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	fetchSource = `
@@ -67,6 +67,7 @@ const (
 		s.is_disabled,
 		s.forward_headers,
 		s.project_id,
+		s.source_verifier_id,
 		sv.type as "verifier.type",
 		sv.basic_username as "verifier.basic_auth.username",
 		sv.basic_password as "verifier.basic_auth.password",
@@ -80,7 +81,7 @@ const (
 		s.updated_at
 	FROM convoy.sources as s
 	LEFT JOIN convoy.source_verifiers sv
-		ON s.id = sv.source_id
+		ON s.source_verifier_id = sv.id
 	WHERE %s = $1 AND s.deleted_at IS NULL;
 	`
 
@@ -92,6 +93,12 @@ const (
 
 	deleteSourceVerifier = `
 	UPDATE convoy.source_verifiers SET
+	deleted_at = now()
+	WHERE id = $1 AND deleted_at IS NULL;
+	`
+
+	deleteSourceSubscription = `
+	UPDATE convoy.subscriptions SET 
 	deleted_at = now()
 	WHERE source_id = $1 AND deleted_at IS NULL;
 	`
@@ -127,30 +134,13 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 		return err
 	}
 
-	source.UID = ulid.Make().String()
-	result1, err := tx.ExecContext(
-		ctx, createSource, source.UID, source.Name, source.Type, source.MaskID,
-		source.Provider, source.IsDisabled, pq.Array(source.ForwardHeaders), source.ProjectID,
-	)
-	if err != nil {
-		return err
-	}
-
-	rowsAffected, err := result1.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected < 1 {
-		return ErrSourceNotCreated
-	}
-
 	var (
 		hmac   datastore.HMac
 		basic  datastore.BasicAuth
 		apiKey datastore.ApiKey
 	)
 
+	sourceVerifierID := ulid.Make().String()
 	switch source.Verifier.Type {
 	case datastore.APIKeyVerifier:
 		apiKey = *source.Verifier.ApiKey
@@ -161,20 +151,39 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 	}
 
 	result2, err := tx.ExecContext(
-		ctx, createSourceVerifier, ulid.Make().String(), source.Verifier.Type, basic.UserName, basic.Password,
-		apiKey.HeaderName, apiKey.HeaderValue, hmac.Hash, hmac.Header, hmac.Secret, hmac.Encoding, source.UID,
+		ctx, createSourceVerifier, sourceVerifierID, source.Verifier.Type, basic.UserName, basic.Password,
+		apiKey.HeaderName, apiKey.HeaderValue, hmac.Hash, hmac.Header, hmac.Secret, hmac.Encoding,
 	)
+
 	if err != nil {
 		return err
 	}
 
-	rowsAffected, err = result2.RowsAffected()
+	rowsAffected, err := result2.RowsAffected()
 	if err != nil {
 		return err
 	}
 
 	if rowsAffected < 1 {
 		return ErrSourceVerifierNotCreated
+	}
+
+	source.VerifierID = sourceVerifierID
+	result1, err := tx.ExecContext(
+		ctx, createSource, source.UID, sourceVerifierID, source.Name, source.Type, source.MaskID,
+		source.Provider, source.IsDisabled, pq.Array(source.ForwardHeaders), source.ProjectID,
+	)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err = result1.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected < 1 {
+		return ErrSourceNotCreated
 	}
 
 	return tx.Commit()
@@ -218,7 +227,7 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 	}
 
 	result2, err := tx.ExecContext(
-		ctx, updateSourceVerifierById, source.UID, source.Verifier.Type, basic.UserName, basic.Password,
+		ctx, updateSourceVerifierById, source.VerifierID, source.Verifier.Type, basic.UserName, basic.Password,
 		apiKey.HeaderName, apiKey.HeaderValue, hmac.Hash, hmac.Header, hmac.Secret, hmac.Encoding,
 	)
 	if err != nil {
@@ -241,6 +250,9 @@ func (s *sourceRepo) FindSourceByID(ctx context.Context, projectID string, id st
 	source := &datastore.Source{}
 	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.id"), id).StructScan(source)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrSourceNotFound
+		}
 		return nil, err
 	}
 
@@ -251,19 +263,22 @@ func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskID string) (*da
 	source := &datastore.Source{}
 	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.mask_id"), maskID).StructScan(source)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrSourceNotFound
+		}
 		return nil, err
 	}
 
 	return source, nil
 }
 
-func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectID string, id string) error {
+func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectID, id, sourceVeriferID string) error {
 	tx, err := s.db.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, deleteSourceVerifier, id)
+	_, err = tx.ExecContext(ctx, deleteSourceVerifier, sourceVeriferID)
 	if err != nil {
 		return err
 	}
@@ -273,20 +288,29 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectID string, id 
 		return err
 	}
 
+	_, err = tx.ExecContext(ctx, deleteSourceSubscription, id)
+	if err != nil {
+		return err
+	}
+
 	return tx.Commit()
 }
 
 func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, filter *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
-	skip := (pageable.Page - 1) * pageable.PerPage
-	rows, err := s.db.QueryxContext(ctx, fetchSourcesPaginated, pageable.PerPage, skip)
+	rows, err := s.db.QueryxContext(ctx, fetchSourcesPaginated, pageable.Limit(), pageable.Offset())
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
 
-	var apiKeys []datastore.Source
-	err = rows.StructScan(&apiKeys)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
+	sources := make([]datastore.Source, 0)
+	var source datastore.Source
+	for rows.Next() {
+		err = rows.StructScan(&source)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		sources = append(sources, source)
 	}
 
 	var count int
@@ -295,14 +319,6 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 		return nil, datastore.PaginationData{}, err
 	}
 
-	pagination := datastore.PaginationData{
-		Total:     int64(count),
-		Page:      int64(pageable.Page),
-		PerPage:   int64(pageable.PerPage),
-		Prev:      int64(getPrevPage(pageable.Page)),
-		Next:      int64(pageable.Page + 1),
-		TotalPage: int64(math.Ceil(float64(count) / float64(pageable.PerPage))),
-	}
-
-	return apiKeys, pagination, nil
+	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
+	return sources, pagination, nil
 }

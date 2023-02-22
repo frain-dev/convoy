@@ -145,8 +145,7 @@ func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *da
 }
 
 func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable datastore.Pageable) ([]*datastore.OrganisationMember, datastore.PaginationData, error) {
-	skip := (pageable.Page - 1) * pageable.PerPage
-	rows, err := o.db.QueryxContext(ctx, fetchOrganisationMembersPaginated, pageable.PerPage, skip, organisationID)
+	rows, err := o.db.QueryxContext(ctx, fetchOrganisationMembersPaginated, pageable.Limit(), pageable.Offset(), organisationID)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -174,8 +173,7 @@ func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organi
 }
 
 func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID string, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
-	skip := (pageable.Page - 1) * pageable.PerPage
-	rows, err := o.db.QueryxContext(ctx, fetchOrgMemberOrganisations, pageable.PerPage, skip, userID)
+	rows, err := o.db.QueryxContext(ctx, fetchOrgMemberOrganisations, pageable.Limit(), pageable.Offset(), userID)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
