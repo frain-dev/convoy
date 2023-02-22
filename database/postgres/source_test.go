@@ -283,6 +283,7 @@ func seedProject(t *testing.T, db *sqlx.DB) *datastore.Project {
 	org := seedOrg(t, db)
 
 	project := &datastore.Project{
+		UID:            ulid.Make().String(),
 		Name:           "project",
 		Config:         &datastore.DefaultProjectConfig,
 		OrganisationID: org.UID,

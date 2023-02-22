@@ -44,7 +44,6 @@ func (p *Postgres) TruncateTables() error {
 		convoy.sources,
 		convoy.configurations,
 		convoy.devices,
-		convoy.subscription_filters,
 		convoy.portal_links,
 		convoy.organisation_invites,
 		convoy.applications,
