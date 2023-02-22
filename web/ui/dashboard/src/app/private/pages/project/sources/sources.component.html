@@ -11,9 +11,9 @@
 </div>
 
 <div class="flex justify-between items-end mt-24px border-b border-b-grey-10 pb-20px mb-24px">
-	<div>
-		<h1 class="text-24 font-bold text-grey-80">Sources</h1>
-		<p class="text-grey-60 text-14 mt-6px max-w-2xl">Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints</p>
+	<div class="flex items-center">
+		<h1 class="text-24 font-bold text-grey-80 mr-10px">Sources</h1>
+		<convoy-tooltip tooltipContent="Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints" position="right"></convoy-tooltip>
 	</div>
 	<button convoy-button size="sm" routerLink="./new">Connect a source</button>
 </div>

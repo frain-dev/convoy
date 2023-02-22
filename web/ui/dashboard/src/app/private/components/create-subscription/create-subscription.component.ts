@@ -73,7 +73,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
-		await Promise.all([this.getEndpoints(), this.getSources(), this.getGetProjectDetails(), this.getSubscriptionDetails()]);
+		await Promise.all([, this.getGetProjectDetails(), this.getSubscriptionDetails()]);
 		this.isLoadingForm = false;
 
 		// add required validation on source input for incoming projects
@@ -97,6 +97,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async getSubscriptionDetails() {
+		await Promise.all([this.getEndpoints(), this.getSources()]);
 		if (this.action !== 'update') return;
 
 		try {

@@ -11,9 +11,9 @@
 </div>
 
 <div class="flex justify-between items-end mt-24px border-b border-b-grey-10 pb-20px mb-24px">
-	<div>
-		<h1 class="text-24 font-bold text-grey-80">Subscriptions</h1>
-		<p class="text-grey-60 text-14 mt-6px max-w-2xl">On Convoy, endpoints are subscribed to listen to events from a source along with configurations like retries and event filters. This page list all your existing subscritions</p>
+	<div class="flex items-center">
+		<h1 class="text-24 font-bold text-grey-80 mr-10px">Subscriptions</h1>
+		<convoy-tooltip tooltipContent="On Convoy, endpoints are subscribed to listen to events from a source along with configurations like retries and event filters. This page list all your existing subscritions" position="right"></convoy-tooltip>
 	</div>
 	<button convoy-button size="sm" routerLink="./new">Create a subscription</button>
 </div>
@@ -40,7 +40,7 @@
 <div *ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length">
 	<div class="flex flex-wrap gap-24px" *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
 		<div convoy-card class="pt-10px transition-all w-full max-w-[356px] cursor-pointer" hover="true" *ngFor="let subscription of subscriptions?.content; let i = index" [routerLink]="['./']" [queryParams]="{ id: subscription.uid }">
-			<div class="w-full text-12 text-grey-60 font-medium px-24px border-b border-b-grey-10 pb-10px">Z{{ subscription.name }}</div>
+			<div class="w-full text-12 text-grey-60 font-medium px-24px border-b border-b-grey-10 pb-10px">{{ subscription.name }}</div>
 			<div class="flex items-center justify-between pt-24px px-24px">
 				<div class="w-114px mb-24px">
 					<div class="text-grey-40 text-10 mb-4px">{{ subscription.source_metadata.provider || (subscription.source_metadata.verifier.type | sourceValue: 'verifier') }} Source</div>
@@ -114,8 +114,6 @@
 	imgSrc="/assets/img/new-empty-state.png"
 	heading="Create your first webhook subscription"
 	description="Webhook subscriptions lets you define the source of your webhook and the destination where any webhook event should be sent. It is what allows Convoy to identify and proxy your webhooks."
-	buttonText="Create Subscription"
-	(onAction)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails?.uid + '/subscriptions/new')"
 	className="min-h-[65vh] mt-16px"
 	id="subscriptions-empty-state"
 	*ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length === 0"

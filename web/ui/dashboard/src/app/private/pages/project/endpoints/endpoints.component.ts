@@ -18,6 +18,7 @@ import { FormsModule } from '@angular/forms';
 import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
+import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 
 @Component({
 	selector: 'convoy-endpoints',
@@ -41,7 +42,8 @@ import { StatusColorModule } from 'src/app/pipes/status-color/status-color.modul
 		TagComponent,
 		FormsModule,
 		RouterModule,
-        StatusColorModule
+		StatusColorModule,
+		TooltipComponent
 	],
 	templateUrl: './endpoints.component.html',
 	styleUrls: ['./endpoints.component.scss']
