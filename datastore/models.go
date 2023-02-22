@@ -693,7 +693,6 @@ func (s *Subscription) GetRateLimitConfig() RateLimitConfiguration {
 }
 
 type Source struct {
-	// ID             primitive.ObjectID `json:"-" bson:"_id"`
 	UID            string          `json:"uid" db:"id"`
 	ProjectID      string          `json:"project_id" db:"project_id"`
 	MaskID         string          `json:"mask_id" db:"mask_id"`
@@ -701,6 +700,7 @@ type Source struct {
 	Type           SourceType      `json:"type" db:"type"`
 	Provider       SourceProvider  `json:"provider" db:"provider"`
 	IsDisabled     bool            `json:"is_disabled" db:"is_disabled"`
+	VerifierID     string          `json:"-" db:"source_verifier_id"`
 	Verifier       *VerifierConfig `json:"verifier" db:"verifier"`
 	ProviderConfig *ProviderConfig `json:"provider_config" db:"provider_config"`
 	ForwardHeaders pq.StringArray  `json:"forward_headers" db:"forward_headers"`

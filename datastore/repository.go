@@ -111,7 +111,7 @@ type SourceRepository interface {
 	UpdateSource(ctx context.Context, projectID string, source *Source) error
 	FindSourceByID(ctx context.Context, projectID string, id string) (*Source, error)
 	FindSourceByMaskID(ctx context.Context, maskID string) (*Source, error)
-	DeleteSourceByID(ctx context.Context, projectID string, id string) error
+	DeleteSourceByID(ctx context.Context, projectID string, id string, sourceVerifierID string) error
 	LoadSourcesPaged(ctx context.Context, projectID string, filter *SourceFilter, pageable Pageable) ([]Source, PaginationData, error)
 }
 
