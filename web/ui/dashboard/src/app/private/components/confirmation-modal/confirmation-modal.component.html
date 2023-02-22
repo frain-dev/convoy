@@ -1,11 +1,13 @@
 <div convoy-modal position="center" size="sm" (closeModal)="closeModal.emit()">
-	<div class="flex flex-col justify-center items-center px-20px py-30px" modalBody>
-		<p class="text-16 font-semibold text-black mb-8px text-center">Confirm Action</p>
-		<p class="text-14 font-medium text-grey-40 mb-20px text-center">
+	<div class="px-20px py-30px" modalBody>
+		<p class="text-16 font-semibold text-black mb-8px">Confirm Action</p>
+		<p class="text-14 font-medium text-grey-40 mb-24px">
 			<span *ngIf="!confirmText">You are about to discard this process, please confirm this action.</span>
 			{{ confirmText }}
 		</p>
-		<button convoy-button [color]="action === 'discard' ? 'danger' : 'primary'" class="mb-24px" (click)="confirmAction.emit()">Confirm</button>
-		<button convoy-button fill="text" class="font-semibold" (click)="closeModal.emit()">Close</button>
+		<div class="flex items-center">
+			<button convoy-button [color]="action === 'discard' ? 'danger' : 'primary'" class="mr-12px px-60px" (click)="confirmAction.emit()">Confirm</button>
+			<button convoy-button fill="clear" [color]="action === 'discard' ? 'primary' : 'danger'" class="font-semibold" (click)="closeModal.emit()">Cancel</button>
+		</div>
 	</div>
 </div>

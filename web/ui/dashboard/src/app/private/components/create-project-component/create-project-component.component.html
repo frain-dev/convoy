@@ -254,7 +254,7 @@
 <convoy-confirmation-modal
 	*ngIf="confirmModal || confirmRegenerateKey"
 	[action]="confirmRegenerateKey ? 'save' : 'discard'"
-	confirmText="You are about to regenerate a new Api Key for this project"
+	[confirmText]="confirmRegenerateKey ? 'You are about to regenerate a new Api Key for this project' : ''"
 	(confirmAction)="confirmRegenerateKey ? regenerateKey() : router.navigateByUrl('/')"
 	(closeModal)="confirmModal = false; confirmRegenerateKey = false"
 ></convoy-confirmation-modal>

@@ -12,7 +12,7 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 })
 export class ConfirmationModalComponent implements OnInit {
 	@Input('action') action: 'save' | 'discard' = 'discard';
-	@Input('confirmText') confirmText!: string;
+	@Input('confirmText') confirmText?: string;
 	@Output() closeModal = new EventEmitter<any>();
 	@Output() confirmAction = new EventEmitter<any>();
 	constructor() {}
