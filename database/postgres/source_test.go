@@ -28,9 +28,6 @@ func Test_CreateSource(t *testing.T) {
 	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
 	require.NoError(t, err)
 
-	source.CreatedAt = time.Time{}
-	source.UpdatedAt = time.Time{}
-
 	newSource.CreatedAt = time.Time{}
 	newSource.UpdatedAt = time.Time{}
 
@@ -53,9 +50,6 @@ func Test_FindSourceByID(t *testing.T) {
 
 	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
 	require.NoError(t, err)
-
-	source.CreatedAt = time.Time{}
-	source.UpdatedAt = time.Time{}
 
 	newSource.CreatedAt = time.Time{}
 	newSource.UpdatedAt = time.Time{}
@@ -80,9 +74,6 @@ func Test_FindSourceByMaskID(t *testing.T) {
 	newSource, err := sourceRepo.FindSourceByMaskID(context.Background(), source.MaskID)
 	require.NoError(t, err)
 
-	source.CreatedAt = time.Time{}
-	source.UpdatedAt = time.Time{}
-
 	newSource.CreatedAt = time.Time{}
 	newSource.UpdatedAt = time.Time{}
 
@@ -106,9 +97,6 @@ func Test_UpdateSource(t *testing.T) {
 
 	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
 	require.NoError(t, err)
-
-	source.CreatedAt = time.Time{}
-	source.UpdatedAt = time.Time{}
 
 	newSource.CreatedAt = time.Time{}
 	newSource.UpdatedAt = time.Time{}
