@@ -154,6 +154,7 @@ func Test_DeleteSource(t *testing.T) {
 
 	_, err = subRepo.FindSubscriptionByID(context.Background(), source.ProjectID, sub.UID)
 	require.Error(t, err)
+	require.True(t, errors.Is(err, datastore.ErrSubscriptionNotFound))
 }
 
 func Test_LoadSourcesPaged(t *testing.T) {
