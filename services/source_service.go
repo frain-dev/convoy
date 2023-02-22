@@ -176,8 +176,7 @@ func (s *SourceService) LoadSourcesPaged(ctx context.Context, g *datastore.Proje
 }
 
 func (s *SourceService) DeleteSource(ctx context.Context, g *datastore.Project, source *datastore.Source) error {
-	// ToDo: add check here to ensure the source doesn't have any existing subscriptions
-	err := s.sourceRepo.DeleteSourceByID(ctx, g.UID, source.UID)
+	err := s.sourceRepo.DeleteSourceByID(ctx, g.UID, source.UID, source.VerifierID)
 	if err != nil {
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete source"))
 	}

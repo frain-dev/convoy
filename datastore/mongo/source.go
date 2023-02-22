@@ -76,7 +76,7 @@ func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskId string) (*da
 	return source, nil
 }
 
-func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectId string, id string) error {
+func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectId, id, sourceVeriferID string) error {
 	ctx = s.setCollectionInContext(ctx)
 	update := bson.M{
 		"$set": bson.M{

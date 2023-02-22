@@ -100,6 +100,7 @@ func Test_UpdateSource(t *testing.T) {
 
 	name := "Convoy-Dev"
 	source.Name = name
+	source.IsDisabled = true
 
 	require.NoError(t, sourceRepo.UpdateSource(context.Background(), source.ProjectID, source))
 
@@ -120,19 +121,39 @@ func Test_DeleteSource(t *testing.T) {
 	defer closeFn()
 
 	sourceRepo := NewSourceRepo(db)
+	subRepo := NewSubscriptionRepo(db)
 	source := generateSource(t, db)
 
 	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
 
-	_, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
+	sub := &datastore.Subscription{
+		Name:        "test_sub",
+		Type:        datastore.SubscriptionTypeAPI,
+		ProjectID:   source.ProjectID,
+		SourceID:    source.UID,
+		AlertConfig: &datastore.DefaultAlertConfig,
+		RetryConfig: &datastore.DefaultRetryConfig,
+		FilterConfig: &datastore.FilterConfiguration{
+			EventTypes: []string{"*"},
+			Filter:     datastore.FilterSchema{},
+		},
+		RateLimitConfig: &datastore.DefaultRateLimitConfig,
+	}
+
+	err := subRepo.CreateSubscription(context.Background(), source.ProjectID, sub)
 	require.NoError(t, err)
 
-	require.NoError(t, sourceRepo.DeleteSourceByID(context.Background(), source.ProjectID, source.UID))
+	_, err = sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
+	require.NoError(t, err)
+
+	require.NoError(t, sourceRepo.DeleteSourceByID(context.Background(), source.ProjectID, source.UID, source.VerifierID))
 
 	_, err = sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
-
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrSourceNotFound))
+
+	_, err = subRepo.FindSubscriptionByID(context.Background(), source.ProjectID, sub.UID)
+	require.Error(t, err)
 }
 
 func Test_LoadSourcesPaged(t *testing.T) {
