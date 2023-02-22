@@ -306,6 +306,7 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addConfigCommand(app))
 	cmd.AddCommand(addStreamCommand(app))
 	cmd.AddCommand(addDomainCommand(app))
+	cmd.AddCommand(addIngestCommand(app))
 }
 
 type ConvoyCli struct {
