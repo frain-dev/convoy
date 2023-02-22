@@ -2,13 +2,14 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
-	"math"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
-	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
 )
 
 const (
@@ -76,10 +77,16 @@ func NewAPIKeyRepo(db *sqlx.DB) datastore.APIKeyRepository {
 }
 
 func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) error {
+	var userID null.String
+
+	if !util.IsStringEmpty(key.UserID) {
+		userID = null.StringFrom(key.UserID)
+	}
+
 	result, err := a.db.ExecContext(
-		ctx, ulid.Make().String(), createAPIKey, key.Name, key.Type, key.MaskID,
+		ctx, createAPIKey, key.UID, key.Name, key.Type, key.MaskID,
 		key.Role.Type, key.Role.Project, key.Role.Endpoint, key.Hash,
-		key.Salt, key.UserID, key.ExpiresAt,
+		key.Salt, userID, key.ExpiresAt,
 	)
 	if err != nil {
 		return err
@@ -121,6 +128,9 @@ func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, id string) (*datastore.
 	apiKey := &datastore.APIKey{}
 	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "id"), id).StructScan(apiKey)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrAPIKeyNotFound
+		}
 		return nil, err
 	}
 
@@ -131,6 +141,9 @@ func (a *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*da
 	apiKey := &datastore.APIKey{}
 	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "mask_id"), maskID).StructScan(apiKey)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrAPIKeyNotFound
+		}
 		return nil, err
 	}
 
@@ -141,6 +154,9 @@ func (a *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datast
 	apiKey := &datastore.APIKey{}
 	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "hash"), hash).StructScan(apiKey)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrAPIKeyNotFound
+		}
 		return nil, err
 	}
 
@@ -166,8 +182,7 @@ func (a *apiKeyRepo) RevokeAPIKeys(ctx context.Context, ids []string) error {
 }
 
 func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
-	skip := (pageable.Page - 1) * pageable.PerPage
-	rows, err := a.db.QueryxContext(ctx, fetchAPIKeysPaginated, pageable.PerPage, skip)
+	rows, err := a.db.QueryxContext(ctx, fetchAPIKeysPaginated, pageable.Limit(), pageable.Offset())
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -190,14 +205,6 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 		return nil, datastore.PaginationData{}, err
 	}
 
-	pagination := datastore.PaginationData{
-		Total:     int64(count),
-		Page:      int64(pageable.Page),
-		PerPage:   int64(pageable.PerPage),
-		Prev:      int64(getPrevPage(pageable.Page)),
-		Next:      int64(pageable.Page + 1),
-		TotalPage: int64(math.Ceil(float64(count) / float64(pageable.PerPage))),
-	}
-
+	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
 	return apiKeys, pagination, nil
 }

@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/auth"
-	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -217,19 +216,4 @@ func TestFetchOrganisationInviteByToken(t *testing.T) {
 	require.Equal(t, iv.UID, invite.UID)
 	require.Equal(t, iv.Token, invite.Token)
 	require.Equal(t, iv.InviteeEmail, invite.InviteeEmail)
-}
-
-func seedOrg(t *testing.T, db *sqlx.DB) *datastore.Organisation {
-	user := seedUser(t, db)
-
-	org := &datastore.Organisation{
-		UID:     ulid.Make().String(),
-		Name:    "test-org",
-		OwnerID: user.UID,
-	}
-
-	err := NewOrgRepo(db).CreateOrganisation(context.Background(), org)
-	require.NoError(t, err)
-
-	return org
 }
