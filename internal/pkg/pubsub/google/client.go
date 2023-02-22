@@ -38,7 +38,9 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 }
 
 func (g *Google) Start() {
-	go g.Consume()
+	if g.workers > 0 {
+		go g.Consume()
+	}
 }
 
 func (g *Google) Stop() {
