@@ -2,13 +2,14 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
-	"math"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
-	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
 )
 
 const (
@@ -19,9 +20,10 @@ const (
 
 	updateAPIKeyById = `
 	UPDATE convoy.api_keys SET
-		role_type= $2,
-		role_project=$3,
-		role_endpoint=$4,
+	    name = $2,
+		role_type= $3,
+		role_project=$4,
+		role_endpoint=$5,
 		updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL ;
 	`
@@ -37,28 +39,50 @@ const (
 	    role_endpoint as "role.endpoint",
 	    hash,
 	    salt,
-	    user_id,
+	    COALESCE(user_id, '') AS user_id,
 	    created_at,
 	    updated_at,
 	    expires_at
 	FROM convoy.api_keys
-	WHERE %s = $1 AND deleted_at IS NULL;
+	WHERE %s = $1 AND deleted_at IS NULL
 	`
 
 	deleteAPIKeys = `
 	UPDATE convoy.api_keys SET
 	deleted_at = now()
-	WHERE id IN $1;
+	WHERE id IN (?);
+	`
+	baseAPIKeysCount = `
+	WITH table_count AS (
+		SELECT count(distinct(id)) as count
+		FROM convoy.api_keys WHERE deleted_at IS NULL
+		%s
+	)
 	`
 
 	fetchAPIKeysPaginated = `
-	SELECT * FROM convoy.api_keys
+	SELECT
+	   table_count.count,
+	    id,
+		name,
+	    key_type,
+	    mask_id,
+	    role_type as "role.type",
+	    role_project as "role.project",
+	    role_endpoint as "role.endpoint",
+	    hash,
+	    salt,
+	    COALESCE(user_id, '') AS user_id,
+	    created_at,
+	    updated_at,
+	    expires_at
+	FROM table_count, convoy.api_keys
 	WHERE deleted_at IS NULL
-	ORDER BY id LIMIT $1 OFFSET $2;
+	%s
+	ORDER BY id LIMIT ? OFFSET ?;
 	`
-	countAPIKeys = `
-	SELECT COUNT(id) FROM convoy.api_keys WHERE deleted_at IS NULL;
-	`
+
+	baseFilter = `AND (role_project = ? OR ? = '') AND (role_endpoint = ? OR ? = '') AND (user_id = ? OR ? = '') AND (key_type = ? OR ? = '')`
 )
 
 var (
@@ -76,10 +100,16 @@ func NewAPIKeyRepo(db *sqlx.DB) datastore.APIKeyRepository {
 }
 
 func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) error {
+	var userID null.String
+
+	if !util.IsStringEmpty(key.UserID) {
+		userID = null.StringFrom(key.UserID)
+	}
+
 	result, err := a.db.ExecContext(
-		ctx, ulid.Make().String(), createAPIKey, key.Name, key.Type, key.MaskID,
+		ctx, createAPIKey, key.UID, key.Name, key.Type, key.MaskID,
 		key.Role.Type, key.Role.Project, key.Role.Endpoint, key.Hash,
-		key.Salt, key.UserID, key.ExpiresAt,
+		key.Salt, userID, key.ExpiresAt,
 	)
 	if err != nil {
 		return err
@@ -99,7 +129,7 @@ func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) er
 
 func (a *apiKeyRepo) UpdateAPIKey(ctx context.Context, key *datastore.APIKey) error {
 	result, err := a.db.ExecContext(
-		ctx, updateAPIKeyById, key.UID, key.Role.Type, key.Role.Project, key.Role.Endpoint,
+		ctx, updateAPIKeyById, key.UID, key.Name, key.Role.Type, key.Role.Project, key.Role.Endpoint,
 	)
 	if err != nil {
 		return err
@@ -121,6 +151,9 @@ func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, id string) (*datastore.
 	apiKey := &datastore.APIKey{}
 	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "id"), id).StructScan(apiKey)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrAPIKeyNotFound
+		}
 		return nil, err
 	}
 
@@ -131,6 +164,9 @@ func (a *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*da
 	apiKey := &datastore.APIKey{}
 	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "mask_id"), maskID).StructScan(apiKey)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrAPIKeyNotFound
+		}
 		return nil, err
 	}
 
@@ -141,6 +177,9 @@ func (a *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datast
 	apiKey := &datastore.APIKey{}
 	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "hash"), hash).StructScan(apiKey)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrAPIKeyNotFound
+		}
 		return nil, err
 	}
 
@@ -148,7 +187,12 @@ func (a *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datast
 }
 
 func (a *apiKeyRepo) RevokeAPIKeys(ctx context.Context, ids []string) error {
-	result, err := a.db.ExecContext(ctx, deleteAPIKeys, ids)
+	query, args, err := sqlx.In(deleteAPIKeys, ids)
+	if err != nil {
+		return err
+	}
+
+	result, err := a.db.ExecContext(ctx, a.db.Rebind(query), args...)
 	if err != nil {
 		return err
 	}
@@ -166,38 +210,53 @@ func (a *apiKeyRepo) RevokeAPIKeys(ctx context.Context, ids []string) error {
 }
 
 func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
-	skip := (pageable.Page - 1) * pageable.PerPage
-	rows, err := a.db.QueryxContext(ctx, fetchAPIKeysPaginated, pageable.PerPage, skip)
+	var query string
+	var err error
+	var args []interface{}
+
+	if len(filter.EndpointIDs) > 0 {
+		filterQuery := `AND role_endpoint IN (?) ` + baseFilter
+		q := fmt.Sprintf(baseAPIKeysCount, filterQuery) + fmt.Sprintf(fetchAPIKeysPaginated, filterQuery)
+		args = []interface{}{filter.EndpointIDs, filter.ProjectID, filter.ProjectID, filter.EndpointID, filter.EndpointID, filter.UserID, filter.UserID, filter.KeyType, filter.KeyType}
+		args = append(args, args...)
+		args = append(args, pageable.Limit(), pageable.Offset())
+		query, args, err = sqlx.In(q, args...)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		query = a.db.Rebind(query)
+	} else {
+		q := fmt.Sprintf(baseAPIKeysCount, baseFilter) + fmt.Sprintf(fetchAPIKeysPaginated, baseFilter)
+		query = a.db.Rebind(q)
+		args = []interface{}{filter.ProjectID, filter.ProjectID, filter.EndpointID, filter.EndpointID, filter.UserID, filter.UserID, filter.KeyType, filter.KeyType}
+		args = append(args, args...)
+		args = append(args, pageable.Limit(), pageable.Offset())
+	}
+
+	rows, err := a.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
 
 	var apiKeys []datastore.APIKey
 
-	ak := datastore.APIKey{}
+	var count int
+	ak := ApiKeyPaginated{}
 	for rows.Next() {
 		err = rows.StructScan(&ak)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 
-		apiKeys = append(apiKeys, ak)
+		apiKeys = append(apiKeys, ak.APIKey)
+		count = ak.Count
 	}
 
-	var count int
-	err = a.db.Get(&count, countAPIKeys)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
-
-	pagination := datastore.PaginationData{
-		Total:     int64(count),
-		Page:      int64(pageable.Page),
-		PerPage:   int64(pageable.PerPage),
-		Prev:      int64(getPrevPage(pageable.Page)),
-		Next:      int64(pageable.Page + 1),
-		TotalPage: int64(math.Ceil(float64(count) / float64(pageable.PerPage))),
-	}
-
+	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
 	return apiKeys, pagination, nil
+}
+
+type ApiKeyPaginated struct {
+	Count int `db:"count"`
+	datastore.APIKey
 }

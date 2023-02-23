@@ -684,7 +684,6 @@ type CLIMetadata struct {
 }
 
 type APIKey struct {
-	// ID        primitive.ObjectID  `json:"-" bson:"_id"`
 	UID       string    `json:"uid" db:"id"`
 	MaskID    string    `json:"mask_id,omitempty" db:"mask_id"`
 	Name      string    `json:"name" db:"name"`
