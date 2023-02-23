@@ -18,7 +18,7 @@ type Postgres struct {
 }
 
 func NewDB() (*Postgres, error) {
-	db, err := sqlx.Connect("postgres", "postgres://postgres@localhost/convoy?sslmode=disable")
+	db, err := sqlx.Connect("postgres", "postgres://admin:password@localhost/convoy?sslmode=disable")
 	if err != nil {
 		return nil, fmt.Errorf("[%s]: failed to open database - %v", pkgName, err)
 	}
