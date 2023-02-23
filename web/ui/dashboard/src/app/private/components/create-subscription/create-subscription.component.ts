@@ -17,7 +17,7 @@ import { CreateSubscriptionService } from './create-subscription.service';
 })
 export class CreateSubscriptionComponent implements OnInit {
 	@Output() onAction = new EventEmitter();
-	@Input('action') action: 'update' | 'create' = 'create';
+	@Input('action') action: 'update' | 'create' | 'view' = 'create';
 	@Input('showAction') showAction: 'true' | 'false' = 'false';
 
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
@@ -56,7 +56,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	projectType!: 'incoming' | 'outgoing';
 	isLoadingForm = true;
-	subscriptionId = this.route.snapshot.params.id;
+	subscriptionId = this.route.snapshot.params.id || this.route.snapshot.queryParams.id;
 	isLoadingPortalProject = false;
 	token: string = this.route.snapshot.queryParams.token;
 	showError = false;
@@ -98,7 +98,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async getSubscriptionDetails() {
 		await Promise.all([this.getEndpoints(), this.getSources()]);
-		if (this.action !== 'update') return;
+		if (this.action === 'create') return;
 
 		try {
 			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId, this.token);
@@ -271,8 +271,9 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	setupFilter() {
+		if (this.action === 'view') this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions/' + this.subscriptionId);
+		document.getElementById(this.showAction === 'true' ? 'subscriptionForm' : 'configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
 		this.showFilterForm = true;
-		document.getElementById('subscriptionForm')?.scroll({ top: 0, behavior: 'smooth' });
 	}
 
 	getFilterSchema(schema: any) {
