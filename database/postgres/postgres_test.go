@@ -13,6 +13,6 @@ func getDB(t *testing.T) (*sqlx.DB, func()) {
 	require.NoError(t, err)
 
 	return db.dbx, func() {
-		require.NoError(t, db.TruncateTables())
+		require.NoError(t, db.truncateTables())
 	}
 }

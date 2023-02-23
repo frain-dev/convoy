@@ -34,7 +34,7 @@ func (p *Postgres) GetDB() *sqlx.DB {
 	return p.dbx
 }
 
-func (p *Postgres) TruncateTables() error {
+func (p *Postgres) truncateTables() error {
 	tables := `
 		convoy.event_deliveries,
 		convoy.events,
@@ -44,12 +44,10 @@ func (p *Postgres) TruncateTables() error {
 		convoy.sources,
 		convoy.configurations,
 		convoy.devices,
-		convoy.subscription_filters,
 		convoy.portal_links,
 		convoy.organisation_invites,
 		convoy.applications,
-		convoy.endpoint_secrets,
-		convoy.endpoints,
+        convoy.endpoints,
 		convoy.projects,
 		convoy.project_configurations,
 		convoy.organisation_members,
