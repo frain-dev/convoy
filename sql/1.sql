@@ -114,20 +114,10 @@ CREATE TABLE IF NOT EXISTS convoy.endpoints (
 	authentication_type_api_key_header_name TEXT,
 	authentication_type_api_key_header_value TEXT,
 
-	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	deleted_at TIMESTAMPTZ
-);
-
-CREATE TABLE IF NOT EXISTS convoy.endpoint_secrets (
-	id CHAR(26) PRIMARY KEY,
-
-	value TEXT NOT NULL,
-	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id),
+    secrets JSONB NOT NULL,
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	expires_at TIMESTAMPTZ,
 	deleted_at TIMESTAMPTZ
 );
 

@@ -90,7 +90,7 @@ type EndpointRepository interface {
 	DeleteEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
 	CountProjectEndpoints(ctx context.Context, projectID string) (int64, error)
 	LoadEndpointsPaged(ctx context.Context, projectID string, query string, pageable Pageable) ([]Endpoint, PaginationData, error)
-	ExpireSecret(ctx context.Context, projectID string, endpointID string, expiredSecret, newSecret Secret) error
+	UpdateSecrets(ctx context.Context, endpointID string, projectID string, secrets Secrets) error
 	DeleteSecret(ctx context.Context, endpoint *Endpoint, secretID string, projectID string) error
 }
 type SubscriptionRepository interface {

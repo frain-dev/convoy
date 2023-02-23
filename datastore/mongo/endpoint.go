@@ -19,6 +19,11 @@ type endpointRepo struct {
 	store datastore.Store
 }
 
+func (db *endpointRepo) UpdateSecrets(ctx context.Context, endpointID string, projectID string, secrets datastore.Secrets) error {
+	// TODO implement me
+	panic("implement me")
+}
+
 func NewEndpointRepo(store datastore.Store) datastore.EndpointRepository {
 	return &endpointRepo{
 		store: store,
