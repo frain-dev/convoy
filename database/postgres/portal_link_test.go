@@ -200,8 +200,8 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			db, _ := getDB(t)
-			// defer closeFn()
+			db, closeFn := getDB(t)
+			defer closeFn()
 
 			project := seedProject(t, db)
 			endpoint := generateEndpoint(project)
