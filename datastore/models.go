@@ -235,20 +235,62 @@ const (
 	PendingEndpointStatus  EndpointStatus = "pending"
 )
 
-type EndpointStatus string
+type (
+	EndpointStatus string
+	Secrets        []Secret
+)
+
+func (s *Secrets) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	var secrets []Secret
+	err := json.Unmarshal(b, &secrets)
+	if err != nil {
+		return err
+	}
+
+	// Filter the deleted secrets out, start from the
+	// last secret in the slice that hasn't been deleted
+	ix := 0
+	for i := range secrets {
+		if secrets[i].DeletedAt.IsZero() {
+			ix = i
+			break
+		}
+	}
+
+	*s = secrets[ix:]
+	return nil
+}
+
+func (s Secrets) Value() (driver.Value, error) {
+	if s == nil {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
 
 type Endpoint struct {
-	UID                string   `json:"uid" db:"id"`
-	ProjectID          string   `json:"project_id" db:"project_id"`
-	OwnerID            string   `json:"owner_id,omitempty" db:"owner_id"`
-	TargetURL          string   `json:"target_url" db:"target_url"`
-	Title              string   `json:"title" db:"title"`
-	Secrets            []Secret `json:"secrets" db:"secrets"`
-	AdvancedSignatures bool     `json:"advanced_signatures" db:"advanced_signatures"`
-	Description        string   `json:"description" db:"description"`
-	SlackWebhookURL    string   `json:"slack_webhook_url,omitempty" db:"slack_webhook_url"`
-	SupportEmail       string   `json:"support_email,omitempty" db:"support_email"`
-	AppID              string   `json:"-" db:"app_id"` // Deprecated but necessary for backward compatibility
+	UID                string  `json:"uid" db:"id"`
+	ProjectID          string  `json:"project_id" db:"project_id"`
+	OwnerID            string  `json:"owner_id,omitempty" db:"owner_id"`
+	TargetURL          string  `json:"target_url" db:"target_url"`
+	Title              string  `json:"title" db:"title"`
+	Secrets            Secrets `json:"secrets" db:"secrets"`
+	AdvancedSignatures bool    `json:"advanced_signatures" db:"advanced_signatures"`
+	Description        string  `json:"description" db:"description"`
+	SlackWebhookURL    string  `json:"slack_webhook_url,omitempty" db:"slack_webhook_url"`
+	SupportEmail       string  `json:"support_email,omitempty" db:"support_email"`
+	AppID              string  `json:"-" db:"app_id"` // Deprecated but necessary for backward compatibility
 
 	HttpTimeout string         `json:"http_timeout" db:"http_timeout"`
 	RateLimit   int            `json:"rate_limit" db:"rate_limit"`
@@ -261,6 +303,23 @@ type Endpoint struct {
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+func (e *Endpoint) FindSecret(secretID string) *Secret {
+	for i := range e.Secrets {
+		secret := &e.Secrets[i]
+		if secret.UID == secretID {
+			return secret
+		}
+	}
+	return nil
+}
+
+type EndpointConfig struct {
+	AdvancedSignatures bool                    `json:"advanced_signatures" db:"advanced_signatures"`
+	Secrets            []Secret                `json:"secrets" db:"secrets"`
+	RateLimit          *RateLimitConfiguration `json:"ratelimit" db:"ratelimit"`
+	Authentication     *EndpointAuthentication `json:"authentication" db:"authentication"`
 }
 
 func (e *Endpoint) GetAuthConfig() EndpointAuthentication {
@@ -374,7 +433,6 @@ type SignatureVersion struct {
 	CreatedAt time.Time    `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 }
 
-// Depr
 type RetentionPolicyConfiguration struct {
 	Policy string `json:"policy" db:"policy" valid:"required~please provide a valid retention policy"`
 }
@@ -440,6 +498,7 @@ var (
 	ErrDuplicateProjectName          = errors.New("a project with this name already exists")
 	ErrDuplicateEmail                = errors.New("a user with this email already exists")
 	ErrNoActiveSecret                = errors.New("no active secret found")
+	ErrSecretNotFound                = errors.New("secret not found")
 )
 
 type AppMetadata struct {
