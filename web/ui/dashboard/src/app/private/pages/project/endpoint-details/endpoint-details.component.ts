@@ -50,8 +50,8 @@ export class EndpointDetailsComponent implements OnInit {
 	endpointDetails?: ENDPOINT;
 	secretKey: any;
 	screenWidth = window.innerWidth;
-	tabs: ['CLI Keys', 'devices'] = ['CLI Keys', 'devices'];
-	activeTab: 'CLI Keys' | 'devices' = 'CLI Keys';
+	tabs: ['Keys', 'devices'] = ['Keys', 'devices'];
+	activeTab: 'Keys' | 'devices' = 'Keys';
 	isSendingTestEvent = false;
 
 	constructor(public privateService: PrivateService, private endpointDetailsService: EndpointDetailsService, public route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
@@ -98,7 +98,7 @@ export class EndpointDetailsComponent implements OnInit {
 		if (endpointUid) this.router.navigate(['../../portal-links'], { relativeTo: this.route, queryParams: { linksEndpoint: endpointUid } });
 	}
 
-	toggleActiveTab(tab: 'CLI Keys' | 'devices') {
+	toggleActiveTab(tab: 'Keys' | 'devices') {
 		this.activeTab = tab;
 	}
 
