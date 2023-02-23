@@ -28,6 +28,10 @@ func (h *HTTPHeader) Scan(value interface{}) error {
 		return fmt.Errorf("unsupported value type %T", value)
 	}
 
+	if string(b) == "null" {
+		return nil
+	}
+
 	if err := json.Unmarshal(b, &h); err != nil {
 		return err
 	}
