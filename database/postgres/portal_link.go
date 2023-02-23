@@ -96,7 +96,6 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 		return err
 	}
 
-	defer tx.Rollback()
 	r, err := tx.ExecContext(ctx, createPortalLink,
 		portal.UID,
 		portal.ProjectID,
@@ -138,7 +137,6 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 		return err
 	}
 
-	defer tx.Rollback()
 	r, err := tx.ExecContext(ctx, updatePortalLink, portal.UID, portal.Name, portal.Endpoints)
 	if err != nil {
 		return err
