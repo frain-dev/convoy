@@ -240,6 +240,7 @@ func sourceResponse(s *datastore.Source, baseUrl string, customDomain string) *m
 		URL:            fmt.Sprintf("%s/ingest/%s", url, s.MaskID),
 		IsDisabled:     s.IsDisabled,
 		Verifier:       s.Verifier,
+		PubSub:         s.PubSub,
 		CreatedAt:      s.CreatedAt,
 		UpdatedAt:      s.UpdatedAt,
 		DeletedAt:      s.DeletedAt,

@@ -69,6 +69,8 @@ type (
 	EncodingType     string
 	StorageType      string
 	KeyType          string
+	PubSubType       string
+	PubSubHandler    func(*Source, string) error
 )
 
 type EndpointAuthenticationType string
@@ -88,6 +90,11 @@ const (
 
 const (
 	APIKeyAuthentication EndpointAuthenticationType = "api_key"
+)
+
+const (
+	SqsPubSub    PubSubType = "sqs"
+	GooglePubSub PubSubType = "google"
 )
 
 func (s SourceProvider) IsValid() bool {
@@ -640,10 +647,31 @@ type Source struct {
 	Verifier       *VerifierConfig    `json:"verifier" bson:"verifier"`
 	ProviderConfig *ProviderConfig    `json:"provider_config" bson:"provider_config"`
 	ForwardHeaders []string           `json:"forward_headers" bson:"forward_headers"`
+	PubSub         *PubSubConfig      `json:"pub_sub" bson:"pub_sub"`
 
 	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
 	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
 	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+}
+
+type PubSubConfig struct {
+	Type    PubSubType          `json:"type" bson:"type"`
+	Workers int                 `json:"workers" bson:"workers"`
+	Sqs     *SQSPubSubConfig    `json:"sqs" bson:"sqs"`
+	Google  *GooglePubSubConfig `json:"google" bson:"google"`
+}
+
+type SQSPubSubConfig struct {
+	AccessKeyID   string `json:"access_key_id" bson:"access_key_id"`
+	SecretKey     string `json:"secret_key" bson:"secret_key"`
+	DefaultRegion string `json:"default_region" bson:"default_region"`
+	QueueName     string `json:"queue_name" bson:"queue_name"`
+}
+
+type GooglePubSubConfig struct {
+	SubscriptionID string `json:"subscription_id" bson:"subscription_id"`
+	ServiceAccount []byte `json:"service_account" bson:"service_account"`
+	ProjectID      string `json:"project_id" bson:"project_id"`
 }
 
 type User struct {
@@ -694,7 +722,7 @@ type TwitterProviderConfig struct {
 }
 
 type VerifierConfig struct {
-	Type      VerifierType `json:"type,omitempty" bson:"type" valid:"supported_verifier~please provide a valid verifier type,required"`
+	Type      VerifierType `json:"type,omitempty" bson:"type" valid:"supported_verifier~please provide a valid verifier type"`
 	HMac      *HMac        `json:"hmac" bson:"hmac"`
 	BasicAuth *BasicAuth   `json:"basic_auth" bson:"basic_auth"`
 	ApiKey    *ApiKey      `json:"api_key" bson:"api_key"`

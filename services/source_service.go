@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
@@ -49,6 +50,12 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("Invalid verifier config for basic auth"))
 	}
 
+	if newSource.Type == datastore.PubSubSource {
+		if err := pubsub.Validate(&newSource.PubSub); err != nil {
+			return nil, util.NewServiceError(http.StatusBadRequest, err)
+		}
+	}
+
 	source := &datastore.Source{
 		UID:       uuid.New().String(),
 		ProjectID: g.UID,
@@ -57,6 +64,7 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		Type:      newSource.Type,
 		Provider:  newSource.Provider,
 		Verifier:  &newSource.Verifier,
+		PubSub:    &newSource.PubSub,
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -120,8 +128,18 @@ func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Project, 
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("Invalid verifier config for basic auth"))
 	}
 
+	if sourceUpdate.Type == datastore.PubSubSource {
+		if err := pubsub.Validate(sourceUpdate.PubSub); err != nil {
+			return nil, util.NewServiceError(http.StatusBadRequest, err)
+		}
+	}
+
 	if sourceUpdate.ForwardHeaders != nil {
 		source.ForwardHeaders = sourceUpdate.ForwardHeaders
+	}
+
+	if sourceUpdate.PubSub != nil {
+		source.PubSub = sourceUpdate.PubSub
 	}
 
 	err := s.sourceRepo.UpdateSource(ctx, g.UID, source)

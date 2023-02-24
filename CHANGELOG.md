@@ -1,3 +1,14 @@
+## 0.8.2
+- [Feature] Set Advanced Signatures by default for Incoming projects. 
+- [Enhancement] Refactored Convoy CLI Implementation. #1290
+- [Enhancement] Improved Project Onboarding #1335
+- [Enhancement] Improved Delivery Attempt Details page #1341
+- [Enhancement] Update Subscriptions Card for Incoming Projects. #1349
+- [Enhancement] Update portal links design #1348
+- [Enhancement] Improve source, subscription and endpoint forms #1335
+- [Bugfix] Event Log pagination bug #1346
+- [Bugfix] Date picker bug fix #1355
+
 ## 0.8.1
 
 - [Enhancement] Improved stats query #1256
@@ -8,39 +19,39 @@
 
 ## 0.8.0
 
--   [Enhancement] Deprecate subscription status field #1243 #1234
 -   [Feature] Filter by HTTP Headers #1240 #1232 #1249
 -   [Feature] Add force retry and batch retry to event logs #1237
--   [Bugfix] Add raw value to event payload #1236
--   [Bugfix] Persist advanced signatures config #1233
 -   [Feature] Add convoy version to private pages #1230
--   [Enhancement] Update email verification flow #1227
--   [Bugfix] Fix migration tool #1226
--   [Enhancement] Improved onboarding forms #1245 #1244 #1246
--   [Bugfix] Token modal on project creation now show visual feedback #1242
--   [Bugfix] Show event deliveries in correct order #1202 #1157
--   [Enhancement] Email verification check after signup #1208 #1186
 -   [Feature] Add frontend analytics and welcome email #1209
 -   [Feature] Build source-maps to separate folder #1216
 -   [Feature] Change group to project #1207
 -   [Feature] Filter events using event types and subscriptions #1205 #1217
 -   [Feature] Add custom domain support #1203
--   [Bugfix] Used correct type for rate limit duation #1201
--   [Bugfix] Fixed events in discarded state getting stuck #1200
--   [Bugfix] Fixed events should be created regardless of subscriptions logic
 -   [Feature] use central logger everywhere #1176
 -   [Feature] Deprecate Apps in favor of Endpoints #1169 #1159 #1069 #1158
 -   [Feature] Deprecate `document_status` in favor of `delete_at` #1123 #1168
--   [Enhancement] Add api key migrations #1166
--   [Bugfix] Enable default retention policy duration #1163
+-   [Feature] Filter events by the subcription filtering #1096 #1116
+-   [Feature] Added support for http connect proxy #1146
+-   [Enhancement] Deprecate subscription status field #1243 #1234
+-   [Enhancement] Update email verification flow #1227
+-   [Enhancement] Improved onboarding forms #1245 #1244 #1246
 -   [Enhancement] MaxIngestSize can be configured per group/project #1160
 -   [Enhancement] Use mongo aggregations when quering multuple collections #1611 #1153
 -   [Enhancement] Redirect user to previous page on login after session timeout #1154
 -   [Enhancement] Add response body to endpoint disabled notification email/slack message #1141 #1152
--   [Feature] Added support for http connect proxy #1146
--   [Bugfix] fixed hobby deployment installation script #1139 #1136 #1135 #1134
--   [Feature] Filter events by the subcription filtering #1096 #1116
+-   [Enhancement] Email verification check after signup #1208 #1186
 -   [Enhancement] Add support for building alpine images #1108
+-   [Enhancement] Add api key migrations #1166
+-   [Bugfix] Add raw value to event payload #1236
+-   [Bugfix] Persist advanced signatures config #1233
+-   [Bugfix] Fix migration tool #1226
+-   [Bugfix] Token modal on project creation now show visual feedback #1242
+-   [Bugfix] Show event deliveries in correct order #1202 #1157
+-   [Bugfix] Used correct type for rate limit duation #1201
+-   [Bugfix] Fixed events in discarded state getting stuck #1200
+-   [Bugfix] Fixed events should be created regardless of subscriptions logic
+-   [Bugfix] Enable default retention policy duration #1163
+-   [Bugfix] fixed hobby deployment installation script #1139 #1136 #1135 #1134
 -   [Bugfix] Update navbar on creating project on new organisation #1250
 -   [Bugfix] Update validation check for create project form #1248
 
