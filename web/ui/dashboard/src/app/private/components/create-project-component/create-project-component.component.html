@@ -16,7 +16,7 @@
 			</div>
 
 			<div class="flex justify-end mt-24px">
-				<button convoy-button color="primary" fill="outline" size="sm" type="button" (click)="regenerateKey()" [disabled]="regeneratingKey">
+				<button convoy-button color="primary" fill="outline" size="sm" type="button" (click)="confirmRegenerateKey = true" [disabled]="regeneratingKey">
 					<svg width="16" height="16" class="mr-8px" [ngClass]="{ 'animate-spin-slow': regeneratingKey }">
 						<use xlink:href="#refresh-icon"></use>
 					</svg>
@@ -244,11 +244,22 @@
 
 <convoy-token-modal
 	*ngIf="showApiKey"
-	title="Project Created Successfully"
-	description="Your API Key has also been created. Please copy this key and save it somewhere safe."
+	[title]="action === 'update' ? 'Api Key Generated Successfully' : 'Project Created Successfully'"
+	[description]="action === 'update' ? 'Please copy this key and save it somewhere safe.' : 'Your API Key has also been created. Please copy this key and save it somewhere safe.'"
 	[token]="apiKey"
 	notificationText="API key has been copied to your clipboard."
 	(closeModal)="action === 'update' ? (showApiKey = false) : onAction.emit({ action: 'createProject', data: projectDetails })"
 ></convoy-token-modal>
 
-<convoy-confirmation-modal *ngIf="confirmModal" (confirmAction)="router.navigateByUrl('/')" (closeModal)="confirmModal = false"></convoy-confirmation-modal>
+<div convoy-modal position="center" size="sm" *ngIf="confirmModal || confirmRegenerateKey" (closeModal)="confirmModal = false; confirmRegenerateKey = false">
+	<div class="px-20px py-30px" modalBody>
+		<p class="text-16 font-semibold text-black mb-8px">Confirm Action</p>
+		<p class="text-14 font-medium text-grey-40 mb-24px">
+			<span>{{ confirmModal ? 'You are about to discard this process, please confirm this action.' : 'You are about to regenerate a new Api Key for this project' }}</span>
+		</p>
+		<div class="flex items-center">
+			<button convoy-button [color]="confirmModal ? 'danger' : 'primary'" class="mr-12px px-60px" (click)="confirmRegenerateKey ? regenerateKey() : router.navigateByUrl('/')">Confirm</button>
+			<button convoy-button fill="clear" [color]="confirmModal ? 'primary' : 'danger'" class="font-semibold" (click)="confirmModal = false; confirmRegenerateKey = false">Cancel</button>
+		</div>
+	</div>
+</div>

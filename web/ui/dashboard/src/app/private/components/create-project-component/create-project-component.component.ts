@@ -44,6 +44,7 @@ export class CreateProjectComponent implements OnInit {
 	showApiKey = false;
 	enableMoreConfig = false;
 	confirmModal = false;
+	confirmRegenerateKey = false;
 	showNewSignatureModal = false;
 	regeneratingKey = false;
 	apiKey!: string;
@@ -223,6 +224,7 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async regenerateKey() {
+		this.confirmRegenerateKey = false;
 		this.regeneratingKey = true;
 		try {
 			const response = await this.createProjectService.regenerateKey();

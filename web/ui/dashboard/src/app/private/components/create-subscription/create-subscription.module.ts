@@ -12,7 +12,6 @@ import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { RadioComponent } from 'src/app/components/radio/radio.component';
-import { ConfirmationModalComponent } from '../confirmation-modal/confirmation-modal.component';
 import { FormatSecondsPipe } from 'src/app/pipes/formatSeconds/format-seconds.pipe';
 import { CreateSubscriptionFilterComponent } from '../create-subscription-filter/create-subscription-filter.component';
 import { CreateEndpointComponent } from '../create-endpoint/create-endpoint.component';
@@ -33,7 +32,6 @@ import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.
 		ModalComponent,
 		CardComponent,
 		RadioComponent,
-		ConfirmationModalComponent,
 		FormatSecondsPipe,
         CreateSubscriptionFilterComponent,
 		InputFieldDirective,
