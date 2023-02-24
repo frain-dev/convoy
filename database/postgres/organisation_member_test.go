@@ -269,3 +269,52 @@ func TestFetchOrganisationMemberByUserID(t *testing.T) {
 		Email:     user.Email,
 	}, member.UserMetadata)
 }
+
+func TestFetchUserProjects(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	user := generateUser(t)
+	ctx := context.Background()
+
+	require.NoError(t, NewUserRepo(db).CreateUser(ctx, user))
+
+	org := seedOrg(t, db)
+
+	organisationMemberRepo := NewOrgMemberRepo(db)
+	projectRepo := NewProjectRepo(db)
+	m := &datastore.OrganisationMember{
+		UID:            ulid.Make().String(),
+		OrganisationID: org.UID,
+		UserID:         user.UID,
+		Role:           auth.Role{Type: auth.RoleAdmin},
+	}
+
+	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
+	require.NoError(t, err)
+
+	project1 := &datastore.Project{
+		UID:            ulid.Make().String(),
+		Name:           "project1",
+		Config:         &datastore.DefaultProjectConfig,
+		OrganisationID: org.UID,
+	}
+
+	project2 := &datastore.Project{
+		UID:            ulid.Make().String(),
+		Name:           "project2",
+		Config:         &datastore.DefaultProjectConfig,
+		OrganisationID: org.UID,
+	}
+
+	err = projectRepo.CreateProject(context.Background(), project1)
+	require.NoError(t, err)
+
+	err = projectRepo.CreateProject(context.Background(), project2)
+	require.NoError(t, err)
+
+	projects, err := organisationMemberRepo.FindUserProjects(ctx, user.UID)
+	require.NoError(t, err)
+
+	require.Equal(t, 2, len(projects))
+}

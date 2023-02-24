@@ -58,7 +58,7 @@ const (
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
-	fetchSource = `
+	baseFetchSource = `
 	SELECT
 		s.id,
 		s.name,
@@ -84,8 +84,11 @@ const (
 	FROM convoy.sources as s
 	LEFT JOIN convoy.source_verifiers sv
 		ON s.source_verifier_id = sv.id
-	WHERE %s = $1 AND s.deleted_at IS NULL;
 	`
+
+	fetchSource = baseFetchSource + ` WHERE %s = $1 AND s.deleted_at IS NULL;`
+
+	fetchSourceByName = baseFetchSource + ` WHERE %s = $1 AND %s = $2 AND s.deleted_at IS NULL;`
 
 	deleteSource = `
 	UPDATE convoy.sources SET
@@ -253,6 +256,19 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 func (s *sourceRepo) FindSourceByID(ctx context.Context, projectID string, id string) (*datastore.Source, error) {
 	source := &datastore.Source{}
 	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.id"), id).StructScan(source)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrSourceNotFound
+		}
+		return nil, err
+	}
+
+	return source, nil
+}
+
+func (s *sourceRepo) FindSourceByName(ctx context.Context, projectID string, name string) (*datastore.Source, error) {
+	source := &datastore.Source{}
+	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSourceByName, "s.project_id", "s.name"), projectID, name).StructScan(source)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrSourceNotFound

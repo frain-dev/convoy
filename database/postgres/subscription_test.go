@@ -426,7 +426,7 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 	require.NoError(t, subRepo.CreateSubscription(context.Background(), project.UID, newSub))
 
 	// Fetch sub again
-	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), project.UID, newSub.UID)
+	dbSub, err := subRepo.FindSubscriptionByDeviceID(context.Background(), project.UID, device.UID, newSub.Type)
 	require.NoError(t, err)
 
 	require.NotEmpty(t, dbSub.CreatedAt)
@@ -448,6 +448,51 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 	dbSub.Source, dbSub.Endpoint = nil, nil
 
 	require.Equal(t, dbSub, newSub)
+}
+
+func Test_FindCLISubscriptions(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	subRepo := NewSubscriptionRepo(db)
+
+	source := seedSource(t, db)
+	project := seedProject(t, db)
+	endpoint := seedEndpoint(t, db)
+
+	for i := 0; i < 8; i++ {
+		newSub := &datastore.Subscription{
+			UID:        uuid.NewString(),
+			Name:       "Subscription",
+			Type:       datastore.SubscriptionTypeCLI,
+			ProjectID:  project.UID,
+			SourceID:   source.UID,
+			EndpointID: endpoint.UID,
+			AlertConfig: &datastore.AlertConfiguration{
+				Count:     10,
+				Threshold: "1m",
+			},
+			RetryConfig: &datastore.RetryConfiguration{
+				Type:       "linear",
+				Duration:   3,
+				RetryCount: 10,
+			},
+			FilterConfig: &datastore.FilterConfiguration{
+				EventTypes: []string{"some.event"},
+				Filter: datastore.FilterSchema{
+					Headers: datastore.M{},
+					Body:    datastore.M{},
+				},
+			},
+		}
+
+		require.NoError(t, subRepo.CreateSubscription(context.Background(), project.UID, newSub))
+	}
+
+	// Fetch sub again
+	dbSubs, err := subRepo.FindCLISubscriptions(context.Background(), project.UID)
+	require.NoError(t, err)
+	require.Equal(t, 8, len(dbSubs))
 }
 
 func TestTestSubscriptionFilter(t *testing.T) {
