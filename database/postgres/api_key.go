@@ -254,8 +254,8 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 	var apiKeys []datastore.APIKey
 
 	var count int
-	ak := ApiKeyPaginated{}
 	for rows.Next() {
+		ak := ApiKeyPaginated{}
 		err = rows.StructScan(&ak)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err

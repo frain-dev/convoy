@@ -428,3 +428,11 @@ func generateEvent(t *testing.T, db *sqlx.DB) *datastore.Event {
 		Data:      data,
 	}
 }
+
+func seedEvent(t *testing.T, db *sqlx.DB, project *datastore.Project) *datastore.Event {
+	ev := generateEvent(t, db)
+	ev.ProjectID = project.UID
+
+	require.NoError(t, NewEventRepo(db).CreateEvent(context.Background(), ev))
+	return ev
+}

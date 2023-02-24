@@ -1,0 +1,490 @@
+//go:build integration
+// +build integration
+
+package postgres
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/pkg/httpheader"
+
+	"github.com/oklog/ulid/v2"
+
+	"github.com/frain-dev/convoy/datastore"
+)
+
+func Test_eventDeliveryRepo_CreateEventDelivery(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	source := seedSource(t, db)
+	project := seedProject(t, db)
+	device := seedDevice(t, db)
+	endpoint := seedEndpoint(t, db)
+	event := seedEvent(t, db, project)
+	sub := seedSubscription(t, db, project, source, endpoint, device)
+
+	ed := generateEventDelivery(project, endpoint, event, device, sub)
+
+	edRepo := NewEventDeliveryRepo(db)
+	err := edRepo.CreateEventDelivery(context.Background(), ed)
+	require.NoError(t, err)
+
+	dbEventDelivery, err := edRepo.FindEventDeliveryByID(context.Background(), ed.UID)
+	require.NoError(t, err)
+
+	require.NotEmpty(t, dbEventDelivery.CreatedAt)
+	require.NotEmpty(t, dbEventDelivery.UpdatedAt)
+
+	dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt = time.Time{}, time.Time{}
+	dbEventDelivery.Event, dbEventDelivery.Endpoint = nil, nil
+
+	require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
+	ed.Metadata.NextSendTime = time.Time{}
+	dbEventDelivery.Metadata.NextSendTime = time.Time{}
+
+	require.Equal(t, ed, dbEventDelivery)
+}
+
+func generateEventDelivery(project *datastore.Project, endpoint *datastore.Endpoint, event *datastore.Event, device *datastore.Device, sub *datastore.Subscription) *datastore.EventDelivery {
+	e := &datastore.EventDelivery{
+		UID:            ulid.Make().String(),
+		ProjectID:      project.UID,
+		EventID:        event.UID,
+		EndpointID:     endpoint.UID,
+		DeviceID:       device.UID,
+		SubscriptionID: sub.UID,
+		Headers:        httpheader.HTTPHeader{"X-sig": []string{"3787 fmmfbf"}},
+		DeliveryAttempts: []datastore.DeliveryAttempt{
+			{UID: ulid.Make().String()},
+		},
+		Status: datastore.SuccessEventStatus,
+		Metadata: &datastore.Metadata{
+			// The line breaks are intentional, the integrity of data must be preserved in the db
+			Data: []byte(`{
+                                "name":"10x",
+                                "beef":"cow"
+                                }`),
+			Raw: `{
+                                "name":"10x",
+                                "beef":"cow"
+                                }`,
+			Strategy:        datastore.ExponentialStrategyProvider,
+			NextSendTime:    time.Now().Add(time.Hour),
+			NumTrials:       1,
+			IntervalSeconds: 10,
+			RetryLimit:      20,
+		},
+		CLIMetadata: &datastore.CLIMetadata{
+			HostName: device.HostName,
+		},
+		Description: "test",
+	}
+
+	return e
+}
+
+func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
+	db, _ := getDB(t)
+	// defer closeFn()
+
+	source := seedSource(t, db)
+	project := seedProject(t, db)
+	device := seedDevice(t, db)
+	endpoint := seedEndpoint(t, db)
+	event := seedEvent(t, db, project)
+	sub := seedSubscription(t, db, project, source, endpoint, device)
+
+	edRepo := NewEventDeliveryRepo(db)
+	edMap := map[string]*datastore.EventDelivery{}
+	ids := []string{}
+	for i := 0; i < 8; i++ {
+		ed := generateEventDelivery(project, endpoint, event, device, sub)
+		ed.Headers["uid"] = []string{ulid.Make().String()}
+		if i == 0 || i == 1 || i == 5 {
+			edMap[ed.UID] = ed
+			ids = append(ids, ed.UID)
+		}
+
+		err := edRepo.CreateEventDelivery(context.Background(), ed)
+		require.NoError(t, err)
+	}
+
+	dbEventDeliveries, err := edRepo.FindEventDeliveriesByIDs(context.Background(), ids)
+	require.NoError(t, err)
+	require.Equal(t, 3, len(dbEventDeliveries))
+
+	for i := range dbEventDeliveries {
+
+		dbEventDelivery := &dbEventDeliveries[i]
+		ed := edMap[dbEventDelivery.UID]
+
+		require.NotEmpty(t, dbEventDelivery.CreatedAt)
+		require.NotEmpty(t, dbEventDelivery.UpdatedAt)
+
+		dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt = time.Time{}, time.Time{}
+		dbEventDelivery.Event, dbEventDelivery.Endpoint = nil, nil
+
+		require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
+		ed.Metadata.NextSendTime = time.Time{}
+		dbEventDelivery.Metadata.NextSendTime = time.Time{}
+
+		require.Equal(t, ed.Headers, dbEventDelivery.Headers)
+		require.Equal(t, ed, dbEventDelivery)
+	}
+}
+
+func Test_eventDeliveryRepo_FindEventDeliveriesByEventID(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	source := seedSource(t, db)
+	project := seedProject(t, db)
+	device := seedDevice(t, db)
+	endpoint := seedEndpoint(t, db)
+	sub := seedSubscription(t, db, project, source, endpoint, device)
+
+	edRepo := NewEventDeliveryRepo(db)
+	edMap := map[string]*datastore.EventDelivery{}
+
+	mainEvent := seedEvent(t, db, project)
+	for i := 0; i < 8; i++ {
+
+		ed := generateEventDelivery(project, endpoint, seedEvent(t, db, project), device, sub)
+		if i == 1 || i == 4 || i == 5 {
+			ed.EventID = mainEvent.UID
+			edMap[ed.UID] = ed
+		}
+
+		err := edRepo.CreateEventDelivery(context.Background(), ed)
+		require.NoError(t, err)
+	}
+
+	dbEventDeliveries, err := edRepo.FindEventDeliveriesByEventID(context.Background(), mainEvent.UID)
+	require.NoError(t, err)
+	require.Equal(t, 3, len(dbEventDeliveries))
+
+	for i := range dbEventDeliveries {
+
+		dbEventDelivery := &dbEventDeliveries[i]
+
+		ed, ok := edMap[dbEventDelivery.UID]
+
+		require.True(t, ok)
+
+		require.NotEmpty(t, dbEventDelivery.CreatedAt)
+		require.NotEmpty(t, dbEventDelivery.UpdatedAt)
+
+		dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt = time.Time{}, time.Time{}
+		dbEventDelivery.Event, dbEventDelivery.Endpoint = nil, nil
+
+		require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
+		ed.Metadata.NextSendTime = time.Time{}
+		dbEventDelivery.Metadata.NextSendTime = time.Time{}
+
+		require.Equal(t, ed, dbEventDelivery)
+	}
+}
+
+func Test_eventDeliveryRepo_CountDeliveriesByStatus(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	source := seedSource(t, db)
+	project := seedProject(t, db)
+	device := seedDevice(t, db)
+	endpoint := seedEndpoint(t, db)
+	event := seedEvent(t, db, project)
+	sub := seedSubscription(t, db, project, source, endpoint, device)
+
+	edRepo := NewEventDeliveryRepo(db)
+
+	status := datastore.FailureEventStatus
+	for i := 0; i < 8; i++ {
+
+		ed := generateEventDelivery(project, endpoint, event, device, sub)
+		if i == 1 || i == 4 || i == 5 {
+			ed.Status = status
+		}
+
+		err := edRepo.CreateEventDelivery(context.Background(), ed)
+		require.NoError(t, err)
+	}
+
+	count, err := edRepo.CountDeliveriesByStatus(context.Background(), status, datastore.SearchParams{
+		CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
+		CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, int64(3), count)
+}
+
+func Test_eventDeliveryRepo_UpdateStatusOfEventDelivery(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	source := seedSource(t, db)
+	project := seedProject(t, db)
+	device := seedDevice(t, db)
+	endpoint := seedEndpoint(t, db)
+	event := seedEvent(t, db, project)
+	sub := seedSubscription(t, db, project, source, endpoint, device)
+
+	ed := generateEventDelivery(project, endpoint, event, device, sub)
+
+	edRepo := NewEventDeliveryRepo(db)
+	err := edRepo.CreateEventDelivery(context.Background(), ed)
+	require.NoError(t, err)
+
+	err = edRepo.UpdateStatusOfEventDelivery(context.Background(), *ed, datastore.RetryEventStatus)
+	require.NoError(t, err)
+
+	dbEventDelivery, err := edRepo.FindEventDeliveryByID(context.Background(), ed.UID)
+	require.NoError(t, err)
+
+	require.Equal(t, datastore.RetryEventStatus, dbEventDelivery.Status)
+}
+
+func Test_eventDeliveryRepo_UpdateStatusOfEventDeliveries(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	source := seedSource(t, db)
+	project := seedProject(t, db)
+	device := seedDevice(t, db)
+	endpoint := seedEndpoint(t, db)
+	event := seedEvent(t, db, project)
+	sub := seedSubscription(t, db, project, source, endpoint, device)
+
+	ed1 := generateEventDelivery(project, endpoint, event, device, sub)
+	ed2 := generateEventDelivery(project, endpoint, event, device, sub)
+
+	edRepo := NewEventDeliveryRepo(db)
+	err := edRepo.CreateEventDelivery(context.Background(), ed1)
+	require.NoError(t, err)
+
+	err = edRepo.CreateEventDelivery(context.Background(), ed2)
+	require.NoError(t, err)
+
+	err = edRepo.UpdateStatusOfEventDeliveries(context.Background(), []string{ed1.UID, ed2.UID}, datastore.RetryEventStatus)
+	require.NoError(t, err)
+
+	dbEventDeliveries, err := edRepo.FindEventDeliveriesByIDs(context.Background(), []string{ed1.UID, ed2.UID})
+	require.NoError(t, err)
+
+	for _, d := range dbEventDeliveries {
+		require.Equal(t, datastore.RetryEventStatus, d.Status)
+	}
+}
+
+func Test_eventDeliveryRepo_FindDiscardedEventDeliveries(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	source := seedSource(t, db)
+	project := seedProject(t, db)
+	device := seedDevice(t, db)
+	endpoint := seedEndpoint(t, db)
+	event := seedEvent(t, db, project)
+	sub := seedSubscription(t, db, project, source, endpoint, device)
+
+	edRepo := NewEventDeliveryRepo(db)
+
+	status := datastore.DiscardedEventStatus
+	for i := 0; i < 8; i++ {
+
+		ed := generateEventDelivery(project, endpoint, event, device, sub)
+		if i == 1 || i == 4 || i == 5 {
+			ed.Status = status
+		}
+
+		err := edRepo.CreateEventDelivery(context.Background(), ed)
+		require.NoError(t, err)
+	}
+
+	dbEventDeliveries, err := edRepo.FindDiscardedEventDeliveries(context.Background(), "", device.UID, datastore.SearchParams{
+		CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
+		CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
+	})
+	require.NoError(t, err)
+
+	for _, d := range dbEventDeliveries {
+		require.Equal(t, datastore.DiscardedEventStatus, d.Status)
+	}
+}
+
+func Test_eventDeliveryRepo_UpdateEventDeliveryWithAttempt(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	source := seedSource(t, db)
+	project := seedProject(t, db)
+	device := seedDevice(t, db)
+	endpoint := seedEndpoint(t, db)
+	event := seedEvent(t, db, project)
+	sub := seedSubscription(t, db, project, source, endpoint, device)
+
+	ed := generateEventDelivery(project, endpoint, event, device, sub)
+
+	edRepo := NewEventDeliveryRepo(db)
+	err := edRepo.CreateEventDelivery(context.Background(), ed)
+	require.NoError(t, err)
+
+	newAttempt := datastore.DeliveryAttempt{
+		UID: ulid.Make().String(),
+	}
+
+	err = edRepo.UpdateEventDeliveryWithAttempt(context.Background(), *ed, newAttempt)
+	require.NoError(t, err)
+
+	dbEventDelivery, err := edRepo.FindEventDeliveryByID(context.Background(), ed.UID)
+	require.NoError(t, err)
+
+	require.Equal(t, ed.DeliveryAttempts[0], dbEventDelivery.DeliveryAttempts[0])
+	require.Equal(t, newAttempt, dbEventDelivery.DeliveryAttempts[1])
+}
+
+func Test_eventDeliveryRepo_CountEventDeliveries(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	source := seedSource(t, db)
+	project := seedProject(t, db)
+	device := seedDevice(t, db)
+	endpoint := seedEndpoint(t, db)
+	event := seedEvent(t, db, project)
+	sub := seedSubscription(t, db, project, source, endpoint, device)
+
+	ed1 := generateEventDelivery(project, endpoint, event, device, sub)
+	ed2 := generateEventDelivery(project, endpoint, event, device, sub)
+
+	edRepo := NewEventDeliveryRepo(db)
+	err := edRepo.CreateEventDelivery(context.Background(), ed1)
+	require.NoError(t, err)
+
+	err = edRepo.CreateEventDelivery(context.Background(), ed2)
+	require.NoError(t, err)
+
+	c, err := edRepo.CountEventDeliveries(context.Background(), project.UID, []string{ed1.EndpointID, ed2.EndpointID}, event.UID, []datastore.EventDeliveryStatus{datastore.SuccessEventStatus}, datastore.SearchParams{
+		CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
+		CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
+	})
+	require.NoError(t, err)
+
+	require.Equal(t, int64(2), c)
+}
+
+func Test_eventDeliveryRepo_DeleteProjectEventDeliveries(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	source := seedSource(t, db)
+	project := seedProject(t, db)
+	device := seedDevice(t, db)
+	endpoint := seedEndpoint(t, db)
+	event := seedEvent(t, db, project)
+	sub := seedSubscription(t, db, project, source, endpoint, device)
+
+	// soft delete
+	ed1 := generateEventDelivery(project, endpoint, event, device, sub)
+	ed2 := generateEventDelivery(project, endpoint, event, device, sub)
+
+	edRepo := NewEventDeliveryRepo(db)
+	err := edRepo.CreateEventDelivery(context.Background(), ed1)
+	require.NoError(t, err)
+
+	err = edRepo.CreateEventDelivery(context.Background(), ed2)
+	require.NoError(t, err)
+
+	err = edRepo.DeleteProjectEventDeliveries(context.Background(), &datastore.EventDeliveryFilter{
+		ProjectID:      project.UID,
+		CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
+		CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
+	}, false)
+
+	require.NoError(t, err)
+
+	// hard delete
+
+	ed1 = generateEventDelivery(project, endpoint, event, device, sub)
+	ed2 = generateEventDelivery(project, endpoint, event, device, sub)
+
+	err = edRepo.CreateEventDelivery(context.Background(), ed1)
+	require.NoError(t, err)
+
+	err = edRepo.CreateEventDelivery(context.Background(), ed2)
+	require.NoError(t, err)
+
+	err = edRepo.DeleteProjectEventDeliveries(context.Background(), &datastore.EventDeliveryFilter{
+		ProjectID:      project.UID,
+		CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
+		CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
+	}, true)
+
+	require.NoError(t, err)
+}
+
+func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	source := seedSource(t, db)
+	project := seedProject(t, db)
+	device := seedDevice(t, db)
+	endpoint := seedEndpoint(t, db)
+	event := seedEvent(t, db, project)
+	sub := seedSubscription(t, db, project, source, endpoint, device)
+
+	edRepo := NewEventDeliveryRepo(db)
+	edMap := map[string]*datastore.EventDelivery{}
+	for i := 0; i < 8; i++ {
+		ed := generateEventDelivery(project, endpoint, event, device, sub)
+		edMap[ed.UID] = ed
+
+		err := edRepo.CreateEventDelivery(context.Background(), ed)
+		require.NoError(t, err)
+	}
+
+	dbEventDeliveries, _, err := edRepo.LoadEventDeliveriesPaged(
+		context.Background(), project.UID, []string{endpoint.UID}, event.UID,
+		[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus},
+		datastore.SearchParams{
+			CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
+			CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
+		},
+		datastore.Pageable{
+			Page:    1,
+			PerPage: 10,
+			Sort:    1,
+		},
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, 8, len(dbEventDeliveries))
+
+	for i := range dbEventDeliveries {
+
+		dbEventDelivery := &dbEventDeliveries[i]
+		ed := edMap[dbEventDelivery.UID]
+
+		require.NotEmpty(t, dbEventDelivery.CreatedAt)
+		require.NotEmpty(t, dbEventDelivery.UpdatedAt)
+
+		dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt = time.Time{}, time.Time{}
+
+		require.Equal(t, event.EventType, dbEventDelivery.Event.EventType)
+		require.Equal(t, endpoint.UID, dbEventDelivery.Endpoint.UID)
+		dbEventDelivery.Event, dbEventDelivery.Endpoint = nil, nil
+
+		require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
+		ed.Metadata.NextSendTime = time.Time{}
+		dbEventDelivery.Metadata.NextSendTime = time.Time{}
+
+		require.Equal(t, ed, dbEventDelivery)
+	}
+}

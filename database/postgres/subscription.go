@@ -357,10 +357,10 @@ func nullifyEmptyConfig(sub *datastore.Subscription) {
 
 func scanSubscriptions(rows *sqlx.Rows) ([]datastore.Subscription, error) {
 	subscriptions := make([]datastore.Subscription, 0)
-	sub := datastore.Subscription{}
 	var err error
 
 	for rows.Next() {
+		sub := datastore.Subscription{}
 		err = rows.StructScan(&sub)
 		if err != nil {
 			return nil, err

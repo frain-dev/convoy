@@ -103,7 +103,7 @@ const (
 	`
 
 	deleteSourceSubscription = `
-	UPDATE convoy.subscriptions SET 
+	UPDATE convoy.subscriptions SET
 	deleted_at = now()
 	WHERE source_id = $1 AND deleted_at IS NULL;
 	`
@@ -161,7 +161,6 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 		ctx, createSourceVerifier, sourceVerifierID, source.Verifier.Type, basic.UserName, basic.Password,
 		apiKey.HeaderName, apiKey.HeaderValue, hmac.Hash, hmac.Header, hmac.Secret, hmac.Encoding,
 	)
-
 	if err != nil {
 		return err
 	}
@@ -336,8 +335,8 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 	}
 
 	sources := make([]datastore.Source, 0)
-	var source datastore.Source
 	for rows.Next() {
+		var source datastore.Source
 		err = rows.StructScan(&source)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
