@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
-	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -29,8 +29,8 @@ var (
 
 const (
 	createEventDelivery = `
-    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,created_at,updated_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14);
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12);
     `
 
 	baseFetchEventDelivery = `
@@ -43,7 +43,7 @@ const (
         ep.target_url as "endpoint_metadata.target_url",
         ev.id as "event_metadata.id",
         ev.event_type as "event_metadata.event_type",
-        d.host_name as "cli_metadata.host_name",
+        d.host_name as "cli_metadata.host_name"
     FROM convoy.event_deliveries ed LEFT JOIN convoy.endpoints ep
     ON ed.endpoint_id = ep.id LEFT JOIN convoy.events ev ON ed.event_id = ev.id
     LEFT JOIN convoy.devices d ON ed.device_id = d.id
@@ -51,7 +51,7 @@ const (
 
 	fetchEventDeliveryByID = baseFetchEventDelivery + ` WHERE ed.id = $1 AND ed.deleted_at IS NULL`
 
-	loadEventDeliveriesPaged = baseFetchEventDelivery + ` WHERE (ed.project_id = $1 OR $1 = '') AND (ed.event_id = $2 OR $2 = '') AND (ed.status IN ($3) OR cardinality($3) = 0) AND (ed.endpoint_id IN ($4) OR cardinality($4) = 0) AND ed.created_at >= $5 AND ed.created_at <= $6  AND ed.deleted_at IS NULL LIMIT $7 OFFSET $8`
+	loadEventDeliveriesPaged = baseFetchEventDelivery + ` WHERE (ed.project_id = ? OR ? = '') AND (ed.event_id = ? OR ? = '') AND ed.created_at >= ? AND ed.created_at <= ?  AND ed.deleted_at IS NULL`
 
 	loadEventDeliveriesIntervals = `
     SELECT
@@ -76,7 +76,7 @@ const (
     `
 
 	fetchDiscardedEventDeliveries = `
-    SELECT * FROM convoy.event_deliveries WHERE status='%s' AND device_id = $1 AND (endpoint_id = $2 or $2 = '') AND created_at >= $5 AND created_at <= $6 AND deleted_at IS NULL;
+    SELECT * FROM convoy.event_deliveries WHERE status=$1 AND device_id = $2 AND (endpoint_id = $3 or $3 = '') AND created_at >= $4 AND created_at <= $5 AND deleted_at IS NULL;
     `
 
 	countEventDeliveriesByStatus = `
@@ -84,11 +84,11 @@ const (
     `
 
 	countEventDeliveries = `
-    SELECT COUNT(id) FROM convoy.event_deliveries WHERE (e.project_id = $1 OR $1 = '') AND (e.event_id = $2 OR $2 = '') AND (e.status IN ($3) OR cardinality($3) = 0) AND (e.endpoint_id IN ($4) OR cardinality($4) = 0) AND e.created_at >= $5 AND e.created_at <= $6 AND deleted_at IS NULL;
+    SELECT COUNT(id) FROM convoy.event_deliveries WHERE (project_id = ? OR ? = '') AND (event_id = ? OR ? = '') AND created_at >= ? AND created_at <= ? AND deleted_at IS NULL
     `
 
 	updateEventDeliveriesStatus = `
-    UPDATE convoy.event_deliveries SET status = $1, updated_at = now() WHERE id IN ($2) AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET status = ?, updated_at = now() WHERE id IN (?) AND deleted_at IS NULL;
     `
 
 	updateEventDeliveryAttempts = `
@@ -96,7 +96,7 @@ const (
     `
 
 	softDeleteProjectEventDeliveries = `
-    UPDATE convoy.event_deliveries SET deleted_at = now() WHERE AND project_id = $1 created_at >= $2 AND created_at <= $3 AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET deleted_at = now() WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3 AND deleted_at IS NULL;
     `
 
 	hardDeleteProjectEventDeliveries = `
@@ -109,28 +109,6 @@ func NewEventDeliveryRepo(db *sqlx.DB) datastore.EventDeliveryRepository {
 }
 
 func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *datastore.EventDelivery) error {
-	delivery.UID = ulid.Make().String()
-
-	headers, err := json.Marshal(delivery.Headers)
-	if err != nil {
-		return fmt.Errorf("failed to marshal event delivery headers: %v", err)
-	}
-
-	attempts, err := json.Marshal(delivery.DeliveryAttempts)
-	if err != nil {
-		return fmt.Errorf("failed to marshal delivery attempts: %v", err)
-	}
-
-	metadata, err := json.Marshal(delivery.Metadata)
-	if err != nil {
-		return fmt.Errorf("failed to marshal matadata: %v", err)
-	}
-
-	cliMetadata, err := json.Marshal(delivery.DeliveryAttempts)
-	if err != nil {
-		return fmt.Errorf("failed to marshal cli metadata: %v", err)
-	}
-
 	var endpointID *string
 	var deviceID *string
 
@@ -145,8 +123,8 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 	result, err := e.db.ExecContext(
 		ctx, createEventDelivery, delivery.UID, delivery.ProjectID,
 		delivery.EventID, endpointID, deviceID,
-		delivery.SubscriptionID, headers, attempts, delivery.Status,
-		metadata, cliMetadata, delivery.Description, delivery.CreatedAt, delivery.UpdatedAt,
+		delivery.SubscriptionID, delivery.Headers, delivery.DeliveryAttempts, delivery.Status,
+		delivery.Metadata, delivery.CLIMetadata, delivery.Description,
 	)
 	if err != nil {
 		return err
@@ -177,8 +155,14 @@ func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, id string
 func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, ids []string) ([]datastore.EventDelivery, error) {
 	eventDeliveries := make([]datastore.EventDelivery, 0)
 
-	q := fmt.Sprintf(fetchEventDeliveries, "id IN ($1)")
-	rows, err := e.db.QueryxContext(ctx, q, ids)
+	query, args, err := sqlx.In(fmt.Sprintf(fetchEventDeliveries, "id IN (?)"), ids)
+	if err != nil {
+		return nil, err
+	}
+
+	query = e.db.Rebind(query)
+
+	rows, err := e.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +218,14 @@ func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, status 
 }
 
 func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, delivery datastore.EventDelivery, status datastore.EventDeliveryStatus) error {
-	result, err := e.db.ExecContext(ctx, updateEventDeliveriesStatus, status, []string{delivery.UID})
+	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, []string{delivery.UID})
+	if err != nil {
+		return err
+	}
+
+	query = e.db.Rebind(query)
+
+	result, err := e.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -252,7 +243,14 @@ func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, del
 }
 
 func (e *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, ids []string, status datastore.EventDeliveryStatus) error {
-	result, err := e.db.ExecContext(ctx, updateEventDeliveriesStatus, status, ids)
+	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, ids)
+	if err != nil {
+		return err
+	}
+
+	query = e.db.Rebind(query)
+
+	result, err := e.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -269,14 +267,13 @@ func (e *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, i
 	return nil
 }
 
-func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, appId, deviceId string, searchParams datastore.SearchParams) ([]datastore.EventDelivery, error) {
+func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, endpointID, deviceId string, searchParams datastore.SearchParams) ([]datastore.EventDelivery, error) {
 	eventDeliveries := make([]datastore.EventDelivery, 0)
 
 	start := time.Unix(searchParams.CreatedAtStart, 0)
 	end := time.Unix(searchParams.CreatedAtEnd, 0)
 
-	q := fmt.Sprintf(fetchDiscardedEventDeliveries, datastore.DiscardedEventStatus)
-	rows, err := e.db.QueryxContext(ctx, q, deviceId, appId, start, end)
+	rows, err := e.db.QueryxContext(ctx, fetchDiscardedEventDeliveries, datastore.DiscardedEventStatus, deviceId, endpointID, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -297,12 +294,7 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, ap
 func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, delivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
 	delivery.DeliveryAttempts = append(delivery.DeliveryAttempts, attempt)
 
-	attempts, err := json.Marshal(delivery.DeliveryAttempts)
-	if err != nil {
-		return fmt.Errorf("failed to marshal delivery attempts: %v", err)
-	}
-
-	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, attempts, delivery.UID)
+	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, delivery.DeliveryAttempts, delivery.UID)
 	if err != nil {
 		return err
 	}
@@ -326,7 +318,33 @@ func (e *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, projectID 
 
 	start := time.Unix(params.CreatedAtStart, 0)
 	end := time.Unix(params.CreatedAtEnd, 0)
-	err := e.db.QueryRowxContext(ctx, countEventDeliveries, projectID, eventID, status, endpointIDs, start, end).StructScan(&count)
+
+	args := []interface{}{
+		projectID, projectID,
+		eventID, eventID,
+		start, end,
+	}
+
+	q := countEventDeliveries
+
+	if len(endpointIDs) > 0 {
+		q += ` AND endpoint_id IN (?)`
+		args = append(args, endpointIDs)
+	}
+
+	if len(status) > 0 {
+		q += ` AND status IN (?)`
+		args = append(args, status)
+	}
+
+	query, args, err := sqlx.In(q, args...)
+	if err != nil {
+		return 0, err
+	}
+
+	query = e.db.Rebind(query)
+
+	err = e.db.QueryRowxContext(ctx, query, args...).StructScan(&count)
 	if err != nil {
 		return 0, err
 	}
@@ -368,7 +386,38 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 
 	start := time.Unix(params.CreatedAtStart, 0)
 	end := time.Unix(params.CreatedAtEnd, 0)
-	rows, err := e.db.QueryxContext(ctx, loadEventDeliveriesPaged, projectID, eventID, status, endpointIDs, start, end, pageable.PerPage, getSkip(pageable.Page, pageable.PerPage))
+
+	args := []interface{}{
+		projectID, projectID,
+		eventID, eventID,
+		start, end,
+	}
+
+	query := loadEventDeliveriesPaged
+
+	if len(endpointIDs) > 0 {
+		query += ` AND ed.endpoint_id IN (?)`
+		args = append(args, endpointIDs)
+	}
+
+	if len(status) > 0 {
+		query += ` AND ed.status IN (?)`
+		args = append(args, status)
+	}
+
+	query += ` LIMIT ? OFFSET ?`
+	args = append(args, pageable.Limit(), pageable.Offset())
+
+	query, args, err := sqlx.In(query, args...)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query = e.db.Rebind(query)
+
+	rows, err := e.db.QueryxContext(
+		ctx, query, args...,
+	)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -416,7 +465,49 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		})
 	}
 
-	return eventDeliveries, datastore.PaginationData{}, nil
+	args = []interface{}{
+		projectID, projectID,
+		eventID, eventID,
+		start, end,
+	}
+
+	q := countEventDeliveries
+
+	if len(endpointIDs) > 0 {
+		q += ` AND endpoint_id IN (?)`
+		args = append(args, endpointIDs)
+	}
+
+	if len(status) > 0 {
+		q += ` AND status IN (?)`
+		args = append(args, status)
+	}
+
+	query, args, err = sqlx.In(q, args...)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query = e.db.Rebind(query)
+
+	count := struct {
+		Count int64
+	}{}
+
+	err = e.db.QueryRowxContext(ctx, query, args...).StructScan(&count)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	pagination := datastore.PaginationData{
+		Total:     count.Count,
+		Page:      int64(pageable.Page),
+		PerPage:   int64(pageable.PerPage),
+		Prev:      int64(getPrevPage(pageable.Page)),
+		Next:      int64(pageable.Page + 1),
+		TotalPage: int64(math.Ceil(float64(count.Count) / float64(pageable.PerPage))),
+	}
+	return eventDeliveries, pagination, nil
 }
 
 const (
@@ -499,7 +590,7 @@ type EventDeliveryPaginated struct {
 	Endpoint *EndpointMetadata `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *EventMetadata    `json:"event_metadata,omitempty" db:"event_metadata"`
 
-	DeliveryAttempts []datastore.DeliveryAttempt   `json:"-" db:"attempts"`
+	DeliveryAttempts datastore.DeliveryAttempts    `json:"-" db:"attempts"`
 	Status           datastore.EventDeliveryStatus `json:"status" db:"status"`
 	Metadata         *datastore.Metadata           `json:"metadata" db:"metadata"`
 	CLIMetadata      *CLIMetadata                  `json:"cli_metadata" db:"cli_metadata"`
@@ -507,4 +598,21 @@ type EventDeliveryPaginated struct {
 	CreatedAt        time.Time                     `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt        time.Time                     `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt        null.Time                     `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+func (m *CLIMetadata) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+
+	return nil
 }

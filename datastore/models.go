@@ -1,7 +1,6 @@
 package datastore
 
 import (
-	"bytes"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
@@ -246,6 +245,10 @@ func (s *Secrets) Scan(value interface{}) error {
 		return fmt.Errorf("unsupported value type %T", value)
 	}
 
+	if string(b) == "null" {
+		return nil
+	}
+
 	var secrets []Secret
 	err := json.Unmarshal(b, &secrets)
 	if err != nil {
@@ -390,6 +393,10 @@ func (s *SignatureVersions) Scan(v interface{}) error {
 	b, ok := v.([]byte)
 	if !ok {
 		return fmt.Errorf("unsupported value type %T", v)
+	}
+
+	if string(b) == "null" {
+		return nil
 	}
 
 	return json.Unmarshal(b, s)
@@ -598,7 +605,7 @@ const (
 
 type Metadata struct {
 	// Data to be sent to endpoint.
-	Data     json.RawMessage  `json:"data" bson:"data"`
+	Data     []byte           `json:"data" bson:"data"`
 	Raw      string           `json:"raw" bson:"raw"`
 	Strategy StrategyProvider `json:"strategy" bson:"strategy"`
 
@@ -613,14 +620,34 @@ type Metadata struct {
 	RetryLimit uint64 `json:"retry_limit" bson:"retry_limit"`
 }
 
-func (em Metadata) Value() (driver.Value, error) {
-	b := new(bytes.Buffer)
-
-	if err := json.NewEncoder(b).Encode(em); err != nil {
-		return driver.Value(""), err
+func (m *Metadata) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
 	}
 
-	return driver.Value(b.String()), nil
+	if string(b) == "null" {
+		return nil
+	}
+
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Metadata) Value() (driver.Value, error) {
+	if m == nil {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 type EventIntervalData struct {
@@ -634,25 +661,56 @@ type EventInterval struct {
 }
 
 type DeliveryAttempt struct {
-	ID         primitive.ObjectID `json:"-" bson:"_id"`
-	UID        string             `json:"uid" bson:"uid"`
-	MsgID      string             `json:"msg_id" bson:"msg_id"`
-	URL        string             `json:"url" bson:"url"`
-	Method     string             `json:"method" bson:"method"`
-	EndpointID string             `json:"endpoint_id" bson:"endpoint_id"`
-	APIVersion string             `json:"api_version" bson:"api_version"`
+	UID        string `json:"uid" db:"id"`
+	MsgID      string `json:"msg_id" db:"msg_id"`
+	URL        string `json:"url" db:"url"`
+	Method     string `json:"method" db:"method"`
+	EndpointID string `json:"endpoint_id" db:"endpoint_id"`
+	APIVersion string `json:"api_version" db:"api_version"`
 
-	IPAddress        string     `json:"ip_address,omitempty" bson:"ip_address,omitempty"`
-	RequestHeader    HttpHeader `json:"request_http_header,omitempty" bson:"request_http_header,omitempty"`
-	ResponseHeader   HttpHeader `json:"response_http_header,omitempty" bson:"response_http_header,omitempty"`
-	HttpResponseCode string     `json:"http_status,omitempty" bson:"http_status,omitempty"`
-	ResponseData     string     `json:"response_data,omitempty" bson:"response_data,omitempty"`
-	Error            string     `json:"error,omitempty" bson:"error,omitempty"`
-	Status           bool       `json:"status,omitempty" bson:"status,omitempty"`
+	IPAddress        string     `json:"ip_address,omitempty" db:"ip_address"`
+	RequestHeader    HttpHeader `json:"request_http_header,omitempty" db:"request_http_header"`
+	ResponseHeader   HttpHeader `json:"response_http_header,omitempty" db:"response_http_header"`
+	HttpResponseCode string     `json:"http_status,omitempty" db:"http_status"`
+	ResponseData     string     `json:"response_data,omitempty" db:"response_data"`
+	Error            string     `json:"error,omitempty" db:"error"`
+	Status           bool       `json:"status,omitempty" db:"statu,"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+type DeliveryAttempts []DeliveryAttempt
+
+func (h *DeliveryAttempts) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	if err := json.Unmarshal(b, &h); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (h DeliveryAttempts) Value() (driver.Value, error) {
+	if h == nil {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(h)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 // EventDelivery defines a payload to be sent to an endpoint
@@ -668,7 +726,7 @@ type EventDelivery struct {
 	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`
 
-	DeliveryAttempts []DeliveryAttempt   `json:"-" db:"attempts"`
+	DeliveryAttempts DeliveryAttempts    `json:"-" db:"attempts"`
 	Status           EventDeliveryStatus `json:"status" db:"status"`
 	Metadata         *Metadata           `json:"metadata" db:"metadata"`
 	CLIMetadata      *CLIMetadata        `json:"cli_metadata" db:"cli_metadata"`
@@ -679,8 +737,38 @@ type EventDelivery struct {
 }
 
 type CLIMetadata struct {
-	EventType string `json:"event_type" bson:"event_type"`
-	HostName  string `json:"host_name,omitempty" bson:"-"`
+	EventType string `json:"event_type" db:"event_type"`
+	HostName  string `json:"host_name,omitempty" db:"host_name"`
+}
+
+func (m *CLIMetadata) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *CLIMetadata) Value() (driver.Value, error) {
+	if m == nil {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 type APIKey struct {
