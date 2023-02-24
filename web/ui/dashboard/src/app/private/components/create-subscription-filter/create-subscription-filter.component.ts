@@ -20,7 +20,7 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 	@ViewChild('headerSchemaEditor') headerSchemaEditor!: MonacoComponent;
 	@ViewChild('requestEditor') requestEditor!: MonacoComponent;
 	@ViewChild('schemaEditor') schemaEditor!: MonacoComponent;
-	@Input('action') action: 'update' | 'create' = 'create';
+	@Input('action') action: 'update' | 'create' | 'view' = 'create';
 	@Input('schema') schema?: any;
 	@Output('filterSchema') filterSchema: EventEmitter<any> = new EventEmitter();
 	tabs: ['body', 'header'] = ['body', 'header'];
