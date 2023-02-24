@@ -38,8 +38,8 @@ CREATE TABLE IF NOT EXISTS convoy.organisation_members (
 	id CHAR(26) PRIMARY KEY,
 
 	role_type TEXT NOT NULL,
-	role_project TEXT NOT NULL,
-	role_endpoint TEXT NOT NULL,
+	role_project TEXT NOT NULL REFERENCES convoy.projects (id),
+	role_endpoint TEXT NOT NULL REFERENCES convoy.endpoints (id),
 	user_id CHAR(26) NOT NULL REFERENCES convoy.users (id),
 	organisation_id CHAR(26) NOT NULL REFERENCES convoy.organisations (id),
 
@@ -141,8 +141,8 @@ CREATE TABLE IF NOT EXISTS convoy.organisation_invites (
 	invitee_email TEXT NOT NULL,
 	token TEXT NOT NULL,
 	role_type TEXT NOT NULL,
-	role_project TEXT NOT NULL,
-	role_endpoint TEXT NOT NULL,
+    role_project TEXT NOT NULL REFERENCES convoy.projects (id),
+    role_endpoint TEXT NOT NULL REFERENCES convoy.endpoints (id),
 	status TEXT NOT NULL,
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -292,8 +292,8 @@ CREATE TABLE IF NOT EXISTS convoy.api_keys (
 	key_type TEXT NOT NULL,
 	mask_id TEXT NOT NULL,
 	role_type TEXT NOT NULL,
-    role_project TEXT NOT NULL,
-    role_endpoint TEXT NOT NULL,
+    role_project TEXT NOT NULL REFERENCES convoy.projects (id),
+    role_endpoint TEXT NOT NULL REFERENCES convoy.endpoints (id),
 	hash TEXT NOT NULL,
 	salt TEXT NOT NULL,
 
