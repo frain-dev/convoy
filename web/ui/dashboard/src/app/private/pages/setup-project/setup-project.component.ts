@@ -65,9 +65,9 @@ export class SetupProjectComponent implements OnInit {
 	async saveProjectConfig() {
 		const [sourceDetails, endpointDetails] = await Promise.allSettled([!this.createSourceForm.sourceCreated ? this.createSourceForm.saveSource() : false, !this.createEndpointForm.endpointCreated ? this.createEndpointForm.saveEndpoint() : false]);
 
-		if (sourceDetails.status === 'fulfilled' && typeof sourceDetails.value !== 'boolean') {
+		if (this.projectType === 'incoming' && sourceDetails.status === 'fulfilled' && typeof sourceDetails.value !== 'boolean') {
 			this.newSource = sourceDetails.value?.data;
-			if (this.projectType === 'incoming') this.subscriptionService.subscriptionData = { source_id: sourceDetails.value?.data.uid };
+			this.subscriptionService.subscriptionData = { source_id: sourceDetails.value?.data.uid };
 		}
 		if (endpointDetails.status === 'fulfilled' && typeof endpointDetails.value !== 'boolean') {
 			this.newEndpoint = endpointDetails.value?.data;
