@@ -37,16 +37,16 @@ func stripVariableFields(t *testing.T, obj string, v interface{}) {
 		for i := range e.Secrets {
 			s := &e.Secrets[i]
 			s.UID = ""
-			s.CreatedAt, s.UpdatedAt, s.DeletedAt = 0, 0, nil
+			s.CreatedAt, s.UpdatedAt, s.DeletedAt = time.Time{}, time.Time{}, null.Time{}
 		}
 
 		e.UID, e.AppID = "", ""
-		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, nil
+		e.CreatedAt, e.UpdatedAt, e.DeletedAt = time.Time{}, time.Time{}, null.Time{}
 	case "event":
 		e := v.(*datastore.Event)
 		e.UID = ""
 		e.MatchedEndpoints = 0
-		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, nil
+		e.CreatedAt, e.UpdatedAt, e.DeletedAt = time.Time{}, time.Time{}, null.Time{}
 	case "apiKey":
 		a := v.(*datastore.APIKey)
 		a.UID, a.MaskID, a.Salt, a.Hash = "", "", "", ""

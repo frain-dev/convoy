@@ -8,7 +8,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/config"
-	cm "github.com/frain-dev/convoy/datastore/mongo"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -54,13 +54,13 @@ func addWorkerCommand(a *app) *cobra.Command {
 			// register worker.
 			consumer := worker.NewConsumer(a.queue, lo)
 
-			endpointRepo := cm.NewEndpointRepo(a.store)
-			eventRepo := cm.NewEventRepository(a.store)
-			eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store)
-			projectRepo := cm.NewProjectRepo(a.store)
-			subRepo := cm.NewSubscriptionRepo(a.store)
-			deviceRepo := cm.NewDeviceRepository(a.store)
-			configRepo := cm.NewConfigRepo(a.store)
+			endpointRepo := postgres.NewEndpointRepo(a.db)
+			eventRepo := postgres.NewEventRepo(a.db)
+			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.db)
+			projectRepo := postgres.NewProjectRepo(a.db)
+			subRepo := postgres.NewSubscriptionRepo(a.db)
+			deviceRepo := postgres.NewDeviceRepo(a.db)
+			configRepo := postgres.NewConfigRepo(a.db)
 
 			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 				endpointRepo,
@@ -90,13 +90,13 @@ func addWorkerCommand(a *app) *cobra.Command {
 				a.searcher))
 
 			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(
-				a.store,
+				a.db,
 				a.queue))
 
 			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(
 				endpointRepo))
 
-			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.store, cfg))
+			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.db, cfg))
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 			consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.searcher))
 			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))

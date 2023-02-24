@@ -10,6 +10,7 @@ import (
 
 	"github.com/oklog/ulid/v2"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 )
@@ -124,8 +125,8 @@ type sourceRepo struct {
 	db *sqlx.DB
 }
 
-func NewSourceRepo(db *sqlx.DB) datastore.SourceRepository {
-	return &sourceRepo{db: db}
+func NewSourceRepo(db database.Database) datastore.SourceRepository {
+	return &sourceRepo{db: db.GetDB()}
 }
 
 func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source) error {

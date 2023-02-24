@@ -6,6 +6,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -17,8 +18,8 @@ type Postgres struct {
 	dbx *sqlx.DB
 }
 
-func NewDB() (*Postgres, error) {
-	db, err := sqlx.Connect("postgres", "postgres://admin:password@localhost/convoy?sslmode=disable")
+func NewDB(cfg config.Configuration) (*Postgres, error) {
+	db, err := sqlx.Connect("postgres", cfg.Database.Dsn)
 	if err != nil {
 		return nil, fmt.Errorf("[%s]: failed to open database - %v", pkgName, err)
 	}

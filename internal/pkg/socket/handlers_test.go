@@ -12,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func provideRepo(ctrl *gomock.Controller) *Repo {
@@ -33,7 +32,7 @@ func provideRepo(ctrl *gomock.Controller) *Repo {
 
 func TestHub_listen(t *testing.T) {
 	ctx := context.Background()
-	lastSeen := primitive.NewDateTimeFromTime(time.Now().Add(-time.Minute))
+	lastSeen := time.Now().Add(-time.Minute)
 	type args struct {
 		ctx           context.Context
 		project       *datastore.Project
@@ -504,7 +503,7 @@ func TestHub_login(t *testing.T) {
 						EndpointID: "abc",
 						HostName:   "hostname_1",
 						Status:     datastore.DeviceStatusOffline,
-						LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
+						LastSeenAt: time.Now(),
 					},
 					nil,
 				)
@@ -562,7 +561,7 @@ func TestHub_login(t *testing.T) {
 						EndpointID: "abc",
 						HostName:   "hostname_1",
 						Status:     datastore.DeviceStatusOnline,
-						LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
+						LastSeenAt: time.Now(),
 					},
 					nil,
 				)
@@ -591,7 +590,7 @@ func TestHub_login(t *testing.T) {
 						EndpointID: "abcd",
 						HostName:   "hostname_1",
 						Status:     datastore.DeviceStatusOnline,
-						LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
+						LastSeenAt: time.Now(),
 					},
 					nil,
 				)
@@ -620,7 +619,7 @@ func TestHub_login(t *testing.T) {
 						EndpointID: "abc",
 						HostName:   "hostname_1",
 						Status:     datastore.DeviceStatusOnline,
-						LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
+						LastSeenAt: time.Now(),
 					},
 					nil,
 				)
@@ -630,7 +629,7 @@ func TestHub_login(t *testing.T) {
 					EndpointID: "abc",
 					HostName:   "hostname_1",
 					Status:     datastore.DeviceStatusOffline,
-					LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
+					LastSeenAt: time.Now(),
 				}, "abc", "1234").Times(1).Return(nil)
 			},
 			want: &datastore.Device{
@@ -660,7 +659,7 @@ func TestHub_login(t *testing.T) {
 						EndpointID: "abc",
 						HostName:   "hostname_1",
 						Status:     datastore.DeviceStatusOnline,
-						LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
+						LastSeenAt: time.Now(),
 					},
 					nil,
 				)
@@ -670,7 +669,7 @@ func TestHub_login(t *testing.T) {
 					EndpointID: "abc",
 					HostName:   "hostname_1",
 					Status:     datastore.DeviceStatusOffline,
-					LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
+					LastSeenAt: time.Now(),
 				}, "abc", "1234").Times(1).Return(errors.New("failed to update device to online"))
 			},
 			wantErr:     true,

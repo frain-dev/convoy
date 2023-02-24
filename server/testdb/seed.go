@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/dchest/uniuri"
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -18,12 +17,11 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"github.com/xdg-go/pbkdf2"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // SeedEndpoint creates a random endpoint for integration tests.
-func SeedEndpoint(store datastore.Store, g *datastore.Project, uid, title, ownerID string, disabled bool, status datastore.EndpointStatus) (*datastore.Endpoint, error) {
+func SeedEndpoint(db datastore.Store, g *datastore.Project, uid, title, ownerID string, disabled bool, status datastore.EndpointStatus) (*datastore.Endpoint, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -76,10 +74,8 @@ func SeedMultipleEndpoints(store datastore.Store, g *datastore.Project, count in
 
 func SeedEndpointSecret(store datastore.Store, e *datastore.Endpoint, value string) (*datastore.Secret, error) {
 	sc := datastore.Secret{
-		UID:       uuid.New().String(),
-		Value:     value,
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		UID:   uuid.New().String(),
+		Value: value,
 	}
 
 	e.Secrets = append(e.Secrets, sc)
@@ -122,9 +118,7 @@ func SeedDefaultProject(store datastore.Store, orgID string) (*datastore.Project
 					},
 				},
 			},
-			ReplayAttacks:     false,
-			RateLimitCount:    convoy.RATE_LIMIT,
-			RateLimitDuration: convoy.RATE_LIMIT_DURATION,
+			ReplayAttacks: false,
 		},
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -295,15 +289,13 @@ func SeedProject(store datastore.Store, uid, name, orgID string, projectType dat
 		orgID = uuid.NewString()
 	}
 	g := &datastore.Project{
-		UID:               uid,
-		Name:              name,
-		Type:              projectType,
-		Config:            cfg,
-		OrganisationID:    orgID,
-		RateLimit:         convoy.RATE_LIMIT,
-		RateLimitDuration: convoy.RATE_LIMIT_DURATION,
-		CreatedAt:         time.Now(),
-		UpdatedAt:         time.Now(),
+		UID:            uid,
+		Name:           name,
+		Type:           projectType,
+		Config:         cfg,
+		OrganisationID: orgID,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	// Seed Data.
@@ -329,8 +321,6 @@ func SeedEvent(store datastore.Store, endpoint *datastore.Endpoint, projectID st
 		Endpoints: []string{endpoint.UID},
 		ProjectID: projectID,
 		SourceID:  sourceID,
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	// Seed Data.
@@ -356,8 +346,6 @@ func SeedEventDelivery(store datastore.Store, event *datastore.Event, endpoint *
 		Status:         status,
 		SubscriptionID: subcription.UID,
 		ProjectID:      projectID,
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	// Seed Data.
@@ -493,9 +481,6 @@ func SeedSubscription(store datastore.Store,
 		RetryConfig:  retryConfig,
 		AlertConfig:  alertConfig,
 		FilterConfig: filterConfig,
-
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	subRepo := cm.NewSubscriptionRepo(store)

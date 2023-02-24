@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
@@ -95,8 +96,8 @@ type apiKeyRepo struct {
 	db *sqlx.DB
 }
 
-func NewAPIKeyRepo(db *sqlx.DB) datastore.APIKeyRepository {
-	return &apiKeyRepo{db: db}
+func NewAPIKeyRepo(db database.Database) datastore.APIKeyRepository {
+	return &apiKeyRepo{db: db.GetDB()}
 }
 
 func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) error {

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/oklog/ulid/v2"
@@ -118,8 +119,8 @@ type subscriptionRepo struct {
 	db *sqlx.DB
 }
 
-func NewSubscriptionRepo(db *sqlx.DB) datastore.SubscriptionRepository {
-	return &subscriptionRepo{db: db}
+func NewSubscriptionRepo(db database.Database) datastore.SubscriptionRepository {
+	return &subscriptionRepo{db: db.GetDB()}
 }
 
 func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {

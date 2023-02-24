@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 )
@@ -60,8 +61,8 @@ type userRepo struct {
 	db *sqlx.DB
 }
 
-func NewUserRepo(db *sqlx.DB) datastore.UserRepository {
-	return &userRepo{db: db}
+func NewUserRepo(db database.Database) datastore.UserRepository {
+	return &userRepo{db: db.GetDB()}
 }
 
 func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {

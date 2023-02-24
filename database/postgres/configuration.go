@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 	"gopkg.in/guregu/null.v4"
@@ -64,8 +65,8 @@ type configRepo struct {
 	db *sqlx.DB
 }
 
-func NewConfigRepo(db *sqlx.DB) datastore.ConfigurationRepository {
-	return &configRepo{db: db}
+func NewConfigRepo(db database.Database) datastore.ConfigurationRepository {
+	return &configRepo{db: db.GetDB()}
 }
 
 func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.Configuration) error {

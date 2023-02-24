@@ -9,6 +9,8 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	dbb "github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/sirupsen/logrus"
@@ -56,7 +58,7 @@ func main() {
 func ensureDefaultUser(ctx context.Context, a *app) error {
 	pageable := datastore.Pageable{}
 
-	userRepo := cm.NewUserRepo(a.store)
+	userRepo := postgres.NewUserRepo(a.db)
 	users, _, err := userRepo.LoadUsersPaged(ctx, pageable)
 	if err != nil {
 		return fmt.Errorf("failed to load users - %w", err)
@@ -95,7 +97,8 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 }
 
 type app struct {
-	store    datastore.Store
+	db dbb.Database
+	// store    datastore.Store
 	queue    queue.Queuer
 	logger   log.StdLogger
 	tracer   tracer.Tracer
@@ -152,16 +155,16 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 		*db = *database
 
 		// Check Pending Migrations
-		if len(cmd.Aliases) > 0 {
-			alias := cmd.Aliases[0]
-			shouldSkip := strings.HasPrefix(alias, "migrate")
-			if !shouldSkip {
-				err := checkPendingMigrations(cfg.Database.Dsn, db)
-				if err != nil {
-					return err
-				}
-			}
-		}
+		// if len(cmd.Aliases) > 0 {
+		// 	alias := cmd.Aliases[0]
+		// 	shouldSkip := strings.HasPrefix(alias, "migrate")
+		// 	if !shouldSkip {
+		// 		err := checkPendingMigrations(cfg.Database.Dsn, db)
+		// 		if err != nil {
+		// 			return err
+		// 		}
+		// 	}
+		// }
 
 		var tr tracer.Tracer
 		var ca cache.Cache
@@ -214,9 +217,15 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 			return err
 		}
 
-		s := datastore.New(db.Database())
+		// s := datastore.New(db.Database())
 
-		app.store = s
+		db, err := postgres.NewDB(cfg)
+		if err != nil {
+			return err
+		}
+
+		app.db = db
+		// app.store = s
 		app.queue = q
 		app.logger = lo
 		app.tracer = tr

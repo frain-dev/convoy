@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
+	"github.com/frain-dev/convoy/database"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -116,8 +117,8 @@ type endpointRepo struct {
 	db *sqlx.DB
 }
 
-func NewEndpointRepo(db *sqlx.DB) datastore.EndpointRepository {
-	return &endpointRepo{db: db}
+func NewEndpointRepo(db database.Database) datastore.EndpointRepository {
+	return &endpointRepo{db: db.GetDB()}
 }
 
 func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
