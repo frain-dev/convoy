@@ -249,7 +249,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 						subscriptionRouter.Post("/", a.CreateSubscription)
 						subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
-						subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
+						subscriptionRouter.With(a.M.Pagination, a.M.RequireBaseUrl()).Get("/", a.GetSubscriptions)
 						subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
 						subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
 						subscriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
@@ -443,7 +443,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 							subscriptionRouter.Post("/", a.CreateSubscription)
 							subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
-							subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
+							subscriptionRouter.With(a.M.Pagination, a.M.RequireBaseUrl()).Get("/", a.GetSubscriptions)
 							subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
 							subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
 							subscriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
@@ -536,7 +536,7 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 		portalRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 			subscriptionRouter.Post("/", a.CreateSubscription)
 			subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
-			subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
+			subscriptionRouter.With(a.M.Pagination, a.M.RequireBaseUrl()).Get("/", a.GetSubscriptions)
 			subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
 			subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
 			subscriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)

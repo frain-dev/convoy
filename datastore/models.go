@@ -646,7 +646,8 @@ type Source struct {
 	IsDisabled     bool               `json:"is_disabled" bson:"is_disabled"`
 	Verifier       *VerifierConfig    `json:"verifier" bson:"verifier"`
 	ProviderConfig *ProviderConfig    `json:"provider_config" bson:"provider_config"`
-	ForwardHeaders []string           `json:"forward_headers" bson:"forward_headers"`
+	ForwardHeaders []string           `json:"-" bson:"forward_headers"`
+	URL            string             `json:"url" bson:"-"`
 	PubSub         *PubSubConfig      `json:"pub_sub" bson:"pub_sub"`
 
 	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`

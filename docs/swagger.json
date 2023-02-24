@@ -6446,6 +6446,23 @@
                 }
             }
         },
+        "datastore.GooglePubSubConfig": {
+            "type": "object",
+            "properties": {
+                "project_id": {
+                    "type": "string"
+                },
+                "service_account": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "subscription_id": {
+                    "type": "string"
+                }
+            }
+        },
         "datastore.HMac": {
             "type": "object",
             "properties": {
@@ -6658,6 +6675,34 @@
                 }
             }
         },
+        "datastore.PubSubConfig": {
+            "type": "object",
+            "properties": {
+                "google": {
+                    "$ref": "#/definitions/datastore.GooglePubSubConfig"
+                },
+                "sqs": {
+                    "$ref": "#/definitions/datastore.SQSPubSubConfig"
+                },
+                "type": {
+                    "$ref": "#/definitions/datastore.PubSubType"
+                },
+                "workers": {
+                    "type": "integer"
+                }
+            }
+        },
+        "datastore.PubSubType": {
+            "type": "string",
+            "enum": [
+                "sqs",
+                "google"
+            ],
+            "x-enum-varnames": [
+                "SqsPubSub",
+                "GooglePubSub"
+            ]
+        },
         "datastore.RateLimitConfiguration": {
             "type": "object",
             "properties": {
@@ -6687,6 +6732,23 @@
                     "type": "integer"
                 },
                 "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "datastore.SQSPubSubConfig": {
+            "type": "object",
+            "properties": {
+                "access_key_id": {
+                    "type": "string"
+                },
+                "default_region": {
+                    "type": "string"
+                },
+                "queue_name": {
+                    "type": "string"
+                },
+                "secret_key": {
                     "type": "string"
                 }
             }
@@ -6754,12 +6816,6 @@
                 "deleted_at": {
                     "type": "string"
                 },
-                "forward_headers": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "is_disabled": {
                     "type": "boolean"
                 },
@@ -6778,6 +6834,9 @@
                 "provider_config": {
                     "$ref": "#/definitions/datastore.ProviderConfig"
                 },
+                "pub_sub": {
+                    "$ref": "#/definitions/datastore.PubSubConfig"
+                },
                 "type": {
                     "$ref": "#/definitions/datastore.SourceType"
                 },
@@ -6785,6 +6844,9 @@
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                },
+                "url": {
                     "type": "string"
                 },
                 "verifier": {
@@ -7234,6 +7296,9 @@
                 "provider": {
                     "$ref": "#/definitions/datastore.SourceProvider"
                 },
+                "pub_sub": {
+                    "$ref": "#/definitions/datastore.PubSubConfig"
+                },
                 "type": {
                     "$ref": "#/definitions/datastore.SourceType"
                 },
@@ -7268,6 +7333,9 @@
                 },
                 "provider_config": {
                     "$ref": "#/definitions/datastore.ProviderConfig"
+                },
+                "pub_sub": {
+                    "$ref": "#/definitions/datastore.PubSubConfig"
                 },
                 "type": {
                     "$ref": "#/definitions/datastore.SourceType"
