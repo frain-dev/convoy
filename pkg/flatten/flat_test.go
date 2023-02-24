@@ -354,3 +354,339 @@ func TestFlattenWithOperatorAndMaps(t *testing.T) {
 		})
 	}
 }
+
+func TestFlattenWithOrAndOperator(t *testing.T) {
+	tests := []struct {
+		name    string
+		given   map[string]interface{}
+		want    map[string]interface{}
+		wantErr bool
+		err     error
+	}{
+		/////////////////// $or operator
+		{
+			name: "top level $or operator - nothing to flatten",
+			given: map[string]interface{}{
+				"$or": []map[string]interface{}{
+					{
+						"age": map[string]interface{}{
+							"$in": []int{10, 11, 12},
+						},
+					},
+					{
+						"temperatures": 39.9,
+					},
+				},
+			},
+			want: map[string]interface{}{
+				"$or": []map[string]interface{}{
+					{
+						"age": map[string]interface{}{
+							"$in": []int{10, 11, 12},
+						},
+					},
+					{
+						"temperatures": 39.9,
+					},
+				},
+			},
+		},
+
+		{
+			name: "top level $or operator - flatten children",
+			given: map[string]interface{}{
+				"$or": []map[string]interface{}{
+					{
+						"person": map[string]interface{}{
+							"age": map[string]interface{}{
+								"$in": []int{10, 11, 12},
+							},
+						},
+					},
+					{
+						"places": map[string]interface{}{
+							"temperatures": 39.9,
+						},
+					},
+				},
+			},
+			want: map[string]interface{}{
+				"$or": []map[string]interface{}{
+					{
+						"person.age": map[string]interface{}{
+							"$in": []int{10, 11, 12},
+						},
+					},
+					{
+						"places.temperatures": 39.9,
+					},
+				},
+			},
+		},
+
+		{
+			name: "top level $or operator - flatten children",
+			given: map[string]interface{}{
+				"$or": []map[string]interface{}{
+					{
+						"person": map[string]interface{}{
+							"age": map[string]interface{}{
+								"$in": []int{10, 11, 12},
+							},
+						},
+					},
+					{
+						"places": map[string]interface{}{
+							"temperatures": 39.9,
+						},
+					},
+				},
+			},
+			want: map[string]interface{}{
+				"$or": []map[string]interface{}{
+					{
+						"person.age": map[string]interface{}{
+							"$in": []int{10, 11, 12},
+						},
+					},
+					{
+						"places.temperatures": 39.9,
+					},
+				},
+			},
+		},
+
+		{
+			name: "top level $or operator - or is not an array",
+			given: map[string]interface{}{
+				"$or": map[string]interface{}{
+					"person": map[string]interface{}{
+						"age": map[string]interface{}{
+							"$in": []int{10, 11, 12},
+						},
+					},
+					"places": map[string]interface{}{
+						"temperatures": 39.9,
+					},
+				},
+			},
+			wantErr: true,
+			err:     ErrOrAndMustBeArray,
+		},
+
+		/////////////////// $and operator
+		{
+			name: "top level $and operator - nothing to flatten",
+			given: map[string]interface{}{
+				"$and": []map[string]interface{}{
+					{
+						"age": map[string]interface{}{
+							"$in": []int{10, 11, 12},
+						},
+					},
+					{
+						"temperatures": 39.9,
+					},
+				},
+			},
+			want: map[string]interface{}{
+				"$and": []map[string]interface{}{
+					{
+						"age": map[string]interface{}{
+							"$in": []int{10, 11, 12},
+						},
+					},
+					{
+						"temperatures": 39.9,
+					},
+				},
+			},
+		},
+
+		{
+			name: "top level $and operator - flatten children",
+			given: map[string]interface{}{
+				"$and": []map[string]interface{}{
+					{
+						"person": map[string]interface{}{
+							"age": map[string]interface{}{
+								"$in": []int{10, 11, 12},
+							},
+						},
+					},
+					{
+						"places": map[string]interface{}{
+							"temperatures": 39.9,
+						},
+					},
+				},
+			},
+			want: map[string]interface{}{
+				"$and": []map[string]interface{}{
+					{
+						"person.age": map[string]interface{}{
+							"$in": []int{10, 11, 12},
+						},
+					},
+					{
+						"places.temperatures": 39.9,
+					},
+				},
+			},
+		},
+
+		{
+			name: "top level $and operator - flatten children",
+			given: map[string]interface{}{
+				"$and": []map[string]interface{}{
+					{
+						"person": map[string]interface{}{
+							"age": map[string]interface{}{
+								"$in": []int{10, 11, 12},
+							},
+						},
+					},
+					{
+						"places": map[string]interface{}{
+							"temperatures": 39.9,
+						},
+					},
+				},
+			},
+			want: map[string]interface{}{
+				"$and": []map[string]interface{}{
+					{
+						"person.age": map[string]interface{}{
+							"$in": []int{10, 11, 12},
+						},
+					},
+					{
+						"places.temperatures": 39.9,
+					},
+				},
+			},
+		},
+
+		{
+			name: "top level $and operator - or is not an array",
+			given: map[string]interface{}{
+				"$and": map[string]interface{}{
+					"person": map[string]interface{}{
+						"age": map[string]interface{}{
+							"$in": []int{10, 11, 12},
+						},
+					},
+					"places": map[string]interface{}{
+						"temperatures": 39.9,
+					},
+				},
+			},
+			wantErr: true,
+			err:     ErrOrAndMustBeArray,
+		},
+
+		/////////////////// combine $and and $or operators
+		{
+			name: "combine $and and $or operators - nothing to flatten",
+			given: map[string]interface{}{
+				"$and": []map[string]interface{}{
+					{
+						"$or": []map[string]interface{}{
+							{
+								"age": map[string]interface{}{
+									"$in": []int{10, 11, 12},
+								},
+							},
+							{
+								"temperatures": 39.9,
+							},
+						},
+					},
+					{
+						"temperatures": 39.9,
+					},
+				},
+			},
+			want: map[string]interface{}{
+				"$and": []map[string]interface{}{
+					{
+						"$or": []map[string]interface{}{
+							{
+								"age": map[string]interface{}{
+									"$in": []int{10, 11, 12},
+								},
+							},
+							{
+								"temperatures": 39.9,
+							},
+						},
+					},
+					{
+						"temperatures": 39.9,
+					},
+				},
+			},
+		},
+
+		{
+			name: "combine $and and $or operators - nothing to flatten",
+			given: map[string]interface{}{
+				"$and": []map[string]interface{}{
+					{
+						"$or": []map[string]interface{}{
+							{
+								"person": map[string]interface{}{
+									"age": map[string]interface{}{
+										"$in": []int{10, 11, 12},
+									},
+								},
+							},
+							{
+								"places": map[string]interface{}{
+									"temperatures": 39.9,
+								},
+							},
+						},
+					},
+					{
+						"city": "lagos",
+					},
+				},
+			},
+			want: map[string]interface{}{
+				"$and": []map[string]interface{}{
+					{
+						"$or": []map[string]interface{}{
+							{
+								"person.age": map[string]interface{}{
+									"$in": []int{10, 11, 12},
+								},
+							},
+							{
+								"places.temperatures": 39.9,
+							},
+						},
+					},
+					{
+						"city": "lagos",
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := Flatten(test.given)
+			if test.wantErr {
+				if test.err != err {
+					t.Errorf("failed to flatten: %+v", err)
+				}
+			}
+
+			if !reflect.DeepEqual(got, test.want) {
+				t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", got, test.want)
+			}
+		})
+	}
+}

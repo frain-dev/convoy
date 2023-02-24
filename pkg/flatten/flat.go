@@ -6,11 +6,9 @@ import (
 	"strings"
 )
 
-var ErrTopLevelElementOr = errors.New("only one top level element is allowed when using the $or operator")
-var ErrTopLevelElementAnd = errors.New("only one top level element is allowed when using the $and operator")
 var ErrOrAndMustBeArray = errors.New("the value of $or and $and must be an array")
 
-// Flatten flattens extended JSON which is used to build and store mongodb queries.
+// Flatten flattens extended JSON which is used to build and store queries.
 //
 // Payloads that look like this
 //
@@ -44,6 +42,38 @@ func flatten(prefix string, nested interface{}) (map[string]interface{}, error) 
 	case map[string]interface{}:
 		for key, value := range n {
 			if strings.HasPrefix(key, "$") {
+				if key == "$or" || key == "$and" {
+					switch a := value.(type) {
+					case []map[string]interface{}:
+						for i := range a {
+							t, err := flatten("", a[i])
+							if err != nil {
+								return nil, err
+							}
+
+							a[i] = t
+						}
+
+						f[key] = a
+						return f, nil
+					case []interface{}:
+						for i := range a {
+							t, err := flatten("", a[i].(map[string]interface{}))
+							if err != nil {
+								return nil, err
+							}
+
+							a[i] = t
+						}
+
+						f[key] = a
+						return f, nil
+					default:
+						return nil, ErrOrAndMustBeArray
+					}
+				}
+
+				// op is not $and or $or
 				continue
 			}
 
