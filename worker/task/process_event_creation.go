@@ -223,7 +223,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 			subscriptions = append(subscriptions, subs...)
 		}
 	} else if project.Type == datastore.IncomingProject {
-		subs, err := subRepo.FindSubscriptionsBySourceIDs(ctx, project.UID, event.SourceID)
+		subs, err := subRepo.FindSubscriptionsBySourceID(ctx, project.UID, event.SourceID)
 		if err != nil {
 			log.Errorf("error fetching subscriptions for this source %s", err)
 			return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}

@@ -6437,12 +6437,10 @@
             "type": "object",
             "properties": {
                 "body": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/datastore.M"
                 },
                 "headers": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/datastore.M"
                 }
             }
         },
@@ -6468,6 +6466,10 @@
             "additionalProperties": {
                 "type": "string"
             }
+        },
+        "datastore.M": {
+            "type": "object",
+            "additionalProperties": true
         },
         "datastore.Metadata": {
             "type": "object",
@@ -6770,7 +6772,6 @@
                     "$ref": "#/definitions/datastore.SourceType"
                 },
                 "uid": {
-                    "description": "ID             primitive.ObjectID `json:\"-\" bson:\"_id\"`",
                     "type": "string"
                 },
                 "updated_at": {

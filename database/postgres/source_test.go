@@ -268,18 +268,9 @@ func generateSource(t *testing.T, db *sqlx.DB) *datastore.Source {
 	}
 }
 
-func seedProject(t *testing.T, db *sqlx.DB) *datastore.Project {
-	org := seedOrg(t, db)
+func seedSource(t *testing.T, db *sqlx.DB) *datastore.Source {
+	source := generateSource(t, db)
 
-	project := &datastore.Project{
-		UID:            ulid.Make().String(),
-		Name:           "project",
-		Config:         &datastore.DefaultProjectConfig,
-		OrganisationID: org.UID,
-	}
-
-	err := NewProjectRepo(db).CreateProject(context.Background(), project)
-	require.NoError(t, err)
-
-	return project
+	require.NoError(t, NewSourceRepo(db).CreateSource(context.Background(), source))
+	return source
 }

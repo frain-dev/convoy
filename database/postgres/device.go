@@ -7,7 +7,6 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
-	"github.com/oklog/ulid/v2"
 )
 
 var (
@@ -78,7 +77,7 @@ func NewDeviceRepo(db *sqlx.DB) datastore.DeviceRepository {
 
 func (d *deviceRepo) CreateDevice(ctx context.Context, device *datastore.Device) error {
 	r, err := d.db.ExecContext(ctx, createDevice,
-		ulid.Make().String(),
+		device.UID,
 		device.ProjectID,
 		device.EndpointID,
 		device.HostName,
@@ -110,7 +109,6 @@ func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device,
 		device.Status,
 		device.LastSeenAt,
 	)
-
 	if err != nil {
 		return err
 	}
@@ -172,7 +170,6 @@ func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, endpointID, p
 func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, endpointID, projectID string) (*datastore.Device, error) {
 	device := &datastore.Device{}
 	err := d.db.QueryRowxContext(ctx, fetchDeviceById, uid, projectID, endpointID).StructScan(device)
-
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrDeviceNotFound
@@ -186,7 +183,6 @@ func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, endpointID
 func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName string, endpointID, projectID string) (*datastore.Device, error) {
 	device := &datastore.Device{}
 	err := d.db.QueryRowxContext(ctx, fetchDeviceByHostName, hostName, projectID, endpointID).StructScan(device)
-
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrDeviceNotFound

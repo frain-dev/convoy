@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -51,7 +50,13 @@ const (
 	baseFetch = `
     SELECT
     s.id,s.name,s.type,
-	s.project_id,s.endpoint_id,s.device_id,s.source_id,
+	s.project_id,
+	s.created_at, s.updated_at,
+
+	COALESCE(s.endpoint_id,'') as "endpoint_id",
+	COALESCE(s.device_id,'') as "device_id",
+	COALESCE(s.source_id,'') as "source_id",
+
 	s.alert_config_count as "alert_config.count",
 	s.alert_config_threshold as "alert_config.threshold",
 	s.retry_config_type as "retry_config.type",
@@ -83,10 +88,17 @@ const (
 
 	fetchSubscriptionsPaginated = baseFetch + ` AND s.project_id = $1 ORDER BY id LIMIT $2 OFFSET $3;`
 
-	fetchSubscriptionsPaginatedFilterByEndpoints = baseFetch + ` AND s.endpoint_id IN $1 AND s.project_id = $2 ORDER BY id LIMIT $2 OFFSET $3;`
+	fetchSubscriptionsPaginatedFilterByEndpoints = baseFetch + ` AND s.endpoint_id IN (?) AND s.project_id = ? ORDER BY id LIMIT ? OFFSET ?;`
 
 	countSubscriptions = `
-	SELECT COUNT(id) FROM convoy.subscriptions WHERE project_id = $1 AND deleted_at IS NULL;
+	SELECT COUNT(*) FROM convoy.subscriptions WHERE project_id = $1 AND deleted_at IS NULL;
+	`
+
+	countSubscriptionsFilterByEndpoints = `
+	SELECT COUNT(*) FROM convoy.subscriptions WHERE
+	endpoint_id IN (?) AND
+	project_id = ? AND
+	deleted_at IS NULL;
 	`
 
 	deleteSubscriptions = `
@@ -121,16 +133,6 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 	fc := subscription.GetFilterConfig()
 	rlc := subscription.GetRateLimitConfig()
 
-	filterHeaders, err := json.Marshal(fc.Filter.Headers)
-	if err != nil {
-		return err
-	}
-
-	filterBody, err := json.Marshal(fc.Filter.Body)
-	if err != nil {
-		return err
-	}
-
 	var endpointID, sourceID, deviceID *string
 	if !util.IsStringEmpty(subscription.EndpointID) {
 		endpointID = &subscription.EndpointID
@@ -149,7 +151,7 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		subscription.Name, subscription.Type, subscription.ProjectID,
 		endpointID, deviceID, sourceID,
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
-		fc.EventTypes, filterHeaders, filterBody, rlc.Count, rlc.Duration,
+		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, rlc.Count, rlc.Duration,
 	)
 	if err != nil {
 		return err
@@ -177,21 +179,11 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 	fc := subscription.GetFilterConfig()
 	rlc := subscription.GetRateLimitConfig()
 
-	filterHeaders, err := json.Marshal(fc.Filter.Headers)
-	if err != nil {
-		return err
-	}
-
-	filterBody, err := json.Marshal(fc.Filter.Body)
-	if err != nil {
-		return err
-	}
-
 	result, err := s.db.ExecContext(
 		ctx, updateSubscription, subscription.UID,
 		subscription.Name, subscription.EndpointID, subscription.SourceID,
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
-		fc.EventTypes, filterHeaders, filterBody, rlc.Count, rlc.Duration,
+		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, rlc.Count, rlc.Duration,
 	)
 	if err != nil {
 		return err
@@ -210,33 +202,44 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 }
 
 func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID string, filter *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
-	skip := (pageable.Page - 1) * pageable.PerPage
-	subscriptions := make([]datastore.Subscription, 0)
 	var rows *sqlx.Rows
 	var err error
 
 	if len(filter.EndpointIDs) > 0 {
-		rows, err = s.db.QueryxContext(ctx, fetchSubscriptionsPaginatedFilterByEndpoints, projectID, filter.EndpointIDs, pageable.PerPage, skip)
+		query, args, inerr := sqlx.In(fetchSubscriptionsPaginatedFilterByEndpoints, filter.EndpointIDs, projectID, pageable.Limit(), pageable.Offset())
+		if inerr != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		query = s.db.Rebind(query)
+
+		rows, err = s.db.QueryxContext(ctx, query, args...)
 	} else {
-		rows, err = s.db.QueryxContext(ctx, fetchSubscriptionsPaginated, projectID, pageable.PerPage, skip)
+		rows, err = s.db.QueryxContext(ctx, fetchSubscriptionsPaginated, projectID, pageable.Limit(), pageable.Offset())
 	}
 
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
+	defer rows.Close()
 
-	sub := datastore.Subscription{}
-	for rows.Next() {
-		err = rows.StructScan(&sub)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-
-		subscriptions = append(subscriptions, sub)
+	subscriptions, err := scanSubscriptions(rows)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
 	}
 
 	var count int
-	err = s.db.Get(&count, countSubscriptions, projectID) // TODO: count with filter
+	if len(filter.EndpointIDs) > 0 {
+		query, args, inerr := sqlx.In(countSubscriptionsFilterByEndpoints, filter.EndpointIDs, projectID)
+		if inerr != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		query = s.db.Rebind(query)
+		err = s.db.Get(&count, query, args...)
+	} else {
+		err = s.db.Get(&count, countSubscriptions, projectID)
+	}
+
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -280,47 +283,27 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, projectID s
 		return nil, err
 	}
 
+	nullifyEmptyConfig(subscription)
+
 	return subscription, nil
 }
 
-func (s *subscriptionRepo) FindSubscriptionsBySourceIDs(ctx context.Context, projectID string, sourceID string) ([]datastore.Subscription, error) {
-	subscriptions := make([]datastore.Subscription, 0)
+func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, projectID string, sourceID string) ([]datastore.Subscription, error) {
 	rows, err := s.db.QueryxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.project_id", "s.source_id"), projectID, sourceID)
 	if err != nil {
 		return nil, err
 	}
 
-	sub := datastore.Subscription{}
-	for rows.Next() {
-		err = rows.StructScan(&sub)
-		if err != nil {
-			return nil, err
-		}
-
-		subscriptions = append(subscriptions, sub)
-	}
-
-	return subscriptions, nil
+	return scanSubscriptions(rows)
 }
 
 func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]datastore.Subscription, error) {
-	subscriptions := make([]datastore.Subscription, 0)
 	rows, err := s.db.QueryxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.project_id", "s.endpoint_id"), projectId, endpointID)
 	if err != nil {
 		return nil, err
 	}
 
-	sub := datastore.Subscription{}
-	for rows.Next() {
-		err = rows.StructScan(&sub)
-		if err != nil {
-			return nil, err
-		}
-
-		subscriptions = append(subscriptions, sub)
-	}
-
-	return subscriptions, nil
+	return scanSubscriptions(rows)
 }
 
 func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string) (*datastore.Subscription, error) {
@@ -330,9 +313,49 @@ func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, proje
 		return nil, err
 	}
 
+	nullifyEmptyConfig(subscription)
+
 	return subscription, nil
 }
 
 func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload map[string]interface{}, filter map[string]interface{}) (bool, error) {
 	return true, nil
+}
+
+var (
+	emptyAlertConfig     = datastore.AlertConfiguration{}
+	emptyRetryConfig     = datastore.RetryConfiguration{}
+	emptyRateLimitConfig = datastore.RateLimitConfiguration{}
+)
+
+func nullifyEmptyConfig(sub *datastore.Subscription) {
+	if *sub.AlertConfig == emptyAlertConfig {
+		sub.AlertConfig = nil
+	}
+
+	if *sub.RetryConfig == emptyRetryConfig {
+		sub.RetryConfig = nil
+	}
+
+	if *sub.RateLimitConfig == emptyRateLimitConfig {
+		sub.RateLimitConfig = nil
+	}
+}
+
+func scanSubscriptions(rows *sqlx.Rows) ([]datastore.Subscription, error) {
+	subscriptions := make([]datastore.Subscription, 0)
+	sub := datastore.Subscription{}
+	var err error
+
+	for rows.Next() {
+		err = rows.StructScan(&sub)
+		if err != nil {
+			return nil, err
+		}
+		nullifyEmptyConfig(&sub)
+
+		subscriptions = append(subscriptions, sub)
+	}
+
+	return subscriptions, nil
 }
