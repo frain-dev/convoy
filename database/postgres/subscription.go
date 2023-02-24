@@ -88,7 +88,7 @@ const (
 
 	fetchSubscriptionsPaginated = baseFetch + ` AND s.project_id = $1 ORDER BY id LIMIT $2 OFFSET $3;`
 
-	fetchSubscriptionsPaginatedFilterByEndpoints = baseFetch + ` AND s.endpoint_id IN (%s) AND s.project_id = $1 ORDER BY id LIMIT $2 OFFSET $3;`
+	fetchSubscriptionsPaginatedFilterByEndpoints = baseFetch + ` AND s.endpoint_id IN (?) AND s.project_id = ? ORDER BY id LIMIT ? OFFSET ?;`
 
 	countSubscriptions = `
 	SELECT COUNT(*) FROM convoy.subscriptions WHERE project_id = $1 AND deleted_at IS NULL;
@@ -96,8 +96,8 @@ const (
 
 	countSubscriptionsFilterByEndpoints = `
 	SELECT COUNT(*) FROM convoy.subscriptions WHERE
-	endpoint_id IN (%s) AND
-	project_id = $1 AND
+	endpoint_id IN (?) AND
+	project_id = ? AND
 	deleted_at IS NULL;
 	`
 
@@ -206,8 +206,13 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 	var err error
 
 	if len(filter.EndpointIDs) > 0 {
-		query := fmt.Sprintf(fetchSubscriptionsPaginatedFilterByEndpoints, expandStringSlice(filter.EndpointIDs))
-		rows, err = s.db.QueryxContext(ctx, query, projectID, pageable.Limit(), pageable.Offset())
+		query, args, err := sqlx.In(fetchSubscriptionsPaginatedFilterByEndpoints, filter.EndpointIDs, projectID, pageable.Limit(), pageable.Offset())
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		query = s.db.Rebind(query)
+
+		rows, err = s.db.QueryxContext(ctx, query, args...)
 	} else {
 		rows, err = s.db.QueryxContext(ctx, fetchSubscriptionsPaginated, projectID, pageable.Limit(), pageable.Offset())
 	}
@@ -224,8 +229,13 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 
 	var count int
 	if len(filter.EndpointIDs) > 0 {
-		query := fmt.Sprintf(countSubscriptionsFilterByEndpoints, expandStringSlice(filter.EndpointIDs))
-		err = s.db.Get(&count, query, projectID)
+		query, args, err := sqlx.In(countSubscriptionsFilterByEndpoints, filter.EndpointIDs, projectID)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		query = s.db.Rebind(query)
+
+		err = s.db.Get(&count, query, args...)
 	} else {
 		err = s.db.Get(&count, countSubscriptions, projectID)
 	}
@@ -348,15 +358,4 @@ func scanSubscriptions(rows *sqlx.Rows) ([]datastore.Subscription, error) {
 	}
 
 	return subscriptions, nil
-}
-
-func expandStringSlice(s []string) string {
-	var expanded string
-	for _, str := range s {
-		expanded += "'" + str + "'" + ","
-	}
-
-	v := expanded[:len(expanded)-1]
-	fmt.Println("tttt", v)
-	return v
 }
