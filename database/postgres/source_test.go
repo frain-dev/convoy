@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/dchest/uniuri"
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
@@ -272,7 +272,7 @@ func Test_LoadSourcesPaged(t *testing.T) {
 	}
 }
 
-func generateSource(t *testing.T, db *sqlx.DB) *datastore.Source {
+func generateSource(t *testing.T, db database.Database) *datastore.Source {
 	project := seedProject(t, db)
 
 	return &datastore.Source{
@@ -294,7 +294,7 @@ func generateSource(t *testing.T, db *sqlx.DB) *datastore.Source {
 	}
 }
 
-func seedSource(t *testing.T, db *sqlx.DB) *datastore.Source {
+func seedSource(t *testing.T, db database.Database) *datastore.Source {
 	source := generateSource(t, db)
 
 	require.NoError(t, NewSourceRepo(db).CreateSource(context.Background(), source))

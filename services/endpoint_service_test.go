@@ -524,6 +524,7 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 					HttpTimeout:       "20s",
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint1"},
+				project:  &datastore.Project{UID: "project1"},
 			},
 			dbFn: func(as *EndpointService) {
 				a, _ := as.endpointRepo.(*mocks.MockEndpointRepository)

@@ -21,8 +21,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var (
@@ -292,7 +290,6 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 	requestHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
 
 	return datastore.DeliveryAttempt{
-		ID:         primitive.NewObjectID(),
 		UID:        uuid.New().String(),
 		URL:        resp.URL.String(),
 		Method:     resp.Method,
@@ -308,8 +305,8 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 		Error:            resp.Error,
 		Status:           attemptStatus,
 
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 }
 

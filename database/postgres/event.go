@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
@@ -95,8 +96,8 @@ type eventRepo struct {
 	db *sqlx.DB
 }
 
-func NewEventRepo(db *sqlx.DB) datastore.EventRepository {
-	return &eventRepo{db: db}
+func NewEventRepo(db database.Database) datastore.EventRepository {
+	return &eventRepo{db: db.GetDB()}
 }
 
 func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) error {

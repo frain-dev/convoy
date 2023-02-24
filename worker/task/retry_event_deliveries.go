@@ -7,15 +7,16 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
 )
 
-func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDuration string, store datastore.Store, eventQueue queue.Queuer) {
+func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDuration string, db database.Database, eventQueue queue.Queuer) {
 	if statuses == nil {
 		statuses = []datastore.EventDeliveryStatus{"Retry", "Scheduled", "Processing"}
 	}
@@ -57,8 +58,8 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 		var wg sync.WaitGroup
 
 		wg.Add(1)
-		eventDeliveryRepo := mongo.NewEventDeliveryRepository(store)
-		projectRepo := mongo.NewProjectRepo(store)
+		eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+		projectRepo := postgres.NewProjectRepo(db)
 
 		go processEventDeliveryBatch(ctx, status, eventDeliveryRepo, projectRepo, deliveryChan, q, &wg)
 

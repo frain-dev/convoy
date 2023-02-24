@@ -89,8 +89,8 @@ func generateEventDelivery(project *datastore.Project, endpoint *datastore.Endpo
 }
 
 func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
-	db, _ := getDB(t)
-	// defer closeFn()
+	db, closeFn := getDB(t)
+	defer closeFn()
 
 	source := seedSource(t, db)
 	project := seedProject(t, db)

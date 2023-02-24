@@ -11,9 +11,9 @@ import (
 
 	"github.com/oklog/ulid/v2"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 
-	"github.com/jmoiron/sqlx"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -395,7 +395,7 @@ func Test_DeleteProject(t *testing.T) {
 	require.Equal(t, datastore.ErrSubscriptionNotFound, err)
 }
 
-func seedOrg(t *testing.T, db *sqlx.DB) *datastore.Organisation {
+func seedOrg(t *testing.T, db database.Database) *datastore.Organisation {
 	user := seedUser(t, db)
 
 	org := &datastore.Organisation{
@@ -413,7 +413,7 @@ func seedOrg(t *testing.T, db *sqlx.DB) *datastore.Organisation {
 	return org
 }
 
-func seedProject(t *testing.T, db *sqlx.DB) *datastore.Project {
+func seedProject(t *testing.T, db database.Database) *datastore.Project {
 	p := &datastore.Project{
 		UID:            ulid.Make().String(),
 		Name:           "Yet another project",

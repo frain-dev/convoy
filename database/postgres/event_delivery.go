@@ -9,6 +9,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
@@ -104,8 +105,8 @@ const (
     `
 )
 
-func NewEventDeliveryRepo(db *sqlx.DB) datastore.EventDeliveryRepository {
-	return &eventDeliveryRepo{db: db}
+func NewEventDeliveryRepo(db database.Database) datastore.EventDeliveryRepository {
+	return &eventDeliveryRepo{db: db.GetDB()}
 }
 
 func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *datastore.EventDelivery) error {

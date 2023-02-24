@@ -10,9 +10,9 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	cm "github.com/frain-dev/convoy/datastore/mongo"
-	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
@@ -22,7 +22,7 @@ import (
 
 type DeviceIntegrationTestSuite struct {
 	suite.Suite
-	DB              convoyMongo.Client
+	DB              database.Database
 	Router          http.Handler
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
@@ -42,13 +42,13 @@ func (d *DeviceIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(d.T(), d.DB)
 
 	// Setup Default Project.
-	d.DefaultProject, _ = testdb.SeedDefaultProject(d.ConvoyApp.A.Store, "")
+	d.DefaultProject, _ = testdb.SeedDefaultProject(d.ConvoyApp.A.DB, "")
 
-	user, err := testdb.SeedDefaultUser(d.ConvoyApp.A.Store)
+	user, err := testdb.SeedDefaultUser(d.ConvoyApp.A.DB)
 	require.NoError(d.T(), err)
 	d.DefaultUser = user
 
-	org, err := testdb.SeedDefaultOrganisation(d.ConvoyApp.A.Store, user)
+	org, err := testdb.SeedDefaultOrganisation(d.ConvoyApp.A.DB, user)
 	require.NoError(d.T(), err)
 	d.DefaultOrg = org
 
@@ -61,8 +61,8 @@ func (d *DeviceIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(d.T(), err)
 
-	apiRepo := cm.NewApiKeyRepo(d.ConvoyApp.A.Store)
-	userRepo := cm.NewUserRepo(d.ConvoyApp.A.Store)
+	apiRepo := postgres.NewAPIKeyRepo(d.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(d.ConvoyApp.A.DB)
 	initRealmChain(d.T(), apiRepo, userRepo, d.ConvoyApp.A.Cache)
 }
 
@@ -74,11 +74,11 @@ func (d *DeviceIntegrationTestSuite) TearDownTest() {
 func (d *DeviceIntegrationTestSuite) Test_FetchDevicesByEndpointID() {
 	expectedStatusCode := http.StatusOK
 
-	endpoint, err := testdb.SeedEndpoint(d.ConvoyApp.A.Store, d.DefaultProject, "", "", "", false, datastore.ActiveEndpointStatus)
+	endpoint, err := testdb.SeedEndpoint(d.ConvoyApp.A.DB, d.DefaultProject, "", "", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(d.T(), err)
 
 	// Just Before.
-	_ = testdb.SeedDevice(d.ConvoyApp.A.Store, d.DefaultProject, endpoint.UID)
+	_ = testdb.SeedDevice(d.ConvoyApp.A.DB, d.DefaultProject, endpoint.UID)
 
 	// Arrange
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/devices", d.DefaultOrg.UID, d.DefaultProject.UID, endpoint.UID)

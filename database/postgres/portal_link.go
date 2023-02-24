@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 )
@@ -86,8 +87,8 @@ type portalLinkRepo struct {
 	db *sqlx.DB
 }
 
-func NewPortalLinkRepo(db *sqlx.DB) datastore.PortalLinkRepository {
-	return &portalLinkRepo{db: db}
+func NewPortalLinkRepo(db database.Database) datastore.PortalLinkRepository {
+	return &portalLinkRepo{db: db.GetDB()}
 }
 
 func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore.PortalLink) error {

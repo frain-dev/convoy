@@ -9,6 +9,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 )
 
@@ -140,8 +141,8 @@ type projectRepo struct {
 	db *sqlx.DB
 }
 
-func NewProjectRepo(db *sqlx.DB) datastore.ProjectRepository {
-	return &projectRepo{db: db}
+func NewProjectRepo(db database.Database) datastore.ProjectRepository {
+	return &projectRepo{db: db.GetDB()}
 }
 
 func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Project) error {

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
@@ -59,8 +60,8 @@ type orgRepo struct {
 	db *sqlx.DB
 }
 
-func NewOrgRepo(db *sqlx.DB) datastore.OrganisationRepository {
-	return &orgRepo{db: db}
+func NewOrgRepo(db database.Database) datastore.OrganisationRepository {
+	return &orgRepo{db: db.GetDB()}
 }
 
 func (o *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organisation) error {

@@ -8,10 +8,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-
-	cm "github.com/frain-dev/convoy/datastore/mongo"
-	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -24,7 +23,7 @@ import (
 
 type ConfigurationIntegrationTestSuite struct {
 	suite.Suite
-	DB              convoyMongo.Client
+	DB              database.Database
 	Router          http.Handler
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
@@ -43,13 +42,13 @@ func (c *ConfigurationIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(c.T(), c.DB)
 
 	// Setup Default Project
-	c.DefaultProject, _ = testdb.SeedDefaultProject(c.ConvoyApp.A.Store, "")
+	c.DefaultProject, _ = testdb.SeedDefaultProject(c.ConvoyApp.A.DB, "")
 
-	user, err := testdb.SeedDefaultUser(c.ConvoyApp.A.Store)
+	user, err := testdb.SeedDefaultUser(c.ConvoyApp.A.DB)
 	require.NoError(c.T(), err)
 	c.DefaultUser = user
 
-	org, err := testdb.SeedDefaultOrganisation(c.ConvoyApp.A.Store, user)
+	org, err := testdb.SeedDefaultOrganisation(c.ConvoyApp.A.DB, user)
 	require.NoError(c.T(), err)
 	c.DefaultOrg = org
 
@@ -62,8 +61,8 @@ func (c *ConfigurationIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(c.T(), err)
 
-	apiRepo := cm.NewApiKeyRepo(c.ConvoyApp.A.Store)
-	userRepo := cm.NewUserRepo(c.ConvoyApp.A.Store)
+	apiRepo := postgres.NewAPIKeyRepo(c.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(c.ConvoyApp.A.DB)
 	initRealmChain(c.T(), apiRepo, userRepo, c.ConvoyApp.A.Cache)
 }
 
@@ -73,7 +72,7 @@ func (c *ConfigurationIntegrationTestSuite) TearDownTest() {
 }
 
 func (c *ConfigurationIntegrationTestSuite) Test_LoadConfiguration() {
-	config, err := testdb.SeedConfiguration(c.ConvoyApp.A.Store)
+	config, err := testdb.SeedConfiguration(c.ConvoyApp.A.DB)
 	require.NoError(c.T(), err)
 
 	// Arrange Request
@@ -128,7 +127,7 @@ func (c *ConfigurationIntegrationTestSuite) Test_CreateConfiguration() {
 }
 
 func (c *ConfigurationIntegrationTestSuite) Test_UpdateConfiguration() {
-	_, err := testdb.SeedConfiguration(c.ConvoyApp.A.Store)
+	_, err := testdb.SeedConfiguration(c.ConvoyApp.A.DB)
 	require.NoError(c.T(), err)
 
 	// Arrange Request

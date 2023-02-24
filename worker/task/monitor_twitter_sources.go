@@ -5,21 +5,22 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 )
 
-func MonitorTwitterSources(store datastore.Store, queue queue.Queuer) func(context.Context, *asynq.Task) error {
-	sourceRepo := mongo.NewSourceRepo(store)
-	subRepo := mongo.NewSubscriptionRepo(store)
-	endpointRepo := mongo.NewEndpointRepo(store)
+func MonitorTwitterSources(db database.Database, queue queue.Queuer) func(context.Context, *asynq.Task) error {
+	sourceRepo := postgres.NewSourceRepo(db)
+	subRepo := postgres.NewSubscriptionRepo(db)
+	endpointRepo := postgres.NewEndpointRepo(db)
 
 	return func(ctx context.Context, t *asynq.Task) error {
 		p := datastore.Pageable{Page: 1, PerPage: 100}

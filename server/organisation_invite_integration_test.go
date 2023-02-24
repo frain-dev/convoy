@@ -13,20 +13,20 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type OrganisationInviteIntegrationTestSuite struct {
 	suite.Suite
-	DB              cm.Client
+	DB              database.Database
 	Router          http.Handler
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
@@ -46,13 +46,13 @@ func (s *OrganisationInviteIntegrationTestSuite) SetupTest() {
 	s.DB = getDB()
 
 	// Setup Default Project.
-	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, "")
+	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, "")
 
-	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
+	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
 
-	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.Store, user)
+	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, user)
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
 
@@ -65,8 +65,8 @@ func (s *OrganisationInviteIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
-	userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -163,18 +163,18 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation_E
 func (s *OrganisationInviteIntegrationTestSuite) Test_GetPendingOrganisationInvites() {
 	expectedStatusCode := http.StatusOK
 
-	_, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, "invite1@test.com", &auth.Role{
+	_, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, "invite1@test.com", &auth.Role{
 		Type:     auth.RoleAdmin,
 		Project:  uuid.NewString(),
 		Endpoint: "",
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
+	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, "invite2@test.com", &auth.Role{
+	_, err = testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, "invite2@test.com", &auth.Role{
 		Type:     auth.RoleAdmin,
 		Project:  uuid.NewString(),
 		Endpoint: "",
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
+	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -204,14 +204,14 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_GetPendingOrganisationInvi
 func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberInvite_AcceptForExistingUser() {
 	expectedStatusCode := http.StatusOK
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.Store, "invite@test.com", "password")
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "invite@test.com", "password")
 	require.NoError(s.T(), err)
 
-	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, user.Email, &auth.Role{
+	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, user.Email, &auth.Role{
 		Type:     auth.RoleAdmin,
 		Project:  uuid.NewString(),
 		Endpoint: "",
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
+	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -231,14 +231,14 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberInvite_InviteExpired() {
 	expectedStatusCode := http.StatusBadRequest
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.Store, "invite@test.com", "password")
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "invite@test.com", "password")
 	require.NoError(s.T(), err)
 
-	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, user.Email, &auth.Role{
+	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, user.Email, &auth.Role{
 		Type:     auth.RoleAdmin,
 		Project:  uuid.NewString(),
 		Endpoint: "",
-	}, primitive.NewDateTimeFromTime(time.Now().Add(-time.Minute)), datastore.InviteStatusPending)
+	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -258,11 +258,11 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberInvite_AcceptForNewUser() {
 	expectedStatusCode := http.StatusOK
 
-	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, "test@invite.com", &auth.Role{
+	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, "test@invite.com", &auth.Role{
 		Type:     auth.RoleAdmin,
 		Project:  uuid.NewString(),
 		Endpoint: "",
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
+	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -284,11 +284,11 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberInvite_EmptyFirstName() {
 	expectedStatusCode := http.StatusBadRequest
 
-	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, "test@invite.com", &auth.Role{
+	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, "test@invite.com", &auth.Role{
 		Type:     auth.RoleAdmin,
 		Project:  uuid.NewString(),
 		Endpoint: "",
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
+	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -310,11 +310,11 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberInvite_Decline() {
 	expectedStatusCode := http.StatusOK
 
-	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, "test@invite.com", &auth.Role{
+	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, "test@invite.com", &auth.Role{
 		Type:     auth.RoleAdmin,
 		Project:  uuid.NewString(),
 		Endpoint: "",
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
+	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -334,14 +334,14 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_ExistingUser() {
 	expectedStatusCode := http.StatusOK
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.Store, "invite@test.com", "password")
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "invite@test.com", "password")
 	require.NoError(s.T(), err)
 
-	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, user.Email, &auth.Role{
+	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, user.Email, &auth.Role{
 		Type:     auth.RoleAdmin,
 		Project:  uuid.NewString(),
 		Endpoint: "",
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
+	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -371,11 +371,11 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_Exis
 func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewUser() {
 	expectedStatusCode := http.StatusOK
 
-	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, "invite@test.com", &auth.Role{
+	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, "invite@test.com", &auth.Role{
 		Type:     auth.RoleAdmin,
 		Project:  uuid.NewString(),
 		Endpoint: "",
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
+	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -400,11 +400,11 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewU
 }
 
 func (s *OrganisationInviteIntegrationTestSuite) Test_ResendInvite() {
-	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, "invite1@test.com", &auth.Role{
+	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, "invite1@test.com", &auth.Role{
 		Type:     auth.RoleAdmin,
 		Project:  uuid.NewString(),
 		Endpoint: "",
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
+	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/ui/organisations/%s/invites/%s/resend", s.DefaultOrg.UID, iv.UID)
@@ -422,11 +422,11 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ResendInvite() {
 }
 
 func (s *OrganisationInviteIntegrationTestSuite) Test_CancelInvite() {
-	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.Store, s.DefaultOrg, "invite1@test.com", &auth.Role{
+	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, "invite1@test.com", &auth.Role{
 		Type:     auth.RoleAdmin,
 		Project:  uuid.NewString(),
 		Endpoint: "",
-	}, primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)), datastore.InviteStatusPending)
+	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/ui/organisations/%s/invites/%s/cancel", s.DefaultOrg.UID, iv.UID)

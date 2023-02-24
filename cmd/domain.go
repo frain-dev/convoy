@@ -7,13 +7,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-
-	cm "github.com/frain-dev/convoy/datastore/mongo"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/spf13/cobra"
@@ -36,7 +35,7 @@ func addDomainCommand(a *app) *cobra.Command {
 				return err
 			}
 
-			orgRepo := cm.NewOrgRepo(a.store)
+			orgRepo := postgres.NewOrgRepo(a.db)
 
 			lo := a.logger.(*log.Logger)
 			lo.SetPrefix("domain server")

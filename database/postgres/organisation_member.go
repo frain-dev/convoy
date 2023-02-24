@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 )
@@ -123,8 +124,8 @@ type orgMemberRepo struct {
 	db *sqlx.DB
 }
 
-func NewOrgMemberRepo(db *sqlx.DB) datastore.OrganisationMemberRepository {
-	return &orgMemberRepo{db: db}
+func NewOrgMemberRepo(db database.Database) datastore.OrganisationMemberRepository {
+	return &orgMemberRepo{db: db.GetDB()}
 }
 
 func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {

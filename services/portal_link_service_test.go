@@ -57,12 +57,12 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 				p.EXPECT().CreatePortalLink(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				e, _ := pl.endpointRepo.(*mocks.MockEndpointRepository)
-				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
+				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
 					UID:       "123",
 					ProjectID: "12345",
 				}, nil)
 
-				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
+				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
 					UID:       "1234",
 					ProjectID: "12345",
 				}, nil)
@@ -99,7 +99,7 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 				p.EXPECT().CreatePortalLink(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 
 				e, _ := pl.endpointRepo.(*mocks.MockEndpointRepository)
-				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
+				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
 					UID:       "123",
 					ProjectID: "12345",
 				}, nil)
@@ -181,12 +181,12 @@ func TestPortalLinkService_UpdatePortalLink(t *testing.T) {
 				p.EXPECT().UpdatePortalLink(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				e, _ := pl.endpointRepo.(*mocks.MockEndpointRepository)
-				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
+				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
 					UID:       "123",
 					ProjectID: "12345",
 				}, nil)
 
-				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
+				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
 					UID:       "1234",
 					ProjectID: "12345",
 				}, nil)
@@ -212,7 +212,7 @@ func TestPortalLinkService_UpdatePortalLink(t *testing.T) {
 				p.EXPECT().UpdatePortalLink(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 
 				e, _ := pl.endpointRepo.(*mocks.MockEndpointRepository)
-				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
+				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
 					UID:       "1234",
 					ProjectID: "12345",
 				}, nil)
@@ -553,7 +553,7 @@ func TestPortalLinkService_GetPortalLinkEndpoints(t *testing.T) {
 			dbFn: func(pl *PortalLinkService) {
 				e, _ := pl.endpointRepo.(*mocks.MockEndpointRepository)
 
-				e.EXPECT().FindEndpointsByID(gomock.Any(), gomock.Any()).Times(1).
+				e.EXPECT().FindEndpointsByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]datastore.Endpoint{
 						{UID: "123"},
 						{UID: "1234"},
@@ -580,7 +580,7 @@ func TestPortalLinkService_GetPortalLinkEndpoints(t *testing.T) {
 			dbFn: func(pl *PortalLinkService) {
 				e, _ := pl.endpointRepo.(*mocks.MockEndpointRepository)
 
-				e.EXPECT().FindEndpointsByID(gomock.Any(), gomock.Any()).Times(1).
+				e.EXPECT().FindEndpointsByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]datastore.Endpoint{}, errors.New("failed"))
 			},
 			wantErr:     true,
@@ -600,7 +600,7 @@ func TestPortalLinkService_GetPortalLinkEndpoints(t *testing.T) {
 				tc.dbFn(pl)
 			}
 
-			endpoints, err := pl.GetPortalLinkEndpoints(tc.args.ctx, tc.args.portalLink)
+			endpoints, err := pl.GetPortalLinkEndpoints(tc.args.ctx, tc.args.portalLink, tc.args.project)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())

@@ -1,12 +1,11 @@
 package main
 
 import (
+	"github.com/frain-dev/convoy/database/postgres"
 	convoyMiddleware "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/socket"
 	"github.com/frain-dev/convoy/pkg/log"
-
-	cm "github.com/frain-dev/convoy/datastore/mongo"
 
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
@@ -27,13 +26,13 @@ func addStreamCommand(a *app) *cobra.Command {
 				return err
 			}
 
-			endpointRepo := cm.NewEndpointRepo(a.store)
-			eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store)
-			sourceRepo := cm.NewSourceRepo(a.store)
-			subRepo := cm.NewSubscriptionRepo(a.store)
-			deviceRepo := cm.NewDeviceRepository(a.store)
-			projectRepo := cm.NewProjectRepo(a.store)
-			apiKeyRepo := cm.NewApiKeyRepo(a.store)
+			endpointRepo := postgres.NewEndpointRepo(a.db)
+			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.db)
+			sourceRepo := postgres.NewSourceRepo(a.db)
+			subRepo := postgres.NewSubscriptionRepo(a.db)
+			deviceRepo := postgres.NewDeviceRepo(a.db)
+			projectRepo := postgres.NewProjectRepo(a.db)
+			apiKeyRepo := postgres.NewAPIKeyRepo(a.db)
 
 			// enable only the native auth realm
 			authCfg := &config.AuthConfiguration{

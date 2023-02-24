@@ -14,13 +14,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/jaswdr/faker"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -30,7 +31,7 @@ import (
 
 type ApplicationIntegrationTestSuite struct {
 	suite.Suite
-	DB             cm.Client
+	DB             database.Database
 	Router         http.Handler
 	ConvoyApp      *ApplicationHandler
 	DefaultOrg     *datastore.Organisation
@@ -49,16 +50,16 @@ func (s *ApplicationIntegrationTestSuite) SetupSuite() {
 func (s *ApplicationIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
 
-	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
+	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
 
-	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.Store, user)
+	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, user)
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
 
 	// Setup Default Project.
-	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
+	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, s.DefaultOrg.UID)
 
 	// Seed Auth
 	role := auth.Role{
@@ -66,16 +67,16 @@ func (s *ApplicationIntegrationTestSuite) SetupTest() {
 		Project: s.DefaultProject.UID,
 	}
 
-	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
+	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
 
-	_, s.PersonalAPIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test-personal-key", string(datastore.PersonalKey), s.DefaultUser.UID)
+	_, s.PersonalAPIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, uuid.NewString(), "test-personal-key", string(datastore.PersonalKey), s.DefaultUser.UID)
 
 	// Setup Config.
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
-	userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -105,7 +106,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
@@ -122,8 +123,8 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication() {
 	var app datastore.Application
 	parseResponse(s.T(), w.Result(), &app)
 
-	appRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	dbApp, err := appRepo.FindEndpointByID(context.Background(), appID)
+	appRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbApp, err := appRepo.FindEndpointByID(context.Background(), appID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), app.UID, dbApp.UID)
 	require.Equal(s.T(), app.Title, dbApp.Title)
@@ -134,7 +135,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication_WithPerso
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
@@ -151,8 +152,8 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication_WithPerso
 	var app datastore.Application
 	parseResponse(s.T(), w.Result(), &app)
 
-	appRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	dbApp, err := appRepo.FindEndpointByID(context.Background(), appID)
+	appRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbApp, err := appRepo.FindEndpointByID(context.Background(), appID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), app.UID, dbApp.UID)
 	require.Equal(s.T(), app.Title, dbApp.Title)
@@ -164,7 +165,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.Store, s.DefaultProject, totalApps)
+	_ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.DB, s.DefaultProject, totalApps)
 
 	// Arrange.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications", s.DefaultProject.UID)
@@ -189,7 +190,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications_WithPer
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.Store, s.DefaultProject, totalApps)
+	_ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.DB, s.DefaultProject, totalApps)
 
 	// Arrange.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications", s.DefaultProject.UID)
@@ -235,8 +236,8 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateApp() {
 	var app datastore.Application
 	parseResponse(s.T(), w.Result(), &app)
 
-	appRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	dbApp, err := appRepo.FindEndpointByID(context.Background(), app.UID)
+	appRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbApp, err := appRepo.FindEndpointByID(context.Background(), app.UID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbApp.Title, appTitle)
 }
@@ -261,8 +262,8 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppWithPersonalAPIKey() {
 	var app datastore.Application
 	parseResponse(s.T(), w.Result(), &app)
 
-	appRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	dbApp, err := appRepo.FindEndpointByID(context.Background(), app.UID)
+	appRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbApp, err := appRepo.FindEndpointByID(context.Background(), app.UID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbApp.Title, appTitle)
 }
@@ -292,7 +293,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_InvalidRequest() {
 	expectedStatusCode := http.StatusBadRequest
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
@@ -316,7 +317,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp() {
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", isDisabled, datastore.InactiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", isDisabled, datastore.InactiveEndpointStatus)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
@@ -338,8 +339,8 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp() {
 	var app datastore.Application
 	parseResponse(s.T(), w.Result(), &app)
 
-	appRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	dbApp, err := appRepo.FindEndpointByID(context.Background(), appID)
+	appRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbApp, err := appRepo.FindEndpointByID(context.Background(), appID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), app.UID, dbApp.UID)
 	require.Equal(s.T(), title, dbApp.Title)
@@ -355,7 +356,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_WithPersonalAPIKey() {
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", isDisabled, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", isDisabled, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
@@ -377,8 +378,8 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_WithPersonalAPIKey() {
 	var app datastore.Application
 	parseResponse(s.T(), w.Result(), &app)
 
-	appRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	dbApp, err := appRepo.FindEndpointByID(context.Background(), appID)
+	appRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbApp, err := appRepo.FindEndpointByID(context.Background(), appID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), app.UID, dbApp.UID)
 	require.Equal(s.T(), title, dbApp.Title)
@@ -391,7 +392,7 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteApp() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
@@ -405,8 +406,8 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteApp() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	appRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	_, err := appRepo.FindEndpointByID(context.Background(), appID)
+	appRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	_, err := appRepo.FindEndpointByID(context.Background(), appID, s.DefaultProject.UID)
 	require.Error(s.T(), err, datastore.ErrEndpointNotFound)
 }
 
@@ -415,7 +416,7 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteApp_WithPersonalAPIKey() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
@@ -429,8 +430,8 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteApp_WithPersonalAPIKey() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	appRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	_, err := appRepo.FindEndpointByID(context.Background(), appID)
+	appRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	_, err := appRepo.FindEndpointByID(context.Background(), appID, s.DefaultProject.UID)
 	require.Error(s.T(), err, datastore.ErrEndpointNotFound)
 }
 
@@ -442,7 +443,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint() {
 	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints", s.DefaultProject.UID, appID)
@@ -465,8 +466,8 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	appRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	dbEndpoint, err := appRepo.FindEndpointByID(context.Background(), endpoint.UID)
+	appRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbEndpoint, err := appRepo.FindEndpointByID(context.Background(), endpoint.UID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), secret, dbEndpoint.Secrets[0].Value)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
@@ -480,7 +481,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_With_Custom_Aut
 	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints", s.DefaultProject.UID, appID)
@@ -510,8 +511,8 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_With_Custom_Aut
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	appRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	dbEndpoint, err := appRepo.FindEndpointByID(context.Background(), endpoint.UID)
+	appRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbEndpoint, err := appRepo.FindEndpointByID(context.Background(), endpoint.UID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
 	require.Equal(s.T(), secret, dbEndpoint.Secrets[0].Value)
@@ -525,7 +526,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint_With_Custom_Aut
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s", s.DefaultProject.UID, appID, endpoint.UID)
@@ -554,8 +555,8 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint_With_Custom_Aut
 	var endpointResponse datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpointResponse)
 
-	appRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	dbEndpoint, err := appRepo.FindEndpointByID(context.Background(), appID)
+	appRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbEndpoint, err := appRepo.FindEndpointByID(context.Background(), appID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
 	require.Equal(s.T(), "x-api-key", dbEndpoint.Authentication.ApiKey.HeaderName)
@@ -570,7 +571,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_TestRedirectToP
 	expectedStatusCode := http.StatusTemporaryRedirect
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/applications/%s/endpoints?groupID=%s", appID, s.DefaultProject.UID)
@@ -605,7 +606,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_WithPersonalAPI
 	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints", s.DefaultProject.UID, appID)
@@ -628,8 +629,8 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_WithPersonalAPI
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	appRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	dbEndpoint, err := appRepo.FindEndpointByID(context.Background(), endpoint.UID)
+	appRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbEndpoint, err := appRepo.FindEndpointByID(context.Background(), endpoint.UID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
 }
@@ -644,7 +645,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s", s.DefaultProject.UID, appID, endpoint.UID)
@@ -667,8 +668,8 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 	var dbEndpoint *datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &dbEndpoint)
 
-	appRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	dbEndpoint, err := appRepo.FindEndpointByID(context.Background(), appID)
+	appRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbEndpoint, err := appRepo.FindEndpointByID(context.Background(), appID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, endpointURL)
 }
@@ -678,7 +679,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s", s.DefaultProject.UID, appID, endpoint.UID)
@@ -695,8 +696,8 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
 	var resp datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &resp)
 
-	appRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	dbEndpoint, err := appRepo.FindEndpointByID(context.Background(), appID)
+	appRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbEndpoint, err := appRepo.FindEndpointByID(context.Background(), appID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), dbEndpoint.TargetURL, resp.TargetURL)
 }
@@ -707,9 +708,9 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoints() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 	endpoint.TargetURL = faker.New().Internet().URL()
-	endpointRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
 
 	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint, endpoint.ProjectID)
 	require.NoError(s.T(), err)
@@ -740,8 +741,8 @@ func (s *ApplicationIntegrationTestSuite) Test_ExpireEndpointSecret() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
-	_, _ = testdb.SeedEndpointSecret(s.ConvoyApp.A.Store, app, secret)
+	app, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpointSecret(s.ConvoyApp.A.DB, app, secret)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s/expire_secret", s.DefaultProject.UID, appID, app.UID)
@@ -762,8 +763,8 @@ func (s *ApplicationIntegrationTestSuite) Test_ExpireEndpointSecret() {
 	var endpoint datastore.DeprecatedEndpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	appRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	app, err := appRepo.FindEndpointByID(context.Background(), appID)
+	appRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	app, err := appRepo.FindEndpointByID(context.Background(), appID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.NotEmpty(s.T(), app.Secrets[0].ExpiresAt)
 }
@@ -773,7 +774,7 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteAppEndpoint() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	app, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
+	app, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints/%s", s.DefaultProject.UID, appID, app.UID)
@@ -787,8 +788,8 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteAppEndpoint() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	appRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
-	_, err := appRepo.FindEndpointByID(context.Background(), appID)
+	appRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	_, err := appRepo.FindEndpointByID(context.Background(), appID, s.DefaultProject.UID)
 	require.Error(s.T(), err, datastore.ErrEndpointNotFound)
 }
 

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 )
@@ -69,8 +70,8 @@ type deviceRepo struct {
 	db *sqlx.DB
 }
 
-func NewDeviceRepo(db *sqlx.DB) datastore.DeviceRepository {
-	return &deviceRepo{db: db}
+func NewDeviceRepo(db database.Database) datastore.DeviceRepository {
+	return &deviceRepo{db: db.GetDB()}
 }
 
 func (d *deviceRepo) CreateDevice(ctx context.Context, device *datastore.Device) error {

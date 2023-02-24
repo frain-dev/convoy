@@ -8,8 +8,8 @@ import (
 
 	"github.com/cip8/autoname"
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -20,8 +20,8 @@ import (
 )
 
 func createSecurityService(a *ApplicationHandler) *services.SecurityService {
-	projectRepo := mongo.NewProjectRepo(a.A.Store)
-	apiKeyRepo := mongo.NewApiKeyRepo(a.A.Store)
+	projectRepo := postgres.NewProjectRepo(a.A.DB)
+	apiKeyRepo := postgres.NewAPIKeyRepo(a.A.DB)
 
 	return services.NewSecurityService(projectRepo, apiKeyRepo)
 }

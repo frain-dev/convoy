@@ -26,7 +26,7 @@ func addRetryCommand(a *app) *cobra.Command {
 			}
 
 			statuses := []datastore.EventDeliveryStatus{datastore.EventDeliveryStatus(status)}
-			task.RetryEventDeliveries(statuses, timeInterval, a.store, a.queue)
+			task.RetryEventDeliveries(statuses, timeInterval, a.db, a.queue)
 		},
 	}
 

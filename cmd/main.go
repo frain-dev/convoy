@@ -9,8 +9,11 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
+	"github.com/oklog/ulid/v2"
 	"github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy/cache"
@@ -18,7 +21,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/migrate"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
-	"github.com/google/uuid"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"go.mongodb.org/mongo-driver/mongo"
 
@@ -45,7 +47,7 @@ func main() {
 	}
 
 	app := &app{}
-	db := &cm.Client{}
+	db := &postgres.Postgres{}
 
 	cli := NewCli(app, db)
 	if err := cli.Execute(); err != nil {
@@ -56,7 +58,7 @@ func main() {
 func ensureDefaultUser(ctx context.Context, a *app) error {
 	pageable := datastore.Pageable{}
 
-	userRepo := cm.NewUserRepo(a.store)
+	userRepo := postgres.NewUserRepo(a.db)
 	users, _, err := userRepo.LoadUsersPaged(ctx, pageable)
 	if err != nil {
 		return fmt.Errorf("failed to load users - %w", err)
@@ -74,7 +76,7 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 	}
 
 	defaultUser := &datastore.User{
-		UID:           uuid.NewString(),
+		UID:           ulid.Make().String(),
 		FirstName:     "default",
 		LastName:      "default",
 		Email:         "superuser@default.com",
@@ -95,7 +97,7 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 }
 
 type app struct {
-	store    datastore.Store
+	db       database.Database
 	queue    queue.Queuer
 	logger   log.StdLogger
 	tracer   tracer.Tracer
@@ -104,7 +106,7 @@ type app struct {
 	searcher searcher.Searcher
 }
 
-func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) error {
+func preRun(app *app, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		cfgPath, err := cmd.Flags().GetString("config")
 		if err != nil {
@@ -143,25 +145,6 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 		}
 
 		apm.SetApplication(nRApp)
-
-		database, err := cm.New(cfg)
-		if err != nil {
-			return err
-		}
-
-		*db = *database
-
-		// Check Pending Migrations
-		if len(cmd.Aliases) > 0 {
-			alias := cmd.Aliases[0]
-			shouldSkip := strings.HasPrefix(alias, "migrate")
-			if !shouldSkip {
-				err := checkPendingMigrations(cfg.Database.Dsn, db)
-				if err != nil {
-					return err
-				}
-			}
-		}
 
 		var tr tracer.Tracer
 		var ca cache.Cache
@@ -214,9 +197,14 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 			return err
 		}
 
-		s := datastore.New(db.Database())
+		postgresDB, err := postgres.NewDB(cfg)
+		if err != nil {
+			return err
+		}
 
-		app.store = s
+		*db = *postgresDB
+
+		app.db = postgresDB
 		app.queue = q
 		app.logger = lo
 		app.tracer = tr
@@ -228,9 +216,9 @@ func preRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) err
 	}
 }
 
-func postRun(app *app, db *cm.Client) func(cmd *cobra.Command, args []string) error {
+func postRun(app *app, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		err := db.Disconnect(context.Background())
+		err := db.GetDB().Close()
 		if err == nil {
 			os.Exit(0)
 		}
@@ -268,7 +256,7 @@ type ConvoyCli struct {
 	cmd *cobra.Command
 }
 
-func NewCli(app *app, db *cm.Client) ConvoyCli {
+func NewCli(app *app, db *postgres.Postgres) ConvoyCli {
 	cmd := &cobra.Command{
 		Use:     "Convoy",
 		Version: convoy.GetVersion(),

@@ -3,8 +3,8 @@ package server
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -12,7 +12,7 @@ import (
 )
 
 func createDeviceService(a *ApplicationHandler) *services.DeviceService {
-	deviceRepo := mongo.NewDeviceRepository(a.A.Store)
+	deviceRepo := postgres.NewDeviceRepo(a.A.DB)
 
 	return services.NewDeviceService(deviceRepo)
 }

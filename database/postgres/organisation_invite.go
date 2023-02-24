@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 )
@@ -91,8 +92,8 @@ type orgInviteRepo struct {
 	db *sqlx.DB
 }
 
-func NewOrgInviteRepo(db *sqlx.DB) datastore.OrganisationInviteRepository {
-	return &orgInviteRepo{db: db}
+func NewOrgInviteRepo(db database.Database) datastore.OrganisationInviteRepository {
+	return &orgInviteRepo{db: db.GetDB()}
 }
 
 func (i *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {

@@ -8,8 +8,8 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/crc"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/verifier"
@@ -84,7 +84,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	projectRepo := mongo.NewProjectRepo(a.A.Store)
+	projectRepo := postgres.NewProjectRepo(a.A.DB)
 
 	g, err := projectRepo.FetchProjectByID(r.Context(), source.ProjectID)
 	if err != nil {
@@ -208,7 +208,7 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	sourceRepo := mongo.NewSourceRepo(a.A.Store)
+	sourceRepo := postgres.NewSourceRepo(a.A.DB)
 	err = c.HandleRequest(w, r, source, sourceRepo)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))

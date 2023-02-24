@@ -15,7 +15,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestIndexDocument(t *testing.T) {
@@ -36,8 +35,8 @@ func TestIndexDocument(t *testing.T) {
 				ProjectID: "project-id-1",
 				Endpoints: []string{"endpoint-id-1"},
 				Data:      []byte(`{}`),
-				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
 			},
 			dbFn: func(args *args) {
 				s, _ := args.search.(*mocks.MockSearcher)
@@ -54,8 +53,8 @@ func TestIndexDocument(t *testing.T) {
 				ProjectID: "project-id-1",
 				Endpoints: []string{"endpoint-id-1"},
 				Data:      []byte(`{}`),
-				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
 			},
 			dbFn: func(args *args) {
 				srh, _ := args.search.(*mocks.MockSearcher)
@@ -75,8 +74,8 @@ func TestIndexDocument(t *testing.T) {
 				ProjectID: "project-id-1",
 				Endpoints: []string{"endpoint-id-1"},
 				Data:      []byte(`{}`),
-				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
 			},
 			dbFn: func(args *args) {
 				srh, _ := args.search.(*mocks.MockSearcher)

@@ -9,8 +9,8 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/cache"
-	"github.com/frain-dev/convoy/datastore"
-	cm "github.com/frain-dev/convoy/datastore/mongo"
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/fflag/flipt"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -34,7 +34,7 @@ type ApplicationHandler struct {
 }
 
 type App struct {
-	Store    datastore.Store
+	DB       database.Database
 	Queue    queue.Queuer
 	Logger   log.StdLogger
 	Tracer   tracer.Tracer
@@ -70,26 +70,26 @@ func NewApplicationHandler(a App) *ApplicationHandler {
 		Logger:            a.Logger,
 		Limiter:           a.Limiter,
 		Tracer:            a.Tracer,
-		EventRepo:         cm.NewEventRepository(a.Store),
-		EventDeliveryRepo: cm.NewEventDeliveryRepository(a.Store),
-		EndpointRepo:      cm.NewEndpointRepo(a.Store),
-		ProjectRepo:       cm.NewProjectRepo(a.Store),
-		ApiKeyRepo:        cm.NewApiKeyRepo(a.Store),
-		SubRepo:           cm.NewSubscriptionRepo(a.Store),
-		SourceRepo:        cm.NewSourceRepo(a.Store),
-		OrgRepo:           cm.NewOrgRepo(a.Store),
-		OrgMemberRepo:     cm.NewOrgMemberRepo(a.Store),
-		OrgInviteRepo:     cm.NewOrgInviteRepo(a.Store),
-		UserRepo:          cm.NewUserRepo(a.Store),
-		ConfigRepo:        cm.NewConfigRepo(a.Store),
-		DeviceRepo:        cm.NewDeviceRepository(a.Store),
-		PortalLinkRepo:    cm.NewPortalLinkRepo(a.Store),
+		EventRepo:         postgres.NewEventRepo(a.DB),
+		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.DB),
+		EndpointRepo:      postgres.NewEndpointRepo(a.DB),
+		ProjectRepo:       postgres.NewProjectRepo(a.DB),
+		ApiKeyRepo:        postgres.NewAPIKeyRepo(a.DB),
+		SubRepo:           postgres.NewSubscriptionRepo(a.DB),
+		SourceRepo:        postgres.NewSourceRepo(a.DB),
+		OrgRepo:           postgres.NewOrgRepo(a.DB),
+		OrgMemberRepo:     postgres.NewOrgMemberRepo(a.DB),
+		OrgInviteRepo:     postgres.NewOrgInviteRepo(a.DB),
+		UserRepo:          postgres.NewUserRepo(a.DB),
+		ConfigRepo:        postgres.NewConfigRepo(a.DB),
+		DeviceRepo:        postgres.NewDeviceRepo(a.DB),
+		PortalLinkRepo:    postgres.NewPortalLinkRepo(a.DB),
 	})
 
 	return &ApplicationHandler{
 		M: m,
 		A: App{
-			Store:    a.Store,
+			DB:       a.DB,
 			Queue:    a.Queue,
 			Cache:    a.Cache,
 			Searcher: a.Searcher,

@@ -248,7 +248,6 @@ func getConfig() config.Configuration {
 }
 
 func getDB(t *testing.T) (*mongo.Database, func()) {
-
 	db, err := cm.New(getConfig())
 	require.NoError(t, err)
 

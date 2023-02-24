@@ -7,8 +7,9 @@ import (
 
 	"github.com/dukex/mixpanel"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -82,13 +83,13 @@ func newAnalytics(Repo *Repo, cfg config.Configuration) (*Analytics, error) {
 	return a, nil
 }
 
-func TrackDailyAnalytics(store datastore.Store, cfg config.Configuration) func(context.Context, *asynq.Task) error {
+func TrackDailyAnalytics(db database.Database, cfg config.Configuration) func(context.Context, *asynq.Task) error {
 	repo := &Repo{
-		ConfigRepo:  cm.NewConfigRepo(store),
-		EventRepo:   cm.NewEventRepository(store),
-		projectRepo: cm.NewProjectRepo(store),
-		OrgRepo:     cm.NewOrgRepo(store),
-		UserRepo:    cm.NewUserRepo(store),
+		ConfigRepo:  postgres.NewConfigRepo(db),
+		EventRepo:   postgres.NewEventRepo(db),
+		projectRepo: postgres.NewProjectRepo(db),
+		OrgRepo:     postgres.NewOrgRepo(db),
+		UserRepo:    postgres.NewUserRepo(db),
 	}
 	return func(ctx context.Context, t *asynq.Task) error {
 		a, err := newAnalytics(repo, cfg)

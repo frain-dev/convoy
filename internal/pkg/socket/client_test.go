@@ -11,7 +11,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func provideClient(r *Repo, c WebSocketConnection) *Client {
@@ -24,7 +23,7 @@ func provideClient(r *Repo, c WebSocketConnection) *Client {
 		Device: &datastore.Device{
 			UID:        "1234",
 			Status:     datastore.DeviceStatusOnline,
-			LastSeenAt: primitive.DateTime(time.Now().Unix() * 1000),
+			LastSeenAt: time.Now(),
 		},
 	}
 }
@@ -59,7 +58,7 @@ func TestIsOnline(t *testing.T) {
 
 	require.Equal(t, true, c.IsOnline())
 
-	c.Device.LastSeenAt = primitive.DateTime(time.Now().Add(-time.Minute).Unix() * 1000)
+	c.Device.LastSeenAt = time.Now().Add(-time.Minute)
 
 	require.Equal(t, false, c.IsOnline())
 }
@@ -147,7 +146,7 @@ func TestPingHandler_Success(t *testing.T) {
 	r := provideRepo(ctrl)
 
 	c := provideClient(r, conn)
-	c.Device.LastSeenAt = primitive.DateTime(time.Now().Add(-time.Minute).Unix() * 1000)
+	c.Device.LastSeenAt = time.Now().Add(-time.Minute)
 
 	conn.EXPECT().WriteMessage(gomock.Any(), gomock.Any()).Return(nil)
 
@@ -173,7 +172,7 @@ func TestPingHandler_FailedToUpdateDevice(t *testing.T) {
 		Device: &datastore.Device{
 			UID:        "1234",
 			Status:     datastore.DeviceStatusOnline,
-			LastSeenAt: primitive.DateTime(time.Now().Add(-time.Minute).Unix() * 1000),
+			LastSeenAt: time.Now().Add(-time.Minute),
 		},
 	}
 
@@ -199,7 +198,7 @@ func TestPingHandler_FailedToSendPongMessage(t *testing.T) {
 		Device: &datastore.Device{
 			UID:        "1234",
 			Status:     datastore.DeviceStatusOnline,
-			LastSeenAt: primitive.DateTime(time.Now().Add(-time.Minute).Unix() * 1000),
+			LastSeenAt: time.Now().Add(-time.Minute),
 		},
 	}
 
