@@ -206,8 +206,8 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 	var err error
 
 	if len(filter.EndpointIDs) > 0 {
-		query, args, err := sqlx.In(fetchSubscriptionsPaginatedFilterByEndpoints, filter.EndpointIDs, projectID, pageable.Limit(), pageable.Offset())
-		if err != nil {
+		query, args, inerr := sqlx.In(fetchSubscriptionsPaginatedFilterByEndpoints, filter.EndpointIDs, projectID, pageable.Limit(), pageable.Offset())
+		if inerr != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 		query = s.db.Rebind(query)
@@ -229,12 +229,12 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 
 	var count int
 	if len(filter.EndpointIDs) > 0 {
-		query, args, err := sqlx.In(countSubscriptionsFilterByEndpoints, filter.EndpointIDs, projectID)
-		if err != nil {
+		query, args, inerr := sqlx.In(countSubscriptionsFilterByEndpoints, filter.EndpointIDs, projectID)
+		if inerr != nil {
 			return nil, datastore.PaginationData{}, err
 		}
-		query = s.db.Rebind(query)
 
+		query = s.db.Rebind(query)
 		err = s.db.Get(&count, query, args...)
 	} else {
 		err = s.db.Get(&count, countSubscriptions, projectID)
