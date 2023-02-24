@@ -1,9 +1,10 @@
 import { Component, HostListener, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
 import { EventDeliveryDetailsService } from './event-delivery-details.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { EventsService } from '../events.service';
+import { PrivateService } from 'src/app/private/private.service';
 
 @Component({
 	selector: 'app-event-delivery-details',
@@ -22,7 +23,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 	screenWidth = window.innerWidth;
 	portalToken = this.route.snapshot.queryParams?.token;
 
-	constructor(private route: ActivatedRoute, private eventDeliveryDetailsService: EventDeliveryDetailsService, private generalService: GeneralService, private eventsService: EventsService) {}
+	constructor(private route: ActivatedRoute, private router: Router, private privateService: PrivateService, private eventDeliveryDetailsService: EventDeliveryDetailsService, private generalService: GeneralService, private eventsService: EventsService) {}
 
 	ngOnInit(): void {
 		const eventDeliveryId = this.route.snapshot.params.id;
@@ -102,6 +103,10 @@ export class EventDeliveryDetailsComponent implements OnInit {
 			return '';
 		}
 		return '';
+	}
+
+	viewEndpoint(endpointId: string) {
+		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/endpoints/' + endpointId);
 	}
 
 	checkScreenSize() {

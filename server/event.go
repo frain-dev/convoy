@@ -617,7 +617,7 @@ func fetchDeliveryAttempts() func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			e := m.GetEventDeliveryFromContext(r.Context())
 
-			r = r.WithContext(m.SetDeliveryAttemptsInContext(r.Context(), &e.DeliveryAttempts))
+			r = r.WithContext(m.SetDeliveryAttemptsInContext(r.Context(), (*[]datastore.DeliveryAttempt)(&e.DeliveryAttempts)))
 			next.ServeHTTP(w, r)
 		})
 	}

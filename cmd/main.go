@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"net/url"
 	"os"
-	"strings"
 	"time"
 	_ "time/tzdata"
+
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -18,14 +19,11 @@ import (
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/internal/pkg/apm"
-	"github.com/frain-dev/convoy/internal/pkg/migrate"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
-	"github.com/newrelic/go-agent/v3/newrelic"
-	"go.mongodb.org/mongo-driver/mongo"
-
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/tracer"
+	"github.com/newrelic/go-agent/v3/newrelic"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -33,8 +31,6 @@ import (
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/spf13/cobra"
-
-	cm "github.com/frain-dev/convoy/datastore/mongo"
 )
 
 func main() {
@@ -94,6 +90,53 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 	a.logger.Infof("Created Superuser with username: %s and password: %s", defaultUser.Email, p.Plaintext)
 
 	return nil
+}
+
+func ensureInstanceConfig(ctx context.Context, a *app, cfg config.Configuration) error {
+	configRepo := postgres.NewConfigRepo(a.db)
+
+	s3 := datastore.S3Storage{
+		Bucket:       null.NewString(cfg.StoragePolicy.S3.Bucket, true),
+		AccessKey:    null.NewString(cfg.StoragePolicy.S3.AccessKey, true),
+		SecretKey:    null.NewString(cfg.StoragePolicy.S3.SecretKey, true),
+		Region:       null.NewString(cfg.StoragePolicy.S3.Region, true),
+		SessionToken: null.NewString(cfg.StoragePolicy.S3.SessionToken, true),
+		Endpoint:     null.NewString(cfg.StoragePolicy.S3.Endpoint, true),
+	}
+
+	onPrem := datastore.OnPremStorage{
+		Path: null.NewString(cfg.StoragePolicy.OnPrem.Path, true),
+	}
+
+	storagePolicy := &datastore.StoragePolicyConfiguration{
+		Type:   datastore.StorageType(cfg.StoragePolicy.Type),
+		S3:     &s3,
+		OnPrem: &onPrem,
+	}
+
+	config, err := configRepo.LoadConfiguration(ctx)
+	if err != nil {
+		if errors.Is(err, datastore.ErrConfigNotFound) {
+			a.logger.Info("Creating Instance Config")
+			return configRepo.CreateConfiguration(ctx, &datastore.Configuration{
+				UID:                ulid.Make().String(),
+				StoragePolicy:      storagePolicy,
+				IsAnalyticsEnabled: cfg.Analytics.IsEnabled,
+				IsSignupEnabled:    cfg.Auth.IsSignupEnabled,
+				CreatedAt:          time.Now(),
+				UpdatedAt:          time.Now(),
+			})
+		}
+
+		return err
+	}
+
+	config.StoragePolicy = storagePolicy
+	config.IsSignupEnabled = cfg.Auth.IsSignupEnabled
+	config.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
+	config.UpdatedAt = time.Now()
+
+	return configRepo.UpdateConfiguration(ctx, config)
 }
 
 type app struct {
@@ -212,7 +255,17 @@ func preRun(app *app, db *postgres.Postgres) func(cmd *cobra.Command, args []str
 		app.limiter = li
 		app.searcher = se
 
-		return ensureDefaultUser(context.Background(), app)
+		err = ensureDefaultUser(context.Background(), app)
+		if err != nil {
+			return err
+		}
+
+		err = ensureInstanceConfig(context.Background(), app, cfg)
+		if err != nil {
+			return err
+		}
+
+		return nil
 	}
 }
 
@@ -244,12 +297,9 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addSchedulerCommand(app))
 	cmd.AddCommand(addMigrateCommand(app))
 	cmd.AddCommand(addConfigCommand(app))
-	cmd.AddCommand(addListenCommand(app))
-	cmd.AddCommand(addLoginCommand())
-	cmd.AddCommand(addListAppsCommand())
 	cmd.AddCommand(addStreamCommand(app))
 	cmd.AddCommand(addDomainCommand(app))
-	cmd.AddCommand(addSwitchCommand())
+	cmd.AddCommand(addIngestCommand(app))
 }
 
 type ConvoyCli struct {
@@ -316,28 +366,29 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	return c, nil
 }
 
-func checkPendingMigrations(dbDsn string, db *cm.Client) error {
-	c := db.Client().(*mongo.Database).Client()
-	u, err := url.Parse(dbDsn)
-	if err != nil {
-		return err
-	}
-
-	dbName := strings.TrimPrefix(u.Path, "/")
-	opts := &migrate.Options{
-		DatabaseName: dbName,
-	}
-
-	m := migrate.NewMigrator(c, opts, migrate.Migrations, nil)
-
-	pm, err := m.CheckPendingMigrations(context.Background())
-	if err != nil {
-		return err
-	}
-
-	if pm {
-		return migrate.ErrPendingMigrationsFound
-	}
-
-	return nil
-}
+//
+//func checkPendingMigrations(dbDsn string, db *cm.Client) error {
+//	c := db.Client().(*mongo.Database).Client()
+//	u, err := url.Parse(dbDsn)
+//	if err != nil {
+//		return err
+//	}
+//
+//	dbName := strings.TrimPrefix(u.Path, "/")
+//	opts := &migrate.Options{
+//		DatabaseName: dbName,
+//	}
+//
+//	m := migrate.NewMigrator(c, opts, migrate.Migrations, nil)
+//
+//	pm, err := m.CheckPendingMigrations(context.Background())
+//	if err != nil {
+//		return err
+//	}
+//
+//	if pm {
+//		return migrate.ErrPendingMigrationsFound
+//	}
+//
+//	return nil
+//}

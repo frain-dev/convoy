@@ -59,6 +59,22 @@ func (db *apiKeyRepo) FindAPIKeyByID(ctx context.Context, uid string) (*datastor
 	return apiKey, nil
 }
 
+func (db *apiKeyRepo) FindAPIKeyByProjectID(ctx context.Context, projectID string) (*datastore.APIKey, error) {
+	ctx = db.setCollectionInContext(ctx)
+
+	apiKey := &datastore.APIKey{}
+
+	err := db.store.FindOne(ctx, bson.M{"role.project": projectID}, nil, apiKey)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			err = datastore.ErrAPIKeyNotFound
+		}
+		return nil, err
+	}
+
+	return apiKey, nil
+}
+
 func (db *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
 	ctx = db.setCollectionInContext(ctx)
 	apiKey := new(datastore.APIKey)

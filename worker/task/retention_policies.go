@@ -28,7 +28,7 @@ func RententionPolicies(instanceConfig config.Configuration, configRepo datastor
 		}
 		collections := []string{"events", "eventdeliveries"}
 
-		objectStoreClient, exportDir, err := NewObjectStoreClient(config)
+		objectStoreClient, exportDir, err := NewObjectStoreClient(config.StoragePolicy)
 		if err != nil {
 			log.WithError(err)
 			return err
@@ -64,17 +64,17 @@ func RententionPolicies(instanceConfig config.Configuration, configRepo datastor
 	}
 }
 
-func NewObjectStoreClient(config *datastore.Configuration) (objectstore.ObjectStore, string, error) {
-	switch config.StoragePolicy.Type {
+func NewObjectStoreClient(storage *datastore.StoragePolicyConfiguration) (objectstore.ObjectStore, string, error) {
+	switch storage.Type {
 	case datastore.S3:
 		exportDir := convoy.TmpExportDir
 		objectStoreOpts := objectstore.ObjectStoreOptions{
-			Bucket:       config.StoragePolicy.S3.Bucket.String,
-			Endpoint:     config.StoragePolicy.S3.Endpoint.String,
-			AccessKey:    config.StoragePolicy.S3.AccessKey.String,
-			SecretKey:    config.StoragePolicy.S3.SecretKey.String,
-			SessionToken: config.StoragePolicy.S3.SessionToken.String,
-			Region:       config.StoragePolicy.S3.Region.String,
+			Bucket:       storage.S3.Bucket.ValueOrZero(),
+			Endpoint:     storage.S3.Endpoint.ValueOrZero(),
+			AccessKey:    storage.S3.AccessKey.ValueOrZero(),
+			SecretKey:    storage.S3.SecretKey.ValueOrZero(),
+			SessionToken: storage.S3.SessionToken.ValueOrZero(),
+			Region:       storage.S3.Region.ValueOrZero(),
 		}
 		objectStoreClient, err := objectstore.NewS3Client(objectStoreOpts)
 		if err != nil {
@@ -83,7 +83,7 @@ func NewObjectStoreClient(config *datastore.Configuration) (objectstore.ObjectSt
 		return objectStoreClient, exportDir, nil
 
 	case datastore.OnPrem:
-		exportDir := config.StoragePolicy.OnPrem.Path
+		exportDir := storage.OnPrem.Path
 		objectStoreOpts := objectstore.ObjectStoreOptions{
 			OnPremStorageDir: exportDir.String,
 		}

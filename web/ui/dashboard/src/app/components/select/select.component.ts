@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, forwardRef, Input, OnInit, Output } from '@angular/core';
+import { Component, ElementRef, EventEmitter, forwardRef, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { ControlContainer, ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
+import { fromEvent, Observable } from 'rxjs';
+import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
 import { ButtonComponent } from '../button/button.component';
 import { DropdownComponent, DropdownOptionDirective } from '../dropdown/dropdown.component';
 import { TooltipComponent } from '../tooltip/tooltip.component';
@@ -26,6 +28,7 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	@Input('label') label!: string;
 	@Input('formControlName') formControlName!: string;
 	@Input('required') required = false;
+	@Input('readonly') readonly = false;
 	@Input('multiple') multiple = false;
 	@Input('placeholder') placeholder!: string;
 	@Input('className') class!: string;
@@ -33,8 +36,10 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	@Input('tooltipPosition') tooltipPosition: 'left' | 'right' = 'left';
 	@Input('tooltipSize') tooltipSize: 'sm' | 'md' = 'md';
 	@Input('tooltipContent') tooltipContent!: string;
-	@Output('onChange') onChange = new EventEmitter<any>();
+	@Input('searchable') searchable: boolean = false;
 	@Output('selectedOption') selectedOption = new EventEmitter<any>();
+	@Output('searchString') searchString = new EventEmitter<any>();
+	@ViewChild('searchFilter', { static: false }) searchFilter!: ElementRef;
 	selectedValue: any;
 	selectedOptions: any = [];
 
@@ -51,7 +56,10 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 			const selectOption = this.selectedOptions?.find((item: any) => item === option) || this.selectedOptions?.find((item: any) => item.uid === option);
 			if (!selectOption) this.selectedOptions.push(option);
 			this.updateSelectedOptions();
-		} else this.selectedOption.emit(option?.uid || option);
+		} else {
+			this.selectedValue = option;
+			this.selectedOption.emit(option?.uid || option);
+		}
 	}
 
 	removeOption(option: any) {
@@ -65,7 +73,7 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	}
 
 	get option(): string {
-		return this.options?.find(item => item.uid === this.value)?.name || this.options?.find(item => item === this.value) || '';
+		return this.options?.find(item => item.uid === this.value)?.name || this.options?.find(item => item.uid === this.value)?.title || this.options?.find(item => item === this.value) || '';
 	}
 
 	registerOnChange() {}
@@ -90,4 +98,19 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	}
 
 	setDisabledState() {}
+
+	ngAfterViewInit() {
+		if (this.searchable) {
+			fromEvent<any>(this.searchFilter?.nativeElement, 'keyup')
+				.pipe(
+					map(event => event.target.value),
+					startWith(''),
+					debounceTime(500),
+					distinctUntilChanged()
+				)
+				.subscribe(searchString => {
+					this.searchString.emit(searchString);
+				});
+		}
+	}
 }

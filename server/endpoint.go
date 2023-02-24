@@ -20,9 +20,10 @@ func createEndpointService(a *ApplicationHandler) *services.EndpointService {
 	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 	eventRepo := postgres.NewEventRepo(a.A.DB)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
+	projectRepo := postgres.NewProjectRepo(a.A.DB)
 
 	return services.NewEndpointService(
-		endpointRepo, eventRepo, eventDeliveryRepo, a.A.Cache, a.A.Queue,
+		projectRepo, endpointRepo, eventRepo, eventDeliveryRepo, a.A.Cache, a.A.Queue,
 	)
 }
 

@@ -15,7 +15,6 @@ export class PrivateComponent implements OnInit {
 	showMoreDropdown = false;
 	showOverlay = false;
 	showAddOrganisationModal = false;
-	showAddAnalytics = false;
 	showVerifyEmailModal = false;
 	isEmailVerified = true;
 	apiURL = this.generalService.apiURL();
@@ -45,7 +44,6 @@ export class PrivateComponent implements OnInit {
 		try {
 			const response = await this.privateService.getConfiguration();
 			this.convoyVersion = response.data[0].api_version;
-			if (response.data.length === 0 && !this.router.url.includes('portal')) this.showAddAnalytics = true;
 		} catch {}
 	}
 

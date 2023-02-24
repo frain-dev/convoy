@@ -41,6 +41,7 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectId string, source 
 			"verifier":        source.Verifier,
 			"updated_at":      primitive.NewDateTimeFromTime(time.Now()),
 			"provider_config": source.ProviderConfig,
+			"pub_sub":         source.PubSub,
 		},
 	}
 
@@ -53,6 +54,20 @@ func (s *sourceRepo) FindSourceByID(ctx context.Context, projectId string, id st
 	source := &datastore.Source{}
 
 	filter := bson.M{"uid": id, "project_id": projectId}
+
+	err := s.store.FindOne(ctx, filter, nil, source)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return source, datastore.ErrSourceNotFound
+	}
+
+	return source, err
+}
+
+func (s *sourceRepo) FindSourceByName(ctx context.Context, projectId string, name string) (*datastore.Source, error) {
+	ctx = s.setCollectionInContext(ctx)
+	source := &datastore.Source{}
+
+	filter := bson.M{"name": name, "project_id": projectId}
 
 	err := s.store.FindOne(ctx, filter, nil, source)
 	if errors.Is(err, mongo.ErrNoDocuments) {

@@ -227,7 +227,7 @@ func (m *Middleware) RequireEndpoint() func(next http.Handler) http.Handler {
 	}
 }
 
-func (m *Middleware) RequireAppID() func(next http.Handler) http.Handler {
+func (m *Middleware) RequireEndpointID() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := GetAuthUserFromContext(r.Context())
@@ -558,6 +558,22 @@ func (m *Middleware) RequireDeliveryAttempt() func(next http.Handler) http.Handl
 
 			r = r.WithContext(setDeliveryAttemptInContext(r.Context(), attempt))
 			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (m *Middleware) RequirePersonalAccessToken() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := GetAuthUserFromContext(r.Context())
+			_, ok := authUser.User.(*datastore.User)
+
+			if authUser.AuthenticatedByRealm == auth.NativeRealmName && ok {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusBadRequest))
 		})
 	}
 }

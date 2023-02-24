@@ -110,7 +110,7 @@ func (a *ApplicationHandler) ResendVerificationEmail(w http.ResponseWriter, r *h
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("verification email resent successfully", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Verification email resent successfully", nil, http.StatusOK))
 }
 
 func (a *ApplicationHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
@@ -204,7 +204,7 @@ func (a *ApplicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Reque
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	_ = render.Render(w, r, util.NewServerResponse("Password reset token has been sent succesfully", nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Password reset token has been sent successfully", nil, http.StatusOK))
 }
 
 // VerifyEmail
@@ -255,7 +255,7 @@ func (a *ApplicationHandler) ResetPassword(w http.ResponseWriter, r *http.Reques
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	_ = render.Render(w, r, util.NewServerResponse("password reset succesful", user, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Password reset successful", user, http.StatusOK))
 }
 
 func getUser(r *http.Request) (*datastore.User, bool) {

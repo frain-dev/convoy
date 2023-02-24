@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/frain-dev/convoy"
 	"github.com/stretchr/testify/require"
 )
 
@@ -122,6 +123,18 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MaxResponseSize: 40 * 1024,
 				Environment:     OSSEnvironment,
+				Auth: AuthConfiguration{
+					IsSignupEnabled: true,
+				},
+				Analytics: AnalyticsConfiguration{
+					IsEnabled: true,
+				},
+				StoragePolicy: StoragePolicyConfiguration{
+					Type: "on-prem",
+					OnPrem: OnPremStorage{
+						Path: convoy.DefaultOnPremDir,
+					},
+				},
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -155,6 +168,18 @@ func TestLoadConfig(t *testing.T) {
 				Search:          DefaultConfiguration.Search,
 				MaxResponseSize: MaxResponseSize,
 				Environment:     OSSEnvironment,
+				Auth: AuthConfiguration{
+					IsSignupEnabled: true,
+				},
+				Analytics: AnalyticsConfiguration{
+					IsEnabled: true,
+				},
+				StoragePolicy: StoragePolicyConfiguration{
+					Type: "on-prem",
+					OnPrem: OnPremStorage{
+						Path: convoy.DefaultOnPremDir,
+					},
+				},
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -188,6 +213,18 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MaxResponseSize: MaxResponseSize,
 				Environment:     OSSEnvironment,
+				Auth: AuthConfiguration{
+					IsSignupEnabled: true,
+				},
+				Analytics: AnalyticsConfiguration{
+					IsEnabled: true,
+				},
+				StoragePolicy: StoragePolicyConfiguration{
+					Type: "on-prem",
+					OnPrem: OnPremStorage{
+						Path: convoy.DefaultOnPremDir,
+					},
+				},
 			},
 			wantErr:    false,
 			wantErrMsg: "",

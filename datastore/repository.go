@@ -8,6 +8,7 @@ type APIKeyRepository interface {
 	CreateAPIKey(context.Context, *APIKey) error
 	UpdateAPIKey(context.Context, *APIKey) error
 	FindAPIKeyByID(context.Context, string) (*APIKey, error)
+	FindAPIKeyByProjectID(context.Context, string) (*APIKey, error)
 	FindAPIKeyByMaskID(context.Context, string) (*APIKey, error)
 	FindAPIKeyByHash(context.Context, string) (*APIKey, error)
 	RevokeAPIKeys(context.Context, []string) error

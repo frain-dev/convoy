@@ -255,7 +255,7 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 	subscription := &datastore.Subscription{
 		UID:       uuid.NewString(),
 		Name:      "test_subscription",
-		Type:      datastore.SubscriptionTypeAPI,
+		Type:      datastore.SubscriptionTypeCLI,
 		SourceID:  "source-id-1",
 		DeviceID:  "device-id-1",
 		ProjectID: "project-id-1",
@@ -263,7 +263,7 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 	require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.ProjectID, subscription))
 
 	// Fetch sub again
-	sub, err := subRepo.FindSubscriptionByDeviceID(context.Background(), "project-id-1", "device-id-1")
+	sub, err := subRepo.FindSubscriptionByDeviceID(context.Background(), "project-id-1", "device-id-1", datastore.SubscriptionTypeCLI)
 	require.NoError(t, err)
 
 	require.NotEmpty(t, sub.UID)
@@ -281,20 +281,20 @@ func TestTestSubscriptionFilter(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		request map[string]interface{}
-		schema  map[string]interface{}
+		payload map[string]interface{}
+		filter  map[string]interface{}
 		want    bool
 		wantErr bool
 		Err     error
 	}{
 		{
 			name: "equal",
-			request: map[string]interface{}{
+			payload: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": 5,
 				},
 			},
-			schema: map[string]interface{}{
+			filter: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": 5,
 				},
@@ -303,12 +303,12 @@ func TestTestSubscriptionFilter(t *testing.T) {
 		},
 		{
 			name: "equal with operator - number",
-			request: map[string]interface{}{
+			payload: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": 5,
 				},
 			},
-			schema: map[string]interface{}{
+			filter: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": map[string]interface{}{
 						"$eq": 5,
@@ -319,12 +319,12 @@ func TestTestSubscriptionFilter(t *testing.T) {
 		},
 		{
 			name: "equal with operator - string",
-			request: map[string]interface{}{
+			payload: map[string]interface{}{
 				"person": map[string]interface{}{
 					"name": "tunde",
 				},
 			},
-			schema: map[string]interface{}{
+			filter: map[string]interface{}{
 				"person": map[string]interface{}{
 					"name": map[string]interface{}{
 						"$eq": "tunde",
@@ -335,12 +335,12 @@ func TestTestSubscriptionFilter(t *testing.T) {
 		},
 		{
 			name: "not equal - false",
-			request: map[string]interface{}{
+			payload: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": 5,
 				},
 			},
-			schema: map[string]interface{}{
+			filter: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": map[string]interface{}{
 						"$neq": 5,
@@ -351,28 +351,28 @@ func TestTestSubscriptionFilter(t *testing.T) {
 		},
 		{
 			name: "not equal - true",
-			request: map[string]interface{}{
+			payload: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": 11,
 				},
 			},
-			schema: map[string]interface{}{
+			filter: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": map[string]interface{}{
 						"$neq": 5,
 					},
 				},
 			},
-			want: false,
+			want: true,
 		},
 		{
 			name: "less than - true",
-			request: map[string]interface{}{
+			payload: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": 11,
 				},
 			},
-			schema: map[string]interface{}{
+			filter: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": map[string]interface{}{
 						"$lt": 15,
@@ -383,12 +383,12 @@ func TestTestSubscriptionFilter(t *testing.T) {
 		},
 		{
 			name: "less than - false",
-			request: map[string]interface{}{
+			payload: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": 11,
 				},
 			},
-			schema: map[string]interface{}{
+			filter: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": map[string]interface{}{
 						"$lt": 5,
@@ -399,12 +399,12 @@ func TestTestSubscriptionFilter(t *testing.T) {
 		},
 		{
 			name: "greater than - true",
-			request: map[string]interface{}{
+			payload: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": 11,
 				},
 			},
-			schema: map[string]interface{}{
+			filter: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": map[string]interface{}{
 						"$gt": 5,
@@ -415,12 +415,12 @@ func TestTestSubscriptionFilter(t *testing.T) {
 		},
 		{
 			name: "greater than - false",
-			request: map[string]interface{}{
+			payload: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": 11,
 				},
 			},
-			schema: map[string]interface{}{
+			filter: map[string]interface{}{
 				"person": map[string]interface{}{
 					"age": map[string]interface{}{
 						"$gt": 50,
@@ -431,15 +431,15 @@ func TestTestSubscriptionFilter(t *testing.T) {
 		},
 		{
 			name: "in array - false",
-			request: map[string]interface{}{
+			payload: map[string]interface{}{
 				"person": map[string]interface{}{
 					"name": "raymond",
 				},
 			},
-			schema: map[string]interface{}{
+			filter: map[string]interface{}{
 				"person": map[string]interface{}{
 					"name": map[string]interface{}{
-						"$in": []string{"subomi", "daniel"},
+						"$in": []interface{}{"subomi", "daniel"},
 					},
 				},
 			},
@@ -447,15 +447,15 @@ func TestTestSubscriptionFilter(t *testing.T) {
 		},
 		{
 			name: "in array - true",
-			request: map[string]interface{}{
+			payload: map[string]interface{}{
 				"person": map[string]interface{}{
 					"name": "subomi",
 				},
 			},
-			schema: map[string]interface{}{
+			filter: map[string]interface{}{
 				"person": map[string]interface{}{
 					"name": map[string]interface{}{
-						"$in": []string{"subomi", "daniel"},
+						"$in": []interface{}{"subomi", "daniel"},
 					},
 				},
 			},
@@ -463,15 +463,15 @@ func TestTestSubscriptionFilter(t *testing.T) {
 		},
 		{
 			name: "not in array - true",
-			request: map[string]interface{}{
+			payload: map[string]interface{}{
 				"person": map[string]interface{}{
 					"name": "raymond",
 				},
 			},
-			schema: map[string]interface{}{
+			filter: map[string]interface{}{
 				"person": map[string]interface{}{
 					"name": map[string]interface{}{
-						"$nin": []string{"subomi", "daniel"},
+						"$nin": []interface{}{"subomi", "daniel"},
 					},
 				},
 			},
@@ -479,15 +479,15 @@ func TestTestSubscriptionFilter(t *testing.T) {
 		},
 		{
 			name: "not in array - false",
-			request: map[string]interface{}{
+			payload: map[string]interface{}{
 				"person": map[string]interface{}{
 					"name": "subomi",
 				},
 			},
-			schema: map[string]interface{}{
+			filter: map[string]interface{}{
 				"person": map[string]interface{}{
 					"name": map[string]interface{}{
-						"$nin": []string{"subomi", "daniel"},
+						"$nin": []interface{}{"subomi", "daniel"},
 					},
 				},
 			},
@@ -497,7 +497,7 @@ func TestTestSubscriptionFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			matched, err := subRepo.TestSubscriptionFilter(context.Background(), tt.request, tt.schema)
+			matched, err := subRepo.TestSubscriptionFilter(context.Background(), tt.payload, tt.filter)
 			if tt.wantErr {
 				require.ErrorIs(t, err, tt.Err)
 			}

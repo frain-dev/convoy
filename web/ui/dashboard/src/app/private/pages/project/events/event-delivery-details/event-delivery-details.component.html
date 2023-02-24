@@ -25,6 +25,10 @@
 			<convoy-skeleton-loader className="mt-10px w-80px h-20px"></convoy-skeleton-loader>
 		</div>
 		<div>
+			<p class="text-grey-40 text-12 font-light">TIME</p>
+			<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
+		</div>
+		<div>
 			<p class="text-grey-40 text-12 font-light">STATUS</p>
 			<convoy-skeleton-loader className="mt-10px w-80px h-20px"></convoy-skeleton-loader>
 		</div>
@@ -32,20 +36,20 @@
 			<p class="text-grey-40 text-12 font-light">IP ADDRESS</p>
 			<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
 		</div>
-		<div *ngIf="eventDelsDetails?.status == 'Success'">
-			<p class="text-grey-40 text-12 font-light">TIME</p>
-			<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
-		</div>
 	</div>
 
 	<div class="grid grid-cols-5 mb-24px pt-16px" *ngIf="!isLoadingDeliveryDetails">
 		<div>
 			<p class="text-grey-40 text-12 font-light">EVENT TYPE</p>
-			<convoy-tag>{{ eventDelsDetails?.event_metadata?.event_type }}</convoy-tag>
+			<p class="text-14 font-medium">{{ eventDelsDetails?.event_metadata?.event_type }}</p>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">ATTEMPTS</p>
 			<p class="text-14 font-medium">{{ eventDelsDetails?.metadata?.num_trials }}</p>
+		</div>
+		<div>
+			<p class="text-grey-40 text-12 font-light">TIME</p>
+			<p class="text-14 font-medium">{{ eventDelsDetails?.updated_at | date: 'mediumTime' }}</p>
 		</div>
 		<div>
 			<p class="text-grey-40 text-12 font-light">STATUS</p>
@@ -54,11 +58,6 @@
 		<div *ngIf="!eventDelsDetails?.device_id">
 			<p class="text-grey-40 text-12 font-light">IP ADDRESS</p>
 			<p class="text-14 font-medium">{{ eventDeliveryAtempt?.ip_address || '-' }}</p>
-		</div>
-
-		<div *ngIf="eventDelsDetails?.status == 'Success'">
-			<p class="text-grey-40 text-12 font-light">TIME</p>
-			<p class="text-14 font-medium">{{ eventDelsDetails?.updated_at | date: 'medium' }}</p>
 		</div>
 	</div>
 
@@ -90,9 +89,7 @@
 		</div>
 		<div *ngIf="!eventDelsDetails?.device_id">
 			<p class="text-grey-40 text-12 font-light">ENDPOINT</p>
-			<p class="text-primary-100 text-14 font-medium overflow-ellipsis whitespace-nowrap w-200px overflow-hidden" [title]="eventDelsDetails?.endpoint_metadata?.target_url">
-				{{ eventDelsDetails?.endpoint_metadata?.target_url }}
-			</p>
+			<button convoy-button size="sm" fill="text" (click)="viewEndpoint(eventDelsDetails?.endpoint_metadata?.uid || '')">View Endpoint</button>
 		</div>
 		<div *ngIf="eventDelsDetails?.device_id">
 			<p class="text-grey-40 text-12 font-light">DEVICE</p>
@@ -110,16 +107,15 @@
 		<div *ngIf="eventDelsDetails?.status === 'Success'"></div>
 	</div>
 
-	<h3 class="font-semibold mb-8px">Event Delivery Attempts</h3>
-
+	<h3 class="font-semibold mb-24px">Delivery Attempts</h3>
 	<div *ngFor="let deliveryAttempt of eventDeliveryAtempts; let i = index" class="border-b border-grey-20">
-		<div class="flex justify-between items-center py-18px" (click)="selectedDeliveryAttempt = deliveryAttempt">
+		<div class="flex justify-between items-center py-12px" (click)="selectedDeliveryAttempt = deliveryAttempt">
 			<div>
-				<p class="text-14 font-semibold flex items-center">
+				<p class="text-14 flex items-center">
 					Attempt {{ eventDeliveryAtempts.length - i }}
-					<convoy-tag *ngIf="deliveryAttempt?.http_status" [type]="deliveryAttempt.error ? 'danger' : 'success'" className="ml-8px">{{ deliveryAttempt?.http_status }}</convoy-tag>
+					<convoy-tag *ngIf="deliveryAttempt?.http_status" [type]="deliveryAttempt?.status ? 'success' : 'danger'" className="ml-18px">{{ deliveryAttempt?.http_status }}</convoy-tag>
 				</p>
-				<p class="text-grey-40 text-10 mt-6px">Attempted At: {{ deliveryAttempt.updated_at | date: 'medium' }}</p>
+				<p class="text-grey-40 text-12 mt-6px">Attempted At: {{ deliveryAttempt.updated_at | date: 'medium' }}</p>
 			</div>
 			<button convoy-button size="sm" fill="text" (click)="selectedDeliveryAttempt = deliveryAttempt">
 				Open Details
@@ -129,27 +125,25 @@
 
 		<div class="transition-all duration-500" [class]="selectedDeliveryAttempt?.uid == deliveryAttempt.uid ? 'h-full' : 'max-h-0 overflow-hidden'">
 			<div class="flex justify-between flex-wrap border-t border-grey-10">
-				<div class="py-32px" [ngClass]="{ 'w-[50%] pr-32px border-r border-grey-10': !shouldRenderSmallSize, 'w-full': shouldRenderSmallSize }">
+				<div class="py-32px" [ngClass]="{ 'w-[50%] pr-32px border-r border-r-grey-10': !shouldRenderSmallSize, 'w-full': shouldRenderSmallSize }">
 					<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>
-					<prism *ngIf="!isloadingDeliveryAttempts" title="Event Payload" language="json" [code]="getCodeSnippetString('event_delivery')"></prism>
+					<prism *ngIf="!isloadingDeliveryAttempts" language="json" title="Request Header" [code]="getCodeSnippetString('req')"></prism>
 				</div>
-
 				<div class="py-32px" [ngClass]="{ 'w-[50%] pl-32px': !shouldRenderSmallSize, 'border-t border-grey-10 w-full': shouldRenderSmallSize }">
 					<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>
-					<prism *ngIf="!isloadingDeliveryAttempts" language="json" title="Response Header" [code]="getCodeSnippetString('res_head')"></prism>
+					<prism *ngIf="!isloadingDeliveryAttempts" title="Event Payload" language="json" [code]="getCodeSnippetString('event_delivery')"></prism>
 				</div>
 			</div>
 
 			<div class="flex justify-between flex-wrap border-t border-grey-10">
-				<div class="py-32px" [ngClass]="{ 'w-[50%] pr-32px border-r border-grey-10': !shouldRenderSmallSize, 'w-full': shouldRenderSmallSize }">
+				<div class="py-32px" [ngClass]="{ 'w-[50%] pr-32px border-r border-r-grey-10': !shouldRenderSmallSize, 'w-full': shouldRenderSmallSize }">
+					<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>
+					<prism *ngIf="!isloadingDeliveryAttempts" language="json" title="Response Header" [code]="getCodeSnippetString('res_head')"></prism>
+				</div>
+				<div class="py-32px" [ngClass]="{ 'w-[50%] pl-32px': !shouldRenderSmallSize, 'border-t border-grey-10 w-full': shouldRenderSmallSize }">
 					<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>
 					<prism *ngIf="selectedDeliveryAttempt?.error && !isloadingDeliveryAttempts" language="json" title="Error" [code]="getCodeSnippetString('error')"></prism>
 					<prism *ngIf="!selectedDeliveryAttempt?.error && !isloadingDeliveryAttempts" language="json" title="Response Body" [code]="getCodeSnippetString('res_body')"></prism>
-				</div>
-
-				<div class="py-32px" [ngClass]="{ 'w-[50%] pl-32px': !shouldRenderSmallSize, 'border-t border-grey-10 w-full': shouldRenderSmallSize }">
-					<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>
-					<prism *ngIf="!isloadingDeliveryAttempts" language="json" title="Request Header" [code]="getCodeSnippetString('req')"></prism>
 				</div>
 			</div>
 		</div>

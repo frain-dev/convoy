@@ -20,16 +20,16 @@
 
 	<!-- fetched api keys  -->
 	<ng-container *ngIf="!isFetchingApiKeys && apiKeys">
-		<div class="flex justify-between items-center p-22px border-b border-b-grey-10 last-of-type:border-none" *ngFor="let key of apiKeys">
+		<div class="flex justify-between items-center pb-10px px-22px mt-24px bg-[#fcfcfc] border-b border-b-grey-10 last-of-type:border-none" *ngFor="let key of apiKeys">
 			<div>
-				<div class="flex items-center">
-					<h3 class="font-semibold mr-14px">{{ key.name }}</h3>
-					<convoy-tag type="grey" className="mr-10px">{{ key.role.type }}</convoy-tag>
+				<div class="flex items-center mb-8px">
+					<p class="text-12 font-medium mr-36px">{{ key.name }}</p>
+					<convoy-tag type="grey" className="mr-16px">{{ key.role.type }}</convoy-tag>
 					<convoy-tag [type]="getKeyStatus(key.expires_at) | statuscolor">{{ getKeyStatus(key.expires_at) }}</convoy-tag>
 				</div>
-				<p class="text-grey-40 text-10 mt-8px">Expires At: {{ key.expires_at | date: 'medium' }}</p>
+				<p class="text-grey-40 text-12 mt-8px">Expires At: {{ key.expires_at | date: 'medium' }}</p>
 			</div>
-			<button convoy-button size="xs" fill="outline" color="danger" (click)="selectedApiKey = key; showRevokeApiModal = true" *ngIf="getKeyStatus(key.expires_at) === 'active'">Revoke</button>
+			<button convoy-button size="xs" fill="text" color="danger" class="font-medium" (click)="selectedApiKey = key; showRevokeApiModal = true" *ngIf="getKeyStatus(key.expires_at) === 'active'">Revoke</button>
 		</div>
 	</ng-container>
 </convoy-card>

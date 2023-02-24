@@ -15,10 +15,10 @@ import (
 
 func provideClient(r *Repo, c WebSocketConnection) *Client {
 	return &Client{
-		conn:              c,
-		deviceID:          "1234",
-		deviceRepo:        r.DeviceRepo,
-		EventTypes:        []string{"*"},
+		conn:       c,
+		deviceID:   "1234",
+		deviceRepo: r.DeviceRepo,
+		// EventTypes:        []string{"*"},
 		eventDeliveryRepo: r.EventDeliveryRepo,
 		Device: &datastore.Device{
 			UID:        "1234",
@@ -164,10 +164,10 @@ func TestPingHandler_FailedToUpdateDevice(t *testing.T) {
 	r := provideRepo(ctrl)
 
 	c := &Client{
-		conn:              conn,
-		deviceID:          "1234",
-		deviceRepo:        r.DeviceRepo,
-		EventTypes:        []string{"*"},
+		conn:       conn,
+		deviceID:   "1234",
+		deviceRepo: r.DeviceRepo,
+		// EventTypes:        []string{"*"},
 		eventDeliveryRepo: r.EventDeliveryRepo,
 		Device: &datastore.Device{
 			UID:        "1234",
@@ -190,10 +190,10 @@ func TestPingHandler_FailedToSendPongMessage(t *testing.T) {
 	r := provideRepo(ctrl)
 
 	c := &Client{
-		conn:              conn,
-		deviceID:          "1234",
-		deviceRepo:        r.DeviceRepo,
-		EventTypes:        []string{"*"},
+		conn:       conn,
+		deviceID:   "1234",
+		deviceRepo: r.DeviceRepo,
+		// EventTypes:        []string{"*"},
 		eventDeliveryRepo: r.EventDeliveryRepo,
 		Device: &datastore.Device{
 			UID:        "1234",

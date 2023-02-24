@@ -1,5 +1,5 @@
 <div convoy-dropdown size="full" position="center" [className]="control.touched && control.invalid ? 'top-[85%]' : ''" *ngIf="control">
-	<div class="w-full" dropdownTrigger>
+	<div class="w-full" [ngClass]="{ 'pointer-events-none': readonly }" dropdownTrigger>
 		<label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center justify-between" [for]="name">
 			<div class="flex items-center">
 				{{ label }}
@@ -40,10 +40,10 @@
 				flex-wrap
 			"
 		>
-			<span *ngIf="!multiple">{{ selectedValue?.name || selectedValue }}</span>
+			<span *ngIf="!multiple">{{ selectedValue?.name || selectedValue?.title || selectedValue }}</span>
 			<ng-container *ngIf="multiple">
 				<div *ngFor="let option of selectedOptions" class="border border-grey-10 bg-grey-10 px-4px font-medium text-12 mr-1 mb-1 rounded-4px flex items-center">
-					{{ option.name || option }}
+					{{ option.name || option.title || option }}
 					<button convoy-button (click)="removeOption(option)" fill="text" type="button" class="py-0 px-0"><img src="/assets/img/close-icon-black.svg" width="12px" class="ml-4px" alt="close icon" /></button>
 				</div>
 			</ng-container>
@@ -57,7 +57,16 @@
 
 	<div dropdownOptions class="py-20px pl-20px w-full max-h-[300px] scroll-m-0 scroll-auto">
 		<ul>
+			<ng-container *ngIf="searchable">
+				<li>
+					<div class="my-10px mr-20px border border-primary-400 h-36px px-14px rounded-[10px] flex items-center bg-white-100">
+						<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px w-14px" />
+						<input type="search" placeholder="Search here" class="w-full outline-none text-12" #searchFilter />
+					</div>
+				</li>
+			</ng-container>
 			<li class="text-14 text-grey-20">Select</li>
+
 			<ng-container *ngIf="multiple">
 				<li *ngFor="let option of options" class="list-none py-10px border-b border-grey-20">
 					<button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>

@@ -594,11 +594,11 @@ func TestProjectService_GetProjects(t *testing.T) {
 			name: "should_get_projects",
 			args: args{
 				ctx:    ctx,
-				filter: &datastore.ProjectFilter{Names: []string{"default_project"}},
+				filter: &datastore.ProjectFilter{OrgID: "default_project"},
 			},
 			dbFn: func(gs *ProjectService) {
 				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
-				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{Names: []string{"default_project"}}).
+				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{OrgID: "default_project"}).
 					Times(1).Return([]*datastore.Project{
 					{UID: "123"},
 					{UID: "abc"},
@@ -635,11 +635,11 @@ func TestProjectService_GetProjects(t *testing.T) {
 			name: "should_get_projects_trims-whitespaces-from-query",
 			args: args{
 				ctx:    ctx,
-				filter: &datastore.ProjectFilter{Names: []string{" default_project "}},
+				filter: &datastore.ProjectFilter{OrgID: " default_project "},
 			},
 			dbFn: func(gs *ProjectService) {
 				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
-				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{Names: []string{"default_project"}}).
+				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{OrgID: "default_project"}).
 					Times(1).Return([]*datastore.Project{
 					{UID: "123"},
 					{UID: "abc"},
@@ -676,11 +676,11 @@ func TestProjectService_GetProjects(t *testing.T) {
 			name: "should_get_projects_trims-whitespaces-from-query-retains-case",
 			args: args{
 				ctx:    ctx,
-				filter: &datastore.ProjectFilter{Names: []string{"  deFault_Project"}},
+				filter: &datastore.ProjectFilter{OrgID: "  deFault_Project"},
 			},
 			dbFn: func(gs *ProjectService) {
 				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
-				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{Names: []string{"deFault_Project"}}).
+				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{OrgID: "deFault_Project"}).
 					Times(1).Return([]*datastore.Project{
 					{UID: "123"},
 					{UID: "abc"},
@@ -717,11 +717,11 @@ func TestProjectService_GetProjects(t *testing.T) {
 			name: "should_fail_to_get_projects",
 			args: args{
 				ctx:    ctx,
-				filter: &datastore.ProjectFilter{Names: []string{"default_project"}},
+				filter: &datastore.ProjectFilter{OrgID: "default_project"},
 			},
 			dbFn: func(gs *ProjectService) {
 				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
-				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{Names: []string{"default_project"}}).
+				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{OrgID: "default_project"}).
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			wantErr:     true,

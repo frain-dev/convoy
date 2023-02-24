@@ -100,4 +100,17 @@ func init() {
 
 		return err == nil
 	})
+
+	govalidator.TagMap["supported_pub_sub"] = govalidator.Validator(func(pubsub string) bool {
+		pubsubs := map[string]bool{
+			string(datastore.SqsPubSub):    true,
+			string(datastore.GooglePubSub): true,
+		}
+
+		if _, ok := pubsubs[pubsub]; !ok {
+			return false
+		}
+
+		return true
+	})
 }

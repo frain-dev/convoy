@@ -17,44 +17,52 @@
 <convoy-card className="p-20px mb-20px">
 	<div class="flex justify-between items-center mb-24px border-b border-b-grey-20 pb-12px">
 		<ng-container *ngIf="!isLoadingEndpointDetails && endpointDetails">
-			<div class="flex items-center">
-				<h3 class="font-medium capitalize">{{ endpointDetails.title }}</h3>
-				<div convoy-dropdown position="left" size="sm" class="ml-4px">
-					<button dropdownTrigger convoy-button size="sm" fill="clear" class="!p-0">
-						<svg width="24" height="24" class="mr-8px fill-primary-100">
-							<use xlink:href="#angle-arrow-down-icon"></use>
-						</svg>
-					</button>
-
-					<ul dropdownOptions>
-						<li class="border-b border-grey-20">
-							<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start" [routerLink]="'./edit'" [relativeTo]="route">
-								<svg width="16" height="16" class="mr-8px fill-primary-100">
-									<use xlink:href="#edit-icon"></use>
-								</svg>
-								Edit
-							</button>
-						</li>
-						<li>
-							<button convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="showDeleteModal = true">
-								<svg width="16" height="16" class="mr-8px fill-danger-100">
-									<use xlink:href="#delete-icon"></use>
-								</svg>
-								Delete
-							</button>
-						</li>
-					</ul>
-				</div>
+			<div>
+				<h3 class="font-semibold capitalize">{{ endpointDetails.title }}</h3>
+				<p class="text-12 text-grey-60 mt-6px">{{ endpointDetails.target_url }}</p>
 			</div>
 
 			<div class="flex justify-end items-center">
-				<button convoy-button fill="outline" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" [disabled]="isSendingTestEvent" [ngClass]="{ 'cursor-wait': isSendingTestEvent }" size="sm" class="mr-20px" (click)="sendTestEvent()">
-					{{ isSendingTestEvent ? 'Sending Event' : 'Send Test Event' }}
-				</button>
-				<button convoy-button fill="outline" size="sm" (click)="viewEndpointPortalLinks(endpointDetails.uid)">
-					Open Portal Link
-					<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />
-				</button>
+				<div class="flex items-center border border-primary-100 rounded-[10px] h-34px">
+					<button convoy-button fill="clear" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" [disabled]="isSendingTestEvent" [ngClass]="{ 'cursor-wait': isSendingTestEvent }" size="sm" class="!px-8px !py-0 my-8px" (click)="sendTestEvent()">
+						{{ isSendingTestEvent ? 'Sending Event' : 'Send Test Event' }}
+					</button>
+					<div convoy-dropdown position="right" size="md" [ngClass]="{'border-l border-primary-100': privateService.activeProjectDetails?.type === 'outgoing'}">
+						<button dropdownTrigger convoy-button size="sm" fill="clear" class="!px-6px !py-0">
+							<svg width="16" height="16" class="fill-primary-100">
+								<use xlink:href="#angle-arrow-down-icon"></use>
+							</svg>
+						</button>
+
+						<ul dropdownOptions>
+							<li class="border-b border-grey-20">
+								<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start" (click)="viewEndpointPortalLinks(endpointDetails.uid)">
+									<svg width="18" height="18" class="stroke-primary-100 mr-8px">
+										<use xlink:href="#portal-icon"></use>
+									</svg>
+									Open Portal Link
+									<img src="/assets/img/arrow-up-right.svg" class="w-12px ml-8px" alt="link out" />
+								</button>
+							</li>
+							<li class="border-b border-grey-20">
+								<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start" [routerLink]="'./edit'" [relativeTo]="route">
+									<svg width="16" height="16" class="mr-8px fill-primary-100">
+										<use xlink:href="#edit-icon"></use>
+									</svg>
+									Edit
+								</button>
+							</li>
+							<li>
+								<button convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="showDeleteModal = true">
+									<svg width="16" height="16" class="mr-8px fill-danger-100">
+										<use xlink:href="#delete-icon"></use>
+									</svg>
+									Delete
+								</button>
+							</li>
+						</ul>
+					</div>
+				</div>
 			</div>
 		</ng-container>
 
@@ -73,40 +81,44 @@
 	<div *ngIf="isLoadingEndpointDetails">
 		<div class="flex items-center flex-wrap justify-between mb-32px">
 			<div>
-				<p class="text-grey-40 text-12 font-light">DATE CREATED</p>
+				<p class="text-grey-40 text-12 font-light">EVENTS COUNT</p>
 				<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
 			</div>
 			<div>
-				<p class="text-grey-40 text-12 font-light">SUPPORT EMAIL</p>
+				<p class="text-grey-40 text-12 font-light">AUTHENTICATION</p>
+				<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
+			</div>
+			<div>
+				<p class="text-grey-40 text-12 font-light">SIGNATURE FORMAT</p>
+				<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
+			</div>
+			<div>
+				<p class="text-grey-40 text-12 font-light">ALERT CONFIG</p>
 				<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
 			</div>
 			<div>
 				<p class="text-grey-40 text-12 font-light">SECRET</p>
 				<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
 			</div>
-			<div>
-				<p class="text-grey-40 text-12 font-light">EVENTS</p>
-				<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
-			</div>
-			<div>
-				<p class="text-grey-40 text-12 font-light">UPDATED</p>
-				<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
-			</div>
-		</div>
-		<div>
-			<p class="text-grey-40 text-12 font-light">URL</p>
-			<convoy-skeleton-loader className="mt-10px w-320px h-20px"></convoy-skeleton-loader>
 		</div>
 	</div>
 
 	<div *ngIf="!isLoadingEndpointDetails && endpointDetails">
 		<div class="flex items-center flex-wrap justify-between mb-32px">
 			<div>
-				<p class="text-grey-40 text-12 font-light">DATE CREATED</p>
-				<p class="text-black text-14 font-normal">{{ endpointDetails.created_at | date: 'mediumDate' }}</p>
+				<p class="text-grey-40 text-12 font-light">EVENTS COUNT</p>
+				<p class="text-black text-14 font-normal">{{ endpointDetails.events || 0 }}</p>
 			</div>
 			<div>
-				<p class="text-grey-40 text-12 font-light">SUPPORT EMAIL</p>
+				<p class="text-grey-40 text-12 font-light">AUTHENTICATION</p>
+				<p class="text-black text-14 font-normal">{{ 'Inactive' }}</p>
+			</div>
+			<div>
+				<p class="text-grey-40 text-12 font-light">SIGNATURE FORMAT</p>
+				<p class="text-black text-14 font-normal">{{ endpointDetails.advanced_signatures ? 'Active' : 'Inactive' }}</p>
+			</div>
+			<div>
+				<p class="text-grey-40 text-12 font-light">ALERT CONFIG</p>
 				<p class="text-black text-14 font-normal">{{ endpointDetails.support_email || '-' }}</p>
 			</div>
 			<div>
@@ -116,21 +128,6 @@
 					<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />
 				</button>
 			</div>
-			<div>
-				<p class="text-grey-40 text-12 font-light">EVENTS</p>
-				<p class="text-black text-14 font-normal">{{ endpointDetails.events || 0 }}</p>
-			</div>
-			<div>
-				<p class="text-grey-40 text-12 font-light">UPDATED</p>
-				<p class="text-black text-14 font-normal">{{ endpointDetails.updated_at | date: 'mediumDate' }}</p>
-			</div>
-		</div>
-		<div>
-			<p class="text-grey-40 text-12 font-light">URL</p>
-			<p class="text-black text-14 font-normal flex">
-				<img src="/assets/img/link-icon.svg" alt="link icon" class="mr-8px" />
-				{{ endpointDetails.target_url }}
-			</p>
 		</div>
 	</div>
 </convoy-card>
@@ -138,22 +135,24 @@
 <ng-container *ngIf="isCliAvailable">
 	<!-- app api keys and devices list  -->
 	<convoy-card className="mt-24px rounded-bl-[0] rounded-br-[0]">
+		<div class="flex justify-between items-center px-24px pt-24px">
+			<h3 class="font-semibold">Command Line</h3>
+			<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px" *ngIf="activeTab === 'Keys'">
+				<convoy-button size="sm" fill="outline" (click)="cliKeys.generateKeyModal = true" class="mt-6px">Generate Key</convoy-button>
+			</div>
+		</div>
 		<div class="flex items-center justify-center">
-			<ul class="flex flex-row m-auto w-full mt-12px">
+			<ul class="flex flex-row m-auto w-full mt-24px">
 				<li *ngFor="let tab of tabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
 					<button class="pb-16px pt-10px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="toggleActiveTab(tab)">
 						<span class="text-14 text-left capitalize text-grey-60 tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
 					</button>
 				</li>
-
-				<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px" *ngIf="activeTab === 'CLI Keys'">
-					<convoy-button size="sm" fill="outline" (click)="cliKeys.generateKeyModal = true" class="mt-6px">Generate Key</convoy-button>
-				</div>
 			</ul>
 		</div>
 	</convoy-card>
 
-	<ng-container *ngIf="activeTab === 'CLI Keys'">
+	<ng-container *ngIf="activeTab === 'Keys'">
 		<convoy-cli-keys></convoy-cli-keys>
 	</ng-container>
 	<ng-container *ngIf="activeTab === 'devices'">

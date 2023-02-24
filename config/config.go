@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/kelseyhightower/envconfig"
 )
@@ -46,6 +47,18 @@ var DefaultConfiguration = Configuration{
 	},
 	Logger: LoggerConfiguration{
 		Level: "error",
+	},
+	Analytics: AnalyticsConfiguration{
+		IsEnabled: true,
+	},
+	StoragePolicy: StoragePolicyConfiguration{
+		Type: "on-prem",
+		OnPrem: OnPremStorage{
+			Path: convoy.DefaultOnPremDir,
+		},
+	},
+	Auth: AuthConfiguration{
+		IsSignupEnabled: true,
 	},
 }
 
@@ -88,9 +101,10 @@ type FileRealmOption struct {
 }
 
 type AuthConfiguration struct {
-	File   FileRealmOption    `json:"file"`
-	Native NativeRealmOptions `json:"native"`
-	Jwt    JwtRealmOptions    `json:"jwt"`
+	File            FileRealmOption    `json:"file"`
+	Native          NativeRealmOptions `json:"native"`
+	Jwt             JwtRealmOptions    `json:"jwt"`
+	IsSignupEnabled bool               `json:"is_signup_enabled"`
 }
 
 type NativeRealmOptions struct {
@@ -168,6 +182,29 @@ type FliptConfiguration struct {
 	Host string `json:"host" envconfig:"CONVOY_FLIPT_HOST"`
 }
 
+type AnalyticsConfiguration struct {
+	IsEnabled bool `json:"enabled" envconfig:"CONVOY_ANALYTICS_ENABLED"`
+}
+
+type StoragePolicyConfiguration struct {
+	Type   string        `json:"type" envconfig:"CONVOY_STORAGE_POLICY_TYPE"`
+	S3     S3Storage     `json:"s3"`
+	OnPrem OnPremStorage `json:"on_prem"`
+}
+
+type S3Storage struct {
+	Bucket       string `json:"bucket" envconfig:"CONVOY_STORAGE_AWS_BUCKET"`
+	AccessKey    string `json:"access_key" envconfig:"CONVOY_STORAGE_AWS_ACCESS_KEY"`
+	SecretKey    string `json:"secret_key" envconfig:"CONVOY_STORAGE_AWS_SECRET_KEY"`
+	Region       string `json:"region" envconfig:"CONVOY_STORAGE_AWS_REGION"`
+	SessionToken string `json:"session_token" envconfig:"CONVOY_STORAGE_AWS_SESSION_TOKEN"`
+	Endpoint     string `json:"endpoint" envconfig:"CONVOY_STORAGE_AWS_ENDPOINT"`
+}
+
+type OnPremStorage struct {
+	Path string `json:"path" envconfig:"CONVOY_STORAGE_PREM_PATH"`
+}
+
 const (
 	envPrefix              string = "convoy"
 	DevelopmentEnvironment string = "development"
@@ -206,22 +243,24 @@ func (s SignatureHeaderProvider) String() string {
 }
 
 type Configuration struct {
-	Auth               AuthConfiguration        `json:"auth,omitempty"`
-	Database           DatabaseConfiguration    `json:"database"`
-	Queue              QueueConfiguration       `json:"queue"`
-	Prometheus         PrometheusConfiguration  `json:"prometheus"`
-	Server             ServerConfiguration      `json:"server"`
-	MaxResponseSize    uint64                   `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
-	SMTP               SMTPConfiguration        `json:"smtp"`
-	Environment        string                   `json:"env" envconfig:"CONVOY_ENV"`
-	Logger             LoggerConfiguration      `json:"logger"`
-	Tracer             TracerConfiguration      `json:"tracer"`
-	Cache              CacheConfiguration       `json:"cache"`
-	Limiter            LimiterConfiguration     `json:"limiter"`
-	Host               string                   `json:"host" envconfig:"CONVOY_HOST"`
-	CustomDomainSuffix string                   `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
-	Search             SearchConfiguration      `json:"search"`
-	FeatureFlag        FeatureFlagConfiguration `json:"feature_flag"`
+	Auth               AuthConfiguration          `json:"auth,omitempty"`
+	Database           DatabaseConfiguration      `json:"database"`
+	Queue              QueueConfiguration         `json:"queue"`
+	Prometheus         PrometheusConfiguration    `json:"prometheus"`
+	Server             ServerConfiguration        `json:"server"`
+	MaxResponseSize    uint64                     `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
+	SMTP               SMTPConfiguration          `json:"smtp"`
+	Environment        string                     `json:"env" envconfig:"CONVOY_ENV"`
+	Logger             LoggerConfiguration        `json:"logger"`
+	Tracer             TracerConfiguration        `json:"tracer"`
+	Cache              CacheConfiguration         `json:"cache"`
+	Limiter            LimiterConfiguration       `json:"limiter"`
+	Host               string                     `json:"host" envconfig:"CONVOY_HOST"`
+	CustomDomainSuffix string                     `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
+	Search             SearchConfiguration        `json:"search"`
+	FeatureFlag        FeatureFlagConfiguration   `json:"feature_flag"`
+	Analytics          AnalyticsConfiguration     `json:"analytics"`
+	StoragePolicy      StoragePolicyConfiguration `json:"storage_policy"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called

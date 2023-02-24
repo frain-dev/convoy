@@ -42,6 +42,8 @@ components:
           type: string
         host_name:
           type: string
+        source_id:
+          type: string
       type: object
     datastore.DeliveryAttempt:
       properties:
@@ -294,6 +296,17 @@ components:
         headers:
           $ref: '#/components/schemas/datastore.M'
       type: object
+    datastore.GooglePubSubConfig:
+      properties:
+        project_id:
+          type: string
+        service_account:
+          items:
+            type: integer
+          type: array
+        subscription_id:
+          type: string
+      type: object
     datastore.HMac:
       properties:
         encoding:
@@ -431,6 +444,25 @@ components:
         twitter:
           $ref: '#/components/schemas/datastore.TwitterProviderConfig'
       type: object
+    datastore.PubSubConfig:
+      properties:
+        google:
+          $ref: '#/components/schemas/datastore.GooglePubSubConfig'
+        sqs:
+          $ref: '#/components/schemas/datastore.SQSPubSubConfig'
+        type:
+          $ref: '#/components/schemas/datastore.PubSubType'
+        workers:
+          type: integer
+      type: object
+    datastore.PubSubType:
+      enum:
+      - sqs
+      - google
+      type: string
+      x-enum-varnames:
+      - SqsPubSub
+      - GooglePubSub
     datastore.RateLimitConfiguration:
       properties:
         count:
@@ -451,6 +483,17 @@ components:
           type: integer
         type:
           $ref: '#/components/schemas/datastore.StrategyProvider'
+      type: object
+    datastore.SQSPubSubConfig:
+      properties:
+        access_key_id:
+          type: string
+        default_region:
+          type: string
+        queue_name:
+          type: string
+        secret_key:
+          type: string
       type: object
     datastore.Secret:
       properties:
@@ -509,6 +552,8 @@ components:
           $ref: '#/components/schemas/datastore.SourceProvider'
         provider_config:
           $ref: '#/components/schemas/datastore.ProviderConfig'
+        pub_sub:
+          $ref: '#/components/schemas/datastore.PubSubConfig'
         type:
           $ref: '#/components/schemas/datastore.SourceType'
         uid:
@@ -822,6 +867,8 @@ components:
           type: string
         provider:
           $ref: '#/components/schemas/datastore.SourceProvider'
+        pub_sub:
+          $ref: '#/components/schemas/datastore.PubSubConfig'
         type:
           $ref: '#/components/schemas/datastore.SourceType'
         verifier:
@@ -845,6 +892,8 @@ components:
           $ref: '#/components/schemas/datastore.SourceProvider'
         provider_config:
           $ref: '#/components/schemas/datastore.ProviderConfig'
+        pub_sub:
+          $ref: '#/components/schemas/datastore.PubSubConfig'
         type:
           $ref: '#/components/schemas/datastore.SourceType'
         uid:

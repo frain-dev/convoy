@@ -35,6 +35,7 @@ func provideArgs(ctrl *gomock.Controller) *args {
 	queue := mocks.NewMockQueuer(ctrl)
 	search := mocks.NewMockSearcher(ctrl)
 	projectRepo := mocks.NewMockProjectRepository(ctrl)
+	deviceRepo := mocks.NewMockDeviceRepository(ctrl)
 	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
@@ -42,6 +43,7 @@ func provideArgs(ctrl *gomock.Controller) *args {
 
 	return &args{
 		endpointRepo:      endpointRepo,
+		deviceRepo:        deviceRepo,
 		eventRepo:         eventRepo,
 		projectRepo:       projectRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
@@ -263,9 +265,28 @@ func TestProcessEventCreated(t *testing.T) {
 							EventTypes: []string{"*"},
 						},
 					},
+					{
+						UID:       "33232",
+						DeviceID:  "334",
+						ProjectID: "project-id-1",
+						FilterConfig: &datastore.FilterConfiguration{
+							Filter: datastore.FilterSchema{},
+						},
+						Type: datastore.SubscriptionTypeCLI,
+					},
 				}
 				s.EXPECT().FindSubscriptionsBySourceID(gomock.Any(), "project-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(4).Return(true, nil)
+
+				d, _ := args.deviceRepo.(*mocks.MockDeviceRepository)
+				d.EXPECT().FetchDeviceByID(gomock.Any(), "334", "", "project-id-1").Times(1).Return(
+					&datastore.Device{
+						UID:       "334",
+						ProjectID: "project-id-1",
+						HostName:  "host",
+						Status:    datastore.DeviceStatusOnline,
+					}, nil,
+				)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
@@ -276,7 +297,7 @@ func TestProcessEventCreated(t *testing.T) {
 					Times(1).Return(endpoint, nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(2).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
@@ -484,10 +505,12 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$eq": 10,
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$eq": 10,
+								},
+							},
 						},
 					},
 				},
@@ -526,10 +549,12 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$neq": 10,
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$neq": 10,
+								},
+							},
 						},
 					},
 				},
@@ -556,20 +581,24 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$gte": 10,
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$gte": 10,
+								},
+							},
 						},
 					},
 				},
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$gt": 10,
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$gt": 10,
+								},
+							},
 						},
 					},
 				},
@@ -595,20 +624,24 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$lte": 10,
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$lte": 10,
+								},
+							},
 						},
 					},
 				},
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$lt": 10,
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$lt": 10,
+								},
+							},
 						},
 					},
 				},
@@ -638,30 +671,36 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$in": []int{10, 1},
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$in": []int{10, 1},
+								},
+							},
 						},
 					},
 				},
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$in": []int{10, 1},
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$in": []int{10, 1},
+								},
+							},
 						},
 					},
 				},
 				{
 					UID: "12345",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"person.age": map[string]interface{}{
-								"$gt": 10,
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"person.age": map[string]interface{}{
+									"$gt": 10,
+								},
+							},
 						},
 					},
 				},
@@ -688,10 +727,12 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{
-							"event.action": map[string]interface{}{
-								"$nin": []string{"update", "delete"},
-							}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{
+								"event.action": map[string]interface{}{
+									"$nin": []string{"update", "delete"},
+								},
+							},
 						},
 					},
 				},

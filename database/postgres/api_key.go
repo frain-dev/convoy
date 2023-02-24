@@ -270,6 +270,11 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 	return apiKeys, pagination, nil
 }
 
+func (a *apiKeyRepo) FindAPIKeyByProjectID(ctx context.Context, s string) (*datastore.APIKey, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
 type ApiKeyPaginated struct {
 	Count int `db:"count"`
 	datastore.APIKey

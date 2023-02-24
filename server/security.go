@@ -224,6 +224,34 @@ func (a *ApplicationHandler) RevokePersonalAPIKey(w http.ResponseWriter, r *http
 	_ = render.Render(w, r, util.NewServerResponse("personal api key revoked successfully", nil, http.StatusOK))
 }
 
+func (a *ApplicationHandler) RegenerateProjectAPIKey(w http.ResponseWriter, r *http.Request) {
+	member := m.GetOrganisationMemberFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
+
+	apiKey, keyString, err := createSecurityService(a).RegenerateProjectAPIKey(r.Context(), project, member)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	resp := &models.APIKeyResponse{
+		APIKey: models.APIKey{
+			Name: apiKey.Name,
+			Role: models.Role{
+				Type:    apiKey.Role.Type,
+				Project: apiKey.Role.Project,
+			},
+			Type:      apiKey.Type,
+			ExpiresAt: apiKey.ExpiresAt,
+		},
+		UID:       apiKey.UID,
+		CreatedAt: apiKey.CreatedAt,
+		Key:       keyString,
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("api key regenerated successfully", resp, http.StatusOK))
+}
+
 func (a *ApplicationHandler) RevokeEndpointAPIKey(w http.ResponseWriter, r *http.Request) {
 	endpoint := m.GetEndpointFromContext(r.Context())
 	project := m.GetProjectFromContext(r.Context())
@@ -300,8 +328,6 @@ func (a *ApplicationHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request
 
 	_ = render.Render(w, r, util.NewServerResponse("api key updated successfully", resp, http.StatusOK))
 }
-
-func _() {}
 
 func (a *ApplicationHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())

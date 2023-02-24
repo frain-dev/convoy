@@ -78,6 +78,7 @@ type (
 	StorageType      string
 	KeyType          string
 	PubSubType       string
+	PubSubHandler    func(*Source, string) error
 )
 
 type EndpointAuthenticationType string
@@ -97,6 +98,11 @@ const (
 
 const (
 	APIKeyAuthentication EndpointAuthenticationType = "api_key"
+)
+
+const (
+	SqsPubSub    PubSubType = "sqs"
+	GooglePubSub PubSubType = "google"
 )
 
 func (s SourceProvider) IsValid() bool {
@@ -739,6 +745,7 @@ type EventDelivery struct {
 
 type CLIMetadata struct {
 	EventType string `json:"event_type" db:"event_type"`
+	SourceID  string `json:"source_id" db:"source_id"`
 	HostName  string `json:"host_name,omitempty" db:"host_name"`
 }
 
@@ -983,7 +990,7 @@ type TwitterProviderConfig struct {
 }
 
 type VerifierConfig struct {
-	Type      VerifierType `json:"type,omitempty" db:"type" valid:"supported_verifier~please provide a valid verifier type,required"`
+	Type      VerifierType `json:"type,omitempty" db:"type" valid:"supported_verifier~please provide a valid verifier type"`
 	HMac      *HMac        `json:"hmac" db:"hmac"`
 	BasicAuth *BasicAuth   `json:"basic_auth" db:"basic_auth"`
 	ApiKey    *ApiKey      `json:"api_key" db:"api_key"`
@@ -1099,16 +1106,17 @@ func (i InviteStatus) String() string {
 }
 
 type OrganisationInvite struct {
-	UID            string       `json:"uid" db:"id"`
-	OrganisationID string       `json:"organisation_id" db:"organisation_id"`
-	InviteeEmail   string       `json:"invitee_email" db:"invitee_email"`
-	Token          string       `json:"token" db:"token"`
-	Role           auth.Role    `json:"role" db:"role"`
-	Status         InviteStatus `json:"status" db:"status"`
-	ExpiresAt      time.Time    `json:"-" db:"expires_at"`
-	CreatedAt      time.Time    `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt      time.Time    `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt      null.Time    `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	UID              string       `json:"uid" db:"id"`
+	OrganisationID   string       `json:"organisation_id" db:"organisation_id"`
+	OrganisationName string       `json:"organisation_name,omitempty" db:"-"`
+	InviteeEmail     string       `json:"invitee_email" db:"invitee_email"`
+	Token            string       `json:"token" db:"token"`
+	Role             auth.Role    `json:"role" db:"role"`
+	Status           InviteStatus `json:"status" db:"status"`
+	ExpiresAt        time.Time    `json:"-" db:"expires_at"`
+	CreatedAt        time.Time    `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt        time.Time    `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt        null.Time    `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type PortalLink struct {

@@ -18,7 +18,7 @@ func addStreamCommand(a *app) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "stream",
-		Short: "Start a websocket server to pipe events to another convoy instance",
+		Short: "Start a websocket server to pipe events to a convoy cli instance",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := config.Get()
 			if err != nil {
@@ -33,32 +33,32 @@ func addStreamCommand(a *app) *cobra.Command {
 			deviceRepo := postgres.NewDeviceRepo(a.db)
 			projectRepo := postgres.NewProjectRepo(a.db)
 			apiKeyRepo := postgres.NewAPIKeyRepo(a.db)
+			userRepo := postgres.NewUserRepo(a.db)
+			orgMemberRepo := postgres.NewOrgMemberRepo(a.db)
 
 			// enable only the native auth realm
 			authCfg := &config.AuthConfiguration{
 				Native: config.NativeRealmOptions{Enabled: true},
 			}
 
-			err = realm_chain.Init(authCfg, apiKeyRepo, nil, nil)
+			err = realm_chain.Init(authCfg, apiKeyRepo, userRepo, nil)
 			if err != nil {
 				a.logger.WithError(err).Fatal("failed to initialize realm chain")
 				return err
 			}
 
 			r := &socket.Repo{
-				EndpointRepo:      endpointRepo,
-				DeviceRepo:        deviceRepo,
-				SubscriptionRepo:  subRepo,
-				SourceRepo:        sourceRepo,
-				EventDeliveryRepo: eventDeliveryRepo,
+				OrgMemberRepository: orgMemberRepo,
+				ProjectRepo:         projectRepo,
+				EndpointRepo:        endpointRepo,
+				DeviceRepo:          deviceRepo,
+				SubscriptionRepo:    subRepo,
+				SourceRepo:          sourceRepo,
+				EventDeliveryRepo:   eventDeliveryRepo,
 			}
 
 			h := socket.NewHub()
-			go h.StartRegister()
-			go h.StartUnregister()
-			go h.StartEventWatcher()
-			go h.StartEventSender()
-			go h.StartClientStatusWatcher()
+			h.Start()
 
 			lo := a.logger.(*log.Logger)
 			lo.SetPrefix("socket server")
@@ -70,6 +70,7 @@ func addStreamCommand(a *app) *cobra.Command {
 			lo.SetLevel(lvl)
 
 			m := convoyMiddleware.NewMiddleware(&convoyMiddleware.CreateMiddleware{
+				UserRepo:     userRepo,
 				EndpointRepo: endpointRepo,
 				ProjectRepo:  projectRepo,
 				Cache:        a.cache,

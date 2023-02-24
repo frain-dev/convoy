@@ -21,6 +21,7 @@ import (
 )
 
 type EndpointService struct {
+	projectRepo       datastore.ProjectRepository
 	endpointRepo      datastore.EndpointRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
@@ -28,8 +29,15 @@ type EndpointService struct {
 	queue             queue.Queuer
 }
 
-func NewEndpointService(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, queue queue.Queuer) *EndpointService {
-	return &EndpointService{endpointRepo: endpointRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, cache: cache, queue: queue}
+func NewEndpointService(projectRepo datastore.ProjectRepository, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, queue queue.Queuer) *EndpointService {
+	return &EndpointService{
+		projectRepo:       projectRepo,
+		endpointRepo:      endpointRepo,
+		eventRepo:         eventRepo,
+		eventDeliveryRepo: eventDeliveryRepo,
+		cache:             cache,
+		queue:             queue,
+	}
 }
 
 func (a *EndpointService) LoadEndpointsPaged(ctx context.Context, uid string, q string, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
@@ -64,6 +72,15 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 	duration, err := time.ParseDuration(e.RateLimitDuration)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("an error occurred parsing the rate limit duration: %v", err))
+	}
+
+	project, err := a.projectRepo.FetchProjectByID(ctx, projectID)
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("Failed to load endpoint project"))
+	}
+
+	if project.Type == datastore.IncomingProject {
+		e.AdvancedSignatures = true
 	}
 
 	endpoint := &datastore.Endpoint{
@@ -150,7 +167,7 @@ func (a *EndpointService) UpdateEndpoint(ctx context.Context, e models.UpdateEnd
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	endpoint, err = updateEndpoint(endpoint, e)
+	endpoint, err = updateEndpoint(endpoint, e, project)
 	if err != nil {
 		return endpoint, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -195,7 +212,7 @@ func (a *EndpointService) CountProjectEndpoints(ctx context.Context, projectID s
 	return endpoints, nil
 }
 
-func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint) (*datastore.Endpoint, error) {
+func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint, project *datastore.Project) (*datastore.Endpoint, error) {
 	endpoint.TargetURL = e.URL
 	endpoint.Description = e.Description
 
@@ -222,7 +239,7 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint) (*dat
 		endpoint.RateLimitDuration = duration.String()
 	}
 
-	if e.AdvancedSignatures != nil {
+	if e.AdvancedSignatures != nil && project.Type == datastore.OutgoingProject {
 		endpoint.AdvancedSignatures = *e.AdvancedSignatures
 	}
 

@@ -7,10 +7,9 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/compare"
 	"github.com/frain-dev/convoy/pkg/flatten"
-	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -252,12 +251,13 @@ func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, pr
 	return subscriptions, err
 }
 
-func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, projectID, deviceID string) (*datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, projectID, deviceID string, subType datastore.SubscriptionType) (*datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
 
 	filter := bson.M{
 		"device_id":  deviceID,
 		"project_id": projectID,
+		"type":       subType,
 	}
 
 	subscription := &datastore.Subscription{}
@@ -271,6 +271,7 @@ func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, proje
 
 func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, projectID string, sourceId string) ([]datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
+
 	filter := bson.M{"project_id": projectID, "source_id": sourceId}
 
 	subscriptions := make([]datastore.Subscription, 0)
@@ -282,110 +283,38 @@ func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, proj
 	return subscriptions, nil
 }
 
-func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload map[string]interface{}, filter map[string]interface{}) (bool, error) {
-	ctx = context.WithValue(ctx, datastore.CollectionCtx, datastore.FilterCollection)
-	isValid := false
+func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID string) ([]datastore.Subscription, error) {
+	ctx = s.setCollectionInContext(ctx)
 
-	err := s.store.WithTransaction(ctx, func(sessCtx mongo.SessionContext) error {
-		f := datastore.SubscriptionFilter{
-			ID:        primitive.NewObjectID(),
-			UID:       uuid.NewString(),
-			Filter:    payload,
-			DeletedAt: nil,
-		}
+	filter := bson.M{"project_id": projectID, "type": datastore.SubscriptionTypeCLI}
 
-		// insert the desired request payload
-		err := s.store.Save(sessCtx, f, nil)
-		if err != nil {
-			return err
-		}
-
-		// compare the filter with the test request payload
-		var q map[string]interface{}
-		if len(filter) == 0 {
-			filter = nil
-		}
-
-		if filter != nil {
-			q, err = flattenFilter(filter)
-			if err != nil {
-				return err
-			}
-		}
-
-		var filters []datastore.SubscriptionFilter
-		err = s.store.FindAll(sessCtx, q, nil, nil, &filters)
-		if err != nil {
-			return err
-		}
-
-		isValid = len(filters) > 0
-
-		err = s.store.DeleteByID(sessCtx, f.UID, true)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
-	return isValid, err
-}
-
-func (s *subscriptionRepo) setCollectionInContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, datastore.CollectionCtx, datastore.SubscriptionCollection)
-}
-
-func flattenFilter(f map[string]interface{}) (map[string]interface{}, error) {
-	isAndOr := false
-	var operator string
-
-	for k := range f {
-		if k == "$or" {
-			if len(f) > 1 {
-				return nil, flatten.ErrTopLevelElementOr
-			}
-			operator = k
-			isAndOr = true
-			break
-		}
-
-		if k == "$and" {
-			if len(f) > 1 {
-				return nil, flatten.ErrTopLevelElementAnd
-			}
-			isAndOr = true
-			break
-		}
-	}
-
-	if isAndOr {
-		if a, ok := f[operator].([]interface{}); ok {
-			if !ok {
-				return nil, flatten.ErrOrAndMustBeArray
-			}
-
-			for i := range a {
-				t, err := flatten.FlattenWithPrefix("filter", a[i].(map[string]interface{}))
-				if err != nil {
-					return nil, err
-				}
-
-				a[i] = t
-			}
-
-			f[operator] = a
-			return f, nil
-		}
-	}
-
-	query := map[string]interface{}{"filter": f}
-	q, err := flatten.Flatten(query)
+	subscriptions := make([]datastore.Subscription, 0)
+	_, err := s.store.FindMany(ctx, filter, nil, nil, 0, 0, &subscriptions)
 	if err != nil {
 		return nil, err
 	}
 
-	return q, nil
+	return subscriptions, nil
+}
+
+func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload map[string]interface{}, filter map[string]interface{}) (bool, error) {
+	p, err := flatten.Flatten(payload)
+	if err != nil {
+		return false, err
+	}
+
+	f, err := flatten.Flatten(filter)
+	if err != nil {
+		return false, err
+	}
+
+	isValid := compare.Compare(p, f)
+
+	return isValid, nil
+}
+
+func (s *subscriptionRepo) setCollectionInContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, datastore.CollectionCtx, datastore.SubscriptionCollection)
 }
 
 // getSkip returns calculated skip value for the query

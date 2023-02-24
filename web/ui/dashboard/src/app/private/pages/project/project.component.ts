@@ -12,7 +12,7 @@ export class ProjectComponent implements OnInit {
 	screenWidth = window.innerWidth;
 	sideBarItems = [
 		{
-			name: 'Events',
+			name: 'Event Deliveries',
 			icon: 'events',
 			route: '/events'
 		},
@@ -39,7 +39,7 @@ export class ProjectComponent implements OnInit {
 		{
 			name: 'Events Log',
 			icon: 'logs',
-			route: '/event-logs'
+			route: '/events-log'
 		}
 	];
 	shouldShowFullSideBar = true;
@@ -65,7 +65,6 @@ export class ProjectComponent implements OnInit {
 			const projectDetails = await this.privateService.getProjectDetails();
 			this.projectDetails = projectDetails.data;
 			localStorage.setItem('PROJECT_CONFIG', JSON.stringify(projectDetails.data?.config));
-			if (this.projectDetails.type === 'outgoing') this.sideBarItems.splice(1, 1);
 			if (this.projectDetails.type === 'incoming') this.sideBarItems.splice(4, 1);
 			this.isLoadingProjectDetails = false;
 		} catch (error) {

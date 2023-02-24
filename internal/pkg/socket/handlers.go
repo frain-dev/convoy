@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -20,29 +21,36 @@ import (
 )
 
 type ListenRequest struct {
-	HostName   string   `json:"host_name"`
-	DeviceID   string   `json:"device_id"`
-	SourceID   string   `json:"source_id"`
-	EventTypes []string `json:"event_types"`
+	HostName   string `json:"host_name" valid:"required~please provide a hostname"`
+	ProjectID  string `json:"project_id" valid:"required~please provide a project id"`
+	DeviceID   string `json:"device_id" valid:"required~please provide a device id"`
+	SourceID   string `json:"-"`
+	SourceName string `json:"source_name"`
+	// EventTypes []string `json:"event_types"`
 }
 
 type LoginRequest struct {
-	HostName string `json:"host_name"`
-	DeviceID string `json:"device_id"`
+	HostName string `json:"host_name" valid:"required~please provide a hostname"`
 }
 
 type LoginResponse struct {
-	Device   *datastore.Device   `json:"device"`
-	Project  *datastore.Project  `json:"project"`
-	Endpoint *datastore.Endpoint `json:"endpoint"`
+	Projects []ProjectDevice `json:"projects"`
+	UserName string          `json:"user_name"`
+}
+
+type ProjectDevice struct {
+	Project *datastore.Project `json:"project"`
+	Device  *datastore.Device  `json:"device"`
 }
 
 type Repo struct {
-	DeviceRepo        datastore.DeviceRepository
-	SourceRepo        datastore.SourceRepository
-	EndpointRepo      datastore.EndpointRepository
-	SubscriptionRepo  datastore.SubscriptionRepository
-	EventDeliveryRepo datastore.EventDeliveryRepository
+	OrgMemberRepository datastore.OrganisationMemberRepository
+	ProjectRepo         datastore.ProjectRepository
+	DeviceRepo          datastore.DeviceRepository
+	SourceRepo          datastore.SourceRepository
+	EndpointRepo        datastore.EndpointRepository
+	SubscriptionRepo    datastore.SubscriptionRepository
+	EventDeliveryRepo   datastore.EventDeliveryRepository
 }
 
 var ug = websocket.Upgrader{
@@ -57,9 +65,7 @@ func BuildRoutes(h *Hub, r *Repo, m *m.Middleware) http.Handler {
 	router.Route("/stream", func(streamRouter chi.Router) {
 		streamRouter.Use(
 			m.RequireAuth(),
-			m.RequireProject(),
-			m.RequireAppID(),
-			// m.RequireAppPortalApplication(),
+			m.RequirePersonalAccessToken(),
 		)
 
 		streamRouter.Get("/listen", ListenHandler(h, r))
@@ -70,7 +76,7 @@ func BuildRoutes(h *Hub, r *Repo, m *m.Middleware) http.Handler {
 }
 
 func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		listenRequest := &ListenRequest{}
 		err := json.Unmarshal([]byte(r.Header.Get("Body")), &listenRequest)
 		if err != nil {
@@ -79,10 +85,13 @@ func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 			return
 		}
 
-		project := m.GetProjectFromContext(r.Context())
-		app := m.GetEndpointFromContext(r.Context())
+		err = util.Validate(listenRequest)
+		if err != nil {
+			respond(w, http.StatusBadRequest, err.Error())
+			return
+		}
 
-		device, err := listen(r.Context(), project, app, listenRequest, hub, repo)
+		device, err := listen(r.Context(), listenRequest, repo)
 		if err != nil {
 			respond(w, err.(*util.ServiceError).ErrCode(), err.Error())
 			return
@@ -95,165 +104,133 @@ func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 			return
 		}
 
-		NewClient(conn, device, listenRequest.EventTypes, repo.DeviceRepo, repo.EventDeliveryRepo)
-	})
+		fmt.Printf("Listener connected for device %s with hostname %s\n", device.UID, device.HostName)
+		NewClient(conn, device, listenRequest.SourceID, repo.DeviceRepo, repo.EventDeliveryRepo)
+	}
 }
 
 func LoginHandler(hub *Hub, repo *Repo) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		loginRequest := &LoginRequest{}
-		err := util.ReadJSON(r, &loginRequest)
+		err := util.ReadJSON(r, loginRequest)
 		if err != nil {
 			respond(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
-		project := m.GetProjectFromContext(r.Context())
-		endpoint := m.GetEndpointFromContext(r.Context())
+		err = util.Validate(loginRequest)
+		if err != nil {
+			respond(w, http.StatusBadRequest, err.Error())
+			return
+		}
 
-		device, err := login(r.Context(), project, endpoint, loginRequest, hub, repo)
+		authUser := m.GetAuthUserFromContext(r.Context())
+
+		lr, err := login(r.Context(), loginRequest, repo, authUser.User.(*datastore.User))
 		if err != nil {
 			respond(w, err.(*util.ServiceError).ErrCode(), err.Error())
 			return
 		}
 
-		lr := &LoginResponse{Device: device, Project: project, Endpoint: endpoint}
-
-		respondWithData(w, http.StatusOK, lr)
-	})
+		respondWithData(w, lr)
+	}
 }
 
-func login(ctx context.Context, project *datastore.Project, endpoint *datastore.Endpoint, loginRequest *LoginRequest, h *Hub, repo *Repo) (*datastore.Device, error) {
-	endpointID := ""
-	if endpoint != nil {
-		endpointID = endpoint.UID
+func login(ctx context.Context, loginRequest *LoginRequest, repo *Repo, user *datastore.User) (*LoginResponse, error) {
+	projects, err := repo.OrgMemberRepository.FindUserProjects(ctx, user.UID)
+	if err != nil {
+		log.WithError(err).Error("failed to find user projects")
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find user projects"))
 	}
 
-	var device *datastore.Device
-	var err error
-	if !util.IsStringEmpty(loginRequest.DeviceID) {
-		device, err = repo.DeviceRepo.FetchDeviceByID(ctx, loginRequest.DeviceID, endpointID, project.UID)
-		if err != nil {
-			log.WithError(err).Error("failed to find device by id")
-			return nil, util.NewServiceError(http.StatusBadRequest, err)
+	loginResponse := &LoginResponse{
+		UserName: fmt.Sprintf("%s %s", user.FirstName, user.LastName),
+	}
+	loginResponse.Projects = make([]ProjectDevice, 0, len(projects))
+
+	for i := range projects {
+		project := &projects[i]
+		if project.Type != datastore.IncomingProject {
+			continue
 		}
 
-		if device.ProjectID != project.UID {
-			return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("this device cannot access this project"))
-		}
-
-		if device.EndpointID != endpointID {
-			return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("this device cannot access this application"))
-		}
-
-		// we set the device to offline because it was in an inconsistent state on the server.
-		// the device should only be set to online when we start listening for events
-		if device.Status == datastore.DeviceStatusOnline {
-			device.Status = datastore.DeviceStatusOffline
-			err = repo.DeviceRepo.UpdateDevice(ctx, device, device.EndpointID, device.ProjectID)
-			if err != nil {
-				return nil, util.NewServiceError(http.StatusBadRequest, err)
-			}
-		}
-	} else {
-		device, err = repo.DeviceRepo.FetchDeviceByHostName(ctx, loginRequest.HostName, endpointID, project.UID)
+		var device *datastore.Device
+		device, err = repo.DeviceRepo.FetchDeviceByHostName(ctx, loginRequest.HostName, "", project.UID)
 		if err != nil {
 			log.WithError(err).Error("failed to find device for this hostname, will create new device")
-		}
 
-		if device != nil {
-			d := &datastore.Device{
-				EndpointID: endpointID,
-				ProjectID:  project.UID,
-				HostName:   loginRequest.HostName,
-			}
-
-			err = repo.DeviceRepo.UpdateDevice(ctx, d, endpointID, project.UID)
-			if err != nil {
-				log.WithError(err).Error("failed to update device")
-				return nil, util.NewServiceError(http.StatusBadRequest, err)
-			}
-
-			device.HostName = d.HostName
-			device.ProjectID = d.ProjectID
-			device.EndpointID = d.EndpointID
-
-		} else {
 			device = &datastore.Device{
-				EndpointID: endpointID,
-				ProjectID:  project.UID,
-				UID:        uuid.NewString(),
-				HostName:   loginRequest.HostName,
-				Status:     datastore.DeviceStatusOffline,
-				LastSeenAt: time.Now(),
-				CreatedAt:  time.Now(),
-				UpdatedAt:  time.Now(),
+				UID:       uuid.NewString(),
+				ProjectID: project.UID,
+				HostName:  loginRequest.HostName,
+				Status:    datastore.DeviceStatusOffline,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
 			}
 
 			err = repo.DeviceRepo.CreateDevice(ctx, device)
 			if err != nil {
 				log.WithError(err).Error("failed to create new device")
-				return nil, util.NewServiceError(http.StatusBadRequest, err)
+				return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create new device"))
 			}
 		}
+
+		loginResponse.Projects = append(loginResponse.Projects, ProjectDevice{
+			Project: project,
+			Device:  device,
+		})
 	}
 
-	return device, nil
+	return loginResponse, nil
 }
 
-func listen(ctx context.Context, project *datastore.Project, endpoint *datastore.Endpoint, listenRequest *ListenRequest, h *Hub, r *Repo) (*datastore.Device, error) {
-	endpointID := ""
-	if endpoint != nil {
-		endpointID = endpoint.UID
+func listen(ctx context.Context, listenRequest *ListenRequest, r *Repo) (*datastore.Device, error) {
+	project, err := r.ProjectRepo.FetchProjectByID(ctx, listenRequest.ProjectID)
+	if err != nil {
+		log.WithError(err).Error("failed to find project")
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find project"))
 	}
 
-	device, err := r.DeviceRepo.FetchDeviceByID(ctx, listenRequest.DeviceID, endpointID, project.UID)
+	if project.Type == datastore.OutgoingProject {
+		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("cli streaming is not available for outgoing projects"))
+	}
+
+	device, err := r.DeviceRepo.FetchDeviceByID(ctx, listenRequest.DeviceID, "", project.UID)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	if device.ProjectID != project.UID {
-		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("this device cannot access this project"))
-	}
-
-	if device.EndpointID != endpointID {
-		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("this device cannot access this application"))
-	}
-
-	if project.Type == datastore.IncomingProject && util.IsStringEmpty(listenRequest.SourceID) {
-		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("the source is required for incoming projects"))
-	}
-
-	if project.Type == datastore.OutgoingProject && !util.IsStringEmpty(listenRequest.SourceID) {
-		return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("the source should not be passed for outgoing projects"))
-	}
-
-	if project.Type == datastore.IncomingProject && !util.IsStringEmpty(listenRequest.SourceID) {
-		source, err := r.SourceRepo.FindSourceByID(ctx, device.ProjectID, listenRequest.SourceID)
+	if device.Status != datastore.DeviceStatusOnline {
+		device.Status = datastore.DeviceStatusOnline
+		err = r.DeviceRepo.UpdateDevice(ctx, device, "", project.UID)
 		if err != nil {
-			log.WithError(err).Error("error retrieving source")
-			return nil, util.NewServiceError(http.StatusBadRequest, err)
-		}
-
-		if source.ProjectID != project.UID {
-			return nil, util.NewServiceError(http.StatusUnauthorized, errors.New("this device cannot access this source"))
+			log.WithError(err).Error("failed to update device to online")
+			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update device to online"))
 		}
 	}
 
-	sub, err := r.SubscriptionRepo.FindSubscriptionByDeviceID(ctx, project.UID, device.UID)
+	if !util.IsStringEmpty(listenRequest.SourceName) {
+		trimmedName := strings.TrimSpace(listenRequest.SourceName)
+		source, err := r.SourceRepo.FindSourceByName(ctx, device.ProjectID, trimmedName)
+		if err != nil {
+			log.WithError(err).Error("failed to find source by name")
+			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find source by name"))
+		}
+
+		listenRequest.SourceID = source.UID
+	}
+
+	sub, err := r.SubscriptionRepo.FindSubscriptionByDeviceID(ctx, project.UID, device.UID, datastore.SubscriptionTypeCLI)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 			s := &datastore.Subscription{
 				UID:          uuid.NewString(),
 				Name:         fmt.Sprintf("%s-subscription", device.HostName),
 				Type:         datastore.SubscriptionTypeCLI,
-				EndpointID:   endpointID,
 				ProjectID:    project.UID,
-				SourceID:     listenRequest.SourceID,
 				DeviceID:     device.UID,
-				FilterConfig: &datastore.FilterConfiguration{EventTypes: []string{"*"}},
-				CreatedAt:    time.Now(),
-				UpdatedAt:    time.Now(),
+				SourceID:     listenRequest.SourceID,
+				FilterConfig: &datastore.FilterConfiguration{EventTypes: []string{"*"}, Filter: datastore.FilterSchema{}},
 			}
 
 			err = r.SubscriptionRepo.CreateSubscription(ctx, project.UID, s)
@@ -267,8 +244,6 @@ func listen(ctx context.Context, project *datastore.Project, endpoint *datastore
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	sub.SourceID = listenRequest.SourceID
-	sub.FilterConfig = &datastore.FilterConfiguration{EventTypes: listenRequest.EventTypes}
 	sub.AlertConfig = &datastore.DefaultAlertConfig
 	sub.RetryConfig = &datastore.DefaultRetryConfig
 	err = r.SubscriptionRepo.UpdateSubscription(ctx, project.UID, sub)
@@ -288,7 +263,7 @@ func respond(w http.ResponseWriter, code int, msg string) {
 	}
 }
 
-func respondWithData(w http.ResponseWriter, code int, v interface{}) {
+func respondWithData(w http.ResponseWriter, v interface{}) {
 	data, err := json.Marshal(v)
 	if err != nil {
 		log.WithError(err).Error("failed to marshal data")
@@ -297,7 +272,6 @@ func respondWithData(w http.ResponseWriter, code int, v interface{}) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
 	_, err = w.Write(data)
 	if err != nil {
 		log.WithError(err).Error("failed to write response data")

@@ -46,5 +46,5 @@ func (j *JwtRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*au
 }
 
 func (j *JwtRealm) GetName() string {
-	return "jwt"
+	return auth.JWTRealmName
 }
