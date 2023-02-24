@@ -422,7 +422,7 @@ func generateEvent(t *testing.T, db *sqlx.DB) *datastore.Event {
 	return &datastore.Event{
 		UID:       ulid.Make().String(),
 		EventType: "test-event",
-		// Endpoints: []string{endpoint.UID},
+		Endpoints: []string{endpoint.UID},
 		ProjectID: project.UID,
 		Headers:   httpheader.HTTPHeader{},
 		Raw:       string(data),
