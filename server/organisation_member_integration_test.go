@@ -84,7 +84,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 
 	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Project:  ulid.Make().String(),
+		Project:  s.DefaultProject.UID,
 		Endpoint: "",
 	})
 	require.NoError(s.T(), err)

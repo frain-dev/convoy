@@ -30,7 +30,11 @@ func (p Pageable) Limit() int {
 }
 
 func (p Pageable) Offset() int {
-	return (p.Page - 1) * p.PerPage
+	v := (p.Page - 1) * p.PerPage
+	if v < 0 {
+		return 0
+	}
+	return v
 }
 
 type PaginationData struct {
