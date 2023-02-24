@@ -1,26 +1,26 @@
 <form class="pb-40px" [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'" [formGroup]="sourceForm" (ngSubmit)="saveSource()">
 	<convoy-card className="p-24px relative">
 		<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
-            <h4 class="font-medium mb-20px">Pre-configured Sources</h4>
-            <ul class="flex flex-row w-full mb-20px">
-                <li *ngFor="let source of preConfiguredSources" class="list-none mr-40px last-of-type:mr-0">
-                    <button
-                        convoy-button
-                        texture="light"
-                        size="sm"
-                        color="grey"
-                        fill="outline"
-                        type="button"
-                        class="w-60px h-60px"
-                        [ngClass]="{ '!border-solid !border !border-primary-100': sourceForm.value.verifier.type === source }"
-                        (click)="sourceForm.get('verifier.type')?.patchValue(source)"
-                    >
-                        <img [src]="'/assets/img/' + source + '.png'" [alt]="source + '-icon'" />
-                    </button>
-                </li>
-            </ul>
-            <hr class="border-grey-20 border-t mb-26px" />
-        </ng-container>
+			<h4 class="font-medium mb-20px">Pre-configured Sources</h4>
+			<ul class="flex flex-row w-full mb-20px">
+				<li *ngFor="let source of preConfiguredSources" class="list-none mr-40px last-of-type:mr-0">
+					<button
+						convoy-button
+						texture="light"
+						size="sm"
+						color="grey"
+						fill="outline"
+						type="button"
+						class="w-60px h-60px"
+						[ngClass]="{ '!border-solid !border !border-primary-100': sourceForm.value.verifier.type === source }"
+						(click)="sourceForm.get('verifier.type')?.patchValue(source)"
+					>
+						<img [src]="'/assets/img/' + source + '.png'" [alt]="source + '-icon'" />
+					</button>
+				</li>
+			</ul>
+			<hr class="border-grey-20 border-t mb-26px" />
+		</ng-container>
 
 		<convoy-input-field>
 			<label for="source-name" required="true" convoy-label required="true">Source name</label>
@@ -111,7 +111,7 @@
 			</div>
 		</ng-container>
 
-        <div formGroupName="pub_sub" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
+		<div formGroupName="pub_sub" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
 			<h2 class="mb-6px font-semibold">Pub/Sub Type</h2>
 			<p class="text-14 text-grey-60 mb-24px">Connect your Google Pub/Sub service to automatically trigger a webhook event to an endpoint as soon as a message drops into your Pub/Sub queue.</p>
 			<div class="grid grid-cols-2 gap-6">
@@ -186,6 +186,7 @@
 				</div>
 			</ng-container>
 		</div>
+
 		<div class="empty:hidden">
 			<ng-content></ng-content>
 		</div>

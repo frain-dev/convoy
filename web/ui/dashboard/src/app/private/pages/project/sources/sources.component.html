@@ -28,63 +28,63 @@
 </div>
 
 <ng-container *ngIf="!isLoadingSources && sources?.content?.length">
-	<div class="min-h-[70vh]">
-		<div class="flex flex-wrap gap-24px">
-			<ng-container *ngFor="let source of sources?.content; let i = index">
-				<convoy-card [id]="'source' + i" hover="true" class="w-full max-w-[348px] cursor-pointer py-20px">
-					<ng-container *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
-						<div class="flex items-center justify-between px-24px">
-							<div class="flex items-center" [routerLink]="['./']" [queryParams]="{ id: source.uid }">
-								<img [src]="'assets/img/' + source.pub_sub.type + '.png'" alt="icon" class="mr-12px" />
-								<div>
-									<p class="text-10 text-grey-40 capitalize mb-4px">{{ source.pub_sub.type | sourceValue: 'pub_sub' }}</p>
-									<p class="text-14 font-medium">{{ source.name }}</p>
-								</div>
+	<div class="flex flex-wrap gap-24px">
+		<ng-container *ngFor="let source of sources?.content; let i = index">
+			<convoy-card [id]="'source' + i" hover="true" class="w-full max-w-[348px] cursor-pointer py-20px">
+				<!-- outgoing project sources -->
+				<ng-container *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
+					<div class="flex items-center justify-between px-24px">
+						<div class="flex items-center" [routerLink]="['./']" [queryParams]="{ id: source.uid }">
+							<img [src]="'assets/img/' + source.pub_sub.type + '.png'" alt="icon" class="mr-12px" />
+							<div>
+								<p class="text-10 text-grey-40 capitalize mb-4px">{{ source.pub_sub.type | sourceValue: 'pub_sub' }}</p>
+								<p class="text-14 font-medium">{{ source.name }}</p>
 							</div>
+						</div>
 
-							<div convoy-dropdown position="right" size="sm" class="ml-4px">
-								<button dropdownTrigger convoy-button size="sm" fill="clear" class="!p-0">
-									<img src="assets/img/more-icon-vertical.svg" class="h-5" alt="more icon" />
-								</button>
-								<ul dropdownOptions>
-									<li class="border-b border-grey-20">
-										<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start" [routerLink]="'./' + source?.uid">
-											<svg width="16" height="16" class="mr-8px fill-primary-100">
-												<use xlink:href="#edit-icon"></use>
-											</svg>
-											Edit
-										</button>
-									</li>
-									<li>
-										<button convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="activeSource = source; showDeleteSourceModal = true">
-											<svg width="16" height="16" class="mr-8px fill-danger-100">
-												<use xlink:href="#delete-icon"></use>
-											</svg>
-											Delete
-										</button>
-									</li>
-								</ul>
-							</div>
+						<div convoy-dropdown position="right" size="sm" class="ml-4px">
+							<button dropdownTrigger convoy-button size="sm" fill="clear" class="!p-0">
+								<img src="assets/img/more-icon-vertical.svg" class="h-5" alt="more icon" />
+							</button>
+							<ul dropdownOptions>
+								<li class="border-b border-grey-20">
+									<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start" [routerLink]="'./' + source?.uid">
+										<svg width="16" height="16" class="mr-8px fill-primary-100">
+											<use xlink:href="#edit-icon"></use>
+										</svg>
+										Edit
+									</button>
+								</li>
+								<li>
+									<button convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="activeSource = source; showDeleteSourceModal = true">
+										<svg width="16" height="16" class="mr-8px fill-danger-100">
+											<use xlink:href="#delete-icon"></use>
+										</svg>
+										Delete
+									</button>
+								</li>
+							</ul>
 						</div>
-					</ng-container>
+					</div>
+				</ng-container>
 
-					<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
-						<div class="px-24px pb-12px border-b border-b-grey-10" [routerLink]="['./']" [queryParams]="{ id: source.uid }">
-							<div class="text-grey-40 text-10 mb-4px">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</div>
-							<div class="flex justify-between items-center">
-								<div class="text-14 font-medium">{{ source.name }}</div>
-								<svg width="18" height="18" class="fill-grey-60">
-									<use xlink:href="#arrow-right-icon"></use>
-								</svg>
-							</div>
+				<!-- incoming project sources -->
+				<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
+					<div class="px-24px pb-12px border-b border-b-grey-10" [routerLink]="['./']" [queryParams]="{ id: source.uid }">
+						<div class="text-grey-40 text-10 mb-4px">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</div>
+						<div class="flex justify-between items-center">
+							<div class="text-14 font-medium">{{ source.name }}</div>
+							<svg width="18" height="18" class="fill-grey-60">
+								<use xlink:href="#arrow-right-icon"></use>
+							</svg>
 						</div>
-						<div class="mt-12px mx-24px">
-							<convoy-copy-button [text]="source.url" size="md" className="ml-2px" [notificationText]="source.name + ' URL has been copied to clipboard'"><span class="text-14 ml-8px font-medium">Copy URL</span></convoy-copy-button>
-						</div>
-					</ng-container>
-				</convoy-card>
-			</ng-container>
-		</div>
+					</div>
+					<div class="mt-12px mx-24px">
+						<convoy-copy-button [text]="source.url" size="md" className="ml-2px" [notificationText]="source.name + ' URL has been copied to clipboard'"><span class="text-14 ml-8px font-medium">Copy URL</span></convoy-copy-button>
+					</div>
+				</ng-container>
+			</convoy-card>
+		</ng-container>
 	</div>
 </ng-container>
 
@@ -97,7 +97,7 @@
 	*ngIf="!isLoadingSources && sources?.content?.length == 0"
 ></convoy-empty-state>
 
-<div convoy-modal *ngIf="activeSource?.uid" position="right" [id]="'source-details'" [title]="activeSource?.name || 'Source Details'" (closeModal)="closeModal()">
+<div convoy-modal *ngIf="showSourceDetails" position="right" [id]="'source-details'" [title]="activeSource?.name || 'Source Details'" (closeModal)="closeModal()">
 	<ng-container modalBody>
 		<ul>
 			<li convoy-list-item>
@@ -179,7 +179,7 @@
 					<use xlink:href="#delete-icon"></use>
 				</svg>
 			</button>
-			<button convoy-button size="sm" class="ml-24px" [routerLink]="'./sources/' + activeSource?.uid">
+			<button convoy-button size="sm" class="ml-24px" [routerLink]="'./' + activeSource?.uid">
 				Edit
 				<svg width="18" height="18" class="ml-8px fill-white-100">
 					<use xlink:href="#edit-icon"></use>
@@ -193,99 +193,6 @@
 	<ng-container modalBody>
 		<convoy-create-source showAction="true" (onAction)="closeCreateSourceModal($event)" [action]="shouldShowUpdateSourceModal ? 'update' : 'create'"></convoy-create-source>
 	</ng-container>
-</div>
-
-<div convoy-modal position="right" [title]="activeSource?.name || ''" *ngIf="activeSource?.uid && privateService.activeProjectDetails?.type === 'incoming'" (closeModal)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails?.uid + '/sources')">
-	<div>
-		<ul class="mt-20px">
-			<li convoy-list-item>
-				<div class="w-1/2 text-14 font-medium ml-8px">Source type</div>
-				<div class="w-1/2 text-14 font-medium text-grey-40 text-right capitalize mr-8px">{{ activeSource?.type || '' | sourceValue: 'sourceType' }}</div>
-			</li>
-
-			<li convoy-list-item>
-				<div class="w-1/2 text-14 font-medium ml-8px">Ingester Type</div>
-				<div class="w-1/2 text-14 font-medium text-grey-40 text-right capitalize mr-8px">{{ activeSource?.verifier?.type ?? '' | sourceValue: 'verifier' }}</div>
-			</li>
-
-			<li convoy-list-item *ngIf="activeSource?.provider !== ''">
-				<div class="w-1/2 text-14 font-medium ml-8px">Provider</div>
-				<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-8px capitalize">{{ activeSource?.provider }}</div>
-			</li>
-
-			<ng-container *ngIf="activeSource?.verifier?.type == 'hmac'">
-				<li convoy-list-item>
-					<div class="w-1/2 text-14 font-medium ml-8px">Encoding</div>
-					<div class="w-1/2 text-14 font-medium text-grey-40 text-right uppercase mr-8px">{{ activeSource?.verifier?.hmac?.encoding }}</div>
-				</li>
-				<li convoy-list-item>
-					<div class="w-1/2 text-14 font-medium ml-8px">Algorithm</div>
-					<div class="w-1/2 text-14 font-medium text-grey-40 text-right uppercase mr-8px">{{ activeSource?.verifier?.hmac?.hash }}</div>
-				</li>
-				<li convoy-list-item>
-					<div class="w-1/2 text-14 font-medium ml-8px">Signature header</div>
-					<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-8px">{{ activeSource?.verifier?.hmac?.header }}</div>
-				</li>
-				<li convoy-list-item>
-					<div class="w-1/2 text-14 font-medium ml-8px">Signing secret</div>
-					<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-8px flex justify-end">
-						*******
-						<convoy-copy-button [text]="activeSource?.verifier?.hmac?.secret || ''" size="md" className="ml-2px" notificationText="Signing secret has been copied to clipboard"></convoy-copy-button>
-					</div>
-				</li>
-				<ng-container *ngIf="activeSource?.provider === 'twitter' && isDateBefore(activeSource?.provider_config?.twitter?.crc_verified_at, activeSource?.created_at)">
-					<li convoy-list-item>
-						<div class="w-1/2 text-14 font-medium ml-8px">Last verified</div>
-						<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-8px">{{ activeSource?.provider_config?.twitter?.crc_verified_at | date: 'medium' }}</div>
-					</li>
-				</ng-container>
-			</ng-container>
-
-			<ng-container *ngIf="activeSource?.verifier?.type == 'basic_auth'">
-				<li convoy-list-item>
-					<div class="w-1/2 text-14 font-medium ml-8px">Username</div>
-					<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-8px">{{ activeSource?.verifier?.basic_auth?.username }}</div>
-				</li>
-				<li convoy-list-item>
-					<div class="w-1/2 text-14 font-medium ml-8px">Password</div>
-					<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-8px flex justify-end">
-						*******
-						<convoy-copy-button [text]="activeSource?.verifier?.basic_auth?.password || ''" size="md" className="ml-2px" notificationText="Password has been copied to clipboard"></convoy-copy-button>
-					</div>
-				</li>
-			</ng-container>
-
-			<ng-container *ngIf="activeSource?.verifier?.type == 'api_key'">
-				<li convoy-list-item>
-					<div class="w-1/2 text-14 font-medium ml-8px">API Key Header</div>
-					<div class="w-1/2 text-14 font-medium text-grey-40 text-right mr-8px">{{ activeSource?.verifier?.api_key?.header_name }}</div>
-				</li>
-				<li convoy-list-item>
-					<div class="w-1/2 text-14 font-medium ml-8px">API Key</div>
-					<div class="w-1/2 text-14 font-medium text-grey-40 text-right flex items-center justify-end mr-8px">
-						*******
-						<convoy-copy-button [text]="activeSource?.verifier?.api_key?.header_value || ''" notificationText="Api Key has been copied to clipboard" className="ml-4px"></convoy-copy-button>
-					</div>
-				</li>
-			</ng-container>
-		</ul>
-
-		<div class="flex justify-end mt-40px mr-24px">
-			<button convoy-button fill="outline" color="danger" size="sm" (click)="showDeleteSourceModal = true">
-				Delete Source
-				<svg width="18" height="18" class="ml-8px fill-danger-100">
-					<use xlink:href="#delete-icon"></use>
-				</svg>
-			</button>
-
-			<button convoy-button size="sm" class="ml-24px" [routerLink]="'./' + activeSource?.uid">
-				Edit Source
-				<svg width="18" height="18" class="ml-8px fill-white-100">
-					<use xlink:href="#edit-icon"></use>
-				</svg>
-			</button>
-		</div>
-	</div>
 </div>
 
 <app-delete-modal *ngIf="showDeleteSourceModal" [isLoading]="isDeletingSource" [deleteText]="'delete “' + activeSource?.name + '”'" (closeModal)="showDeleteSourceModal = false" (deleteData)="deleteSource()"></app-delete-modal>
