@@ -1,7 +1,7 @@
 <form class="pb-40px relative" [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()">
 	<convoy-loader *ngIf="isLoadingForm"></convoy-loader>
 
-	<convoy-card className="px-24px py-24px mb-70px relative">
+	<convoy-card className="px-24px py-24px mb-40px relative">
 		<convoy-input-field>
 			<label for="subscription-name" required="true" convoy-label>Subscription name</label>
 			<input type="text" id="subscription-name" convoy-input autocomplete="subscription-name" formControlName="name" placeholder="e.g paystack-live" />
