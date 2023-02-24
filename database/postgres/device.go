@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
@@ -56,15 +57,12 @@ const (
 
 	fetchDevicesPaginated = `
 	SELECT count(*) OVER(), * FROM convoy.devices
-	WHERE project_id = $3 AND (endpoint_id = $4 OR $4 = '') AND deleted_at IS NULL
-	ORDER BY id LIMIT $1 OFFSET $2;
+	WHERE deleted_at IS NULL
+	%s
+	ORDER BY id LIMIT :limit OFFSET :offset;
 	`
 
-	fetchDevicesPaginatedFilterByEndpoints = `
-	SELECT count(*) as count OVER(), * FROM convoy.devices
-	WHERE endpoint_id IN (?) AND project_id =? AND deleted_at IS NULL
-	ORDER BY id LIMIT ? OFFSET ?;
-	`
+	baseDevicesFilter = `AND project_id = :project_id AND (endpoint_id = :endpoint_id OR :endpoint_id = '' )`
 )
 
 type deviceRepo struct {
@@ -198,16 +196,36 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, projectID string, fil
 	var args []interface{}
 	var err error
 
+	arg := map[string]interface{}{
+		"project_id":   projectID,
+		"endpoint_id":  filter.EndpointID,
+		"endpoint_ids": filter.EndpointIDs,
+		"limit":        pageable.Limit(),
+		"offset":       pageable.Offset(),
+	}
+
 	if len(filter.EndpointIDs) > 0 {
-		query, args, err = sqlx.In(fetchDevicesPaginatedFilterByEndpoints, filter.EndpointIDs, projectID, pageable.Limit(), pageable.Offset())
+		filterQuery := `AND endpoint_id IN (:endpoint_ids) ` + baseDevicesFilter
+		query = fmt.Sprintf(fetchDevicesPaginated, filterQuery)
+		query, args, err = sqlx.Named(query, arg)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		query, args, err = sqlx.In(query, args...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 
 		query = d.db.Rebind(query)
 	} else {
-		query = fetchDevicesPaginated
-		args = []interface{}{pageable.Limit(), pageable.Offset(), projectID, filter.EndpointID}
+		query = fmt.Sprintf(fetchDevicesPaginated, baseDevicesFilter)
+		query, args, err = sqlx.Named(query, arg)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		query = d.db.Rebind(query)
 	}
 
 	rows, err := d.db.QueryxContext(ctx, query, args...)
