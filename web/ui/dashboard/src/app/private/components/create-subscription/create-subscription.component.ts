@@ -48,6 +48,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	showCreateEndpointForm = false;
 	enableMoreConfig = false;
 	showFilterForm = false;
+	configSetting = this.route.snapshot.queryParams.configSetting;
 	retryLogicTypes = [
 		{ uid: 'linear', name: 'Linear time retry' },
 		{ uid: 'exponential', name: 'Exponential time backoff' }
@@ -82,6 +83,12 @@ export class CreateSubscriptionComponent implements OnInit {
 			this.subscriptionForm.get('source_id')?.updateValueAndValidity();
 			this.configurations.splice(2, 1);
 		}
+
+		if (this.configSetting) this.toggleConfigForm(this.configSetting);
+	}
+
+	toggleConfig(configValue: string) {
+		this.action === 'view' ? this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions/' + this.subscriptionId], { queryParams: { configSetting: configValue } }) : this.toggleConfigForm(configValue);
 	}
 
 	toggleConfigForm(configValue: string) {
@@ -271,7 +278,6 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	setupFilter() {
-		if (this.action === 'view') this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions/' + this.subscriptionId);
 		document.getElementById(this.showAction === 'true' ? 'subscriptionForm' : 'configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
 		this.showFilterForm = true;
 	}
