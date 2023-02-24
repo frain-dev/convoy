@@ -151,20 +151,25 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 		return err
 	}
 
+	rc := project.Config.GetRetentionPolicyConfig()
+	rlc := project.Config.GetRateLimitConfig()
+	sc := project.Config.GetStrategyConfig()
+	sgc := project.Config.GetSignatureConfig()
+
 	configID := ulid.Make().String()
 	result, err := tx.ExecContext(ctx, createProjectConfiguration,
 		configID,
-		project.Config.RetentionPolicy.Policy,
+		rc.Policy,
 		project.Config.MaxIngestSize,
 		project.Config.ReplayAttacks,
 		project.Config.IsRetentionPolicyEnabled,
-		project.Config.RateLimit.Count,
-		project.Config.RateLimit.Duration,
-		project.Config.Strategy.Type,
-		project.Config.Strategy.Duration,
-		project.Config.Strategy.RetryCount,
-		project.Config.Signature.Header,
-		project.Config.Signature.Versions,
+		rlc.Count,
+		rlc.Duration,
+		sc.Type,
+		sc.Duration,
+		sc.RetryCount,
+		sgc.Header,
+		sgc.Versions,
 	)
 	if err != nil {
 		return err

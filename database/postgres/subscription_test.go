@@ -43,7 +43,7 @@ func generateSubscription(project *datastore.Project, source *datastore.Source, 
 	}
 }
 
-func seedSubscription(t *testing.T, db *sqlx.DB, project *datastore.Project, source *datastore.Source, endpoint *datastore.Endpoint, device *datastore.Device) *datastore.Subscription {
+func seedSubscription(t *testing.T, db database.Database, project *datastore.Project, source *datastore.Source, endpoint *datastore.Endpoint, device *datastore.Device) *datastore.Subscription {
 	s := generateSubscription(project, source, endpoint, device)
 	require.NoError(t, NewSubscriptionRepo(db).CreateSubscription(context.Background(), project.UID, s))
 	return s

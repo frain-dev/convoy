@@ -423,6 +423,34 @@ type ProjectConfig struct {
 	Signature                *SignatureConfiguration       `json:"signature" db:"signature"`
 }
 
+func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {
+	if p.RateLimit != nil {
+		return *p.RateLimit
+	}
+	return RateLimitConfiguration{}
+}
+
+func (p *ProjectConfig) GetStrategyConfig() StrategyConfiguration {
+	if p.Strategy != nil {
+		return *p.Strategy
+	}
+	return StrategyConfiguration{}
+}
+
+func (p *ProjectConfig) GetSignatureConfig() SignatureConfiguration {
+	if p.Signature != nil {
+		return *p.Signature
+	}
+	return SignatureConfiguration{}
+}
+
+func (p *ProjectConfig) GetRetentionPolicyConfig() RetentionPolicyConfiguration {
+	if p.RetentionPolicy != nil {
+		return *p.RetentionPolicy
+	}
+	return RetentionPolicyConfiguration{}
+}
+
 type RateLimitConfiguration struct {
 	Count    int    `json:"count" db:"count"`
 	Duration uint64 `json:"duration" db:"duration"`
