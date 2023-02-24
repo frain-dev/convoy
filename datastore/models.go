@@ -78,6 +78,7 @@ type (
 	EncodingType     string
 	StorageType      string
 	KeyType          string
+	PubSubType       string
 )
 
 type EndpointAuthenticationType string
@@ -768,10 +769,56 @@ type Source struct {
 	Verifier       *VerifierConfig `json:"verifier" db:"verifier"`
 	ProviderConfig *ProviderConfig `json:"provider_config" db:"provider_config"`
 	ForwardHeaders pq.StringArray  `json:"forward_headers" db:"forward_headers"`
+	PubSub         *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+type PubSubConfig struct {
+	Type    PubSubType          `json:"type" db:"type"`
+	Workers int                 `json:"workers" db:"workers"`
+	Sqs     *SQSPubSubConfig    `json:"sqs" db:"sqs"`
+	Google  *GooglePubSubConfig `json:"google" db:"google"`
+}
+
+func (p *PubSubConfig) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	var ps PubSubConfig
+	err := json.Unmarshal(b, &ps)
+	if err != nil {
+		return err
+	}
+
+	*p = ps
+	return nil
+}
+
+func (p PubSubConfig) Value() (driver.Value, error) {
+	b, err := json.Marshal(p)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+type SQSPubSubConfig struct {
+	AccessKeyID   string `json:"access_key_id" db:"access_key_id"`
+	SecretKey     string `json:"secret_key" db:"secret_key"`
+	DefaultRegion string `json:"default_region" db:"default_region"`
+	QueueName     string `json:"queue_name" db:"queue_name"`
+}
+
+type GooglePubSubConfig struct {
+	SubscriptionID string `json:"subscription_id" db:"subscription_id"`
+	ServiceAccount []byte `json:"service_account" db:"service_account"`
+	ProjectID      string `json:"project_id" db:"project_id"`
 }
 
 type User struct {
