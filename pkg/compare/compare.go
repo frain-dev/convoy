@@ -77,15 +77,15 @@ func compare(payload map[string]interface{}, filter map[string]interface{}) bool
 }
 
 func gte(payload, filter interface{}) bool {
-	p, ok := payload.(float64)
+	p, ok := toFloat64(payload)
 	if !ok {
-		fmt.Printf("payload %f is not a valid number\n", payload)
+		fmt.Printf("payload %v is not a valid number\n", payload)
 		return false
 	}
 
-	f, ok := filter.(float64)
+	f, ok := toFloat64(filter)
 	if !ok {
-		fmt.Printf("filter %f is not a valid number\n", filter)
+		fmt.Printf("filter %v is not a valid number\n", filter)
 		return false
 	}
 
@@ -93,15 +93,15 @@ func gte(payload, filter interface{}) bool {
 }
 
 func gt(payload, filter interface{}) bool {
-	p, ok := payload.(float64)
+	p, ok := toFloat64(payload)
 	if !ok {
-		fmt.Printf("payload %f is not a valid number\n", payload)
+		fmt.Printf("payload %v is not a valid number\n", payload)
 		return false
 	}
 
-	f, ok := filter.(float64)
+	f, ok := toFloat64(filter)
 	if !ok {
-		fmt.Printf("filter %f is not a valid number\n", filter)
+		fmt.Printf("filter %v is not a valid number\n", filter)
 		return false
 	}
 
@@ -161,20 +161,22 @@ func nin(payload, filter interface{}) bool {
 
 // eq checks whether x, y are deeply eq
 func eq(x, y interface{}) bool {
-	// if the y value is numeric (int/int8-int64/float32/float64) then convert to float64
-	if fv, ok := toFloat64(y); ok {
-		y = fv
+	// if the x value is numeric (int/int8-int64/float32/float64) then convert to float64
+	if fx, ok := toFloat64(x); ok {
+		x = fx
 	}
+
+	// if the y value is numeric (int/int8-int64/float32/float64) then convert to float64
+	if fy, ok := toFloat64(y); ok {
+		y = fy
+	}
+
 	return reflect.DeepEqual(x, y)
 }
 
 // eq checks whether x, y are deeply eq
 func neq(x, y interface{}) bool {
-	// if the y value is numeric (int/int8-int64/float32/float64) then convert to float64
-	if fv, ok := toFloat64(y); ok {
-		y = fv
-	}
-	return reflect.DeepEqual(x, y)
+	return !eq(x, y)
 }
 
 func or(payload, filter interface{}) bool {
