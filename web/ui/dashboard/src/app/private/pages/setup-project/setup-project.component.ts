@@ -63,18 +63,19 @@ export class SetupProjectComponent implements OnInit {
 	}
 
 	async saveProjectConfig() {
-		const [sourceDetails, endpointDetails] = await Promise.allSettled([!this.createSourceForm.sourceCreated ? this.createSourceForm.saveSource() : false, !this.createEndpointForm.endpointCreated ? this.createEndpointForm.saveEndpoint() : false]);
+		const [sourceDetails, endpointDetails] = await Promise.allSettled([this.createSourceForm && !this.createSourceForm?.sourceCreated ? this.createSourceForm.saveSource() : false, !this.createEndpointForm.endpointCreated ? this.createEndpointForm.saveEndpoint() : false]);
 
 		if (this.projectType === 'incoming' && sourceDetails.status === 'fulfilled' && typeof sourceDetails.value !== 'boolean') {
 			this.newSource = sourceDetails.value?.data;
 			this.subscriptionService.subscriptionData = { source_id: sourceDetails.value?.data.uid };
 		}
+
 		if (endpointDetails.status === 'fulfilled' && typeof endpointDetails.value !== 'boolean') {
 			this.newEndpoint = endpointDetails.value?.data;
 			this.subscriptionService.subscriptionData = { ...this.subscriptionService.subscriptionData, endpoint_id: endpointDetails.value?.data.uid };
 		}
 
-		if (this.automaticSubscription) this.subscriptionService.subscriptionData = { ...this.subscriptionService.subscriptionData, name: `${this.newEndpoint.title}${this.newSource ? ' - ' + this.newSource.name : ''}` };
+		if (this.automaticSubscription) this.subscriptionService.subscriptionData = { ...this.subscriptionService.subscriptionData, name: `${this.newEndpoint.title}${this.newSource ? ' - ' + this.newSource.name : ''}'s Subscription` };
 		await this.createSubscriptionForm.saveSubscription();
 	}
 }
