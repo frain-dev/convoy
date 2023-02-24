@@ -70,6 +70,9 @@ jobs:
 
             - name: Migrate Postgres
               run: go run ./cmd migrate up
+              env:
+                  CONVOY_DB_DSN: "postgres://admin:password@localhost:5432/convoy?sslmode=disable"
+                  CONVOY_REDIS_DSN: "redis://localhost:6379"
 
             - name: Run integration tests
               run: make integration_tests
