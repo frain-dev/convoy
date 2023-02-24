@@ -79,10 +79,10 @@ const (
 	FROM table_count, convoy.api_keys
 	WHERE deleted_at IS NULL
 	%s
-	ORDER BY id LIMIT ? OFFSET ?;
+	ORDER BY id LIMIT :limit OFFSET :offset;
 	`
 
-	baseFilter = `AND (role_project = ? OR ? = '') AND (role_endpoint = ? OR ? = '') AND (user_id = ? OR ? = '') AND (key_type = ? OR ? = '')`
+	baseFilter = `AND (role_project = :project_id OR :project_id = '') AND (role_endpoint = :endpoint_id OR :endpoint_id = '') AND (user_id = :user_id OR :user_id = '') AND (key_type = :key_type OR :key_type = '')`
 )
 
 var (
@@ -214,23 +214,36 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 	var err error
 	var args []interface{}
 
+	arg := map[string]interface{}{
+		"endpoint_ids": filter.EndpointIDs,
+		"project_id":   filter.ProjectID,
+		"endpoint_id":  filter.EndpointID,
+		"user_id":      filter.UserID,
+		"key_type":     filter.KeyType,
+		"limit":        pageable.Limit(),
+		"offset":       pageable.Offset(),
+	}
+
 	if len(filter.EndpointIDs) > 0 {
-		filterQuery := `AND role_endpoint IN (?) ` + baseFilter
+		filterQuery := `AND role_endpoint IN (:endpoint_ids) ` + baseFilter
 		q := fmt.Sprintf(baseAPIKeysCount, filterQuery) + fmt.Sprintf(fetchAPIKeysPaginated, filterQuery)
-		args = []interface{}{filter.EndpointIDs, filter.ProjectID, filter.ProjectID, filter.EndpointID, filter.EndpointID, filter.UserID, filter.UserID, filter.KeyType, filter.KeyType}
-		args = append(args, args...)
-		args = append(args, pageable.Limit(), pageable.Offset())
-		query, args, err = sqlx.In(q, args...)
+		query, args, err = sqlx.Named(q, arg)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		query, args, err = sqlx.In(query, args...)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		query = a.db.Rebind(query)
+	} else {
+		q := fmt.Sprintf(baseAPIKeysCount, baseFilter) + fmt.Sprintf(fetchAPIKeysPaginated, baseFilter)
+		query, args, err = sqlx.Named(q, arg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 		query = a.db.Rebind(query)
-	} else {
-		q := fmt.Sprintf(baseAPIKeysCount, baseFilter) + fmt.Sprintf(fetchAPIKeysPaginated, baseFilter)
-		query = a.db.Rebind(q)
-		args = []interface{}{filter.ProjectID, filter.ProjectID, filter.EndpointID, filter.EndpointID, filter.UserID, filter.UserID, filter.KeyType, filter.KeyType}
-		args = append(args, args...)
-		args = append(args, pageable.Limit(), pageable.Offset())
 	}
 
 	rows, err := a.db.QueryxContext(ctx, query, args...)
