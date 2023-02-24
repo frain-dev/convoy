@@ -17,13 +17,12 @@ import (
 
 var (
 	ErrEventNotCreated = errors.New("event could not be created")
-	ErrEventNotFound   = errors.New("event not found")
 )
 
 const (
 	createEvent = `
-	INSERT INTO convoy.events (id, event_type, project_id, source_id, headers, raw, data)
-	VALUES ($1, $2, $3, $4, $5, $6, $7)
+	INSERT INTO convoy.events (id, event_type, endpoints, project_id, source_id, headers, raw, data)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 
 	createEventEndpoints = `
@@ -31,11 +30,15 @@ const (
 	`
 
 	fetchEventById = `
-	SELECT * from convoy.events WHERE id = $1 AND deleted_at is NULL;
+	SELECT id, event_type, endpoints, project_id, 
+	COALESCE(source_id, '') AS source_id, headers, raw, data
+	FROM convoy.events WHERE id = $1 AND deleted_at is NULL;
 	`
 
 	fetchEventsByIds = `
-	SELECT * from convoy.events WHERE id IN (?) AND deleted_at IS NULL;
+	SELECT id, event_type, endpoints, project_id, 
+	COALESCE(source_id, '') AS source_id, headers, raw, data
+	FROM convoy.events WHERE id IN (?) AND deleted_at IS NULL;
 	`
 
 	countProjectMessages = `
@@ -72,13 +75,10 @@ const (
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
 	WHERE ev.deleted_at IS NULL
 	%s
+	LIMIT :limit OFFSET :offset
 	`
 
-	filterWithEndpoints = `AND ee.endpoint_id IN (?) AND (ev.project_id = ? OR ? = '') AND (ev.source_id = ? OR ? = '') AND ev.created_at >= ? AND ev.created_at <= ?`
-
-	filterWithoutEndpoints = `AND (ev.project_id = ? OR ? = '') AND (ev.source_id = ? OR ? = '') AND ev.created_at >= ? AND ev.created_at <= ?`
-
-	paginateQuery = `LIMIT ? OFFSET ?`
+	baseEventFilter = `AND (ev.project_id = :project_id OR :project_id = '') AND (ev.source_id = :source_id OR :source_id = '') AND ev.created_at >= :start_date AND ev.created_at <= :end_date`
 
 	softDeleteProjectEvents = `
 	UPDATE convoy.events SET deleted_at = now()
@@ -114,6 +114,7 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 	_, err = tx.ExecContext(ctx, createEvent,
 		event.UID,
 		event.EventType,
+		event.Endpoints,
 		event.ProjectID,
 		sourceID,
 		event.Headers,
@@ -145,7 +146,7 @@ func (e *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.Ev
 	err := e.db.QueryRowxContext(ctx, fetchEventById, id).StructScan(event)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrEventNotFound
+			return nil, datastore.ErrEventNotFound
 		}
 
 		return nil, err
@@ -222,24 +223,38 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 		filter.EndpointIDs = append(filter.EndpointIDs, filter.EndpointID)
 	}
 
-	if len(filter.EndpointIDs) > 0 {
-		q := fmt.Sprintf(baseEventsCount, filterWithEndpoints) + fmt.Sprintf(baseEventsPaged, filterWithEndpoints) + paginateQuery
-		args = []interface{}{filter.EndpointIDs, projectID, projectID, filter.SourceID, filter.SourceID, startDate, endDate}
-		args = append(args, args...)
-		args = append(args, filter.Pageable.Limit(), filter.Pageable.Offset())
+	arg := map[string]interface{}{
+		"endpoint_ids": filter.EndpointIDs,
+		"project_id":   projectID,
+		"source_id":    filter.SourceID,
+		"start_date":   startDate,
+		"end_date":     endDate,
+		"limit":        filter.Pageable.Limit(),
+		"offset":       filter.Pageable.Offset(),
+	}
 
-		query, args, err = sqlx.In(q, args...)
+	if len(filter.EndpointIDs) > 0 {
+		filterQuery := `AND ee.endpoint_id IN (:endpoint_ids) ` + baseEventFilter
+		q := fmt.Sprintf(baseEventsCount, filterQuery) + fmt.Sprintf(baseEventsPaged, filterQuery)
+		query, args, err = sqlx.Named(q, arg)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		query, args, err = sqlx.In(query, args...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 
 		query = e.db.Rebind(query)
+
 	} else {
-		q := fmt.Sprintf(baseEventsCount, filterWithoutEndpoints) + fmt.Sprintf(baseEventsPaged, filterWithoutEndpoints) + paginateQuery
-		query = e.db.Rebind(q)
-		args = []interface{}{projectID, projectID, filter.SourceID, filter.SourceID, startDate, endDate}
-		args = append(args, args...)
-		args = append(args, filter.Pageable.Limit(), filter.Pageable.Offset())
+		q := fmt.Sprintf(baseEventsCount, baseEventFilter) + fmt.Sprintf(baseEventsPaged, baseEventFilter)
+		query, args, err = sqlx.Named(q, arg)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		query = e.db.Rebind(query)
 	}
 
 	rows, err := e.db.QueryxContext(ctx, query, args...)
