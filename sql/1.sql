@@ -300,6 +300,7 @@ CREATE TABLE IF NOT EXISTS convoy.events (
 	id CHAR(26) PRIMARY KEY,
 
 	event_type TEXT NOT NULL,
+	endpoints TEXT,
 
 	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
 	source_id CHAR(26) REFERENCES convoy.sources (id),
@@ -315,8 +316,8 @@ CREATE TABLE IF NOT EXISTS convoy.events (
 );
 
 CREATE TABLE IF NOT EXISTS convoy.events_endpoints (
-	event_id CHAR(26) NOT NULL REFERENCES convoy.events (id),
-	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id)
+	event_id CHAR(26) NOT NULL REFERENCES convoy.events (id) ON DELETE CASCADE,
+	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS convoy.event_deliveries (

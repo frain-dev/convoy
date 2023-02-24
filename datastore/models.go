@@ -523,7 +523,7 @@ type Event struct {
 	SourceID         string                `json:"source_id,omitempty" db:"source_id"`
 	AppID            string                `json:"app_id,omitempty" db:"app_id"` // Deprecated
 	ProjectID        string                `json:"project_id,omitempty" db:"project_id"`
-	Endpoints        []string              `json:"endpoints" db:"endpoints"`
+	Endpoints        pq.StringArray        `json:"endpoints" db:"endpoints"`
 	Headers          httpheader.HTTPHeader `json:"headers" db:"headers"`
 	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Source           *Source               `json:"source_metadata,omitempty" db:"source_metadata"`
