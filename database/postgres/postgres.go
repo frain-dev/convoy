@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"time"
@@ -33,35 +32,6 @@ func NewDB(cfg config.Configuration) (*Postgres, error) {
 
 func (p *Postgres) GetDB() *sqlx.DB {
 	return p.dbx
-}
-
-func (p *Postgres) truncateTables() error {
-	tables := `
-		convoy.event_deliveries,
-		convoy.events,
-		convoy.api_keys,
-		convoy.subscriptions,
-		convoy.source_verifiers,
-		convoy.sources,
-		convoy.configurations,
-		convoy.devices,
-		convoy.portal_links,
-		convoy.organisation_invites,
-		convoy.applications,
-        convoy.endpoints,
-		convoy.projects,
-		convoy.project_configurations,
-		convoy.organisation_members,
-		convoy.organisations,
-		convoy.users
-	`
-
-	_, err := p.dbx.ExecContext(context.Background(), fmt.Sprintf("TRUNCATE %s CASCADE;", tables))
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // getPrevPage returns calculated value for the prev page
