@@ -123,7 +123,10 @@ func Test_DeleteSource(t *testing.T) {
 		RetryConfig: &datastore.DefaultRetryConfig,
 		FilterConfig: &datastore.FilterConfiguration{
 			EventTypes: []string{"*"},
-			Filter:     datastore.FilterSchema{},
+			Filter: datastore.FilterSchema{
+				Headers: datastore.M{},
+				Body:    datastore.M{},
+			},
 		},
 		RateLimitConfig: &datastore.DefaultRateLimitConfig,
 	}
@@ -266,4 +269,11 @@ func generateSource(t *testing.T, db *sqlx.DB) *datastore.Source {
 			BasicAuth: &datastore.BasicAuth{},
 		},
 	}
+}
+
+func seedSource(t *testing.T, db *sqlx.DB) *datastore.Source {
+	source := generateSource(t, db)
+
+	require.NoError(t, NewSourceRepo(db).CreateSource(context.Background(), source))
+	return source
 }

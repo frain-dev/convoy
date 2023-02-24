@@ -269,7 +269,7 @@ func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, proje
 	return subscription, nil
 }
 
-func (s *subscriptionRepo) FindSubscriptionsBySourceIDs(ctx context.Context, projectID string, sourceId string) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, projectID string, sourceId string) ([]datastore.Subscription, error) {
 	ctx = s.setCollectionInContext(ctx)
 	filter := bson.M{"project_id": projectID, "source_id": sourceId}
 

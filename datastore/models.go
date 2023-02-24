@@ -740,7 +740,13 @@ func (s *Subscription) GetFilterConfig() FilterConfiguration {
 	if s.FilterConfig != nil {
 		return *s.FilterConfig
 	}
-	return FilterConfiguration{}
+	return FilterConfiguration{
+		EventTypes: []string{},
+		Filter: FilterSchema{
+			Headers: M{},
+			Body:    M{},
+		},
+	}
 }
 
 func (s *Subscription) GetRateLimitConfig() RateLimitConfiguration {
@@ -800,9 +806,37 @@ type FilterConfiguration struct {
 	Filter     FilterSchema   `json:"filter" db:"filter"`
 }
 
+type M map[string]interface{}
+
+func (h *M) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	return json.Unmarshal(b, h)
+}
+
+func (h M) Value() (driver.Value, error) {
+	if h == nil {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(h)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
 type FilterSchema struct {
-	Headers map[string]interface{} `json:"headers" db:"headers"`
-	Body    map[string]interface{} `json:"body" db:"body"`
+	Headers M `json:"headers" db:"headers"`
+	Body    M `json:"body" db:"body"`
 }
 
 type ProviderConfig struct {

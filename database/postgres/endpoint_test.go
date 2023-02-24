@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jmoiron/sqlx"
+
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/jaswdr/faker"
@@ -564,4 +566,14 @@ func generateEndpoint(project *datastore.Project) *datastore.Endpoint {
 			},
 		},
 	}
+}
+
+func seedEndpoint(t *testing.T, db *sqlx.DB) *datastore.Endpoint {
+	project := seedProject(t, db)
+	endpoint := generateEndpoint(project)
+
+	err := NewEndpointRepo(db).CreateEndpoint(context.Background(), endpoint, project.UID)
+	require.NoError(t, err)
+
+	return endpoint
 }

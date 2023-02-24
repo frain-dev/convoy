@@ -426,12 +426,10 @@
 			"datastore.FilterSchema": {
 				"properties": {
 					"body": {
-						"additionalProperties": true,
-						"type": "object"
+						"$ref": "#/components/schemas/datastore.M"
 					},
 					"headers": {
-						"additionalProperties": true,
-						"type": "object"
+						"$ref": "#/components/schemas/datastore.M"
 					}
 				},
 				"type": "object"
@@ -457,6 +455,10 @@
 				"additionalProperties": {
 					"type": "string"
 				},
+				"type": "object"
+			},
+			"datastore.M": {
+				"additionalProperties": true,
 				"type": "object"
 			},
 			"datastore.Metadata": {
@@ -759,7 +761,6 @@
 						"$ref": "#/components/schemas/datastore.SourceType"
 					},
 					"uid": {
-						"description": "ID             primitive.ObjectID `json:\"-\" bson:\"_id\"`",
 						"type": "string"
 					},
 					"updated_at": {

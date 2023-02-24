@@ -290,11 +290,9 @@ definitions:
   datastore.FilterSchema:
     properties:
       body:
-        additionalProperties: true
-        type: object
+        $ref: '#/definitions/datastore.M'
       headers:
-        additionalProperties: true
-        type: object
+        $ref: '#/definitions/datastore.M'
     type: object
   datastore.HMac:
     properties:
@@ -310,6 +308,9 @@ definitions:
   datastore.HttpHeader:
     additionalProperties:
       type: string
+    type: object
+  datastore.M:
+    additionalProperties: true
     type: object
   datastore.Metadata:
     properties:
@@ -511,7 +512,6 @@ definitions:
       type:
         $ref: '#/definitions/datastore.SourceType'
       uid:
-        description: ID             primitive.ObjectID `json:"-" bson:"_id"`
         type: string
       updated_at:
         type: string
