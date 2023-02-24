@@ -89,8 +89,8 @@ func generateEventDelivery(project *datastore.Project, endpoint *datastore.Endpo
 }
 
 func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
-	db, closeFn := getDB(t)
-	defer closeFn()
+	db, _ := getDB(t)
+	// defer closeFn()
 
 	source := seedSource(t, db)
 	project := seedProject(t, db)
@@ -104,7 +104,8 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
 	ids := []string{}
 	for i := 0; i < 8; i++ {
 		ed := generateEventDelivery(project, endpoint, event, device, sub)
-		if i == 1 || i == 4 || i == 5 {
+		ed.Headers["uid"] = []string{ulid.Make().String()}
+		if i == 0 || i == 1 || i == 5 {
 			edMap[ed.UID] = ed
 			ids = append(ids, ed.UID)
 		}
@@ -132,6 +133,7 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
 		ed.Metadata.NextSendTime = time.Time{}
 		dbEventDelivery.Metadata.NextSendTime = time.Time{}
 
+		require.Equal(t, ed.Headers, dbEventDelivery.Headers)
 		require.Equal(t, ed, dbEventDelivery)
 	}
 }
@@ -448,14 +450,19 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	dbEventDeliveries, _, err := edRepo.LoadEventDeliveriesPaged(context.Background(), project.UID, []string{endpoint.UID}, event.UID, []datastore.EventDeliveryStatus{datastore.SuccessEventStatus}, datastore.SearchParams{
-		CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
-		CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
-	}, datastore.Pageable{
-		Page:    1,
-		PerPage: 10,
-		Sort:    1,
-	})
+	dbEventDeliveries, _, err := edRepo.LoadEventDeliveriesPaged(
+		context.Background(), project.UID, []string{endpoint.UID}, event.UID,
+		[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus},
+		datastore.SearchParams{
+			CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
+			CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
+		},
+		datastore.Pageable{
+			Page:    1,
+			PerPage: 10,
+			Sort:    1,
+		},
+	)
 
 	require.NoError(t, err)
 	require.Equal(t, 8, len(dbEventDeliveries))

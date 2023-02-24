@@ -167,8 +167,8 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, ids []
 		return nil, err
 	}
 
-	var ed datastore.EventDelivery
 	for rows.Next() {
+		var ed datastore.EventDelivery
 		err = rows.StructScan(&ed)
 		if err != nil {
 			return nil, err
@@ -189,8 +189,8 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, ev
 		return nil, err
 	}
 
-	var ed datastore.EventDelivery
 	for rows.Next() {
+		var ed datastore.EventDelivery
 		err = rows.StructScan(&ed)
 		if err != nil {
 			return nil, err
@@ -278,8 +278,8 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, en
 		return nil, err
 	}
 
-	var ed datastore.EventDelivery
 	for rows.Next() {
+		var ed datastore.EventDelivery
 		err = rows.StructScan(&ed)
 		if err != nil {
 			return nil, err
@@ -422,8 +422,8 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		return nil, datastore.PaginationData{}, err
 	}
 
-	var ed EventDeliveryPaginated
 	for rows.Next() {
+		var ed EventDeliveryPaginated
 		err = rows.StructScan(&ed)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -548,8 +548,8 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, pr
 		return nil, err
 	}
 
-	var interval datastore.EventInterval
 	for rows.Next() {
+		var interval datastore.EventInterval
 		err = rows.StructScan(&interval)
 		if err != nil {
 			return nil, err
