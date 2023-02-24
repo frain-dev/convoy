@@ -179,6 +179,7 @@ func neq(x, y interface{}) bool {
 	return !eq(x, y)
 }
 
+// or evaluate matches across an array of conditions. The array of conditions can contain any other valid json schema.
 func or(payload, filter interface{}) bool {
 	check := false
 	f, ok := filter.([]interface{})
@@ -200,6 +201,7 @@ func or(payload, filter interface{}) bool {
 	return check
 }
 
+// and evaluate matches across an array of conditions. The array of conditions can contain any other valid json schema.
 func and(payload, filter interface{}) bool {
 	check := true
 	f, ok := filter.([]interface{})
@@ -221,7 +223,7 @@ func and(payload, filter interface{}) bool {
 	return check
 }
 
-// $exist requires a field to be undefined when false and array, number, object, string, boolean or null when true.
+// exist requires a field to be undefined when false and array, number, object, string, boolean or null when true.
 func exist(payload, filter interface{}) bool {
 	f, ok := filter.(map[string]interface{})
 	if !ok {
