@@ -20,9 +20,13 @@ export class SourcesComponent implements OnInit {
 	isLoadingSources = false;
 	isDeletingSource = false;
 	showDeleteSourceModal = false;
+	showSourceDetails = false;
 
 	constructor(private route: ActivatedRoute, public router: Router, private sourcesService: SourcesService, public privateService: PrivateService, private generalService: GeneralService) {
-		this.route.queryParams.subscribe(params => (this.activeSource = this.sources?.content.find(source => source.uid === params?.id)));
+		this.route.queryParams.subscribe(params => {
+			this.activeSource = this.sources?.content.find(source => source.uid === params?.id);
+			params?.id && this.activeSource ? (this.showSourceDetails = true) : (this.showSourceDetails = false);
+		});
 
 		const urlParam = route.snapshot.params.id;
 		if (urlParam && urlParam === 'new') this.shouldShowCreateSourceModal = true;
@@ -36,10 +40,14 @@ export class SourcesComponent implements OnInit {
 	async getSources(requestDetails?: { page?: number }) {
 		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
 		this.isLoadingSources = true;
+
 		try {
 			const sourcesResponse = await this.privateService.getSources({ page });
 			this.sources = sourcesResponse.data;
-			if ((this.sources?.pagination?.total || 0) > 0) this.activeSource = this.sources?.content.find(source => source.uid === this.route.snapshot.queryParams?.id);
+			if ((this.sources?.pagination?.total || 0) > 0) {
+				this.activeSource = this.sources?.content.find(source => source.uid === this.route.snapshot.queryParams?.id);
+				if (this.route.snapshot.queryParams?.id && this.activeSource) this.showSourceDetails = true;
+			}
 			this.isLoadingSources = false;
 		} catch (error) {
 			this.isLoadingSources = false;

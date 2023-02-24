@@ -129,14 +129,18 @@ export class CreateSourceComponent implements OnInit {
 	}
 
 	async getSourceDetails() {
+		this.isloading = true;
 		try {
 			const response = await this.createSourceService.getSourceDetails(this.sourceId);
 			this.sourceDetails = response.data;
 			const sourceProvider = response.data?.provider;
 			this.sourceForm.patchValue(response.data);
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
+			this.isloading = false;
+
 			return;
 		} catch (error) {
+			this.isloading = false;
 			return error;
 		}
 	}
