@@ -23,11 +23,11 @@
 			</div>
 
 			<div class="flex justify-end items-center">
-				<div class="flex items-center border border-primary-100 rounded-[10px] h-34px mr-24px">
+				<div class="flex items-center border border-primary-100 rounded-[10px] h-34px">
 					<button convoy-button fill="clear" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" [disabled]="isSendingTestEvent" [ngClass]="{ 'cursor-wait': isSendingTestEvent }" size="sm" class="!px-8px !py-0 my-8px" (click)="sendTestEvent()">
 						{{ isSendingTestEvent ? 'Sending Event' : 'Send Test Event' }}
 					</button>
-					<div convoy-dropdown position="right" size="sm" class="border-l border-primary-100">
+					<div convoy-dropdown position="right" size="md" [ngClass]="{'border-l border-primary-100': privateService.activeProjectDetails?.type === 'outgoing'}">
 						<button dropdownTrigger convoy-button size="sm" fill="clear" class="!px-6px !py-0">
 							<svg width="16" height="16" class="fill-primary-100">
 								<use xlink:href="#angle-arrow-down-icon"></use>
@@ -35,6 +35,15 @@
 						</button>
 
 						<ul dropdownOptions>
+							<li class="border-b border-grey-20">
+								<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start" (click)="viewEndpointPortalLinks(endpointDetails.uid)">
+									<svg width="16" height="16" class="mr-8px">
+										<use xlink:href="#portal-icon"></use>
+									</svg>
+									Open Portal Link
+									<img src="/assets/img/arrow-up-right.svg" class="w-12px ml-8px" alt="link out" />
+								</button>
+							</li>
 							<li class="border-b border-grey-20">
 								<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start" [routerLink]="'./edit'" [relativeTo]="route">
 									<svg width="16" height="16" class="mr-8px fill-primary-100">
@@ -54,11 +63,6 @@
 						</ul>
 					</div>
 				</div>
-
-				<button convoy-button fill="outline" size="sm" (click)="viewEndpointPortalLinks(endpointDetails.uid)">
-					Open Portal Link
-					<img src="/assets/img/arrow-up-right.svg" class="w-14px" alt="link out" />
-				</button>
 			</div>
 		</ng-container>
 
