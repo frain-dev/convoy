@@ -9,10 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jmoiron/sqlx"
-
 	"gopkg.in/guregu/null.v4"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/stretchr/testify/require"
 )
@@ -213,7 +212,7 @@ func TestDeleteOrganisation(t *testing.T) {
 	require.Equal(t, datastore.ErrOrgNotFound, err)
 }
 
-func seedUser(t *testing.T, db *sqlx.DB) *datastore.User {
+func seedUser(t *testing.T, db database.Database) *datastore.User {
 	user := generateUser(t)
 
 	err := NewUserRepo(db).CreateUser(context.Background(), user)

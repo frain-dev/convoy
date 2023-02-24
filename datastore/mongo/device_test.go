@@ -6,11 +6,8 @@ package mongo
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
@@ -30,9 +27,6 @@ func Test_CreateDevice(t *testing.T) {
 		EndpointID: uuid.NewString(),
 		HostName:   "",
 		Status:     datastore.DeviceStatusOnline,
-		LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
-		CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
@@ -58,9 +52,6 @@ func Test_UpdateDevice(t *testing.T) {
 		EndpointID: uuid.NewString(),
 		HostName:   "",
 		Status:     datastore.DeviceStatusOnline,
-		LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
-		CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
@@ -91,9 +82,6 @@ func Test_UpdateDeviceLastSeen(t *testing.T) {
 		EndpointID: uuid.NewString(),
 		HostName:   "",
 		Status:     datastore.DeviceStatusOnline,
-		LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
-		CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
@@ -124,9 +112,6 @@ func Test_DeleteDevice(t *testing.T) {
 		EndpointID: uuid.NewString(),
 		HostName:   "",
 		Status:     datastore.DeviceStatusOnline,
-		LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
-		CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
@@ -151,9 +136,6 @@ func Test_FetchDeviceByID(t *testing.T) {
 		EndpointID: uuid.NewString(),
 		HostName:   "",
 		Status:     datastore.DeviceStatusOnline,
-		LastSeenAt: primitive.NewDateTimeFromTime(time.Now()),
-		CreatedAt:  primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:  primitive.NewDateTimeFromTime(time.Now()),
 	}
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))

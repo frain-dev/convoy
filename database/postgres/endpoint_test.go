@@ -9,13 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jmoiron/sqlx"
-
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/jaswdr/faker"
 	"github.com/oklog/ulid/v2"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/stretchr/testify/require"
 )
@@ -568,7 +567,7 @@ func generateEndpoint(project *datastore.Project) *datastore.Endpoint {
 	}
 }
 
-func seedEndpoint(t *testing.T, db *sqlx.DB) *datastore.Endpoint {
+func seedEndpoint(t *testing.T, db database.Database) *datastore.Endpoint {
 	project := seedProject(t, db)
 	endpoint := generateEndpoint(project)
 

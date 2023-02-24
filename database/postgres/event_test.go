@@ -7,14 +7,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
-	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
@@ -407,7 +406,7 @@ func Test_HardDeleteProjectEvents(t *testing.T) {
 	require.True(t, errors.Is(err, datastore.ErrEventNotFound))
 }
 
-func generateEvent(t *testing.T, db *sqlx.DB) *datastore.Event {
+func generateEvent(t *testing.T, db database.Database) *datastore.Event {
 	project := seedProject(t, db)
 	endpoint := generateEndpoint(project)
 

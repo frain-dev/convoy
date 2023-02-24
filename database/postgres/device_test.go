@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	"github.com/stretchr/testify/require"
@@ -247,7 +247,7 @@ func Test_LoadDevicesPaged(t *testing.T) {
 	}
 }
 
-func generateDevice(t *testing.T, db *sqlx.DB) *datastore.Device {
+func generateDevice(t *testing.T, db database.Database) *datastore.Device {
 	project := seedProject(t, db)
 	endpoint := generateEndpoint(project)
 

@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
@@ -454,7 +454,7 @@ func TestTestSubscriptionFilter(t *testing.T) {
 	t.Skip()
 }
 
-func seedDevice(t *testing.T, db *sqlx.DB) *datastore.Device {
+func seedDevice(t *testing.T, db database.Database) *datastore.Device {
 	project := seedProject(t, db)
 	endpoint := seedEndpoint(t, db)
 

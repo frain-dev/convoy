@@ -1,18 +1,35 @@
+//go:build integration
+// +build integration
+
 package postgres
 
 import (
+	"os"
 	"testing"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database"
 
 	"github.com/stretchr/testify/require"
 )
 
-func getDB(t *testing.T) (*sqlx.DB, func()) {
-	db, err := NewDB()
+func getDSN() string {
+	return os.Getenv("TEST_POSTGRES_DSN")
+}
+
+func getConfig() config.Configuration {
+	return config.Configuration{
+		Database: config.DatabaseConfiguration{
+			Dsn: getDSN(),
+		},
+	}
+}
+
+func getDB(t *testing.T) (database.Database, func()) {
+	db, err := NewDB(getConfig())
 	require.NoError(t, err)
 
-	return db.dbx, func() {
+	return db, func() {
 		require.NoError(t, db.truncateTables())
 	}
 }

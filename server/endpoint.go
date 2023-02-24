@@ -5,8 +5,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -17,9 +17,9 @@ import (
 )
 
 func createEndpointService(a *ApplicationHandler) *services.EndpointService {
-	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
-	eventRepo := mongo.NewEventRepository(a.A.Store)
-	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+	eventRepo := postgres.NewEventRepo(a.A.DB)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
 
 	return services.NewEndpointService(
 		endpointRepo, eventRepo, eventDeliveryRepo, a.A.Cache, a.A.Queue,
@@ -93,7 +93,7 @@ func (a *ApplicationHandler) GetEndpoint(w http.ResponseWriter, r *http.Request)
 // @Router /api/v1/projects/{projectID}/endpoints [get]
 func (a *ApplicationHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())
-	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 	q := r.URL.Query().Get("q")
 	pageable := m.GetPageableFromContext(r.Context())
 

@@ -522,7 +522,7 @@ func TestSourceService_DeleteSource(t *testing.T) {
 			},
 			dbFn: func(so *SourceService) {
 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
-				s.EXPECT().DeleteSourceByID(gomock.Any(), gomock.Any(), "12345").Times(1).Return(nil)
+				s.EXPECT().DeleteSourceByID(gomock.Any(), gomock.Any(), "12345", gomock.Any()).Times(1).Return(nil)
 			},
 		},
 
@@ -535,7 +535,7 @@ func TestSourceService_DeleteSource(t *testing.T) {
 			},
 			dbFn: func(so *SourceService) {
 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
-				s.EXPECT().DeleteSourceByID(gomock.Any(), gomock.Any(), "12345").Times(1).Return(nil)
+				s.EXPECT().DeleteSourceByID(gomock.Any(), gomock.Any(), "12345", gomock.Any()).Times(1).Return(nil)
 
 				c, _ := so.cache.(*mocks.MockCache)
 				c.EXPECT().Delete(gomock.Any(), gomock.Any())
@@ -551,7 +551,7 @@ func TestSourceService_DeleteSource(t *testing.T) {
 			},
 			dbFn: func(so *SourceService) {
 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
-				s.EXPECT().DeleteSourceByID(gomock.Any(), gomock.Any(), "12345").Times(1).Return(errors.New("failed"))
+				s.EXPECT().DeleteSourceByID(gomock.Any(), gomock.Any(), "12345", gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,

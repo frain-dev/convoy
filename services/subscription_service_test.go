@@ -63,7 +63,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					Return(nil)
 
 				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
 					&datastore.Endpoint{
 						ProjectID: "12345",
@@ -96,7 +96,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					Return(nil)
 
 				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
 					&datastore.Endpoint{
 						ProjectID: "12345",
@@ -134,7 +134,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			},
 			dbFn: func(ss *SubcriptionService) {
 				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
 					&datastore.Endpoint{
 						ProjectID: "12345",
@@ -169,7 +169,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			},
 			dbFn: func(ss *SubcriptionService) {
 				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			wantErr:     true,
@@ -195,7 +195,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			},
 			dbFn: func(ss *SubcriptionService) {
 				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
 					&datastore.Endpoint{
 						ProjectID: "abb",
@@ -226,7 +226,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			},
 			dbFn: func(ss *SubcriptionService) {
 				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(nil, errors.New("failed to find endpoint by id"))
 			},
 			wantErr:     true,
@@ -253,7 +253,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					Return(errors.New("failed"))
 
 				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
 					&datastore.Endpoint{
 						ProjectID: "12345",
@@ -292,7 +292,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					Return(nil)
 
 				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
 					&datastore.Endpoint{
 						ProjectID: "12345",

@@ -12,16 +12,16 @@ import (
 	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/util"
 	"github.com/google/uuid"
 	"github.com/xdg-go/pbkdf2"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // SeedEndpoint creates a random endpoint for integration tests.
-func SeedEndpoint(db datastore.Store, g *datastore.Project, uid, title, ownerID string, disabled bool, status datastore.EndpointStatus) (*datastore.Endpoint, error) {
+func SeedEndpoint(db database.Database, g *datastore.Project, uid, title, ownerID string, disabled bool, status datastore.EndpointStatus) (*datastore.Endpoint, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -44,7 +44,7 @@ func SeedEndpoint(db datastore.Store, g *datastore.Project, uid, title, ownerID 
 	}
 
 	// Seed Data.
-	endpointRepo := cm.NewEndpointRepo(store)
+	endpointRepo := postgres.NewEndpointRepo(db)
 	err := endpointRepo.CreateEndpoint(context.TODO(), endpoint, g.UID)
 	if err != nil {
 		return &datastore.Endpoint{}, err
@@ -53,7 +53,7 @@ func SeedEndpoint(db datastore.Store, g *datastore.Project, uid, title, ownerID 
 	return endpoint, nil
 }
 
-func SeedMultipleEndpoints(store datastore.Store, g *datastore.Project, count int) error {
+func SeedMultipleEndpoints(db database.Database, g *datastore.Project, count int) error {
 	for i := 0; i < count; i++ {
 		uid := uuid.New().String()
 		app := &datastore.Endpoint{
@@ -63,7 +63,7 @@ func SeedMultipleEndpoints(store datastore.Store, g *datastore.Project, count in
 		}
 
 		// Seed Data.
-		appRepo := cm.NewEndpointRepo(store)
+		appRepo := postgres.NewEndpointRepo(db)
 		err := appRepo.CreateEndpoint(context.TODO(), app, app.ProjectID)
 		if err != nil {
 			return err
@@ -72,7 +72,7 @@ func SeedMultipleEndpoints(store datastore.Store, g *datastore.Project, count in
 	return nil
 }
 
-func SeedEndpointSecret(store datastore.Store, e *datastore.Endpoint, value string) (*datastore.Secret, error) {
+func SeedEndpointSecret(db database.Database, e *datastore.Endpoint, value string) (*datastore.Secret, error) {
 	sc := datastore.Secret{
 		UID:   uuid.New().String(),
 		Value: value,
@@ -81,7 +81,7 @@ func SeedEndpointSecret(store datastore.Store, e *datastore.Endpoint, value stri
 	e.Secrets = append(e.Secrets, sc)
 
 	// Seed Data.
-	endpointRepo := cm.NewEndpointRepo(store)
+	endpointRepo := postgres.NewEndpointRepo(db)
 	err := endpointRepo.UpdateEndpoint(context.TODO(), e, e.ProjectID)
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func SeedEndpointSecret(store datastore.Store, e *datastore.Endpoint, value stri
 }
 
 // seed default project
-func SeedDefaultProject(store datastore.Store, orgID string) (*datastore.Project, error) {
+func SeedDefaultProject(db database.Database, orgID string) (*datastore.Project, error) {
 	if orgID == "" {
 		orgID = uuid.NewString()
 	}
@@ -125,7 +125,7 @@ func SeedDefaultProject(store datastore.Store, orgID string) (*datastore.Project
 	}
 
 	// Seed Data.
-	projectRepo := cm.NewProjectRepo(store)
+	projectRepo := postgres.NewProjectRepo(db)
 	err := projectRepo.CreateProject(context.TODO(), defaultProject)
 	if err != nil {
 		return &datastore.Project{}, err
@@ -137,7 +137,7 @@ func SeedDefaultProject(store datastore.Store, orgID string) (*datastore.Project
 const DefaultUserPassword = "password"
 
 // seed default user
-func SeedDefaultUser(store datastore.Store) (*datastore.User, error) {
+func SeedDefaultUser(db database.Database) (*datastore.User, error) {
 	p := datastore.Password{Plaintext: DefaultUserPassword}
 	err := p.GenerateHash()
 	if err != nil {
@@ -155,7 +155,7 @@ func SeedDefaultUser(store datastore.Store) (*datastore.User, error) {
 	}
 
 	// Seed Data.
-	userRepo := cm.NewUserRepo(store)
+	userRepo := postgres.NewUserRepo(db)
 	err = userRepo.CreateUser(context.TODO(), defaultUser)
 	if err != nil {
 		return &datastore.User{}, err
@@ -165,7 +165,7 @@ func SeedDefaultUser(store datastore.Store) (*datastore.User, error) {
 }
 
 // seed default organisation
-func SeedDefaultOrganisation(store datastore.Store, user *datastore.User) (*datastore.Organisation, error) {
+func SeedDefaultOrganisation(db database.Database, user *datastore.User) (*datastore.Organisation, error) {
 	defaultOrg := &datastore.Organisation{
 		UID:       uuid.NewString(),
 		OwnerID:   user.UID,
@@ -175,7 +175,7 @@ func SeedDefaultOrganisation(store datastore.Store, user *datastore.User) (*data
 	}
 
 	// Seed Data.
-	organisationRepo := cm.NewOrgRepo(store)
+	organisationRepo := postgres.NewOrgRepo(db)
 	err := organisationRepo.CreateOrganisation(context.TODO(), defaultOrg)
 	if err != nil {
 		return &datastore.Organisation{}, err
@@ -190,7 +190,7 @@ func SeedDefaultOrganisation(store datastore.Store, user *datastore.User) (*data
 		UpdatedAt:      time.Now(),
 	}
 
-	orgMemberRepo := cm.NewOrgMemberRepo(store)
+	orgMemberRepo := postgres.NewOrgMemberRepo(db)
 	err = orgMemberRepo.CreateOrganisationMember(context.TODO(), member)
 	if err != nil {
 		return nil, err
@@ -200,7 +200,7 @@ func SeedDefaultOrganisation(store datastore.Store, user *datastore.User) (*data
 }
 
 // seed organisation member
-func SeedOrganisationMember(store datastore.Store, org *datastore.Organisation, user *datastore.User, role *auth.Role) (*datastore.OrganisationMember, error) {
+func SeedOrganisationMember(db database.Database, org *datastore.Organisation, user *datastore.User, role *auth.Role) (*datastore.OrganisationMember, error) {
 	member := &datastore.OrganisationMember{
 		UID:            uuid.NewString(),
 		OrganisationID: org.UID,
@@ -210,7 +210,7 @@ func SeedOrganisationMember(store datastore.Store, org *datastore.Organisation, 
 		UpdatedAt:      time.Now(),
 	}
 
-	orgMemberRepo := cm.NewOrgMemberRepo(store)
+	orgMemberRepo := postgres.NewOrgMemberRepo(db)
 	err := orgMemberRepo.CreateOrganisationMember(context.TODO(), member)
 	if err != nil {
 		return nil, err
@@ -220,7 +220,7 @@ func SeedOrganisationMember(store datastore.Store, org *datastore.Organisation, 
 }
 
 // seed organisation invite
-func SeedOrganisationInvite(store datastore.Store, org *datastore.Organisation, email string, role *auth.Role, expiry time.Time, status datastore.InviteStatus) (*datastore.OrganisationInvite, error) {
+func SeedOrganisationInvite(db database.Database, org *datastore.Organisation, email string, role *auth.Role, expiry time.Time, status datastore.InviteStatus) (*datastore.OrganisationInvite, error) {
 	if expiry == (time.Time{}) {
 		expiry = time.Now()
 	}
@@ -237,7 +237,7 @@ func SeedOrganisationInvite(store datastore.Store, org *datastore.Organisation, 
 		UpdatedAt:      time.Now(),
 	}
 
-	orgInviteRepo := cm.NewOrgInviteRepo(store)
+	orgInviteRepo := postgres.NewOrgInviteRepo(db)
 	err := orgInviteRepo.CreateOrganisationInvite(context.TODO(), iv)
 	if err != nil {
 		return nil, err
@@ -247,7 +247,7 @@ func SeedOrganisationInvite(store datastore.Store, org *datastore.Organisation, 
 }
 
 // SeedAPIKey creates random api key for integration tests.
-func SeedAPIKey(store datastore.Store, role auth.Role, uid, name, keyType, userID string) (*datastore.APIKey, string, error) {
+func SeedAPIKey(db database.Database, role auth.Role, uid, name, keyType, userID string) (*datastore.APIKey, string, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -274,7 +274,7 @@ func SeedAPIKey(store datastore.Store, role auth.Role, uid, name, keyType, userI
 		UpdatedAt: time.Now(),
 	}
 
-	apiRepo := cm.NewApiKeyRepo(store)
+	apiRepo := postgres.NewAPIKeyRepo(db)
 	err = apiRepo.CreateAPIKey(context.Background(), apiKey)
 	if err != nil {
 		return nil, "", err
@@ -284,7 +284,7 @@ func SeedAPIKey(store datastore.Store, role auth.Role, uid, name, keyType, userI
 }
 
 // seed default project
-func SeedProject(store datastore.Store, uid, name, orgID string, projectType datastore.ProjectType, cfg *datastore.ProjectConfig) (*datastore.Project, error) {
+func SeedProject(db database.Database, uid, name, orgID string, projectType datastore.ProjectType, cfg *datastore.ProjectConfig) (*datastore.Project, error) {
 	if orgID == "" {
 		orgID = uuid.NewString()
 	}
@@ -299,7 +299,7 @@ func SeedProject(store datastore.Store, uid, name, orgID string, projectType dat
 	}
 
 	// Seed Data.
-	projectRepo := cm.NewProjectRepo(store)
+	projectRepo := postgres.NewProjectRepo(db)
 	err := projectRepo.CreateProject(context.TODO(), g)
 	if err != nil {
 		return &datastore.Project{}, err
@@ -309,7 +309,7 @@ func SeedProject(store datastore.Store, uid, name, orgID string, projectType dat
 }
 
 // SeedEvent creates a random event for integration tests.
-func SeedEvent(store datastore.Store, endpoint *datastore.Endpoint, projectID string, uid, eventType string, sourceID string, data []byte) (*datastore.Event, error) {
+func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID string, uid, eventType string, sourceID string, data []byte) (*datastore.Event, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -324,7 +324,7 @@ func SeedEvent(store datastore.Store, endpoint *datastore.Endpoint, projectID st
 	}
 
 	// Seed Data.
-	eventRepo := cm.NewEventRepository(store)
+	eventRepo := postgres.NewEventRepo(db)
 	err := eventRepo.CreateEvent(context.TODO(), ev)
 	if err != nil {
 		return nil, err
@@ -334,7 +334,7 @@ func SeedEvent(store datastore.Store, endpoint *datastore.Endpoint, projectID st
 }
 
 // SeedEventDelivery creates a random event delivery for integration tests.
-func SeedEventDelivery(store datastore.Store, event *datastore.Event, endpoint *datastore.Endpoint, projectID string, uid string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
+func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *datastore.Endpoint, projectID string, uid string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -349,7 +349,7 @@ func SeedEventDelivery(store datastore.Store, event *datastore.Event, endpoint *
 	}
 
 	// Seed Data.
-	eventDeliveryRepo := cm.NewEventDeliveryRepository(store)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	err := eventDeliveryRepo.CreateEventDelivery(context.TODO(), eventDelivery)
 	if err != nil {
 		return nil, err
@@ -359,7 +359,7 @@ func SeedEventDelivery(store datastore.Store, event *datastore.Event, endpoint *
 }
 
 // SeedOrganisation is create random Organisation for integration tests.
-func SeedOrganisation(store datastore.Store, uid, ownerID, name string) (*datastore.Organisation, error) {
+func SeedOrganisation(db database.Database, uid, ownerID, name string) (*datastore.Organisation, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -377,7 +377,7 @@ func SeedOrganisation(store datastore.Store, uid, ownerID, name string) (*datast
 	}
 
 	// Seed Data.
-	orgRepo := cm.NewOrgRepo(store)
+	orgRepo := postgres.NewOrgRepo(db)
 	err := orgRepo.CreateOrganisation(context.TODO(), org)
 	if err != nil {
 		return &datastore.Organisation{}, err
@@ -387,7 +387,7 @@ func SeedOrganisation(store datastore.Store, uid, ownerID, name string) (*datast
 }
 
 // SeedMultipleOrganisations is creates random Organisations for integration tests.
-func SeedMultipleOrganisations(store datastore.Store, ownerID string, num int) ([]*datastore.Organisation, error) {
+func SeedMultipleOrganisations(db database.Database, ownerID string, num int) ([]*datastore.Organisation, error) {
 	orgs := []*datastore.Organisation{}
 
 	for i := 0; i < num; i++ {
@@ -403,7 +403,7 @@ func SeedMultipleOrganisations(store datastore.Store, ownerID string, num int) (
 		orgs = append(orgs, org)
 
 		// Seed Data.
-		orgRepo := cm.NewOrgRepo(store)
+		orgRepo := postgres.NewOrgRepo(db)
 		err := orgRepo.CreateOrganisation(context.TODO(), org)
 		if err != nil {
 			return nil, err
@@ -413,7 +413,7 @@ func SeedMultipleOrganisations(store datastore.Store, ownerID string, num int) (
 	return orgs, nil
 }
 
-func SeedSource(store datastore.Store, g *datastore.Project, uid, maskID, ds string, v *datastore.VerifierConfig) (*datastore.Source, error) {
+func SeedSource(db database.Database, g *datastore.Project, uid, maskID, ds string, v *datastore.VerifierConfig) (*datastore.Source, error) {
 	if util.IsStringEmpty(uid) {
 		uid = uuid.New().String()
 	}
@@ -447,7 +447,7 @@ func SeedSource(store datastore.Store, g *datastore.Project, uid, maskID, ds str
 	}
 
 	// Seed Data
-	sourceRepo := cm.NewSourceRepo(store)
+	sourceRepo := postgres.NewSourceRepo(db)
 	err := sourceRepo.CreateSource(context.TODO(), source)
 	if err != nil {
 		return nil, err
@@ -456,7 +456,7 @@ func SeedSource(store datastore.Store, g *datastore.Project, uid, maskID, ds str
 	return source, nil
 }
 
-func SeedSubscription(store datastore.Store,
+func SeedSubscription(db database.Database,
 	g *datastore.Project,
 	uid string,
 	projectType datastore.ProjectType,
@@ -483,7 +483,7 @@ func SeedSubscription(store datastore.Store,
 		FilterConfig: filterConfig,
 	}
 
-	subRepo := cm.NewSubscriptionRepo(store)
+	subRepo := postgres.NewSubscriptionRepo(db)
 	err := subRepo.CreateSubscription(context.TODO(), g.UID, subscription)
 	if err != nil {
 		return nil, err
@@ -492,7 +492,7 @@ func SeedSubscription(store datastore.Store,
 	return subscription, nil
 }
 
-func SeedUser(store datastore.Store, email, password string) (*datastore.User, error) {
+func SeedUser(db database.Database, email, password string) (*datastore.User, error) {
 	p := &datastore.Password{Plaintext: password}
 	err := p.GenerateHash()
 	if err != nil {
@@ -512,7 +512,7 @@ func SeedUser(store datastore.Store, email, password string) (*datastore.User, e
 	}
 
 	// Seed Data
-	userRepo := cm.NewUserRepo(store)
+	userRepo := postgres.NewUserRepo(db)
 	err = userRepo.CreateUser(context.TODO(), user)
 	if err != nil {
 		return nil, err
@@ -521,7 +521,7 @@ func SeedUser(store datastore.Store, email, password string) (*datastore.User, e
 	return user, nil
 }
 
-func SeedConfiguration(store datastore.Store) (*datastore.Configuration, error) {
+func SeedConfiguration(db database.Database) (*datastore.Configuration, error) {
 	config := &datastore.Configuration{
 		UID:                uuid.NewString(),
 		IsAnalyticsEnabled: true,
@@ -530,7 +530,7 @@ func SeedConfiguration(store datastore.Store) (*datastore.Configuration, error) 
 	}
 
 	// Seed Data
-	configRepo := cm.NewConfigRepo(store)
+	configRepo := postgres.NewConfigRepo(db)
 	err := configRepo.CreateConfiguration(context.TODO(), config)
 	if err != nil {
 		return nil, err
@@ -539,7 +539,7 @@ func SeedConfiguration(store datastore.Store) (*datastore.Configuration, error) 
 	return config, nil
 }
 
-func SeedDevice(store datastore.Store, g *datastore.Project, endpointID string) error {
+func SeedDevice(db database.Database, g *datastore.Project, endpointID string) error {
 	device := &datastore.Device{
 		UID:        uuid.NewString(),
 		ProjectID:  g.UID,
@@ -548,7 +548,7 @@ func SeedDevice(store datastore.Store, g *datastore.Project, endpointID string) 
 		Status:     datastore.DeviceStatusOnline,
 	}
 
-	deviceRepo := cm.NewDeviceRepository(store)
+	deviceRepo := postgres.NewDeviceRepo(db)
 	err := deviceRepo.CreateDevice(context.TODO(), device)
 	if err != nil {
 		return err
@@ -557,7 +557,7 @@ func SeedDevice(store datastore.Store, g *datastore.Project, endpointID string) 
 	return nil
 }
 
-func SeedPortalLink(store datastore.Store, g *datastore.Project, endpoints []string) (*datastore.PortalLink, error) {
+func SeedPortalLink(db database.Database, g *datastore.Project, endpoints []string) (*datastore.PortalLink, error) {
 	portalLink := &datastore.PortalLink{
 		UID:       uuid.NewString(),
 		ProjectID: g.UID,
@@ -566,7 +566,7 @@ func SeedPortalLink(store datastore.Store, g *datastore.Project, endpoints []str
 		Endpoints: endpoints,
 	}
 
-	portalLinkRepo := cm.NewPortalLinkRepo(store)
+	portalLinkRepo := postgres.NewPortalLinkRepo(db)
 	err := portalLinkRepo.CreatePortalLink(context.TODO(), portalLink)
 	if err != nil {
 		return nil, err
@@ -577,10 +577,38 @@ func SeedPortalLink(store datastore.Store, g *datastore.Project, endpoints []str
 
 // PurgeDB is run after every test run and it's used to truncate the DB to have
 // a clean slate in the next run.
-func PurgeDB(t *testing.T, db cm.Client) {
-	client := db.Client().(*mongo.Database)
-	err := client.Drop(context.TODO())
+func PurgeDB(t *testing.T, db database.Database) {
+	err := truncateTables(db)
 	if err != nil {
 		t.Fatalf("Could not purge DB: %v", err)
 	}
+}
+
+func truncateTables(db database.Database) error {
+	tables := `
+		convoy.event_deliveries,
+		convoy.events,
+		convoy.api_keys,
+		convoy.subscriptions,
+		convoy.source_verifiers,
+		convoy.sources,
+		convoy.configurations,
+		convoy.devices,
+		convoy.portal_links,
+		convoy.organisation_invites,
+		convoy.applications,
+        convoy.endpoints,
+		convoy.projects,
+		convoy.project_configurations,
+		convoy.organisation_members,
+		convoy.organisations,
+		convoy.users
+	`
+
+	_, err := db.GetDB().ExecContext(context.Background(), fmt.Sprintf("TRUNCATE %s CASCADE;", tables))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

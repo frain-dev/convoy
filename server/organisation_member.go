@@ -3,7 +3,7 @@ package server
 import (
 	"net/http"
 
-	"github.com/frain-dev/convoy/datastore/mongo"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -14,7 +14,7 @@ import (
 )
 
 func createOrganisationMemberService(a *ApplicationHandler) *services.OrganisationMemberService {
-	orgMemberRepo := mongo.NewOrgMemberRepo(a.A.Store)
+	orgMemberRepo := postgres.NewOrgMemberRepo(a.A.DB)
 
 	return services.NewOrganisationMemberService(orgMemberRepo)
 }

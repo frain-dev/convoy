@@ -8,8 +8,8 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/log"
 
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -56,7 +56,7 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		endpoint.Status = datastore.InactiveEndpointStatus
 	}
 
-	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 	err = endpointRepo.CreateEndpoint(r.Context(), endpoint, project.UID)
 	if err != nil {
 		msg := "failed to create application"
@@ -74,7 +74,7 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 
 func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())
-	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 	q := r.URL.Query().Get("q")
 	pageable := m.GetPageableFromContext(r.Context())
 
@@ -128,7 +128,7 @@ func (a *ApplicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	endpoints := m.GetEndpointsFromContext(r.Context())
 	project := m.GetProjectFromContext(r.Context())
-	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 
 	appUpdate := struct {
 		Name            *string `json:"name" valid:"required~please provide your appName"`
@@ -181,7 +181,7 @@ func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *ApplicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
-	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 	project := m.GetProjectFromContext(r.Context())
 
 	endpoints := m.GetEndpointsFromContext(r.Context())
@@ -316,7 +316,7 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 
 		endpoint.Authentication = auth
 
-		endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+		endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 		err = endpointRepo.UpdateEndpoint(r.Context(), endpoint, project.UID)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))

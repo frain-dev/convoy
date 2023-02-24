@@ -11,14 +11,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/google/uuid"
 	"github.com/sebdah/goldie/v2"
@@ -27,7 +28,7 @@ import (
 
 type DashboardIntegrationTestSuite struct {
 	suite.Suite
-	DB              cm.Client
+	DB              database.Database
 	Router          http.Handler
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
@@ -46,17 +47,17 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
 
 	// Setup Default User
-	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
+	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
 
 	// Setup Default Organisation
-	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.Store, user)
+	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, user)
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
 
 	// Setup Default Project.
-	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
+	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, s.DefaultOrg.UID)
 
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
 		Username: user.Email,
@@ -67,8 +68,8 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
-	userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -88,7 +89,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 		UpdatedAt:    time.Now(),
 	}
 
-	endpointRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
 	err := endpointRepo.CreateEndpoint(ctx, endpoint, endpoint.ProjectID)
 	require.NoError(s.T(), err)
 
@@ -132,7 +133,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 		},
 	}
 
-	eventDelivery := cm.NewEventDeliveryRepository(s.ConvoyApp.A.Store)
+	eventDelivery := postgres.NewEventDeliveryRepo(s.ConvoyApp.A.DB)
 	for i := range eventDeliveries {
 		err = eventDelivery.CreateEventDelivery(ctx, &eventDeliveries[i])
 		require.NoError(s.T(), err)
@@ -245,8 +246,8 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
-			userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
+			apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+			userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 			initRealmChain(t, apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/organisations/%s/projects/%s/dashboard/summary?startDate=%s&endDate=%s&type=%s", s.DefaultOrg.UID, tc.urlQuery.projectID, tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type), nil)

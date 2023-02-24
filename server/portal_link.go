@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -16,7 +16,7 @@ import (
 )
 
 func createPortalLinkService(a *ApplicationHandler) *services.PortalLinkService {
-	portalRepo := mongo.NewPortalLinkRepo(a.A.Store)
+	portalRepo := postgres.NewPortalLinkRepo(a.A.DB)
 	endpointService := createEndpointService(a)
 
 	return services.NewPortalLinkService(portalRepo, endpointService)
@@ -267,7 +267,7 @@ func (a *ApplicationHandler) GetPortalLinkDevices(w http.ResponseWriter, r *http
 		EndpointIDs: endpointIDs,
 	}
 
-	deviceRepo := mongo.NewDeviceRepository(a.A.Store)
+	deviceRepo := postgres.NewDeviceRepo(a.A.DB)
 	devices, paginationData, err := deviceRepo.LoadDevicesPaged(r.Context(), project.UID, f, pageable)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching devices", http.StatusInternalServerError))
@@ -297,7 +297,7 @@ func (a *ApplicationHandler) GetPortalLinkKeys(w http.ResponseWriter, r *http.Re
 		KeyType:     datastore.CLIKey,
 	}
 
-	apiKeyRepo := mongo.NewApiKeyRepo(a.A.Store)
+	apiKeyRepo := postgres.NewAPIKeyRepo(a.A.DB)
 	apiKeys, paginationData, err := apiKeyRepo.LoadAPIKeysPaged(r.Context(), f, &pageable)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching api keys", http.StatusInternalServerError))

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
@@ -233,7 +233,7 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 	}
 }
 
-func generatePortalLink(t *testing.T, db *sqlx.DB) *datastore.PortalLink {
+func generatePortalLink(t *testing.T, db database.Database) *datastore.PortalLink {
 	project := seedProject(t, db)
 
 	endpoint := generateEndpoint(project)

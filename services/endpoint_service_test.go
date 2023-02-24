@@ -463,6 +463,7 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 		ctx      context.Context
 		e        models.UpdateEndpoint
 		endpoint *datastore.Endpoint
+		project  *datastore.Project
 	}
 	tests := []struct {
 		name         string
@@ -486,6 +487,7 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 					HttpTimeout:       "20s",
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint2"},
+				project:  &datastore.Project{UID: "project1"},
 			},
 			wantEndpoint: &datastore.Endpoint{
 				Title:             "Endpoint2",
@@ -497,7 +499,7 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 			},
 			dbFn: func(as *EndpointService) {
 				a, _ := as.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.Endpoint{UID: "endpoint2"}, nil)
 
 				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -521,10 +523,11 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 					HttpTimeout:       "20s",
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint1"},
+				project:  &datastore.Project{UID: "project1"},
 			},
 			dbFn: func(as *EndpointService) {
 				a, _ := as.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.Endpoint{UID: "endpoint1"}, nil)
 			},
 			wantErr:     true,
@@ -544,10 +547,11 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 					HttpTimeout:       "20s",
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint1"},
+				project:  &datastore.Project{UID: "project1"},
 			},
 			dbFn: func(as *EndpointService) {
 				a, _ := as.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.Endpoint{UID: "endpoint1"}, nil)
 
 				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -570,10 +574,11 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 					HttpTimeout:       "20s",
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint1"},
+				project:  &datastore.Project{UID: "project1"},
 			},
 			dbFn: func(as *EndpointService) {
 				a, _ := as.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil, datastore.ErrEndpointNotFound)
 			},
 			wantErr:     true,
@@ -592,7 +597,7 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 				tc.dbFn(as)
 			}
 
-			endpoint, err := as.UpdateEndpoint(tc.args.ctx, tc.args.e, tc.args.endpoint)
+			endpoint, err := as.UpdateEndpoint(tc.args.ctx, tc.args.e, tc.args.endpoint, tc.args.project)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -637,7 +642,7 @@ func TestEndpointService_DeleteEndpoint(t *testing.T) {
 			},
 			dbFn: func(as *EndpointService) {
 				endpointRepo := as.endpointRepo.(*mocks.MockEndpointRepository)
-				endpointRepo.EXPECT().DeleteEndpoint(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				endpointRepo.EXPECT().DeleteEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				c, _ := as.cache.(*mocks.MockCache)
 				c.EXPECT().Delete(gomock.Any(), gomock.Any())
@@ -653,7 +658,7 @@ func TestEndpointService_DeleteEndpoint(t *testing.T) {
 			},
 			dbFn: func(as *EndpointService) {
 				endpointRepo := as.endpointRepo.(*mocks.MockEndpointRepository)
-				endpointRepo.EXPECT().DeleteEndpoint(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+				endpointRepo.EXPECT().DeleteEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -671,7 +676,7 @@ func TestEndpointService_DeleteEndpoint(t *testing.T) {
 				tc.dbFn(as)
 			}
 
-			err := as.DeleteEndpoint(tc.args.ctx, tc.args.e)
+			err := as.DeleteEndpoint(tc.args.ctx, tc.args.e, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())

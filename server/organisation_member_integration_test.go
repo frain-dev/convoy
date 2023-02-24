@@ -13,8 +13,9 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
@@ -25,7 +26,7 @@ import (
 
 type OrganisationMemberIntegrationTestSuite struct {
 	suite.Suite
-	DB              cm.Client
+	DB              database.Database
 	Router          http.Handler
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
@@ -45,13 +46,13 @@ func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
 	s.DB = getDB()
 
 	// Setup Default Project.
-	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, "")
+	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, "")
 
-	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
+	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
 
-	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.Store, user)
+	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, user)
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
 
@@ -64,8 +65,8 @@ func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
-	userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -77,10 +78,10 @@ func (s *OrganisationMemberIntegrationTestSuite) TearDownTest() {
 func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 	expectedStatusCode := http.StatusOK
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.Store, "member@test.com", "password")
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "member@test.com", "password")
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
 		Type:     auth.RoleAdmin,
 		Project:  uuid.NewString(),
 		Endpoint: "",
@@ -123,17 +124,17 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 	}
 
 	for _, member := range members {
-		require.Contains(s.T(), metadata, *member.UserMetadata)
+		require.Contains(s.T(), metadata, member.UserMetadata)
 	}
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 	expectedStatusCode := http.StatusOK
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.Store, "member@test.com", "password")
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "member@test.com", "password")
 	require.NoError(s.T(), err)
 
-	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{
+	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
 		Type:     auth.RoleAdmin,
 		Project:  uuid.NewString(),
 		Endpoint: "",
@@ -166,16 +167,16 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
-	}, *m.UserMetadata)
+	}, m.UserMetadata)
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember() {
 	expectedStatusCode := http.StatusAccepted
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.Store, "member@test.com", "password")
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "member@test.com", "password")
 	require.NoError(s.T(), err)
 
-	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{
+	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
 		Type:     auth.RoleAdmin,
 		Project:  uuid.NewString(),
 		Endpoint: "",
@@ -210,10 +211,10 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember() {
 	expectedStatusCode := http.StatusOK
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.Store, "member@test.com", "password")
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "member@test.com", "password")
 	require.NoError(s.T(), err)
 
-	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.Store, s.DefaultOrg, user, &auth.Role{
+	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
 		Type:     auth.RoleAdmin,
 		Project:  uuid.NewString(),
 		Endpoint: "",
@@ -234,7 +235,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember()
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	orgMemberRepo := cm.NewOrgMemberRepo(s.ConvoyApp.A.Store)
+	orgMemberRepo := postgres.NewOrgMemberRepo(s.ConvoyApp.A.DB)
 	_, err = orgMemberRepo.FetchOrganisationMemberByID(context.Background(), member.UID, s.DefaultOrg.UID)
 	require.Equal(s.T(), datastore.ErrOrgMemberNotFound, err)
 }
@@ -242,7 +243,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember()
 func (s *OrganisationMemberIntegrationTestSuite) Test_CannotDeleteOrganisationOwner() {
 	expectedStatusCode := http.StatusForbidden
 
-	orgMemberRepo := cm.NewOrgMemberRepo(s.ConvoyApp.A.Store)
+	orgMemberRepo := postgres.NewOrgMemberRepo(s.ConvoyApp.A.DB)
 	member, err := orgMemberRepo.FetchOrganisationMemberByUserID(context.Background(), s.DefaultUser.UID, s.DefaultOrg.UID)
 	require.NoError(s.T(), err)
 

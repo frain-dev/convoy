@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -13,7 +13,7 @@ import (
 )
 
 func createConfigService(a *ApplicationHandler) *services.ConfigService {
-	configRepo := mongo.NewConfigRepo(a.A.Store)
+	configRepo := postgres.NewConfigRepo(a.A.DB)
 
 	return services.NewConfigService(
 		configRepo,

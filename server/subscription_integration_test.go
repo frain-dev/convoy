@@ -12,12 +12,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -26,7 +27,7 @@ import (
 
 type SubscriptionIntegrationTestSuite struct {
 	suite.Suite
-	DB             cm.Client
+	DB             database.Database
 	Router         http.Handler
 	ConvoyApp      *ApplicationHandler
 	DefaultProject *datastore.Project
@@ -43,7 +44,7 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
 
 	// Setup Default Project.
-	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, "")
+	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, "")
 	fmt.Printf("%+v\n", s.DefaultProject)
 
 	// Seed Auth
@@ -52,14 +53,14 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 		Project: s.DefaultProject.UID,
 	}
 
-	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
+	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
 
 	// Setup Config.
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
-	userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
@@ -70,7 +71,7 @@ func (s *SubscriptionIntegrationTestSuite) TearDownTest() {
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
 	body := serialize(`{
 		"name": "sub-1",
 		"type": "incoming",
@@ -113,7 +114,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := cm.NewSubscriptionRepo(s.ConvoyApp.A.Store)
+	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscription.UID)
 
 	require.NoError(s.T(), err)
@@ -124,7 +125,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProject() {
-	project, err := testdb.SeedProject(s.ConvoyApp.A.Store, uuid.NewString(), "test_project", "", datastore.IncomingProject, nil)
+	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, uuid.NewString(), "test_project", "", datastore.IncomingProject, nil)
 	require.NoError(s.T(), err)
 
 	// Seed Auth
@@ -133,10 +134,10 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProje
 		Project: project.UID,
 	}
 
-	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
+	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
 
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, project, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
-	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, project, uuid.NewString(), "", "", nil)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, project, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
+	source, _ := testdb.SeedSource(s.ConvoyApp.A.DB, project, uuid.NewString(), "", "", nil)
 	bodyStr := fmt.Sprintf(`{
 		"name": "sub-1",
 		"type": "incoming",
@@ -179,7 +180,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProje
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := cm.NewSubscriptionRepo(s.ConvoyApp.A.Store)
+	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), project.UID, subscription.UID)
 	require.NoError(s.T(), err)
 
@@ -190,7 +191,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProje
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProject_RedirectToProjects() {
-	project, err := testdb.SeedProject(s.ConvoyApp.A.Store, uuid.NewString(), "test_project", "", datastore.IncomingProject, nil)
+	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, uuid.NewString(), "test_project", "", datastore.IncomingProject, nil)
 	require.NoError(s.T(), err)
 
 	// Seed Auth
@@ -199,10 +200,10 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProje
 		Project: project.UID,
 	}
 
-	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
+	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
 
-	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, project, uuid.NewString(), "", "", nil)
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, project, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
+	source, _ := testdb.SeedSource(s.ConvoyApp.A.DB, project, uuid.NewString(), "", "", nil)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, project, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
 	bodyStr := fmt.Sprintf(`{
 		"name": "sub-1",
 		"type": "incoming",
@@ -244,7 +245,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProje
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppNotFound() {
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, &datastore.Project{UID: uuid.NewString()}, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, &datastore.Project{UID: uuid.NewString()}, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
 	bodyStr := fmt.Sprintf(`{
 		"name": "sub-1",
 		"type": "incoming",
@@ -280,7 +281,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppNotFound()
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_EndpointDoesNotBelongToProject() {
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, &datastore.Project{UID: uuid.NewString()}, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, &datastore.Project{UID: uuid.NewString()}, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
 	bodyStr := fmt.Sprintf(`{
 		"name": "sub-1",
 		"type": "incoming",
@@ -406,9 +407,9 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingProje
 	project := s.DefaultProject
 
 	// Just Before
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, project, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
-	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, project, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, project, subscriptionId, project.Type, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, project, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
+	source, _ := testdb.SeedSource(s.ConvoyApp.A.DB, project, uuid.NewString(), "", "", nil)
+	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.DB, project, subscriptionId, project.Type, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultProject.UID, subscriptionId)
@@ -425,7 +426,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingProje
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := cm.NewSubscriptionRepo(s.ConvoyApp.A.Store)
+	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), project.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), subscription.UID, dbSub.UID)
@@ -435,7 +436,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingProje
 func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingProject_ValidSubscription() {
 	subscriptionId := "123456789"
 
-	project, err := testdb.SeedProject(s.ConvoyApp.A.Store, uuid.NewString(), "test-project", "", datastore.IncomingProject, nil)
+	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, uuid.NewString(), "test-project", "", datastore.IncomingProject, nil)
 	require.NoError(s.T(), err)
 
 	// Seed Auth
@@ -444,12 +445,12 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingProje
 		Project: project.UID,
 	}
 
-	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
+	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
 
 	// Just Before
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, project, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
-	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, project, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, project, subscriptionId, "incoming", source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, project, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
+	source, _ := testdb.SeedSource(s.ConvoyApp.A.DB, project, uuid.NewString(), "", "", nil)
+	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.DB, project, subscriptionId, "incoming", source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", project.UID, subscriptionId)
@@ -466,7 +467,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingProje
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := cm.NewSubscriptionRepo(s.ConvoyApp.A.Store)
+	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), project.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), subscription.UID, dbSub.UID)
@@ -480,9 +481,9 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetSubscriptions_ValidSubscripti
 
 	for i := 0; i < totalSubs; i++ {
 		// Just Before
-		endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
-		source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), "", "", nil)
-		_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), datastore.OutgoingProject, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
+		endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
+		source, _ := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, uuid.NewString(), "", "", nil)
+		_, _ = testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, uuid.NewString(), datastore.OutgoingProject, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 	}
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultProject.UID)
@@ -505,9 +506,9 @@ func (s *SubscriptionIntegrationTestSuite) Test_DeleteSubscription() {
 	subscriptionId := "123456789"
 
 	// Just Before
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
-	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultProject, subscriptionId, datastore.OutgoingProject, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
+	source, _ := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, uuid.NewString(), "", "", nil)
+	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, subscriptionId, datastore.OutgoingProject, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultProject.UID, subscriptionId)
@@ -521,7 +522,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_DeleteSubscription() {
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert.
-	subRepo := cm.NewSubscriptionRepo(s.ConvoyApp.A.Store)
+	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
 	_, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscriptionId)
 	require.ErrorIs(s.T(), err, datastore.ErrSubscriptionNotFound)
 }
@@ -530,9 +531,9 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	subscriptionId := "123456789"
 
 	// Just Before
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
-	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), "", "", nil)
-	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.Store, s.DefaultProject, subscriptionId, datastore.OutgoingProject, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, uuid.NewString(), "", "", false, datastore.ActiveEndpointStatus)
+	source, _ := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, uuid.NewString(), "", "", nil)
+	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, subscriptionId, datastore.OutgoingProject, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{})
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultProject.UID, subscriptionId)
@@ -569,7 +570,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := cm.NewSubscriptionRepo(s.ConvoyApp.A.Store)
+	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 2, len(dbSub.FilterConfig.EventTypes))
