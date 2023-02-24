@@ -86,6 +86,10 @@ const (
 
 	fetchSubscriptionByID = baseFetch + ` AND %s = $1 AND %s = $2;`
 
+	fetchSubscriptionByDeviceID = baseFetch + ` AND %s = $1 AND %s = $2 AND %s = $3`
+
+	fetchCLISubscriptions = baseFetch + `AND %s = $1 AND %s = $2`
+
 	fetchSubscriptionsPaginated = baseFetch + ` AND s.project_id = $1 ORDER BY id LIMIT $2 OFFSET $3;`
 
 	fetchSubscriptionsPaginatedFilterByEndpoints = baseFetch + ` AND s.endpoint_id IN (?) AND s.project_id = ? ORDER BY id LIMIT ? OFFSET ?;`
@@ -306,9 +310,9 @@ func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, pr
 	return scanSubscriptions(rows)
 }
 
-func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string) (*datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string, subscriptionType datastore.SubscriptionType) (*datastore.Subscription, error) {
 	subscription := &datastore.Subscription{}
-	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.device_id", "s.project_id"), deviceID, projectId).StructScan(subscription)
+	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSubscriptionByDeviceID, "s.device_id", "s.project_id", "s.type"), deviceID, projectId, subscriptionType).StructScan(subscription)
 	if err != nil {
 		return nil, err
 	}
@@ -316,6 +320,15 @@ func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, proje
 	nullifyEmptyConfig(subscription)
 
 	return subscription, nil
+}
+
+func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID string) ([]datastore.Subscription, error) {
+	rows, err := s.db.QueryxContext(ctx, fmt.Sprintf(fetchCLISubscriptions, "s.project_id", "s.type"), projectID, datastore.SubscriptionTypeCLI)
+	if err != nil {
+		return nil, err
+	}
+
+	return scanSubscriptions(rows)
 }
 
 func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload map[string]interface{}, filter map[string]interface{}) (bool, error) {
