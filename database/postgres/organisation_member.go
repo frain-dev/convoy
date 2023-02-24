@@ -110,6 +110,14 @@ const (
 	JOIN convoy.organisations o ON m.organisation_id = o.id
 	WHERE m.user_id = $1 AND o.deleted_at IS NULL AND m.deleted_at IS NULL
 	`
+
+	fetchUserProjects = `
+	SELECT p.id, p.name, p.type, p.retained_events, p.logo_url,
+	p.organisation_id, p.project_configuration_id, p.created_at,
+	p.updated_at FROM convoy.organisation_members m 
+	LEFT JOIN convoy.projects p ON p.organisation_id = m.organisation_id
+	WHERE m.user_id = $1 AND m.deleted_at IS NULL AND p.deleted_at IS NULL
+	`
 )
 
 type orgMemberRepo struct {
@@ -199,6 +207,29 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 
 	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
 	return organisations, pagination, nil
+}
+
+func (o *orgMemberRepo) FindUserProjects(ctx context.Context, userID string) ([]datastore.Project, error) {
+	rows, err := o.db.QueryxContext(ctx, fetchUserProjects, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var projects []datastore.Project
+	for rows.Next() {
+		var proj datastore.Project
+
+		err = rows.StructScan(&proj)
+		if err != nil {
+			return nil, err
+		}
+
+		projects = append(projects, proj)
+	}
+
+	return projects, nil
 }
 
 func (o *orgMemberRepo) UpdateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {

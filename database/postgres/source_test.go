@@ -57,6 +57,29 @@ func Test_FindSourceByID(t *testing.T) {
 	require.Equal(t, source, newSource)
 }
 
+func Test_FindSourceByName(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	sourceRepo := NewSourceRepo(db)
+	source := generateSource(t, db)
+
+	_, err := sourceRepo.FindSourceByName(context.Background(), source.ProjectID, source.Name)
+
+	require.Error(t, err)
+	require.True(t, errors.Is(err, datastore.ErrSourceNotFound))
+
+	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
+
+	newSource, err := sourceRepo.FindSourceByName(context.Background(), source.ProjectID, source.Name)
+	require.NoError(t, err)
+
+	newSource.CreatedAt = time.Time{}
+	newSource.UpdatedAt = time.Time{}
+
+	require.Equal(t, source, newSource)
+}
+
 func Test_FindSourceByMaskID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()

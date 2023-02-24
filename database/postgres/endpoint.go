@@ -340,9 +340,9 @@ func (e *endpointRepo) DeleteSecret(ctx context.Context, endpoint *datastore.End
 
 func (e *endpointRepo) baseFetch(rows *sqlx.Rows) ([]datastore.Endpoint, error) {
 	var endpoints []datastore.Endpoint
-	var endpoint datastore.Endpoint
 
 	for rows.Next() {
+		var endpoint datastore.Endpoint
 		err := rows.StructScan(&endpoint)
 		if err != nil {
 			return nil, err

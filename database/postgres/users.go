@@ -179,8 +179,8 @@ func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageab
 	}
 
 	var users []datastore.User
-	var user datastore.User
 	for rows.Next() {
+		var user datastore.User
 		err = rows.StructScan(&user)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err

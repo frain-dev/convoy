@@ -17,8 +17,8 @@ import (
 
 const (
 	createSource = `
-    INSERT INTO convoy.sources (id, source_verifier_id, name,type,mask_id,provider,is_disabled,forward_headers,project_id)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9);
+    INSERT INTO convoy.sources (id, source_verifier_id, name,type,mask_id,provider,is_disabled,forward_headers,project_id, pub_sub)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10);
     `
 
 	createSourceVerifier = `
@@ -39,6 +39,7 @@ const (
 	is_disabled=$6,
 	forward_headers=$7,
 	project_id =$8,
+	pub_sub= $9,
 	updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL ;
 	`
@@ -58,7 +59,7 @@ const (
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
-	fetchSource = `
+	baseFetchSource = `
 	SELECT
 		s.id,
 		s.name,
@@ -69,6 +70,7 @@ const (
 		s.forward_headers,
 		s.project_id,
 		s.source_verifier_id,
+		s.pub_sub,
 		sv.type as "verifier.type",
 		sv.basic_username as "verifier.basic_auth.username",
 		sv.basic_password as "verifier.basic_auth.password",
@@ -83,8 +85,11 @@ const (
 	FROM convoy.sources as s
 	LEFT JOIN convoy.source_verifiers sv
 		ON s.source_verifier_id = sv.id
-	WHERE %s = $1 AND s.deleted_at IS NULL;
 	`
+
+	fetchSource = baseFetchSource + ` WHERE %s = $1 AND s.deleted_at IS NULL;`
+
+	fetchSourceByName = baseFetchSource + ` WHERE %s = $1 AND %s = $2 AND s.deleted_at IS NULL;`
 
 	deleteSource = `
 	UPDATE convoy.sources SET
@@ -99,7 +104,7 @@ const (
 	`
 
 	deleteSourceSubscription = `
-	UPDATE convoy.subscriptions SET 
+	UPDATE convoy.subscriptions SET
 	deleted_at = now()
 	WHERE source_id = $1 AND deleted_at IS NULL;
 	`
@@ -107,10 +112,12 @@ const (
 	fetchSourcesPaginated = `
 	SELECT * FROM convoy.sources
 	WHERE deleted_at IS NULL
-	ORDER BY id LIMIT $1 OFFSET $2;
+	AND (type = :type OR :type = '') AND (provider = :provider OR :provider = '')
+	ORDER BY id LIMIT :limit OFFSET :offset;
 	`
 	countSources = `
-	SELECT COUNT(id) FROM convoy.sources WHERE deleted_at IS NULL;
+	SELECT COUNT(id) FROM convoy.sources WHERE deleted_at IS NULL
+	AND (type = :type OR :type = '') AND (provider = :provider OR :provider = '');
 	`
 )
 
@@ -155,7 +162,6 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 		ctx, createSourceVerifier, sourceVerifierID, source.Verifier.Type, basic.UserName, basic.Password,
 		apiKey.HeaderName, apiKey.HeaderValue, hmac.Hash, hmac.Header, hmac.Secret, hmac.Encoding,
 	)
-
 	if err != nil {
 		return err
 	}
@@ -172,7 +178,7 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 	source.VerifierID = sourceVerifierID
 	result1, err := tx.ExecContext(
 		ctx, createSource, source.UID, sourceVerifierID, source.Name, source.Type, source.MaskID,
-		source.Provider, source.IsDisabled, pq.Array(source.ForwardHeaders), source.ProjectID,
+		source.Provider, source.IsDisabled, pq.Array(source.ForwardHeaders), source.ProjectID, source.PubSub,
 	)
 	if err != nil {
 		return err
@@ -198,7 +204,7 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 
 	result, err := tx.ExecContext(
 		ctx, updateSourceById, source.UID, source.Name, source.Type, source.MaskID,
-		source.Provider, source.IsDisabled, source.ForwardHeaders, source.ProjectID,
+		source.Provider, source.IsDisabled, source.ForwardHeaders, source.ProjectID, source.PubSub,
 	)
 	if err != nil {
 		return err
@@ -260,6 +266,19 @@ func (s *sourceRepo) FindSourceByID(ctx context.Context, projectID string, id st
 	return source, nil
 }
 
+func (s *sourceRepo) FindSourceByName(ctx context.Context, projectID string, name string) (*datastore.Source, error) {
+	source := &datastore.Source{}
+	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSourceByName, "s.project_id", "s.name"), projectID, name).StructScan(source)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrSourceNotFound
+		}
+		return nil, err
+	}
+
+	return source, nil
+}
+
 func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskID string) (*datastore.Source, error) {
 	source := &datastore.Source{}
 	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.mask_id"), maskID).StructScan(source)
@@ -298,14 +317,27 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectID, id, source
 }
 
 func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, filter *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
-	rows, err := s.db.QueryxContext(ctx, fetchSourcesPaginated, pageable.Limit(), pageable.Offset())
+	arg := map[string]interface{}{
+		"type":     filter.Type,
+		"provider": filter.Provider,
+		"limit":    pageable.Limit(),
+		"offset":   pageable.Offset(),
+	}
+
+	query, args, err := sqlx.Named(fetchSourcesPaginated, arg)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+	
+	query = s.db.Rebind(query)
+	rows, err := s.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
 
 	sources := make([]datastore.Source, 0)
-	var source datastore.Source
 	for rows.Next() {
+		var source datastore.Source
 		err = rows.StructScan(&source)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -315,7 +347,13 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 	}
 
 	var count int
-	err = s.db.Get(&count, countSources)
+	query, args, err = sqlx.Named(countSources, arg)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query = s.db.Rebind(query)
+	err = s.db.Get(&count, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}

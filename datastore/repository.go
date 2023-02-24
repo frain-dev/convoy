@@ -22,7 +22,7 @@ type EventDeliveryRepository interface {
 	CountDeliveriesByStatus(context.Context, EventDeliveryStatus, SearchParams) (int64, error)
 	UpdateStatusOfEventDelivery(context.Context, EventDelivery, EventDeliveryStatus) error
 	UpdateStatusOfEventDeliveries(context.Context, []string, EventDeliveryStatus) error
-	FindDiscardedEventDeliveries(ctx context.Context, appId, deviceId string, searchParams SearchParams) ([]EventDelivery, error)
+	FindDiscardedEventDeliveries(ctx context.Context, endpointId, deviceId string, searchParams SearchParams) ([]EventDelivery, error)
 
 	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, DeliveryAttempt) error
 	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
@@ -72,6 +72,7 @@ type OrganisationInviteRepository interface {
 type OrganisationMemberRepository interface {
 	LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable Pageable) ([]*OrganisationMember, PaginationData, error)
 	LoadUserOrganisationsPaged(ctx context.Context, userID string, pageable Pageable) ([]Organisation, PaginationData, error)
+	FindUserProjects(ctx context.Context, userID string) ([]Project, error)
 	CreateOrganisationMember(ctx context.Context, member *OrganisationMember) error
 	UpdateOrganisationMember(ctx context.Context, member *OrganisationMember) error
 	DeleteOrganisationMember(ctx context.Context, memberID string, orgID string) error
@@ -101,7 +102,8 @@ type SubscriptionRepository interface {
 	FindSubscriptionByID(context.Context, string, string) (*Subscription, error)
 	FindSubscriptionsBySourceID(context.Context, string, string) ([]Subscription, error)
 	FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]Subscription, error)
-	FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string) (*Subscription, error)
+	FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string, subscriptionType SubscriptionType) (*Subscription, error)
+	FindCLISubscriptions(ctx context.Context, projectID string) ([]Subscription, error)
 	TestSubscriptionFilter(ctx context.Context, payload map[string]interface{}, filter map[string]interface{}) (bool, error)
 }
 
@@ -109,6 +111,7 @@ type SourceRepository interface {
 	CreateSource(context.Context, *Source) error
 	UpdateSource(ctx context.Context, projectID string, source *Source) error
 	FindSourceByID(ctx context.Context, projectID string, id string) (*Source, error)
+	FindSourceByName(ctx context.Context, projectId string, name string) (*Source, error)
 	FindSourceByMaskID(ctx context.Context, maskID string) (*Source, error)
 	DeleteSourceByID(ctx context.Context, projectID string, id string, sourceVerifierID string) error
 	LoadSourcesPaged(ctx context.Context, projectID string, filter *SourceFilter, pageable Pageable) ([]Source, PaginationData, error)
