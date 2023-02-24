@@ -251,10 +251,16 @@
 	(closeModal)="action === 'update' ? (showApiKey = false) : onAction.emit({ action: 'createProject', data: projectDetails })"
 ></convoy-token-modal>
 
-<convoy-confirmation-modal
-	*ngIf="confirmModal || confirmRegenerateKey"
-	[action]="confirmRegenerateKey ? 'save' : 'discard'"
-	[confirmText]="confirmRegenerateKey ? 'You are about to regenerate a new Api Key for this project' : ''"
-	(confirmAction)="confirmRegenerateKey ? regenerateKey() : router.navigateByUrl('/')"
-	(closeModal)="confirmModal = false; confirmRegenerateKey = false"
-></convoy-confirmation-modal>
+<div convoy-modal position="center" size="sm"  *ngIf="confirmModal || confirmRegenerateKey" (closeModal)="confirmModal = false; confirmRegenerateKey = false">
+	<div class="px-20px py-30px" modalBody>
+		<p class="text-16 font-semibold text-black mb-8px">Confirm Action</p>
+		<p class="text-14 font-medium text-grey-40 mb-24px">
+			<span>{{ confirmModal ? 'You are about to discard this process, please confirm this action.' : 'You are about to regenerate a new Api Key for this project' }}</span>
+		</p>
+		<div class="flex items-center">
+			<button convoy-button [color]="confirmModal ? 'danger' : 'primary'" class="mr-12px px-60px" (click)="confirmRegenerateKey ? regenerateKey() : router.navigateByUrl('/')">Confirm</button>
+			<button convoy-button fill="clear" [color]="confirmModal ? 'primary' : 'danger'" class="font-semibold" (click)="confirmModal = false; confirmRegenerateKey = false">Cancel</button>
+		</div>
+	</div>
+</div>
+

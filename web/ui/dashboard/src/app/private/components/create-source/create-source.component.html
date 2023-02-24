@@ -125,4 +125,14 @@
 	</div>
 </form>
 
-<convoy-confirmation-modal *ngIf="confirmModal" (confirmAction)="onAction.emit({ action: 'close' })" (closeModal)="confirmModal = false"></convoy-confirmation-modal>
+
+<div convoy-modal position="center" size="sm" *ngIf="confirmModal" (closeModal)="confirmModal = false">
+	<div class="px-20px py-30px" modalBody>
+		<p class="text-16 font-semibold text-black mb-8px">Confirm Action</p>
+		<p class="text-14 font-medium text-grey-40 mb-24px">You are about to discard this process, please confirm this action.</p>
+		<div class="flex items-center">
+			<button convoy-button color="danger" class="mr-12px px-60px" (click)="onAction.emit({ action: 'close' })">Confirm</button>
+			<button convoy-button fill="clear" [color]="confirmModal ? 'primary' : 'danger'" class="font-semibold" (click)="confirmModal = false">Cancel</button>
+		</div>
+	</div>
+</div>
