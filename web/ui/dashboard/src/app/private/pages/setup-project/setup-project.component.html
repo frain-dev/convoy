@@ -2,11 +2,34 @@
 	<div modalBody class="pb-60px">
 		<convoy-loader *ngIf="showLoader"></convoy-loader>
 
+		<ng-container *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
+			<convoy-card class="p-24px mt-40px mb-70px">
+				<div class="flex justify-between">
+					<div>
+						<h2 class="font-semibold mb-8px">Connect Pub/sub as event source</h2>
+						<p class="text-grey-60 text-12 mt-6px max-w-[348px]">Connect your Google Pub/Sub or AWS SQS to automatically trigger events to endpoints once there is a new message on the queue</p>
+
+                        <!-- pending when documentation is ready  -->
+						<!-- <a convoy-button size="sm" fill="text" type="button" class="font-medium !justify-start" href="https://getconvoy.io/docs/manual/subscriptions#subscription-filters" target="_blank" referrerpolicy="noreferrer">
+							Read more here
+							<svg width="24" height="24" class="ml-8px" class="fill-primary-100">
+								<use xlink:href="#arrow-right-icon"></use>
+							</svg>
+						</a> -->
+					</div>
+					<convoy-toggle (onChange)="connectPubSub = !connectPubSub" [isChecked]="connectPubSub"></convoy-toggle>
+				</div>
+			</convoy-card>
+		</ng-container>
+
 		<ng-container *ngIf="projectType === 'incoming'">
 			<h3 class="font-semibold mt-40px">Create your first source</h3>
 			<p class="text-14 text-grey-60 mt-6px max-w-[634px]">
 				A source on Convoy represents your event senders, the providers and services you’ll like to receive events from. On creating a source, you’ll get a unique URL to listen to event into Convoy which can then be routed to any endpoint of choice
 			</p>
+		</ng-container>
+
+		<ng-container *ngIf="projectType === 'incoming' || connectPubSub">
 			<convoy-create-source></convoy-create-source>
 		</ng-container>
 
