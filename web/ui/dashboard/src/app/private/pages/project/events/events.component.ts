@@ -38,15 +38,26 @@ export class EventsComponent implements OnInit {
 	eventsFetched!: EVENT[];
 	chartData!: CHARTDATA[];
 	showAddEventModal = false;
+	lastestSourceURL: string = '';
 
 	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, private route: ActivatedRoute, public router: Router) {}
 
 	async ngOnInit() {
 		this.isloadingDashboardData = true;
-		await Promise.all([this.fetchDashboardData(), this.fetchEvents()]);
+		await Promise.all([this.fetchDashboardData(), this.fetchEvents(), this.getSourceURL()]);
 		this.isloadingDashboardData = false;
 
 		// this.toggleActiveTab(this.route.snapshot.queryParams?.activeTab ?? 'events');
+	}
+
+	async getSourceURL() {
+		try {
+			const sources = await this.privateService.getSources();
+			this.lastestSourceURL = sources.data.content[sources.data.content.length - 1].url;
+			return;
+		} catch (error) {
+			return error;
+		}
 	}
 
 	addTabToUrl() {
@@ -92,7 +103,6 @@ export class EventsComponent implements OnInit {
 		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}${requestDetails?.endTime || 'T23:59:59'}` : '';
 		return { startDate, endDate };
 	}
-
 
 	initConvoyChart(dashboardResponse: HTTP_RESPONSE, chatLabels: LABELS[]) {
 		let chartData: { label: string; data: any }[] = [];

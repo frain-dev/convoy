@@ -3,34 +3,51 @@
 </div>
 
 <ng-container *ngIf="!isloadingDashboardData">
-	<div class="text-12 font-medium flex items-center uppercase">
-		<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
-		<svg width="16" height="16" class="mx-4px">
-			<use xlink:href="#arrow-right-icon"></use>
-		</svg>
-		{{ privateService.activeProjectDetails?.name }}
-		<svg width="16" height="16" class="mx-4px">
-			<use xlink:href="#arrow-right-icon"></use>
-		</svg>
-		<span class="text-primary-100 font-medium">Events</span>
-	</div>
-
 	<ng-container *ngIf="eventsFetched?.length === 0">
-		<convoy-empty-state type="table" className="h-[70vh]" imgSrc="/assets/img/new-empty-state.png" heading="Your events are managed here." [description]="emptyStateDescription">
-			<div emptyStateCTA>
-				<button convoy-button class="mt-22px" *ngIf="isProjectConfigurationComplete" (click)="setUpEvents()">
-					Learn how to
-					{{ privateService.activeProjectDetails?.type === 'incoming' ? ' receive' : ' send' }} events
-					<svg width="24" height="24" class="ml-8px fill-white-100">
-						<use xlink:href="#arrow-right-icon"></use>
-					</svg>
-				</button>
-				<button convoy-button *ngIf="!isProjectConfigurationComplete" class="mt-22px" (click)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails?.uid + '/setup')">Complete project setup</button>
-			</div>
-		</convoy-empty-state>
+		<div convoy-card class="flex items-center justify-center flex-col py-82px h-full text-center px-40px">
+			<img src="/assets/img/events-empty-state-image.svg" alt="events empty state image" class="mb-48px" />
+			<h3 class="mb-10px text-16 font-bold">{{ privateService.activeProjectDetails?.type === 'incoming' ? 'You have no incoming events.' : 'You have no outgoing events yet' }}</h3>
+			<p class="text-14 text-grey-40 max-w-[428px]">
+				{{ privateService.activeProjectDetails?.type === 'incoming' ? 'Start receiving webhooks by pasting your webhook URL into your source “Source Name”' : 'You have not sent any webhook events yet. Learn how to do that in our docs' }}
+			</p>
+
+			<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
+				<div class="flex items-center justify-between w-full h-50px border border-grey-10 bg-[#F7F9FC] rounded-[6px] px-16px mb-32px max-w-[500px] mt-42px">
+					<span class="text-14 text-grey-40 font-normal whitespace-nowrap w-[440px] overflow-hidden text-ellipsis">{{ lastestSourceURL }}</span>
+					<convoy-copy-button [text]="'token'" notificationText="Source URL copied to clipboard"></convoy-copy-button>
+				</div>
+
+				<div convoy-card class="flex justify-between py-10px px-40px max-w-[446px] w-full items-center">
+					<img src="/assets/img/time-icon.svg" alt="timer icon" class="mr-20px w-38px" />
+					<p class="mr-12px text-14 text-grey-80">Waiting on your first web-hook event</p>
+					<img src="/assets/img/Loader.png" class="opacity-50 w-50px" alt="loader icon" />
+				</div>
+
+				<a href="https://getconvoy.io/docs" target="_blank" referrerpolicy="no-referrer" convoy-button fill="clear" class="mt-48px font-medium">Don't See Your Events Yet?</a>
+			</ng-container>
+
+			<a href="https://getconvoy.io/docs" convoy-button target="_blank" referrerpolicy="no-referrer" fill="outline" class="mt-48px" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
+				Go to documentation
+				<svg class="ml-8px fill-primary-100 w-20px h-20px">
+					<use xlink:href="#external-link-icon"></use>
+				</svg>
+			</a>
+		</div>
 	</ng-container>
 
 	<ng-container *ngIf="eventsFetched?.length">
+		<div class="text-12 font-medium flex items-center uppercase">
+			<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
+			<svg width="16" height="16" class="mx-4px">
+				<use xlink:href="#arrow-right-icon"></use>
+			</svg>
+			{{ privateService.activeProjectDetails?.name }}
+			<svg width="16" height="16" class="mx-4px">
+				<use xlink:href="#arrow-right-icon"></use>
+			</svg>
+			<span class="text-primary-100 font-medium">Events</span>
+		</div>
+
 		<div class="py-24px flex items-center">
 			<convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()"></convoy-date-picker>
 
