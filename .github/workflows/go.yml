@@ -18,7 +18,7 @@ jobs:
         runs-on: ubuntu-latest
         services:
             postgres:
-                image: postgres:14
+                image: postgres:15
                 ports:
                     - 5432:5432
                 env:
@@ -28,12 +28,6 @@ jobs:
                     # set up health check for postgres
                 options: --health-cmd pg_isready --health-interval 10ms --health-timeout 500ms --health-retries 15
         steps:
-            - name: Start MongoDB
-              uses: supercharge/mongodb-github-action@1.4.1
-              with:
-                  mongodb-replica-set: test
-                  mongodb-version: ${{ matrix.mongodb-version }}
-
             - name: Start Redis v${{ matrix.redis-version }}
               uses: supercharge/redis-github-action@1.4.0
               with:
@@ -73,6 +67,9 @@ jobs:
 
             - name: Go vet
               run: go vet ./...
+
+            - name: Migrate Postgres
+              run: go run ./cmd migrate up
 
             - name: Run integration tests
               run: make integration_tests
