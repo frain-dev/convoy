@@ -158,11 +158,18 @@ CREATE TABLE IF NOT EXISTS convoy.portal_links (
 
 	name TEXT NOT NULL,
 	token TEXT NOT NULL,
-	endpoints TEXT[] NOT NULL,
+	endpoints TEXT NOT NULL,
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	deleted_at TIMESTAMPTZ
+	deleted_at TIMESTAMPTZ,
+
+	CONSTRAINT portal_links_token UNIQUE NULLS NOT DISTINCT (token, deleted_at)
+);
+
+CREATE TABLE IF NOT EXISTS convoy.portal_links_endpoints (
+	portal_link_id CHAR(26) NOT NULL REFERENCES convoy.portal_links (id),
+	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id)
 );
 
 CREATE TABLE IF NOT EXISTS convoy.devices (
