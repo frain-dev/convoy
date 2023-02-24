@@ -11,7 +11,7 @@ export interface EVENT {
 	event_type: string;
 	data: any;
 	matched_endpoints: number;
-    endpoint_metadata: ENDPOINT[];
+	endpoint_metadata: ENDPOINT[];
 	metadata?: {
 		interval_seconds: number;
 		next_send_time: Date;
@@ -53,9 +53,10 @@ export interface EVENT_DELIVERY_ATTEMPT {
 	updated_at: string;
 	created_at: string;
 	deleted_at?: number;
+	status?: boolean;
 	response_data?: string;
 	response_http_header: any;
 	request_http_header: any;
-    uid:string;
+	uid: string;
 	error?: string;
 }

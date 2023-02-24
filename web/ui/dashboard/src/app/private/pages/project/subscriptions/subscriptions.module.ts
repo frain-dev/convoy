@@ -33,7 +33,8 @@ const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 		FormatSecondsPipe,
 		DeleteModalComponent,
 		SourceValueModule,
-		TooltipComponent
+		TooltipComponent,
+        CardComponent
 	]
 })
 export class SubscriptionsModule {}

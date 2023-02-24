@@ -28,6 +28,7 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	@Input('label') label!: string;
 	@Input('formControlName') formControlName!: string;
 	@Input('required') required = false;
+	@Input('readonly') readonly = false;
 	@Input('multiple') multiple = false;
 	@Input('placeholder') placeholder!: string;
 	@Input('className') class!: string;

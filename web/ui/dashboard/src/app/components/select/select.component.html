@@ -1,5 +1,5 @@
 <div convoy-dropdown size="full" position="center" [className]="control.touched && control.invalid ? 'top-[85%]' : ''" *ngIf="control">
-	<div class="w-full" dropdownTrigger>
+	<div class="w-full" [ngClass]="{ 'pointer-events-none': readonly }" dropdownTrigger>
 		<label class="w-full font-medium text-12 text-grey-40 mb-8px flex items-center justify-between" [for]="name">
 			<div class="flex items-center">
 				{{ label }}
@@ -40,7 +40,6 @@
 				flex-wrap
 			"
 		>
-
 			<span *ngIf="!multiple">{{ selectedValue?.name || selectedValue?.title || selectedValue }}</span>
 			<ng-container *ngIf="multiple">
 				<div *ngFor="let option of selectedOptions" class="border border-grey-10 bg-grey-10 px-4px font-medium text-12 mr-1 mb-1 rounded-4px flex items-center">
