@@ -242,10 +242,10 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 
 	var portalLinks []datastore.PortalLink
 	portalLinksMap := make(map[string]*datastore.PortalLink, 0)
-	var link PortalLinkPaginated
 	var count int
 
 	for rows.Next() {
+		var link PortalLinkPaginated
 		err = rows.StructScan(&link)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
