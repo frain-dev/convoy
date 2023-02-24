@@ -73,7 +73,7 @@ func Test_UpdateConfiguration(t *testing.T) {
 
 func generateConfig() *datastore.Configuration {
 	return &datastore.Configuration{
-		UID:                uuid.NewString(),
+		UID:                ulid.Make().String(),
 		IsAnalyticsEnabled: true,
 	}
 }

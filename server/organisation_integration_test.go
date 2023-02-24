@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
 	"github.com/frain-dev/convoy/auth"
@@ -20,7 +22,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -126,7 +127,7 @@ func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation_EmptyOrganisa
 func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation_CustomDomain() {
 	expectedStatusCode := http.StatusAccepted
 
-	uid := uuid.NewString()
+	uid := ulid.Make().String()
 	org, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, uid, s.DefaultUser.UID, "new_org")
 	require.NoError(s.T(), err)
 
@@ -159,7 +160,7 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation_CustomDomain(
 func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation() {
 	expectedStatusCode := http.StatusAccepted
 
-	uid := uuid.NewString()
+	uid := ulid.Make().String()
 	org, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, uid, s.DefaultUser.UID, "new_org")
 	require.NoError(s.T(), err)
 
@@ -191,7 +192,7 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation() {
 func (s *OrganisationIntegrationTestSuite) Test_GetOrganisation() {
 	expectedStatusCode := http.StatusOK
 
-	uid := uuid.NewString()
+	uid := ulid.Make().String()
 	seedOrg, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, uid, s.DefaultUser.UID, "new_org")
 	require.NoError(s.T(), err)
 
@@ -226,12 +227,12 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisation() {
 func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
 	expectedStatusCode := http.StatusOK
 
-	org, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, uuid.NewString(), "", "test-org")
+	org, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, ulid.Make().String(), "", "test-org")
 	require.NoError(s.T(), err)
 
 	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, org, s.DefaultUser, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Project:  uuid.NewString(),
+		Project:  ulid.Make().String(),
 		Endpoint: "",
 	})
 	require.NoError(s.T(), err)
@@ -266,17 +267,17 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
 func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations_WithPersonalAPIKey() {
 	expectedStatusCode := http.StatusOK
 
-	org, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, uuid.NewString(), "", "test-org")
+	org, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, ulid.Make().String(), "", "test-org")
 	require.NoError(s.T(), err)
 
 	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, org, s.DefaultUser, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Project:  uuid.NewString(),
+		Project:  ulid.Make().String(),
 		Endpoint: "",
 	})
 	require.NoError(s.T(), err)
 
-	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -307,7 +308,7 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations_WithPersonalAPI
 func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation() {
 	expectedStatusCode := http.StatusOK
 
-	uid := uuid.NewString()
+	uid := ulid.Make().String()
 	seedOrg, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, uid, s.DefaultUser.UID, "new_org")
 	require.NoError(s.T(), err)
 

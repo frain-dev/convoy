@@ -12,13 +12,10 @@ import (
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/pkg/httpheader"
-
-	"gopkg.in/guregu/null.v4"
-
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/google/uuid"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/guregu/null.v4"
 )
 
 func Test_FetchProjectByID(t *testing.T) {
@@ -207,7 +204,7 @@ func Test_LoadProjects(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		project := &datastore.Project{
 			UID:            ulid.Make().String(),
-			Name:           fmt.Sprintf("%s-project", uuid.NewString()),
+			Name:           fmt.Sprintf("%s-project", ulid.Make().String()),
 			OrganisationID: org.UID,
 			Config:         &datastore.DefaultProjectConfig,
 		}
@@ -219,7 +216,7 @@ func Test_LoadProjects(t *testing.T) {
 	for i := 0; i < 4; i++ {
 		project := &datastore.Project{
 			UID:            ulid.Make().String(),
-			Name:           fmt.Sprintf("%s-project", uuid.NewString()),
+			Name:           fmt.Sprintf("%s-project", ulid.Make().String()),
 			OrganisationID: seedOrg(t, db).UID,
 			Config:         &datastore.DefaultProjectConfig,
 		}

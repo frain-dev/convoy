@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
@@ -19,7 +21,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -83,7 +84,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 
 	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Project:  uuid.NewString(),
+		Project:  ulid.Make().String(),
 		Endpoint: "",
 	})
 	require.NoError(s.T(), err)
@@ -96,7 +97,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 	require.NoError(s.T(), err)
 
 	w := httptest.NewRecorder()
-
+	fmt.Println("fff", w.Body.String())
 	// Act.
 	s.Router.ServeHTTP(w, req)
 
@@ -136,7 +137,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Project:  uuid.NewString(),
+		Project:  ulid.Make().String(),
 		Endpoint: "",
 	})
 
@@ -178,7 +179,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Project:  uuid.NewString(),
+		Project:  ulid.Make().String(),
 		Endpoint: "",
 	})
 	require.NoError(s.T(), err)
@@ -216,7 +217,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember()
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Project:  uuid.NewString(),
+		Project:  ulid.Make().String(),
 		Endpoint: "",
 	})
 

@@ -9,7 +9,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -29,7 +29,7 @@ func (db *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, eventDeliv
 	ctx = db.setCollectionInContext(ctx)
 
 	if util.IsStringEmpty(eventDelivery.UID) {
-		eventDelivery.UID = uuid.New().String()
+		eventDelivery.UID = ulid.Make().String()
 	}
 
 	return db.store.Save(ctx, eventDelivery, nil)

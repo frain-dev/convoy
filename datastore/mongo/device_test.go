@@ -7,10 +7,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/google/uuid"
-
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,9 +21,9 @@ func Test_CreateDevice(t *testing.T) {
 
 	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
-		UID:        uuid.NewString(),
-		ProjectID:  uuid.NewString(),
-		EndpointID: uuid.NewString(),
+		UID:        ulid.Make().String(),
+		ProjectID:  ulid.Make().String(),
+		EndpointID: ulid.Make().String(),
 		HostName:   "",
 		Status:     datastore.DeviceStatusOnline,
 	}
@@ -47,9 +46,9 @@ func Test_UpdateDevice(t *testing.T) {
 
 	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
-		UID:        uuid.NewString(),
-		ProjectID:  uuid.NewString(),
-		EndpointID: uuid.NewString(),
+		UID:        ulid.Make().String(),
+		ProjectID:  ulid.Make().String(),
+		EndpointID: ulid.Make().String(),
 		HostName:   "",
 		Status:     datastore.DeviceStatusOnline,
 	}
@@ -77,9 +76,9 @@ func Test_UpdateDeviceLastSeen(t *testing.T) {
 
 	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
-		UID:        uuid.NewString(),
-		ProjectID:  uuid.NewString(),
-		EndpointID: uuid.NewString(),
+		UID:        ulid.Make().String(),
+		ProjectID:  ulid.Make().String(),
+		EndpointID: ulid.Make().String(),
 		HostName:   "",
 		Status:     datastore.DeviceStatusOnline,
 	}
@@ -107,9 +106,9 @@ func Test_DeleteDevice(t *testing.T) {
 
 	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
-		UID:        uuid.NewString(),
-		ProjectID:  uuid.NewString(),
-		EndpointID: uuid.NewString(),
+		UID:        ulid.Make().String(),
+		ProjectID:  ulid.Make().String(),
+		EndpointID: ulid.Make().String(),
 		HostName:   "",
 		Status:     datastore.DeviceStatusOnline,
 	}
@@ -131,9 +130,9 @@ func Test_FetchDeviceByID(t *testing.T) {
 
 	deviceRepo := NewDeviceRepository(store)
 	device := &datastore.Device{
-		UID:        uuid.NewString(),
-		ProjectID:  uuid.NewString(),
-		EndpointID: uuid.NewString(),
+		UID:        ulid.Make().String(),
+		ProjectID:  ulid.Make().String(),
+		EndpointID: ulid.Make().String(),
 		HostName:   "",
 		Status:     datastore.DeviceStatusOnline,
 	}
@@ -162,7 +161,7 @@ func Test_LoadDevicesPaged(t *testing.T) {
 			name:      "Load Devices Paged - 10 records",
 			pageData:  datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
 			count:     10,
-			projectID: uuid.NewString(),
+			projectID: ulid.Make().String(),
 			filter:    &datastore.ApiKeyFilter{EndpointID: ""},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
@@ -180,7 +179,7 @@ func Test_LoadDevicesPaged(t *testing.T) {
 			name:      "Load Devices Paged - 12 records",
 			pageData:  datastore.Pageable{Page: 2, PerPage: 4, Sort: -1},
 			count:     12,
-			projectID: uuid.NewString(),
+			projectID: ulid.Make().String(),
 			filter:    &datastore.ApiKeyFilter{EndpointID: ""},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
@@ -198,7 +197,7 @@ func Test_LoadDevicesPaged(t *testing.T) {
 			name:      "Load Devices Paged - 5 records",
 			pageData:  datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
 			count:     5,
-			projectID: uuid.NewString(),
+			projectID: ulid.Make().String(),
 			filter:    &datastore.ApiKeyFilter{EndpointID: ""},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
@@ -216,8 +215,8 @@ func Test_LoadDevicesPaged(t *testing.T) {
 			name:      "Load Devices Paged - 1 record",
 			pageData:  datastore.Pageable{Page: 1, PerPage: 3, Sort: -1},
 			count:     1,
-			projectID: uuid.NewString(),
-			filter:    &datastore.ApiKeyFilter{EndpointID: uuid.NewString()},
+			projectID: ulid.Make().String(),
+			filter:    &datastore.ApiKeyFilter{EndpointID: ulid.Make().String()},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					Total:     1,
@@ -241,9 +240,9 @@ func Test_LoadDevicesPaged(t *testing.T) {
 
 			for i := 0; i < tc.count; i++ {
 				device := &datastore.Device{
-					UID:        uuid.NewString(),
+					UID:        ulid.Make().String(),
 					ProjectID:  tc.projectID,
-					EndpointID: uuid.NewString(),
+					EndpointID: ulid.Make().String(),
 					HostName:   "",
 					Status:     datastore.DeviceStatusOnline,
 				}

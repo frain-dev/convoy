@@ -184,11 +184,11 @@ func Test_LoadSourcesPaged(t *testing.T) {
 
 			store := getStore(db)
 			sourceRepo := NewSourceRepo(store)
-			projectId := uuid.NewString()
+			projectId := ulid.Make().String()
 
 			for i := 0; i < tc.count; i++ {
 				source := &datastore.Source{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					ProjectID: projectId,
 					Name:      "Convoy-Prod",
 					MaskID:    uniuri.NewLen(16),
@@ -221,8 +221,8 @@ func Test_LoadSourcesPaged(t *testing.T) {
 
 func generateSource(t *testing.T) *datastore.Source {
 	return &datastore.Source{
-		UID:       uuid.NewString(),
-		ProjectID: uuid.NewString(),
+		UID:       ulid.Make().String(),
+		ProjectID: ulid.Make().String(),
 		Name:      "Convoy-Prod",
 		MaskID:    uniuri.NewLen(16),
 		Type:      datastore.HTTPSource,

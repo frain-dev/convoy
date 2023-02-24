@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -20,7 +22,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -322,7 +323,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Access_Token() {
 	bodyStr := fmt.Sprintf(`{
 		"access_token": "%s",
 		"refresh_token": "%s"
-	}`, uuid.NewString(), token.RefreshToken)
+	}`, ulid.Make().String(), token.RefreshToken)
 
 	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, "", body)
@@ -347,7 +348,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Refresh_Token() {
 	bodyStr := fmt.Sprintf(`{
 		"access_token": "%s",
 		"refresh_token": "%s"
-	}`, token.AccessToken, uuid.NewString())
+	}`, token.AccessToken, ulid.Make().String())
 
 	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, "", body)
@@ -385,7 +386,7 @@ func (u *UserIntegrationTestSuite) Test_LogoutUser_Invalid_Access_Token() {
 	// Arrange Request
 	url := "/ui/auth/logout"
 	req := httptest.NewRequest(http.MethodPost, url, nil)
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", uuid.NewString()))
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", ulid.Make().String()))
 	req.Header.Add("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -438,9 +439,9 @@ func (u *UserIntegrationTestSuite) Test_UpdateUser() {
 	token, err := u.jwt.GenerateToken(user)
 	require.NoError(u.T(), err)
 
-	firstName := fmt.Sprintf("test%s", uuid.New().String())
-	lastName := fmt.Sprintf("test%s", uuid.New().String())
-	email := fmt.Sprintf("%s@test.com", uuid.New().String())
+	firstName := fmt.Sprintf("test%s", ulid.Make().String())
+	lastName := fmt.Sprintf("test%s", ulid.Make().String())
+	email := fmt.Sprintf("%s@test.com", ulid.Make().String())
 
 	// Arrange Request
 	url := fmt.Sprintf("/ui/users/%s/profile", user.UID)
@@ -674,7 +675,7 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Invalid_Token() {
 func (u *UserIntegrationTestSuite) Test_VerifyEmail() {
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.DB, "", testdb.DefaultUserPassword)
 
-	user.EmailVerificationToken = uuid.NewString()
+	user.EmailVerificationToken = ulid.Make().String()
 	user.EmailVerificationExpiresAt = time.Now().Add(time.Hour)
 
 	userRepo := postgres.NewUserRepo(u.ConvoyApp.A.DB)

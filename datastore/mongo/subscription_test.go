@@ -9,13 +9,13 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
 
 func createSubscription() *datastore.Subscription {
 	return &datastore.Subscription{
-		UID:        uuid.NewString(),
+		UID:        ulid.Make().String(),
 		Name:       "Subscription",
 		Type:       datastore.SubscriptionTypeAPI,
 		ProjectID:  "project-id-1",
@@ -46,12 +46,12 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 
 	for i := 0; i < 20; i++ {
 		subscription := &datastore.Subscription{
-			UID:        uuid.NewString(),
+			UID:        ulid.Make().String(),
 			Name:       fmt.Sprintf("Subscription %d", i),
 			Type:       datastore.SubscriptionTypeAPI,
 			ProjectID:  "project-id-1",
-			SourceID:   uuid.NewString(),
-			EndpointID: uuid.NewString(),
+			SourceID:   ulid.Make().String(),
+			EndpointID: ulid.Make().String(),
 		}
 
 		if i == 0 {
@@ -224,12 +224,12 @@ func Test_FindSubscriptionByEndpointID(t *testing.T) {
 
 	for i := 0; i < 20; i++ {
 		subscription := &datastore.Subscription{
-			UID:        uuid.NewString(),
+			UID:        ulid.Make().String(),
 			Name:       fmt.Sprintf("Subscription %d", i),
 			Type:       datastore.SubscriptionTypeAPI,
 			EndpointID: "app-id-1",
 			ProjectID:  "project-id-1",
-			SourceID:   uuid.NewString(),
+			SourceID:   ulid.Make().String(),
 		}
 		require.NoError(t, subRepo.CreateSubscription(context.Background(), subscription.ProjectID, subscription))
 	}
@@ -253,7 +253,7 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 	subRepo := NewSubscriptionRepo(store)
 
 	subscription := &datastore.Subscription{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		Name:      "test_subscription",
 		Type:      datastore.SubscriptionTypeCLI,
 		SourceID:  "source-id-1",

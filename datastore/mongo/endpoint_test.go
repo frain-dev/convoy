@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,7 +22,7 @@ func Test_UpdateEndpoint(t *testing.T) {
 
 	newProject := &datastore.Project{
 		Name: "Random new project",
-		UID:  uuid.NewString(),
+		UID:  ulid.Make().String(),
 	}
 
 	require.NoError(t, projectRepo.CreateProject(context.Background(), newProject))
@@ -55,7 +55,7 @@ func Test_CreateEndpoint(t *testing.T) {
 
 	newOrg := &datastore.Project{
 		Name: "Random new project 2",
-		UID:  uuid.NewString(),
+		UID:  ulid.Make().String(),
 	}
 
 	require.NoError(t, projectRepo.CreateProject(context.Background(), newOrg))
@@ -63,7 +63,7 @@ func Test_CreateEndpoint(t *testing.T) {
 	endpoint := &datastore.Endpoint{
 		Title:     "Next application name",
 		ProjectID: newOrg.UID,
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 	}
 
 	require.NoError(t, endpointRepo.CreateEndpoint(context.Background(), endpoint, endpoint.ProjectID))
@@ -90,7 +90,7 @@ func Test_FindEndpointByID(t *testing.T) {
 
 	endpointRepo := NewEndpointRepo(getStore(db))
 
-	_, err := endpointRepo.FindEndpointByID(context.Background(), uuid.New().String())
+	_, err := endpointRepo.FindEndpointByID(context.Background(), ulid.Make().String())
 	require.Error(t, err)
 
 	require.True(t, errors.Is(err, datastore.ErrEndpointNotFound))
@@ -106,7 +106,7 @@ func Test_FindEndpointByID(t *testing.T) {
 	endpoint := &datastore.Endpoint{
 		Title:     "Next endpoint name again",
 		ProjectID: newProject.UID,
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 	}
 
 	require.NoError(t, endpointRepo.CreateEndpoint(context.Background(), endpoint, endpoint.ProjectID))

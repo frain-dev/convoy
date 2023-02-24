@@ -14,8 +14,8 @@ import (
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
+	"github.com/oklog/ulid/v2"
 )
 
 type CreateEvent struct {
@@ -107,7 +107,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			}
 
 			eventDelivery := &datastore.EventDelivery{
-				UID:            uuid.New().String(),
+				UID:            ulid.Make().String(),
 				SubscriptionID: s.UID,
 				Metadata:       metadata,
 				ProjectID:      project.UID,
@@ -315,7 +315,7 @@ func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscri
 func generateSubscription(project *datastore.Project, endpoint *datastore.Endpoint) *datastore.Subscription {
 	return &datastore.Subscription{
 		ProjectID:    project.UID,
-		UID:          uuid.New().String(),
+		UID:          ulid.Make().String(),
 		Name:         fmt.Sprintf("%s-subscription", endpoint.Title),
 		Type:         datastore.SubscriptionTypeAPI,
 		EndpointID:   endpoint.UID,

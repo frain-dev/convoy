@@ -14,7 +14,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 )
 
 type SourceService struct {
@@ -56,7 +56,7 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 	}
 
 	source := &datastore.Source{
-		UID:       uuid.New().String(),
+		UID:       ulid.Make().String(),
 		ProjectID: g.UID,
 		MaskID:    uniuri.NewLen(16),
 		Name:      newSource.Name,

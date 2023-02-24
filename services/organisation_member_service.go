@@ -10,7 +10,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 )
 
 type OrganisationMemberService struct {
@@ -29,7 +29,7 @@ func (om *OrganisationMemberService) CreateOrganisationMember(ctx context.Contex
 	}
 
 	member := &datastore.OrganisationMember{
-		UID:            uuid.NewString(),
+		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
 		UserID:         user.UID,
 		Role:           *role,

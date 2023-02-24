@@ -8,7 +8,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -345,7 +345,7 @@ var Migrations = []*Migration{
 						}
 
 						endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
-							UID:       uuid.NewString(),
+							UID:       ulid.Make().String(),
 							Value:     endpoint.Secret,
 							CreatedAt: time.Now(),
 							UpdatedAt: time.Now(),
@@ -440,7 +440,7 @@ var Migrations = []*Migration{
 
 					project.Config.Signature.Versions = []datastore.SignatureVersion{
 						{
-							UID:       uuid.NewString(),
+							UID:       ulid.Make().String(),
 							Hash:      project.Config.Signature.Hash,
 							Encoding:  datastore.HexEncoding,
 							CreatedAt: time.Now(),

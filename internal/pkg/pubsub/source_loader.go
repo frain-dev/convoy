@@ -15,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 )
 
 const (
@@ -136,7 +136,7 @@ func (s *SourceLoader) handler(source *datastore.Source, msg string) error {
 	}
 
 	event := datastore.Event{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		EventType: datastore.EventType(ev.EventType),
 		SourceID:  source.UID,
 		ProjectID: source.ProjectID,

@@ -7,7 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 	log "github.com/sirupsen/logrus"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -35,7 +35,7 @@ func (db *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.
 
 	// endpoint.ID = primitive.NewObjectID()
 	if util.IsStringEmpty(endpoint.UID) {
-		endpoint.UID = uuid.New().String()
+		endpoint.UID = ulid.Make().String()
 	}
 
 	return db.store.Save(ctx, endpoint, nil)

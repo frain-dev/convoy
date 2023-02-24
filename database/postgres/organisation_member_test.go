@@ -11,7 +11,6 @@ import (
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -74,7 +73,7 @@ func TestLoadUserOrganisationsPaged(t *testing.T) {
 	for i := 0; i < 7; i++ {
 
 		org := &datastore.Organisation{
-			UID:     uuid.NewString(),
+			UID:     ulid.Make().String(),
 			OwnerID: user.UID,
 		}
 
@@ -157,7 +156,7 @@ func TestUpdateOrganisationMember(t *testing.T) {
 
 	role := auth.Role{
 		Type:     auth.RoleSuperUser,
-		Project:  uuid.NewString(),
+		Project:  ulid.Make().String(),
 		Endpoint: "",
 	}
 	m.Role = role

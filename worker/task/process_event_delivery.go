@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/signature"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -19,7 +20,6 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/retrystrategies"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 )
 
@@ -290,7 +290,7 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 	requestHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
 
 	return datastore.DeliveryAttempt{
-		UID:        uuid.New().String(),
+		UID:        ulid.Make().String(),
 		URL:        resp.URL.String(),
 		Method:     resp.Method,
 		MsgID:      m.UID,

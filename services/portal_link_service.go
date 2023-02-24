@@ -11,7 +11,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 )
 
 var ErrInvalidEndpoints = errors.New("endpoints cannot be empty")
@@ -44,7 +44,7 @@ func (p *PortalLinkService) CreatePortalLink(ctx context.Context, portal *models
 	}
 
 	portalLink := &datastore.PortalLink{
-		UID:       uuid.New().String(),
+		UID:       ulid.Make().String(),
 		ProjectID: project.UID,
 		Name:      portal.Name,
 		Token:     uniuri.NewLen(24),

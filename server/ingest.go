@@ -18,7 +18,7 @@ import (
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 )
 
 func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
@@ -126,7 +126,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// Attach Source to Event.
 	// Write Event to the Ingestion Queue.
 	event := &datastore.Event{
-		UID:       uuid.New().String(),
+		UID:       ulid.Make().String(),
 		EventType: datastore.EventType(maskID),
 		SourceID:  source.UID,
 		ProjectID: source.ProjectID,

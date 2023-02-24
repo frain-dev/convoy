@@ -25,7 +25,7 @@ func Test_FetchProjectByID(t *testing.T) {
 
 	newOrg := &datastore.Project{
 		Name: "Yet another project",
-		UID:  uuid.NewString(),
+		UID:  ulid.Make().String(),
 	}
 
 	require.NoError(t, projectRepo.CreateProject(context.Background(), newOrg))
@@ -55,7 +55,7 @@ func Test_CreateProject(t *testing.T) {
 			projects: []datastore.Project{
 				{
 					Name: "project 1",
-					UID:  uuid.NewString(),
+					UID:  ulid.Make().String(),
 				},
 			},
 		},
@@ -66,13 +66,13 @@ func Test_CreateProject(t *testing.T) {
 				{
 					Name:           "project 2",
 					OrganisationID: "123abc",
-					UID:            uuid.NewString(),
+					UID:            ulid.Make().String(),
 				},
 
 				{
 					Name:           "project 2",
 					OrganisationID: "123abc",
-					UID:            uuid.NewString(),
+					UID:            ulid.Make().String(),
 				},
 			},
 			isDuplicate: true,
@@ -84,7 +84,7 @@ func Test_CreateProject(t *testing.T) {
 				{
 					Name:           "project 3",
 					OrganisationID: "abc",
-					UID:            uuid.NewString(),
+					UID:            ulid.Make().String(),
 					DeletedAt:      &d,
 				},
 
@@ -92,7 +92,7 @@ func Test_CreateProject(t *testing.T) {
 					Name:           "project 3",
 					OrganisationID: "abc",
 					DeletedAt:      nil,
-					UID:            uuid.NewString(),
+					UID:            ulid.Make().String(),
 				},
 			},
 		},
@@ -101,14 +101,14 @@ func Test_CreateProject(t *testing.T) {
 			projects: []datastore.Project{
 				{
 					Name:           "project 4",
-					OrganisationID: uuid.NewString(),
-					UID:            uuid.NewString(),
+					OrganisationID: ulid.Make().String(),
+					UID:            ulid.Make().String(),
 				},
 
 				{
 					Name:           "project 4",
-					OrganisationID: uuid.NewString(),
-					UID:            uuid.NewString(),
+					OrganisationID: ulid.Make().String(),
+					UID:            ulid.Make().String(),
 				},
 			},
 			isDuplicate: true,
@@ -167,12 +167,12 @@ func Test_FillProjectStatistics(t *testing.T) {
 
 	project1 := &datastore.Project{
 		Name: "project1",
-		UID:  uuid.NewString(),
+		UID:  ulid.Make().String(),
 	}
 
 	project2 := &datastore.Project{
 		Name: "project2",
-		UID:  uuid.NewString(),
+		UID:  ulid.Make().String(),
 	}
 
 	err := projectRepo.CreateProject(context.Background(), project1)
@@ -182,12 +182,12 @@ func Test_FillProjectStatistics(t *testing.T) {
 	require.NoError(t, err)
 
 	endpoint1 := &datastore.Endpoint{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		ProjectID: project1.UID,
 	}
 
 	endpoint2 := &datastore.Endpoint{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		ProjectID: project2.UID,
 	}
 
@@ -200,7 +200,7 @@ func Test_FillProjectStatistics(t *testing.T) {
 	require.NoError(t, err)
 
 	event := &datastore.Event{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		ProjectID: endpoint1.ProjectID,
 		Endpoints: []string{endpoint1.UID},
 	}

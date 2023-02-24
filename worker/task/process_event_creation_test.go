@@ -13,8 +13,8 @@ import (
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/golang/mock/gomock"
-	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -67,7 +67,7 @@ func TestProcessEventCreated(t *testing.T) {
 			name: "should_process_event_for_outgoing_project",
 			event: &CreateEvent{
 				Event: datastore.Event{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					EventType: "*",
 					SourceID:  "source-id-1",
 					ProjectID: "project-id-1",
@@ -146,7 +146,7 @@ func TestProcessEventCreated(t *testing.T) {
 			name: "should_process_event_for_outgoing_project_without_subscription",
 			event: &CreateEvent{
 				Event: datastore.Event{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					EventType: "*",
 					SourceID:  "source-id-1",
 					ProjectID: "project-id-1",
@@ -219,7 +219,7 @@ func TestProcessEventCreated(t *testing.T) {
 			name: "should_process_event_for_incoming_project",
 			event: &CreateEvent{
 				Event: datastore.Event{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					EventType: "*",
 					SourceID:  "source-id-1",
 					ProjectID: "project-id-1",
@@ -311,7 +311,7 @@ func TestProcessEventCreated(t *testing.T) {
 			name: "should_process_replayed_event",
 			event: &CreateEvent{
 				Event: datastore.Event{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					EventType: "*",
 					SourceID:  "source-id-1",
 					ProjectID: "project-id-1",

@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 )
 
 var (
@@ -83,9 +83,9 @@ func (f *Flipt) evaluate(flagKey string, evaluate map[string]string) (*EvaluateR
 		EntityId  string            `json:"entityId"`
 		Context   map[string]string `json:"context"`
 	}{
-		RequestId: uuid.NewString(),
+		RequestId: ulid.Make().String(),
 		FlagKey:   flagKey,
-		EntityId:  uuid.NewString(),
+		EntityId:  ulid.Make().String(),
 		Context:   evaluate,
 	}
 

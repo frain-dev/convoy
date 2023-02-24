@@ -29,10 +29,10 @@ func Test_CreateUser(t *testing.T) {
 			name: "create user",
 			users: []datastore.User{
 				{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					FirstName: "test",
 					LastName:  "test",
-					Email:     fmt.Sprintf("%s@test.com", uuid.NewString()),
+					Email:     fmt.Sprintf("%s@test.com", ulid.Make().String()),
 				},
 			},
 		},
@@ -40,14 +40,14 @@ func Test_CreateUser(t *testing.T) {
 			name: "cannot create user with existing email",
 			users: []datastore.User{
 				{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					FirstName: "test",
 					LastName:  "test",
 					Email:     "test@test.com",
 				},
 
 				{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					FirstName: "test",
 					LastName:  "test",
 					Email:     "test@test.com",
@@ -202,10 +202,10 @@ func Test_LoadUsersPaged(t *testing.T) {
 			userRepo := NewUserRepo(store)
 			for i := 0; i < tc.count; i++ {
 				user := &datastore.User{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					FirstName: "test",
 					LastName:  "test",
-					Email:     fmt.Sprintf("%s@test.com", uuid.NewString()),
+					Email:     fmt.Sprintf("%s@test.com", ulid.Make().String()),
 				}
 				require.NoError(t, userRepo.CreateUser(context.Background(), user))
 			}
@@ -231,9 +231,9 @@ func Test_UpdateUser(t *testing.T) {
 
 	require.NoError(t, userRepo.CreateUser(context.Background(), user))
 
-	firstName := fmt.Sprintf("test%s", uuid.NewString())
-	lastName := fmt.Sprintf("test%s", uuid.NewString())
-	email := fmt.Sprintf("%s@test.com", uuid.NewString())
+	firstName := fmt.Sprintf("test%s", ulid.Make().String())
+	lastName := fmt.Sprintf("test%s", ulid.Make().String())
+	email := fmt.Sprintf("%s@test.com", ulid.Make().String())
 
 	user.FirstName = firstName
 	user.LastName = lastName
@@ -251,9 +251,9 @@ func Test_UpdateUser(t *testing.T) {
 
 func generateUser(t *testing.T) *datastore.User {
 	return &datastore.User{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		FirstName: "test",
 		LastName:  "test",
-		Email:     fmt.Sprintf("%s@test.com", uuid.NewString()),
+		Email:     fmt.Sprintf("%s@test.com", ulid.Make().String()),
 	}
 }

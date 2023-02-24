@@ -429,7 +429,7 @@ func generateEvent(t *testing.T, db database.Database) *datastore.Event {
 	}
 }
 
-func seedEvent(t *testing.T, db *sqlx.DB, project *datastore.Project) *datastore.Event {
+func seedEvent(t *testing.T, db database.Database, project *datastore.Project) *datastore.Event {
 	ev := generateEvent(t, db)
 	ev.ProjectID = project.UID
 

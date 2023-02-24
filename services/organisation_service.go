@@ -15,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -40,7 +40,7 @@ func (os *OrganisationService) CreateOrganisation(ctx context.Context, newOrg *m
 	}
 
 	org := &datastore.Organisation{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		OwnerID:   user.UID,
 		Name:      newOrg.Name,
 		CreatedAt: time.Now(),

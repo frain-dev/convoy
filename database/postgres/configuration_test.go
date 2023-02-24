@@ -9,8 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -87,7 +88,7 @@ func Test_UpdateConfiguration(t *testing.T) {
 
 func generateConfig() *datastore.Configuration {
 	return &datastore.Configuration{
-		UID:                uuid.NewString(),
+		UID:                ulid.Make().String(),
 		IsAnalyticsEnabled: true,
 		IsSignupEnabled:    false,
 		StoragePolicy:      &datastore.DefaultStoragePolicy,

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -24,7 +24,7 @@ func NewUserRepo(store datastore.Store) datastore.UserRepository {
 
 func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
 	ctx = u.setCollectionInContext(ctx)
-	user.ResetPasswordToken = uuid.NewString()
+	user.ResetPasswordToken = ulid.Make().String()
 
 	err := u.store.Save(ctx, user, nil)
 

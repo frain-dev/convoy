@@ -28,11 +28,11 @@ func TestWrite(t *testing.T) {
 	}{
 		{
 			name:            "write a single event to queue",
-			queueName:       uuid.NewString(),
-			endpointID:      uuid.NewString(),
+			queueName:       ulid.Make().String(),
+			endpointID:      ulid.Make().String(),
 			configFile:      "../testdata/convoy_redis.json",
-			eventID:         uuid.NewString(),
-			eventDeliveryID: uuid.NewString(),
+			eventID:         ulid.Make().String(),
+			eventDeliveryID: ulid.Make().String(),
 		},
 	}
 
@@ -47,7 +47,7 @@ func TestWrite(t *testing.T) {
 				Payload: json.RawMessage(eventDelivery.UID),
 			}
 
-			taskName := convoy.TaskName(uuid.NewString())
+			taskName := convoy.TaskName(ulid.Make().String())
 			configFile := tc.configFile
 			eventQueue := initializeQueue(configFile, tc.queueName, t)
 			err := eventQueue.Write(taskName, convoy.EventQueue, job)

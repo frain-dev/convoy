@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -23,9 +25,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/testdb"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-
 	"github.com/stretchr/testify/suite"
 )
 
@@ -69,7 +69,7 @@ func (s *ApplicationIntegrationTestSuite) SetupTest() {
 
 	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
 
-	_, s.PersonalAPIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, uuid.NewString(), "test-personal-key", string(datastore.PersonalKey), s.DefaultUser.UID)
+	_, s.PersonalAPIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test-personal-key", string(datastore.PersonalKey), s.DefaultUser.UID)
 
 	// Setup Config.
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
@@ -214,7 +214,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApps_Filters() {
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_CreateApp() {
-	appTitle := fmt.Sprintf("Test-%s", uuid.New().String())
+	appTitle := fmt.Sprintf("Test-%s", ulid.Make().String())
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
@@ -243,7 +243,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateApp() {
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_CreateAppWithPersonalAPIKey() {
-	appTitle := fmt.Sprintf("Test-%s", uuid.New().String())
+	appTitle := fmt.Sprintf("Test-%s", ulid.Make().String())
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
@@ -289,7 +289,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateApp_NoName() {
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_InvalidRequest() {
-	appID := uuid.New().String()
+	appID := ulid.Make().String()
 	expectedStatusCode := http.StatusBadRequest
 
 	// Just Before.
@@ -313,7 +313,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp() {
 	title := "random-name"
 	supportEmail := "10xengineer@getconvoy.io"
 	isDisabled := true
-	appID := uuid.New().String()
+	appID := ulid.Make().String()
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
@@ -352,7 +352,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_WithPersonalAPIKey() {
 	title := "random-name"
 	supportEmail := "10xengineer@getconvoy.io"
 	isDisabled := false
-	appID := uuid.New().String()
+	appID := ulid.Make().String()
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
@@ -388,7 +388,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateApp_WithPersonalAPIKey() {
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_DeleteApp() {
-	appID := uuid.New().String()
+	appID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -412,7 +412,7 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteApp() {
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_DeleteApp_WithPersonalAPIKey() {
-	appID := uuid.New().String()
+	appID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -436,7 +436,7 @@ func (s *ApplicationIntegrationTestSuite) Test_DeleteApp_WithPersonalAPIKey() {
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint() {
-	appID := uuid.New().String()
+	appID := ulid.Make().String()
 	f := faker.New()
 	endpointURL := f.Internet().URL()
 	secret := f.Lorem().Text(25)
@@ -474,7 +474,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint() {
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_With_Custom_Authentication() {
-	appID := uuid.New().String()
+	appID := ulid.Make().String()
 	f := faker.New()
 	endpointURL := f.Internet().URL()
 	secret := f.Lorem().Text(25)
@@ -520,7 +520,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_With_Custom_Aut
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint_With_Custom_Authentication() {
-	appID := uuid.New().String()
+	appID := ulid.Make().String()
 	f := faker.New()
 	endpointURL := f.Internet().URL()
 	expectedStatusCode := http.StatusAccepted
@@ -564,7 +564,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint_With_Custom_Aut
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_TestRedirectToProjectsAPI() {
-	appID := uuid.New().String()
+	appID := ulid.Make().String()
 	f := faker.New()
 	endpointURL := f.Internet().URL()
 	secret := f.Lorem().Text(25)
@@ -599,7 +599,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_TestRedirectToP
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_WithPersonalAPIKey() {
-	appID := uuid.New().String()
+	appID := ulid.Make().String()
 	f := faker.New()
 	endpointURL := f.Internet().URL()
 	secret := f.Lorem().Text(25)
@@ -636,7 +636,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_WithPersonalAPI
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
-	appID := uuid.New().String()
+	appID := ulid.Make().String()
 	f := faker.New()
 	endpointURL := f.Internet().URL()
 	rand.Seed(time.Now().UnixNano())
@@ -675,7 +675,7 @@ func (s *ApplicationIntegrationTestSuite) Test_UpdateAppEndpoint() {
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
-	appID := uuid.New().String()
+	appID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -703,7 +703,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoint() {
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoints() {
-	appID := uuid.New().String()
+	appID := ulid.Make().String()
 	rand.Seed(time.Now().UnixNano())
 	expectedStatusCode := http.StatusOK
 
@@ -734,7 +734,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetAppEndpoints() {
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_ExpireEndpointSecret() {
-	appID := uuid.New().String()
+	appID := ulid.Make().String()
 	f := faker.New()
 	secret := f.Lorem().Text(25)
 	expiration := 7
@@ -770,7 +770,7 @@ func (s *ApplicationIntegrationTestSuite) Test_ExpireEndpointSecret() {
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_DeleteAppEndpoint() {
-	appID := uuid.New().String()
+	appID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.

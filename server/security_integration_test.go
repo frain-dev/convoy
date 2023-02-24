@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -20,7 +22,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/server/testdb"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -117,7 +118,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey() {
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, uuid.NewString(), "test-app", "", true, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "test-app", "", true, datastore.ActiveEndpointStatus)
 
 	role := auth.Role{
 		Type:    auth.RoleAdmin,
@@ -125,7 +126,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey() {
 	}
 
 	// Generate api key for this Project, use the key to authenticate for this request later on
-	_, keyString, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, uuid.NewString(), "test", "api", "")
+	_, keyString, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, ulid.Make().String(), "test", "api", "")
 	require.NoError(s.T(), err)
 
 	// Arrange Request.
@@ -171,7 +172,7 @@ func (s *SecurityIntegrationTestSuite) Test_RegenerateProjectAPIKey() {
 	}
 
 	// Generate api key for this Project
-	_, keyString, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, uuid.NewString(), "test", "api", "")
+	_, keyString, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, ulid.Make().String(), "test", "api", "")
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/security/keys/regenerate", s.DefaultOrg.UID, s.DefaultProject.UID)
@@ -211,7 +212,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey_RedirectT
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, uuid.NewString(), "test-app", "", true, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "test-app", "", true, datastore.ActiveEndpointStatus)
 
 	role := auth.Role{
 		Type:    auth.RoleAdmin,
@@ -219,7 +220,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey_RedirectT
 	}
 
 	// Generate api key for this Project, use the key to authenticate for this request later on
-	_, keyString, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, uuid.NewString(), "test", "api", "")
+	_, keyString, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, ulid.Make().String(), "test", "api", "")
 	require.NoError(s.T(), err)
 
 	// Arrange Request.
@@ -251,7 +252,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointCliAPIKey() {
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, uuid.NewString(), "test-app", "", true, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "test-app", "", true, datastore.ActiveEndpointStatus)
 
 	role := auth.Role{
 		Type:    auth.RoleAdmin,
@@ -259,7 +260,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointCliAPIKey() {
 	}
 
 	// Generate api key for this Project, use the key to authenticate for this request later on
-	_, keyString, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, uuid.NewString(), "test", "api", "")
+	_, keyString, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, ulid.Make().String(), "test", "api", "")
 	require.NoError(s.T(), err)
 
 	// Arrange Request.
@@ -299,7 +300,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey_EndpointD
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, &datastore.Project{UID: uuid.NewString()}, uuid.NewString(), "test-app", "", true, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, &datastore.Project{UID: ulid.Make().String()}, ulid.Make().String(), "test-app", "", true, datastore.ActiveEndpointStatus)
 
 	role := auth.Role{
 		Type:    auth.RoleAdmin,
@@ -307,7 +308,7 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey_EndpointD
 	}
 
 	// Generate api key for this Project, use the key to authenticate for this request later on
-	_, keyString, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, uuid.NewString(), "test", "api", "")
+	_, keyString, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, ulid.Make().String(), "test", "api", "")
 	require.NoError(s.T(), err)
 
 	// Arrange Request.
@@ -331,7 +332,7 @@ func (s *SecurityIntegrationTestSuite) Test_RevokePersonalAPIKey() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	apiKey, _, _ := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
+	apiKey, _, _ := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
 
 	url := fmt.Sprintf("/ui/users/%s/security/personal_api_keys/%s/revoke", s.DefaultUser.UID, apiKey.UID)
 
@@ -357,7 +358,7 @@ func (s *SecurityIntegrationTestSuite) Test_RevokePersonalAPIKey_UnauthorizedUse
 	expectedStatusCode := http.StatusUnauthorized
 
 	// Just Before.
-	apiKey, _, _ := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), uuid.NewString())
+	apiKey, _, _ := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), ulid.Make().String())
 
 	url := fmt.Sprintf("/ui/users/%s/security/personal_api_keys/%s/revoke", s.DefaultUser.UID, apiKey.UID)
 
@@ -383,9 +384,9 @@ func (s *SecurityIntegrationTestSuite) Test_GetPersonalAPIKeys() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_, _, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, uuid.NewString(), "test-1", string(datastore.PersonalKey), s.DefaultUser.UID)
-	_, _, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, uuid.NewString(), "test-2", string(datastore.PersonalKey), s.DefaultUser.UID)
-	_, _, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, uuid.NewString(), "test-3", string(datastore.PersonalKey), uuid.NewString())
+	_, _, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test-1", string(datastore.PersonalKey), s.DefaultUser.UID)
+	_, _, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test-2", string(datastore.PersonalKey), s.DefaultUser.UID)
+	_, _, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test-3", string(datastore.PersonalKey), ulid.Make().String())
 
 	url := fmt.Sprintf("/ui/users/%s/security/personal_api_keys?keyType=personal_key", s.DefaultUser.UID)
 	req := createRequest(http.MethodGet, url, "", nil)
@@ -410,7 +411,7 @@ func (s *SecurityIntegrationTestSuite) Test_GetEndpointAPIKeys() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, uuid.NewString(), "test-app", "", true, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "test-app", "", true, datastore.ActiveEndpointStatus)
 
 	role := auth.Role{
 		Type:     auth.RoleAdmin,
@@ -418,8 +419,8 @@ func (s *SecurityIntegrationTestSuite) Test_GetEndpointAPIKeys() {
 		Endpoint: endpoint.UID,
 	}
 
-	_, _, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, uuid.NewString(), "test", string(datastore.CLIKey), "")
-	_, _, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, uuid.NewString(), "test", string(datastore.AppPortalKey), "")
+	_, _, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, ulid.Make().String(), "test", string(datastore.CLIKey), "")
+	_, _, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, ulid.Make().String(), "test", string(datastore.AppPortalKey), "")
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/keys", s.DefaultOrg.UID, s.DefaultProject.UID, endpoint.UID)
 	req := createRequest(http.MethodGet, url, "", nil)
@@ -444,7 +445,7 @@ func (s *SecurityIntegrationTestSuite) Test_RevokeEndpointAPIKey() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, uuid.NewString(), "test-app", "", true, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "test-app", "", true, datastore.ActiveEndpointStatus)
 
 	role := auth.Role{
 		Type:     auth.RoleAdmin,
@@ -452,7 +453,7 @@ func (s *SecurityIntegrationTestSuite) Test_RevokeEndpointAPIKey() {
 		Endpoint: endpoint.UID,
 	}
 
-	apiKey, _, _ := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, uuid.NewString(), "test", string(datastore.CLIKey), "")
+	apiKey, _, _ := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, ulid.Make().String(), "test", string(datastore.CLIKey), "")
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/keys/%s/revoke", s.DefaultOrg.UID, s.DefaultProject.UID, endpoint.UID, apiKey.UID)
 	req := createRequest(http.MethodPut, url, "", nil)

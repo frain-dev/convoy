@@ -87,7 +87,7 @@ func Test_UpdatePortalLink(t *testing.T) {
 
 	require.NoError(t, portalLinkRepo.CreatePortalLink(context.Background(), portalLink))
 
-	endpoints := []string{uuid.NewString()}
+	endpoints := []string{ulid.Make().String()}
 	portalLink.Endpoints = endpoints
 
 	require.NoError(t, portalLinkRepo.UpdatePortalLink(context.Background(), portalLink.ProjectID, portalLink))
@@ -190,13 +190,13 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 
 			store := getStore(db)
 			portalLinkRepo := NewPortalLinkRepo(store)
-			projectID := uuid.NewString()
+			projectID := ulid.Make().String()
 
 			for i := 0; i < tc.count; i++ {
 				portalLink := &datastore.PortalLink{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					ProjectID: projectID,
-					Endpoints: []string{uuid.NewString()},
+					Endpoints: []string{ulid.Make().String()},
 					Token:     uniuri.NewLen(5),
 				}
 
@@ -219,10 +219,10 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 
 func generatePortalLink(t *testing.T) *datastore.PortalLink {
 	return &datastore.PortalLink{
-		UID:       uuid.NewString(),
-		ProjectID: uuid.NewString(),
-		Name:      fmt.Sprintf("Test-%s", uuid.NewString()),
+		UID:       ulid.Make().String(),
+		ProjectID: ulid.Make().String(),
+		Name:      fmt.Sprintf("Test-%s", ulid.Make().String()),
 		Token:     uniuri.NewLen(5),
-		Endpoints: []string{uuid.NewString(), uuid.NewString()},
+		Endpoints: []string{ulid.Make().String(), ulid.Make().String()},
 	}
 }

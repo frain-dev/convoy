@@ -23,17 +23,17 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 
 	store := getStore(db)
 	organisationMemberRepo := NewOrgMemberRepo(store)
-	orgID := uuid.NewString()
+	orgID := ulid.Make().String()
 
 	userMap := map[string]*datastore.UserMetadata{}
 
 	for i := 1; i < 6; i++ {
 		user := &datastore.User{
-			UID:       uuid.NewString(),
-			FirstName: fmt.Sprintf("test-%s", uuid.NewString()),
-			LastName:  fmt.Sprintf("test-%s", uuid.NewString()),
-			Email:     fmt.Sprintf("test-%s", uuid.NewString()),
-			Password:  fmt.Sprintf("test-%s", uuid.NewString()),
+			UID:       ulid.Make().String(),
+			FirstName: fmt.Sprintf("test-%s", ulid.Make().String()),
+			LastName:  fmt.Sprintf("test-%s", ulid.Make().String()),
+			Email:     fmt.Sprintf("test-%s", ulid.Make().String()),
+			Password:  fmt.Sprintf("test-%s", ulid.Make().String()),
 			CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 			UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		}
@@ -42,7 +42,7 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 		require.NoError(t, NewUserRepo(store).CreateUser(userCtx, user))
 
 		member := &datastore.OrganisationMember{
-			UID:            uuid.NewString(),
+			UID:            ulid.Make().String(),
 			OrganisationID: orgID,
 			UserID:         user.UID,
 			Role:           auth.Role{Type: auth.RoleAdmin},
@@ -83,20 +83,20 @@ func TestLoadUserOrganisationsPaged(t *testing.T) {
 	store := getStore(db)
 	organisationMemberRepo := NewOrgMemberRepo(store)
 
-	userID := uuid.NewString()
+	userID := ulid.Make().String()
 	for i := 0; i < 7; i++ {
 		var deletedAt *primitive.DateTime
 		if i == 6 {
 			d := primitive.NewDateTimeFromTime(time.Now())
 			deletedAt = &d
 		}
-		org := &datastore.Organisation{UID: uuid.NewString(), DeletedAt: deletedAt}
+		org := &datastore.Organisation{UID: ulid.Make().String(), DeletedAt: deletedAt}
 
 		err := NewOrgRepo(store).CreateOrganisation(context.Background(), org)
 		require.NoError(t, err)
 
 		member := &datastore.OrganisationMember{
-			UID:            uuid.NewString(),
+			UID:            ulid.Make().String(),
 			OrganisationID: org.UID,
 			UserID:         userID,
 			Role:           auth.Role{Type: auth.RoleAdmin},
@@ -124,11 +124,11 @@ func TestCreateOrganisationMember(t *testing.T) {
 
 	store := getStore(db)
 	user := &datastore.User{
-		UID:       uuid.NewString(),
-		FirstName: fmt.Sprintf("test-%s", uuid.NewString()),
-		LastName:  fmt.Sprintf("test-%s", uuid.NewString()),
-		Email:     fmt.Sprintf("test-%s", uuid.NewString()),
-		Password:  fmt.Sprintf("test-%s", uuid.NewString()),
+		UID:       ulid.Make().String(),
+		FirstName: fmt.Sprintf("test-%s", ulid.Make().String()),
+		LastName:  fmt.Sprintf("test-%s", ulid.Make().String()),
+		Email:     fmt.Sprintf("test-%s", ulid.Make().String()),
+		Password:  fmt.Sprintf("test-%s", ulid.Make().String()),
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -139,8 +139,8 @@ func TestCreateOrganisationMember(t *testing.T) {
 	organisationMemberRepo := NewOrgMemberRepo(store)
 
 	m := &datastore.OrganisationMember{
-		UID:            uuid.NewString(),
-		OrganisationID: uuid.NewString(),
+		UID:            ulid.Make().String(),
+		OrganisationID: ulid.Make().String(),
 		UserID:         user.UID,
 		Role:           auth.Role{Type: auth.RoleAdmin},
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -170,11 +170,11 @@ func TestUpdateOrganisationMember(t *testing.T) {
 
 	store := getStore(db)
 	user := &datastore.User{
-		UID:       uuid.NewString(),
-		FirstName: fmt.Sprintf("test-%s", uuid.NewString()),
-		LastName:  fmt.Sprintf("test-%s", uuid.NewString()),
-		Email:     fmt.Sprintf("test-%s", uuid.NewString()),
-		Password:  fmt.Sprintf("test-%s", uuid.NewString()),
+		UID:       ulid.Make().String(),
+		FirstName: fmt.Sprintf("test-%s", ulid.Make().String()),
+		LastName:  fmt.Sprintf("test-%s", ulid.Make().String()),
+		Email:     fmt.Sprintf("test-%s", ulid.Make().String()),
+		Password:  fmt.Sprintf("test-%s", ulid.Make().String()),
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -183,8 +183,8 @@ func TestUpdateOrganisationMember(t *testing.T) {
 
 	organisationMemberRepo := NewOrgMemberRepo(store)
 	m := &datastore.OrganisationMember{
-		UID:            uuid.NewString(),
-		OrganisationID: uuid.NewString(),
+		UID:            ulid.Make().String(),
+		OrganisationID: ulid.Make().String(),
 		UserID:         user.UID,
 		Role:           auth.Role{Type: auth.RoleAdmin},
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -196,7 +196,7 @@ func TestUpdateOrganisationMember(t *testing.T) {
 
 	role := auth.Role{
 		Type:     auth.RoleSuperUser,
-		Project:  uuid.NewString(),
+		Project:  ulid.Make().String(),
 		Endpoint: "",
 	}
 	m.Role = role
@@ -225,9 +225,9 @@ func TestDeleteOrganisationMember(t *testing.T) {
 	organisationMemberRepo := NewOrgMemberRepo(store)
 
 	m := &datastore.OrganisationMember{
-		UID:            uuid.NewString(),
-		OrganisationID: uuid.NewString(),
-		UserID:         uuid.NewString(),
+		UID:            ulid.Make().String(),
+		OrganisationID: ulid.Make().String(),
+		UserID:         ulid.Make().String(),
 		Role:           auth.Role{Type: auth.RoleAdmin},
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -249,11 +249,11 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 
 	store := getStore(db)
 	user := &datastore.User{
-		UID:       uuid.NewString(),
-		FirstName: fmt.Sprintf("test-%s", uuid.NewString()),
-		LastName:  fmt.Sprintf("test-%s", uuid.NewString()),
-		Email:     fmt.Sprintf("test-%s", uuid.NewString()),
-		Password:  fmt.Sprintf("test-%s", uuid.NewString()),
+		UID:       ulid.Make().String(),
+		FirstName: fmt.Sprintf("test-%s", ulid.Make().String()),
+		LastName:  fmt.Sprintf("test-%s", ulid.Make().String()),
+		Email:     fmt.Sprintf("test-%s", ulid.Make().String()),
+		Password:  fmt.Sprintf("test-%s", ulid.Make().String()),
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -264,8 +264,8 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 	organisationMemberRepo := NewOrgMemberRepo(store)
 
 	m := &datastore.OrganisationMember{
-		UID:            uuid.NewString(),
-		OrganisationID: uuid.NewString(),
+		UID:            ulid.Make().String(),
+		OrganisationID: ulid.Make().String(),
 		UserID:         user.UID,
 		Role:           auth.Role{Type: auth.RoleAdmin},
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
@@ -295,11 +295,11 @@ func TestFetchOrganisationMemberByUserID(t *testing.T) {
 
 	store := getStore(db)
 	user := &datastore.User{
-		UID:       uuid.NewString(),
-		FirstName: fmt.Sprintf("test-%s", uuid.NewString()),
-		LastName:  fmt.Sprintf("test-%s", uuid.NewString()),
-		Email:     uuid.NewString(),
-		Password:  fmt.Sprintf("test-%s", uuid.NewString()),
+		UID:       ulid.Make().String(),
+		FirstName: fmt.Sprintf("test-%s", ulid.Make().String()),
+		LastName:  fmt.Sprintf("test-%s", ulid.Make().String()),
+		Email:     ulid.Make().String(),
+		Password:  fmt.Sprintf("test-%s", ulid.Make().String()),
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -309,8 +309,8 @@ func TestFetchOrganisationMemberByUserID(t *testing.T) {
 
 	organisationMemberRepo := NewOrgMemberRepo(store)
 	m := &datastore.OrganisationMember{
-		UID:            uuid.NewString(),
-		OrganisationID: uuid.NewString(),
+		UID:            ulid.Make().String(),
+		OrganisationID: ulid.Make().String(),
 		UserID:         user.UID,
 		Role:           auth.Role{Type: auth.RoleAdmin},
 		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),

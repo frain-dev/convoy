@@ -23,7 +23,7 @@ func TestLoadOrganisationsPaged(t *testing.T) {
 
 	for i := 1; i < 6; i++ {
 		org := &datastore.Organisation{
-			UID:       uuid.NewString(),
+			UID:       ulid.Make().String(),
 			Name:      fmt.Sprintf("org%d", i),
 			CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 			UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -51,7 +51,7 @@ func TestCreateOrganisation(t *testing.T) {
 	orgRepo := NewOrgRepo(store)
 
 	org := &datastore.Organisation{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		Name:      fmt.Sprintf("new org"),
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -69,7 +69,7 @@ func TestUpdateOrganisation(t *testing.T) {
 	orgRepo := NewOrgRepo(store)
 
 	org := &datastore.Organisation{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		Name:      fmt.Sprintf("new org"),
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -98,7 +98,7 @@ func TestFetchOrganisationByID(t *testing.T) {
 	orgRepo := NewOrgRepo(store)
 
 	org := &datastore.Organisation{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		Name:      fmt.Sprintf("new org"),
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -121,7 +121,7 @@ func TestDeleteOrganisation(t *testing.T) {
 	orgRepo := NewOrgRepo(store)
 
 	org := &datastore.Organisation{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		Name:      fmt.Sprintf("new org"),
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),

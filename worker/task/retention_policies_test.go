@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	noopsearcher "github.com/frain-dev/convoy/internal/pkg/searcher/noop"
@@ -21,7 +22,6 @@ import (
 
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -56,7 +56,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 			Header: "X-Convoy-Signature",
 			Versions: []datastore.SignatureVersion{
 				{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					Hash:      "SHA256",
 					Encoding:  datastore.HexEncoding,
 					CreatedAt: time.Now(),
@@ -75,20 +75,20 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 		ReplayAttacks:            true,
 		IsRetentionPolicyEnabled: true,
 	}
-	project, err := testdb.SeedProject(r.ConvoyApp.database, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingProject, projectConfig)
+	project, err := testdb.SeedProject(r.ConvoyApp.database, ulid.Make().String(), ulid.Make().String(), "test", datastore.OutgoingProject, projectConfig)
 
 	require.NoError(r.T(), err)
 	// seed event
 	duration, err := time.ParseDuration("80h")
 	require.NoError(r.T(), err)
 
-	event, err := seedEvent(r.ConvoyApp.database, uuid.NewString(), project.UID, "", "*", []byte(`{}`), SeedFilter{
+	event, err := seedEvent(r.ConvoyApp.database, ulid.Make().String(), project.UID, "", "*", []byte(`{}`), SeedFilter{
 		CreatedAt: time.Now().UTC().Add(-duration),
 	})
 	require.NoError(r.T(), err)
 
 	// seed eventdelivery
-	eventDelivery, err := seedEventDelivery(r.ConvoyApp.database, event.UID, uuid.NewString(), project.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
+	eventDelivery, err := seedEventDelivery(r.ConvoyApp.database, event.UID, ulid.Make().String(), project.UID, "", datastore.SuccessEventStatus, ulid.Make().String(), SeedFilter{
 		CreatedAt: time.Now().UTC().Add(-duration),
 	})
 	require.NoError(r.T(), err)
@@ -124,7 +124,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 			Header: "X-Convoy-Signature",
 			Versions: []datastore.SignatureVersion{
 				{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					Hash:      "SHA256",
 					Encoding:  datastore.HexEncoding,
 					CreatedAt: time.Now(),
@@ -143,17 +143,17 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 		ReplayAttacks:            true,
 		IsRetentionPolicyEnabled: true,
 	}
-	project, err := testdb.SeedProject(r.ConvoyApp.database, uuid.NewString(), uuid.NewString(), "test", datastore.OutgoingProject, projectConfig)
+	project, err := testdb.SeedProject(r.ConvoyApp.database, ulid.Make().String(), ulid.Make().String(), "test", datastore.OutgoingProject, projectConfig)
 
 	require.NoError(r.T(), err)
 	// seed event
-	event, err := seedEvent(r.ConvoyApp.database, uuid.NewString(), project.UID, "", "*", []byte(`{}`), SeedFilter{
+	event, err := seedEvent(r.ConvoyApp.database, ulid.Make().String(), project.UID, "", "*", []byte(`{}`), SeedFilter{
 		CreatedAt: time.Now().UTC(),
 	})
 	require.NoError(r.T(), err)
 
 	// seed eventdelivery
-	eventDelivery, err := seedEventDelivery(r.ConvoyApp.database, event.UID, uuid.NewString(), project.UID, "", datastore.SuccessEventStatus, uuid.NewString(), SeedFilter{
+	eventDelivery, err := seedEventDelivery(r.ConvoyApp.database, event.UID, ulid.Make().String(), project.UID, "", datastore.SuccessEventStatus, ulid.Make().String(), SeedFilter{
 		CreatedAt: time.Now().UTC(),
 	})
 	require.NoError(r.T(), err)
@@ -234,7 +234,7 @@ type applicationHandler struct {
 
 func seedEvent(db database.Database, endpointID string, projectID string, uid, eventType string, data []byte, filter SeedFilter) (*datastore.Event, error) {
 	if util.IsStringEmpty(uid) {
-		uid = uuid.New().String()
+		uid = ulid.Make().String()
 	}
 
 	ev := &datastore.Event{
@@ -259,7 +259,7 @@ func seedEvent(db database.Database, endpointID string, projectID string, uid, e
 
 func seedEventDelivery(db database.Database, eventID string, endpointID string, projectID string, uid string, status datastore.EventDeliveryStatus, subcriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
-		uid = uuid.New().String()
+		uid = ulid.Make().String()
 	}
 
 	eventDelivery := &datastore.EventDelivery{
@@ -286,7 +286,7 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 	defaultStorage.OnPrem.Path = null.NewString("/tmp/convoy/export/", true)
 
 	config := &datastore.Configuration{
-		UID:                uuid.NewString(),
+		UID:                ulid.Make().String(),
 		IsAnalyticsEnabled: true,
 		StoragePolicy:      defaultStorage,
 	}

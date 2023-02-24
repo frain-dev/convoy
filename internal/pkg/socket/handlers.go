@@ -13,11 +13,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/gorilla/websocket"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
 )
 
 type ListenRequest struct {
@@ -160,7 +160,7 @@ func login(ctx context.Context, loginRequest *LoginRequest, repo *Repo, user *da
 			log.WithError(err).Error("failed to find device for this hostname, will create new device")
 
 			device = &datastore.Device{
-				UID:       uuid.NewString(),
+				UID:       ulid.Make().String(),
 				ProjectID: project.UID,
 				HostName:  loginRequest.HostName,
 				Status:    datastore.DeviceStatusOffline,
@@ -224,7 +224,7 @@ func listen(ctx context.Context, listenRequest *ListenRequest, r *Repo) (*datast
 	if err != nil {
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 			s := &datastore.Subscription{
-				UID:          uuid.NewString(),
+				UID:          ulid.Make().String(),
 				Name:         fmt.Sprintf("%s-subscription", device.HostName),
 				Type:         datastore.SubscriptionTypeCLI,
 				ProjectID:    project.UID,

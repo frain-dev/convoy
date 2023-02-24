@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
@@ -16,7 +17,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
 )
 
 type ProjectService struct {
@@ -55,7 +55,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 	}
 
 	project := &datastore.Project{
-		UID:            uuid.New().String(),
+		UID:            ulid.Make().String(),
 		Name:           projectName,
 		Type:           newProject.Type,
 		OrganisationID: org.UID,
@@ -145,7 +145,7 @@ func checkSignatureVersions(versions []datastore.SignatureVersion) {
 	for i := range versions {
 		v := &versions[i]
 		if v.UID == "" {
-			v.UID = uuid.NewString()
+			v.UID = ulid.Make().String()
 		}
 
 		if v.CreatedAt.Unix() == 0 {

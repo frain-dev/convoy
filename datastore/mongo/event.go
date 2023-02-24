@@ -8,7 +8,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -38,7 +38,7 @@ func (db *eventRepo) CreateEvent(ctx context.Context, message *datastore.Event) 
 	// message.ID = primitive.NewObjectID()
 
 	if util.IsStringEmpty(message.UID) {
-		message.UID = uuid.New().String()
+		message.UID = ulid.Make().String()
 	}
 
 	return db.store.Save(ctx, message, nil)

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
@@ -31,7 +30,7 @@ func Test_CreateUser(t *testing.T) {
 				{
 					FirstName: "test",
 					LastName:  "test",
-					Email:     fmt.Sprintf("%s@test.com", uuid.NewString()),
+					Email:     fmt.Sprintf("%s@test.com", ulid.Make().String()),
 				},
 			},
 		},
@@ -268,7 +267,7 @@ func Test_LoadUsersPaged(t *testing.T) {
 				user := &datastore.User{
 					FirstName: "test",
 					LastName:  "test",
-					Email:     fmt.Sprintf("%s@test.com", uuid.NewString()),
+					Email:     fmt.Sprintf("%s@test.com", ulid.Make().String()),
 				}
 				require.NoError(t, userRepo.CreateUser(context.Background(), user))
 			}
@@ -295,13 +294,13 @@ func Test_UpdateUser(t *testing.T) {
 
 	updatedUser := &datastore.User{
 		UID:                        user.UID,
-		FirstName:                  fmt.Sprintf("test%s", uuid.NewString()),
-		LastName:                   fmt.Sprintf("test%s", uuid.NewString()),
-		Email:                      fmt.Sprintf("%s@test.com", uuid.NewString()),
+		FirstName:                  fmt.Sprintf("test%s", ulid.Make().String()),
+		LastName:                   fmt.Sprintf("test%s", ulid.Make().String()),
+		Email:                      fmt.Sprintf("%s@test.com", ulid.Make().String()),
 		EmailVerified:              !user.EmailVerified,
-		Password:                   uuid.NewString(),
-		ResetPasswordToken:         fmt.Sprintf("%s-reset-password-token", uuid.NewString()),
-		EmailVerificationToken:     fmt.Sprintf("%s-verification-token", uuid.NewString()),
+		Password:                   ulid.Make().String(),
+		ResetPasswordToken:         fmt.Sprintf("%s-reset-password-token", ulid.Make().String()),
+		EmailVerificationToken:     fmt.Sprintf("%s-verification-token", ulid.Make().String()),
 		ResetPasswordExpiresAt:     time.Now().Add(time.Hour).UTC(),
 		EmailVerificationExpiresAt: time.Now().Add(time.Hour).UTC(),
 	}
@@ -324,7 +323,7 @@ func generateUser(t *testing.T) *datastore.User {
 		UID:                        ulid.Make().String(),
 		FirstName:                  "test",
 		LastName:                   "test",
-		Email:                      fmt.Sprintf("%s@test.com", uuid.NewString()),
+		Email:                      fmt.Sprintf("%s@test.com", ulid.Make().String()),
 		EmailVerified:              true,
 		Password:                   "dvsdvdkhjskuis",
 		ResetPasswordToken:         "dvsdvdkhjskuis",

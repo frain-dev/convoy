@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/dchest/uniuri"
@@ -18,7 +19,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
 )
 
 type OrganisationInviteService struct {
@@ -52,7 +52,7 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 	}
 
 	iv := &datastore.OrganisationInvite{
-		UID:            uuid.NewString(),
+		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
 		InviteeEmail:   newIV.InviteeEmail,
 		Token:          uniuri.NewLen(64),
@@ -198,7 +198,7 @@ func (ois *OrganisationInviteService) createNewUser(ctx context.Context, newUser
 	}
 
 	user := &datastore.User{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		FirstName: newUser.FirstName,
 		LastName:  newUser.LastName,
 		Email:     email,

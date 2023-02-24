@@ -10,14 +10,13 @@ import (
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
 
 func generateSubscription(project *datastore.Project, source *datastore.Source, endpoint *datastore.Endpoint, device *datastore.Device) *datastore.Subscription {
 	return &datastore.Subscription{
-		UID:        uuid.NewString(),
+		UID:        ulid.Make().String(),
 		Name:       "Subscription",
 		Type:       datastore.SubscriptionTypeAPI,
 		ProjectID:  project.UID,
@@ -468,7 +467,7 @@ func Test_FindCLISubscriptions(t *testing.T) {
 
 	for i := 0; i < 8; i++ {
 		newSub := &datastore.Subscription{
-			UID:        uuid.NewString(),
+			UID:        ulid.Make().String(),
 			Name:       "Subscription",
 			Type:       datastore.SubscriptionTypeCLI,
 			ProjectID:  project.UID,

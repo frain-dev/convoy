@@ -18,7 +18,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 )
 
 type UserService struct {
@@ -95,12 +95,12 @@ func (u *UserService) RegisterUser(ctx context.Context, baseURL string, data *mo
 	}
 
 	user := &datastore.User{
-		UID:                        uuid.NewString(),
+		UID:                        ulid.Make().String(),
 		FirstName:                  data.FirstName,
 		LastName:                   data.LastName,
 		Email:                      data.Email,
 		Password:                   string(p.Hash),
-		EmailVerificationToken:     uuid.NewString(),
+		EmailVerificationToken:     ulid.Make().String(),
 		CreatedAt:                  time.Now(),
 		UpdatedAt:                  time.Now(),
 		EmailVerificationExpiresAt: time.Now().Add(time.Hour * 2),
@@ -149,7 +149,7 @@ func (u *UserService) ResendEmailVerificationToken(ctx context.Context, baseURL 
 	}
 
 	user.EmailVerificationExpiresAt = time.Now().Add(time.Hour * 2)
-	user.EmailVerificationToken = uuid.NewString()
+	user.EmailVerificationToken = ulid.Make().String()
 
 	err := u.userRepo.UpdateUser(ctx, user)
 	if err != nil {
@@ -386,7 +386,7 @@ func (u *UserService) GeneratePasswordResetToken(ctx context.Context, baseURL st
 
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
-	resetToken := uuid.NewString()
+	resetToken := ulid.Make().String()
 	user.ResetPasswordToken = resetToken
 	user.ResetPasswordExpiresAt = time.Now().Add(time.Hour * 2)
 	err = u.userRepo.UpdateUser(ctx, user)

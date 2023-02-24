@@ -14,7 +14,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/xdg-go/pbkdf2"
 )
@@ -72,7 +72,7 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
 	apiKey := &datastore.APIKey{
-		UID:       uuid.New().String(),
+		UID:       ulid.Make().String(),
 		MaskID:    maskID,
 		Name:      newApiKey.Name,
 		Type:      newApiKey.Type, // TODO: this should be set to datastore.ProjectKey
@@ -116,7 +116,7 @@ func (ss *SecurityService) CreatePersonalAPIKey(ctx context.Context, user *datas
 	}
 
 	apiKey := &datastore.APIKey{
-		UID:       uuid.New().String(),
+		UID:       ulid.Make().String(),
 		MaskID:    maskID,
 		Name:      newApiKey.Name,
 		Type:      datastore.PersonalKey,
@@ -190,7 +190,7 @@ func (ss *SecurityService) CreateEndpointAPIKey(ctx context.Context, d *models.C
 	}
 
 	apiKey := &datastore.APIKey{
-		UID:       uuid.New().String(),
+		UID:       ulid.Make().String(),
 		MaskID:    maskID,
 		Name:      d.Name,
 		Type:      d.KeyType,

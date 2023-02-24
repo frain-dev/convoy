@@ -19,7 +19,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/server/testdb"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -271,7 +271,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_InvalidSourceType() {
 func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 	name := "updated-convoy-prod"
 	isDisabled := randBool()
-	sourceID := uuid.New().String()
+	sourceID := ulid.Make().String()
 
 	// Just Before
 	_, _ = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, "", "", nil)
@@ -316,7 +316,7 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 }
 
 func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
-	sourceID := uuid.New().String()
+	sourceID := ulid.Make().String()
 
 	// Just Before.
 	_, _ = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, "", "", nil)

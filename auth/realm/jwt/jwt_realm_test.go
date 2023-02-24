@@ -11,7 +11,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -97,7 +97,7 @@ func TestJwtRealm_Authenticate(t *testing.T) {
 			args: args{
 				cred: &auth.Credential{
 					Type:  auth.CredentialTypeJWT,
-					Token: uuid.NewString(),
+					Token: ulid.Make().String(),
 				},
 			},
 			dbFn:       nil,

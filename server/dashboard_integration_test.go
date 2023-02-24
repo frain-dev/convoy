@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
@@ -21,7 +23,6 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/models"
-	"github.com/google/uuid"
 	"github.com/sebdah/goldie/v2"
 	"github.com/stretchr/testify/require"
 )
@@ -95,38 +96,38 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 
 	eventDeliveries := []datastore.EventDelivery{
 		{
-			UID:        uuid.New().String(),
+			UID:        ulid.Make().String(),
 			ProjectID:  s.DefaultProject.UID,
 			EndpointID: endpoint.UID,
 			CreatedAt:  time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC),
 			UpdatedAt:  time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC),
 		},
 		{
-			UID:       uuid.New().String(),
+			UID:       ulid.Make().String(),
 			ProjectID: s.DefaultProject.UID,
 			CreatedAt: time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC),
 			UpdatedAt: time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC),
 		},
 		{
-			UID:       uuid.New().String(),
+			UID:       ulid.Make().String(),
 			ProjectID: s.DefaultProject.UID,
 			CreatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 			UpdatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 		},
 		{
-			UID:       uuid.New().String(),
+			UID:       ulid.Make().String(),
 			ProjectID: s.DefaultProject.UID,
 			CreatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 			UpdatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 		},
 		{
-			UID:       uuid.New().String(),
+			UID:       ulid.Make().String(),
 			ProjectID: s.DefaultProject.UID,
 			CreatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 			UpdatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 		},
 		{
-			UID:       uuid.New().String(),
+			UID:       ulid.Make().String(),
 			ProjectID: s.DefaultProject.UID,
 			CreatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 			UpdatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),

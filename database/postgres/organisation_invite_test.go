@@ -12,7 +12,6 @@ import (
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,8 +26,8 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 	for i := 1; i < 3; i++ {
 		iv := &datastore.OrganisationInvite{
 			UID:            ulid.Make().String(),
-			InviteeEmail:   fmt.Sprintf("%s@gmail.com", uuid.NewString()),
-			Token:          uuid.NewString(),
+			InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),
+			Token:          ulid.Make().String(),
 			OrganisationID: org.UID,
 			Role:           auth.Role{Type: auth.RoleAdmin},
 			Status:         datastore.InviteStatusPending,
@@ -41,8 +40,8 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 	for i := 1; i < 3; i++ {
 		iv := &datastore.OrganisationInvite{
 			UID:            ulid.Make().String(),
-			InviteeEmail:   fmt.Sprintf("%s@gmail.com", uuid.NewString()),
-			Token:          uuid.NewString(),
+			InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),
+			Token:          ulid.Make().String(),
 			OrganisationID: org.UID,
 			Role:           auth.Role{Type: auth.RoleAdmin},
 			Status:         datastore.InviteStatusDeclined,
@@ -73,8 +72,8 @@ func TestCreateOrganisationInvite(t *testing.T) {
 	inviteRepo := NewOrgInviteRepo(db)
 	iv := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
-		InviteeEmail:   fmt.Sprintf("%s@gmail.com", uuid.NewString()),
-		Token:          uuid.NewString(),
+		InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),
+		Token:          ulid.Make().String(),
 		OrganisationID: org.UID,
 		Role:           auth.Role{Type: auth.RoleAdmin},
 		Status:         datastore.InviteStatusPending,
@@ -98,12 +97,12 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 	inviteRepo := NewOrgInviteRepo(db)
 	iv := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
-		InviteeEmail:   fmt.Sprintf("%s@gmail.com", uuid.NewString()),
-		Token:          uuid.NewString(),
+		InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),
+		Token:          ulid.Make().String(),
 		OrganisationID: org.UID,
 		Role: auth.Role{
 			Type:    auth.RoleAdmin,
-			Project: uuid.NewString(),
+			Project: ulid.Make().String(),
 		},
 		Status: datastore.InviteStatusPending,
 	}
@@ -113,7 +112,7 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 
 	role := auth.Role{
 		Type:     auth.RoleSuperUser,
-		Project:  uuid.NewString(),
+		Project:  ulid.Make().String(),
 		Endpoint: "",
 	}
 	status := datastore.InviteStatusAccepted
@@ -140,12 +139,12 @@ func TestDeleteOrganisationInvite(t *testing.T) {
 	inviteRepo := NewOrgInviteRepo(db)
 	iv := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
-		InviteeEmail:   fmt.Sprintf("%s@gmail.com", uuid.NewString()),
-		Token:          uuid.NewString(),
+		InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),
+		Token:          ulid.Make().String(),
 		OrganisationID: org.UID,
 		Role: auth.Role{
 			Type:    auth.RoleAdmin,
-			Project: uuid.NewString(),
+			Project: ulid.Make().String(),
 		},
 		Status: datastore.InviteStatusPending,
 	}
@@ -168,12 +167,12 @@ func TestFetchOrganisationInviteByID(t *testing.T) {
 	inviteRepo := NewOrgInviteRepo(db)
 	iv := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
-		InviteeEmail:   fmt.Sprintf("%s@gmail.com", uuid.NewString()),
-		Token:          uuid.NewString(),
+		InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),
+		Token:          ulid.Make().String(),
 		OrganisationID: org.UID,
 		Role: auth.Role{
 			Type:    auth.RoleAdmin,
-			Project: uuid.NewString(),
+			Project: ulid.Make().String(),
 		},
 		Status: datastore.InviteStatusPending,
 	}
@@ -197,12 +196,12 @@ func TestFetchOrganisationInviteByToken(t *testing.T) {
 	inviteRepo := NewOrgInviteRepo(db)
 	iv := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
-		InviteeEmail:   fmt.Sprintf("%s@gmail.com", uuid.NewString()),
-		Token:          uuid.NewString(),
+		InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),
+		Token:          ulid.Make().String(),
 		OrganisationID: org.UID,
 		Role: auth.Role{
 			Type:    auth.RoleAdmin,
-			Project: uuid.NewString(),
+			Project: ulid.Make().String(),
 		},
 		Status: datastore.InviteStatusPending,
 	}

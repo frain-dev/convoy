@@ -16,14 +16,14 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 	"github.com/xdg-go/pbkdf2"
 )
 
 // SeedEndpoint creates a random endpoint for integration tests.
 func SeedEndpoint(db database.Database, g *datastore.Project, uid, title, ownerID string, disabled bool, status datastore.EndpointStatus) (*datastore.Endpoint, error) {
 	if util.IsStringEmpty(uid) {
-		uid = uuid.New().String()
+		uid = ulid.Make().String()
 	}
 
 	if util.IsStringEmpty(title) {
@@ -31,7 +31,7 @@ func SeedEndpoint(db database.Database, g *datastore.Project, uid, title, ownerI
 	}
 
 	if util.IsStringEmpty(ownerID) {
-		ownerID = uuid.New().String()
+		ownerID = ulid.Make().String()
 	}
 
 	endpoint := &datastore.Endpoint{
@@ -55,7 +55,7 @@ func SeedEndpoint(db database.Database, g *datastore.Project, uid, title, ownerI
 
 func SeedMultipleEndpoints(db database.Database, g *datastore.Project, count int) error {
 	for i := 0; i < count; i++ {
-		uid := uuid.New().String()
+		uid := ulid.Make().String()
 		app := &datastore.Endpoint{
 			UID:       uid,
 			Title:     fmt.Sprintf("Test-%s", uid),
@@ -74,7 +74,7 @@ func SeedMultipleEndpoints(db database.Database, g *datastore.Project, count int
 
 func SeedEndpointSecret(db database.Database, e *datastore.Endpoint, value string) (*datastore.Secret, error) {
 	sc := datastore.Secret{
-		UID:   uuid.New().String(),
+		UID:   ulid.Make().String(),
 		Value: value,
 	}
 
@@ -93,11 +93,11 @@ func SeedEndpointSecret(db database.Database, e *datastore.Endpoint, value strin
 // seed default project
 func SeedDefaultProject(db database.Database, orgID string) (*datastore.Project, error) {
 	if orgID == "" {
-		orgID = uuid.NewString()
+		orgID = ulid.Make().String()
 	}
 
 	defaultProject := &datastore.Project{
-		UID:            uuid.New().String(),
+		UID:            ulid.Make().String(),
 		Name:           "default-project",
 		Type:           datastore.OutgoingProject,
 		OrganisationID: orgID,
@@ -111,7 +111,7 @@ func SeedDefaultProject(db database.Database, orgID string) (*datastore.Project,
 				Header: config.DefaultSignatureHeader,
 				Versions: []datastore.SignatureVersion{
 					{
-						UID:       uuid.NewString(),
+						UID:       ulid.Make().String(),
 						Hash:      "SHA256",
 						Encoding:  datastore.HexEncoding,
 						CreatedAt: time.Now(),
@@ -145,7 +145,7 @@ func SeedDefaultUser(db database.Database) (*datastore.User, error) {
 	}
 
 	defaultUser := &datastore.User{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		FirstName: "default",
 		LastName:  "default",
 		Email:     "default@user.com",
@@ -167,7 +167,7 @@ func SeedDefaultUser(db database.Database) (*datastore.User, error) {
 // seed default organisation
 func SeedDefaultOrganisation(db database.Database, user *datastore.User) (*datastore.Organisation, error) {
 	defaultOrg := &datastore.Organisation{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		OwnerID:   user.UID,
 		Name:      "default-org",
 		CreatedAt: time.Now(),
@@ -182,7 +182,7 @@ func SeedDefaultOrganisation(db database.Database, user *datastore.User) (*datas
 	}
 
 	member := &datastore.OrganisationMember{
-		UID:            uuid.NewString(),
+		UID:            ulid.Make().String(),
 		OrganisationID: defaultOrg.UID,
 		UserID:         user.UID,
 		Role:           auth.Role{Type: auth.RoleSuperUser},
@@ -202,7 +202,7 @@ func SeedDefaultOrganisation(db database.Database, user *datastore.User) (*datas
 // seed organisation member
 func SeedOrganisationMember(db database.Database, org *datastore.Organisation, user *datastore.User, role *auth.Role) (*datastore.OrganisationMember, error) {
 	member := &datastore.OrganisationMember{
-		UID:            uuid.NewString(),
+		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
 		UserID:         user.UID,
 		Role:           *role,
@@ -226,7 +226,7 @@ func SeedOrganisationInvite(db database.Database, org *datastore.Organisation, e
 	}
 
 	iv := &datastore.OrganisationInvite{
-		UID:            uuid.NewString(),
+		UID:            ulid.Make().String(),
 		InviteeEmail:   email,
 		OrganisationID: org.UID,
 		Role:           *role,
@@ -249,7 +249,7 @@ func SeedOrganisationInvite(db database.Database, org *datastore.Organisation, e
 // SeedAPIKey creates random api key for integration tests.
 func SeedAPIKey(db database.Database, role auth.Role, uid, name, keyType, userID string) (*datastore.APIKey, string, error) {
 	if util.IsStringEmpty(uid) {
-		uid = uuid.New().String()
+		uid = ulid.Make().String()
 	}
 
 	maskID, key := util.GenerateAPIKey()
@@ -286,7 +286,7 @@ func SeedAPIKey(db database.Database, role auth.Role, uid, name, keyType, userID
 // seed default project
 func SeedProject(db database.Database, uid, name, orgID string, projectType datastore.ProjectType, cfg *datastore.ProjectConfig) (*datastore.Project, error) {
 	if orgID == "" {
-		orgID = uuid.NewString()
+		orgID = ulid.Make().String()
 	}
 	g := &datastore.Project{
 		UID:            uid,
@@ -311,7 +311,7 @@ func SeedProject(db database.Database, uid, name, orgID string, projectType data
 // SeedEvent creates a random event for integration tests.
 func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID string, uid, eventType string, sourceID string, data []byte) (*datastore.Event, error) {
 	if util.IsStringEmpty(uid) {
-		uid = uuid.New().String()
+		uid = ulid.Make().String()
 	}
 
 	ev := &datastore.Event{
@@ -336,7 +336,7 @@ func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID str
 // SeedEventDelivery creates a random event delivery for integration tests.
 func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *datastore.Endpoint, projectID string, uid string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
-		uid = uuid.New().String()
+		uid = ulid.Make().String()
 	}
 
 	eventDelivery := &datastore.EventDelivery{
@@ -361,7 +361,7 @@ func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *d
 // SeedOrganisation is create random Organisation for integration tests.
 func SeedOrganisation(db database.Database, uid, ownerID, name string) (*datastore.Organisation, error) {
 	if util.IsStringEmpty(uid) {
-		uid = uuid.New().String()
+		uid = ulid.Make().String()
 	}
 
 	if util.IsStringEmpty(name) {
@@ -391,7 +391,7 @@ func SeedMultipleOrganisations(db database.Database, ownerID string, num int) ([
 	orgs := []*datastore.Organisation{}
 
 	for i := 0; i < num; i++ {
-		uid := uuid.New().String()
+		uid := ulid.Make().String()
 
 		org := &datastore.Organisation{
 			UID:       uid,
@@ -415,11 +415,11 @@ func SeedMultipleOrganisations(db database.Database, ownerID string, num int) ([
 
 func SeedSource(db database.Database, g *datastore.Project, uid, maskID, ds string, v *datastore.VerifierConfig) (*datastore.Source, error) {
 	if util.IsStringEmpty(uid) {
-		uid = uuid.New().String()
+		uid = ulid.Make().String()
 	}
 
 	if util.IsStringEmpty(maskID) {
-		maskID = uuid.New().String()
+		maskID = ulid.Make().String()
 	}
 
 	if v == nil {
@@ -467,7 +467,7 @@ func SeedSubscription(db database.Database,
 	filterConfig *datastore.FilterConfiguration,
 ) (*datastore.Subscription, error) {
 	if util.IsStringEmpty(uid) {
-		uid = uuid.New().String()
+		uid = ulid.Make().String()
 	}
 
 	subscription := &datastore.Subscription{
@@ -504,7 +504,7 @@ func SeedUser(db database.Database, email, password string) (*datastore.User, er
 	}
 
 	user := &datastore.User{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		FirstName: "test",
 		LastName:  "test",
 		Password:  string(p.Hash),
@@ -523,7 +523,7 @@ func SeedUser(db database.Database, email, password string) (*datastore.User, er
 
 func SeedConfiguration(db database.Database) (*datastore.Configuration, error) {
 	config := &datastore.Configuration{
-		UID:                uuid.NewString(),
+		UID:                ulid.Make().String(),
 		IsAnalyticsEnabled: true,
 		IsSignupEnabled:    true,
 		StoragePolicy:      &datastore.DefaultStoragePolicy,
@@ -541,7 +541,7 @@ func SeedConfiguration(db database.Database) (*datastore.Configuration, error) {
 
 func SeedDevice(db database.Database, g *datastore.Project, endpointID string) error {
 	device := &datastore.Device{
-		UID:        uuid.NewString(),
+		UID:        ulid.Make().String(),
 		ProjectID:  g.UID,
 		EndpointID: endpointID,
 		HostName:   "",
@@ -559,10 +559,10 @@ func SeedDevice(db database.Database, g *datastore.Project, endpointID string) e
 
 func SeedPortalLink(db database.Database, g *datastore.Project, endpoints []string) (*datastore.PortalLink, error) {
 	portalLink := &datastore.PortalLink{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		ProjectID: g.UID,
-		Name:      fmt.Sprintf("TestPortalLink-%s", uuid.NewString()),
-		Token:     uuid.NewString(),
+		Name:      fmt.Sprintf("TestPortalLink-%s", ulid.Make().String()),
+		Token:     ulid.Make().String(),
 		Endpoints: endpoints,
 	}
 

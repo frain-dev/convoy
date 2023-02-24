@@ -11,8 +11,8 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
+	"github.com/oklog/ulid/v2"
 )
 
 const (
@@ -149,7 +149,7 @@ func NewMixPanelClient(cfg config.Configuration) (*MixPanelClient, error) {
 }
 
 func (m *MixPanelClient) Export(eventName string, e Event) error {
-	err := m.client.Track(uuid.NewString(), eventName, &mixpanel.Event{
+	err := m.client.Track(ulid.Make().String(), eventName, &mixpanel.Event{
 		IP:         "0",
 		Timestamp:  nil,
 		Properties: e,

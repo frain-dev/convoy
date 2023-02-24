@@ -18,7 +18,7 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 )
 
 var (
@@ -410,7 +410,7 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 	}
 
 	event := &datastore.Event{
-		UID:       uuid.New().String(),
+		UID:       ulid.Make().String(),
 		EventType: datastore.EventType(newMessage.EventType),
 		Data:      newMessage.Data,
 		Raw:       newMessage.Raw,

@@ -13,7 +13,7 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -332,7 +332,7 @@ func TestUserService_RefreshToken(t *testing.T) {
 			name: "should_fail_to_refresh_for_invalid_access_token",
 			args: args{
 				ctx:   ctx,
-				token: &models.Token{AccessToken: uuid.NewString(), RefreshToken: uuid.NewString()},
+				token: &models.Token{AccessToken: ulid.Make().String(), RefreshToken: ulid.Make().String()},
 			},
 			dbFn: func(u *UserService) {
 				ca, _ := u.cache.(*mocks.MockCache)
@@ -347,7 +347,7 @@ func TestUserService_RefreshToken(t *testing.T) {
 			args: args{
 				ctx:   ctx,
 				user:  &datastore.User{UID: "123456"},
-				token: &models.Token{RefreshToken: uuid.NewString()},
+				token: &models.Token{RefreshToken: ulid.Make().String()},
 			},
 			dbFn: func(u *UserService) {
 				ca, _ := u.cache.(*mocks.MockCache)
@@ -445,7 +445,7 @@ func TestUserService_LogoutUser(t *testing.T) {
 			args: args{
 				ctx:   ctx,
 				user:  &datastore.User{UID: "12345"},
-				token: &models.Token{AccessToken: uuid.NewString()},
+				token: &models.Token{AccessToken: ulid.Make().String()},
 			},
 			dbFn: func(u *UserService) {
 				ca, _ := u.cache.(*mocks.MockCache)

@@ -7,7 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -27,7 +27,7 @@ func (db *apiKeyRepo) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey
 	ctx = db.setCollectionInContext(ctx)
 
 	if util.IsStringEmpty(apiKey.UID) {
-		apiKey.UID = uuid.New().String()
+		apiKey.UID = ulid.Make().String()
 	}
 
 	return db.store.Save(ctx, apiKey, nil)

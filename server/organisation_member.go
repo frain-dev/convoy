@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/frain-dev/convoy/database/postgres"
@@ -25,6 +26,8 @@ func (a *ApplicationHandler) GetOrganisationMembers(w http.ResponseWriter, r *ht
 	orgMemberService := createOrganisationMemberService(a)
 
 	members, paginationData, err := orgMemberService.LoadOrganisationMembersPaged(r.Context(), org, pageable)
+	fmt.Println("1111", members)
+	fmt.Println("2222", err)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to load organisations")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

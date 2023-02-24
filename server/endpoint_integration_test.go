@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -21,10 +23,8 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/server/testdb"
-	"github.com/google/uuid"
 	"github.com/jaswdr/faker"
 	"github.com/stretchr/testify/require"
-
 	"github.com/stretchr/testify/suite"
 )
 
@@ -68,7 +68,7 @@ func (s *EndpointIntegrationTestSuite) SetupTest() {
 
 	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
 
-	_, s.PersonalAPIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, uuid.NewString(), "test-personal-key", string(datastore.PersonalKey), s.DefaultUser.UID)
+	_, s.PersonalAPIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test-personal-key", string(datastore.PersonalKey), s.DefaultUser.UID)
 
 	// Setup Config.
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
@@ -213,7 +213,7 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
 }
 
 func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint() {
-	endpointTitle := fmt.Sprintf("Test-%s", uuid.New().String())
+	endpointTitle := fmt.Sprintf("Test-%s", ulid.Make().String())
 	endpointURL := faker.New().Internet().URL()
 	expectedStatusCode := http.StatusCreated
 
@@ -246,7 +246,7 @@ func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint() {
 }
 
 func (s *EndpointIntegrationTestSuite) Test_CreateEndpointWithPersonalAPIKey() {
-	endpointTitle := fmt.Sprintf("Test-%s", uuid.New().String())
+	endpointTitle := fmt.Sprintf("Test-%s", ulid.Make().String())
 	endpointURL := faker.New().Internet().URL()
 	expectedStatusCode := http.StatusCreated
 
@@ -298,7 +298,7 @@ func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_NoName() {
 }
 
 func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_InvalidRequest() {
-	endpointID := uuid.New().String()
+	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusBadRequest
 
 	// Just Before.
@@ -322,7 +322,7 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	title := "random-name"
 	endpointURL := faker.New().Internet().URL()
 	supportEmail := "10xengineer@getconvoy.io"
-	endpointID := uuid.New().String()
+	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
@@ -363,7 +363,7 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_WithPersonalAPIKey() 
 	title := "random-name"
 	supportEmail := "10xengineer@getconvoy.io"
 	isDisabled := randBool()
-	endpointID := uuid.New().String()
+	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusAccepted
 	endpointURL := faker.New().Internet().URL()
 
@@ -404,7 +404,7 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_WithPersonalAPIKey() 
 }
 
 func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint() {
-	endpointID := uuid.New().String()
+	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -428,7 +428,7 @@ func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint() {
 }
 
 func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint_WithPersonalAPIKey() {
-	endpointID := uuid.New().String()
+	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -495,7 +495,7 @@ func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Authentic
 }
 
 func (s *EndpointIntegrationTestSuite) Test_ExpireEndpointSecret() {
-	endpointID := uuid.New().String()
+	endpointID := ulid.Make().String()
 	f := faker.New()
 	secret := f.Lorem().Text(25)
 	expiration := 7

@@ -13,7 +13,7 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1126,7 +1126,7 @@ func TestOrganisationInviteService_CancelOrganisationMemberInvite(t *testing.T) 
 			args: args{
 				ctx:  ctx,
 				org:  &datastore.Organisation{UID: "123"},
-				ivID: uuid.NewString(),
+				ivID: ulid.Make().String(),
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				a, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)

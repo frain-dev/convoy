@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
@@ -14,7 +15,6 @@ import (
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
-	"github.com/google/uuid"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
@@ -39,7 +39,7 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	project := m.GetProjectFromContext(r.Context())
-	uid := uuid.New().String()
+	uid := ulid.Make().String()
 	endpoint := &datastore.Endpoint{
 		UID:             uid,
 		ProjectID:       project.UID,
@@ -288,7 +288,7 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 
 			endpoint.Secrets = []datastore.Secret{
 				{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					Value:     sc,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
@@ -296,7 +296,7 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 			}
 		} else {
 			endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
-				UID:       uuid.NewString(),
+				UID:       ulid.Make().String(),
 				Value:     req.Secret,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
