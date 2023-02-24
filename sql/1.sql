@@ -246,6 +246,8 @@ CREATE TABLE IF NOT EXISTS convoy.sources (
 	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
 	source_verifier_id CHAR(26) REFERENCES convoy.source_verifiers (id),
 
+	pub_sub JSONB,
+
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	deleted_at TIMESTAMPTZ,

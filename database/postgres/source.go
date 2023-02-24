@@ -16,8 +16,8 @@ import (
 
 const (
 	createSource = `
-    INSERT INTO convoy.sources (id, source_verifier_id, name,type,mask_id,provider,is_disabled,forward_headers,project_id)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9);
+    INSERT INTO convoy.sources (id, source_verifier_id, name,type,mask_id,provider,is_disabled,forward_headers,project_id, pub_sub)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10);
     `
 
 	createSourceVerifier = `
@@ -38,6 +38,7 @@ const (
 	is_disabled=$6,
 	forward_headers=$7,
 	project_id =$8,
+	pub_sub= $9,
 	updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL ;
 	`
@@ -68,6 +69,7 @@ const (
 		s.forward_headers,
 		s.project_id,
 		s.source_verifier_id,
+		s.pub_sub,
 		sv.type as "verifier.type",
 		sv.basic_username as "verifier.basic_auth.username",
 		sv.basic_password as "verifier.basic_auth.password",
@@ -106,10 +108,12 @@ const (
 	fetchSourcesPaginated = `
 	SELECT * FROM convoy.sources
 	WHERE deleted_at IS NULL
-	ORDER BY id LIMIT $1 OFFSET $2;
+	AND (type = :type OR :type = '') AND (provider = :provider OR :provider = '')
+	ORDER BY id LIMIT :limit OFFSET :offset;
 	`
 	countSources = `
-	SELECT COUNT(id) FROM convoy.sources WHERE deleted_at IS NULL;
+	SELECT COUNT(id) FROM convoy.sources WHERE deleted_at IS NULL
+	AND (type = :type OR :type = '') AND (provider = :provider OR :provider = '');
 	`
 )
 
@@ -171,7 +175,7 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 	source.VerifierID = sourceVerifierID
 	result1, err := tx.ExecContext(
 		ctx, createSource, source.UID, sourceVerifierID, source.Name, source.Type, source.MaskID,
-		source.Provider, source.IsDisabled, pq.Array(source.ForwardHeaders), source.ProjectID,
+		source.Provider, source.IsDisabled, pq.Array(source.ForwardHeaders), source.ProjectID, source.PubSub,
 	)
 	if err != nil {
 		return err
@@ -197,7 +201,7 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 
 	result, err := tx.ExecContext(
 		ctx, updateSourceById, source.UID, source.Name, source.Type, source.MaskID,
-		source.Provider, source.IsDisabled, source.ForwardHeaders, source.ProjectID,
+		source.Provider, source.IsDisabled, source.ForwardHeaders, source.ProjectID, source.PubSub,
 	)
 	if err != nil {
 		return err
@@ -297,7 +301,20 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectID, id, source
 }
 
 func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, filter *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
-	rows, err := s.db.QueryxContext(ctx, fetchSourcesPaginated, pageable.Limit(), pageable.Offset())
+	arg := map[string]interface{}{
+		"type":     filter.Type,
+		"provider": filter.Provider,
+		"limit":    pageable.Limit(),
+		"offset":   pageable.Offset(),
+	}
+
+	query, args, err := sqlx.Named(fetchSourcesPaginated, arg)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+	
+	query = s.db.Rebind(query)
+	rows, err := s.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -314,7 +331,13 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 	}
 
 	var count int
-	err = s.db.Get(&count, countSources)
+	query, args, err = sqlx.Named(countSources, arg)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query = s.db.Rebind(query)
+	err = s.db.Get(&count, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
