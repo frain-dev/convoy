@@ -103,11 +103,12 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_AppNotFound() {
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication() {
-	appID := "123456789"
+	appID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
@@ -132,11 +133,12 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication() {
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication_WithPersonalAPIKey() {
-	appID := "123456789"
+	appID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s", s.DefaultProject.UID, appID)
@@ -444,7 +446,8 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint() {
 	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints", s.DefaultProject.UID, appID)
@@ -482,7 +485,8 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateAppEndpoint_With_Custom_Aut
 	expectedStatusCode := http.StatusCreated
 
 	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, appID, "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/applications/%s/endpoints", s.DefaultProject.UID, appID)

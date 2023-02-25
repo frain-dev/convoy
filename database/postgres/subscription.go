@@ -10,8 +10,6 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/util"
 
-	"github.com/oklog/ulid/v2"
-
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 )
@@ -69,18 +67,18 @@ const (
 	s.rate_limit_config_count as "rate_limit_config.count",
 	s.rate_limit_config_duration as "rate_limit_config.duration",
 
-	endpoint_metadata.id as "endpoint_metadata.id",
-	endpoint_metadata.title as "endpoint_metadata.title",
-	endpoint_metadata.project_id as "endpoint_metadata.project_id",
-	endpoint_metadata.support_email as "endpoint_metadata.support_email",
-	endpoint_metadata.target_url as "endpoint_metadata.target_url",
+	COALESCE(endpoint_metadata.id,'') as "endpoint_metadata.id",
+	COALESCE(endpoint_metadata.title,'') as "endpoint_metadata.title",
+	COALESCE(endpoint_metadata.project_id,'') as "endpoint_metadata.project_id",
+	COALESCE(endpoint_metadata.support_email,'') as "endpoint_metadata.support_email",
+	COALESCE(endpoint_metadata.target_url,'') as "endpoint_metadata.target_url",
 
-	source_metadata.id as "source_metadata.id",
-	source_metadata.name as "source_metadata.name",
-	source_metadata.type as "source_metadata.type",
-	source_metadata.mask_id as "source_metadata.mask_id",
-	source_metadata.project_id as "source_metadata.project_id",
- 	source_metadata.is_disabled as "source_metadata.is_disabled"
+	COALESCE(source_metadata.id,'') as "source_metadata.id",
+	COALESCE(source_metadata.name,'') as "source_metadata.name",
+	COALESCE(source_metadata.type,'') as "source_metadata.type",
+	COALESCE(source_metadata.mask_id,'') as "source_metadata.mask_id",
+	COALESCE(source_metadata.project_id,'') as "source_metadata.project_id",
+ 	COALESCE(source_metadata.is_disabled,false) as "source_metadata.is_disabled"
 	FROM convoy.subscriptions s LEFT JOIN convoy.endpoints endpoint_metadata
     ON s.endpoint_id = endpoint_metadata.id LEFT JOIN convoy.sources source_metadata
     ON s.source_id = source_metadata.id WHERE s.deleted_at IS NULL `
@@ -132,7 +130,6 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		return datastore.ErrNotAuthorisedToAccessDocument
 	}
 
-	subscription.UID = ulid.Make().String()
 	ac := subscription.GetAlertConfig()
 	rc := subscription.GetRetryConfig()
 	fc := subscription.GetFilterConfig()

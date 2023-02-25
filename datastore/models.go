@@ -644,7 +644,7 @@ const (
 
 type Metadata struct {
 	// Data to be sent to endpoint.
-	Data     []byte           `json:"data" bson:"data"`
+	Data     json.RawMessage  `json:"data" bson:"data"`
 	Raw      string           `json:"raw" bson:"raw"`
 	Strategy StrategyProvider `json:"strategy" bson:"strategy"`
 
@@ -690,8 +690,9 @@ func (m *Metadata) Value() (driver.Value, error) {
 }
 
 type EventIntervalData struct {
-	Interval int64  `json:"index" db:"index"`
-	Time     string `json:"date" db:"total_time"`
+	Interval  int64  `json:"index" db:"index"`
+	Time      string `json:"date" db:"total_time"`
+	GroupStub string `json:"-" db:"group_only"` // ugnore
 }
 
 type EventInterval struct {

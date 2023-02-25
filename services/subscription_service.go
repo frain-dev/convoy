@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -91,7 +92,10 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, project *da
 	}
 
 	if len(subscription.FilterConfig.Filter.Body) == 0 && len(subscription.FilterConfig.Filter.Headers) == 0 {
-		subscription.FilterConfig.Filter = datastore.FilterSchema{}
+		subscription.FilterConfig.Filter = datastore.FilterSchema{
+			Headers: datastore.M{},
+			Body:    datastore.M{},
+		}
 	} else {
 		// validate that the filter is a json string
 		_, err := json.Marshal(subscription.FilterConfig.Filter)
@@ -117,6 +121,7 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, projectId s
 	}
 
 	subscription, err := s.subRepo.FindSubscriptionByID(ctx, projectId, subscriptionId)
+	fmt.Println("ff", err)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrSubscriptionNotFound.Error())
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)

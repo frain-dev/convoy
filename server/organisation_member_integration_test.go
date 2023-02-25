@@ -8,10 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
-
-	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
@@ -136,11 +133,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "member@test.com", "password")
 	require.NoError(s.T(), err)
 
-	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
-		Type:     auth.RoleAdmin,
-		Project:  ulid.Make().String(),
-		Endpoint: "",
-	})
+	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{Type: auth.RoleAdmin})
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
@@ -180,7 +173,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Project:  ulid.Make().String(),
+		Project:  s.DefaultProject.UID,
 		Endpoint: "",
 	})
 	require.NoError(s.T(), err)
@@ -188,7 +181,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
 
-	body := strings.NewReader(`{"role":{ "type":"api", "project":"123"}}`)
+	body := serialize(`{"role":{ "type":"api", "project":"%s"}}`, s.DefaultProject.UID)
 	req := createRequest(http.MethodPut, url, "", body)
 
 	err = s.AuthenticatorFn(req, s.Router)
@@ -207,7 +200,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 	parseResponse(s.T(), w.Result(), &m)
 
 	require.Equal(s.T(), member.UID, m.UID)
-	require.Equal(s.T(), auth.Role{Type: auth.RoleAPI, Project: "123"}, m.Role)
+	require.Equal(s.T(), auth.Role{Type: auth.RoleAPI, Project: s.DefaultProject.UID}, m.Role)
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember() {
@@ -218,9 +211,10 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember()
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
 		Type:     auth.RoleAdmin,
-		Project:  ulid.Make().String(),
+		Project:  s.DefaultProject.UID,
 		Endpoint: "",
 	})
+	require.NoError(s.T(), err)
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)

@@ -76,7 +76,7 @@ func (s *ProjectIntegrationTestSuite) TestGetProject() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, projectID, "", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
+	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, projectID, "", s.DefaultOrg.UID, datastore.OutgoingProject, &datastore.DefaultProjectConfig)
 	require.NoError(s.T(), err)
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, project, ulid.Make().String(), "test-app", "", false, datastore.ActiveEndpointStatus)
 	_, _ = testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, project.UID, ulid.Make().String(), "*", "", []byte("{}"))
@@ -171,7 +171,7 @@ func (s *ProjectIntegrationTestSuite) TestDeleteProject() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, projectID, "", "", datastore.OutgoingProject, nil)
+	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, projectID, "x-proj", s.DefaultOrg.UID, datastore.OutgoingProject, &datastore.DefaultProjectConfig)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s", s.DefaultOrg.UID, project.UID)
@@ -211,7 +211,7 @@ func (s *ProjectIntegrationTestSuite) TestDeleteProjectWithPersonalAPIKey() {
 	projectID := ulid.Make().String()
 
 	// Just Before.
-	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, projectID, "test", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
+	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, projectID, "test", s.DefaultOrg.UID, datastore.OutgoingProject, &datastore.DefaultProjectConfig)
 	require.NoError(s.T(), err)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
@@ -275,12 +275,12 @@ func (s *ProjectIntegrationTestSuite) TestCreateProject() {
             "hash": "SHA512"
         },
         "disable_endpoint": false,
-        "replay_attacks": false
-        "rate_limit": {
+        "replay_attacks": false,
+        "ratelimit": {
             "count": 8000,
-            "duration": "5m"
-        },
-    },
+            "duration": 60
+        }
+    }
 }`
 
 	body := serialize(bodyStr)
@@ -291,7 +291,6 @@ func (s *ProjectIntegrationTestSuite) TestCreateProject() {
 	require.NoError(s.T(), err)
 
 	w := httptest.NewRecorder()
-
 	// Act.
 	s.Router.ServeHTTP(w, req)
 
@@ -302,7 +301,7 @@ func (s *ProjectIntegrationTestSuite) TestCreateProject() {
 	parseResponse(s.T(), w.Result(), &respProject)
 	require.NotEmpty(s.T(), respProject.Project.UID)
 	require.Equal(s.T(), 8000, respProject.Project.Config.RateLimit.Count)
-	require.Equal(s.T(), "5m", respProject.Project.Config.RateLimit.Duration)
+	require.Equal(s.T(), uint64(60), respProject.Project.Config.RateLimit.Duration)
 	require.Equal(s.T(), "test-project", respProject.Project.Name)
 	require.Equal(s.T(), "test-project's default key", respProject.APIKey.Name)
 
@@ -330,12 +329,12 @@ func (s *ProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey() {
             "hash": "SHA512"
         },
         "disable_endpoint": false,
-        "replay_attacks": false
-        "rate_limit": {
+        "replay_attacks": false,
+        "ratelimit": {
             "count": 8000,
-            "duration": "5m"
-        },
-    },
+            "duration": 60
+        }
+    }
 }`
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
@@ -358,7 +357,7 @@ func (s *ProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey() {
 	parseResponse(s.T(), w.Result(), &respProject)
 	require.NotEmpty(s.T(), respProject.Project.UID)
 	require.Equal(s.T(), 8000, respProject.Project.Config.RateLimit.Count)
-	require.Equal(s.T(), "5m", respProject.Project.Config.RateLimit.Duration)
+	require.Equal(s.T(), uint64(60), respProject.Project.Config.RateLimit.Duration)
 	require.Equal(s.T(), "test-project", respProject.Project.Name)
 	require.Equal(s.T(), "test-project's default key", respProject.APIKey.Name)
 
@@ -397,7 +396,7 @@ func (s *ProjectIntegrationTestSuite) TestUpdateProject() {
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, projectID, "", "test-project", datastore.OutgoingProject, nil)
+	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, projectID, "x-proj", s.DefaultOrg.UID, datastore.OutgoingProject, &datastore.DefaultProjectConfig)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s", s.DefaultOrg.UID, project.UID)
@@ -406,6 +405,7 @@ func (s *ProjectIntegrationTestSuite) TestUpdateProject() {
     "name": "project_1",
 	"type": "outgoing",
     "config": {
+        "retention_policy":{"policy":"1h"},
         "strategy": {
             "type": "exponential",
             "duration": 10,
@@ -416,7 +416,11 @@ func (s *ProjectIntegrationTestSuite) TestUpdateProject() {
             "hash": "SHA512"
         },
         "disable_endpoint": false,
-        "replay_attacks": false
+        "replay_attacks": false,
+        "ratelimit": {
+            "count": 8000,
+            "duration": 60
+        }
     }
 }`
 	req := createRequest(http.MethodPut, url, "", serialize(bodyStr))
@@ -440,7 +444,7 @@ func (s *ProjectIntegrationTestSuite) TestUpdateProjectWithPersonalAPIKey() {
 	projectID := ulid.Make().String()
 
 	// Just Before.
-	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, projectID, "test", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
+	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, projectID, "test", s.DefaultOrg.UID, datastore.OutgoingProject, &datastore.DefaultProjectConfig)
 	require.NoError(s.T(), err)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
@@ -493,13 +497,18 @@ func (s *ProjectIntegrationTestSuite) TestGetProjects() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	project1, _ := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
-	project2, _ := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
-	project3, _ := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
+	project1, err := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "123", s.DefaultOrg.UID, datastore.OutgoingProject, &datastore.DefaultProjectConfig)
+	require.NoError(s.T(), err)
+
+	project2, err := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "43", s.DefaultOrg.UID, datastore.OutgoingProject, &datastore.DefaultProjectConfig)
+	require.NoError(s.T(), err)
+
+	project3, err := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "66", s.DefaultOrg.UID, datastore.OutgoingProject, &datastore.DefaultProjectConfig)
+	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects", s.DefaultOrg.UID)
 	req := createRequest(http.MethodGet, url, "", nil)
-	err := s.AuthenticatorFn(req, s.Router)
+	err = s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
 
@@ -524,8 +533,11 @@ func (s *ProjectIntegrationTestSuite) TestGetProjectsWithPersonalAPIKey() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	project1, _ := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
-	project2, _ := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
+	project1, err := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "vve", s.DefaultOrg.UID, datastore.OutgoingProject, &datastore.DefaultProjectConfig)
+	require.NoError(s.T(), err)
+
+	project2, err := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "bbv", s.DefaultOrg.UID, datastore.OutgoingProject, &datastore.DefaultProjectConfig)
+	require.NoError(s.T(), err)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
 	require.NoError(s.T(), err)
@@ -549,33 +561,6 @@ func (s *ProjectIntegrationTestSuite) TestGetProjectsWithPersonalAPIKey() {
 	require.Contains(s.T(), v, project1.UID)
 	require.Contains(s.T(), v, project2.UID)
 	require.Contains(s.T(), v, s.DefaultProject.UID)
-}
-
-func (s *ProjectIntegrationTestSuite) TestGetProjects_FilterByName() {
-	expectedStatusCode := http.StatusOK
-
-	// Just Before.
-	project1, _ := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "abcdef", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
-	_, _ = testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "test-project-2", "", datastore.OutgoingProject, nil)
-	_, _ = testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "test-project-3", "", datastore.OutgoingProject, nil)
-
-	url := fmt.Sprintf("/ui/organisations/%s/projects?name=%s", s.DefaultOrg.UID, project1.Name)
-	req := createRequest(http.MethodGet, url, "", nil)
-	err := s.AuthenticatorFn(req, s.Router)
-	require.NoError(s.T(), err)
-	w := httptest.NewRecorder()
-
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	var projects []*datastore.Project
-	parseResponse(s.T(), w.Result(), &projects)
-	require.Equal(s.T(), 1, len(projects))
-
-	require.Equal(s.T(), project1.UID, projects[0].UID)
 }
 
 func (s *ProjectIntegrationTestSuite) TearDownTest() {

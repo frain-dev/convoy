@@ -202,8 +202,8 @@ func (m *Middleware) RequireEndpoint() func(next http.Handler) http.Handler {
 				return
 			}
 
-			project := GetProjectFromContext(r.Context())
 			if endpoint == nil {
+				project := GetProjectFromContext(r.Context())
 				endpoint, err = m.endpointRepo.FindEndpointByID(r.Context(), endpointID, project.UID)
 				if err != nil {
 					if errors.Is(err, datastore.ErrEndpointNotFound) {
@@ -996,6 +996,7 @@ func (m *Middleware) ComputeDashboardMessages(ctx context.Context, projectID str
 	var messagesSent uint64
 
 	messages, err := m.eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, projectID, searchParams, period, 1)
+	fmt.Println("ffjhgfj", err)
 	if err != nil {
 		m.logger.WithError(err).Error("failed to load message intervals - ")
 		return 0, nil, err

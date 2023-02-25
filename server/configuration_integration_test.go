@@ -95,7 +95,7 @@ func (c *ConfigurationIntegrationTestSuite) Test_LoadConfiguration() {
 	require.NotEmpty(c.T(), newConfig[0].UID)
 	require.Equal(c.T(), config.UID, newConfig[0].UID)
 	require.Equal(c.T(), config.IsAnalyticsEnabled, newConfig[0].IsAnalyticsEnabled)
-	require.Equal(c.T(), config.StoragePolicy.OnPrem.Path, convoy.DefaultOnPremDir)
+	require.Equal(c.T(), config.StoragePolicy.OnPrem.Path.ValueOrZero(), convoy.DefaultOnPremDir)
 	require.Equal(c.T(), convoy.GetVersion(), newConfig[0].ApiVersion)
 }
 
@@ -158,7 +158,7 @@ func (c *ConfigurationIntegrationTestSuite) Test_UpdateConfiguration() {
 	parseResponse(c.T(), w.Result(), &config)
 
 	require.NotEmpty(c.T(), config.UID)
-	require.Equal(c.T(), "/tmp", config.StoragePolicy.OnPrem.Path)
+	require.Equal(c.T(), "/tmp", config.StoragePolicy.OnPrem.Path.ValueOrZero())
 	require.False(c.T(), config.IsAnalyticsEnabled)
 	require.False(c.T(), config.IsSignupEnabled)
 }

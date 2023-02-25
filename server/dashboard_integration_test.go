@@ -85,6 +85,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 		UID:          "abc",
 		ProjectID:    s.DefaultProject.UID,
 		Title:        "test-app",
+		Secrets:      datastore.Secrets{},
 		SupportEmail: "test@suport.com",
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
@@ -94,43 +95,67 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	err := endpointRepo.CreateEndpoint(ctx, endpoint, endpoint.ProjectID)
 	require.NoError(s.T(), err)
 
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+
+	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.IncomingProject, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
+	require.NoError(s.T(), err)
+
 	eventDeliveries := []datastore.EventDelivery{
 		{
-			UID:        ulid.Make().String(),
-			ProjectID:  s.DefaultProject.UID,
-			EndpointID: endpoint.UID,
-			CreatedAt:  time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC),
-			UpdatedAt:  time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC),
+			UID:            ulid.Make().String(),
+			ProjectID:      s.DefaultProject.UID,
+			EndpointID:     endpoint.UID,
+			EventID:        event.UID,
+			SubscriptionID: sub.UID,
+			Metadata:       &datastore.Metadata{},
+			CreatedAt:      time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC),
+			UpdatedAt:      time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC),
 		},
 		{
-			UID:       ulid.Make().String(),
-			ProjectID: s.DefaultProject.UID,
-			CreatedAt: time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC),
-			UpdatedAt: time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC),
+			UID:            ulid.Make().String(),
+			ProjectID:      s.DefaultProject.UID,
+			EventID:        event.UID,
+			SubscriptionID: sub.UID,
+			Metadata:       &datastore.Metadata{},
+			CreatedAt:      time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC),
+			UpdatedAt:      time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC),
 		},
 		{
-			UID:       ulid.Make().String(),
-			ProjectID: s.DefaultProject.UID,
-			CreatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
-			UpdatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+			UID:            ulid.Make().String(),
+			ProjectID:      s.DefaultProject.UID,
+			EventID:        event.UID,
+			SubscriptionID: sub.UID,
+			Metadata:       &datastore.Metadata{},
+			CreatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+			UpdatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 		},
 		{
-			UID:       ulid.Make().String(),
-			ProjectID: s.DefaultProject.UID,
-			CreatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
-			UpdatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+			UID:            ulid.Make().String(),
+			ProjectID:      s.DefaultProject.UID,
+			EventID:        event.UID,
+			SubscriptionID: sub.UID,
+			Metadata:       &datastore.Metadata{},
+			CreatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+			UpdatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 		},
 		{
-			UID:       ulid.Make().String(),
-			ProjectID: s.DefaultProject.UID,
-			CreatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
-			UpdatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+			UID:            ulid.Make().String(),
+			ProjectID:      s.DefaultProject.UID,
+			EventID:        event.UID,
+			SubscriptionID: sub.UID,
+			Metadata:       &datastore.Metadata{},
+			CreatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+			UpdatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 		},
 		{
-			UID:       ulid.Make().String(),
-			ProjectID: s.DefaultProject.UID,
-			CreatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
-			UpdatedAt: time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+			UID:            ulid.Make().String(),
+			ProjectID:      s.DefaultProject.UID,
+			EventID:        event.UID,
+			SubscriptionID: sub.UID,
+			Metadata:       &datastore.Metadata{},
+			CreatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+			UpdatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 		},
 	}
 

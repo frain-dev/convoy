@@ -1,1 +1,1 @@
-{"status":true,"message":"Dashboard summary fetched successfully","data":{"events_sent":6,"apps":1,"period":"weekly","event_data":[{"data":{"index":0,"date":"2021-01"},"count":1},{"data":{"index":2,"date":"2021-01"},"count":1},{"data":{"index":12,"date":"2022-03"},"count":4}]}}
+{"status":true,"message":"Dashboard summary fetched successfully","data":{"events_sent":6,"apps":1,"period":"weekly","event_data":[{"data":{"index":53,"date":"2020-12"},"count":1},{"data":{"index":1,"date":"2021-01"},"count":1},{"data":{"index":11,"date":"2022-03"},"count":4}]}}

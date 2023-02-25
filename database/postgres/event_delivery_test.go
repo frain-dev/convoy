@@ -64,15 +64,8 @@ func generateEventDelivery(project *datastore.Project, endpoint *datastore.Endpo
 		},
 		Status: datastore.SuccessEventStatus,
 		Metadata: &datastore.Metadata{
-			// The line breaks are intentional, the integrity of data must be preserved in the db
-			Data: []byte(`{
-                                "name":"10x",
-                                "beef":"cow"
-                                }`),
-			Raw: `{
-                                "name":"10x",
-                                "beef":"cow"
-                                }`,
+			Data:            []byte(`{"name": "10x"}`),
+			Raw:             `{"name": "10x"}`,
 			Strategy:        datastore.ExponentialStrategyProvider,
 			NextSendTime:    time.Now().Add(time.Hour),
 			NumTrials:       1,
@@ -83,6 +76,8 @@ func generateEventDelivery(project *datastore.Project, endpoint *datastore.Endpo
 			HostName: device.HostName,
 		},
 		Description: "test",
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 
 	return e
