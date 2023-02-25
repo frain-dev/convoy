@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/frain-dev/convoy/util"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
@@ -18,7 +20,7 @@ var (
 
 const (
 	createOrgMember = `
-	INSERT INTO convoy.organisation_members (id, organisation_id, user_id, role_type, role_project, role_endpoint) 
+	INSERT INTO convoy.organisation_members (id, organisation_id, user_id, role_type, role_project, role_endpoint)
 	VALUES ($1, $2, $3, $4, $5, $6);
 	`
 
@@ -33,7 +35,7 @@ const (
 	`
 
 	deleteOrgMember = `
-	UPDATE convoy.organisation_members SET 
+	UPDATE convoy.organisation_members SET
 	deleted_at = now()
 	WHERE id = $1 AND organisation_id = $2 AND deleted_at IS NULL;
 	`
@@ -44,14 +46,14 @@ const (
 		o.organisation_id as "organisation_id",
 		o.role_type as "role.type",
 		o.role_project as "role.project",
-		o.role_endpoint as "role.endpoint",
+	    COALESCE(o.role_endpoint,'') as "role.endpoint",
 		u.id as "user_id",
 		u.id as "user_metadata.user_id",
 		u.first_name as "user_metadata.first_name",
 		u.last_name as "user_metadata.last_name",
 		u.email as "user_metadata.email"
 	FROM convoy.organisation_members o
-	LEFT JOIN convoy.users u 
+	LEFT JOIN convoy.users u
 		ON o.user_id = u.id
 	WHERE o.id = $1 AND o.organisation_id = $2 AND o.deleted_at IS NULL;
 	`
@@ -62,14 +64,14 @@ const (
 		o.organisation_id as "organisation_id",
 		o.role_type as "role.type",
 		o.role_project as "role.project",
-		o.role_endpoint as "role.endpoint",
+	    COALESCE(o.role_endpoint,'') as "role.endpoint",
 		u.id as "user_id",
 		u.id as "user_metadata.user_id",
 		u.first_name as "user_metadata.first_name",
 		u.last_name as "user_metadata.last_name",
 		u.email as "user_metadata.email"
 	FROM convoy.organisation_members o
-	LEFT JOIN convoy.users u 
+	LEFT JOIN convoy.users u
 		ON o.user_id = u.id
 	WHERE o.user_id = $1 AND o.organisation_id = $2 AND o.deleted_at IS NULL;
 	`
@@ -80,14 +82,14 @@ const (
 		o.organisation_id as "organisation_id",
 		o.role_type as "role.type",
 		o.role_project as "role.project",
-		o.role_endpoint as "role.endpoint",
+	    COALESCE(o.role_endpoint,'') as "role.endpoint",
 		u.id as "user_id",
 		u.id as "user_metadata.user_id",
 		u.first_name as "user_metadata.first_name",
 		u.last_name as "user_metadata.last_name",
 		u.email as "user_metadata.email"
 	FROM convoy.organisation_members o
-	LEFT JOIN convoy.users u 
+	LEFT JOIN convoy.users u
 		ON o.user_id = u.id
 	WHERE o.organisation_id = $3 AND o.deleted_at IS NULL
 	ORDER BY id LIMIT $1 OFFSET $2
@@ -114,7 +116,7 @@ const (
 	fetchUserProjects = `
 	SELECT p.id, p.name, p.type, p.retained_events, p.logo_url,
 	p.organisation_id, p.project_configuration_id, p.created_at,
-	p.updated_at FROM convoy.organisation_members m 
+	p.updated_at FROM convoy.organisation_members m
 	LEFT JOIN convoy.projects p ON p.organisation_id = m.organisation_id
 	WHERE m.user_id = $1 AND m.deleted_at IS NULL AND p.deleted_at IS NULL
 	`
@@ -129,13 +131,18 @@ func NewOrgMemberRepo(db database.Database) datastore.OrganisationMemberReposito
 }
 
 func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
+	var endpointID *string
+	if !util.IsStringEmpty(member.Role.Endpoint) {
+		endpointID = &member.Role.Endpoint
+	}
+
 	r, err := o.db.ExecContext(ctx, createOrgMember,
 		member.UID,
 		member.OrganisationID,
 		member.UserID,
 		member.Role.Type,
 		member.Role.Project,
-		member.Role.Endpoint,
+		endpointID,
 	)
 	if err != nil {
 		return err
@@ -233,12 +240,17 @@ func (o *orgMemberRepo) FindUserProjects(ctx context.Context, userID string) ([]
 }
 
 func (o *orgMemberRepo) UpdateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
+	var endpointID *string
+	if !util.IsStringEmpty(member.Role.Endpoint) {
+		endpointID = &member.Role.Endpoint
+	}
+
 	r, err := o.db.ExecContext(ctx,
 		updateOrgMember,
 		member.UID,
 		member.Role.Type,
 		member.Role.Project,
-		member.Role.Endpoint,
+		endpointID,
 	)
 	if err != nil {
 		return err

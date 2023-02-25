@@ -41,9 +41,6 @@ func (d *DeviceIntegrationTestSuite) SetupSuite() {
 func (d *DeviceIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(d.T(), d.DB)
 
-	// Setup Default Project.
-	d.DefaultProject, _ = testdb.SeedDefaultProject(d.ConvoyApp.A.DB, "")
-
 	user, err := testdb.SeedDefaultUser(d.ConvoyApp.A.DB)
 	require.NoError(d.T(), err)
 	d.DefaultUser = user
@@ -51,6 +48,10 @@ func (d *DeviceIntegrationTestSuite) SetupTest() {
 	org, err := testdb.SeedDefaultOrganisation(d.ConvoyApp.A.DB, user)
 	require.NoError(d.T(), err)
 	d.DefaultOrg = org
+
+	// Setup Default Project.
+	d.DefaultProject, err = testdb.SeedDefaultProject(d.ConvoyApp.A.DB, org.UID)
+	require.NoError(d.T(), err)
 
 	d.AuthenticatorFn = authenticateRequest(&models.LoginUser{
 		Username: user.Email,

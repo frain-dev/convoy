@@ -19,8 +19,11 @@ func Test_CreateAPIKey(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
+	project := seedProject(t, db)
+	endpoint := seedEndpoint(t, db)
+
 	apiKeyRepo := NewAPIKeyRepo(db)
-	apiKey := generateApiKey()
+	apiKey := generateApiKey(project, endpoint)
 
 	require.NoError(t, apiKeyRepo.CreateAPIKey(context.Background(), apiKey))
 
@@ -39,8 +42,11 @@ func Test_FindAPIKeyByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
+	project := seedProject(t, db)
+	endpoint := seedEndpoint(t, db)
+
 	apiKeyRepo := NewAPIKeyRepo(db)
-	apiKey := generateApiKey()
+	apiKey := generateApiKey(project, endpoint)
 
 	_, err := apiKeyRepo.FindAPIKeyByID(context.Background(), apiKey.UID)
 	require.Error(t, err)
@@ -63,8 +69,11 @@ func Test_FindAPIKeyByMaskID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
+	project := seedProject(t, db)
+	endpoint := seedEndpoint(t, db)
+
 	apiKeyRepo := NewAPIKeyRepo(db)
-	apiKey := generateApiKey()
+	apiKey := generateApiKey(project, endpoint)
 
 	_, err := apiKeyRepo.FindAPIKeyByMaskID(context.Background(), apiKey.MaskID)
 	require.Error(t, err)
@@ -87,8 +96,11 @@ func Test_FindAPIKeyByHash(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
+	project := seedProject(t, db)
+	endpoint := seedEndpoint(t, db)
+
 	apiKeyRepo := NewAPIKeyRepo(db)
-	apiKey := generateApiKey()
+	apiKey := generateApiKey(project, endpoint)
 
 	_, err := apiKeyRepo.FindAPIKeyByHash(context.Background(), apiKey.Hash)
 	require.Error(t, err)
@@ -111,14 +123,18 @@ func Test_UpdateAPIKey(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
+	project := seedProject(t, db)
+	endpoint := seedEndpoint(t, db)
+
 	apiKeyRepo := NewAPIKeyRepo(db)
-	apiKey := generateApiKey()
+	apiKey := generateApiKey(project, endpoint)
 
 	require.NoError(t, apiKeyRepo.CreateAPIKey(context.Background(), apiKey))
 
 	apiKey.Name = "Updated-Test-Api-Key"
 	apiKey.Role = auth.Role{
-		Type: auth.RoleSuperUser,
+		Type:    auth.RoleSuperUser,
+		Project: project.UID,
 	}
 
 	require.NoError(t, apiKeyRepo.UpdateAPIKey(context.Background(), apiKey))
@@ -138,8 +154,11 @@ func Test_RevokeAPIKey(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
+	project := seedProject(t, db)
+	endpoint := seedEndpoint(t, db)
+
 	apiKeyRepo := NewAPIKeyRepo(db)
-	apiKey := generateApiKey()
+	apiKey := generateApiKey(project, endpoint)
 
 	require.NoError(t, apiKeyRepo.CreateAPIKey(context.Background(), apiKey))
 
@@ -219,6 +238,7 @@ func Test_LoadAPIKeysPaged(t *testing.T) {
 			defer closeFn()
 
 			project := seedProject(t, db)
+
 			apiKeyRepo := NewAPIKeyRepo(db)
 			for i := 0; i < tc.count; i++ {
 				apiKey := &datastore.APIKey{
@@ -227,9 +247,8 @@ func Test_LoadAPIKeysPaged(t *testing.T) {
 					Name:   "Test Api Key",
 					Type:   datastore.ProjectKey,
 					Role: auth.Role{
-						Type:     auth.RoleAdmin,
-						Project:  project.UID,
-						Endpoint: ulid.Make().String(),
+						Type:    auth.RoleAdmin,
+						Project: project.UID,
 					},
 					Hash:      ulid.Make().String(),
 					Salt:      ulid.Make().String(),
@@ -252,7 +271,7 @@ func Test_LoadAPIKeysPaged(t *testing.T) {
 	}
 }
 
-func generateApiKey() *datastore.APIKey {
+func generateApiKey(project *datastore.Project, endpoint *datastore.Endpoint) *datastore.APIKey {
 	return &datastore.APIKey{
 		UID:    ulid.Make().String(),
 		MaskID: ulid.Make().String(),
@@ -260,8 +279,8 @@ func generateApiKey() *datastore.APIKey {
 		Type:   datastore.ProjectKey,
 		Role: auth.Role{
 			Type:     auth.RoleAdmin,
-			Project:  ulid.Make().String(),
-			Endpoint: ulid.Make().String(),
+			Project:  project.UID,
+			Endpoint: endpoint.UID,
 		},
 		Hash:      ulid.Make().String(),
 		Salt:      ulid.Make().String(),

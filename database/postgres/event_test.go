@@ -340,7 +340,7 @@ func Test_LoadEventsPaged(t *testing.T) {
 				Project:    project,
 				EndpointID: endpoint.UID,
 				SearchParams: datastore.SearchParams{
-					CreatedAtStart: time.Now().Unix(),
+					CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
 					CreatedAtEnd:   time.Now().Add(5 * time.Minute).Unix(),
 				},
 				Pageable: tc.pageData,

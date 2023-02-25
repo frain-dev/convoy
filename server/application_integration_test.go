@@ -67,7 +67,8 @@ func (s *ApplicationIntegrationTestSuite) SetupTest() {
 		Project: s.DefaultProject.UID,
 	}
 
-	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
+	_, s.APIKey, err = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
+	require.NoError(s.T(), err)
 
 	_, s.PersonalAPIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test-personal-key", string(datastore.PersonalKey), s.DefaultUser.UID)
 

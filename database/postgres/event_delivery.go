@@ -36,7 +36,11 @@ const (
 
 	baseFetchEventDelivery = `
     SELECT
-        ed.*,
+        ed.id,ed.project_id,ed.event_id,ed.subscription_id,
+        ed.headers,ed.attempts,ed.status,ed.metadata,ed.cli_metadata,
+        ed.description,ed.created_at,ed.updated_at,
+        COALESCE(ed.device_id,'') as "device_id",
+        COALESCE(ed.endpoint_id,'') as "endpoint_id",
         ep.id as "endpoint_metadata.id",
         ep.title as "endpoint_metadata.title",
         ep.project_id as "endpoint_metadata.project_id",
@@ -44,7 +48,7 @@ const (
         ep.target_url as "endpoint_metadata.target_url",
         ev.id as "event_metadata.id",
         ev.event_type as "event_metadata.event_type",
-        d.host_name as "cli_metadata.host_name"
+        COALESCE(d.host_name,'') as "cli_metadata.host_name"
     FROM convoy.event_deliveries ed LEFT JOIN convoy.endpoints ep
     ON ed.endpoint_id = ep.id LEFT JOIN convoy.events ev ON ed.event_id = ev.id
     LEFT JOIN convoy.devices d ON ed.device_id = d.id
@@ -73,11 +77,23 @@ const (
     `
 
 	fetchEventDeliveries = `
-    SELECT * FROM convoy.event_deliveries WHERE %s AND deleted_at IS NULL;
+    SELECT
+        id,project_id,event_id,subscription_id,
+        headers,attempts,status,metadata,cli_metadata,
+        description,created_at,updated_at,
+        COALESCE(device_id,'') as "device_id",
+        COALESCE(endpoint_id,'') as "endpoint_id"
+    FROM convoy.event_deliveries ed WHERE %s AND deleted_at IS NULL;
     `
 
 	fetchDiscardedEventDeliveries = `
-    SELECT * FROM convoy.event_deliveries WHERE status=$1 AND device_id = $2 AND (endpoint_id = $3 or $3 = '') AND created_at >= $4 AND created_at <= $5 AND deleted_at IS NULL;
+    SELECT
+        id,project_id,event_id,subscription_id,
+        headers,attempts,status,metadata,cli_metadata,
+        description,created_at,updated_at,
+        COALESCE(device_id,'') as "device_id",
+        COALESCE(endpoint_id,'') as "endpoint_id"
+    FROM convoy.event_deliveries WHERE status=$1 AND device_id = $2 AND (endpoint_id = $3 or $3 = '') AND created_at >= $4 AND created_at <= $5 AND deleted_at IS NULL;
     `
 
 	countEventDeliveriesByStatus = `
@@ -147,6 +163,9 @@ func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, id string
 	eventDelivery := &datastore.EventDelivery{}
 	err := e.db.QueryRowxContext(ctx, fetchEventDeliveryByID, id).StructScan(eventDelivery)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrEventDeliveryNotFound
+		}
 		return nil, err
 	}
 
@@ -437,6 +456,10 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 
 	for i := range eventDeliveriesP {
 		ev := &eventDeliveriesP[i]
+		var cli *datastore.CLIMetadata
+		if ev.CLIMetadata != nil {
+			cli = &datastore.CLIMetadata{HostName: ev.CLIMetadata.HostName.ValueOrZero()}
+		}
 		eventDeliveries = append(eventDeliveries, datastore.EventDelivery{
 			UID:            ev.UID,
 			ProjectID:      ev.ProjectID,
@@ -456,13 +479,11 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 			DeliveryAttempts: ev.DeliveryAttempts,
 			Status:           ev.Status,
 			Metadata:         ev.Metadata,
-			CLIMetadata: &datastore.CLIMetadata{
-				HostName: ev.CLIMetadata.HostName.ValueOrZero(),
-			},
-			Description: ev.Description,
-			CreatedAt:   ev.CreatedAt,
-			UpdatedAt:   ev.UpdatedAt,
-			DeletedAt:   ev.DeletedAt,
+			CLIMetadata:      cli,
+			Description:      ev.Description,
+			CreatedAt:        ev.CreatedAt,
+			UpdatedAt:        ev.UpdatedAt,
+			DeletedAt:        ev.DeletedAt,
 		})
 	}
 
@@ -576,7 +597,7 @@ type EventMetadata struct {
 }
 
 type CLIMetadata struct {
-	HostName null.String `db:"host_name"`
+	HostName null.String `json:"host_name" db:"host_name"`
 }
 
 type EventDeliveryPaginated struct {
@@ -602,6 +623,10 @@ type EventDeliveryPaginated struct {
 }
 
 func (m *CLIMetadata) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
 	b, ok := value.([]byte)
 	if !ok {
 		return fmt.Errorf("unsupported value type %T", value)

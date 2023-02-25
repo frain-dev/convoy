@@ -60,7 +60,7 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 		return nil, errors.New("api key has expired")
 	}
 
-	if apiKey.DeletedAt.IsZero() {
+	if !apiKey.DeletedAt.IsZero() {
 		return nil, errors.New("api key has been revoked")
 	}
 

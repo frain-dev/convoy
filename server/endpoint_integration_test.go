@@ -58,7 +58,8 @@ func (s *EndpointIntegrationTestSuite) SetupTest() {
 	s.DefaultOrg = org
 
 	// Setup Default Project.
-	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, s.DefaultOrg.UID)
+	s.DefaultProject, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, s.DefaultOrg.UID)
+	require.NoError(s.T(), err)
 
 	// Seed Auth
 	role := auth.Role{
@@ -66,9 +67,11 @@ func (s *EndpointIntegrationTestSuite) SetupTest() {
 		Project: s.DefaultProject.UID,
 	}
 
-	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
+	_, s.APIKey, err = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
+	require.NoError(s.T(), err)
 
-	_, s.PersonalAPIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test-personal-key", string(datastore.PersonalKey), s.DefaultUser.UID)
+	_, s.PersonalAPIKey, err = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test-personal-key", string(datastore.PersonalKey), s.DefaultUser.UID)
+	require.NoError(s.T(), err)
 
 	// Setup Config.
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
@@ -164,7 +167,8 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.DB, s.DefaultProject, totalEndpoints)
+	err := testdb.SeedMultipleEndpoints(s.ConvoyApp.A.DB, s.DefaultProject, totalEndpoints)
+	require.NoError(s.T(), err)
 
 	// Arrange.
 	url := fmt.Sprintf("/api/v1/projects/%s/endpoints", s.DefaultProject.UID)
@@ -531,10 +535,11 @@ func (s *EndpointIntegrationTestSuite) Test_ExpireEndpointSecret() {
 }
 
 func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_ActiveStatus() {
-	endpointId := "123456789"
+	endpointId := ulid.Make().String()
 
 	// Just Before
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.ActiveEndpointStatus)
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.UID, endpointId)
@@ -559,7 +564,7 @@ func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_ActiveStatus() 
 }
 
 func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_InactiveStatus() {
-	endpointId := "123456789"
+	endpointId := ulid.Make().String()
 
 	// Just Before
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.InactiveEndpointStatus)
@@ -587,7 +592,7 @@ func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_InactiveStatus(
 }
 
 func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_PendingStatus() {
-	endpointId := "123456789"
+	endpointId := ulid.Make().String()
 
 	// Just Before
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.PendingEndpointStatus)
@@ -605,7 +610,7 @@ func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_PendingStatus()
 }
 
 func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_UnknownStatus() {
-	endpointID := "123456789"
+	endpointID := ulid.Make().String()
 
 	// Just Before
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.EndpointStatus("abc"))

@@ -34,20 +34,6 @@ CREATE TABLE IF NOT EXISTS convoy.organisations (
 	deleted_at TIMESTAMPTZ NULL
 );
 
-CREATE TABLE IF NOT EXISTS convoy.organisation_members (
-	id CHAR(26) PRIMARY KEY,
-
-	role_type TEXT NOT NULL,
-	role_project TEXT NOT NULL REFERENCES convoy.projects (id),
-	role_endpoint TEXT NOT NULL REFERENCES convoy.endpoints (id),
-	user_id CHAR(26) NOT NULL REFERENCES convoy.users (id),
-	organisation_id CHAR(26) NOT NULL REFERENCES convoy.organisations (id),
-
-	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-	deleted_at TIMESTAMPTZ
-);
-
 CREATE TABLE IF NOT EXISTS convoy.project_configurations (
 	id CHAR(26) PRIMARY KEY,
 
@@ -90,7 +76,6 @@ CREATE TABLE IF NOT EXISTS convoy.projects (
     CONSTRAINT name_org_id_key UNIQUE NULLS NOT DISTINCT (name, organisation_id, deleted_at)
 );
 
-
 CREATE TABLE IF NOT EXISTS convoy.endpoints (
 	id CHAR(26) PRIMARY KEY,
 
@@ -121,6 +106,22 @@ CREATE TABLE IF NOT EXISTS convoy.endpoints (
 	deleted_at TIMESTAMPTZ
 );
 
+
+CREATE TABLE IF NOT EXISTS convoy.organisation_members (
+    id CHAR(26) PRIMARY KEY,
+
+    role_type TEXT NOT NULL,
+    role_project TEXT NOT NULL REFERENCES convoy.projects (id),
+    role_endpoint TEXT REFERENCES convoy.endpoints (id),
+    user_id CHAR(26) NOT NULL REFERENCES convoy.users (id),
+    organisation_id CHAR(26) NOT NULL REFERENCES convoy.organisations (id),
+
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMPTZ
+    );
+
+
 CREATE TABLE IF NOT EXISTS convoy.applications (
 	id CHAR(26) PRIMARY KEY,
 
@@ -142,7 +143,7 @@ CREATE TABLE IF NOT EXISTS convoy.organisation_invites (
 	token TEXT NOT NULL,
 	role_type TEXT NOT NULL,
     role_project TEXT NOT NULL REFERENCES convoy.projects (id),
-    role_endpoint TEXT NOT NULL REFERENCES convoy.endpoints (id),
+    role_endpoint TEXT REFERENCES convoy.endpoints (id),
 	status TEXT NOT NULL,
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -292,8 +293,8 @@ CREATE TABLE IF NOT EXISTS convoy.api_keys (
 	key_type TEXT NOT NULL,
 	mask_id TEXT NOT NULL,
 	role_type TEXT NOT NULL,
-    role_project TEXT NOT NULL REFERENCES convoy.projects (id),
-    role_endpoint TEXT NOT NULL REFERENCES convoy.endpoints (id),
+    role_project TEXT REFERENCES convoy.projects (id),
+    role_endpoint TEXT REFERENCES convoy.endpoints (id),
 	hash TEXT NOT NULL,
 	salt TEXT NOT NULL,
 

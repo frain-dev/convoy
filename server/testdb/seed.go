@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/httpheader"
+
 	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
@@ -40,7 +42,10 @@ func SeedEndpoint(db database.Database, g *datastore.Project, uid, title, ownerI
 		ProjectID: g.UID,
 		OwnerID:   ownerID,
 		Status:    status,
-		AppID:     uid,
+		Secrets: datastore.Secrets{
+			{UID: ulid.Make().String()},
+		},
+		AppID: uid,
 	}
 
 	// Seed Data.
@@ -60,6 +65,9 @@ func SeedMultipleEndpoints(db database.Database, g *datastore.Project, count int
 			UID:       uid,
 			Title:     fmt.Sprintf("Test-%s", uid),
 			ProjectID: g.UID,
+			Secrets: datastore.Secrets{
+				{UID: ulid.Make().String()},
+			},
 		}
 
 		// Seed Data.
@@ -181,11 +189,16 @@ func SeedDefaultOrganisation(db database.Database, user *datastore.User) (*datas
 		return &datastore.Organisation{}, err
 	}
 
+	p, err := SeedProject(db, ulid.Make().String(), "x-proj", defaultOrg.UID, datastore.IncomingProject, &datastore.DefaultProjectConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	member := &datastore.OrganisationMember{
 		UID:            ulid.Make().String(),
 		OrganisationID: defaultOrg.UID,
 		UserID:         user.UID,
-		Role:           auth.Role{Type: auth.RoleSuperUser},
+		Role:           auth.Role{Type: auth.RoleSuperUser, Project: p.UID},
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
@@ -319,6 +332,7 @@ func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID str
 		EventType: datastore.EventType(eventType),
 		Data:      data,
 		Endpoints: []string{endpoint.UID},
+		Headers:   httpheader.HTTPHeader{},
 		ProjectID: projectID,
 		SourceID:  sourceID,
 	}
@@ -345,6 +359,8 @@ func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *d
 		EndpointID:     endpoint.UID,
 		Status:         status,
 		SubscriptionID: subcription.UID,
+		Headers:        httpheader.HTTPHeader{},
+		Metadata:       &datastore.Metadata{},
 		ProjectID:      projectID,
 	}
 

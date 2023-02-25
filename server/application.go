@@ -48,6 +48,7 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		SlackWebhookURL: newApp.SlackWebhookURl,
 		Status:          datastore.ActiveEndpointStatus,
 		AppID:           uid,
+		Secrets:         datastore.Secrets{},
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
 	}

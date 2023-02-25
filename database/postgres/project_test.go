@@ -280,7 +280,11 @@ func Test_FillProjectStatistics(t *testing.T) {
 	}
 
 	endpoint2 := &datastore.Endpoint{
+		UID:       ulid.Make().String(),
 		ProjectID: project2.UID,
+		Secrets: datastore.Secrets{
+			{UID: ulid.Make().String()},
+		},
 	}
 
 	endpointRepo := NewEndpointRepo(db)
@@ -368,7 +372,10 @@ func Test_DeleteProject(t *testing.T) {
 		RetryConfig: &datastore.DefaultRetryConfig,
 		FilterConfig: &datastore.FilterConfiguration{
 			EventTypes: []string{"*"},
-			Filter:     datastore.FilterSchema{},
+			Filter: datastore.FilterSchema{
+				Headers: datastore.M{},
+				Body:    datastore.M{},
+			},
 		},
 		RateLimitConfig: &datastore.DefaultRateLimitConfig,
 	}

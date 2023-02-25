@@ -723,6 +723,10 @@ type DeliveryAttempt struct {
 type DeliveryAttempts []DeliveryAttempt
 
 func (h *DeliveryAttempts) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
 	b, ok := value.([]byte)
 	if !ok {
 		return fmt.Errorf("unsupported value type %T", value)
@@ -782,6 +786,10 @@ type CLIMetadata struct {
 }
 
 func (m *CLIMetadata) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
 	b, ok := value.([]byte)
 	if !ok {
 		return fmt.Errorf("unsupported value type %T", value)

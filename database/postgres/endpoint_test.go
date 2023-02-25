@@ -129,7 +129,10 @@ func Test_DeleteEndpoint(t *testing.T) {
 		RetryConfig: &datastore.DefaultRetryConfig,
 		FilterConfig: &datastore.FilterConfiguration{
 			EventTypes: []string{"*"},
-			Filter:     datastore.FilterSchema{},
+			Filter: datastore.FilterSchema{
+				Headers: datastore.M{},
+				Body:    datastore.M{},
+			},
 		},
 		RateLimitConfig: &datastore.DefaultRateLimitConfig,
 	}

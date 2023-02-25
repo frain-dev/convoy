@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/frain-dev/convoy/util"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
@@ -18,7 +20,7 @@ var (
 
 const (
 	createOrganisationInvite = `
-	INSERT INTO convoy.organisation_invites (id, organisation_id, invitee_email, token, role_type, role_project, role_endpoint, status, expires_at) 
+	INSERT INTO convoy.organisation_invites (id, organisation_id, invitee_email, token, role_type, role_project, role_endpoint, status, expires_at)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
 	`
 
@@ -36,14 +38,14 @@ const (
 
 	fetchOrganisationInviteById = `
 	SELECT
-	    id, 
+	    id,
 		organisation_id,
 		invitee_email,
 		token,
 		status,
 		role_type as "role.type",
 		role_project as "role.project",
-		role_endpoint as "role.endpoint"
+	    COALESCE(role_endpoint,'') as "role.endpoint"
 	FROM convoy.organisation_invites
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -57,20 +59,20 @@ const (
 		status,
 		role_type as "role.type",
 		role_project as "role.project",
-		role_endpoint as "role.endpoint"
+	    COALESCE(role_endpoint,'') as "role.endpoint"
 	FROM convoy.organisation_invites
 	WHERE token = $1 AND deleted_at IS NULL;
 	`
 
 	fetchOrganisationInvitesPaginated = `
 	SELECT
-	    id, 
+	    id,
 		organisation_id,
 		invitee_email,
 		status,
 		role_type as "role.type",
 		role_project as "role.project",
-		role_endpoint as "role.endpoint"
+	    COALESCE(role_endpoint,'') as "role.endpoint"
 	FROM convoy.organisation_invites
 	WHERE organisation_id = $3 AND status = $4 AND deleted_at IS NULL
 	ORDER BY id LIMIT $1 OFFSET $2
@@ -82,7 +84,7 @@ const (
 	`
 
 	deleteOrganisationInvite = `
-	UPDATE convoy.organisation_invites SET 
+	UPDATE convoy.organisation_invites SET
 	deleted_at = now()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -97,6 +99,11 @@ func NewOrgInviteRepo(db database.Database) datastore.OrganisationInviteReposito
 }
 
 func (i *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {
+	var endpointID *string
+	if !util.IsStringEmpty(iv.Role.Endpoint) {
+		endpointID = &iv.Role.Endpoint
+	}
+
 	r, err := i.db.ExecContext(ctx, createOrganisationInvite,
 		iv.UID,
 		iv.OrganisationID,
@@ -104,7 +111,7 @@ func (i *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datast
 		iv.Token,
 		iv.Role.Type,
 		iv.Role.Project,
-		iv.Role.Endpoint,
+		endpointID,
 		iv.Status,
 		iv.ExpiresAt,
 	)
@@ -153,12 +160,17 @@ func (i *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID
 }
 
 func (i *orgInviteRepo) UpdateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {
+	var endpointID *string
+	if !util.IsStringEmpty(iv.Role.Endpoint) {
+		endpointID = &iv.Role.Endpoint
+	}
+
 	r, err := i.db.ExecContext(ctx,
 		updateOrganisationInvite,
 		iv.UID,
 		iv.Role.Type,
 		iv.Role.Project,
-		iv.Role.Endpoint,
+		endpointID,
 		iv.Status,
 		iv.ExpiresAt,
 	)

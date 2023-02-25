@@ -46,9 +46,6 @@ func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
 	s.DB = getDB()
 
-	// Setup Default Project.
-	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, "")
-
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
@@ -56,6 +53,10 @@ func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
 	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, user)
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
+
+	// Setup Default Project.
+	s.DefaultProject, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, org.UID)
+	require.NoError(s.T(), err)
 
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
 		Username: user.Email,
@@ -97,7 +98,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 	require.NoError(s.T(), err)
 
 	w := httptest.NewRecorder()
-	fmt.Println("fff", w.Body.String())
+
 	// Act.
 	s.Router.ServeHTTP(w, req)
 

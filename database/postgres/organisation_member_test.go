@@ -20,6 +20,7 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 
 	organisationMemberRepo := NewOrgMemberRepo(db)
 	org := seedOrg(t, db)
+	project := seedProject(t, db)
 
 	userMap := map[string]*datastore.UserMetadata{}
 	userRepo := NewUserRepo(db)
@@ -33,7 +34,7 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 			UID:            ulid.Make().String(),
 			OrganisationID: org.UID,
 			UserID:         user.UID,
-			Role:           auth.Role{Type: auth.RoleAdmin},
+			Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
 		}
 
 		userMap[user.UID] = &datastore.UserMetadata{
@@ -68,6 +69,7 @@ func TestLoadUserOrganisationsPaged(t *testing.T) {
 
 	organisationMemberRepo := NewOrgMemberRepo(db)
 	orgRepo := NewOrgRepo(db)
+	project := seedProject(t, db)
 
 	user := seedUser(t, db)
 	for i := 0; i < 7; i++ {
@@ -84,7 +86,7 @@ func TestLoadUserOrganisationsPaged(t *testing.T) {
 			UID:            ulid.Make().String(),
 			OrganisationID: org.UID,
 			UserID:         user.UID,
-			Role:           auth.Role{Type: auth.RoleAdmin},
+			Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
 		}
 
 		err = organisationMemberRepo.CreateOrganisationMember(context.Background(), member)
@@ -108,6 +110,7 @@ func TestCreateOrganisationMember(t *testing.T) {
 	user := generateUser(t)
 	require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
 	org := seedOrg(t, db)
+	project := seedProject(t, db)
 
 	organisationMemberRepo := NewOrgMemberRepo(db)
 
@@ -115,7 +118,7 @@ func TestCreateOrganisationMember(t *testing.T) {
 		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
 		UserID:         user.UID,
-		Role:           auth.Role{Type: auth.RoleAdmin},
+		Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
 	}
 
 	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
@@ -142,13 +145,14 @@ func TestUpdateOrganisationMember(t *testing.T) {
 	user := generateUser(t)
 	org := seedOrg(t, db)
 	require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
+	project := seedProject(t, db)
 
 	organisationMemberRepo := NewOrgMemberRepo(db)
 	m := &datastore.OrganisationMember{
 		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
 		UserID:         user.UID,
-		Role:           auth.Role{Type: auth.RoleAdmin},
+		Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
 	}
 
 	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
@@ -156,7 +160,7 @@ func TestUpdateOrganisationMember(t *testing.T) {
 
 	role := auth.Role{
 		Type:     auth.RoleSuperUser,
-		Project:  ulid.Make().String(),
+		Project:  project.UID,
 		Endpoint: "",
 	}
 	m.Role = role
@@ -183,12 +187,13 @@ func TestDeleteOrganisationMember(t *testing.T) {
 
 	organisationMemberRepo := NewOrgMemberRepo(db)
 	org := seedOrg(t, db)
+	project := seedProject(t, db)
 
 	m := &datastore.OrganisationMember{
 		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
 		UserID:         org.OwnerID,
-		Role:           auth.Role{Type: auth.RoleAdmin},
+		Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
 	}
 
 	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
@@ -209,13 +214,14 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 	require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
 
 	org := seedOrg(t, db)
+	project := seedProject(t, db)
 	organisationMemberRepo := NewOrgMemberRepo(db)
 
 	m := &datastore.OrganisationMember{
 		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
 		UserID:         user.UID,
-		Role:           auth.Role{Type: auth.RoleAdmin},
+		Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
 	}
 
 	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
@@ -243,13 +249,14 @@ func TestFetchOrganisationMemberByUserID(t *testing.T) {
 	require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
 
 	org := seedOrg(t, db)
+	project := seedProject(t, db)
 
 	organisationMemberRepo := NewOrgMemberRepo(db)
 	m := &datastore.OrganisationMember{
 		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
 		UserID:         user.UID,
-		Role:           auth.Role{Type: auth.RoleAdmin},
+		Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
 	}
 
 	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
@@ -279,6 +286,7 @@ func TestFetchUserProjects(t *testing.T) {
 	require.NoError(t, NewUserRepo(db).CreateUser(ctx, user))
 
 	org := seedOrg(t, db)
+	project := seedProject(t, db)
 
 	organisationMemberRepo := NewOrgMemberRepo(db)
 	projectRepo := NewProjectRepo(db)
@@ -286,7 +294,7 @@ func TestFetchUserProjects(t *testing.T) {
 		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
 		UserID:         user.UID,
-		Role:           auth.Role{Type: auth.RoleAdmin},
+		Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
 	}
 
 	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)

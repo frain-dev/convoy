@@ -21,6 +21,7 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 
 	org := seedOrg(t, db)
 	inviteRepo := NewOrgInviteRepo(db)
+	project := seedProject(t, db)
 
 	uids := []string{}
 	for i := 1; i < 3; i++ {
@@ -29,7 +30,7 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 			InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),
 			Token:          ulid.Make().String(),
 			OrganisationID: org.UID,
-			Role:           auth.Role{Type: auth.RoleAdmin},
+			Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
 			Status:         datastore.InviteStatusPending,
 		}
 		uids = append(uids, iv.UID)
@@ -43,7 +44,7 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 			InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),
 			Token:          ulid.Make().String(),
 			OrganisationID: org.UID,
-			Role:           auth.Role{Type: auth.RoleAdmin},
+			Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
 			Status:         datastore.InviteStatusDeclined,
 		}
 
@@ -68,6 +69,8 @@ func TestCreateOrganisationInvite(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
+	project := seedProject(t, db)
+
 	org := seedOrg(t, db)
 	inviteRepo := NewOrgInviteRepo(db)
 	iv := &datastore.OrganisationInvite{
@@ -75,7 +78,7 @@ func TestCreateOrganisationInvite(t *testing.T) {
 		InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),
 		Token:          ulid.Make().String(),
 		OrganisationID: org.UID,
-		Role:           auth.Role{Type: auth.RoleAdmin},
+		Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
 		Status:         datastore.InviteStatusPending,
 	}
 
@@ -94,6 +97,8 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 	defer closeFn()
 
 	org := seedOrg(t, db)
+	project := seedProject(t, db)
+
 	inviteRepo := NewOrgInviteRepo(db)
 	iv := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
@@ -102,7 +107,7 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 		OrganisationID: org.UID,
 		Role: auth.Role{
 			Type:    auth.RoleAdmin,
-			Project: ulid.Make().String(),
+			Project: project.UID,
 		},
 		Status: datastore.InviteStatusPending,
 	}
@@ -112,7 +117,7 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 
 	role := auth.Role{
 		Type:     auth.RoleSuperUser,
-		Project:  ulid.Make().String(),
+		Project:  seedProject(t, db).UID,
 		Endpoint: "",
 	}
 	status := datastore.InviteStatusAccepted
@@ -136,6 +141,8 @@ func TestDeleteOrganisationInvite(t *testing.T) {
 	defer closeFn()
 
 	org := seedOrg(t, db)
+	project := seedProject(t, db)
+
 	inviteRepo := NewOrgInviteRepo(db)
 	iv := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
@@ -144,7 +151,7 @@ func TestDeleteOrganisationInvite(t *testing.T) {
 		OrganisationID: org.UID,
 		Role: auth.Role{
 			Type:    auth.RoleAdmin,
-			Project: ulid.Make().String(),
+			Project: project.UID,
 		},
 		Status: datastore.InviteStatusPending,
 	}
@@ -163,6 +170,8 @@ func TestFetchOrganisationInviteByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
+	project := seedProject(t, db)
+
 	org := seedOrg(t, db)
 	inviteRepo := NewOrgInviteRepo(db)
 	iv := &datastore.OrganisationInvite{
@@ -172,7 +181,7 @@ func TestFetchOrganisationInviteByID(t *testing.T) {
 		OrganisationID: org.UID,
 		Role: auth.Role{
 			Type:    auth.RoleAdmin,
-			Project: ulid.Make().String(),
+			Project: project.UID,
 		},
 		Status: datastore.InviteStatusPending,
 	}
@@ -193,6 +202,8 @@ func TestFetchOrganisationInviteByToken(t *testing.T) {
 	defer closeFn()
 
 	org := seedOrg(t, db)
+	project := seedProject(t, db)
+
 	inviteRepo := NewOrgInviteRepo(db)
 	iv := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
@@ -201,7 +212,7 @@ func TestFetchOrganisationInviteByToken(t *testing.T) {
 		OrganisationID: org.UID,
 		Role: auth.Role{
 			Type:    auth.RoleAdmin,
-			Project: ulid.Make().String(),
+			Project: project.UID,
 		},
 		Status: datastore.InviteStatusPending,
 	}

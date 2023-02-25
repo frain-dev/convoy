@@ -524,6 +524,7 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 			eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
 
 			eventDelivery, err := m.eventDeliveryRepo.FindEventDeliveryByID(r.Context(), eventDeliveryID)
+			fmt.Println("Ff", err)
 			if err != nil {
 
 				eventDelivery := "an error occurred while retrieving event delivery details"
