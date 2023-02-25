@@ -91,7 +91,10 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, project *da
 	}
 
 	if len(subscription.FilterConfig.Filter.Body) == 0 && len(subscription.FilterConfig.Filter.Headers) == 0 {
-		subscription.FilterConfig.Filter = datastore.FilterSchema{}
+		subscription.FilterConfig.Filter = datastore.FilterSchema{
+			Headers: map[string]interface{}{},
+			Body:    map[string]interface{}{},
+		}
 	} else {
 		// validate that the filter is a json string
 		_, err := json.Marshal(subscription.FilterConfig.Filter)

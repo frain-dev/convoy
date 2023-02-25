@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"gopkg.in/guregu/null.v4"
 )
 
 type Crc interface {
@@ -44,7 +44,7 @@ func (tc *TwitterCrc) HandleRequest(w http.ResponseWriter, r *http.Request, sour
 		return err
 	}
 
-	source.ProviderConfig.Twitter.CrcVerifiedAt = primitive.NewDateTimeFromTime(time.Now())
+	source.ProviderConfig.Twitter.CrcVerifiedAt = null.TimeFrom(time.Now())
 	err = sourceRepo.UpdateSource(r.Context(), source.ProjectID, source)
 	if err != nil {
 		return err

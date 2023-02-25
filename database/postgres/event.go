@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
@@ -65,7 +66,7 @@ const (
 
 	baseEventsPaged = `
 	SELECT table_count.count, ev.id,
-	ev.project_id, ev.source_id, ev.headers, ev.raw,
+	ev.project_id, ev.event_type, ev.source_id, ev.headers, ev.raw,
 	ev.data, ev.created_at, ev.updated_at, ev.deleted_at,
 	e.id AS "endpoint.id", e.title AS "endpoint.title",
 	e.project_id AS "endpoint.project_id", e.support_email AS "endpoint.support_email",
@@ -76,7 +77,7 @@ const (
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
 	WHERE ev.deleted_at IS NULL
 	%s
-	LIMIT :limit OFFSET :offset
+	ORDER BY ev.created_at DESC LIMIT :limit OFFSET :offset
 	`
 
 	baseEventFilter = `AND (ev.project_id = :project_id OR :project_id = '') AND (ev.source_id = :source_id OR :source_id = '') AND ev.created_at >= :start_date AND ev.created_at <= :end_date`
@@ -265,7 +266,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 
 	count := 0
 	eventMap := make(map[string]*datastore.Event)
-	var events []datastore.Event
+	events := make([]datastore.Event, 0)
 	for rows.Next() {
 		var data EventPaginated
 
@@ -305,6 +306,10 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 	for _, event := range eventMap {
 		events = append(events, *event)
 	}
+
+	sort.SliceStable(events, func(i, j int) bool {
+		return events[i].CreatedAt.After(events[j].CreatedAt)
+	})
 
 	pagination := calculatePaginationData(count, filter.Pageable.Page, filter.Pageable.PerPage)
 	return events, pagination, nil

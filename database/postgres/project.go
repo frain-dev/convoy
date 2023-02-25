@@ -211,7 +211,7 @@ func (p *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFilt
 		return nil, err
 	}
 
-	var projects []*datastore.Project
+	projects := make([]*datastore.Project, 0)
 	for rows.Next() {
 		var proj datastore.Project
 

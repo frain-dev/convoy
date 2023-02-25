@@ -38,8 +38,9 @@ func MonitorTwitterSources(db database.Database, queue queue.Queuer) func(contex
 
 			// the source needs to have been created at least one hour ago
 			if now.After(source.CreatedAt.Add(time.Hour)) {
+				expiry := source.ProviderConfig.Twitter.CrcVerifiedAt.Time
 				// the crc verified at timestamp must not be less than two hours ago
-				if crcExpiry.After(source.ProviderConfig.Twitter.CrcVerifiedAt.Time()) {
+				if crcExpiry.After(expiry) {
 					subscriptions, err := subRepo.FindSubscriptionsBySourceID(ctx, source.ProjectID, source.UID)
 					if err != nil {
 						log.Error("Failed to load sources paged")
@@ -74,7 +75,7 @@ func sendNotificationEmail(source datastore.Source, endpoint *datastore.Endpoint
 		Subject:      "Twitter Custom Source",
 		TemplateName: email.TemplateTwitterSource,
 		Params: map[string]string{
-			"crc_verified_at": source.ProviderConfig.Twitter.CrcVerifiedAt.Time().String(),
+			"crc_verified_at": source.ProviderConfig.Twitter.CrcVerifiedAt.Time.String(),
 			"source_name":     source.Name,
 		},
 	}

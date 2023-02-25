@@ -88,7 +88,7 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 		return nil, datastore.PaginationData{}, err
 	}
 
-	var organizations []datastore.Organisation
+	organizations := make([]datastore.Organisation, 0)
 	for rows.Next() {
 		var org datastore.Organisation
 

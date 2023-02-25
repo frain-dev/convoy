@@ -172,8 +172,7 @@ func (u *userRepo) FindUserByEmailVerificationToken(ctx context.Context, token s
 }
 
 func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.User, datastore.PaginationData, error) {
-	skip := getSkip(pageable.Page, pageable.PerPage)
-	rows, err := u.db.QueryxContext(ctx, fetchUsersPaginated, pageable.PerPage, skip)
+	rows, err := u.db.QueryxContext(ctx, fetchUsersPaginated, pageable.Limit(), pageable.Offset())
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}

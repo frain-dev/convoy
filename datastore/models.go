@@ -644,7 +644,7 @@ const (
 
 type Metadata struct {
 	// Data to be sent to endpoint.
-	Data     []byte           `json:"data" bson:"data"`
+	Data     json.RawMessage  `json:"data" bson:"data"`
 	Raw      string           `json:"raw" bson:"raw"`
 	Strategy StrategyProvider `json:"strategy" bson:"strategy"`
 
@@ -1022,11 +1022,11 @@ type FilterSchema struct {
 }
 
 type ProviderConfig struct {
-	Twitter *TwitterProviderConfig `json:"twitter" bson:"twitter"`
+	Twitter *TwitterProviderConfig `json:"twitter" db:"twitter"`
 }
 
 type TwitterProviderConfig struct {
-	CrcVerifiedAt primitive.DateTime `json:"crc_verified_at" bson:"crc_verified_at"`
+	CrcVerifiedAt null.Time `json:"crc_verified_at" db:"crc_verified_at"`
 }
 
 type VerifierConfig struct {
@@ -1054,7 +1054,7 @@ type ApiKey struct {
 }
 
 type Organisation struct {
-	UID            string      `json:"id" db:"id"`
+	UID            string      `json:"uid" db:"id"`
 	OwnerID        string      `json:"" db:"owner_id"`
 	Name           string      `json:"name" db:"name"`
 	CustomDomain   null.String `json:"custom_domain" db:"custom_domain"`

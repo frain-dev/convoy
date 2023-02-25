@@ -199,7 +199,7 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 		return nil, datastore.PaginationData{}, err
 	}
 
-	var organisations []datastore.Organisation
+	organisations := make([]datastore.Organisation, 0)
 	for rows.Next() {
 		var org datastore.Organisation
 
