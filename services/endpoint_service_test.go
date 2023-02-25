@@ -515,9 +515,6 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 				HttpTimeout:       "20s",
 			},
 			dbFn: func(as *EndpointService) {
-				p, _ := as.projectRepo.(*mocks.MockProjectRepository)
-				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any())
-
 				a, _ := as.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").
 					Times(1).Return(&datastore.Endpoint{UID: "endpoint2"}, nil)
@@ -543,12 +540,9 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 					HttpTimeout:       "20s",
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint1"},
-				project:  &datastore.Project{UID: "project1"},
+				project:  project,
 			},
 			dbFn: func(as *EndpointService) {
-				p, _ := as.projectRepo.(*mocks.MockProjectRepository)
-				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any())
-
 				a, _ := as.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").
 					Times(1).Return(&datastore.Endpoint{UID: "endpoint1"}, nil)
@@ -573,9 +567,6 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 				project:  project,
 			},
 			dbFn: func(as *EndpointService) {
-				p, _ := as.projectRepo.(*mocks.MockProjectRepository)
-				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any())
-
 				a, _ := as.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").
 					Times(1).Return(&datastore.Endpoint{UID: "endpoint1"}, nil)

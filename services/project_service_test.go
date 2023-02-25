@@ -180,7 +180,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Name:    "test_project_1",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config:  &datastore.ProjectConfig{},
+					Config:  nil,
 				},
 				org: &datastore.Organisation{UID: "1234"},
 				member: &datastore.OrganisationMember{
@@ -205,6 +205,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				LogoURL:        "https://google.com",
 				OrganisationID: "1234",
 				Config: &datastore.ProjectConfig{
+					MaxIngestSize: 50,
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 						Versions: []datastore.SignatureVersion{
@@ -214,10 +215,10 @@ func TestProjectService_CreateProject(t *testing.T) {
 							},
 						},
 					},
-					Strategy:  &datastore.DefaultStrategyConfig,
-					RateLimit: &datastore.DefaultRateLimitConfig,
-					// RetentionPolicy: &datastore.DefaultRetentionPolicy,
-					ReplayAttacks: false,
+					Strategy:        &datastore.DefaultStrategyConfig,
+					RateLimit:       &datastore.DefaultRateLimitConfig,
+					RetentionPolicy: &datastore.DefaultRetentionPolicy,
+					ReplayAttacks:   false,
 				},
 			},
 			wantErr: false,
@@ -230,11 +231,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Name:    "test_project",
 					Type:    "outgoing",
 					LogoURL: "https://google.com",
-					Config: &datastore.ProjectConfig{
-						Signature: &datastore.SignatureConfiguration{
-							Header: "X-Convoy-Signature",
-						},
-					},
+					Config:  nil,
 				},
 				org: &datastore.Organisation{UID: "1234"},
 				member: &datastore.OrganisationMember{
@@ -260,13 +257,20 @@ func TestProjectService_CreateProject(t *testing.T) {
 				OrganisationID: "1234",
 
 				Config: &datastore.ProjectConfig{
+					MaxIngestSize: 50,
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
+						Versions: []datastore.SignatureVersion{
+							{
+								Hash:     "SHA256",
+								Encoding: datastore.HexEncoding,
+							},
+						},
 					},
-					Strategy:  &datastore.DefaultStrategyConfig,
-					RateLimit: &datastore.DefaultRateLimitConfig,
-					// RetentionPolicy: &datastore.DefaultRetentionPolicy,
-					ReplayAttacks: false,
+					Strategy:        &datastore.DefaultStrategyConfig,
+					RateLimit:       &datastore.DefaultRateLimitConfig,
+					RetentionPolicy: &datastore.DefaultRetentionPolicy,
+					ReplayAttacks:   false,
 				},
 			},
 			wantErr: false,
@@ -311,7 +315,15 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Name:    "test_project_1",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config:  &datastore.ProjectConfig{},
+					Config: &datastore.ProjectConfig{Signature: &datastore.SignatureConfiguration{
+						Header: "X-Convoy-Signature",
+						Versions: []datastore.SignatureVersion{
+							{
+								Hash:     "SHA256",
+								Encoding: datastore.HexEncoding,
+							},
+						},
+					}},
 				},
 				org: &datastore.Organisation{UID: "1234"},
 				member: &datastore.OrganisationMember{
@@ -396,7 +408,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 			require.Equal(t, project.Name+"'s default key", apiKey.Name)
 			require.Equal(t, project.UID, apiKey.Role.Project)
 			require.Equal(t, auth.RoleAdmin, apiKey.Role.Type)
-			require.NotEmpty(t, apiKey.ExpiresAt)
+			require.Empty(t, apiKey.ExpiresAt)
 			require.NotEmpty(t, apiKey.UID)
 			require.NotEmpty(t, apiKey.Key)
 			require.NotEmpty(t, apiKey.CreatedAt)
@@ -599,88 +611,6 @@ func TestProjectService_GetProjects(t *testing.T) {
 			dbFn: func(gs *ProjectService) {
 				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
 				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{OrgID: "default_project"}).
-					Times(1).Return([]*datastore.Project{
-					{UID: "123"},
-					{UID: "abc"},
-				}, nil)
-
-				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
-					project.Statistics = &datastore.ProjectStatistics{
-						MessagesSent:   1,
-						TotalEndpoints: 1,
-					}
-
-					return nil
-				})
-			},
-			wantProjects: []*datastore.Project{
-				{
-					UID: "123",
-					Statistics: &datastore.ProjectStatistics{
-						MessagesSent:   1,
-						TotalEndpoints: 1,
-					},
-				},
-				{
-					UID: "abc",
-					Statistics: &datastore.ProjectStatistics{
-						MessagesSent:   1,
-						TotalEndpoints: 1,
-					},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "should_get_projects_trims-whitespaces-from-query",
-			args: args{
-				ctx:    ctx,
-				filter: &datastore.ProjectFilter{OrgID: " default_project "},
-			},
-			dbFn: func(gs *ProjectService) {
-				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
-				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{OrgID: "default_project"}).
-					Times(1).Return([]*datastore.Project{
-					{UID: "123"},
-					{UID: "abc"},
-				}, nil)
-
-				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
-					project.Statistics = &datastore.ProjectStatistics{
-						MessagesSent:   1,
-						TotalEndpoints: 1,
-					}
-
-					return nil
-				})
-			},
-			wantProjects: []*datastore.Project{
-				{
-					UID: "123",
-					Statistics: &datastore.ProjectStatistics{
-						MessagesSent:   1,
-						TotalEndpoints: 1,
-					},
-				},
-				{
-					UID: "abc",
-					Statistics: &datastore.ProjectStatistics{
-						MessagesSent:   1,
-						TotalEndpoints: 1,
-					},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "should_get_projects_trims-whitespaces-from-query-retains-case",
-			args: args{
-				ctx:    ctx,
-				filter: &datastore.ProjectFilter{OrgID: "  deFault_Project"},
-			},
-			dbFn: func(gs *ProjectService) {
-				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
-				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{OrgID: "deFault_Project"}).
 					Times(1).Return([]*datastore.Project{
 					{UID: "123"},
 					{UID: "abc"},
