@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/frain-dev/convoy/database/postgres"
@@ -118,6 +119,7 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 
 	subService := createSubscriptionService(a)
 	subscription, err := subService.CreateSubscription(r.Context(), project, &sub)
+	fmt.Println("ererer", err)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to create subscription")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

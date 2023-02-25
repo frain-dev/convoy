@@ -690,8 +690,9 @@ func (m *Metadata) Value() (driver.Value, error) {
 }
 
 type EventIntervalData struct {
-	Interval int64  `json:"index" db:"index"`
-	Time     string `json:"date" db:"total_time"`
+	Interval  int64  `json:"index" db:"index"`
+	Time      string `json:"date" db:"total_time"`
+	GroupStub string `json:"-" db:"group_only"` // ugnore
 }
 
 type EventInterval struct {

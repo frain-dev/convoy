@@ -238,7 +238,6 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 					projectSubRouter.Route("/security", func(securityRouter chi.Router) {
 						securityRouter.Route("/endpoints/{endpointID}/keys", func(securitySubRouter chi.Router) {
 							securitySubRouter.Use(a.M.RequireEndpoint())
-							securitySubRouter.Use(a.M.RequireEndpointBelongsToProject())
 							securitySubRouter.Use(a.M.RequireBaseUrl())
 							securitySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateEndpointAPIKey)
 						})

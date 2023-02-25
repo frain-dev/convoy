@@ -53,7 +53,8 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 	s.DefaultOrg = org
 
 	// Setup Default Project.
-	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, s.DefaultOrg.UID)
+	s.DefaultProject, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, s.DefaultOrg.UID)
+	require.NoError(s.T(), err)
 
 	// Seed Auth
 	role := auth.Role{
@@ -128,7 +129,8 @@ func (s *SourceIntegrationTestSuite) Test_GetSource_ValidSources() {
 
 	// Just Before
 	for i := 0; i < totalSources; i++ {
-		_, _ = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, "", "", "", nil)
+		_, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, "", "", "", nil)
+		require.NoError(s.T(), err)
 	}
 
 	// Arrange Request

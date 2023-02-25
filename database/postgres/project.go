@@ -231,6 +231,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	pRes, err := tx.ExecContext(ctx, updateProjectById, project.UID, project.Name, project.LogoURL, project.RetainedEvents)
 	if err != nil {

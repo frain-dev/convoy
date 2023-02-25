@@ -302,9 +302,17 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 	return apiKeys, pagination, nil
 }
 
-func (a *apiKeyRepo) FindAPIKeyByProjectID(ctx context.Context, s string) (*datastore.APIKey, error) {
-	// TODO implement me
-	panic("implement me")
+func (a *apiKeyRepo) FindAPIKeyByProjectID(ctx context.Context, projectID string) (*datastore.APIKey, error) {
+	apiKey := &datastore.APIKey{}
+	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "role_project"), projectID).StructScan(apiKey)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrAPIKeyNotFound
+		}
+		return nil, err
+	}
+
+	return apiKey, nil
 }
 
 type ApiKeyPaginated struct {

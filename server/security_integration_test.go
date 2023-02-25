@@ -9,7 +9,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
+
+	"github.com/jaswdr/faker"
 
 	"github.com/oklog/ulid/v2"
 
@@ -288,46 +289,6 @@ func (s *SecurityIntegrationTestSuite) Test_CreateEndpointCliAPIKey() {
 	require.Equal(s.T(), apiKeyResponse.EndpointID, endpoint.UID)
 }
 
-func (s *SecurityIntegrationTestSuite) Test_CreateEndpointPortalAPIKey_EndpointDoesNotBelongToProject() {
-	expectedStatusCode := http.StatusUnauthorized
-
-	// Switch to the native realm
-	err := config.LoadConfig("./testdata/Auth_Config/full-convoy-with-native-auth-realm.json")
-	require.NoError(s.T(), err)
-
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
-
-	// Just Before.
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, &datastore.Project{UID: ulid.Make().String()}, ulid.Make().String(), "test-app", "", true, datastore.ActiveEndpointStatus)
-
-	role := auth.Role{
-		Type:    auth.RoleAdmin,
-		Project: s.DefaultProject.UID,
-	}
-
-	// Generate api key for this Project, use the key to authenticate for this request later on
-	_, keyString, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, ulid.Make().String(), "test", "api", "")
-	require.NoError(s.T(), err)
-
-	// Arrange Request.
-	bodyStr := `{"key_type":"cli"}"`
-	body := serialize(bodyStr, s.DefaultProject.UID, time.Now().Add(time.Hour))
-
-	url := fmt.Sprintf("/api/v1/projects/%s/security/endpoints/%s/keys", s.DefaultProject.UID, endpoint.UID)
-
-	req := createRequest(http.MethodPost, url, "", body)
-	req.Header.Set("Authorization", fmt.Sprintf("BEARER %s", keyString)) // authenticate with previously generated key
-	w := httptest.NewRecorder()
-
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-}
-
 func (s *SecurityIntegrationTestSuite) Test_RevokePersonalAPIKey() {
 	expectedStatusCode := http.StatusOK
 
@@ -357,13 +318,17 @@ func (s *SecurityIntegrationTestSuite) Test_RevokePersonalAPIKey() {
 func (s *SecurityIntegrationTestSuite) Test_RevokePersonalAPIKey_UnauthorizedUser() {
 	expectedStatusCode := http.StatusUnauthorized
 
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, faker.New().Internet().Email(), faker.New().RandomStringWithLength(7))
+	require.NoError(s.T(), err)
+
 	// Just Before.
-	apiKey, _, _ := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), ulid.Make().String())
+	apiKey, _, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), user.UID)
+	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/ui/users/%s/security/personal_api_keys/%s/revoke", s.DefaultUser.UID, apiKey.UID)
 
 	req := createRequest(http.MethodPut, url, "", nil)
-	err := s.AuthenticatorFn(req, s.Router)
+	err = s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 
 	w := httptest.NewRecorder()

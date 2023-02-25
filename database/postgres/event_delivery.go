@@ -30,8 +30,8 @@ var (
 
 const (
 	createEventDelivery = `
-    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12);
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,created_at,updated_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14);
     `
 
 	baseFetchEventDelivery = `
@@ -60,6 +60,7 @@ const (
 
 	loadEventDeliveriesIntervals = `
     SELECT
+        date_trunc('%s', created_at) as "data.group_only",
         to_char(date_trunc('%s', created_at), '%s') as "data.total_time",
         extract(%s from created_at) as "data.index",
         count(*) as count
@@ -71,7 +72,7 @@ const (
         created_at >= $2 AND
         created_at <= $3
     GROUP BY
-        "data.total_time", "data.index"
+        "data.group_only", "data.index"
     ORDER BY
         "data.total_time" ASC;
     `
@@ -141,7 +142,7 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 		ctx, createEventDelivery, delivery.UID, delivery.ProjectID,
 		delivery.EventID, endpointID, deviceID,
 		delivery.SubscriptionID, delivery.Headers, delivery.DeliveryAttempts, delivery.Status,
-		delivery.Metadata, delivery.CLIMetadata, delivery.Description,
+		delivery.Metadata, delivery.CLIMetadata, delivery.Description, delivery.CreatedAt, delivery.UpdatedAt,
 	)
 	if err != nil {
 		return err
@@ -547,24 +548,29 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, pr
 
 	var timeComponent string
 	var format string
+	var extract string
 	switch period {
 	case datastore.Daily:
 		timeComponent = "day"
 		format = dailyIntervalFormat
+		extract = "doy"
 	case datastore.Weekly:
 		timeComponent = "week"
 		format = weeklyIntervalFormat
+		extract = timeComponent
 	case datastore.Monthly:
 		timeComponent = "month"
 		format = monthlyIntervalFormat
+		extract = timeComponent
 	case datastore.Yearly:
 		timeComponent = "year"
 		format = yearlyIntervalFormat
+		extract = timeComponent
 	default:
 		return nil, errors.New("specified data cannot be generated for period")
 	}
 
-	q := fmt.Sprintf(loadEventDeliveriesIntervals, timeComponent, format, timeComponent)
+	q := fmt.Sprintf(loadEventDeliveriesIntervals, timeComponent, timeComponent, format, extract)
 	rows, err := e.db.QueryxContext(ctx, q, projectID, start, end)
 	if err != nil {
 		return nil, err

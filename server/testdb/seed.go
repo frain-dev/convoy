@@ -42,10 +42,8 @@ func SeedEndpoint(db database.Database, g *datastore.Project, uid, title, ownerI
 		ProjectID: g.UID,
 		OwnerID:   ownerID,
 		Status:    status,
-		Secrets: datastore.Secrets{
-			{UID: ulid.Make().String()},
-		},
-		AppID: uid,
+		Secrets:   datastore.Secrets{},
+		AppID:     uid,
 	}
 
 	// Seed Data.
@@ -189,16 +187,11 @@ func SeedDefaultOrganisation(db database.Database, user *datastore.User) (*datas
 		return &datastore.Organisation{}, err
 	}
 
-	p, err := SeedProject(db, ulid.Make().String(), "x-proj", defaultOrg.UID, datastore.IncomingProject, &datastore.DefaultProjectConfig)
-	if err != nil {
-		return nil, err
-	}
-
 	member := &datastore.OrganisationMember{
 		UID:            ulid.Make().String(),
 		OrganisationID: defaultOrg.UID,
 		UserID:         user.UID,
-		Role:           auth.Role{Type: auth.RoleSuperUser, Project: p.UID},
+		Role:           auth.Role{Type: auth.RoleSuperUser},
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
@@ -362,6 +355,8 @@ func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *d
 		Headers:        httpheader.HTTPHeader{},
 		Metadata:       &datastore.Metadata{},
 		ProjectID:      projectID,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	// Seed Data.
@@ -484,6 +479,16 @@ func SeedSubscription(db database.Database,
 ) (*datastore.Subscription, error) {
 	if util.IsStringEmpty(uid) {
 		uid = ulid.Make().String()
+	}
+
+	if filterConfig == nil {
+		filterConfig = &datastore.FilterConfiguration{
+			EventTypes: []string{"*"},
+			Filter: datastore.FilterSchema{
+				Headers: datastore.M{},
+				Body:    datastore.M{},
+			},
+		}
 	}
 
 	subscription := &datastore.Subscription{
