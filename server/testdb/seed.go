@@ -355,6 +355,8 @@ func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *d
 		Headers:        httpheader.HTTPHeader{},
 		Metadata:       &datastore.Metadata{},
 		ProjectID:      projectID,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	// Seed Data.
