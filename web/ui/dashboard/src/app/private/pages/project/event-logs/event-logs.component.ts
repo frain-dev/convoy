@@ -97,6 +97,8 @@ export class EventLogsComponent implements OnInit {
 		this.getFiltersFromURL();
 		this.getEvents();
 		if (!this.portalToken) this.getSourcesForFilter();
+
+		if (this.privateService.activeProjectDetails?.type === 'incoming') this.eventLogsTableHead.splice(1, 1);
 	}
 
 	ngAfterViewInit() {
@@ -369,7 +371,7 @@ export class EventLogsComponent implements OnInit {
 	}
 
 	viewSource(sourceId?: string) {
-		if (!sourceId) return;
+		if (!sourceId || this.portalToken) return;
 		this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/sources/'], { queryParams: { id: sourceId } });
 	}
 

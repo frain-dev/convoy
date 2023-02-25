@@ -143,9 +143,8 @@
 									<span *ngIf="!portalToken" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/endpoints/' + event.endpoint_metadata[0].uid" class="underline text-primary-100">{{ event.endpoint_metadata[0].title }}</span>
 									<span *ngIf="portalToken">{{ event.endpoint_metadata[0].title }}</span>
 								</td>
-								<td convoy-table-cell class="w-150px overflow-ellipsis">
-									<span *ngIf="!portalToken" (click)="viewSource(event?.source_metadata?.uid || '')" class="underline text-primary-100">{{ event.source_metadata.name || 'API' }}</span>
-									<span *ngIf="portalToken">{{ event.source_metadata.name }}</span>
+								<td convoy-table-cell>
+									<span (click)="viewSource(event?.source_metadata?.uid || '')" [ngClass]="{ underline: !portalToken }" class="max-w-[150px] overflow-hidden overflow-ellipsis text-primary-100">{{ event.source_metadata?.name || 'API' }}</span>
 								</td>
 								<td convoy-table-cell>{{ event.created_at | date: 'mediumTime' }}</td>
 
