@@ -184,7 +184,7 @@ const (
 var (
 	DefaultProjectConfig = ProjectConfig{
 		RetentionPolicy:          &DefaultRetentionPolicy,
-		MaxIngestSize:            config.MaxResponseSizeKb,
+		MaxIngestSize:            config.MaxResponseSize,
 		ReplayAttacks:            false,
 		IsRetentionPolicyEnabled: false,
 		RateLimit:                &DefaultRateLimitConfig,

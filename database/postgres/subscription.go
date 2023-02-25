@@ -79,10 +79,21 @@ const (
 	COALESCE(source_metadata.type,'') as "source_metadata.type",
 	COALESCE(source_metadata.mask_id,'') as "source_metadata.mask_id",
 	COALESCE(source_metadata.project_id,'') as "source_metadata.project_id",
- 	COALESCE(source_metadata.is_disabled,false) as "source_metadata.is_disabled"
+ 	COALESCE(source_metadata.is_disabled,false) as "source_metadata.is_disabled",
+	COALESCE(sv.type, '') as "source_metadata.verifier.type",
+	COALESCE(sv.basic_username, '') as "source_metadata.verifier.basic_auth.username",
+	COALESCE(sv.basic_password, '') as "source_metadata.verifier.basic_auth.password",
+	COALESCE(sv.api_key_header_name, '') as "source_metadata.verifier.api_key.header_name",
+	COALESCE(sv.api_key_header_value, '') as "source_metadata.verifier.api_key.header_value",
+	COALESCE(sv.hmac_hash, '') as "source_metadata.verifier.hmac.hash",
+	COALESCE(sv.hmac_header, '') as "source_metadata.verifier.hmac.header",
+	COALESCE(sv.hmac_secret, '') as "source_metadata.verifier.hmac.secret",
+	COALESCE(sv.hmac_encoding, '') as "source_metadata.verifier.hmac.encoding"
 	FROM convoy.subscriptions s LEFT JOIN convoy.endpoints endpoint_metadata
     ON s.endpoint_id = endpoint_metadata.id LEFT JOIN convoy.sources source_metadata
-    ON s.source_id = source_metadata.id WHERE s.deleted_at IS NULL `
+    ON s.source_id = source_metadata.id 
+	LEFT JOIN convoy.source_verifiers sv ON sv.id = source_metadata.source_verifier_id 
+	WHERE s.deleted_at IS NULL `
 
 	fetchSubscriptionByID = baseFetch + ` AND %s = $1 AND %s = $2;`
 

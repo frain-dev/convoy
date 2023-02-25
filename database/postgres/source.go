@@ -72,15 +72,15 @@ const (
 		s.project_id,
 		s.source_verifier_id,
 		s.pub_sub,
-		sv.type as "verifier.type",
-		sv.basic_username as "verifier.basic_auth.username",
-		sv.basic_password as "verifier.basic_auth.password",
-        sv.api_key_header_name as "verifier.api_key.header_name",
-        sv.api_key_header_value as "verifier.api_key.header_value",
-        sv.hmac_hash as "verifier.hmac.hash",
-        sv.hmac_header as "verifier.hmac.header",
-        sv.hmac_secret as "verifier.hmac.secret",
-        sv.hmac_encoding as "verifier.hmac.encoding",
+		COALESCE(sv.type, '') as "verifier.type",
+		COALESCE(sv.basic_username, '') as "verifier.basic_auth.username",
+		COALESCE(sv.basic_password, '') as "verifier.basic_auth.password",
+        COALESCE(sv.api_key_header_name, '') as "verifier.api_key.header_name",
+        COALESCE(sv.api_key_header_value, '') as "verifier.api_key.header_value",
+        COALESCE(sv.hmac_hash, '') as "verifier.hmac.hash",
+        COALESCE(sv.hmac_header, '') as "verifier.hmac.header",
+        COALESCE(sv.hmac_secret, '') as "verifier.hmac.secret",
+        COALESCE(sv.hmac_encoding, '') as "verifier.hmac.encoding",
 		s.created_at,
 		s.updated_at
 	FROM convoy.sources as s
@@ -110,13 +110,8 @@ const (
 	WHERE source_id = $1 AND deleted_at IS NULL;
 	`
 
-	fetchSourcesPaginated = `
-	SELECT * FROM convoy.sources
-	WHERE deleted_at IS NULL
-	AND (type = :type OR :type = '') AND (provider = :provider OR :provider = '')
-	AND (project_id = :project_id OR :project_id = '')
-	ORDER BY id LIMIT :limit OFFSET :offset;
-	`
+	fetchSourcesPaginated = baseFetchSource + ` WHERE s.deleted_at IS NULL AND (s.type = :type OR :type = '') AND (s.provider = :provider OR :provider = '') AND (s.project_id = :project_id OR :project_id = '') ORDER BY s.id LIMIT :limit OFFSET :offset;`
+
 	countSources = `
 	SELECT COUNT(id) FROM convoy.sources WHERE deleted_at IS NULL
 	AND (type = :type OR :type = '') AND (provider = :provider OR :provider = '');

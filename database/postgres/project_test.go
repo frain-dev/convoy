@@ -403,6 +403,7 @@ func seedOrg(t *testing.T, db database.Database) *datastore.Organisation {
 	user := seedUser(t, db)
 
 	org := &datastore.Organisation{
+		UID:            ulid.Make().String(),
 		Name:           ulid.Make().String() + "-new_org",
 		OwnerID:        user.UID,
 		CustomDomain:   null.NewString("https://google.com", true),
