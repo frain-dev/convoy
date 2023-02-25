@@ -3,30 +3,57 @@
 </div>
 
 <ng-container *ngIf="!isloadingDashboardData">
-	<ng-container *ngIf="eventsFetched?.length === 0">
+	<ng-container *ngIf="!hasEvents">
 		<div convoy-card class="flex items-center justify-center flex-col py-82px h-full text-center px-40px">
 			<img src="/assets/img/events-empty-state-image.svg" alt="events empty state image" class="mb-48px" />
 			<h3 class="mb-10px text-16 font-bold">{{ privateService.activeProjectDetails?.type === 'incoming' ? 'You have no incoming events.' : 'You have no outgoing events yet' }}</h3>
-			<p class="text-14 text-grey-40 max-w-[428px]">
-				{{ privateService.activeProjectDetails?.type === 'incoming' ? 'Start receiving webhooks by pasting your webhook URL into your source “Source Name”' : 'You have not sent any webhook events yet. Learn how to do that in our docs' }}
+			<p class="text-14 text-grey-40 max-w-[428px]" *ngIf="isProjectConfigurationComplete">
+				{{ privateService.activeProjectDetails?.type === 'incoming' ? 'Start receiving webhooks by adding your webhook URL into your webhook sender platform "' + lastestSource.name + '"' : 'You have not sent any webhook events yet. Learn how to do that in our docs' }}
+			</p>
+			<p class="text-14 text-grey-40 max-w-[428px]" *ngIf="!isProjectConfigurationComplete">
+				{{ privateService.activeProjectDetails?.type === 'incoming' ? 'You need to create an endpoint subscribe it to an event source (sender of your webhooks) to start receiving events' : 'You need to create an endpoint and subscribe it to listen to events' }}
 			</p>
 
-			<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
+			<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming' && isProjectConfigurationComplete">
 				<div class="flex items-center justify-between w-full h-50px border border-grey-10 bg-[#F7F9FC] rounded-[6px] px-16px mb-32px max-w-[500px] mt-42px">
-					<span class="text-14 text-grey-40 font-normal whitespace-nowrap w-[440px] overflow-hidden text-ellipsis">{{ lastestSourceURL }}</span>
-					<convoy-copy-button [text]="'token'" notificationText="Source URL copied to clipboard"></convoy-copy-button>
+					<span class="text-14 text-grey-40 font-normal whitespace-nowrap w-[440px] overflow-hidden text-ellipsis">{{ lastestSource.url }}</span>
+					<convoy-copy-button [text]="lastestSource.url" notificationText="Source URL copied to clipboard"></convoy-copy-button>
 				</div>
 
-				<div convoy-card class="flex justify-between py-10px px-40px max-w-[446px] w-full items-center">
-					<img src="/assets/img/time-icon.svg" alt="timer icon" class="mr-20px w-38px" />
-					<p class="mr-12px text-14 text-grey-80">Waiting on your first web-hook event</p>
-					<img src="/assets/img/Loader.png" class="opacity-50 w-50px" alt="loader icon" />
-				</div>
+				<ng-container *ngIf="lastestEventDeliveries.length === 0">
+					<div convoy-card class="flex justify-between py-10px px-40px max-w-[446px] w-full items-center">
+						<img src="/assets/img/time-icon.svg" alt="timer icon" class="mr-20px w-38px" />
+						<p class="mr-12px text-14 text-grey-80">Waiting on your first web-hook event</p>
+						<img src="/assets/img/Loader.png" class="opacity-50 w-50px" alt="loader icon" />
+					</div>
+					<a href="https://getconvoy.io/docs/getting-started/receiving-webhook-example" target="_blank" referrerpolicy="no-referrer" convoy-button fill="clear" class="mt-48px font-medium">Don't See Your Events Yet?</a>
+				</ng-container>
 
-				<a href="https://getconvoy.io/docs" target="_blank" referrerpolicy="no-referrer" convoy-button fill="clear" class="mt-48px font-medium">Don't See Your Events Yet?</a>
+				<ng-container *ngIf="lastestEventDeliveries.length > 0">
+					<div class="w-full max-w-[500px]" convoy-card>
+						<div class="flex w-full border-b border-b-grey-10 text-grey-40 text-14 p-10px">
+							<div class="w-1/5 text-left">Status</div>
+							<div class="w-1/3 text-left ml-2px">Subscription</div>
+							<div class="w-1/5 text-left ml-2px">Event Time</div>
+							<div class="w-1/5 text-left ml-2px">Retry Time</div>
+						</div>
+						<div class="flex text-left text-14 p-10px cursor-pointer hover:bg-grey-10" *ngFor="let event of lastestEventDeliveries" [routerLink]="['./event-deliveries/' + event.uid]">
+							<div class="w-1/5">
+								<div convoy-tag [type]="event.status | statuscolor">{{ event?.status }}</div>
+							</div>
+							<div class="w-1/3 ml-2px max-w-[159px] whitespace-nowrap overflow-hidden text-ellipsis">{{ event?.endpoint_metadata?.title }}</div>
+							<div class="w-1/5 ml-2px">{{ event.created_at | date: 'mediumTime' }}</div>
+							<div class="w-1/5 ml-2px">{{ event.updated_at | date: 'mediumTime' }}</div>
+						</div>
+					</div>
+
+					<button (click)="checkEventsOnFirstLoad()" convoy-button class="mt-48px font-medium">Continue to Dashboard</button>
+				</ng-container>
 			</ng-container>
 
-			<a href="https://getconvoy.io/docs" convoy-button target="_blank" referrerpolicy="no-referrer" fill="outline" class="mt-48px" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
+			<button convoy-button *ngIf="!isProjectConfigurationComplete" class="mt-48px" (click)="router.navigateByUrl('/projects/' + privateService.activeProjectDetails?.uid + '/setup')">Complete project setup</button>
+
+			<a href="https://getconvoy.io/docs/getting-started/sending-webhook-example" convoy-button target="_blank" referrerpolicy="no-referrer" fill="outline" class="mt-48px" *ngIf="privateService.activeProjectDetails?.type === 'outgoing' && isProjectConfigurationComplete">
 				Go to documentation
 				<svg class="ml-8px fill-primary-100 w-20px h-20px">
 					<use xlink:href="#external-link-icon"></use>
@@ -35,7 +62,7 @@
 		</div>
 	</ng-container>
 
-	<ng-container *ngIf="eventsFetched?.length">
+	<ng-container *ngIf="hasEvents">
 		<div class="text-12 font-medium flex items-center uppercase">
 			<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
 			<svg width="16" height="16" class="mx-4px">
