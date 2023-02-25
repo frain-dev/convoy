@@ -1,12 +1,13 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { differenceInCalendarDays, differenceInCalendarMonths, differenceInCalendarWeeks, differenceInCalendarYears, format, getDayOfYear, getMonth, getWeek, getYear, sub } from 'date-fns';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { EventsService } from './events.service';
-import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
+import { EVENT_DELIVERY } from 'src/app/models/event.model';
 import { CHARTDATA, PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
+import { SOURCE } from 'src/app/models/group.model';
 
 interface LABELS {
 	date: string;
@@ -18,48 +19,70 @@ interface LABELS {
 	templateUrl: './events.component.html',
 	styleUrls: ['./events.component.scss']
 })
-export class EventsComponent implements OnInit {
+export class EventsComponent implements OnInit, OnDestroy {
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
-	tabs: ['events', 'event deliveries'] = ['events', 'event deliveries'];
-	activeTab: 'events' | 'event deliveries' = 'event deliveries';
-	showOverlay: boolean = false;
 	isloadingDashboardData: boolean = false;
 	showFilterDropdown: boolean = false;
 	selectedDateOption: string = '';
 	dashboardFrequency: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily';
 	filterOptions: ['daily', 'weekly', 'monthly', 'yearly'] = ['daily', 'weekly', 'monthly', 'yearly'];
 	dashboardData = { apps: 0, events_sent: 0 };
-	events!: { pagination: PAGINATION; content: EVENT[] };
 	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	statsDateRange: FormGroup = this.formBuilder.group({
 		startDate: [{ value: new Date(new Date().setDate(new Date().getDate() - 30)), disabled: true }],
 		endDate: [{ value: new Date(), disabled: true }]
 	});
-	eventsFetched!: EVENT[];
+	hasEvents: boolean = false;
 	chartData!: CHARTDATA[];
 	showAddEventModal = false;
+	lastestSource!: SOURCE;
+	lastestEventDeliveries: EVENT_DELIVERY[] = [];
+	eventDelTableHead: string[] = ['Status', 'Event Type', 'Event Time', 'Next Attempt'];
+	eventDelievryIntervalTime: any;
 
-	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, private route: ActivatedRoute, public router: Router) {}
+	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, public router: Router) {}
 
 	async ngOnInit() {
 		this.isloadingDashboardData = true;
-		await Promise.all([this.fetchDashboardData(), this.fetchEvents()]);
+		await Promise.all([this.fetchDashboardData(), this.getLatestSource(), this.getLatestEvent()]);
+		this.checkEventsOnFirstLoad();
 		this.isloadingDashboardData = false;
 
-		// this.toggleActiveTab(this.route.snapshot.queryParams?.activeTab ?? 'events');
+		if (this.privateService.activeProjectDetails?.type === 'incoming') {
+			this.eventDelievryIntervalTime = setInterval(() => {
+				this.getLatestEvent();
+			}, 2000);
+		}
 	}
 
-	addTabToUrl() {
-		const currentURLfilters = this.route.snapshot.queryParams;
-		const queryParams: any = {};
-
-		queryParams.activeTab = this.activeTab;
-		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
+	ngOnDestroy(): void {
+		clearInterval(this.eventDelievryIntervalTime);
 	}
 
-	toggleActiveTab(tab: 'events' | 'event deliveries') {
-		this.activeTab = tab;
-		this.addTabToUrl();
+	async getLatestSource() {
+		try {
+			const sources = await this.privateService.getSources();
+			this.lastestSource = sources.data.content[sources.data.content.length - 1];
+			return;
+		} catch (error) {
+			return error;
+		}
+	}
+
+	async getLatestEvent() {
+		try {
+			const eventDeliveries = await this.eventsService.getEventDeliveries({ pageNo: 1 });
+			this.lastestEventDeliveries = eventDeliveries.data.content;
+			this.privateService.activeProjectDetails?.type === 'outgoing' && this.lastestEventDeliveries.length > 0;
+			return;
+		} catch (error) {
+			return error;
+		}
+	}
+
+	async checkEventsOnFirstLoad() {
+		this.hasEvents = this.lastestEventDeliveries.length === 0 ? false : true;
+		clearInterval(this.eventDelievryIntervalTime);
 	}
 
 	async fetchDashboardData() {
@@ -68,7 +91,6 @@ export class EventsComponent implements OnInit {
 
 			const dashboardResponse = await this.eventsService.dashboardSummary({ startDate: startDate || '', endDate: endDate || '', frequency: this.dashboardFrequency });
 			this.dashboardData = dashboardResponse.data;
-			if (this.dashboardData.events_sent === 0) this.fetchEvents();
 			const chatLabels = this.getDateRange();
 			this.initConvoyChart(dashboardResponse, chatLabels);
 
@@ -92,7 +114,6 @@ export class EventsComponent implements OnInit {
 		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}${requestDetails?.endTime || 'T23:59:59'}` : '';
 		return { startDate, endDate };
 	}
-
 
 	initConvoyChart(dashboardResponse: HTTP_RESPONSE, chatLabels: LABELS[]) {
 		let chartData: { label: string; data: any }[] = [];
@@ -175,42 +196,13 @@ export class EventsComponent implements OnInit {
 		return dateArray;
 	}
 
-	async fetchEvents() {
-		try {
-			const response = await this.eventsService.getEvents({ pageNo: 1, startDate: '', endDate: '', appId: '' });
-			this.eventsFetched = response.data.content;
-			return;
-		} catch (error: any) {
-			return;
-		}
-	}
-
 	get isProjectConfigurationComplete() {
 		const configurationComplete = localStorage.getItem('isActiveProjectConfigurationComplete');
 		return configurationComplete ? JSON.parse(configurationComplete) : false;
 	}
 
-	get emptyStateDescription() {
-		return this.isProjectConfigurationComplete
-			? `You have not ${this.privateService.activeProjectDetails?.type === 'incoming' ? 'received' : 'sent'} any webhook events yet. Learn how to do that in our docs`
-			: `You have not completed this projects setup, please complete setup to start ${this.privateService.activeProjectDetails?.type === 'incoming' ? 'receiving' : 'sending'} events`;
-	}
-
 	getDateRange() {
 		const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 		return this.dateRange(startDate, endDate);
-	}
-
-	openSource(sourceId: string) {
-		this.router.navigate([`/projects/${this.privateService.activeProjectDetails?.uid}/sources`], { queryParams: { id: sourceId } });
-	}
-
-	openApp(appId: string) {
-		this.router.navigateByUrl(`/projects/${this.privateService.activeProjectDetails?.uid}/apps/${appId}`);
-	}
-
-	setUpEvents() {
-		if (this.privateService.activeProjectDetails?.type === 'outgoing') window.open('https://getconvoy.io/docs/getting-started/sending-webhook-example', '_blank');
-		if (this.privateService.activeProjectDetails?.type === 'incoming') window.open('https://getconvoy.io/docs/getting-started/receiving-webhook-example', '_blank');
 	}
 }
