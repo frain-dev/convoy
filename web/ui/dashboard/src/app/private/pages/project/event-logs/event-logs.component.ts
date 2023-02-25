@@ -57,7 +57,7 @@ import { ModalComponent } from 'src/app/components/modal/modal.component';
 })
 export class EventLogsComponent implements OnInit {
 	eventsDateFilterFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
-	eventLogsTableHead: string[] = ['Event Type', 'Endpoint Name', 'Time Created', ''];
+	eventLogsTableHead: string[] = ['Event Type', 'Endpoint Name', 'Source Name', 'Time Created', ''];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventsSearchString?: string;
 	eventEndpoint?: string;
@@ -276,9 +276,6 @@ export class EventLogsComponent implements OnInit {
 
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
 
-			// to show endpoint name or source name on events table header
-			if (this.displayedEvents && this.displayedEvents.length > 0 && this.displayedEvents[0].content[0].source_metadata?.name) this.eventLogsTableHead[1] = 'Source Name';
-
 			this.eventsDetailsItem = this.events?.content[0];
 			this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
 
@@ -337,7 +334,6 @@ export class EventLogsComponent implements OnInit {
 	}
 
 	async retryEvent(requestDetails: { eventId: string }) {
-
 		try {
 			const response = await this.eventsLogService.retryEvent({ eventId: requestDetails.eventId, token: this.portalToken });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
@@ -370,6 +366,11 @@ export class EventLogsComponent implements OnInit {
 			this.isRetrying = false;
 			return error;
 		}
+	}
+
+	viewSource(sourceId?: string) {
+		if (!sourceId) return;
+		this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/sources/'], { queryParams: { id: sourceId } });
 	}
 
 	viewEventDeliveries(eventId: string) {
