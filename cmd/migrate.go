@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/migrator"
@@ -15,11 +13,35 @@ func addMigrateCommand(a *app) *cobra.Command {
 		Use:   "migrate",
 		Short: "Convoy migrations",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("I'm here 1 >>>>>>")
+			cfgPath, err := cmd.Flags().GetString("config")
+			if err != nil {
+				return err
+			}
+
+			err = config.LoadConfig(cfgPath)
+			if err != nil {
+				return err
+			}
+
+			_, err = config.Get()
+			if err != nil {
+				return err
+			}
+
+			// Override with CLI Flags
+			cliConfig, err := buildCliConfiguration(cmd)
+			if err != nil {
+				return err
+			}
+
+			if err = config.Override(cliConfig); err != nil {
+				return err
+			}
+
 			return nil
+
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("I'm here 2 >>>>>>")
 			return nil
 		},
 	}
@@ -36,21 +58,17 @@ func addUpCommand() *cobra.Command {
 		Aliases: []string{"migrate-up"},
 		Short:   "Run all pending migrations",
 		Run: func(cmd *cobra.Command, args []string) {
-			// cfg, err := config.Get()
-			// if err != nil {
-			// 	log.WithError(err).Fatalf("Error fetching the config.")
-			// }
-
-			cfg := config.Configuration{
-				Database: config.DatabaseConfiguration{
-					Dsn: "postgres://postgres@localhost/convoy?sslmode=disable",
-				},
+			cfg, err := config.Get()
+			if err != nil {
+				log.WithError(err).Fatalf("Error fetching the config.")
 			}
 
 			db, err := postgres.NewDB(cfg)
 			if err != nil {
 				log.Fatal(err)
 			}
+
+			defer db.GetDB().Close()
 
 			m := migrator.New(db)
 			err = m.Up()
@@ -80,6 +98,8 @@ func addDownCommand() *cobra.Command {
 			if err != nil {
 				log.Fatal(err)
 			}
+
+			defer db.GetDB().Close()
 
 			m := migrator.New(db)
 			err = m.Down()
