@@ -44,8 +44,9 @@ const (
 		token,
 		status,
 		role_type as "role.type",
-		role_project as "role.project",
-	    COALESCE(role_endpoint,'') as "role.endpoint"
+	    COALESCE(role_project,'') as "role.project",
+	    COALESCE(role_endpoint,'') as "role.endpoint",
+	    created_at, updated_at, expires_at
 	FROM convoy.organisation_invites
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -58,8 +59,9 @@ const (
 		token,
 		status,
 		role_type as "role.type",
-		role_project as "role.project",
-	    COALESCE(role_endpoint,'') as "role.endpoint"
+	    COALESCE(role_project,'') as "role.project",
+	    COALESCE(role_endpoint,'') as "role.endpoint",
+	    created_at, updated_at, expires_at
 	FROM convoy.organisation_invites
 	WHERE token = $1 AND deleted_at IS NULL;
 	`
@@ -71,8 +73,9 @@ const (
 		invitee_email,
 		status,
 		role_type as "role.type",
-		role_project as "role.project",
-	    COALESCE(role_endpoint,'') as "role.endpoint"
+	    COALESCE(role_project,'') as "role.project",
+	    COALESCE(role_endpoint,'') as "role.endpoint",
+	    created_at, updated_at, expires_at
 	FROM convoy.organisation_invites
 	WHERE organisation_id = $3 AND status = $4 AND deleted_at IS NULL
 	ORDER BY id LIMIT $1 OFFSET $2
@@ -100,8 +103,13 @@ func NewOrgInviteRepo(db database.Database) datastore.OrganisationInviteReposito
 
 func (i *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {
 	var endpointID *string
+	var projectID *string
 	if !util.IsStringEmpty(iv.Role.Endpoint) {
 		endpointID = &iv.Role.Endpoint
+	}
+
+	if !util.IsStringEmpty(iv.Role.Project) {
+		projectID = &iv.Role.Project
 	}
 
 	r, err := i.db.ExecContext(ctx, createOrganisationInvite,
@@ -110,7 +118,7 @@ func (i *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datast
 		iv.InviteeEmail,
 		iv.Token,
 		iv.Role.Type,
-		iv.Role.Project,
+		projectID,
 		endpointID,
 		iv.Status,
 		iv.ExpiresAt,
@@ -161,15 +169,20 @@ func (i *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID
 
 func (i *orgInviteRepo) UpdateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {
 	var endpointID *string
+	var projectID *string
 	if !util.IsStringEmpty(iv.Role.Endpoint) {
 		endpointID = &iv.Role.Endpoint
+	}
+
+	if !util.IsStringEmpty(iv.Role.Project) {
+		projectID = &iv.Role.Project
 	}
 
 	r, err := i.db.ExecContext(ctx,
 		updateOrganisationInvite,
 		iv.UID,
 		iv.Role.Type,
-		iv.Role.Project,
+		projectID,
 		endpointID,
 		iv.Status,
 		iv.ExpiresAt,

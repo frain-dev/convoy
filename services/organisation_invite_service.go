@@ -130,8 +130,7 @@ func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx contex
 		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("organisation member invite already %s", iv.Status.String()))
 	}
 
-	now := time.Now().Unix()
-	if now > iv.ExpiresAt.Unix() {
+	if time.Now().After(iv.ExpiresAt) { // if current date has surpassed expiry date
 		return util.NewServiceError(http.StatusBadRequest, errors.New("organisation member invite already expired"))
 	}
 

@@ -39,11 +39,18 @@ func (i *IngestIntegrationTestSuite) SetupSuite() {
 func (i *IngestIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(i.T(), i.DB)
 
+	user, err := testdb.SeedDefaultUser(i.ConvoyApp.A.DB)
+	require.NoError(i.T(), err)
+
+	org, err := testdb.SeedDefaultOrganisation(i.ConvoyApp.A.DB, user)
+	require.NoError(i.T(), err)
+
 	// Setup Default Project.
-	i.DefaultProject, _ = testdb.SeedDefaultProject(i.ConvoyApp.A.DB, "")
+	i.DefaultProject, err = testdb.SeedDefaultProject(i.ConvoyApp.A.DB, org.UID)
+	require.NoError(i.T(), err)
 
 	// Setup Config.
-	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(i.T(), err)
 
 	apiRepo := postgres.NewAPIKeyRepo(i.ConvoyApp.A.DB)

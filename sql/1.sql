@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS convoy.organisation_members (
     id CHAR(26) PRIMARY KEY,
 
     role_type TEXT NOT NULL,
-    role_project TEXT NOT NULL REFERENCES convoy.projects (id),
+    role_project TEXT REFERENCES convoy.projects (id),
     role_endpoint TEXT REFERENCES convoy.endpoints (id),
     user_id CHAR(26) NOT NULL REFERENCES convoy.users (id),
     organisation_id CHAR(26) NOT NULL REFERENCES convoy.organisations (id),
@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS convoy.organisation_invites (
 	invitee_email TEXT NOT NULL,
 	token TEXT NOT NULL,
 	role_type TEXT NOT NULL,
-    role_project TEXT NOT NULL REFERENCES convoy.projects (id),
+    role_project TEXT REFERENCES convoy.projects (id),
     role_endpoint TEXT REFERENCES convoy.endpoints (id),
 	status TEXT NOT NULL,
 
@@ -292,7 +292,7 @@ CREATE TABLE IF NOT EXISTS convoy.api_keys (
 	name TEXT NOT NULL,
 	key_type TEXT NOT NULL,
 	mask_id TEXT NOT NULL,
-	role_type TEXT NOT NULL,
+	role_type TEXT,
     role_project TEXT REFERENCES convoy.projects (id),
     role_endpoint TEXT REFERENCES convoy.endpoints (id),
 	hash TEXT NOT NULL,
@@ -315,7 +315,7 @@ CREATE TABLE IF NOT EXISTS convoy.events (
 	project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
 	source_id CHAR(26) REFERENCES convoy.sources (id),
 
-	headers JSONB NOT NULL,
+	headers JSONB,
 
 	raw TEXT NOT NULL,
 	data BYTEA NOT NULL,
@@ -342,10 +342,9 @@ CREATE TABLE IF NOT EXISTS convoy.event_deliveries (
 	device_id CHAR(26) REFERENCES convoy.devices (id),
 	subscription_id CHAR(26) NOT NULL REFERENCES convoy.subscriptions (id),
 
-	headers JSONB NOT NULL,
-    attempts JSONB,
-
     metadata JSONB NOT NULL,
+	headers JSONB,
+    attempts JSONB,
     cli_metadata JSONB,
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,

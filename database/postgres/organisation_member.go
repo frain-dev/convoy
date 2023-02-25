@@ -45,7 +45,7 @@ const (
 		o.id as id,
 		o.organisation_id as "organisation_id",
 		o.role_type as "role.type",
-		o.role_project as "role.project",
+	    COALESCE(o.role_project,'') as "role.project",
 	    COALESCE(o.role_endpoint,'') as "role.endpoint",
 		u.id as "user_id",
 		u.id as "user_metadata.user_id",
@@ -63,7 +63,7 @@ const (
 		o.id as id,
 		o.organisation_id as "organisation_id",
 		o.role_type as "role.type",
-		o.role_project as "role.project",
+	    COALESCE(o.role_project,'') as "role.project",
 	    COALESCE(o.role_endpoint,'') as "role.endpoint",
 		u.id as "user_id",
 		u.id as "user_metadata.user_id",
@@ -81,7 +81,7 @@ const (
 		o.id as id,
 		o.organisation_id as "organisation_id",
 		o.role_type as "role.type",
-		o.role_project as "role.project",
+	    COALESCE(o.role_project,'') as "role.project",
 	    COALESCE(o.role_endpoint,'') as "role.endpoint",
 		u.id as "user_id",
 		u.id as "user_metadata.user_id",
@@ -132,8 +132,13 @@ func NewOrgMemberRepo(db database.Database) datastore.OrganisationMemberReposito
 
 func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
 	var endpointID *string
+	var projectID *string
 	if !util.IsStringEmpty(member.Role.Endpoint) {
 		endpointID = &member.Role.Endpoint
+	}
+
+	if !util.IsStringEmpty(member.Role.Project) {
+		projectID = &member.Role.Project
 	}
 
 	r, err := o.db.ExecContext(ctx, createOrgMember,
@@ -141,7 +146,7 @@ func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *da
 		member.OrganisationID,
 		member.UserID,
 		member.Role.Type,
-		member.Role.Project,
+		projectID,
 		endpointID,
 	)
 	if err != nil {
@@ -241,15 +246,20 @@ func (o *orgMemberRepo) FindUserProjects(ctx context.Context, userID string) ([]
 
 func (o *orgMemberRepo) UpdateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
 	var endpointID *string
+	var projectID *string
 	if !util.IsStringEmpty(member.Role.Endpoint) {
 		endpointID = &member.Role.Endpoint
+	}
+
+	if !util.IsStringEmpty(member.Role.Project) {
+		projectID = &member.Role.Project
 	}
 
 	r, err := o.db.ExecContext(ctx,
 		updateOrgMember,
 		member.UID,
 		member.Role.Type,
-		member.Role.Project,
+		projectID,
 		endpointID,
 	)
 	if err != nil {

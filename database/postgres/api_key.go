@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/frain-dev/convoy/auth"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
@@ -34,7 +36,7 @@ const (
 		name,
 	    key_type,
 	    mask_id,
-	    role_type as "role.type",
+	    COALESCE(role_type,'') as "role.type",
 	    COALESCE(role_project,'') as "role.project",
 	    COALESCE(role_endpoint,'') as "role.endpoint",
 	    hash,
@@ -67,7 +69,7 @@ const (
 		name,
 	    key_type,
 	    mask_id,
-	    role_type as "role.type",
+	    COALESCE(role_type,'') as "role.type",
 	    COALESCE(role_project,'') as "role.project",
 	    COALESCE(role_endpoint,'') as "role.endpoint",
 	    hash,
@@ -103,6 +105,7 @@ func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) er
 	var userID *string
 	var endpointID *string
 	var projectID *string
+	var roleType *auth.RoleType
 
 	if !util.IsStringEmpty(key.UserID) {
 		userID = &key.UserID
@@ -116,9 +119,13 @@ func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) er
 		projectID = &key.Role.Project
 	}
 
+	if !util.IsStringEmpty(string(key.Role.Type)) {
+		roleType = (&key.Role.Type)
+	}
+
 	result, err := a.db.ExecContext(
 		ctx, createAPIKey, key.UID, key.Name, key.Type, key.MaskID,
-		key.Role.Type, projectID, endpointID, key.Hash,
+		roleType, projectID, endpointID, key.Hash,
 		key.Salt, userID, key.ExpiresAt,
 	)
 	if err != nil {
@@ -139,12 +146,23 @@ func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) er
 
 func (a *apiKeyRepo) UpdateAPIKey(ctx context.Context, key *datastore.APIKey) error {
 	var endpointID *string
+	var projectID *string
+	var roleType *auth.RoleType
+
 	if !util.IsStringEmpty(key.Role.Endpoint) {
 		endpointID = &key.Role.Endpoint
 	}
 
+	if !util.IsStringEmpty(key.Role.Project) {
+		projectID = &key.Role.Project
+	}
+
+	if !util.IsStringEmpty(string(key.Role.Type)) {
+		roleType = &key.Role.Type
+	}
+
 	result, err := a.db.ExecContext(
-		ctx, updateAPIKeyById, key.UID, key.Name, key.Role.Type, key.Role.Project, endpointID,
+		ctx, updateAPIKeyById, key.UID, key.Name, roleType, projectID, endpointID,
 	)
 	if err != nil {
 		return err
