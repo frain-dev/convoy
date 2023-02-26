@@ -48,6 +48,7 @@ type createEvent struct {
 	EventType     string
 	EndpointID    string
 	CustomHeaders map[string]string
+	QueryParams   map[string][]string
 }
 
 func NewEventService(
@@ -412,15 +413,16 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 	}
 
 	event := &datastore.Event{
-		UID:       uuid.New().String(),
-		EventType: datastore.EventType(newMessage.EventType),
-		Data:      newMessage.Data,
-		Raw:       newMessage.Raw,
-		Headers:   e.getCustomHeaders(newMessage.CustomHeaders),
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		Endpoints: endpointIDs,
-		ProjectID: g.UID,
+		UID:         uuid.New().String(),
+		EventType:   datastore.EventType(newMessage.EventType),
+		Data:        newMessage.Data,
+		Raw:         newMessage.Raw,
+		Headers:     e.getCustomHeaders(newMessage.CustomHeaders),
+		QueryParams: newMessage.QueryParams,
+		CreatedAt:   primitive.NewDateTimeFromTime(time.Now()),
+		UpdatedAt:   primitive.NewDateTimeFromTime(time.Now()),
+		Endpoints:   endpointIDs,
+		ProjectID:   g.UID,
 	}
 
 	if (g.Config == nil || g.Config.Strategy == nil) ||
