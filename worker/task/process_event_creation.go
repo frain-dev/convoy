@@ -314,13 +314,19 @@ func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscri
 
 func generateSubscription(project *datastore.Project, endpoint *datastore.Endpoint) *datastore.Subscription {
 	return &datastore.Subscription{
-		ProjectID:    project.UID,
-		UID:          ulid.Make().String(),
-		Name:         fmt.Sprintf("%s-subscription", endpoint.Title),
-		Type:         datastore.SubscriptionTypeAPI,
-		EndpointID:   endpoint.UID,
-		FilterConfig: &datastore.FilterConfiguration{EventTypes: []string{"*"}},
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		ProjectID:  project.UID,
+		UID:        ulid.Make().String(),
+		Name:       fmt.Sprintf("%s-subscription", endpoint.Title),
+		Type:       datastore.SubscriptionTypeAPI,
+		EndpointID: endpoint.UID,
+		FilterConfig: &datastore.FilterConfiguration{
+			EventTypes: []string{"*"},
+			Filter: datastore.FilterSchema{
+				Headers: datastore.M{},
+				Body:    datastore.M{},
+			},
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 }
