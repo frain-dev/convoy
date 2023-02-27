@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/oklog/ulid/v2"
@@ -30,10 +32,10 @@ func Test_CreateAPIKey(t *testing.T) {
 	newApiKey, err := apiKeyRepo.FindAPIKeyByID(context.Background(), apiKey.UID)
 	require.NoError(t, err)
 
-	apiKey.ExpiresAt = time.Time{}
+	apiKey.ExpiresAt = null.Time{}
 	newApiKey.CreatedAt = time.Time{}
 	newApiKey.UpdatedAt = time.Time{}
-	newApiKey.ExpiresAt = time.Time{}
+	newApiKey.ExpiresAt = null.Time{}
 
 	require.Equal(t, apiKey, newApiKey)
 }
@@ -57,10 +59,10 @@ func Test_FindAPIKeyByID(t *testing.T) {
 	newApiKey, err := apiKeyRepo.FindAPIKeyByID(context.Background(), apiKey.UID)
 	require.NoError(t, err)
 
-	apiKey.ExpiresAt = time.Time{}
+	apiKey.ExpiresAt = null.Time{}
 	newApiKey.CreatedAt = time.Time{}
 	newApiKey.UpdatedAt = time.Time{}
-	newApiKey.ExpiresAt = time.Time{}
+	newApiKey.ExpiresAt = null.Time{}
 
 	require.Equal(t, apiKey, newApiKey)
 }
@@ -84,10 +86,10 @@ func Test_FindAPIKeyByMaskID(t *testing.T) {
 	newApiKey, err := apiKeyRepo.FindAPIKeyByMaskID(context.Background(), apiKey.MaskID)
 	require.NoError(t, err)
 
-	apiKey.ExpiresAt = time.Time{}
+	apiKey.ExpiresAt = null.Time{}
 	newApiKey.CreatedAt = time.Time{}
 	newApiKey.UpdatedAt = time.Time{}
-	newApiKey.ExpiresAt = time.Time{}
+	newApiKey.ExpiresAt = null.Time{}
 
 	require.Equal(t, apiKey, newApiKey)
 }
@@ -111,10 +113,10 @@ func Test_FindAPIKeyByHash(t *testing.T) {
 	newApiKey, err := apiKeyRepo.FindAPIKeyByHash(context.Background(), apiKey.Hash)
 	require.NoError(t, err)
 
-	apiKey.ExpiresAt = time.Time{}
+	apiKey.ExpiresAt = null.Time{}
 	newApiKey.CreatedAt = time.Time{}
 	newApiKey.UpdatedAt = time.Time{}
-	newApiKey.ExpiresAt = time.Time{}
+	newApiKey.ExpiresAt = null.Time{}
 
 	require.Equal(t, apiKey, newApiKey)
 }
@@ -142,10 +144,10 @@ func Test_UpdateAPIKey(t *testing.T) {
 	newApiKey, err := apiKeyRepo.FindAPIKeyByID(context.Background(), apiKey.UID)
 	require.NoError(t, err)
 
-	apiKey.ExpiresAt = time.Time{}
+	apiKey.ExpiresAt = null.Time{}
 	newApiKey.CreatedAt = time.Time{}
 	newApiKey.UpdatedAt = time.Time{}
-	newApiKey.ExpiresAt = time.Time{}
+	newApiKey.ExpiresAt = null.Time{}
 
 	require.Equal(t, apiKey, newApiKey)
 }
@@ -252,7 +254,7 @@ func Test_LoadAPIKeysPaged(t *testing.T) {
 					},
 					Hash:      ulid.Make().String(),
 					Salt:      ulid.Make().String(),
-					ExpiresAt: time.Now().Add(5 * time.Minute),
+					ExpiresAt: null.NewTime(time.Now().Add(5*time.Minute), true),
 				}
 				require.NoError(t, apiKeyRepo.CreateAPIKey(context.Background(), apiKey))
 			}
@@ -284,6 +286,6 @@ func generateApiKey(project *datastore.Project, endpoint *datastore.Endpoint) *d
 		},
 		Hash:      ulid.Make().String(),
 		Salt:      ulid.Make().String(),
-		ExpiresAt: time.Now().Add(5 * time.Minute),
+		ExpiresAt: null.NewTime(time.Now().Add(5*time.Minute), true),
 	}
 }
