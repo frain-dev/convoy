@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/frain-dev/convoy/auth"
 
@@ -102,11 +103,13 @@ func NewAPIKeyRepo(db database.Database) datastore.APIKeyRepository {
 }
 
 func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) error {
-	var userID *string
-	var endpointID *string
-	var projectID *string
-	var roleType *auth.RoleType
-
+	var (
+		userID     *string
+		endpointID *string
+		projectID  *string
+		roleType   *auth.RoleType
+		expiresAt  *time.Time
+	)
 	if !util.IsStringEmpty(key.UserID) {
 		userID = &key.UserID
 	}
@@ -120,13 +123,17 @@ func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) er
 	}
 
 	if !util.IsStringEmpty(string(key.Role.Type)) {
-		roleType = (&key.Role.Type)
+		roleType = &key.Role.Type
+	}
+
+	if key.ExpiresAt != (time.Time{}) {
+		expiresAt = &key.ExpiresAt
 	}
 
 	result, err := a.db.ExecContext(
 		ctx, createAPIKey, key.UID, key.Name, key.Type, key.MaskID,
 		roleType, projectID, endpointID, key.Hash,
-		key.Salt, userID, key.ExpiresAt,
+		key.Salt, userID, expiresAt,
 	)
 	if err != nil {
 		return err
