@@ -70,7 +70,7 @@ const (
 		s.is_disabled,
 		s.forward_headers,
 		s.project_id,
-		s.source_verifier_id,
+		COALESCE(s.source_verifier_id, '') AS source_verifier_id,
 		s.pub_sub,
 		COALESCE(sv.type, '') as "verifier.type",
 		COALESCE(sv.basic_username, '') as "verifier.basic_auth.username",
@@ -177,7 +177,10 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 		}
 	}
 
-	source.VerifierID = *sourceVerifierID
+	if !util.IsStringEmpty(string(source.Verifier.Type)) {
+		source.VerifierID = *sourceVerifierID
+	}
+
 	result1, err := tx.ExecContext(
 		ctx, createSource, source.UID, sourceVerifierID, source.Name, source.Type, source.MaskID,
 		source.Provider, source.IsDisabled, pq.Array(source.ForwardHeaders), source.ProjectID, source.PubSub,
