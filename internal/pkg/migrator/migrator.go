@@ -7,6 +7,10 @@ import (
 	migrate "github.com/rubenv/sql-migrate"
 )
 
+var (
+	tableSchema = "convoy"
+)
+
 type Migrator struct {
 	dbx *sqlx.DB
 	src migrate.MigrationSource
@@ -18,6 +22,7 @@ func New(d database.Database) *Migrator {
 		Root:       "sql",
 	}
 
+	migrate.SetSchema(tableSchema)
 	return &Migrator{dbx: d.GetDB(), src: migrations}
 }
 

@@ -1,6 +1,7 @@
 -- +migrate Up
 CREATE SCHEMA IF NOT EXISTS convoy;
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.users (
     id CHAR(26) PRIMARY KEY,
 
@@ -21,6 +22,7 @@ CREATE TABLE IF NOT EXISTS convoy.users (
     CONSTRAINT users_email_key UNIQUE NULLS NOT DISTINCT (email, deleted_at)
 );
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.organisations (
 	id CHAR(26) PRIMARY KEY,
 
@@ -34,6 +36,7 @@ CREATE TABLE IF NOT EXISTS convoy.organisations (
 	deleted_at TIMESTAMPTZ NULL
 );
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.project_configurations (
 	id CHAR(26) PRIMARY KEY,
 
@@ -58,6 +61,7 @@ CREATE TABLE IF NOT EXISTS convoy.project_configurations (
 	deleted_at TIMESTAMPTZ
 );
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.projects (
 	id CHAR(26) PRIMARY KEY,
 
@@ -76,6 +80,7 @@ CREATE TABLE IF NOT EXISTS convoy.projects (
     CONSTRAINT name_org_id_key UNIQUE NULLS NOT DISTINCT (name, organisation_id, deleted_at)
 );
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.endpoints (
 	id CHAR(26) PRIMARY KEY,
 
@@ -107,6 +112,7 @@ CREATE TABLE IF NOT EXISTS convoy.endpoints (
 );
 
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.organisation_members (
     id CHAR(26) PRIMARY KEY,
 
@@ -121,7 +127,7 @@ CREATE TABLE IF NOT EXISTS convoy.organisation_members (
     deleted_at TIMESTAMPTZ
     );
 
-
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.applications (
 	id CHAR(26) PRIMARY KEY,
 
@@ -135,6 +141,7 @@ CREATE TABLE IF NOT EXISTS convoy.applications (
 	deleted_at TIMESTAMPTZ
 );
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.organisation_invites (
 	id CHAR(26) PRIMARY KEY,
 
@@ -152,6 +159,7 @@ CREATE TABLE IF NOT EXISTS convoy.organisation_invites (
 	deleted_at TIMESTAMPTZ
 );
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.portal_links (
 	id CHAR(26) PRIMARY KEY,
 
@@ -168,11 +176,13 @@ CREATE TABLE IF NOT EXISTS convoy.portal_links (
 	CONSTRAINT portal_links_token UNIQUE NULLS NOT DISTINCT (token, deleted_at)
 );
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.portal_links_endpoints (
 	portal_link_id CHAR(26) NOT NULL REFERENCES convoy.portal_links (id),
 	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id)
 );
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.devices (
 	id CHAR(26) PRIMARY KEY,
 
@@ -188,6 +198,7 @@ CREATE TABLE IF NOT EXISTS convoy.devices (
 	deleted_at TIMESTAMPTZ
 );
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.configurations (
 	id TEXT PRIMARY KEY,
 
@@ -211,6 +222,7 @@ CREATE TABLE IF NOT EXISTS convoy.configurations (
 	deleted_at TIMESTAMPTZ
 );
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.source_verifiers (
 	id CHAR(26) PRIMARY KEY,
 
@@ -234,6 +246,7 @@ CREATE TABLE IF NOT EXISTS convoy.source_verifiers (
 	deleted_at TIMESTAMPTZ
 );
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.sources (
 	id CHAR(26) PRIMARY KEY,
 
@@ -256,6 +269,7 @@ CREATE TABLE IF NOT EXISTS convoy.sources (
 	CONSTRAINT sources_mask_id UNIQUE NULLS NOT DISTINCT (mask_id, deleted_at)
 );
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.subscriptions (
 	id CHAR(26) PRIMARY KEY,
 
@@ -286,6 +300,7 @@ CREATE TABLE IF NOT EXISTS convoy.subscriptions (
 	deleted_at TIMESTAMPTZ
 );
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.api_keys (
 	id CHAR(26) PRIMARY KEY,
 
@@ -306,6 +321,7 @@ CREATE TABLE IF NOT EXISTS convoy.api_keys (
 	deleted_at TIMESTAMPTZ
 );
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.events (
 	id CHAR(26) PRIMARY KEY,
 
@@ -325,11 +341,13 @@ CREATE TABLE IF NOT EXISTS convoy.events (
 	deleted_at TIMESTAMPTZ
 );
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.events_endpoints (
 	event_id CHAR(26) NOT NULL REFERENCES convoy.events (id) ON DELETE CASCADE,
 	endpoint_id CHAR(26) NOT NULL REFERENCES convoy.endpoints (id) ON DELETE CASCADE
 );
 
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.event_deliveries (
 	id CHAR(26) PRIMARY KEY,
 
@@ -353,4 +371,22 @@ CREATE TABLE IF NOT EXISTS convoy.event_deliveries (
 );
 
 -- +migrate Down
-DROP SCHEMA convoy CASCADE;
+DROP TABLE IF EXISTS convoy.users CASCADE;
+DROP TABLE IF EXISTS convoy.organisations CASCADE;
+DROP TABLE IF EXISTS convoy.project_configurations CASCADE;
+DROP TABLE IF EXISTS convoy.projects CASCADE;
+DROP TABLE IF EXISTS convoy.endpoints CASCADE;
+DROP TABLE IF EXISTS convoy.organisation_invites;
+DROP TABLE IF EXISTS convoy.organisation_members;
+DROP TABLE IF EXISTS convoy.portal_links_endpoints;
+DROP TABLE IF EXISTS convoy.configurations;
+DROP TABLE IF EXISTS convoy.devices CASCADE;
+DROP TABLE IF EXISTS convoy.portal_links;
+DROP TABLE IF EXISTS convoy.event_deliveries;
+DROP TABLE IF EXISTS convoy.events_endpoints;
+DROP TABLE IF EXISTS convoy.sources CASCADE;
+DROP TABLE IF EXISTS convoy.source_verifiers;
+DROP TABLE IF EXISTS convoy.subscriptions CASCADE;
+DROP TABLE IF EXISTS convoy.api_keys;
+DROP TABLE IF EXISTS convoy.events;
+DROP TABLE IF EXISTS convoy.applications;

@@ -104,7 +104,7 @@ func addDownCommand() *cobra.Command {
 			m := migrator.New(db)
 			err = m.Down()
 			if err != nil {
-				log.Fatalf("migration up failed with error: %+v", err)
+				log.Fatalf("migration down failed with error: %+v", err)
 			}
 		},
 	}
