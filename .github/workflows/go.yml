@@ -19,6 +19,7 @@ jobs:
         services:
             postgres:
                 image: postgres:15
+                command: postgres -c 'max_connections=2000'
                 ports:
                     - 5432:5432
                 env:

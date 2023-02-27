@@ -27,8 +27,8 @@ func NewDB(cfg config.Configuration) (*Postgres, error) {
 		return nil, fmt.Errorf("[%s]: failed to open database - %v", pkgName, err)
 	}
 
-	db.SetMaxIdleConns(20)                    // The default is defaultMaxIdleConns (= 2)
-	db.SetMaxOpenConns(100)                   // The default is 0 (unlimited)
+	db.SetMaxIdleConns(10)                    // The default is defaultMaxIdleConns (= 2)
+	db.SetMaxOpenConns(1000)                  // The default is 0 (unlimited)
 	db.SetConnMaxLifetime(3600 * time.Second) // The default is 0 (connections reused forever)
 
 	return &Postgres{dbx: db}, nil
