@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"context"
+	"time"
 )
 
 type APIKeyRepository interface {
@@ -151,4 +152,8 @@ type PortalLinkRepository interface {
 	FindPortalLinkByToken(ctx context.Context, token string) (*PortalLink, error)
 	LoadPortalLinksPaged(ctx context.Context, projectID string, f *FilterBy, pageable Pageable) ([]PortalLink, PaginationData, error)
 	RevokePortalLink(ctx context.Context, projectID string, id string) error
+}
+
+type ExportRepository interface {
+	ExportRecords(ctx context.Context, tableName, projectID string, createdAt time.Time, dest interface{}) (int64, error)
 }

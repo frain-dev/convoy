@@ -81,13 +81,14 @@ func addWorkerCommand(a *app) *cobra.Command {
 				a.searcher,
 				deviceRepo))
 
-			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RententionPolicies(
-				cfg,
+			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
 				configRepo,
 				projectRepo,
 				eventRepo,
 				eventDeliveryRepo,
-				a.searcher))
+				postgres.NewExportRepo(a.db),
+				a.searcher,
+			))
 
 			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(
 				a.db,

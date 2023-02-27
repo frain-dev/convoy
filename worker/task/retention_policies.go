@@ -7,17 +7,22 @@ import (
 	"os"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/exporter"
+
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	objectstore "github.com/frain-dev/convoy/datastore/object-store"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/util"
 	"github.com/hibiken/asynq"
 )
 
-func RententionPolicies(instanceConfig config.Configuration, configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, searcher searcher.Searcher) func(context.Context, *asynq.Task) error {
+const (
+	eventsTable          = "convoy.events"
+	eventDeliveriesTable = "convoy.event_deliveries"
+)
+
+func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, exportRepo datastore.ExportRepository, searcher searcher.Searcher) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		config, err := configRepo.LoadConfiguration(ctx)
 		if err != nil {
@@ -26,7 +31,7 @@ func RententionPolicies(instanceConfig config.Configuration, configRepo datastor
 			}
 			return err
 		}
-		collections := []string{"events", "eventdeliveries"}
+		tables := []string{eventsTable, eventDeliveriesTable}
 
 		objectStoreClient, exportDir, err := NewObjectStoreClient(config.StoragePolicy)
 		if err != nil {
@@ -44,17 +49,16 @@ func RententionPolicies(instanceConfig config.Configuration, configRepo datastor
 		for _, p := range projects {
 			cfg := p.Config
 			if cfg.IsRetentionPolicyEnabled {
-				//export events collection
+				// export tables
 				policy, err := time.ParseDuration(cfg.RetentionPolicy.Policy)
 				if err != nil {
 					return err
 				}
 				expDate := time.Now().UTC().Add(-policy)
-				uri := instanceConfig.Database.Dsn
-				for _, collection := range collections {
-					err = ExportCollection(ctx, collection, uri, exportDir, expDate, objectStoreClient, p, eventRepo, eventDeliveriesRepo, projectRepo, searcher)
+				for _, table := range tables {
+					err = ExportCollection(ctx, table, exportDir, expDate, objectStoreClient, p, eventRepo, eventDeliveriesRepo, projectRepo, exportRepo, searcher)
 					if err != nil {
-						log.WithError(err).Errorf("Error exporting collection %v", collection)
+						log.WithError(err).Errorf("Error exporting table %v", table)
 						return err
 					}
 				}
@@ -97,34 +101,30 @@ func NewObjectStoreClient(storage *datastore.StoragePolicyConfiguration) (object
 	}
 }
 
-func GetArgsByCollection(collection string, uri string, exportDir string, expDate time.Time, project *datastore.Project) ([]string, string, error) {
-	switch collection {
-	case "events":
-		query := fmt.Sprintf(`{ "project_id": "%s", "deleted_at": null, "created_at": { "$lt": { "$date": "%s" }}}`, project.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
+func GetArgsByCollection(tableName string, exportDir string, project *datastore.Project) string {
+	switch tableName {
+	case eventsTable:
 		// orgs/<org-id>/projects/<project-id>/events/<today-as-ISODateTime>
-		out := fmt.Sprintf("%s/orgs/%s/projects/%s/events/%s.json", exportDir, project.OrganisationID, project.UID, time.Now().UTC().Format(time.RFC3339))
-		args := util.MongoExportArgsBuilder(uri, collection, query, out)
-		return args, out, nil
-
-	case "eventdeliveries":
-		query := fmt.Sprintf(`{ "project_id": "%s", "deleted_at": null, "created_at": { "$lt": { "$date": "%s" }}}`, project.UID, fmt.Sprint(expDate.Format(time.RFC3339)))
+		return fmt.Sprintf("%s/orgs/%s/projects/%s/events/%s.json", exportDir, project.OrganisationID, project.UID, time.Now().UTC().Format(time.RFC3339))
+	case eventDeliveriesTable:
 		// orgs/<org-id>/projects/<project-id>/eventdeliveries/<today-as-ISODateTime>
-		out := fmt.Sprintf("%s/orgs/%s/projects/%s/eventdeliveries/%s.json", exportDir, project.OrganisationID, project.UID, time.Now().UTC().Format(time.RFC3339))
-		args := util.MongoExportArgsBuilder(uri, collection, query, out)
-		return args, out, nil
+		return fmt.Sprintf("%s/orgs/%s/projects/%s/eventdeliveries/%s.json", exportDir, project.OrganisationID, project.UID, time.Now().UTC().Format(time.RFC3339))
 	default:
-		return nil, "", errors.New("invalid collection")
+		return ""
 	}
 }
 
-func ExportCollection(ctx context.Context, collection string, uri string, exportDir string, expDate time.Time, objectStoreClient objectstore.ObjectStore, project *datastore.Project, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, projectRepo datastore.ProjectRepository, searcher searcher.Searcher) error {
-	args, out, err := GetArgsByCollection(collection, uri, exportDir, expDate, project)
-	if err != nil {
-		return err
+func ExportCollection(ctx context.Context, collection string, exportDir string, expDate time.Time, objectStoreClient objectstore.ObjectStore, project *datastore.Project, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, projectRepo datastore.ProjectRepository, exportRepo datastore.ExportRepository, searcher searcher.Searcher) error {
+	out := GetArgsByCollection(collection, exportDir, project)
+
+	mongoExporter := &exporter.MongoExporter{
+		TableName: collection,
+		ProjectID: project.UID,
+		CreatedAt: expDate,
+		Out:       out,
 	}
 
-	mongoExporter := &util.MongoExporter{Args: args}
-	numDocs, err := mongoExporter.Export()
+	numDocs, err := mongoExporter.Export(ctx, exportRepo)
 	if err != nil {
 		return err
 	}

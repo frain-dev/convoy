@@ -226,13 +226,14 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			a.searcher,
 			deviceRepo))
 
-		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RententionPolicies(
-			cfg,
+		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
 			configRepo,
 			projectRepo,
 			eventRepo,
 			eventDeliveryRepo,
-			a.searcher))
+			postgres.NewExportRepo(a.db),
+			a.searcher,
+		))
 
 		consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(
 			a.db,
