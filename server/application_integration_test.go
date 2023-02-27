@@ -59,7 +59,8 @@ func (s *ApplicationIntegrationTestSuite) SetupTest() {
 	s.DefaultOrg = org
 
 	// Setup Default Project.
-	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, s.DefaultOrg.UID)
+	s.DefaultProject, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, s.DefaultOrg.UID)
+	require.NoError(s.T(), err)
 
 	// Seed Auth
 	role := auth.Role{
@@ -70,7 +71,8 @@ func (s *ApplicationIntegrationTestSuite) SetupTest() {
 	_, s.APIKey, err = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
 	require.NoError(s.T(), err)
 
-	_, s.PersonalAPIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test-personal-key", string(datastore.PersonalKey), s.DefaultUser.UID)
+	_, s.PersonalAPIKey, err = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test-personal-key", string(datastore.PersonalKey), s.DefaultUser.UID)
+	require.NoError(s.T(), err)
 
 	// Setup Config.
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
@@ -231,7 +233,7 @@ func (s *ApplicationIntegrationTestSuite) Test_CreateApp() {
 
 	// Act.
 	s.Router.ServeHTTP(w, req)
-
+	fmt.Println("body", w.Body.String())
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
