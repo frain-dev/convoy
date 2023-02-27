@@ -996,7 +996,6 @@ func (m *Middleware) ComputeDashboardMessages(ctx context.Context, projectID str
 	var messagesSent uint64
 
 	messages, err := m.eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, projectID, searchParams, period, 1)
-	fmt.Println("ffjhgfj", err)
 	if err != nil {
 		m.logger.WithError(err).Error("failed to load message intervals - ")
 		return 0, nil, err

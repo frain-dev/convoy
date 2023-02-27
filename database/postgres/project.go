@@ -58,8 +58,7 @@ const (
 		updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
-
-	fetchProjectById = `
+	baseProjectFetch = `
 	SELECT
 		p.id,
 		p.name,
@@ -85,14 +84,11 @@ const (
 	FROM convoy.projects p
 	LEFT JOIN convoy.project_configurations c
 		ON p.project_configuration_id = c.id
-	WHERE p.id = $1 AND p.deleted_at IS NULL;
 	`
 
-	fetchProjects = `
-	SELECT * FROM convoy.projects
-	WHERE organisation_id = $1 AND deleted_at IS NULL
-	ORDER BY id;
-	`
+	fetchProjectById = baseProjectFetch + ` WHERE p.id = $1 AND p.deleted_at IS NULL;`
+
+	fetchProjects = baseProjectFetch + ` WHERE (p.organisation_id = $1 OR $1 = '') AND p.deleted_at IS NULL ORDER BY p.id;`
 
 	updateProjectById = `
 	UPDATE convoy.projects SET
@@ -211,7 +207,7 @@ func (p *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFilt
 		return nil, err
 	}
 
-	var projects []*datastore.Project
+	projects := make([]*datastore.Project, 0)
 	for rows.Next() {
 		var proj datastore.Project
 

@@ -12,6 +12,38 @@ func addMigrateCommand(a *app) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "migrate",
 		Short: "Convoy migrations",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			cfgPath, err := cmd.Flags().GetString("config")
+			if err != nil {
+				return err
+			}
+
+			err = config.LoadConfig(cfgPath)
+			if err != nil {
+				return err
+			}
+
+			_, err = config.Get()
+			if err != nil {
+				return err
+			}
+
+			// Override with CLI Flags
+			cliConfig, err := buildCliConfiguration(cmd)
+			if err != nil {
+				return err
+			}
+
+			if err = config.Override(cliConfig); err != nil {
+				return err
+			}
+
+			return nil
+
+		},
+		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+			return nil
+		},
 	}
 
 	cmd.AddCommand(addUpCommand())
@@ -35,6 +67,8 @@ func addUpCommand() *cobra.Command {
 			if err != nil {
 				log.Fatal(err)
 			}
+
+			defer db.GetDB().Close()
 
 			m := migrator.New(db)
 			err = m.Up()
@@ -64,6 +98,8 @@ func addDownCommand() *cobra.Command {
 			if err != nil {
 				log.Fatal(err)
 			}
+
+			defer db.GetDB().Close()
 
 			m := migrator.New(db)
 			err = m.Down()

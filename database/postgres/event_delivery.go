@@ -110,7 +110,7 @@ const (
     `
 
 	updateEventDeliveryAttempts = `
-    UPDATE convoy.event_deliveries SET attempts = $1, updated_at = now() WHERE id = $2 AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET attempts = $1, status = $2, updated_at = now() WHERE id = $3 AND deleted_at IS NULL;
     `
 
 	softDeleteProjectEventDeliveries = `
@@ -315,7 +315,7 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, en
 func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, delivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
 	delivery.DeliveryAttempts = append(delivery.DeliveryAttempts, attempt)
 
-	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, delivery.DeliveryAttempts, delivery.UID)
+	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, delivery.DeliveryAttempts, delivery.Status, delivery.UID)
 	if err != nil {
 		return err
 	}

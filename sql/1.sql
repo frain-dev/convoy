@@ -227,7 +227,7 @@ CREATE TABLE IF NOT EXISTS convoy.source_verifiers (
 	hmac_secret TEXT,
 	hmac_encoding TEXT,
 
-	twitter_crc_verified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+	twitter_crc_verified_at TIMESTAMPTZ,
 
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,

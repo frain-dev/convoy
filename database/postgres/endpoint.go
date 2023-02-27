@@ -339,7 +339,7 @@ func (e *endpointRepo) DeleteSecret(ctx context.Context, endpoint *datastore.End
 }
 
 func (e *endpointRepo) baseFetch(rows *sqlx.Rows) ([]datastore.Endpoint, error) {
-	var endpoints []datastore.Endpoint
+	endpoints := make([]datastore.Endpoint, 0)
 
 	for rows.Next() {
 		var endpoint datastore.Endpoint

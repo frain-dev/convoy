@@ -12,6 +12,7 @@ import (
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -71,15 +72,15 @@ const (
 		s.project_id,
 		s.source_verifier_id,
 		s.pub_sub,
-		sv.type as "verifier.type",
-		sv.basic_username as "verifier.basic_auth.username",
-		sv.basic_password as "verifier.basic_auth.password",
-        sv.api_key_header_name as "verifier.api_key.header_name",
-        sv.api_key_header_value as "verifier.api_key.header_value",
-        sv.hmac_hash as "verifier.hmac.hash",
-        sv.hmac_header as "verifier.hmac.header",
-        sv.hmac_secret as "verifier.hmac.secret",
-        sv.hmac_encoding as "verifier.hmac.encoding",
+		COALESCE(sv.type, '') as "verifier.type",
+		COALESCE(sv.basic_username, '') as "verifier.basic_auth.username",
+		COALESCE(sv.basic_password, '') as "verifier.basic_auth.password",
+        COALESCE(sv.api_key_header_name, '') as "verifier.api_key.header_name",
+        COALESCE(sv.api_key_header_value, '') as "verifier.api_key.header_value",
+        COALESCE(sv.hmac_hash, '') as "verifier.hmac.hash",
+        COALESCE(sv.hmac_header, '') as "verifier.hmac.header",
+        COALESCE(sv.hmac_secret, '') as "verifier.hmac.secret",
+        COALESCE(sv.hmac_encoding, '') as "verifier.hmac.encoding",
 		s.created_at,
 		s.updated_at
 	FROM convoy.sources as s
@@ -109,12 +110,8 @@ const (
 	WHERE source_id = $1 AND deleted_at IS NULL;
 	`
 
-	fetchSourcesPaginated = `
-	SELECT * FROM convoy.sources
-	WHERE deleted_at IS NULL
-	AND (type = :type OR :type = '') AND (provider = :provider OR :provider = '')
-	ORDER BY id LIMIT :limit OFFSET :offset;
-	`
+	fetchSourcesPaginated = baseFetchSource + ` WHERE s.deleted_at IS NULL AND (s.type = :type OR :type = '') AND (s.provider = :provider OR :provider = '') AND (s.project_id = :project_id OR :project_id = '') ORDER BY s.id LIMIT :limit OFFSET :offset;`
+
 	countSources = `
 	SELECT COUNT(id) FROM convoy.sources WHERE deleted_at IS NULL
 	AND (type = :type OR :type = '') AND (provider = :provider OR :provider = '');
@@ -137,6 +134,7 @@ func NewSourceRepo(db database.Database) datastore.SourceRepository {
 }
 
 func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source) error {
+	var sourceVerifierID *string
 	tx, err := s.db.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -148,7 +146,6 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 		apiKey datastore.ApiKey
 	)
 
-	sourceVerifierID := ulid.Make().String()
 	switch source.Verifier.Type {
 	case datastore.APIKeyVerifier:
 		apiKey = *source.Verifier.ApiKey
@@ -158,24 +155,29 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 		hmac = *source.Verifier.HMac
 	}
 
-	result2, err := tx.ExecContext(
-		ctx, createSourceVerifier, sourceVerifierID, source.Verifier.Type, basic.UserName, basic.Password,
-		apiKey.HeaderName, apiKey.HeaderValue, hmac.Hash, hmac.Header, hmac.Secret, hmac.Encoding,
-	)
-	if err != nil {
-		return err
+	if !util.IsStringEmpty(string(source.Verifier.Type)) {
+		id := ulid.Make().String()
+		sourceVerifierID = &id
+
+		result2, err := tx.ExecContext(
+			ctx, createSourceVerifier, sourceVerifierID, source.Verifier.Type, basic.UserName, basic.Password,
+			apiKey.HeaderName, apiKey.HeaderValue, hmac.Hash, hmac.Header, hmac.Secret, hmac.Encoding,
+		)
+		if err != nil {
+			return err
+		}
+
+		rowsAffected, err := result2.RowsAffected()
+		if err != nil {
+			return err
+		}
+
+		if rowsAffected < 1 {
+			return ErrSourceVerifierNotCreated
+		}
 	}
 
-	rowsAffected, err := result2.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected < 1 {
-		return ErrSourceVerifierNotCreated
-	}
-
-	source.VerifierID = sourceVerifierID
+	source.VerifierID = *sourceVerifierID
 	result1, err := tx.ExecContext(
 		ctx, createSource, source.UID, sourceVerifierID, source.Name, source.Type, source.MaskID,
 		source.Provider, source.IsDisabled, pq.Array(source.ForwardHeaders), source.ProjectID, source.PubSub,
@@ -184,7 +186,7 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 		return err
 	}
 
-	rowsAffected, err = result1.RowsAffected()
+	rowsAffected, err := result1.RowsAffected()
 	if err != nil {
 		return err
 	}
@@ -318,17 +320,18 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectID, id, source
 
 func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, filter *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
 	arg := map[string]interface{}{
-		"type":     filter.Type,
-		"provider": filter.Provider,
-		"limit":    pageable.Limit(),
-		"offset":   pageable.Offset(),
+		"type":       filter.Type,
+		"provider":   filter.Provider,
+		"project_id": projectID,
+		"limit":      pageable.Limit(),
+		"offset":     pageable.Offset(),
 	}
 
 	query, args, err := sqlx.Named(fetchSourcesPaginated, arg)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
-	
+
 	query = s.db.Rebind(query)
 	rows, err := s.db.QueryxContext(ctx, query, args...)
 	if err != nil {

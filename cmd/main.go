@@ -2,14 +2,20 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
+	"time"
 	_ "time/tzdata"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
+	"github.com/oklog/ulid/v2"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/internal/pkg/apm"
@@ -45,89 +51,89 @@ func main() {
 }
 
 func ensureDefaultUser(ctx context.Context, a *app) error {
-	// pageable := datastore.Pageable{}
+	pageable := datastore.Pageable{Page: 1, PerPage: 10}
 
-	//userRepo := postgres.NewUserRepo(a.db)
-	//users, _, err := userRepo.LoadUsersPaged(ctx, pageable)
-	//if err != nil {
-	//	return fmt.Errorf("failed to load users - %w", err)
-	//}
-	//
-	//if len(users) > 0 {
-	//	return nil
-	//}
-	//
-	//p := datastore.Password{Plaintext: "default"}
-	//err = p.GenerateHash()
-	//
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//defaultUser := &datastore.User{
-	//	UID:           ulid.Make().String(),
-	//	FirstName:     "default",
-	//	LastName:      "default",
-	//	Email:         "superuser@default.com",
-	//	Password:      string(p.Hash),
-	//	EmailVerified: true,
-	//	CreatedAt:     time.Now(),
-	//	UpdatedAt:     time.Now(),
-	//}
-	//
-	//err = userRepo.CreateUser(ctx, defaultUser)
-	//if err != nil {
-	//	return fmt.Errorf("failed to create user - %w", err)
-	//}
-	//
-	//a.logger.Infof("Created Superuser with username: %s and password: %s", defaultUser.Email, p.Plaintext)
+	userRepo := postgres.NewUserRepo(a.db)
+	users, _, err := userRepo.LoadUsersPaged(ctx, pageable)
+	if err != nil {
+		return fmt.Errorf("failed to load users - %w", err)
+	}
+
+	if len(users) > 0 {
+		return nil
+	}
+
+	p := datastore.Password{Plaintext: "default"}
+	err = p.GenerateHash()
+
+	if err != nil {
+		return err
+	}
+
+	defaultUser := &datastore.User{
+		UID:           ulid.Make().String(),
+		FirstName:     "default",
+		LastName:      "default",
+		Email:         "superuser@default.com",
+		Password:      string(p.Hash),
+		EmailVerified: true,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+	}
+
+	err = userRepo.CreateUser(ctx, defaultUser)
+	if err != nil {
+		return fmt.Errorf("failed to create user - %w", err)
+	}
+
+	a.logger.Infof("Created Superuser with username: %s and password: %s", defaultUser.Email, p.Plaintext)
 
 	return nil
 }
 
 func ensureInstanceConfig(ctx context.Context, a *app, cfg config.Configuration) error {
-	//configRepo := postgres.NewConfigRepo(a.db)
-	//
-	//s3 := datastore.S3Storage{
-	//	Bucket:       null.NewString(cfg.StoragePolicy.S3.Bucket, true),
-	//	AccessKey:    null.NewString(cfg.StoragePolicy.S3.AccessKey, true),
-	//	SecretKey:    null.NewString(cfg.StoragePolicy.S3.SecretKey, true),
-	//	Region:       null.NewString(cfg.StoragePolicy.S3.Region, true),
-	//	SessionToken: null.NewString(cfg.StoragePolicy.S3.SessionToken, true),
-	//	Endpoint:     null.NewString(cfg.StoragePolicy.S3.Endpoint, true),
-	//}
-	//
-	//onPrem := datastore.OnPremStorage{
-	//	Path: null.NewString(cfg.StoragePolicy.OnPrem.Path, true),
-	//}
-	//
-	//storagePolicy := &datastore.StoragePolicyConfiguration{
-	//	Type:   datastore.StorageType(cfg.StoragePolicy.Type),
-	//	S3:     &s3,
-	//	OnPrem: &onPrem,
-	//}
-	//
-	//config, err := configRepo.LoadConfiguration(ctx)
-	//if err != nil {
-	//	if errors.Is(err, datastore.ErrConfigNotFound) {
-	//		a.logger.Info("Creating Instance Config")
-	//		return configRepo.CreateConfiguration(ctx, &datastore.Configuration{
-	//			UID:                ulid.Make().String(),
-	//			StoragePolicy:      storagePolicy,
-	//			IsAnalyticsEnabled: cfg.Analytics.IsEnabled,
-	//			IsSignupEnabled:    cfg.Auth.IsSignupEnabled,
-	//			CreatedAt:          time.Now(),
-	//			UpdatedAt:          time.Now(),
-	//		})
-	//	}
-	//
-	//	return err
-	//}
-	//
-	//config.StoragePolicy = storagePolicy
-	//config.IsSignupEnabled = cfg.Auth.IsSignupEnabled
-	//config.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
-	//config.UpdatedAt = time.Now()
+	configRepo := postgres.NewConfigRepo(a.db)
+
+	s3 := datastore.S3Storage{
+		Bucket:       null.NewString(cfg.StoragePolicy.S3.Bucket, true),
+		AccessKey:    null.NewString(cfg.StoragePolicy.S3.AccessKey, true),
+		SecretKey:    null.NewString(cfg.StoragePolicy.S3.SecretKey, true),
+		Region:       null.NewString(cfg.StoragePolicy.S3.Region, true),
+		SessionToken: null.NewString(cfg.StoragePolicy.S3.SessionToken, true),
+		Endpoint:     null.NewString(cfg.StoragePolicy.S3.Endpoint, true),
+	}
+
+	onPrem := datastore.OnPremStorage{
+		Path: null.NewString(cfg.StoragePolicy.OnPrem.Path, true),
+	}
+
+	storagePolicy := &datastore.StoragePolicyConfiguration{
+		Type:   datastore.StorageType(cfg.StoragePolicy.Type),
+		S3:     &s3,
+		OnPrem: &onPrem,
+	}
+
+	config, err := configRepo.LoadConfiguration(ctx)
+	if err != nil {
+		if errors.Is(err, datastore.ErrConfigNotFound) {
+			a.logger.Info("Creating Instance Config")
+			return configRepo.CreateConfiguration(ctx, &datastore.Configuration{
+				UID:                ulid.Make().String(),
+				StoragePolicy:      storagePolicy,
+				IsAnalyticsEnabled: cfg.Analytics.IsEnabled,
+				IsSignupEnabled:    cfg.Auth.IsSignupEnabled,
+				CreatedAt:          time.Now(),
+				UpdatedAt:          time.Now(),
+			})
+		}
+
+		return err
+	}
+
+	config.StoragePolicy = storagePolicy
+	config.IsSignupEnabled = cfg.Auth.IsSignupEnabled
+	config.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
+	config.UpdatedAt = time.Now()
 
 	return nil
 }

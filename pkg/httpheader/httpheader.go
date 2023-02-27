@@ -23,6 +23,11 @@ func (h HTTPHeader) MergeHeaders(nh HTTPHeader) {
 }
 
 func (h *HTTPHeader) Scan(value interface{}) error {
+	if value == nil {
+		*h = nil
+		return nil
+	}
+	
 	b, ok := value.([]byte)
 	if !ok {
 		return fmt.Errorf("unsupported value type %T", value)
