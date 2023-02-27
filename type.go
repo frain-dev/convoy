@@ -19,6 +19,9 @@ type GenericMap map[string]interface{}
 //go:embed VERSION
 var f embed.FS
 
+//go:embed sql/*.sql
+var MigrationFiles embed.FS
+
 func (t TaskName) SetPrefix(prefix string) TaskName {
 	var name strings.Builder
 	delim := "-"
