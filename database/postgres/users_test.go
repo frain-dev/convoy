@@ -333,7 +333,7 @@ func Test_UpdateUser(t *testing.T) {
 	require.InDelta(t, user.EmailVerificationExpiresAt.Unix(), dbUser.EmailVerificationExpiresAt.Unix(), float64(time.Hour))
 	require.InDelta(t, user.ResetPasswordExpiresAt.Unix(), dbUser.ResetPasswordExpiresAt.Unix(), float64(time.Hour))
 
-	user.EmailVerificationExpiresAt, user.ResetPasswordExpiresAt = time.Time{}, time.Time{}
+	updatedUser.EmailVerificationExpiresAt, updatedUser.ResetPasswordExpiresAt = time.Time{}, time.Time{}
 	dbUser.EmailVerificationExpiresAt, dbUser.ResetPasswordExpiresAt = time.Time{}, time.Time{}
 
 	require.Equal(t, updatedUser, dbUser)
