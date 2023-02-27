@@ -187,6 +187,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, ids []
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var ed datastore.EventDelivery
@@ -209,6 +210,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, ev
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var ed datastore.EventDelivery
@@ -298,6 +300,7 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, en
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var ed datastore.EventDelivery

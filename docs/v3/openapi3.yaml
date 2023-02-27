@@ -358,11 +358,11 @@ components:
           $ref: '#/components/schemas/null.String'
         deleted_at:
           type: string
-        id:
-          type: string
         name:
           type: string
         ownerID:
+          type: string
+        uid:
           type: string
         updated_at:
           type: string
@@ -646,7 +646,7 @@ components:
     datastore.TwitterProviderConfig:
       properties:
         crc_verified_at:
-          type: integer
+          type: string
       type: object
     datastore.User:
       properties:

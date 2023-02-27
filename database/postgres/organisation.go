@@ -87,6 +87,7 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
+	defer rows.Close()
 
 	organizations := make([]datastore.Organisation, 0)
 	for rows.Next() {
@@ -115,7 +116,7 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 		TotalPage: int64(math.Ceil(float64(count) / float64(pageable.PerPage))),
 	}
 
-	return organizations, pagination, rows.Close()
+	return organizations, pagination, nil
 }
 
 func (o *orgRepo) UpdateOrganisation(ctx context.Context, org *datastore.Organisation) error {

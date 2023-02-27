@@ -526,13 +526,13 @@
 					"deleted_at": {
 						"type": "string"
 					},
-					"id": {
-						"type": "string"
-					},
 					"name": {
 						"type": "string"
 					},
 					"ownerID": {
+						"type": "string"
+					},
+					"uid": {
 						"type": "string"
 					},
 					"updated_at": {
@@ -958,7 +958,7 @@
 			"datastore.TwitterProviderConfig": {
 				"properties": {
 					"crc_verified_at": {
-						"type": "integer"
+						"type": "string"
 					}
 				},
 				"type": "object"

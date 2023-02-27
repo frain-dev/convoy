@@ -6537,13 +6537,13 @@
                 "deleted_at": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "string"
-                },
                 "name": {
                     "type": "string"
                 },
                 "ownerID": {
+                    "type": "string"
+                },
+                "uid": {
                     "type": "string"
                 },
                 "updated_at": {
@@ -6969,7 +6969,7 @@
             "type": "object",
             "properties": {
                 "crc_verified_at": {
-                    "type": "integer"
+                    "type": "string"
                 }
             }
         },

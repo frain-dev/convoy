@@ -283,6 +283,7 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
+	defer rows.Close()
 
 	var apiKeys []datastore.APIKey
 

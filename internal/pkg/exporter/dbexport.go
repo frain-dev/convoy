@@ -35,7 +35,7 @@ func (me *MongoExporter) Export(ctx context.Context, exportRepo datastore.Export
 
 	writer, err := GetOutputWriter(me.Out)
 	if err != nil {
-		log.WithError(err).Error("error opening output stream: %v")
+		log.WithError(err).Error("error opening output stream")
 		return 0, err
 	}
 
@@ -47,7 +47,7 @@ func (me *MongoExporter) Export(ctx context.Context, exportRepo datastore.Export
 
 	_, err = writer.Write(data)
 	if err != nil {
-		log.WithError(err).Error("failed to write export data to output file %s", me.Out)
+		log.WithError(err).Errorf("failed to write export data to output file %s", me.Out)
 		return 0, err
 	}
 
@@ -62,7 +62,7 @@ func GetOutputWriter(out string) (io.WriteCloser, error) {
 	// If the directory in which the output file is to be
 	// written does not exist, create it
 	fileDir := filepath.Dir(out)
-	err := os.MkdirAll(fileDir, 0750)
+	err := os.MkdirAll(fileDir, 0o750)
 	if err != nil {
 		return nil, err
 	}

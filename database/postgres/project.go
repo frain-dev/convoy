@@ -146,6 +146,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	rc := project.Config.GetRetentionPolicyConfig()
 	rlc := project.Config.GetRateLimitConfig()
@@ -206,6 +207,7 @@ func (p *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFilt
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	projects := make([]*datastore.Project, 0)
 	for rows.Next() {
@@ -302,6 +304,7 @@ func (p *projectRepo) DeleteProject(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	_, err = tx.ExecContext(ctx, deleteProject, id)
 	if err != nil {

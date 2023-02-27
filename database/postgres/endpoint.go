@@ -126,6 +126,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	ac := endpoint.GetAuthConfig()
 	args := []interface{}{
@@ -177,7 +178,7 @@ func (e *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string, proj
 		return nil, err
 	}
 
-	return e.baseFetch(rows)
+	return e.scanEndpoints(rows)
 }
 
 func (e *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID, projectID string) ([]datastore.Endpoint, error) {
@@ -186,7 +187,7 @@ func (e *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID, projectI
 		return nil, err
 	}
 
-	return e.baseFetch(rows)
+	return e.scanEndpoints(rows)
 }
 
 func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]datastore.Endpoint, error) {
@@ -195,7 +196,7 @@ func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID str
 		return nil, err
 	}
 
-	return e.baseFetch(rows)
+	return e.scanEndpoints(rows)
 }
 
 func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
@@ -245,6 +246,7 @@ func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.E
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	_, err = tx.ExecContext(ctx, deleteEndpoint, endpoint.UID, projectID)
 	if err != nil {
@@ -280,7 +282,7 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 		return nil, datastore.PaginationData{}, err
 	}
 
-	endpoints, err := e.baseFetch(rows)
+	endpoints, err := e.scanEndpoints(rows)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -338,8 +340,9 @@ func (e *endpointRepo) DeleteSecret(ctx context.Context, endpoint *datastore.End
 	return nil
 }
 
-func (e *endpointRepo) baseFetch(rows *sqlx.Rows) ([]datastore.Endpoint, error) {
+func (e *endpointRepo) scanEndpoints(rows *sqlx.Rows) ([]datastore.Endpoint, error) {
 	endpoints := make([]datastore.Endpoint, 0)
+	defer rows.Close()
 
 	for rows.Next() {
 		var endpoint datastore.Endpoint
