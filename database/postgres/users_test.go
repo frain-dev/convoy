@@ -110,8 +110,11 @@ func Test_FindUserByEmail(t *testing.T) {
 	newUser.CreatedAt = time.Time{}
 	newUser.UpdatedAt = time.Time{}
 
-	user.EmailVerificationExpiresAt = user.EmailVerificationExpiresAt.UTC()
-	user.ResetPasswordExpiresAt = user.ResetPasswordExpiresAt.UTC()
+	require.InDelta(t, user.EmailVerificationExpiresAt.Unix(), newUser.EmailVerificationExpiresAt.Unix(), float64(time.Hour))
+	require.InDelta(t, user.ResetPasswordExpiresAt.Unix(), newUser.ResetPasswordExpiresAt.Unix(), float64(time.Hour))
+
+	user.EmailVerificationExpiresAt, user.ResetPasswordExpiresAt = time.Time{}, time.Time{}
+	newUser.EmailVerificationExpiresAt, newUser.ResetPasswordExpiresAt = time.Time{}, time.Time{}
 
 	require.Equal(t, user, newUser)
 }
@@ -138,8 +141,11 @@ func Test_FindUserByID(t *testing.T) {
 	newUser.CreatedAt = time.Time{}
 	newUser.UpdatedAt = time.Time{}
 
-	user.EmailVerificationExpiresAt = user.EmailVerificationExpiresAt.UTC()
-	user.ResetPasswordExpiresAt = user.ResetPasswordExpiresAt.UTC()
+	require.InDelta(t, user.EmailVerificationExpiresAt.Unix(), newUser.EmailVerificationExpiresAt.Unix(), float64(time.Hour))
+	require.InDelta(t, user.ResetPasswordExpiresAt.Unix(), newUser.ResetPasswordExpiresAt.Unix(), float64(time.Hour))
+
+	user.EmailVerificationExpiresAt, user.ResetPasswordExpiresAt = time.Time{}, time.Time{}
+	newUser.EmailVerificationExpiresAt, newUser.ResetPasswordExpiresAt = time.Time{}, time.Time{}
 
 	require.Equal(t, user, newUser)
 }
@@ -165,8 +171,11 @@ func Test_FindUserByToken(t *testing.T) {
 	newUser.CreatedAt = time.Time{}
 	newUser.UpdatedAt = time.Time{}
 
-	user.EmailVerificationExpiresAt = user.EmailVerificationExpiresAt.UTC()
-	user.ResetPasswordExpiresAt = user.ResetPasswordExpiresAt.UTC()
+	require.InDelta(t, user.EmailVerificationExpiresAt.Unix(), newUser.EmailVerificationExpiresAt.Unix(), float64(time.Hour))
+	require.InDelta(t, user.ResetPasswordExpiresAt.Unix(), newUser.ResetPasswordExpiresAt.Unix(), float64(time.Hour))
+
+	user.EmailVerificationExpiresAt, user.ResetPasswordExpiresAt = time.Time{}, time.Time{}
+	newUser.EmailVerificationExpiresAt, newUser.ResetPasswordExpiresAt = time.Time{}, time.Time{}
 
 	require.Equal(t, user, newUser)
 }
@@ -192,8 +201,11 @@ func Test_FindUserByEmailVerificationToken(t *testing.T) {
 	newUser.CreatedAt = time.Time{}
 	newUser.UpdatedAt = time.Time{}
 
-	user.EmailVerificationExpiresAt = user.EmailVerificationExpiresAt.UTC()
-	user.ResetPasswordExpiresAt = user.ResetPasswordExpiresAt.UTC()
+	require.InDelta(t, user.EmailVerificationExpiresAt.Unix(), newUser.EmailVerificationExpiresAt.Unix(), float64(time.Hour))
+	require.InDelta(t, user.ResetPasswordExpiresAt.Unix(), newUser.ResetPasswordExpiresAt.Unix(), float64(time.Hour))
+
+	user.EmailVerificationExpiresAt, user.ResetPasswordExpiresAt = time.Time{}, time.Time{}
+	newUser.EmailVerificationExpiresAt, newUser.ResetPasswordExpiresAt = time.Time{}, time.Time{}
 
 	require.Equal(t, user, newUser)
 }
@@ -317,6 +329,12 @@ func Test_UpdateUser(t *testing.T) {
 
 	dbUser.CreatedAt = time.Time{}
 	dbUser.UpdatedAt = time.Time{}
+
+	require.InDelta(t, user.EmailVerificationExpiresAt.Unix(), dbUser.EmailVerificationExpiresAt.Unix(), float64(time.Hour))
+	require.InDelta(t, user.ResetPasswordExpiresAt.Unix(), dbUser.ResetPasswordExpiresAt.Unix(), float64(time.Hour))
+
+	user.EmailVerificationExpiresAt, user.ResetPasswordExpiresAt = time.Time{}, time.Time{}
+	dbUser.EmailVerificationExpiresAt, dbUser.ResetPasswordExpiresAt = time.Time{}, time.Time{}
 
 	require.Equal(t, updatedUser, dbUser)
 }
