@@ -298,6 +298,8 @@ func Test_FillProjectStatistics(t *testing.T) {
 		ProjectID: endpoint1.ProjectID,
 		Endpoints: []string{endpoint1.UID},
 		Headers:   httpheader.HTTPHeader{},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	err = NewEventRepo(db).CreateEvent(context.Background(), event)
@@ -359,6 +361,8 @@ func Test_DeleteProject(t *testing.T) {
 		ProjectID: endpoint.ProjectID,
 		Endpoints: []string{endpoint.UID},
 		Headers:   httpheader.HTTPHeader{},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	err = NewEventRepo(db).CreateEvent(context.Background(), event)

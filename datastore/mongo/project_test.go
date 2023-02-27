@@ -6,12 +6,12 @@ package mongo
 import (
 	"context"
 	"testing"
-	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"gopkg.in/guregu/null.v4"
+
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -42,8 +42,6 @@ func Test_CreateProject(t *testing.T) {
 	defer closeFn()
 
 	store := getStore(db)
-
-	d := primitive.NewDateTimeFromTime(time.Now())
 
 	tt := []struct {
 		name        string
@@ -85,13 +83,13 @@ func Test_CreateProject(t *testing.T) {
 					Name:           "project 3",
 					OrganisationID: "abc",
 					UID:            ulid.Make().String(),
-					DeletedAt:      &d,
+					DeletedAt:      null.Time{},
 				},
 
 				{
 					Name:           "project 3",
 					OrganisationID: "abc",
-					DeletedAt:      nil,
+					DeletedAt:      null.Time{},
 					UID:            ulid.Make().String(),
 				},
 			},

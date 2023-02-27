@@ -898,6 +898,7 @@ type Source struct {
 	ProjectID      string          `json:"project_id" db:"project_id"`
 	MaskID         string          `json:"mask_id" db:"mask_id"`
 	Name           string          `json:"name" db:"name"`
+	URL            string          `json:"url" db:"-"`
 	Type           SourceType      `json:"type" db:"type"`
 	Provider       SourceProvider  `json:"provider" db:"provider"`
 	IsDisabled     bool            `json:"is_disabled" db:"is_disabled"`

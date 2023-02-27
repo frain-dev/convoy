@@ -31,7 +31,10 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 			}
 			return err
 		}
-		tables := []string{eventsTable, eventDeliveriesTable}
+
+		// order is important here, event_deliveries references
+		// event id, so event_deliveries must be deleted first
+		tables := []string{eventDeliveriesTable, eventsTable}
 
 		objectStoreClient, exportDir, err := NewObjectStoreClient(config.StoragePolicy)
 		if err != nil {
@@ -114,17 +117,22 @@ func GetArgsByCollection(tableName string, exportDir string, project *datastore.
 	}
 }
 
-func ExportCollection(ctx context.Context, collection string, exportDir string, expDate time.Time, objectStoreClient objectstore.ObjectStore, project *datastore.Project, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, projectRepo datastore.ProjectRepository, exportRepo datastore.ExportRepository, searcher searcher.Searcher) error {
-	out := GetArgsByCollection(collection, exportDir, project)
+func ExportCollection(
+	ctx context.Context, tableName string, exportDir string, expDate time.Time,
+	objectStoreClient objectstore.ObjectStore, project *datastore.Project,
+	eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository,
+	projectRepo datastore.ProjectRepository, exportRepo datastore.ExportRepository, searcher searcher.Searcher,
+) error {
+	out := GetArgsByCollection(tableName, exportDir, project)
 
-	mongoExporter := &exporter.MongoExporter{
-		TableName: collection,
+	dbExporter := &exporter.MongoExporter{
+		TableName: tableName,
 		ProjectID: project.UID,
 		CreatedAt: expDate,
 		Out:       out,
 	}
 
-	numDocs, err := mongoExporter.Export(ctx, exportRepo)
+	numDocs, err := dbExporter.Export(ctx, exportRepo)
 	if err != nil {
 		return err
 	}
@@ -140,8 +148,8 @@ func ExportCollection(ctx context.Context, collection string, exportDir string, 
 		return err
 	}
 
-	switch collection {
-	case "events":
+	switch tableName {
+	case eventsTable:
 		evntFilter := &datastore.EventFilter{
 			ProjectID:      project.UID,
 			CreatedAtStart: 0,
@@ -158,7 +166,7 @@ func ExportCollection(ctx context.Context, collection string, exportDir string, 
 			return err
 		}
 
-	case "eventdeliveries":
+	case eventDeliveriesTable:
 		evntDeliveryFilter := &datastore.EventDeliveryFilter{
 			ProjectID:      project.UID,
 			CreatedAtStart: 0,
@@ -179,7 +187,7 @@ func ExportCollection(ctx context.Context, collection string, exportDir string, 
 		},
 	}}
 
-	err = searcher.Remove(collection, sf)
+	err = searcher.Remove(tableName, sf)
 	if err != nil {
 		log.WithError(err).Error("typesense: an error occured deleting typesense record")
 	}

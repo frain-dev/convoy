@@ -328,6 +328,8 @@ func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID str
 		Headers:   httpheader.HTTPHeader{},
 		ProjectID: projectID,
 		SourceID:  sourceID,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	// Seed Data.

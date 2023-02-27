@@ -136,6 +136,8 @@ func Test_CountProjectMessages(t *testing.T) {
 					Headers:   httpheader.HTTPHeader{},
 					Raw:       string(tc.data),
 					Data:      data,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
 				}
 
 				err := eventRepo.CreateEvent(context.Background(), event)
@@ -201,6 +203,8 @@ func Test_CountEvents(t *testing.T) {
 					Headers:   httpheader.HTTPHeader{},
 					Raw:       string(tc.data),
 					Data:      data,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
 				}
 
 				err := eventRepo.CreateEvent(context.Background(), event)
@@ -330,6 +334,8 @@ func Test_LoadEventsPaged(t *testing.T) {
 					Headers:   httpheader.HTTPHeader{},
 					Raw:       string(data),
 					Data:      data,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
 				}
 
 				err := eventRepo.CreateEvent(context.Background(), event)
@@ -426,6 +432,8 @@ func generateEvent(t *testing.T, db database.Database) *datastore.Event {
 		Headers:   httpheader.HTTPHeader{},
 		Raw:       string(data),
 		Data:      data,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 }
 

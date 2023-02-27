@@ -17,14 +17,12 @@ import (
 	"gopkg.in/guregu/null.v4"
 )
 
-var (
-	ErrEventNotCreated = errors.New("event could not be created")
-)
+var ErrEventNotCreated = errors.New("event could not be created")
 
 const (
 	createEvent = `
-	INSERT INTO convoy.events (id, event_type, endpoints, project_id, source_id, headers, raw, data)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	INSERT INTO convoy.events (id, event_type, endpoints, project_id, source_id, headers, raw, data,created_at,updated_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
 
 	createEventEndpoints = `
@@ -32,13 +30,13 @@ const (
 	`
 
 	fetchEventById = `
-	SELECT id, event_type, endpoints, project_id, 
+	SELECT id, event_type, endpoints, project_id,
 	COALESCE(source_id, '') AS source_id, headers, raw, data
 	FROM convoy.events WHERE id = $1 AND deleted_at is NULL;
 	`
 
 	fetchEventsByIds = `
-	SELECT id, event_type, endpoints, project_id, 
+	SELECT id, event_type, endpoints, project_id,
 	COALESCE(source_id, '') AS source_id, headers, raw, data
 	FROM convoy.events WHERE id IN (?) AND deleted_at IS NULL;
 	`
@@ -122,6 +120,7 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		event.Headers,
 		event.Raw,
 		event.Data,
+		event.CreatedAt, event.UpdatedAt,
 	)
 	if err != nil {
 		return err

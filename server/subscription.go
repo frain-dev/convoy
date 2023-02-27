@@ -73,7 +73,7 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 
 	baseUrl := m.GetHostFromContext(r.Context())
 	for i := range subscriptions {
-		fillSourceURL(subscriptions[i].Source, baseUrl, org.CustomDomain)
+		fillSourceURL(subscriptions[i].Source, baseUrl, org.CustomDomain.ValueOrZero())
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Subscriptions fetched successfully",
