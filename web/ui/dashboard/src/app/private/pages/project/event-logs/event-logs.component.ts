@@ -370,6 +370,11 @@ export class EventLogsComponent implements OnInit {
 		}
 	}
 
+	viewEndpoint(endpointId?: string) {
+		if (!endpointId || this.portalToken) return;
+		this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/endpoints/' + endpointId]);
+	}
+
 	viewSource(sourceId?: string) {
 		if (!sourceId || this.portalToken) return;
 		this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/sources/'], { queryParams: { id: sourceId } });
