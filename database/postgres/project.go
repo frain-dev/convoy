@@ -146,7 +146,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer rollbackTx(tx)
 
 	rc := project.Config.GetRetentionPolicyConfig()
 	rlc := project.Config.GetRateLimitConfig()
@@ -229,7 +229,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer rollbackTx(tx)
 
 	pRes, err := tx.ExecContext(ctx, updateProjectById, project.UID, project.Name, project.LogoURL, project.RetainedEvents)
 	if err != nil {
@@ -304,7 +304,7 @@ func (p *projectRepo) DeleteProject(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer rollbackTx(tx)
 
 	_, err = tx.ExecContext(ctx, deleteProject, id)
 	if err != nil {

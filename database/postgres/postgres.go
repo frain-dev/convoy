@@ -1,9 +1,13 @@
 package postgres
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"math"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -48,6 +52,13 @@ func getPrevPage(page int) int {
 	}
 
 	return prev
+}
+
+func rollbackTx(tx *sqlx.Tx) {
+	err := tx.Rollback()
+	if err != nil && !errors.Is(err, sql.ErrTxDone) {
+		log.WithError(err).Error("failed to rollback tx")
+	}
 }
 
 func calculatePaginationData(count, page, perPage int) datastore.PaginationData {
