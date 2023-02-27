@@ -42,8 +42,14 @@ func (s *SubscriptionIntegrationTestSuite) SetupSuite() {
 func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
 
+	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
+	require.NoError(s.T(), err)
+
+	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.Store, user)
+	require.NoError(s.T(), err)
+
 	// Setup Default Project.
-	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, "")
+	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, org.UID)
 	fmt.Printf("%+v\n", s.DefaultProject)
 
 	// Seed Auth
@@ -55,7 +61,7 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
 
 	// Setup Config.
-	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
 	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)

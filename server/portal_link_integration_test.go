@@ -48,8 +48,14 @@ func (s *PortalLinkIntegrationTestSuite) SetupSuite() {
 func (s *PortalLinkIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
 
+	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
+	require.NoError(s.T(), err)
+
+	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.Store, user)
+	require.NoError(s.T(), err)
+
 	// Setup Default Project.
-	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, "")
+	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, org.UID)
 
 	// Seed Auth
 	role := auth.Role{
@@ -60,7 +66,7 @@ func (s *PortalLinkIntegrationTestSuite) SetupTest() {
 	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.Store, role, "", "test", "", "")
 
 	// Setup Config.
-	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
 	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
@@ -395,7 +401,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpointSubscriptions
 	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.Store, s.DefaultProject, []string{endpoint2.UID})
 	require.NoError(s.T(), err)
 
-	source := &datastore.Source{UID: uuid.NewString()}
+	source, _ := testdb.SeedSource(s.ConvoyApp.A.Store, s.DefaultProject, uuid.NewString(), "", "", nil)
 
 	// seed subscriptions
 	for i := 0; i < 5; i++ {

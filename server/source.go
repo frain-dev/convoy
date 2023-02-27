@@ -57,8 +57,8 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 	}
 
 	baseUrl := m.GetHostFromContext(r.Context())
-	sr := sourceResponse(source, baseUrl, org.CustomDomain)
-	_ = render.Render(w, r, util.NewServerResponse("Source created successfully", sr, http.StatusCreated))
+	fillSourceURL(source, baseUrl, org.CustomDomain)
+	_ = render.Render(w, r, util.NewServerResponse("Source created successfully", source, http.StatusCreated))
 }
 
 // GetSourceByID
@@ -91,9 +91,9 @@ func (a *ApplicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Reques
 	}
 
 	baseUrl := m.GetHostFromContext(r.Context())
-	sr := sourceResponse(source, baseUrl, org.CustomDomain)
+	fillSourceURL(source, baseUrl, org.CustomDomain)
 
-	_ = render.Render(w, r, util.NewServerResponse("Source fetched successfully", sr, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Source fetched successfully", source, http.StatusOK))
 }
 
 // UpdateSource
@@ -140,9 +140,9 @@ func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 	}
 
 	baseUrl := m.GetHostFromContext(r.Context())
-	sr := sourceResponse(source, baseUrl, org.CustomDomain)
+	fillSourceURL(source, baseUrl, org.CustomDomain)
 
-	_ = render.Render(w, r, util.NewServerResponse("Source updated successfully", sr, http.StatusAccepted))
+	_ = render.Render(w, r, util.NewServerResponse("Source updated successfully", source, http.StatusAccepted))
 }
 
 // DeleteSource
@@ -205,7 +205,6 @@ func (a *ApplicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	sourcesResponse := []*models.SourceResponse{}
 	baseUrl := m.GetHostFromContext(r.Context())
 
 	orgService := createOrganisationService(a)
@@ -215,34 +214,18 @@ func (a *ApplicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	for _, source := range sources {
-		s := sourceResponse(&source, baseUrl, org.CustomDomain)
-		sourcesResponse = append(sourcesResponse, s)
+	for i := range sources {
+		fillSourceURL(&sources[i], baseUrl, org.CustomDomain)
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Sources fetched successfully", pagedResponse{Content: sourcesResponse, Pagination: &paginationData}, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Sources fetched successfully", pagedResponse{Content: sources, Pagination: &paginationData}, http.StatusOK))
 }
 
-func sourceResponse(s *datastore.Source, baseUrl string, customDomain string) *models.SourceResponse {
+func fillSourceURL(s *datastore.Source, baseUrl string, customDomain string) {
 	url := baseUrl
 	if len(customDomain) > 0 {
 		url = customDomain
 	}
 
-	return &models.SourceResponse{
-		UID:            s.UID,
-		MaskID:         s.MaskID,
-		ProjectID:      s.ProjectID,
-		Name:           s.Name,
-		Type:           s.Type,
-		Provider:       s.Provider,
-		ProviderConfig: s.ProviderConfig,
-		URL:            fmt.Sprintf("%s/ingest/%s", url, s.MaskID),
-		IsDisabled:     s.IsDisabled,
-		Verifier:       s.Verifier,
-		PubSub:         s.PubSub,
-		CreatedAt:      s.CreatedAt,
-		UpdatedAt:      s.UpdatedAt,
-		DeletedAt:      s.DeletedAt,
-	}
+	s.URL = fmt.Sprintf("%s/ingest/%s", url, s.MaskID)
 }

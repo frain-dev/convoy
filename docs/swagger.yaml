@@ -296,6 +296,17 @@ definitions:
         additionalProperties: true
         type: object
     type: object
+  datastore.GooglePubSubConfig:
+    properties:
+      project_id:
+        type: string
+      service_account:
+        items:
+          type: integer
+        type: array
+      subscription_id:
+        type: string
+    type: object
   datastore.HMac:
     properties:
       encoding:
@@ -438,6 +449,25 @@ definitions:
       twitter:
         $ref: '#/definitions/datastore.TwitterProviderConfig'
     type: object
+  datastore.PubSubConfig:
+    properties:
+      google:
+        $ref: '#/definitions/datastore.GooglePubSubConfig'
+      sqs:
+        $ref: '#/definitions/datastore.SQSPubSubConfig'
+      type:
+        $ref: '#/definitions/datastore.PubSubType'
+      workers:
+        type: integer
+    type: object
+  datastore.PubSubType:
+    enum:
+    - sqs
+    - google
+    type: string
+    x-enum-varnames:
+    - SqsPubSub
+    - GooglePubSub
   datastore.RateLimitConfiguration:
     properties:
       count:
@@ -457,6 +487,17 @@ definitions:
       retry_count:
         type: integer
       type:
+        type: string
+    type: object
+  datastore.SQSPubSubConfig:
+    properties:
+      access_key_id:
+        type: string
+      default_region:
+        type: string
+      queue_name:
+        type: string
+      secret_key:
         type: string
     type: object
   datastore.Secret:
@@ -500,10 +541,6 @@ definitions:
         type: string
       deleted_at:
         type: string
-      forward_headers:
-        items:
-          type: string
-        type: array
       is_disabled:
         type: boolean
       mask_id:
@@ -516,11 +553,15 @@ definitions:
         $ref: '#/definitions/datastore.SourceProvider'
       provider_config:
         $ref: '#/definitions/datastore.ProviderConfig'
+      pub_sub:
+        $ref: '#/definitions/datastore.PubSubConfig'
       type:
         $ref: '#/definitions/datastore.SourceType'
       uid:
         type: string
       updated_at:
+        type: string
+      url:
         type: string
       verifier:
         $ref: '#/definitions/datastore.VerifierConfig'
@@ -825,6 +866,8 @@ definitions:
         type: string
       provider:
         $ref: '#/definitions/datastore.SourceProvider'
+      pub_sub:
+        $ref: '#/definitions/datastore.PubSubConfig'
       type:
         $ref: '#/definitions/datastore.SourceType'
       verifier:
@@ -848,6 +891,8 @@ definitions:
         $ref: '#/definitions/datastore.SourceProvider'
       provider_config:
         $ref: '#/definitions/datastore.ProviderConfig'
+      pub_sub:
+        $ref: '#/definitions/datastore.PubSubConfig'
       type:
         $ref: '#/definitions/datastore.SourceType'
       uid:
