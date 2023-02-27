@@ -7,12 +7,13 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/google/uuid"
 )
 
 func TestWrite(t *testing.T) {
@@ -56,7 +57,6 @@ func TestWrite(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func initializeQueue(configFile string, name string, t *testing.T) queue.Queuer {
@@ -67,7 +67,6 @@ func initializeQueue(configFile string, name string, t *testing.T) queue.Queuer 
 	cfg, err := config.Get()
 	if err != nil {
 		t.Fatalf("Failed to get config: %v", err)
-
 	}
 
 	var opts queue.QueueOptions
