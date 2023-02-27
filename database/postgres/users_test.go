@@ -28,6 +28,7 @@ func Test_CreateUser(t *testing.T) {
 			name: "create user",
 			users: []datastore.User{
 				{
+					UID:       ulid.Make().String(),
 					FirstName: "test",
 					LastName:  "test",
 					Email:     fmt.Sprintf("%s@test.com", ulid.Make().String()),
@@ -39,6 +40,7 @@ func Test_CreateUser(t *testing.T) {
 			isDuplicateEmail: true,
 			users: []datastore.User{
 				{
+					UID:                        ulid.Make().String(),
 					FirstName:                  "test",
 					LastName:                   "test",
 					Email:                      "test@test.com",
@@ -50,6 +52,7 @@ func Test_CreateUser(t *testing.T) {
 					EmailVerificationExpiresAt: time.Now(),
 				},
 				{
+					UID:       ulid.Make().String(),
 					FirstName: "test",
 					LastName:  "test",
 					Email:     "test@test.com",
@@ -65,7 +68,6 @@ func Test_CreateUser(t *testing.T) {
 			for i, user := range tc.users {
 				if i == 0 {
 					require.NoError(t, userRepo.CreateUser(context.Background(), &user))
-					require.NotEmpty(t, user.UID)
 				}
 
 				user := &datastore.User{
@@ -265,6 +267,7 @@ func Test_LoadUsersPaged(t *testing.T) {
 
 			for i := 0; i < tc.count; i++ {
 				user := &datastore.User{
+					UID:       ulid.Make().String(),
 					FirstName: "test",
 					LastName:  "test",
 					Email:     fmt.Sprintf("%s@test.com", ulid.Make().String()),

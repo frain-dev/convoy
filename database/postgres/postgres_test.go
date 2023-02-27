@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/frain-dev/convoy/config"
@@ -27,9 +28,17 @@ func getConfig() config.Configuration {
 	}
 }
 
+var (
+	once = sync.Once{}
+	db   *Postgres
+)
+
 func getDB(t *testing.T) (database.Database, func()) {
-	db, err := NewDB(getConfig())
-	require.NoError(t, err)
+	once.Do(func() {
+		var err error
+		db, err = NewDB(getConfig())
+		require.NoError(t, err)
+	})
 
 	return db, func() {
 		require.NoError(t, db.truncateTables())
