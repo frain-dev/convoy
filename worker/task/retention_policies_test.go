@@ -234,6 +234,7 @@ func buildApplication() *applicationHandler {
 	eventRepo := postgres.NewEventRepo(db)
 	configRepo := postgres.NewConfigRepo(db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+	exportRepo := postgres.NewExportRepo(db)
 
 	app := &applicationHandler{
 		projectRepo:       projectRepo,
@@ -242,6 +243,7 @@ func buildApplication() *applicationHandler {
 		eventDeliveryRepo: eventDeliveryRepo,
 		searcher:          searcher,
 		database:          db,
+		exportRepo:        exportRepo,
 	}
 
 	return app
@@ -309,7 +311,7 @@ func seedEventDelivery(db database.Database, eventID string, endpointID string, 
 		},
 		CLIMetadata: &datastore.CLIMetadata{},
 		Description: "test",
-		CreatedAt:   time.Now(),
+		CreatedAt:   filter.CreatedAt,
 		UpdatedAt:   time.Now(),
 	}
 

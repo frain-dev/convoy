@@ -205,7 +205,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				LogoURL:        "https://google.com",
 				OrganisationID: "1234",
 				Config: &datastore.ProjectConfig{
-					MaxIngestSize: 50,
+					MaxIngestSize: 51200,
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 						Versions: []datastore.SignatureVersion{
@@ -257,7 +257,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				OrganisationID: "1234",
 
 				Config: &datastore.ProjectConfig{
-					MaxIngestSize: 50,
+					MaxIngestSize: 51200,
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 						Versions: []datastore.SignatureVersion{

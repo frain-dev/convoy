@@ -27,13 +27,13 @@ export class EventsService {
 		});
 	}
 
-	getEventDeliveries(requestDetails: { pageNo: number; startDate?: string; endDate?: string; endpointId?: string; eventId: string; statusQuery: string; token?: string; sourceId?: string }): Promise<HTTP_RESPONSE> {
+	getEventDeliveries(requestDetails: { pageNo: number; startDate?: string; endDate?: string; endpointId?: string; eventId?: string; statusQuery?: string; token?: string; sourceId?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries?eventId=${requestDetails.eventId}&page=${requestDetails.pageNo}&startDate=${requestDetails.startDate}&endDate=${requestDetails.endDate}&endpointId=${
-						requestDetails.endpointId
-					}${requestDetails.statusQuery}&sourceId=${requestDetails.sourceId || ''}${requestDetails.token ? '&token=' + requestDetails.token : ''}`,
+					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/eventdeliveries?eventId=${requestDetails?.eventId || ''}&page=${requestDetails.pageNo || 1}&startDate=${requestDetails?.startDate || ''}&endDate=${
+						requestDetails?.endDate || ''
+					}&endpointId=${requestDetails?.endpointId || ''}${requestDetails?.statusQuery || ''}&sourceId=${requestDetails?.sourceId || ''}${requestDetails?.token ? '&token=' + requestDetails?.token : ''}`,
 					method: 'get',
 					token: requestDetails.token
 				});

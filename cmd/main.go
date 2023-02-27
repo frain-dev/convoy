@@ -296,7 +296,7 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addSchedulerCommand(app))
 	cmd.AddCommand(addMigrateCommand(app))
 	cmd.AddCommand(addConfigCommand(app))
-	cmd.AddCommand(addStreamCommand(app))
+	// cmd.AddCommand(addStreamCommand(app))
 	cmd.AddCommand(addDomainCommand(app))
 	cmd.AddCommand(addIngestCommand(app))
 }

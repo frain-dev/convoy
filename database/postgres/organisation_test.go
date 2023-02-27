@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oklog/ulid/v2"
+
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/database"
@@ -26,6 +28,7 @@ func TestLoadOrganisationsPaged(t *testing.T) {
 
 	for i := 1; i < 6; i++ {
 		org := &datastore.Organisation{
+			UID:            ulid.Make().String(),
 			OwnerID:        user.UID,
 			Name:           fmt.Sprintf("org%d", i),
 			CustomDomain:   null.NewString("https://google.com", true),
@@ -34,7 +37,6 @@ func TestLoadOrganisationsPaged(t *testing.T) {
 
 		err := orgRepo.CreateOrganisation(context.Background(), org)
 		require.NoError(t, err)
-		require.NotEmpty(t, org.UID)
 	}
 
 	organisations, _, err := orgRepo.LoadOrganisationsPaged(context.Background(), datastore.Pageable{
@@ -54,6 +56,7 @@ func TestCreateOrganisation(t *testing.T) {
 	user := seedUser(t, db)
 
 	org := &datastore.Organisation{
+		UID:            ulid.Make().String(),
 		Name:           "new org",
 		OwnerID:        user.UID,
 		CustomDomain:   null.NewString("https://google.com", true),
@@ -64,7 +67,6 @@ func TestCreateOrganisation(t *testing.T) {
 
 	err := NewOrgRepo(db).CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
-	require.NotEmpty(t, org.UID)
 }
 
 func TestUpdateOrganisation(t *testing.T) {
@@ -112,6 +114,7 @@ func TestFetchOrganisationByID(t *testing.T) {
 	orgRepo := NewOrgRepo(db)
 
 	org := &datastore.Organisation{
+		UID:            ulid.Make().String(),
 		Name:           "new org",
 		OwnerID:        user.UID,
 		CustomDomain:   null.NewString("https://google.com", true),
@@ -120,7 +123,6 @@ func TestFetchOrganisationByID(t *testing.T) {
 
 	err := orgRepo.CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
-	require.NotEmpty(t, org.UID)
 
 	dbOrg, err := orgRepo.FetchOrganisationByID(context.Background(), org.UID)
 	require.NoError(t, err)
@@ -142,6 +144,7 @@ func TestFetchOrganisationByAssignedDomain(t *testing.T) {
 	orgRepo := NewOrgRepo(db)
 
 	org := &datastore.Organisation{
+		UID:            ulid.Make().String(),
 		Name:           "new org",
 		OwnerID:        user.UID,
 		CustomDomain:   null.NewString("https://yt.com", true),
@@ -150,7 +153,6 @@ func TestFetchOrganisationByAssignedDomain(t *testing.T) {
 
 	err := orgRepo.CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
-	require.NotEmpty(t, org.UID)
 
 	dbOrg, err := orgRepo.FetchOrganisationByAssignedDomain(context.Background(), "https://google.com")
 	require.NoError(t, err)
@@ -172,6 +174,7 @@ func TestFetchOrganisationByCustomDomain(t *testing.T) {
 	orgRepo := NewOrgRepo(db)
 
 	org := &datastore.Organisation{
+		UID:            ulid.Make().String(),
 		Name:           "new org",
 		OwnerID:        user.UID,
 		CustomDomain:   null.NewString("https://yt.com", true),
@@ -180,7 +183,6 @@ func TestFetchOrganisationByCustomDomain(t *testing.T) {
 
 	err := orgRepo.CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
-	require.NotEmpty(t, org.UID)
 
 	dbOrg, err := orgRepo.FetchOrganisationByCustomDomain(context.Background(), "https://yt.com")
 	require.NoError(t, err)

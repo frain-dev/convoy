@@ -6845,6 +6845,9 @@
                 "updated_at": {
                     "type": "string"
                 },
+                "url": {
+                    "type": "string"
+                },
                 "verifier": {
                     "$ref": "#/definitions/datastore.VerifierConfig"
                 }

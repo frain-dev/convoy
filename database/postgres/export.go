@@ -13,15 +13,15 @@ import (
 const (
 	exportRepoQ = `
     SELECT
-        json_build_object('uid', id) ||
-        (SELECT to_jsonb(t) - 'id' FROM (SELECT * FROM %s %s) t) FROM %s %s;
+        to_jsonb(ed) - 'id' || jsonb_build_object('uid', ed.id) AS json_output
+    FROM %s AS ed %s;
     `
 
 	count = `
     SELECT COUNT(*) FROM %s %s;
     `
 
-	where = ` WHERE deleted_at IS NULL AND project_id = $1 AMD created_at <= $2`
+	where = ` WHERE deleted_at IS NULL AND project_id = $1 AND created_at < $2`
 )
 
 type exportRepo struct {
@@ -43,9 +43,12 @@ func (e *exportRepo) ExportRecords(ctx context.Context, tableName, projectID str
 		return 0, err
 	}
 
+	if c.Count == 0 { // nothing to export
+		return 0, nil
+	}
+
 	q := fmt.Sprintf(
 		exportRepoQ,
-		tableName, where,
 		tableName, where,
 	)
 

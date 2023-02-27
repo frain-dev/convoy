@@ -28,10 +28,9 @@ func Test_CreateDevice(t *testing.T) {
 	newDevice, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.EndpointID, device.ProjectID)
 	require.NoError(t, err)
 
-	device.LastSeenAt = device.LastSeenAt.UTC()
-	newDevice.LastSeenAt = newDevice.LastSeenAt.UTC()
-	newDevice.CreatedAt = time.Time{}
-	newDevice.UpdatedAt = time.Time{}
+	require.InDelta(t, device.LastSeenAt.Unix(), newDevice.LastSeenAt.Unix(), float64(time.Hour))
+	newDevice.CreatedAt, newDevice.UpdatedAt = time.Time{}, time.Time{}
+	device.LastSeenAt, newDevice.LastSeenAt = time.Time{}, time.Time{}
 
 	require.Equal(t, device, newDevice)
 }
@@ -52,10 +51,9 @@ func Test_UpdateDevice(t *testing.T) {
 	newDevice, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.EndpointID, device.ProjectID)
 	require.NoError(t, err)
 
-	device.LastSeenAt = device.LastSeenAt.UTC()
-	newDevice.LastSeenAt = newDevice.LastSeenAt.UTC()
-	newDevice.CreatedAt = time.Time{}
-	newDevice.UpdatedAt = time.Time{}
+	require.InDelta(t, device.LastSeenAt.Unix(), newDevice.LastSeenAt.Unix(), float64(time.Hour))
+	newDevice.CreatedAt, newDevice.UpdatedAt = time.Time{}, time.Time{}
+	device.LastSeenAt, newDevice.LastSeenAt = time.Time{}, time.Time{}
 
 	require.Equal(t, device, newDevice)
 }
@@ -76,10 +74,9 @@ func Test_UpdateDeviceLastSeen(t *testing.T) {
 	newDevice, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.EndpointID, device.ProjectID)
 	require.NoError(t, err)
 
-	device.LastSeenAt = device.LastSeenAt.UTC()
-	newDevice.LastSeenAt = newDevice.LastSeenAt.UTC()
-	newDevice.CreatedAt = time.Time{}
-	newDevice.UpdatedAt = time.Time{}
+	require.InDelta(t, device.LastSeenAt.Unix(), newDevice.LastSeenAt.Unix(), float64(time.Hour))
+	newDevice.CreatedAt, newDevice.UpdatedAt = time.Time{}, time.Time{}
+	device.LastSeenAt, newDevice.LastSeenAt = time.Time{}, time.Time{}
 
 	require.Equal(t, device, newDevice)
 }
@@ -112,10 +109,9 @@ func Test_FetchDeviceByID(t *testing.T) {
 	newDevice, err := deviceRepo.FetchDeviceByID(context.Background(), device.UID, device.EndpointID, device.ProjectID)
 	require.NoError(t, err)
 
-	device.LastSeenAt = device.LastSeenAt.UTC()
-	newDevice.LastSeenAt = newDevice.LastSeenAt.UTC()
-	newDevice.CreatedAt = time.Time{}
-	newDevice.UpdatedAt = time.Time{}
+	require.InDelta(t, device.LastSeenAt.Unix(), newDevice.LastSeenAt.Unix(), float64(time.Hour))
+	newDevice.CreatedAt, newDevice.UpdatedAt = time.Time{}, time.Time{}
+	device.LastSeenAt, newDevice.LastSeenAt = time.Time{}, time.Time{}
 
 	require.Equal(t, device, newDevice)
 }

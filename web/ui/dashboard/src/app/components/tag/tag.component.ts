@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { STATUS_COLOR } from 'src/app/models/global.model';
 
 @Component({
-	selector: 'convoy-tag',
+	selector: 'convoy-tag, [convoy-tag]',
 	standalone: true,
 	imports: [CommonModule],
 	templateUrl: './tag.component.html',

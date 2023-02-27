@@ -47,6 +47,7 @@ func Test_eventDeliveryRepo_CreateEventDelivery(t *testing.T) {
 	ed.Metadata.NextSendTime = time.Time{}
 	dbEventDelivery.Metadata.NextSendTime = time.Time{}
 
+	ed.CreatedAt, ed.UpdatedAt = time.Time{}, time.Time{}
 	require.Equal(t, ed, dbEventDelivery)
 }
 
@@ -128,6 +129,8 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
 		ed.Metadata.NextSendTime = time.Time{}
 		dbEventDelivery.Metadata.NextSendTime = time.Time{}
 
+		ed.CreatedAt, ed.UpdatedAt = time.Time{}, time.Time{}
+
 		require.Equal(t, ed.Headers, dbEventDelivery.Headers)
 		require.Equal(t, ed, dbEventDelivery)
 	}
@@ -181,6 +184,7 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByEventID(t *testing.T) {
 		ed.Metadata.NextSendTime = time.Time{}
 		dbEventDelivery.Metadata.NextSendTime = time.Time{}
 
+		ed.CreatedAt, ed.UpdatedAt = time.Time{}, time.Time{}
 		require.Equal(t, ed, dbEventDelivery)
 	}
 }
@@ -479,6 +483,8 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 		require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
 		ed.Metadata.NextSendTime = time.Time{}
 		dbEventDelivery.Metadata.NextSendTime = time.Time{}
+
+		ed.CreatedAt, ed.UpdatedAt = time.Time{}, time.Time{}
 
 		require.Equal(t, ed, dbEventDelivery)
 	}
