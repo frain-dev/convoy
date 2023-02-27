@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"time"
 
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -29,7 +31,7 @@ func NewSecurityService(projectRepo datastore.ProjectRepository, apiKeyRepo data
 }
 
 func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.OrganisationMember, newApiKey *models.APIKey) (*datastore.APIKey, string, error) {
-	if newApiKey.ExpiresAt != (time.Time{}) && newApiKey.ExpiresAt.Before(time.Now()) {
+	if !newApiKey.ExpiresAt.IsZero() && newApiKey.ExpiresAt.ValueOrZero().Before(time.Now()) {
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("expiry date is invalid"))
 	}
 
@@ -83,7 +85,7 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 		UpdatedAt: time.Now(),
 	}
 
-	if newApiKey.ExpiresAt != (time.Time{}) {
+	if !newApiKey.ExpiresAt.IsZero() {
 		apiKey.ExpiresAt = newApiKey.ExpiresAt
 	}
 
@@ -108,11 +110,11 @@ func (ss *SecurityService) CreatePersonalAPIKey(ctx context.Context, user *datas
 	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
-	var expiresAt time.Time
+	var v time.Time
 	if newApiKey.Expiration != 0 {
-		expiresAt = time.Now().Add(time.Hour * 24 * time.Duration(newApiKey.Expiration))
+		v = time.Now().Add(time.Hour * 24 * time.Duration(newApiKey.Expiration))
 	} else {
-		expiresAt = time.Now().Add(time.Hour * 24)
+		v = time.Now().Add(time.Hour * 24)
 	}
 
 	apiKey := &datastore.APIKey{
@@ -123,7 +125,7 @@ func (ss *SecurityService) CreatePersonalAPIKey(ctx context.Context, user *datas
 		UserID:    user.UID,
 		Hash:      encodedKey,
 		Salt:      salt,
-		ExpiresAt: expiresAt,
+		ExpiresAt: null.NewTime(v, true),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -182,11 +184,11 @@ func (ss *SecurityService) CreateEndpointAPIKey(ctx context.Context, d *models.C
 	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
-	var expiresAt time.Time
+	var v time.Time
 	if d.KeyType == datastore.CLIKey {
-		expiresAt = time.Now().Add(time.Hour * 24 * time.Duration(d.Expiration))
+		v = time.Now().Add(time.Hour * 24 * time.Duration(d.Expiration))
 	} else if d.KeyType == datastore.AppPortalKey {
-		expiresAt = time.Now().Add(30 * time.Minute)
+		v = time.Now().Add(30 * time.Minute)
 	}
 
 	apiKey := &datastore.APIKey{
@@ -197,7 +199,7 @@ func (ss *SecurityService) CreateEndpointAPIKey(ctx context.Context, d *models.C
 		Role:      role,
 		Hash:      encodedKey,
 		Salt:      salt,
-		ExpiresAt: expiresAt,
+		ExpiresAt: null.NewTime(v, true),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}

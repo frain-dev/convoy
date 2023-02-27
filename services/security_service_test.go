@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
@@ -37,7 +39,7 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 		newApiKey *models.APIKey
 		member    *datastore.OrganisationMember
 	}
-	expires := time.Now().Add(time.Hour)
+	expires := null.NewTime(time.Now().Add(time.Hour), true)
 	tests := []struct {
 		name        string
 		args        args
@@ -96,7 +98,7 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 						Project: "1234",
 						App:     "1234",
 					},
-					ExpiresAt: expires.Add(-2 * time.Hour),
+					ExpiresAt: null.NewTime(expires.ValueOrZero().Add(-2*time.Hour), true),
 				},
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
@@ -320,7 +322,7 @@ func TestSecurityService_CreateEndpointAPIKey(t *testing.T) {
 					Project:  "1234",
 					Endpoint: "abc",
 				},
-				ExpiresAt: time.Now().Add(time.Minute * 30),
+				ExpiresAt: null.NewTime(time.Now().Add(time.Minute*30), true),
 			},
 			dbFn: func(ss *SecurityService) {
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -351,7 +353,7 @@ func TestSecurityService_CreateEndpointAPIKey(t *testing.T) {
 					Project:  "1234",
 					Endpoint: "abc",
 				},
-				ExpiresAt: time.Now().Add(time.Hour * 24 * 7),
+				ExpiresAt: null.NewTime(time.Now().Add(time.Hour*24*7), true),
 			},
 			dbFn: func(ss *SecurityService) {
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -424,12 +426,12 @@ func TestSecurityService_CreateEndpointAPIKey(t *testing.T) {
 				require.Equal(t, tc.wantBaseUrl, fmt.Sprintf("?projectID=%s&appId=%s", tc.args.newApiKey.Project.UID, tc.args.newApiKey.Endpoint.UID))
 			}
 
-			require.True(t, sameMinute(apiKey.ExpiresAt, tc.wantAPIKey.ExpiresAt))
+			require.True(t, sameMinute(apiKey.ExpiresAt.ValueOrZero(), tc.wantAPIKey.ExpiresAt.ValueOrZero()))
 
 			stripVariableFields(t, "apiKey", apiKey)
 			stripVariableFields(t, "apiKey", tc.wantAPIKey)
-			apiKey.ExpiresAt = time.Time{}
-			tc.wantAPIKey.ExpiresAt = time.Time{}
+			apiKey.ExpiresAt = null.Time{}
+			tc.wantAPIKey.ExpiresAt = null.Time{}
 			require.Equal(t, tc.wantAPIKey, apiKey)
 		})
 	}
@@ -920,7 +922,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 
 func TestSecurityService_CreatePersonalAPIKey(t *testing.T) {
 	ctx := context.Background()
-	expires := time.Now().Add(time.Hour)
+	expires := null.NewTime(time.Now().Add(time.Hour), true)
 
 	type args struct {
 		ctx       context.Context
@@ -1002,9 +1004,9 @@ func TestSecurityService_CreatePersonalAPIKey(t *testing.T) {
 			require.Empty(t, apiKey.DeletedAt)
 
 			stripVariableFields(t, "apiKey", apiKey)
-			require.InDelta(t, tt.wantAPIKey.ExpiresAt.Unix(), apiKey.ExpiresAt.Unix(), float64(time.Second))
-			tt.wantAPIKey.ExpiresAt = time.Time{}
-			apiKey.ExpiresAt = time.Time{}
+			require.InDelta(t, tt.wantAPIKey.ExpiresAt.ValueOrZero().Unix(), apiKey.ExpiresAt.ValueOrZero().Unix(), float64(time.Second))
+			tt.wantAPIKey.ExpiresAt = null.Time{}
+			apiKey.ExpiresAt = null.Time{}
 			require.Equal(t, tt.wantAPIKey, apiKey)
 		})
 	}

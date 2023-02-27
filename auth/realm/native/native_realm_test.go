@@ -48,7 +48,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
 					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt: time.Time{},
+					ExpiresAt: null.Time{},
 					CreatedAt: time.Time{},
 				}, nil)
 			},
@@ -71,7 +71,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
 					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt: time.Time{},
+					ExpiresAt: null.Time{},
 					CreatedAt: time.Time{},
 				},
 			},
@@ -99,7 +99,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
 					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt: time.Time{},
+					ExpiresAt: null.Time{},
 					CreatedAt: time.Time{},
 				}, nil)
 
@@ -128,7 +128,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
 					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt: time.Time{},
+					ExpiresAt: null.Time{},
 					CreatedAt: time.Time{},
 				},
 			},
@@ -156,7 +156,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
 					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt: time.Time{},
+					ExpiresAt: null.Time{},
 					CreatedAt: time.Time{},
 				}, nil)
 
@@ -198,7 +198,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
 					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
 					DeletedAt: null.NewTime(time.Now(), true),
-					ExpiresAt: time.Time{},
+					ExpiresAt: null.Time{},
 					CreatedAt: time.Time{},
 				}, nil)
 			},
@@ -238,7 +238,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
 					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt: time.Now().Add(time.Second * -10),
+					ExpiresAt: null.NewTime(time.Now().Add(time.Second*-10), true),
 					DeletedAt: null.Time{},
 					CreatedAt: time.Time{},
 				}, nil)

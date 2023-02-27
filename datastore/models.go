@@ -829,7 +829,7 @@ type APIKey struct {
 	Salt      string    `json:"salt,omitempty" db:"salt"`
 	Type      KeyType   `json:"key_type" db:"key_type"`
 	UserID    string    `json:"user_id" db:"user_id"`
-	ExpiresAt time.Time `json:"expires_at,omitempty" db:"expires_at"`
+	ExpiresAt null.Time `json:"expires_at,omitempty" db:"expires_at"`
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at"`
