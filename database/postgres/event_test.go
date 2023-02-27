@@ -33,6 +33,7 @@ func Test_CreateEvent(t *testing.T) {
 
 	newEvent.CreatedAt = time.Time{}
 	newEvent.UpdatedAt = time.Time{}
+	event.CreatedAt, event.UpdatedAt = time.Time{}, time.Time{}
 
 	require.Equal(t, event, newEvent)
 }
@@ -57,6 +58,7 @@ func Test_FindEventByID(t *testing.T) {
 	newEvent.CreatedAt = time.Time{}
 	newEvent.UpdatedAt = time.Time{}
 
+	event.CreatedAt, event.UpdatedAt = time.Time{}, time.Time{}
 	require.Equal(t, event, newEvent)
 }
 
