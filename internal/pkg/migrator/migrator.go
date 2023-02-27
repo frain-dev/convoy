@@ -1,6 +1,7 @@
 package migrator
 
 import (
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/database"
 	"github.com/jmoiron/sqlx"
 	migrate "github.com/rubenv/sql-migrate"
@@ -12,9 +13,11 @@ type Migrator struct {
 }
 
 func New(d database.Database) *Migrator {
-	migrations := &migrate.FileMigrationSource{
-		Dir: "sql",
+	migrations := &migrate.EmbedFileSystemMigrationSource{
+		FileSystem: convoy.MigrationFiles,
+		Root:       "sql",
 	}
+
 	return &Migrator{dbx: d.GetDB(), src: migrations}
 }
 
