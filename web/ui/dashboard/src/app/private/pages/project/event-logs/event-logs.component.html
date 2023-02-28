@@ -139,18 +139,18 @@
 								<td convoy-table-cell class="pl-16px">
 									<convoy-tag type="grey" className="mr-8px">{{ event.event_type }}</convoy-tag>
 								</td>
-								<td convoy-table-cell *ngIf="event.endpoint_metadata && event.endpoint_metadata[0]?.title" class="w-150px overflow-ellipsis">
-									<span *ngIf="!portalToken" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/endpoints/' + event.endpoint_metadata[0].uid" class="underline text-primary-100">{{ event.endpoint_metadata[0].title }}</span>
-									<span *ngIf="portalToken">{{ event.endpoint_metadata[0].title }}</span>
+								<td convoy-table-cell *ngIf="event.endpoint_metadata && event.endpoint_metadata[0]?.title">
+									<span (click)="viewEndpoint(event.endpoint_metadata[0].uid || '')" [ngClass]="{ underline: !portalToken }" class="max-w-[150px] overflow-hidden overflow-ellipsis text-primary-100">
+										{{ event.endpoint_metadata[0].title }}
+									</span>
 								</td>
-								<td convoy-table-cell *ngIf="event.source_metadata?.name" class="w-150px overflow-ellipsis">
-									<span *ngIf="!portalToken" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/sources'" [queryParams]="{ id: event.source_metadata.uid }" class="underline text-primary-100">{{ event.source_metadata.name }}</span>
-									<span *ngIf="portalToken">{{ event.source_metadata.name }}</span>
+								<td convoy-table-cell>
+									<span (click)="viewSource(event?.source_metadata?.uid || '')" [ngClass]="{ underline: !portalToken }" class="max-w-[150px] overflow-hidden overflow-ellipsis text-primary-100">{{ event.source_metadata?.name || 'API' }}</span>
 								</td>
 								<td convoy-table-cell>{{ event.created_at | date: 'mediumTime' }}</td>
 
 								<td convoy-table-cell>
-									<button convoy-button fill="clear" class="!p-0" size="sm" (click)="viewEventDeliveries(event.uid)">
+									<button convoy-button fill="clear" size="sm" (click)="viewEventDeliveries(event.uid)">
 										Deliveries
 										<img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px h-16px" alt="arrow right" />
 									</button>
