@@ -37,24 +37,25 @@ const (
 
 	baseEndpointFetch = `
 	SELECT
-	id, title, status, owner_id,
-	target_url, description, http_timeout,
-	rate_limit, rate_limit_duration, advanced_signatures,
-	slack_webhook_url, support_email, app_id,
-	project_id, secrets, created_at, updated_at,
-	authentication_type AS "authentication.type",
-	authentication_type_api_key_header_name AS "authentication.api_key.header_name",
-	authentication_type_api_key_header_value AS "authentication.api_key.header_value"
-	FROM convoy.endpoints
+	e.id, e.title, e.status, e.owner_id,
+	e.target_url, e.description, e.http_timeout,
+	e.rate_limit, e.rate_limit_duration, e.advanced_signatures,
+	e.slack_webhook_url, e.support_email, e.app_id,
+	e.project_id, e.secrets, e.created_at, e.updated_at,
+	e.authentication_type AS "authentication.type",
+	e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
+	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value",
+	COUNT(ee.event_id) AS event_count
+	FROM convoy.endpoints AS e LEFT JOIN convoy.events_endpoints AS ee ON e.id = ee.endpoint_id
 	`
 
-	fetchEndpointById = baseEndpointFetch + `WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;`
+	fetchEndpointById = baseEndpointFetch + `WHERE e.id = $1 AND e.project_id = $2 AND e.deleted_at IS NULL GROUP BY e.id ORDER BY e.id;`
 
-	fetchEndpointsById = baseEndpointFetch + `WHERE id IN (?) AND project_id = ? AND deleted_at IS NULL;`
+	fetchEndpointsById = baseEndpointFetch + `WHERE e.id IN (?) AND e.project_id = ? AND e.deleted_at IS NULL GROUP BY e.id ORDER BY e.id;`
 
-	fetchEndpointsByAppId = baseEndpointFetch + `WHERE app_id = $1 AND project_id = $2 AND deleted_at IS NULL;`
+	fetchEndpointsByAppId = baseEndpointFetch + `WHERE e.app_id = $1 AND e.project_id = $2 AND e.deleted_at IS NULL GROUP BY e.id ORDER BY e.id;`
 
-	fetchEndpointsByOwnerId = baseEndpointFetch + `WHERE project_id = $1 AND owner_id = $2 AND deleted_at IS NULL;`
+	fetchEndpointsByOwnerId = baseEndpointFetch + `WHERE e.project_id = $1 AND e.owner_id = $2 AND e.deleted_at IS NULL GROUP BY e.id ORDER BY e.id;`
 
 	updateEndpoint = `
 	UPDATE convoy.endpoints SET
@@ -96,16 +97,18 @@ const (
 
 	fetchEndpointsPaginated = `
 	SELECT
-	id, title, status, owner_id,
-	target_url, description, http_timeout,
-	rate_limit, rate_limit_duration, advanced_signatures,
-	slack_webhook_url, support_email, app_id,
-	project_id, secrets, created_at, updated_at,
-	authentication_type AS "authentication.type",
-	authentication_type_api_key_header_name AS "authentication.api_key.header_name",
-	authentication_type_api_key_header_value AS "authentication.api_key.header_value"
-	FROM convoy.endpoints WHERE deleted_at IS NULL AND project_id = $3 AND (title ILIKE $4 OR $4 = '')
-	ORDER BY id LIMIT $1 OFFSET $2;
+	e.id, e.title, e.status, e.owner_id,
+	e.target_url, e.description, e.http_timeout,
+	e.rate_limit, e.rate_limit_duration, e.advanced_signatures,
+	e.slack_webhook_url, e.support_email, e.app_id,
+	e.project_id, e.secrets, e.created_at, e.updated_at,
+	e.authentication_type AS "authentication.type",
+	e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
+	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value",
+	COUNT(ee.event_id) AS event_count
+	FROM convoy.endpoints AS e LEFT JOIN convoy.events_endpoints AS ee  ON e.id = ee.endpoint_id
+	WHERE e.deleted_at IS NULL AND e.project_id = $3 AND (e.title ILIKE $4 OR $4 = '')
+	GROUP BY e.id ORDER BY e.id LIMIT $1 OFFSET $2;
 	`
 
 	countEndpoints = `

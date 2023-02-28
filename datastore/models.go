@@ -308,7 +308,7 @@ type Endpoint struct {
 
 	HttpTimeout string         `json:"http_timeout" db:"http_timeout"`
 	RateLimit   int            `json:"rate_limit" db:"rate_limit"`
-	Events      int64          `json:"events,omitempty" db:"-"`
+	Events      int64          `json:"events,omitempty" db:"event_count"`
 	Status      EndpointStatus `json:"status" db:"status"`
 
 	RateLimitDuration string                  `json:"rate_limit_duration" db:"rate_limit_duration"`
