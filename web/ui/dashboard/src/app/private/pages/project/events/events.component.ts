@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { differenceInCalendarDays, differenceInCalendarMonths, differenceInCalendarWeeks, differenceInCalendarYears, format, getDayOfYear, getMonth, getWeek, getYear, sub } from 'date-fns';
+import { format } from 'date-fns';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { EventsService } from './events.service';
 import { EVENT_DELIVERY } from 'src/app/models/event.model';
@@ -39,6 +39,7 @@ export class EventsComponent implements OnInit, OnDestroy {
 	lastestEventDeliveries: EVENT_DELIVERY[] = [];
 	eventDelTableHead: string[] = ['Status', 'Event Type', 'Event Time', 'Next Attempt'];
 	eventDelievryIntervalTime: any;
+	labelsDateFormat!: string;
 
 	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, public router: Router) {}
 
@@ -91,8 +92,7 @@ export class EventsComponent implements OnInit, OnDestroy {
 
 			const dashboardResponse = await this.eventsService.dashboardSummary({ startDate: startDate || '', endDate: endDate || '', frequency: this.dashboardFrequency });
 			this.dashboardData = dashboardResponse.data;
-			const chatLabels = this.getDateRange();
-			this.initConvoyChart(dashboardResponse, chatLabels);
+			this.initConvoyChart(dashboardResponse);
 
 			return;
 		} catch (error: any) {
@@ -115,94 +115,45 @@ export class EventsComponent implements OnInit, OnDestroy {
 		return { startDate, endDate };
 	}
 
-	initConvoyChart(dashboardResponse: HTTP_RESPONSE, chatLabels: LABELS[]) {
+	initConvoyChart(dashboardResponse: HTTP_RESPONSE) {
 		let chartData: { label: string; data: any }[] = [];
 
-		const eventData = dashboardResponse.data.event_data;
-
-		chatLabels.forEach(label => {
+		const eventData = dashboardResponse.data.event_data.reverse();
+		const labelFormat = this.getDateLabelFormat();
+		eventData.forEach((data: any) => {
 			chartData.push({
-				label: label.date,
-				data: eventData.find((data: { data: { index: number } }) => data.data.index === label.index)?.count || 0
+				label: format(new Date(data.data.date), labelFormat),
+				data: data.count || 0
 			});
 		});
+
 		this.chartData = chartData;
 	}
 
-	dateRange(startDate: string, endDate: string): { date: string; index: number }[] {
+	getDateLabelFormat() {
 		let labelsDateFormat = '';
-		let periodDifference;
-		let currentDate = new Date(startDate);
-		let currentEndDate = new Date(endDate);
-		let currentStartDate = currentDate;
-
 		switch (this.dashboardFrequency) {
 			case 'daily':
-				labelsDateFormat = 'do, MMM';
-				periodDifference = differenceInCalendarDays(new Date(endDate), new Date(startDate)) + 1;
-				periodDifference && periodDifference < 31 ? (currentStartDate = sub(currentEndDate, { days: 30 })) : (currentStartDate = currentDate);
+				labelsDateFormat = 'do, MMM, yyyy';
 				break;
 			case 'weekly':
 				labelsDateFormat = 'yyyy-MM';
-				periodDifference = differenceInCalendarWeeks(new Date(endDate), new Date(startDate)) + 1;
-				periodDifference && periodDifference < 31 ? (currentStartDate = sub(currentEndDate, { weeks: 30 })) : (currentStartDate = currentDate);
 				break;
 			case 'monthly':
-				labelsDateFormat = 'MMM';
-				periodDifference = differenceInCalendarMonths(new Date(endDate), new Date(startDate)) + 1;
-				periodDifference && periodDifference < 31 ? (currentStartDate = sub(currentEndDate, { months: 30 })) : (currentStartDate = currentDate);
+				labelsDateFormat = 'MMM, yyyy';
 				break;
 			case 'yearly':
 				labelsDateFormat = 'yyyy';
-				periodDifference = differenceInCalendarYears(new Date(endDate), new Date(startDate)) + 1;
-				periodDifference && periodDifference < 31 ? (currentStartDate = sub(currentEndDate, { years: 30 })) : (currentStartDate = currentDate);
 				break;
 			default:
 				break;
 		}
 
-		for (var dateArray: any = []; currentStartDate <= currentEndDate; currentStartDate.setDate(currentStartDate.getDate() + 1)) {
-			switch (this.dashboardFrequency) {
-				case 'daily':
-					dateArray.push({
-						index: getDayOfYear(new Date(currentStartDate)),
-						date: format(new Date(currentStartDate), labelsDateFormat)
-					});
-					break;
-				case 'weekly':
-					dateArray.push({
-						index: getWeek(new Date(currentStartDate)),
-						date: format(new Date(currentStartDate), labelsDateFormat)
-					});
-					break;
-				case 'monthly':
-					dateArray.push({
-						index: getMonth(new Date(currentStartDate)) + 1,
-						date: format(new Date(currentStartDate), labelsDateFormat)
-					});
-					break;
-				case 'yearly':
-					dateArray.push({
-						index: getYear(new Date(currentStartDate)),
-						date: format(new Date(currentStartDate), labelsDateFormat)
-					});
-					break;
-				default:
-					break;
-			}
-
-			dateArray = [...new Map(dateArray.map((item: any) => [item['index'], item])).values()];
-		}
-		return dateArray;
+		return labelsDateFormat;
 	}
 
 	get isProjectConfigurationComplete() {
 		const configurationComplete = localStorage.getItem('isActiveProjectConfigurationComplete');
 		return configurationComplete ? JSON.parse(configurationComplete) : false;
-	}
-
-	getDateRange() {
-		const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
-		return this.dateRange(startDate, endDate);
 	}
 }
