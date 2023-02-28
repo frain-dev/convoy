@@ -11,24 +11,25 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oklog/ulid/v2"
+
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
 	"github.com/frain-dev/convoy/server/testdb"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
-	"github.com/google/uuid"
 	"github.com/sebdah/goldie/v2"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type DashboardIntegrationTestSuite struct {
 	suite.Suite
-	DB              cm.Client
+	DB              database.Database
 	Router          http.Handler
 	ConvoyApp       *ApplicationHandler
 	AuthenticatorFn AuthenticatorFn
@@ -47,17 +48,17 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
 
 	// Setup Default User
-	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.Store)
+	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
 
 	// Setup Default Organisation
-	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.Store, user)
+	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, user)
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
 
 	// Setup Default Project.
-	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.Store, s.DefaultOrg.UID)
+	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, s.DefaultOrg.UID)
 
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
 		Username: user.Email,
@@ -68,8 +69,8 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
-	userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -84,56 +85,81 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 		UID:          "abc",
 		ProjectID:    s.DefaultProject.UID,
 		Title:        "test-app",
+		Secrets:      datastore.Secrets{},
 		SupportEmail: "test@suport.com",
-		CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	}
 
-	endpointRepo := cm.NewEndpointRepo(s.ConvoyApp.A.Store)
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
 	err := endpointRepo.CreateEndpoint(ctx, endpoint, endpoint.ProjectID)
+	require.NoError(s.T(), err)
+
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+
+	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.IncomingProject, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
 	require.NoError(s.T(), err)
 
 	eventDeliveries := []datastore.EventDelivery{
 		{
-			UID:        uuid.New().String(),
-			ProjectID:  s.DefaultProject.UID,
-			EndpointID: endpoint.UID,
-			CreatedAt:  primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt:  primitive.NewDateTimeFromTime(time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC)),
+			UID:            ulid.Make().String(),
+			ProjectID:      s.DefaultProject.UID,
+			EndpointID:     endpoint.UID,
+			EventID:        event.UID,
+			SubscriptionID: sub.UID,
+			Metadata:       &datastore.Metadata{},
+			CreatedAt:      time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC),
+			UpdatedAt:      time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC),
 		},
 		{
-			UID:       uuid.New().String(),
-			ProjectID: s.DefaultProject.UID,
-			CreatedAt: primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt: primitive.NewDateTimeFromTime(time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC)),
+			UID:            ulid.Make().String(),
+			ProjectID:      s.DefaultProject.UID,
+			EventID:        event.UID,
+			SubscriptionID: sub.UID,
+			Metadata:       &datastore.Metadata{},
+			CreatedAt:      time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC),
+			UpdatedAt:      time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC),
 		},
 		{
-			UID:       uuid.New().String(),
-			ProjectID: s.DefaultProject.UID,
-			CreatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UID:            ulid.Make().String(),
+			ProjectID:      s.DefaultProject.UID,
+			EventID:        event.UID,
+			SubscriptionID: sub.UID,
+			Metadata:       &datastore.Metadata{},
+			CreatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+			UpdatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 		},
 		{
-			UID:       uuid.New().String(),
-			ProjectID: s.DefaultProject.UID,
-			CreatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UID:            ulid.Make().String(),
+			ProjectID:      s.DefaultProject.UID,
+			EventID:        event.UID,
+			SubscriptionID: sub.UID,
+			Metadata:       &datastore.Metadata{},
+			CreatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+			UpdatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 		},
 		{
-			UID:       uuid.New().String(),
-			ProjectID: s.DefaultProject.UID,
-			CreatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UID:            ulid.Make().String(),
+			ProjectID:      s.DefaultProject.UID,
+			EventID:        event.UID,
+			SubscriptionID: sub.UID,
+			Metadata:       &datastore.Metadata{},
+			CreatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+			UpdatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 		},
 		{
-			UID:       uuid.New().String(),
-			ProjectID: s.DefaultProject.UID,
-			CreatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
-			UpdatedAt: primitive.NewDateTimeFromTime(time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC)),
+			UID:            ulid.Make().String(),
+			ProjectID:      s.DefaultProject.UID,
+			EventID:        event.UID,
+			SubscriptionID: sub.UID,
+			Metadata:       &datastore.Metadata{},
+			CreatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+			UpdatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
 		},
 	}
 
-	eventDelivery := cm.NewEventDeliveryRepository(s.ConvoyApp.A.Store)
+	eventDelivery := postgres.NewEventDeliveryRepo(s.ConvoyApp.A.DB)
 	for i := range eventDeliveries {
 		err = eventDelivery.CreateEventDelivery(ctx, &eventDeliveries[i])
 		require.NoError(s.T(), err)
@@ -246,8 +272,8 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			if err != nil {
 				t.Errorf("Failed to load config file: %v", err)
 			}
-			apiRepo := cm.NewApiKeyRepo(s.ConvoyApp.A.Store)
-			userRepo := cm.NewUserRepo(s.ConvoyApp.A.Store)
+			apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+			userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 			initRealmChain(t, apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
 			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/organisations/%s/projects/%s/dashboard/summary?startDate=%s&endDate=%s&type=%s", s.DefaultOrg.UID, tc.urlQuery.projectID, tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type), nil)

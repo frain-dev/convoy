@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
@@ -15,8 +13,8 @@ import (
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/golang/mock/gomock"
-	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -69,14 +67,14 @@ func TestProcessEventCreated(t *testing.T) {
 			name: "should_process_event_for_outgoing_project",
 			event: &CreateEvent{
 				Event: datastore.Event{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					EventType: "*",
 					SourceID:  "source-id-1",
 					ProjectID: "project-id-1",
 					Endpoints: []string{"endpoint-id-1"},
 					Data:      []byte(`{}`),
-					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-					UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
 				},
 			},
 			dbFn: func(args *args) {
@@ -108,7 +106,7 @@ func TestProcessEventCreated(t *testing.T) {
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
 				endpoint := &datastore.Endpoint{UID: "endpoint-id-1"}
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").Times(1).Return(endpoint, nil)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).Times(1).Return(endpoint, nil)
 				mockCache.EXPECT().Set(gomock.Any(), "endpoints:endpoint-id-1", endpoint, 10*time.Minute).Times(1).Return(nil)
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
@@ -130,7 +128,7 @@ func TestProcessEventCreated(t *testing.T) {
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				endpoint = &datastore.Endpoint{UID: "098", TargetURL: "https://google.com", Status: datastore.ActiveEndpointStatus}
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(endpoint, nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
@@ -148,14 +146,14 @@ func TestProcessEventCreated(t *testing.T) {
 			name: "should_process_event_for_outgoing_project_without_subscription",
 			event: &CreateEvent{
 				Event: datastore.Event{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					EventType: "*",
 					SourceID:  "source-id-1",
 					ProjectID: "project-id-1",
 					Endpoints: []string{"endpoint-id-1"},
 					Data:      []byte(`{}`),
-					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-					UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
 				},
 				CreateSubscription: true,
 			},
@@ -188,7 +186,7 @@ func TestProcessEventCreated(t *testing.T) {
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
 				endpoint := &datastore.Endpoint{UID: "endpoint-id-1"}
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").Times(1).Return(endpoint, nil)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).Times(1).Return(endpoint, nil)
 				mockCache.EXPECT().Set(gomock.Any(), "endpoints:endpoint-id-1", endpoint, 10*time.Minute).Times(1).Return(nil)
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
@@ -203,7 +201,7 @@ func TestProcessEventCreated(t *testing.T) {
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				endpoint = &datastore.Endpoint{UID: "098", TargetURL: "https://google.com", Status: datastore.ActiveEndpointStatus}
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(endpoint, nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
@@ -221,14 +219,14 @@ func TestProcessEventCreated(t *testing.T) {
 			name: "should_process_event_for_incoming_project",
 			event: &CreateEvent{
 				Event: datastore.Event{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					EventType: "*",
 					SourceID:  "source-id-1",
 					ProjectID: "project-id-1",
 					Endpoints: []string{"endpoint-id-1"},
 					Data:      []byte(`{}`),
-					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-					UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
 				},
 			},
 			dbFn: func(args *args) {
@@ -295,7 +293,7 @@ func TestProcessEventCreated(t *testing.T) {
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				endpoint := &datastore.Endpoint{UID: "endpoint-id-1", TargetURL: "https://google.com", Status: datastore.ActiveEndpointStatus}
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(endpoint, nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
@@ -313,14 +311,14 @@ func TestProcessEventCreated(t *testing.T) {
 			name: "should_process_replayed_event",
 			event: &CreateEvent{
 				Event: datastore.Event{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					EventType: "*",
 					SourceID:  "source-id-1",
 					ProjectID: "project-id-1",
 					Endpoints: []string{"endpoint-id-1"},
 					Data:      []byte(`{}`),
-					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-					UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
 				},
 			},
 			dbFn: func(args *args) {
@@ -367,7 +365,7 @@ func TestProcessEventCreated(t *testing.T) {
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
 
 				endpoint := &datastore.Endpoint{UID: "endpoint-id-1", TargetURL: "https://google.com", Status: datastore.ActiveEndpointStatus}
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1").
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(endpoint, nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)

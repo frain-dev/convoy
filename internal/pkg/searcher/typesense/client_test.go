@@ -8,9 +8,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -70,7 +71,7 @@ func Test_IndexOne(t *testing.T) {
 	p := Person{
 		Age:       1,
 		Name:      "raymond",
-		ID:        uuid.NewString(),
+		ID:        ulid.Make().String(),
 		UID:       "uid-1",
 		CreatedAt: "2022-08-02T15:04:05+01:00",
 		UpdatedAt: "2022-09-02T15:04:05+01:00",
@@ -100,7 +101,7 @@ func Test_IndexMutiple(t *testing.T) {
 			Name:      "subomi",
 			UID:       "uid-1",
 			GroupID:   "group-1",
-			ID:        uuid.NewString(),
+			ID:        ulid.Make().String(),
 			CreatedAt: "2022-09-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
 		},
@@ -108,14 +109,14 @@ func Test_IndexMutiple(t *testing.T) {
 			Age:       2,
 			GroupID:   "group-1",
 			Name:      "raymond",
-			ID:        uuid.NewString(),
+			ID:        ulid.Make().String(),
 			UID:       "uid-2",
 			CreatedAt: "2022-08-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
 		},
 		{
 			Age:       2,
-			ID:        uuid.NewString(),
+			ID:        ulid.Make().String(),
 			Name:      "emmanuel",
 			GroupID:   "group-1",
 			UID:       "uid-3",
@@ -156,7 +157,7 @@ func Test_Index(t *testing.T) {
 		{
 			name: "Successfully index the document",
 			person: Person{
-				ID:        uuid.NewString(),
+				ID:        ulid.Make().String(),
 				UID:       "uid-5",
 				Age:       5,
 				GroupID:   "group-1",
@@ -187,7 +188,7 @@ func Test_Index(t *testing.T) {
 		{
 			name: "Should fail to index the document - missing created_at field",
 			person: Person{
-				ID:        uuid.NewString(),
+				ID:        ulid.Make().String(),
 				Age:       5,
 				GroupID:   "group-1",
 				UID:       "uid-2",
@@ -204,7 +205,7 @@ func Test_Index(t *testing.T) {
 			name: "Should fail to index the document - missing updated_at field",
 			person: Person{
 				Age:       5,
-				ID:        uuid.NewString(),
+				ID:        ulid.Make().String(),
 				GroupID:   "group-1",
 				UID:       "uid-2",
 				Name:      "emmanuella",
@@ -220,7 +221,7 @@ func Test_Index(t *testing.T) {
 			name: "Should fail to index the document - missing uid field",
 			person: Person{
 				Age:       5,
-				ID:        uuid.NewString(),
+				ID:        ulid.Make().String(),
 				GroupID:   "group-1",
 				Name:      "emmanuella",
 				CreatedAt: "2022-09-02T15:04:05+01:00",
@@ -263,7 +264,7 @@ func Test_Search(t *testing.T) {
 	people := []Person{
 		{
 			UID:       "uid-1",
-			ID:        uuid.NewString(),
+			ID:        ulid.Make().String(),
 			Age:       1,
 			GroupID:   "group-1",
 			Name:      "subomi",
@@ -271,7 +272,7 @@ func Test_Search(t *testing.T) {
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
 		},
 		{
-			ID:        uuid.NewString(),
+			ID:        ulid.Make().String(),
 			UID:       "uid-2",
 			Age:       2,
 			GroupID:   "group-1",
@@ -280,7 +281,7 @@ func Test_Search(t *testing.T) {
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
 		},
 		{
-			ID:        uuid.NewString(),
+			ID:        ulid.Make().String(),
 			UID:       "uid-3",
 			Age:       2,
 			GroupID:   "group-1",
@@ -289,7 +290,7 @@ func Test_Search(t *testing.T) {
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
 		},
 		{
-			ID:        uuid.NewString(),
+			ID:        ulid.Make().String(),
 			UID:       "uid-4",
 			GroupID:   "group-1",
 			Age:       3,
@@ -298,7 +299,7 @@ func Test_Search(t *testing.T) {
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
 		},
 		{
-			ID:        uuid.NewString(),
+			ID:        ulid.Make().String(),
 			UID:       "uid-5",
 			GroupID:   "group-1",
 			Age:       5,

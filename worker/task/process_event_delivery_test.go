@@ -37,7 +37,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				UID: "",
 			},
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{RetryConfig: &datastore.DefaultRetryConfig}, nil)
@@ -65,7 +65,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				UID: "",
 			},
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
 						RateLimitDuration: "1m",
@@ -116,7 +116,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				UID: "",
 			},
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID:         "123",
 						RateLimit:         10,
@@ -163,10 +163,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Header: "X-Convoy-Signature",
 								Versions: []datastore.SignatureVersion{
 									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
 									},
 								},
 							},
@@ -206,7 +205,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				UID: "",
 			},
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
@@ -258,10 +257,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
 									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
 									},
 								},
 							},
@@ -301,7 +299,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				UID: "",
 			},
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID: "123",
 						Secrets: []datastore.Secret{
@@ -352,10 +350,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
 									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
 									},
 								},
 							},
@@ -395,7 +392,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				UID: "",
 			},
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID: "123",
 						Secrets: []datastore.Secret{
@@ -446,10 +443,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
 									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
 									},
 								},
 							},
@@ -489,7 +485,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				UID: "",
 			},
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID: "123",
 						Secrets: []datastore.Secret{
@@ -540,10 +536,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
 									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
 									},
 								},
 							},
@@ -583,7 +578,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				UID: "",
 			},
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID: "123",
 						Secrets: []datastore.Secret{
@@ -634,10 +629,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
 									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
 									},
 								},
 							},
@@ -677,7 +671,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				UID: "",
 			},
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID:    "123",
 						SupportEmail: "test@gmail.com",
@@ -729,10 +723,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Header: config.SignatureHeaderProvider("X-Convoy-Signature"),
 								Versions: []datastore.SignatureVersion{
 									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
 									},
 								},
 							},
@@ -776,7 +769,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				UID: "",
 			},
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, r *mocks.MockRateLimiter, s *mocks.MockSubscriptionRepository, q *mocks.MockQueuer) {
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID:    "123",
 						SupportEmail: "test@gmail.com",
@@ -829,10 +822,9 @@ func TestProcessEventDelivery(t *testing.T) {
 								Header: "X-Convoy-Signature",
 								Versions: []datastore.SignatureVersion{
 									{
-										UID:       "abc",
-										Hash:      "SHA256",
-										Encoding:  datastore.HexEncoding,
-										CreatedAt: 1234,
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
 									},
 								},
 							},

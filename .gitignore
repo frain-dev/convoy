@@ -20,6 +20,7 @@
 /data/mongo/
 .DS_Store
 *.db
+pgdata
 
 # ui depencencies
 **/node_modules
@@ -33,3 +34,4 @@ convoy.json
 docker-compose.yml
 compose.yml
 typesense-data
+/.run/go test github.com_frain-dev_convoy_server.run.xml

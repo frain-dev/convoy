@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
@@ -16,8 +17,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ProjectService struct {
@@ -50,51 +49,20 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 
 	config := newProject.Config
 	if newProject.Config == nil {
-		config = &datastore.ProjectConfig{}
-		config.Signature = datastore.GetDefaultSignatureConfig()
-		config.Strategy = &datastore.DefaultStrategyConfig
-		config.RateLimit = &datastore.DefaultRateLimitConfig
-		config.RetentionPolicy = &datastore.DefaultRetentionPolicy
+		config = &datastore.DefaultProjectConfig
 	} else {
-		if newProject.Config.Signature == nil {
-			config.Signature = datastore.GetDefaultSignatureConfig()
-		}
-
 		checkSignatureVersions(newProject.Config.Signature.Versions)
-
-		if newProject.Config.Strategy == nil {
-			config.Strategy = &datastore.DefaultStrategyConfig
-		}
-
-		if newProject.Config.RateLimit == nil {
-			config.RateLimit = &datastore.DefaultRateLimitConfig
-		}
-
-		if newProject.Config.RetentionPolicy == nil {
-			config.RetentionPolicy = &datastore.DefaultRetentionPolicy
-		}
-
-	}
-
-	if newProject.RateLimit == 0 {
-		newProject.RateLimit = convoy.RATE_LIMIT
-	}
-
-	if util.IsStringEmpty(newProject.RateLimitDuration) {
-		newProject.RateLimitDuration = convoy.RATE_LIMIT_DURATION
 	}
 
 	project := &datastore.Project{
-		UID:               uuid.New().String(),
-		Name:              projectName,
-		Type:              newProject.Type,
-		OrganisationID:    org.UID,
-		Config:            config,
-		LogoURL:           newProject.LogoURL,
-		CreatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:         primitive.NewDateTimeFromTime(time.Now()),
-		RateLimit:         newProject.RateLimit,
-		RateLimitDuration: newProject.RateLimitDuration,
+		UID:            ulid.Make().String(),
+		Name:           projectName,
+		Type:           newProject.Type,
+		OrganisationID: org.UID,
+		Config:         config,
+		LogoURL:        newProject.LogoURL,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	err = ps.projectRepo.CreateProject(ctx, project)
@@ -128,10 +96,10 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 				Project: apiKey.Role.Project,
 			},
 			Type:      apiKey.Type,
-			ExpiresAt: apiKey.ExpiresAt.Time(),
+			ExpiresAt: apiKey.ExpiresAt,
 		},
 		UID:       apiKey.UID,
-		CreatedAt: apiKey.CreatedAt.Time(),
+		CreatedAt: apiKey.CreatedAt,
 		Key:       keyString,
 	}
 
@@ -177,17 +145,17 @@ func checkSignatureVersions(versions []datastore.SignatureVersion) {
 	for i := range versions {
 		v := &versions[i]
 		if v.UID == "" {
-			v.UID = uuid.NewString()
+			v.UID = ulid.Make().String()
 		}
 
-		if v.CreatedAt == 0 {
-			v.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
+		if v.CreatedAt.Unix() == 0 {
+			v.CreatedAt = time.Now()
 		}
 	}
 }
 
 func (ps *ProjectService) GetProjects(ctx context.Context, filter *datastore.ProjectFilter) ([]*datastore.Project, error) {
-	projects, err := ps.projectRepo.LoadProjects(ctx, filter.WithNamesTrimmed())
+	projects, err := ps.projectRepo.LoadProjects(ctx, filter)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to load projects")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching projects"))

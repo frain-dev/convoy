@@ -40,6 +40,8 @@ components:
       properties:
         event_type:
           type: string
+        host_name:
+          type: string
         source_id:
           type: string
       type: object
@@ -290,11 +292,20 @@ components:
     datastore.FilterSchema:
       properties:
         body:
-          additionalProperties: true
-          type: object
+          $ref: '#/components/schemas/datastore.M'
         headers:
-          additionalProperties: true
-          type: object
+          $ref: '#/components/schemas/datastore.M'
+      type: object
+    datastore.GooglePubSubConfig:
+      properties:
+        project_id:
+          type: string
+        service_account:
+          items:
+            type: integer
+          type: array
+        subscription_id:
+          type: string
       type: object
     datastore.HMac:
       properties:
@@ -311,6 +322,9 @@ components:
       additionalProperties:
         type: string
       type: object
+    datastore.M:
+      additionalProperties: true
+      type: object
     datastore.Metadata:
       properties:
         data:
@@ -321,7 +335,7 @@ components:
         interval_seconds:
           type: integer
         next_send_time:
-          type: integer
+          type: string
         num_trials:
           description: |-
             NumTrials: number of times we have tried to deliver this Event to
@@ -332,19 +346,21 @@ components:
         retry_limit:
           type: integer
         strategy:
-          type: string
+          $ref: '#/components/schemas/datastore.StrategyProvider'
       type: object
     datastore.Organisation:
       properties:
         assigned_domain:
-          type: string
+          $ref: '#/components/schemas/null.String'
         created_at:
           type: string
         custom_domain:
-          type: string
+          $ref: '#/components/schemas/null.String'
         deleted_at:
           type: string
         name:
+          type: string
+        ownerID:
           type: string
         uid:
           type: string
@@ -376,17 +392,12 @@ components:
           type: string
         logo_url:
           type: string
-        metadata:
-          $ref: '#/components/schemas/datastore.ProjectMetadata'
         name:
           type: string
         organisation_id:
           type: string
-        rate_limit:
-          description: 'TODO(subomi): refactor this into the Instance API.'
+        retained_events:
           type: integer
-        rate_limit_duration:
-          type: string
         statistics:
           $ref: '#/components/schemas/datastore.ProjectStatistics'
         type:
@@ -398,25 +409,20 @@ components:
       type: object
     datastore.ProjectConfig:
       properties:
-        is_retention_policy_enabled:
-          type: boolean
         max_payload_read_size:
           type: integer
         ratelimit:
           $ref: '#/components/schemas/datastore.RateLimitConfiguration'
-        replay_attacks:
+        replay_attacks_prevention_enabled:
           type: boolean
         retention_policy:
           $ref: '#/components/schemas/datastore.RetentionPolicyConfiguration'
+        retention_policy_enabled:
+          type: boolean
         signature:
           $ref: '#/components/schemas/datastore.SignatureConfiguration'
         strategy:
           $ref: '#/components/schemas/datastore.StrategyConfiguration'
-      type: object
-    datastore.ProjectMetadata:
-      properties:
-        retained_events:
-          type: integer
       type: object
     datastore.ProjectStatistics:
       properties:
@@ -438,6 +444,25 @@ components:
         twitter:
           $ref: '#/components/schemas/datastore.TwitterProviderConfig'
       type: object
+    datastore.PubSubConfig:
+      properties:
+        google:
+          $ref: '#/components/schemas/datastore.GooglePubSubConfig'
+        sqs:
+          $ref: '#/components/schemas/datastore.SQSPubSubConfig'
+        type:
+          $ref: '#/components/schemas/datastore.PubSubType'
+        workers:
+          type: integer
+      type: object
+    datastore.PubSubType:
+      enum:
+      - sqs
+      - google
+      type: string
+      x-enum-varnames:
+      - SqsPubSub
+      - GooglePubSub
     datastore.RateLimitConfiguration:
       properties:
         count:
@@ -457,6 +482,17 @@ components:
         retry_count:
           type: integer
         type:
+          $ref: '#/components/schemas/datastore.StrategyProvider'
+      type: object
+    datastore.SQSPubSubConfig:
+      properties:
+        access_key_id:
+          type: string
+        default_region:
+          type: string
+        queue_name:
+          type: string
+        secret_key:
           type: string
       type: object
     datastore.Secret:
@@ -516,11 +552,15 @@ components:
           $ref: '#/components/schemas/datastore.SourceProvider'
         provider_config:
           $ref: '#/components/schemas/datastore.ProviderConfig'
+        pub_sub:
+          $ref: '#/components/schemas/datastore.PubSubConfig'
         type:
           $ref: '#/components/schemas/datastore.SourceType'
         uid:
           type: string
         updated_at:
+          type: string
+        url:
           type: string
         verifier:
           $ref: '#/components/schemas/datastore.VerifierConfig'
@@ -554,8 +594,18 @@ components:
         retry_count:
           type: integer
         type:
-          type: string
+          $ref: '#/components/schemas/datastore.StrategyProvider'
       type: object
+    datastore.StrategyProvider:
+      enum:
+      - linear
+      - linear
+      - exponential
+      type: string
+      x-enum-varnames:
+      - DefaultStrategyProvider
+      - LinearStrategyProvider
+      - ExponentialStrategyProvider
     datastore.Subscription:
       properties:
         alert_config:
@@ -598,7 +648,7 @@ components:
     datastore.TwitterProviderConfig:
       properties:
         crc_verified_at:
-          type: integer
+          type: string
       type: object
     datastore.User:
       properties:
@@ -616,8 +666,6 @@ components:
           type: string
         reset_password_expires_at:
           type: string
-        role:
-          $ref: '#/components/schemas/auth.Role'
         uid:
           type: string
         updated_at:
@@ -758,9 +806,9 @@ components:
     models.PortalLinkResponse:
       properties:
         created_at:
-          type: integer
+          type: string
         deleted_at:
-          type: integer
+          type: string
         endpoint_count:
           type: integer
         endpoints:
@@ -780,7 +828,7 @@ components:
         uid:
           type: string
         updated_at:
-          type: integer
+          type: string
         url:
           type: string
       type: object
@@ -791,10 +839,6 @@ components:
         logo_url:
           type: string
         name:
-          type: string
-        rate_limit:
-          type: integer
-        rate_limit_duration:
           type: string
         type:
           $ref: '#/components/schemas/datastore.ProjectType'
@@ -815,7 +859,7 @@ components:
         retry_count:
           type: integer
         type:
-          type: string
+          $ref: '#/components/schemas/datastore.StrategyProvider'
       type: object
     models.Source:
       properties:
@@ -825,6 +869,8 @@ components:
           type: string
         provider:
           $ref: '#/components/schemas/datastore.SourceProvider'
+        pub_sub:
+          $ref: '#/components/schemas/datastore.PubSubConfig'
         type:
           $ref: '#/components/schemas/datastore.SourceType'
         verifier:
@@ -833,9 +879,9 @@ components:
     models.SourceResponse:
       properties:
         created_at:
-          type: integer
+          type: string
         deleted_at:
-          type: integer
+          type: string
         is_disabled:
           type: boolean
         mask_id:
@@ -848,12 +894,14 @@ components:
           $ref: '#/components/schemas/datastore.SourceProvider'
         provider_config:
           $ref: '#/components/schemas/datastore.ProviderConfig'
+        pub_sub:
+          $ref: '#/components/schemas/datastore.PubSubConfig'
         type:
           $ref: '#/components/schemas/datastore.SourceType'
         uid:
           type: string
         updated_at:
-          type: integer
+          type: string
         url:
           type: string
         verifier:
@@ -885,6 +933,14 @@ components:
           $ref: '#/components/schemas/models.FilterSchema'
         schema:
           $ref: '#/components/schemas/models.FilterSchema'
+      type: object
+    null.String:
+      properties:
+        string:
+          type: string
+        valid:
+          description: Valid is true if String is not NULL
+          type: boolean
       type: object
     server.Stub:
       type: object

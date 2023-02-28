@@ -7,12 +7,13 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/google/uuid"
 )
 
 func TestWrite(t *testing.T) {
@@ -28,11 +29,11 @@ func TestWrite(t *testing.T) {
 	}{
 		{
 			name:            "write a single event to queue",
-			queueName:       uuid.NewString(),
-			endpointID:      uuid.NewString(),
+			queueName:       ulid.Make().String(),
+			endpointID:      ulid.Make().String(),
 			configFile:      "../testdata/convoy_redis.json",
-			eventID:         uuid.NewString(),
-			eventDeliveryID: uuid.NewString(),
+			eventID:         ulid.Make().String(),
+			eventDeliveryID: ulid.Make().String(),
 		},
 	}
 
@@ -47,7 +48,7 @@ func TestWrite(t *testing.T) {
 				Payload: json.RawMessage(eventDelivery.UID),
 			}
 
-			taskName := convoy.TaskName(uuid.NewString())
+			taskName := convoy.TaskName(ulid.Make().String())
 			configFile := tc.configFile
 			eventQueue := initializeQueue(configFile, tc.queueName, t)
 			err := eventQueue.Write(taskName, convoy.EventQueue, job)
@@ -56,7 +57,6 @@ func TestWrite(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func initializeQueue(configFile string, name string, t *testing.T) queue.Queuer {
@@ -67,7 +67,6 @@ func initializeQueue(configFile string, name string, t *testing.T) queue.Queuer 
 	cfg, err := config.Get()
 	if err != nil {
 		t.Fatalf("Failed to get config: %v", err)
-
 	}
 
 	var opts queue.QueueOptions

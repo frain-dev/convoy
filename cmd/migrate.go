@@ -1,23 +1,49 @@
 package main
 
 import (
-	"context"
-	"net/url"
-	"strings"
-
 	"github.com/frain-dev/convoy/config"
-	cm "github.com/frain-dev/convoy/datastore/mongo"
-	"github.com/frain-dev/convoy/internal/pkg/migrate"
+	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/pkg/migrator"
 	"github.com/frain-dev/convoy/pkg/log"
-
 	"github.com/spf13/cobra"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func addMigrateCommand(a *app) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "migrate",
 		Short: "Convoy migrations",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			cfgPath, err := cmd.Flags().GetString("config")
+			if err != nil {
+				return err
+			}
+
+			err = config.LoadConfig(cfgPath)
+			if err != nil {
+				return err
+			}
+
+			_, err = config.Get()
+			if err != nil {
+				return err
+			}
+
+			// Override with CLI Flags
+			cliConfig, err := buildCliConfiguration(cmd)
+			if err != nil {
+				return err
+			}
+
+			if err = config.Override(cliConfig); err != nil {
+				return err
+			}
+
+			return nil
+
+		},
+		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+			return nil
+		},
 	}
 
 	cmd.AddCommand(addUpCommand())
@@ -37,28 +63,17 @@ func addUpCommand() *cobra.Command {
 				log.WithError(err).Fatalf("Error fetching the config.")
 			}
 
-			db, err := cm.New(cfg)
+			db, err := postgres.NewDB(cfg)
 			if err != nil {
-				log.WithError(err).Fatalf("Error instantiating a database client")
+				log.Fatal(err)
 			}
 
-			c := db.Client().(*mongo.Database).Client()
+			defer db.GetDB().Close()
 
-			u, err := url.Parse(cfg.Database.Dsn)
+			m := migrator.New(db)
+			err = m.Up()
 			if err != nil {
-				log.WithError(err).Error("Error parsing database url")
-			}
-
-			dbName := strings.TrimPrefix(u.Path, "/")
-			opts := &migrate.Options{
-				DatabaseName: dbName,
-			}
-
-			m := migrate.NewMigrator(c, opts, migrate.Migrations, nil)
-
-			err = m.Migrate(context.Background())
-			if err != nil {
-				log.WithError(err).Fatalf("Error running migrations")
+				log.Fatalf("migration up failed with error: %+v", err)
 			}
 		},
 	}
@@ -79,28 +94,17 @@ func addDownCommand() *cobra.Command {
 				log.WithError(err).Fatalf("Error fetching the config.")
 			}
 
-			db, err := cm.New(cfg)
+			db, err := postgres.NewDB(cfg)
 			if err != nil {
-				log.WithError(err).Fatalf("Error instantiating a database client")
+				log.Fatal(err)
 			}
 
-			c := db.Client().(*mongo.Database).Client()
+			defer db.GetDB().Close()
 
-			u, err := url.Parse(cfg.Database.Dsn)
+			m := migrator.New(db)
+			err = m.Down()
 			if err != nil {
-				log.WithError(err).Error("Error parsing database url")
-			}
-
-			dbName := strings.TrimPrefix(u.Path, "/")
-			opts := &migrate.Options{
-				DatabaseName: dbName,
-			}
-
-			m := migrate.NewMigrator(c, opts, migrate.Migrations, nil)
-
-			err = m.RollbackTo(context.Background(), migrationID)
-			if err != nil {
-				log.WithError(err).Fatalf("Error rolling back migrations")
+				log.Fatalf("migration down failed with error: %+v", err)
 			}
 		},
 	}

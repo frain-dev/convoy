@@ -16,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
@@ -27,7 +29,6 @@ import (
 	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	convoyMongo "github.com/frain-dev/convoy/datastore/mongo"
 	noopsearcher "github.com/frain-dev/convoy/internal/pkg/searcher/noop"
 	nooplimiter "github.com/frain-dev/convoy/limiter/noop"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -39,6 +40,10 @@ import (
 // TEST HELPERS.
 func getMongoDSN() string {
 	return os.Getenv("TEST_MONGO_DSN")
+}
+
+func getPostgresDSN() string {
+	return os.Getenv("TEST_POSTGRES_DSN")
 }
 
 func getRedisDSN() string {
@@ -55,20 +60,19 @@ func getConfig() config.Configuration {
 		},
 		Database: config.DatabaseConfiguration{
 			Type: config.MongodbDatabaseProvider,
-			Dsn:  getMongoDSN(),
+			Dsn:  getPostgresDSN(),
 		},
 	}
 }
 
-func getDB() convoyMongo.Client {
-
-	db, err := convoyMongo.New(getConfig())
+func getDB() database.Database {
+	db, err := postgres.NewDB(getConfig())
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect to db: %v", err))
 	}
 	_ = os.Setenv("TZ", "") // Use UTC by default :)
 
-	return *db
+	return db
 }
 
 func getStore(db *mongo.Database) datastore.Store {
@@ -106,7 +110,6 @@ func buildServer() *ApplicationHandler {
 	db := getDB()
 	qOpts, _ = getQueueOptions("EventQueue")
 
-	store := datastore.New(db.Database())
 	queue := redisqueue.NewQueue(qOpts)
 	logger = log.NewLogger(os.Stderr)
 	logger.SetLevel(log.FatalLevel)
@@ -118,7 +121,7 @@ func buildServer() *ApplicationHandler {
 
 	return NewApplicationHandler(
 		App{
-			Store:    store,
+			DB:       db,
 			Queue:    queue,
 			Logger:   logger,
 			Tracer:   tracer,

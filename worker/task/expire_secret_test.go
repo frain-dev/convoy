@@ -29,9 +29,10 @@ func TestExpireSecret(t *testing.T) {
 			payload: &Payload{
 				EndpointID: "abc",
 				SecretID:   "secret_1",
+				ProjectID:  "project_1",
 			},
 			dbFn: func(a *mocks.MockEndpointRepository) {
-				a.EXPECT().FindEndpointByID(gomock.Any(), "abc").Times(1).Return(
+				a.EXPECT().FindEndpointByID(gomock.Any(), "abc", gomock.Any()).Times(1).Return(
 					&datastore.Endpoint{
 						UID:       "123",
 						ProjectID: "project_1",
@@ -42,7 +43,13 @@ func TestExpireSecret(t *testing.T) {
 					nil,
 				)
 
-				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Any(), "project_1").Times(1).Return(nil)
+				a.EXPECT().DeleteSecret(gomock.Any(), &datastore.Endpoint{
+					UID:       "123",
+					ProjectID: "project_1",
+					Secrets: []datastore.Secret{
+						{UID: "secret_1"},
+					},
+				}, "secret_1", "project_1")
 			},
 			wantErr: nil,
 		},
@@ -54,7 +61,7 @@ func TestExpireSecret(t *testing.T) {
 				SecretID:   "secret_1",
 			},
 			dbFn: func(a *mocks.MockEndpointRepository) {
-				a.EXPECT().FindEndpointByID(gomock.Any(), "abc").Times(1).Return(
+				a.EXPECT().FindEndpointByID(gomock.Any(), "abc", gomock.Any()).Times(1).Return(
 					nil,
 					datastore.ErrEndpointNotFound,
 				)

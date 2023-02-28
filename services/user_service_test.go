@@ -13,9 +13,8 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func provideUserService(ctrl *gomock.Controller, t *testing.T) *UserService {
@@ -333,7 +332,7 @@ func TestUserService_RefreshToken(t *testing.T) {
 			name: "should_fail_to_refresh_for_invalid_access_token",
 			args: args{
 				ctx:   ctx,
-				token: &models.Token{AccessToken: uuid.NewString(), RefreshToken: uuid.NewString()},
+				token: &models.Token{AccessToken: ulid.Make().String(), RefreshToken: ulid.Make().String()},
 			},
 			dbFn: func(u *UserService) {
 				ca, _ := u.cache.(*mocks.MockCache)
@@ -348,7 +347,7 @@ func TestUserService_RefreshToken(t *testing.T) {
 			args: args{
 				ctx:   ctx,
 				user:  &datastore.User{UID: "123456"},
-				token: &models.Token{RefreshToken: uuid.NewString()},
+				token: &models.Token{RefreshToken: ulid.Make().String()},
 			},
 			dbFn: func(u *UserService) {
 				ca, _ := u.cache.(*mocks.MockCache)
@@ -446,7 +445,7 @@ func TestUserService_LogoutUser(t *testing.T) {
 			args: args{
 				ctx:   ctx,
 				user:  &datastore.User{UID: "12345"},
-				token: &models.Token{AccessToken: uuid.NewString()},
+				token: &models.Token{AccessToken: ulid.Make().String()},
 			},
 			dbFn: func(u *UserService) {
 				ca, _ := u.cache.(*mocks.MockCache)
@@ -756,7 +755,7 @@ func TestUserService_VerifyEmail(t *testing.T) {
 				user := &datastore.User{
 					UID:                        "abc",
 					EmailVerificationToken:     "12345",
-					EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)),
+					EmailVerificationExpiresAt: time.Now().Add(time.Hour),
 				}
 
 				us.EXPECT().FindUserByEmailVerificationToken(gomock.Any(), "12345").Times(1).Return(
@@ -818,7 +817,7 @@ func TestUserService_VerifyEmail(t *testing.T) {
 				user := &datastore.User{
 					UID:                        "abc",
 					EmailVerificationToken:     "12345",
-					EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)),
+					EmailVerificationExpiresAt: time.Now().Add(time.Hour),
 				}
 
 				us.EXPECT().FindUserByEmailVerificationToken(gomock.Any(), "12345").Times(1).Return(
@@ -846,7 +845,7 @@ func TestUserService_VerifyEmail(t *testing.T) {
 				user := &datastore.User{
 					UID:                        "abc",
 					EmailVerificationToken:     "12345",
-					EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour)),
+					EmailVerificationExpiresAt: time.Now().Add(time.Hour),
 				}
 
 				us.EXPECT().FindUserByEmailVerificationToken(gomock.Any(), "12345").Times(1).Return(
@@ -911,7 +910,7 @@ func TestUserService_ResendEmailVerificationToken(t *testing.T) {
 			args: args{
 				ctx:     ctx,
 				baseURL: "localhost",
-				user:    &datastore.User{EmailVerified: false, EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(-time.Hour))},
+				user:    &datastore.User{EmailVerified: false, EmailVerificationExpiresAt: time.Now().Add(-time.Hour)},
 			},
 			dbFn: func(u *UserService) {
 				q, _ := u.queue.(*mocks.MockQueuer)
@@ -927,7 +926,7 @@ func TestUserService_ResendEmailVerificationToken(t *testing.T) {
 			args: args{
 				ctx:     ctx,
 				baseURL: "localhost",
-				user:    &datastore.User{EmailVerified: true, EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(-time.Hour))},
+				user:    &datastore.User{EmailVerified: true, EmailVerificationExpiresAt: time.Now().Add(-time.Hour)},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -938,7 +937,7 @@ func TestUserService_ResendEmailVerificationToken(t *testing.T) {
 			args: args{
 				ctx:     ctx,
 				baseURL: "localhost",
-				user:    &datastore.User{EmailVerified: false, EmailVerificationExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour))},
+				user:    &datastore.User{EmailVerified: false, EmailVerificationExpiresAt: time.Now().Add(time.Hour)},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,

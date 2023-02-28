@@ -7,9 +7,9 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
+	"github.com/oklog/ulid/v2"
 )
 
 type RedisQueue struct {
@@ -45,7 +45,7 @@ func NewQueue(opts queue.QueueOptions) queue.Queuer {
 
 func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
 	if job.ID == "" {
-		job.ID = uuid.NewString()
+		job.ID = ulid.Make().String()
 	}
 	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(string(queueName)), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
 	_, err := q.client.Enqueue(t)

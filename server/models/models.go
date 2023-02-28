@@ -6,16 +6,14 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"gopkg.in/guregu/null.v4"
 )
 
 type Project struct {
-	Name              string                   `json:"name" bson:"name" valid:"required~please provide a valid name"`
-	Type              datastore.ProjectType    `json:"type" bson:"type" valid:"required~please provide a valid type,in(incoming|outgoing)"`
-	LogoURL           string                   `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
-	RateLimit         int                      `json:"rate_limit" bson:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
-	RateLimitDuration string                   `json:"rate_limit_duration" bson:"rate_limit_duration" valid:"alphanum~please provide a valid rate limit duration,optional"`
-	Config            *datastore.ProjectConfig `json:"config"`
+	Name    string                   `json:"name" bson:"name" valid:"required~please provide a valid name"`
+	Type    datastore.ProjectType    `json:"type" bson:"type" valid:"required~please provide a valid type,in(incoming|outgoing)"`
+	LogoURL string                   `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
+	Config  *datastore.ProjectConfig `json:"config"`
 }
 
 type UpdateProject struct {
@@ -44,9 +42,9 @@ type ConfigurationResponse struct {
 	ApiVersion         string                                `json:"api_version"`
 	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	DeletedAt null.Time `json:"deleted_at,omitempty"`
 }
 
 type OrganisationInvite struct {
@@ -58,7 +56,7 @@ type APIKey struct {
 	Name      string            `json:"name"`
 	Role      Role              `json:"role"`
 	Type      datastore.KeyType `json:"key_type"`
-	ExpiresAt time.Time         `json:"expires_at"`
+	ExpiresAt null.Time         `json:"expires_at"`
 }
 
 type PersonalAPIKey struct {
@@ -77,14 +75,13 @@ type UpdateOrganisationMember struct {
 }
 
 type APIKeyByIDResponse struct {
-	UID       string             `json:"uid"`
-	Name      string             `json:"name"`
-	Role      auth.Role          `json:"role"`
-	Type      datastore.KeyType  `json:"key_type"`
-	ExpiresAt primitive.DateTime `json:"expires_at,omitempty"`
-	CreatedAt primitive.DateTime `json:"created_at,omitempty"`
-	UpdatedAt primitive.DateTime `json:"updated_at,omitempty"`
-	DeletedAt primitive.DateTime `json:"deleted_at,omitempty"`
+	UID       string            `json:"uid"`
+	Name      string            `json:"name"`
+	Role      auth.Role         `json:"role"`
+	Type      datastore.KeyType `json:"key_type"`
+	ExpiresAt null.Time         `json:"expires_at,omitempty"`
+	CreatedAt time.Time         `json:"created_at,omitempty"`
+	UpdatedAt time.Time         `json:"updated_at,omitempty"`
 }
 
 type APIKeyResponse struct {
@@ -122,9 +119,9 @@ type SourceResponse struct {
 	ProviderConfig *datastore.ProviderConfig `json:"provider_config"`
 	PubSub         *datastore.PubSubConfig   `json:"pub_sub"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	DeletedAt null.Time `json:"deleted_at,omitempty"`
 }
 
 type LoginUser struct {
@@ -148,9 +145,8 @@ type LoginUserResponse struct {
 	Token         Token  `json:"token"`
 	EmailVerified bool   `json:"email_verified"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
+	CreatedAt time.Time `json:"created_at,omitempty" bson:"created_at"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" bson:"updated_at"`
 }
 
 type UserInviteTokenResponse struct {
@@ -359,9 +355,9 @@ type PortalLinkResponse struct {
 	Token             string               `json:"token"`
 	EndpointsMetadata []datastore.Endpoint `json:"endpoints_metadata"`
 	URL               string               `json:"url"`
-	CreatedAt         primitive.DateTime   `json:"created_at,omitempty"`
-	UpdatedAt         primitive.DateTime   `json:"updated_at,omitempty"`
-	DeletedAt         primitive.DateTime   `json:"deleted_at,omitempty"`
+	CreatedAt         time.Time            `json:"created_at,omitempty"`
+	UpdatedAt         time.Time            `json:"updated_at,omitempty"`
+	DeletedAt         null.Time            `json:"deleted_at,omitempty"`
 }
 
 type TestFilter struct {

@@ -5,6 +5,9 @@ import (
 	"errors"
 	"net/http"
 	"testing"
+	"time"
+
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -23,44 +26,44 @@ func stripVariableFields(t *testing.T, obj string, v interface{}) {
 			for i := range g.Config.Signature.Versions {
 				v := &g.Config.Signature.Versions[i]
 				v.UID = ""
-				v.CreatedAt = 0
+				v.CreatedAt = time.Time{}
 			}
 		}
 		g.UID = ""
-		g.CreatedAt, g.UpdatedAt, g.DeletedAt = 0, 0, nil
+		g.CreatedAt, g.UpdatedAt, g.DeletedAt = time.Time{}, time.Time{}, null.Time{}
 	case "endpoint":
 		e := v.(*datastore.Endpoint)
 
 		for i := range e.Secrets {
 			s := &e.Secrets[i]
 			s.UID = ""
-			s.CreatedAt, s.UpdatedAt, s.DeletedAt = 0, 0, nil
+			s.CreatedAt, s.UpdatedAt, s.DeletedAt = time.Time{}, time.Time{}, null.Time{}
 		}
 
 		e.UID, e.AppID = "", ""
-		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, nil
+		e.CreatedAt, e.UpdatedAt, e.DeletedAt = time.Time{}, time.Time{}, null.Time{}
 	case "event":
 		e := v.(*datastore.Event)
 		e.UID = ""
 		e.MatchedEndpoints = 0
-		e.CreatedAt, e.UpdatedAt, e.DeletedAt = 0, 0, nil
+		e.CreatedAt, e.UpdatedAt, e.DeletedAt = time.Time{}, time.Time{}, null.Time{}
 	case "apiKey":
 		a := v.(*datastore.APIKey)
 		a.UID, a.MaskID, a.Salt, a.Hash = "", "", "", ""
-		a.CreatedAt, a.UpdatedAt = 0, 0
+		a.CreatedAt, a.UpdatedAt = time.Time{}, time.Time{}
 	case "organisation":
 		a := v.(*datastore.Organisation)
 		a.UID = ""
-		a.CreatedAt, a.UpdatedAt = 0, 0
+		a.CreatedAt, a.UpdatedAt = time.Time{}, time.Time{}
 	case "organisation_member":
 		a := v.(*datastore.OrganisationMember)
 		a.UID = ""
-		a.CreatedAt, a.UpdatedAt = 0, 0
+		a.CreatedAt, a.UpdatedAt = time.Time{}, time.Time{}
 	case "organisation_invite":
 		a := v.(*datastore.OrganisationInvite)
 		a.UID = ""
 		a.Token = ""
-		a.CreatedAt, a.UpdatedAt, a.ExpiresAt, a.DeletedAt = 0, 0, 0, nil
+		a.CreatedAt, a.UpdatedAt, a.ExpiresAt, a.DeletedAt = time.Time{}, time.Time{}, time.Time{}, null.Time{}
 	default:
 		t.Errorf("invalid data body - %v of type %T", obj, obj)
 		t.FailNow()
@@ -472,10 +475,12 @@ func TestEndpointService_CreateEndpoint(t *testing.T) {
 
 func TestEndpointService_UpdateEndpoint(t *testing.T) {
 	ctx := context.Background()
+	project := &datastore.Project{UID: "1234567890"}
 	type args struct {
 		ctx      context.Context
 		e        models.UpdateEndpoint
 		endpoint *datastore.Endpoint
+		project  *datastore.Project
 	}
 	tests := []struct {
 		name         string
@@ -499,6 +504,7 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 					HttpTimeout:       "20s",
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint2"},
+				project:  project,
 			},
 			wantEndpoint: &datastore.Endpoint{
 				Title:             "Endpoint2",
@@ -509,11 +515,8 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 				HttpTimeout:       "20s",
 			},
 			dbFn: func(as *EndpointService) {
-				p, _ := as.projectRepo.(*mocks.MockProjectRepository)
-				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any())
-
 				a, _ := as.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").
 					Times(1).Return(&datastore.Endpoint{UID: "endpoint2"}, nil)
 
 				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -537,13 +540,11 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 					HttpTimeout:       "20s",
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint1"},
+				project:  project,
 			},
 			dbFn: func(as *EndpointService) {
-				p, _ := as.projectRepo.(*mocks.MockProjectRepository)
-				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any())
-
 				a, _ := as.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").
 					Times(1).Return(&datastore.Endpoint{UID: "endpoint1"}, nil)
 			},
 			wantErr:     true,
@@ -563,13 +564,11 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 					HttpTimeout:       "20s",
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint1"},
+				project:  project,
 			},
 			dbFn: func(as *EndpointService) {
-				p, _ := as.projectRepo.(*mocks.MockProjectRepository)
-				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any())
-
 				a, _ := as.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").
 					Times(1).Return(&datastore.Endpoint{UID: "endpoint1"}, nil)
 
 				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -592,10 +591,11 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 					HttpTimeout:       "20s",
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint1"},
+				project:  project,
 			},
 			dbFn: func(as *EndpointService) {
 				a, _ := as.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").
 					Times(1).Return(nil, datastore.ErrEndpointNotFound)
 			},
 			wantErr:     true,
@@ -614,7 +614,7 @@ func TestEndpointService_UpdateEndpoint(t *testing.T) {
 				tc.dbFn(as)
 			}
 
-			endpoint, err := as.UpdateEndpoint(tc.args.ctx, tc.args.e, tc.args.endpoint)
+			endpoint, err := as.UpdateEndpoint(tc.args.ctx, tc.args.e, tc.args.endpoint, tc.args.project)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -659,7 +659,7 @@ func TestEndpointService_DeleteEndpoint(t *testing.T) {
 			},
 			dbFn: func(as *EndpointService) {
 				endpointRepo := as.endpointRepo.(*mocks.MockEndpointRepository)
-				endpointRepo.EXPECT().DeleteEndpoint(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				endpointRepo.EXPECT().DeleteEndpoint(gomock.Any(), gomock.Any(), "1234567890").Times(1).Return(nil)
 
 				c, _ := as.cache.(*mocks.MockCache)
 				c.EXPECT().Delete(gomock.Any(), gomock.Any())
@@ -675,7 +675,7 @@ func TestEndpointService_DeleteEndpoint(t *testing.T) {
 			},
 			dbFn: func(as *EndpointService) {
 				endpointRepo := as.endpointRepo.(*mocks.MockEndpointRepository)
-				endpointRepo.EXPECT().DeleteEndpoint(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+				endpointRepo.EXPECT().DeleteEndpoint(gomock.Any(), gomock.Any(), "1234567890").Times(1).Return(errors.New("failed"))
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -693,7 +693,7 @@ func TestEndpointService_DeleteEndpoint(t *testing.T) {
 				tc.dbFn(as)
 			}
 
-			err := as.DeleteEndpoint(tc.args.ctx, tc.args.e)
+			err := as.DeleteEndpoint(tc.args.ctx, tc.args.e, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -708,11 +708,12 @@ func TestEndpointService_DeleteEndpoint(t *testing.T) {
 
 func TestEndpointService_ExpireEndpointSecret(t *testing.T) {
 	ctx := context.Background()
-
+	project := &datastore.Project{UID: "1234567890"}
 	type args struct {
 		ctx      context.Context
 		secret   *models.ExpireSecret
 		endpoint *datastore.Endpoint
+		project  *datastore.Project
 	}
 	tests := []struct {
 		name        string
@@ -730,6 +731,7 @@ func TestEndpointService_ExpireEndpointSecret(t *testing.T) {
 					Secret:     "abce",
 					Expiration: 10,
 				},
+				project: project,
 				endpoint: &datastore.Endpoint{
 					UID:       "abc",
 					ProjectID: "1234",
@@ -745,7 +747,7 @@ func TestEndpointService_ExpireEndpointSecret(t *testing.T) {
 			dbFn: func(es *EndpointService) {
 				endpointRepo := es.endpointRepo.(*mocks.MockEndpointRepository)
 
-				endpointRepo.EXPECT().ExpireSecret(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				endpointRepo.EXPECT().UpdateSecrets(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)
@@ -771,7 +773,7 @@ func TestEndpointService_ExpireEndpointSecret(t *testing.T) {
 				tt.dbFn(as)
 			}
 
-			_, err := as.ExpireSecret(tt.args.ctx, tt.args.secret, tt.args.endpoint)
+			_, err := as.ExpireSecret(tt.args.ctx, tt.args.secret, tt.args.endpoint, tt.args.project)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())

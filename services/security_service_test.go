@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
@@ -15,7 +17,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func provideSecurityService(ctrl *gomock.Controller) *SecurityService {
@@ -38,7 +39,7 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 		newApiKey *models.APIKey
 		member    *datastore.OrganisationMember
 	}
-	expires := time.Now().Add(time.Hour)
+	expires := null.NewTime(time.Now().Add(time.Hour), true)
 	tests := []struct {
 		name        string
 		args        args
@@ -74,7 +75,7 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 					Type:    auth.RoleAdmin,
 					Project: "1234",
 				},
-				ExpiresAt: primitive.NewDateTimeFromTime(expires),
+				ExpiresAt: expires,
 			},
 			dbFn: func(ss *SecurityService) {
 				g, _ := ss.projectRepo.(*mocks.MockProjectRepository)
@@ -97,7 +98,7 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 						Project: "1234",
 						App:     "1234",
 					},
-					ExpiresAt: expires.Add(-2 * time.Hour),
+					ExpiresAt: null.NewTime(expires.ValueOrZero().Add(-2*time.Hour), true),
 				},
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
@@ -273,7 +274,6 @@ func TestSecurityService_CreateAPIKey(t *testing.T) {
 			require.NotEmpty(t, apiKey.MaskID)
 			require.NotEmpty(t, apiKey.Hash)
 			require.NotEmpty(t, apiKey.Salt)
-			require.NotEmpty(t, apiKey.ID)
 			require.NotEmpty(t, apiKey.CreatedAt)
 			require.NotEmpty(t, apiKey.UpdatedAt)
 			require.NotEmpty(t, keyString)
@@ -322,7 +322,7 @@ func TestSecurityService_CreateEndpointAPIKey(t *testing.T) {
 					Project:  "1234",
 					Endpoint: "abc",
 				},
-				ExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Minute * 30)),
+				ExpiresAt: null.NewTime(time.Now().Add(time.Minute*30), true),
 			},
 			dbFn: func(ss *SecurityService) {
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -353,7 +353,7 @@ func TestSecurityService_CreateEndpointAPIKey(t *testing.T) {
 					Project:  "1234",
 					Endpoint: "abc",
 				},
-				ExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 24 * 7)),
+				ExpiresAt: null.NewTime(time.Now().Add(time.Hour*24*7), true),
 			},
 			dbFn: func(ss *SecurityService) {
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
@@ -417,7 +417,6 @@ func TestSecurityService_CreateEndpointAPIKey(t *testing.T) {
 			require.NotEmpty(t, apiKey.MaskID)
 			require.NotEmpty(t, apiKey.Hash)
 			require.NotEmpty(t, apiKey.Salt)
-			require.NotEmpty(t, apiKey.ID)
 			require.NotEmpty(t, apiKey.CreatedAt)
 			require.NotEmpty(t, apiKey.UpdatedAt)
 			require.NotEmpty(t, keyString)
@@ -427,12 +426,12 @@ func TestSecurityService_CreateEndpointAPIKey(t *testing.T) {
 				require.Equal(t, tc.wantBaseUrl, fmt.Sprintf("?projectID=%s&appId=%s", tc.args.newApiKey.Project.UID, tc.args.newApiKey.Endpoint.UID))
 			}
 
-			require.True(t, sameMinute(apiKey.ExpiresAt.Time(), tc.wantAPIKey.ExpiresAt.Time()))
+			require.True(t, sameMinute(apiKey.ExpiresAt.ValueOrZero(), tc.wantAPIKey.ExpiresAt.ValueOrZero()))
 
 			stripVariableFields(t, "apiKey", apiKey)
 			stripVariableFields(t, "apiKey", tc.wantAPIKey)
-			apiKey.ExpiresAt = 0
-			tc.wantAPIKey.ExpiresAt = 0
+			apiKey.ExpiresAt = null.Time{}
+			tc.wantAPIKey.ExpiresAt = null.Time{}
 			require.Equal(t, tc.wantAPIKey, apiKey)
 		})
 	}
@@ -923,7 +922,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 
 func TestSecurityService_CreatePersonalAPIKey(t *testing.T) {
 	ctx := context.Background()
-	expires := time.Now().Add(time.Hour)
+	expires := null.NewTime(time.Now().Add(time.Hour), true)
 
 	type args struct {
 		ctx       context.Context
@@ -954,7 +953,7 @@ func TestSecurityService_CreatePersonalAPIKey(t *testing.T) {
 			wantAPIKey: &datastore.APIKey{
 				UserID:    "1234",
 				Name:      "test_personal_key",
-				ExpiresAt: primitive.NewDateTimeFromTime(expires),
+				ExpiresAt: expires,
 				Type:      datastore.PersonalKey,
 			},
 			wantErr: false,
@@ -999,16 +998,15 @@ func TestSecurityService_CreatePersonalAPIKey(t *testing.T) {
 			require.NotEmpty(t, apiKey.MaskID)
 			require.NotEmpty(t, apiKey.Hash)
 			require.NotEmpty(t, apiKey.Salt)
-			require.NotEmpty(t, apiKey.ID)
 			require.NotEmpty(t, apiKey.CreatedAt)
 			require.NotEmpty(t, apiKey.UpdatedAt)
 			require.NotEmpty(t, keyString)
 			require.Empty(t, apiKey.DeletedAt)
 
 			stripVariableFields(t, "apiKey", apiKey)
-			require.InDelta(t, int64(tt.wantAPIKey.ExpiresAt), int64(apiKey.ExpiresAt), float64(time.Second))
-			tt.wantAPIKey.ExpiresAt = 0
-			apiKey.ExpiresAt = 0
+			require.InDelta(t, tt.wantAPIKey.ExpiresAt.ValueOrZero().Unix(), apiKey.ExpiresAt.ValueOrZero().Unix(), float64(time.Second))
+			tt.wantAPIKey.ExpiresAt = null.Time{}
+			apiKey.ExpiresAt = null.Time{}
 			require.Equal(t, tt.wantAPIKey, apiKey)
 		})
 	}

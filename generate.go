@@ -10,4 +10,3 @@ package convoy
 //go:generate mockgen --source datastore/db.go --destination mocks/store.go -package mocks
 //go:generate mockgen --source internal/pkg/socket/socket.go --destination mocks/socket.go -package mocks
 //go:generate mockgen --source internal/pkg/pubsub/pubsub.go --destination mocks/pubsub.go -package mocks
-

@@ -18,9 +18,7 @@ import (
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
-	"github.com/google/uuid"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/oklog/ulid/v2"
 )
 
 var (
@@ -71,7 +69,7 @@ func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrInvalidEndpointID)
 	}
 
-	endpoints, err := e.FindEndpoints(ctx, newMessage)
+	endpoints, err := e.FindEndpoints(ctx, newMessage, g)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -328,7 +326,7 @@ func (e *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *da
 		return errors.New("cannot resend event that did not fail previously")
 	}
 
-	endpoint, err := e.endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID)
+	endpoint, err := e.endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, g.UID)
 	if err != nil {
 		return datastore.ErrEndpointNotFound
 	}
@@ -348,7 +346,7 @@ func (e *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *da
 }
 
 func (e *EventService) forceResendEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Project) error {
-	endpoint, err := e.endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID)
+	endpoint, err := e.endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, g.UID)
 	if err != nil {
 		return datastore.ErrEndpointNotFound
 	}
@@ -413,16 +411,16 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 	}
 
 	event := &datastore.Event{
-		UID:         uuid.New().String(),
-		EventType:   datastore.EventType(newMessage.EventType),
-		Data:        newMessage.Data,
-		Raw:         newMessage.Raw,
-		Headers:     e.getCustomHeaders(newMessage.CustomHeaders),
-		QueryParams: newMessage.QueryParams,
-		CreatedAt:   primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:   primitive.NewDateTimeFromTime(time.Now()),
-		Endpoints:   endpointIDs,
-		ProjectID:   g.UID,
+		UID:       ulid.Make().String(),
+		EventType: datastore.EventType(newMessage.EventType),
+		Data:      newMessage.Data,
+		Raw:       newMessage.Raw,
+		Headers:   e.getCustomHeaders(newMessage.CustomHeaders),
+    QueryParams: newMessage.QueryParams,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Endpoints: endpointIDs,
+		ProjectID: g.UID,
 	}
 
 	if (g.Config == nil || g.Config.Strategy == nil) ||
@@ -457,11 +455,11 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 	return event, nil
 }
 
-func (e *EventService) FindEndpoints(ctx context.Context, newMessage *models.Event) ([]datastore.Endpoint, error) {
+func (e *EventService) FindEndpoints(ctx context.Context, newMessage *models.Event, project *datastore.Project) ([]datastore.Endpoint, error) {
 	var endpoints []datastore.Endpoint
 
 	if !util.IsStringEmpty(newMessage.EndpointID) {
-		endpoint, err := e.endpointRepo.FindEndpointByID(ctx, newMessage.EndpointID)
+		endpoint, err := e.endpointRepo.FindEndpointByID(ctx, newMessage.EndpointID, project.UID)
 		if err != nil {
 			return endpoints, err
 		}
@@ -471,7 +469,7 @@ func (e *EventService) FindEndpoints(ctx context.Context, newMessage *models.Eve
 	}
 
 	if !util.IsStringEmpty(newMessage.AppID) {
-		endpoints, err := e.endpointRepo.FindEndpointsByAppID(ctx, newMessage.AppID)
+		endpoints, err := e.endpointRepo.FindEndpointsByAppID(ctx, newMessage.AppID, project.UID)
 		if err != nil {
 			return endpoints, err
 		}

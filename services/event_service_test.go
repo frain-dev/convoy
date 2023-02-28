@@ -50,7 +50,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			name: "should_create_event",
 			dbFn: func(es *EventService) {
 				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "abc").
 					Times(1).Return(&datastore.Endpoint{
 					Title:        "test_app",
 					UID:          "123",
@@ -96,7 +96,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			name: "should_create_event_with_exponential_backoff_strategy",
 			dbFn: func(es *EventService) {
 				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "abc").
 					Times(1).Return(&datastore.Endpoint{
 					Title:        "test_app",
 					UID:          "123",
@@ -140,7 +140,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			name: "should_create_event_for_disabled_endpoint",
 			dbFn: func(es *EventService) {
 				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "abc").
 					Times(1).Return(&datastore.Endpoint{
 					Title:        "test_app",
 					UID:          "123",
@@ -186,7 +186,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			name: "should_create_event_with_custom_headers",
 			dbFn: func(es *EventService) {
 				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "abc").
 					Times(1).Return(&datastore.Endpoint{
 					Title:        "test_app",
 					UID:          "123",
@@ -234,7 +234,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			name: "should_error_for_invalid_strategy_config",
 			dbFn: func(es *EventService) {
 				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "abc").
 					Times(1).Return(&datastore.Endpoint{
 					Title:        "test_app",
 					UID:          "123",
@@ -278,7 +278,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			name: "should_error_for_endpoint_not_found",
 			dbFn: func(es *EventService) {
 				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "abc").
 					Times(1).Return(nil, datastore.ErrEndpointNotFound)
 			},
 			args: args{
@@ -288,7 +288,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
-				g: &datastore.Project{},
+				g: &datastore.Project{UID: "abc"},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -728,7 +728,7 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				ss, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
 
-				ss.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				ss.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "123").
 					Return(&datastore.Endpoint{
 						Status: datastore.ActiveEndpointStatus,
 					}, nil).Times(2)
@@ -797,7 +797,7 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				ss, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
 
-				ss.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				ss.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "123").
 					Return(&datastore.Endpoint{
 						Status: datastore.ActiveEndpointStatus,
 					}, nil).Times(1)
@@ -1018,7 +1018,7 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 					)
 
 				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "123").
 					Times(2).Return(&datastore.Endpoint{
 					Status: datastore.ActiveEndpointStatus,
 				}, nil)
@@ -1542,7 +1542,7 @@ func TestEventService_ResendEventDelivery(t *testing.T) {
 			name: "should_retry_event_delivery",
 			dbFn: func(es *EventService) {
 				a, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "abc").
 					Times(1).Return(&datastore.Endpoint{Status: datastore.ActiveEndpointStatus}, nil)
 
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
@@ -1615,7 +1615,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			name: "should_retry_event_delivery",
 			dbFn: func(es *EventService) {
 				er, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				er.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				er.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "abc").
 					Times(1).Return(&datastore.Endpoint{Status: datastore.ActiveEndpointStatus}, nil)
 
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
@@ -1690,7 +1690,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			name: "should_fail_to_find_subscription",
 			dbFn: func(es *EventService) {
 				s, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				s.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				s.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "abc").
 					Times(1).Return(nil, datastore.ErrEndpointNotFound)
 			},
 			args: args{
@@ -1708,7 +1708,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			name: "should_error_for_pending_subscription_status",
 			dbFn: func(es *EventService) {
 				s, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				s.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				s.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "abc").
 					Times(1).Return(&datastore.Endpoint{
 					Status: datastore.PendingEndpointStatus,
 				}, nil)
@@ -1728,7 +1728,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			name: "should_retry_event_delivery_with_inactive_subscription",
 			dbFn: func(es *EventService) {
 				s, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				s.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				s.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "abc").
 					Times(1).Return(&datastore.Endpoint{
 					Status: datastore.InactiveEndpointStatus,
 				}, nil)
@@ -1756,7 +1756,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 			name: "should_fail_to_retry_event_delivery_with_inactive_subscription",
 			dbFn: func(es *EventService) {
 				s, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				s.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				s.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "abc").
 					Times(1).Return(&datastore.Endpoint{
 					Status: datastore.InactiveEndpointStatus,
 				}, nil)
@@ -1816,7 +1816,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 			name: "should_force_resend_event_delivery",
 			dbFn: func(es *EventService) {
 				s, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				s.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				s.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "test_project").
 					Times(1).Return(&datastore.Endpoint{
 					Status: datastore.ActiveEndpointStatus,
 				}, nil)
@@ -1835,14 +1835,14 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.SuccessEventStatus,
 				},
-				g: &datastore.Project{Name: "test_project"},
+				g: &datastore.Project{UID: "test_project"},
 			},
 		},
 		{
 			name: "should_fail_to_find_endpoint",
 			dbFn: func(es *EventService) {
 				s, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				s.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				s.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "test_project").
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			args: args{
@@ -1851,7 +1851,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.SuccessEventStatus,
 				},
-				g: &datastore.Project{Name: "test_project"},
+				g: &datastore.Project{UID: "test_project"},
 			},
 			wantErr:    true,
 			wantErrMsg: "endpoint not found",
@@ -1860,7 +1860,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 			name: "should_error_not_active_subscription",
 			dbFn: func(es *EventService) {
 				s, _ := es.endpointRepo.(*mocks.MockEndpointRepository)
-				s.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any()).
+				s.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "test_project").
 					Times(1).Return(&datastore.Endpoint{
 					Status: datastore.InactiveEndpointStatus,
 				}, nil)
@@ -1871,7 +1871,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 					UID:    "123",
 					Status: datastore.SuccessEventStatus,
 				},
-				g: &datastore.Project{Name: "test_project"},
+				g: &datastore.Project{UID: "test_project"},
 			},
 			wantErr:    true,
 			wantErrMsg: "force resend to an inactive or pending endpoint is not allowed",

@@ -15,8 +15,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/oklog/ulid/v2"
 )
 
 const (
@@ -57,7 +56,7 @@ func (s *SourceLoader) Run(interval int) {
 			}
 
 		case <-exit:
-			//Stop the ticker
+			// Stop the ticker
 			ticker.Stop()
 
 			// Stop the existing pub sub sources
@@ -88,7 +87,6 @@ func (s *SourceLoader) fetchSources(page int) error {
 
 	for _, source := range sources {
 		ps, err := NewPubSubSource(&source, s.handler, s.log)
-
 		if err != nil {
 			s.log.WithError(err).Error("failed to create pub sub source")
 		}
@@ -129,7 +127,7 @@ func (s *SourceLoader) handler(source *datastore.Source, msg string) error {
 			endpoints = append(endpoints, endpoint.UID)
 		}
 	} else {
-		endpoint, err := s.endpointRepo.FindEndpointByID(context.Background(), ev.EndpointID)
+		endpoint, err := s.endpointRepo.FindEndpointByID(context.Background(), ev.EndpointID, source.ProjectID)
 		if err != nil {
 			return err
 		}
@@ -138,16 +136,16 @@ func (s *SourceLoader) handler(source *datastore.Source, msg string) error {
 	}
 
 	event := datastore.Event{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		EventType: datastore.EventType(ev.EventType),
 		SourceID:  source.UID,
 		ProjectID: source.ProjectID,
 		Raw:       string(ev.Data),
 		Data:      ev.Data,
 		Headers:   getCustomHeaders(ev.CustomHeaders),
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 		Endpoints: endpoints,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	createEvent := task.CreateEvent{

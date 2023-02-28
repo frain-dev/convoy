@@ -11,15 +11,14 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type OrganisationInviteService struct {
@@ -53,15 +52,15 @@ func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context
 	}
 
 	iv := &datastore.OrganisationInvite{
-		UID:            uuid.NewString(),
+		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
 		InviteeEmail:   newIV.InviteeEmail,
 		Token:          uniuri.NewLen(64),
 		Role:           newIV.Role,
 		Status:         datastore.InviteStatusPending,
-		ExpiresAt:      primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 24 * 14)), // expires in 2 weeks
-		CreatedAt:      primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:      primitive.NewDateTimeFromTime(time.Now()),
+		ExpiresAt:      time.Now().Add(time.Hour * 24 * 14), // expires in 2 weeks
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	err = ois.orgInviteRepo.CreateOrganisationInvite(ctx, iv)
@@ -97,7 +96,7 @@ func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *d
 			"invite_url":        fmt.Sprintf("%s/accept-invite?token=%s", baseURL, iv.Token),
 			"organisation_name": org.Name,
 			"inviter_name":      fmt.Sprintf("%s %s", user.FirstName, user.LastName),
-			"expires_at":        iv.ExpiresAt.Time().String(),
+			"expires_at":        iv.ExpiresAt.String(),
 		},
 	}
 
@@ -131,8 +130,7 @@ func (ois *OrganisationInviteService) ProcessOrganisationMemberInvite(ctx contex
 		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("organisation member invite already %s", iv.Status.String()))
 	}
 
-	now := primitive.NewDateTimeFromTime(time.Now())
-	if now > iv.ExpiresAt {
+	if time.Now().After(iv.ExpiresAt) { // if current date has surpassed expiry date
 		return util.NewServiceError(http.StatusBadRequest, errors.New("organisation member invite already expired"))
 	}
 
@@ -199,14 +197,13 @@ func (ois *OrganisationInviteService) createNewUser(ctx context.Context, newUser
 	}
 
 	user := &datastore.User{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		FirstName: newUser.FirstName,
 		LastName:  newUser.LastName,
 		Email:     email,
 		Password:  string(p.Hash),
-		// Role:          newUser.Role, // TODO(all): this role field shouldn't be in user.
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	err = ois.userRepo.CreateUser(ctx, user)
@@ -250,7 +247,7 @@ func (ois *OrganisationInviteService) ResendOrganisationMemberInvite(ctx context
 		log.FromContext(ctx).WithError(err).Error("failed to fetch organisation by invitee id")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation by invitee id"))
 	}
-	iv.ExpiresAt = primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 24 * 14)) // expires in 2 weeks
+	iv.ExpiresAt = time.Now().Add(time.Hour * 24 * 14) // expires in 2 weeks
 
 	err = ois.orgInviteRepo.UpdateOrganisationInvite(ctx, iv)
 	if err != nil {
@@ -277,7 +274,7 @@ func (ois *OrganisationInviteService) CancelOrganisationMemberInvite(ctx context
 	}
 
 	iv.Status = datastore.InviteStatusCancelled
-	iv.DeletedAt = util.NewDateTime()
+	iv.DeletedAt = null.NewTime(time.Now(), true)
 
 	err = ois.orgInviteRepo.UpdateOrganisationInvite(ctx, iv)
 	if err != nil {

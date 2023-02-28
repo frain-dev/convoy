@@ -11,7 +11,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -57,7 +57,6 @@ func TestJwtRealm_Authenticate(t *testing.T) {
 					UID:       "123456",
 					FirstName: "test",
 					LastName:  "test",
-					Role:      auth.Role{Type: auth.RoleAdmin},
 				}, nil)
 			},
 			want: &auth.AuthenticatedUser{
@@ -70,15 +69,13 @@ func TestJwtRealm_Authenticate(t *testing.T) {
 					UID:       "123456",
 					FirstName: "test",
 					LastName:  "test",
-					Role:      auth.Role{Type: auth.RoleAdmin},
 				},
 				User: &datastore.User{
 					UID:       "123456",
 					FirstName: "test",
 					LastName:  "test",
-					Role:      auth.Role{Type: auth.RoleAdmin},
 				},
-				Role: auth.Role{Type: auth.RoleAdmin},
+				Role: auth.Role{},
 			},
 		},
 
@@ -100,7 +97,7 @@ func TestJwtRealm_Authenticate(t *testing.T) {
 			args: args{
 				cred: &auth.Credential{
 					Type:  auth.CredentialTypeJWT,
-					Token: uuid.NewString(),
+					Token: ulid.Make().String(),
 				},
 			},
 			dbFn:       nil,
@@ -146,5 +143,4 @@ func TestJwtRealm_Authenticate(t *testing.T) {
 			require.Equal(t, tc.want, got)
 		})
 	}
-
 }

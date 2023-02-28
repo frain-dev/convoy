@@ -6073,6 +6073,9 @@
                 "event_type": {
                     "type": "string"
                 },
+                "host_name": {
+                    "type": "string"
+                },
                 "source_id": {
                     "type": "string"
                 }
@@ -6437,12 +6440,27 @@
             "type": "object",
             "properties": {
                 "body": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/datastore.M"
                 },
                 "headers": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/datastore.M"
+                }
+            }
+        },
+        "datastore.GooglePubSubConfig": {
+            "type": "object",
+            "properties": {
+                "project_id": {
+                    "type": "string"
+                },
+                "service_account": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "subscription_id": {
+                    "type": "string"
                 }
             }
         },
@@ -6469,6 +6487,10 @@
                 "type": "string"
             }
         },
+        "datastore.M": {
+            "type": "object",
+            "additionalProperties": true
+        },
         "datastore.Metadata": {
             "type": "object",
             "properties": {
@@ -6483,7 +6505,7 @@
                     "type": "integer"
                 },
                 "next_send_time": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "num_trials": {
                     "description": "NumTrials: number of times we have tried to deliver this Event to\nan application",
@@ -6496,7 +6518,7 @@
                     "type": "integer"
                 },
                 "strategy": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.StrategyProvider"
                 }
             }
         },
@@ -6504,18 +6526,21 @@
             "type": "object",
             "properties": {
                 "assigned_domain": {
-                    "type": "string"
+                    "$ref": "#/definitions/null.String"
                 },
                 "created_at": {
                     "type": "string"
                 },
                 "custom_domain": {
-                    "type": "string"
+                    "$ref": "#/definitions/null.String"
                 },
                 "deleted_at": {
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "ownerID": {
                     "type": "string"
                 },
                 "uid": {
@@ -6564,21 +6589,14 @@
                 "logo_url": {
                     "type": "string"
                 },
-                "metadata": {
-                    "$ref": "#/definitions/datastore.ProjectMetadata"
-                },
                 "name": {
                     "type": "string"
                 },
                 "organisation_id": {
                     "type": "string"
                 },
-                "rate_limit": {
-                    "description": "TODO(subomi): refactor this into the Instance API.",
+                "retained_events": {
                     "type": "integer"
-                },
-                "rate_limit_duration": {
-                    "type": "string"
                 },
                 "statistics": {
                     "$ref": "#/definitions/datastore.ProjectStatistics"
@@ -6597,34 +6615,26 @@
         "datastore.ProjectConfig": {
             "type": "object",
             "properties": {
-                "is_retention_policy_enabled": {
-                    "type": "boolean"
-                },
                 "max_payload_read_size": {
                     "type": "integer"
                 },
                 "ratelimit": {
                     "$ref": "#/definitions/datastore.RateLimitConfiguration"
                 },
-                "replay_attacks": {
+                "replay_attacks_prevention_enabled": {
                     "type": "boolean"
                 },
                 "retention_policy": {
                     "$ref": "#/definitions/datastore.RetentionPolicyConfiguration"
+                },
+                "retention_policy_enabled": {
+                    "type": "boolean"
                 },
                 "signature": {
                     "$ref": "#/definitions/datastore.SignatureConfiguration"
                 },
                 "strategy": {
                     "$ref": "#/definitions/datastore.StrategyConfiguration"
-                }
-            }
-        },
-        "datastore.ProjectMetadata": {
-            "type": "object",
-            "properties": {
-                "retained_events": {
-                    "type": "integer"
                 }
             }
         },
@@ -6658,6 +6668,34 @@
                 }
             }
         },
+        "datastore.PubSubConfig": {
+            "type": "object",
+            "properties": {
+                "google": {
+                    "$ref": "#/definitions/datastore.GooglePubSubConfig"
+                },
+                "sqs": {
+                    "$ref": "#/definitions/datastore.SQSPubSubConfig"
+                },
+                "type": {
+                    "$ref": "#/definitions/datastore.PubSubType"
+                },
+                "workers": {
+                    "type": "integer"
+                }
+            }
+        },
+        "datastore.PubSubType": {
+            "type": "string",
+            "enum": [
+                "sqs",
+                "google"
+            ],
+            "x-enum-varnames": [
+                "SqsPubSub",
+                "GooglePubSub"
+            ]
+        },
         "datastore.RateLimitConfiguration": {
             "type": "object",
             "properties": {
@@ -6687,6 +6725,23 @@
                     "type": "integer"
                 },
                 "type": {
+                    "$ref": "#/definitions/datastore.StrategyProvider"
+                }
+            }
+        },
+        "datastore.SQSPubSubConfig": {
+            "type": "object",
+            "properties": {
+                "access_key_id": {
+                    "type": "string"
+                },
+                "default_region": {
+                    "type": "string"
+                },
+                "queue_name": {
+                    "type": "string"
+                },
+                "secret_key": {
                     "type": "string"
                 }
             }
@@ -6778,6 +6833,9 @@
                 "provider_config": {
                     "$ref": "#/definitions/datastore.ProviderConfig"
                 },
+                "pub_sub": {
+                    "$ref": "#/definitions/datastore.PubSubConfig"
+                },
                 "type": {
                     "$ref": "#/definitions/datastore.SourceType"
                 },
@@ -6785,6 +6843,9 @@
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                },
+                "url": {
                     "type": "string"
                 },
                 "verifier": {
@@ -6830,9 +6891,22 @@
                     "type": "integer"
                 },
                 "type": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.StrategyProvider"
                 }
             }
+        },
+        "datastore.StrategyProvider": {
+            "type": "string",
+            "enum": [
+                "linear",
+                "linear",
+                "exponential"
+            ],
+            "x-enum-varnames": [
+                "DefaultStrategyProvider",
+                "LinearStrategyProvider",
+                "ExponentialStrategyProvider"
+            ]
         },
         "datastore.Subscription": {
             "type": "object",
@@ -6898,7 +6972,7 @@
             "type": "object",
             "properties": {
                 "crc_verified_at": {
-                    "type": "integer"
+                    "type": "string"
                 }
             }
         },
@@ -6925,9 +6999,6 @@
                 },
                 "reset_password_expires_at": {
                     "type": "string"
-                },
-                "role": {
-                    "$ref": "#/definitions/auth.Role"
                 },
                 "uid": {
                     "type": "string"
@@ -7131,10 +7202,10 @@
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "deleted_at": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "endpoint_count": {
                     "type": "integer"
@@ -7164,7 +7235,7 @@
                     "type": "string"
                 },
                 "updated_at": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "url": {
                     "type": "string"
@@ -7181,12 +7252,6 @@
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
-                },
-                "rate_limit": {
-                    "type": "integer"
-                },
-                "rate_limit_duration": {
                     "type": "string"
                 },
                 "type": {
@@ -7218,7 +7283,7 @@
                     "type": "integer"
                 },
                 "type": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.StrategyProvider"
                 }
             }
         },
@@ -7234,6 +7299,9 @@
                 "provider": {
                     "$ref": "#/definitions/datastore.SourceProvider"
                 },
+                "pub_sub": {
+                    "$ref": "#/definitions/datastore.PubSubConfig"
+                },
                 "type": {
                     "$ref": "#/definitions/datastore.SourceType"
                 },
@@ -7246,10 +7314,10 @@
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "deleted_at": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "is_disabled": {
                     "type": "boolean"
@@ -7269,6 +7337,9 @@
                 "provider_config": {
                     "$ref": "#/definitions/datastore.ProviderConfig"
                 },
+                "pub_sub": {
+                    "$ref": "#/definitions/datastore.PubSubConfig"
+                },
                 "type": {
                     "$ref": "#/definitions/datastore.SourceType"
                 },
@@ -7276,7 +7347,7 @@
                     "type": "string"
                 },
                 "updated_at": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "url": {
                     "type": "string"
@@ -7324,6 +7395,18 @@
                 },
                 "schema": {
                     "$ref": "#/definitions/models.FilterSchema"
+                }
+            }
+        },
+        "null.String": {
+            "type": "object",
+            "properties": {
+                "string": {
+                    "type": "string"
+                },
+                "valid": {
+                    "description": "Valid is true if String is not NULL",
+                    "type": "boolean"
                 }
             }
         },

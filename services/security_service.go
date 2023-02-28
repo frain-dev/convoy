@@ -9,15 +9,16 @@ import (
 	"net/http"
 	"time"
 
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/xdg-go/pbkdf2"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type SecurityService struct {
@@ -30,7 +31,7 @@ func NewSecurityService(projectRepo datastore.ProjectRepository, apiKeyRepo data
 }
 
 func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.OrganisationMember, newApiKey *models.APIKey) (*datastore.APIKey, string, error) {
-	if newApiKey.ExpiresAt != (time.Time{}) && newApiKey.ExpiresAt.Before(time.Now()) {
+	if !newApiKey.ExpiresAt.IsZero() && newApiKey.ExpiresAt.ValueOrZero().Before(time.Now()) {
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("expiry date is invalid"))
 	}
 
@@ -73,19 +74,19 @@ func (ss *SecurityService) CreateAPIKey(ctx context.Context, member *datastore.O
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
 	apiKey := &datastore.APIKey{
-		UID:       uuid.New().String(),
+		UID:       ulid.Make().String(),
 		MaskID:    maskID,
 		Name:      newApiKey.Name,
 		Type:      newApiKey.Type, // TODO: this should be set to datastore.ProjectKey
 		Role:      *role,
 		Hash:      encodedKey,
 		Salt:      salt,
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
-	if newApiKey.ExpiresAt != (time.Time{}) {
-		apiKey.ExpiresAt = primitive.NewDateTimeFromTime(newApiKey.ExpiresAt)
+	if !newApiKey.ExpiresAt.IsZero() {
+		apiKey.ExpiresAt = newApiKey.ExpiresAt
 	}
 
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)
@@ -109,24 +110,24 @@ func (ss *SecurityService) CreatePersonalAPIKey(ctx context.Context, user *datas
 	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
-	var expiresAt time.Time
+	var v time.Time
 	if newApiKey.Expiration != 0 {
-		expiresAt = time.Now().Add(time.Hour * 24 * time.Duration(newApiKey.Expiration))
+		v = time.Now().Add(time.Hour * 24 * time.Duration(newApiKey.Expiration))
 	} else {
-		expiresAt = time.Now().Add(time.Hour * 24)
+		v = time.Now().Add(time.Hour * 24)
 	}
 
 	apiKey := &datastore.APIKey{
-		UID:       uuid.New().String(),
+		UID:       ulid.Make().String(),
 		MaskID:    maskID,
 		Name:      newApiKey.Name,
 		Type:      datastore.PersonalKey,
 		UserID:    user.UID,
 		Hash:      encodedKey,
 		Salt:      salt,
-		ExpiresAt: primitive.NewDateTimeFromTime(expiresAt),
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		ExpiresAt: null.NewTime(v, true),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)
@@ -183,24 +184,24 @@ func (ss *SecurityService) CreateEndpointAPIKey(ctx context.Context, d *models.C
 	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
-	var expiresAt time.Time
+	var v time.Time
 	if d.KeyType == datastore.CLIKey {
-		expiresAt = time.Now().Add(time.Hour * 24 * time.Duration(d.Expiration))
+		v = time.Now().Add(time.Hour * 24 * time.Duration(d.Expiration))
 	} else if d.KeyType == datastore.AppPortalKey {
-		expiresAt = time.Now().Add(30 * time.Minute)
+		v = time.Now().Add(30 * time.Minute)
 	}
 
 	apiKey := &datastore.APIKey{
-		UID:       uuid.New().String(),
+		UID:       ulid.Make().String(),
 		MaskID:    maskID,
 		Name:      d.Name,
 		Type:      d.KeyType,
 		Role:      role,
 		Hash:      encodedKey,
 		Salt:      salt,
-		ExpiresAt: primitive.NewDateTimeFromTime(expiresAt),
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		ExpiresAt: null.NewTime(v, true),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	err = ss.apiKeyRepo.CreateAPIKey(ctx, apiKey)

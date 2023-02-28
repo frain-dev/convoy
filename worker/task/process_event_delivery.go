@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/signature"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -19,10 +20,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/retrystrategies"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var (
@@ -47,7 +45,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		endpoint, err := endpointRepo.FindEndpointByID(context.Background(), ed.EndpointID)
+		endpoint, err := endpointRepo.FindEndpointByID(context.Background(), ed.EndpointID, ed.ProjectID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
@@ -192,7 +190,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			ed.Status = datastore.RetryEventStatus
 
 			nextTime := time.Now().Add(delayDuration)
-			ed.Metadata.NextSendTime = primitive.NewDateTimeFromTime(nextTime)
+			ed.Metadata.NextSendTime = nextTime
 			attempts := ed.Metadata.NumTrials + 1
 
 			log.Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", ed.UID, nextTime.Format(time.ANSIC), ed.Metadata.Strategy, ed.Metadata.IntervalSeconds, attempts, ed.Metadata.RetryLimit)
@@ -281,7 +279,7 @@ func newSignature(endpoint *datastore.Endpoint, g *datastore.Project, data json.
 		}
 
 		for _, sc := range endpoint.Secrets {
-			if sc.DeletedAt == nil {
+			if sc.DeletedAt.IsZero() {
 				// the secret has not been expired
 				scheme.Secret = append(scheme.Secret, sc.Value)
 			}
@@ -297,8 +295,7 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 	requestHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
 
 	return datastore.DeliveryAttempt{
-		ID:         primitive.NewObjectID(),
-		UID:        uuid.New().String(),
+		UID:        ulid.Make().String(),
 		URL:        resp.URL.String(),
 		Method:     resp.Method,
 		MsgID:      m.UID,
@@ -313,8 +310,8 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 		Error:            resp.Error,
 		Status:           attemptStatus,
 
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 }
 

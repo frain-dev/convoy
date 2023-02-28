@@ -7,11 +7,12 @@ import (
 
 	"github.com/dukex/mixpanel"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	cm "github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
+	"github.com/oklog/ulid/v2"
 )
 
 const (
@@ -83,13 +84,13 @@ func newAnalytics(Repo *Repo, cfg config.Configuration) (*Analytics, error) {
 	return a, nil
 }
 
-func TrackDailyAnalytics(store datastore.Store, cfg config.Configuration) func(context.Context, *asynq.Task) error {
+func TrackDailyAnalytics(db database.Database, cfg config.Configuration) func(context.Context, *asynq.Task) error {
 	repo := &Repo{
-		ConfigRepo:  cm.NewConfigRepo(store),
-		EventRepo:   cm.NewEventRepository(store),
-		projectRepo: cm.NewProjectRepo(store),
-		OrgRepo:     cm.NewOrgRepo(store),
-		UserRepo:    cm.NewUserRepo(store),
+		ConfigRepo:  postgres.NewConfigRepo(db),
+		EventRepo:   postgres.NewEventRepo(db),
+		projectRepo: postgres.NewProjectRepo(db),
+		OrgRepo:     postgres.NewOrgRepo(db),
+		UserRepo:    postgres.NewUserRepo(db),
 	}
 	return func(ctx context.Context, t *asynq.Task) error {
 		a, err := newAnalytics(repo, cfg)
@@ -148,7 +149,7 @@ func NewMixPanelClient(cfg config.Configuration) (*MixPanelClient, error) {
 }
 
 func (m *MixPanelClient) Export(eventName string, e Event) error {
-	err := m.client.Track(uuid.NewString(), eventName, &mixpanel.Event{
+	err := m.client.Track(ulid.Make().String(), eventName, &mixpanel.Event{
 		IP:         "0",
 		Timestamp:  nil,
 		Properties: e,

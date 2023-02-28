@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"context"
+	"time"
 )
 
 type APIKeyRepository interface {
@@ -23,12 +24,12 @@ type EventDeliveryRepository interface {
 	CountDeliveriesByStatus(context.Context, EventDeliveryStatus, SearchParams) (int64, error)
 	UpdateStatusOfEventDelivery(context.Context, EventDelivery, EventDeliveryStatus) error
 	UpdateStatusOfEventDeliveries(context.Context, []string, EventDeliveryStatus) error
-	FindDiscardedEventDeliveries(ctx context.Context, appId, deviceId string, searchParams SearchParams) ([]EventDelivery, error)
+	FindDiscardedEventDeliveries(ctx context.Context, endpointId, deviceId string, searchParams SearchParams) ([]EventDelivery, error)
 
 	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, DeliveryAttempt) error
-	CountEventDeliveries(context.Context, string, []string, string, []EventDeliveryStatus, SearchParams) (int64, error)
+	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
 	DeleteProjectEventDeliveries(ctx context.Context, filter *EventDeliveryFilter, hardDelete bool) error
-	LoadEventDeliveriesPaged(context.Context, string, []string, string, []EventDeliveryStatus, SearchParams, Pageable) ([]EventDelivery, PaginationData, error)
+	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable) ([]EventDelivery, PaginationData, error)
 	LoadEventDeliveriesIntervals(context.Context, string, SearchParams, Period, int) ([]EventInterval, error)
 }
 
@@ -48,7 +49,6 @@ type ProjectRepository interface {
 	UpdateProject(context.Context, *Project) error
 	DeleteProject(ctx context.Context, uid string) error
 	FetchProjectByID(context.Context, string) (*Project, error)
-	FetchProjectsByIDs(context.Context, []string) ([]Project, error)
 	FillProjectsStatistics(ctx context.Context, project *Project) error
 }
 
@@ -84,19 +84,17 @@ type OrganisationMemberRepository interface {
 
 type EndpointRepository interface {
 	CreateEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
-	FindEndpointByID(çtx context.Context, id string) (*Endpoint, error)
-	FindEndpointsByID(ctx context.Context, ids []string) ([]Endpoint, error)
-	FindEndpointsByAppID(ctx context.Context, appID string) ([]Endpoint, error)
+	FindEndpointByID(çtx context.Context, id string, projectID string) (*Endpoint, error)
+	FindEndpointsByID(ctx context.Context, ids []string, projectID string) ([]Endpoint, error)
+	FindEndpointsByAppID(ctx context.Context, appID string, projectID string) ([]Endpoint, error)
 	FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]Endpoint, error)
 	UpdateEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
 	UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status EndpointStatus) error
-	DeleteEndpoint(ctx context.Context, endpoint *Endpoint) error
+	DeleteEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
 	CountProjectEndpoints(ctx context.Context, projectID string) (int64, error)
-	DeleteProjectEndpoints(context.Context, string) error
 	LoadEndpointsPaged(ctx context.Context, projectID string, query string, pageable Pageable) ([]Endpoint, PaginationData, error)
-	LoadEndpointsPagedByProjectId(ctx context.Context, projectID string, pageable Pageable) ([]Endpoint, PaginationData, error)
-	SearchEndpointsByProjectId(ctx context.Context, projectID string, params SearchParams) ([]Endpoint, error)
-	ExpireSecret(ctx context.Context, projectID string, endpointID string, secrets []Secret) error
+	UpdateSecrets(ctx context.Context, endpointID string, projectID string, secrets Secrets) error
+	DeleteSecret(ctx context.Context, endpoint *Endpoint, secretID string, projectID string) error
 }
 type SubscriptionRepository interface {
 	CreateSubscription(context.Context, string, *Subscription) error
@@ -104,7 +102,6 @@ type SubscriptionRepository interface {
 	LoadSubscriptionsPaged(context.Context, string, *FilterBy, Pageable) ([]Subscription, PaginationData, error)
 	DeleteSubscription(context.Context, string, *Subscription) error
 	FindSubscriptionByID(context.Context, string, string) (*Subscription, error)
-	FindSubscriptionsByEventType(context.Context, string, string, EventType) ([]Subscription, error)
 	FindSubscriptionsBySourceID(context.Context, string, string) ([]Subscription, error)
 	FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]Subscription, error)
 	FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string, subscriptionType SubscriptionType) (*Subscription, error)
@@ -118,7 +115,7 @@ type SourceRepository interface {
 	FindSourceByID(ctx context.Context, projectID string, id string) (*Source, error)
 	FindSourceByName(ctx context.Context, projectId string, name string) (*Source, error)
 	FindSourceByMaskID(ctx context.Context, maskID string) (*Source, error)
-	DeleteSourceByID(ctx context.Context, projectID string, id string) error
+	DeleteSourceByID(ctx context.Context, projectID string, id string, sourceVerifierID string) error
 	LoadSourcesPaged(ctx context.Context, projectID string, filter *SourceFilter, pageable Pageable) ([]Source, PaginationData, error)
 }
 
@@ -155,4 +152,8 @@ type PortalLinkRepository interface {
 	FindPortalLinkByToken(ctx context.Context, token string) (*PortalLink, error)
 	LoadPortalLinksPaged(ctx context.Context, projectID string, f *FilterBy, pageable Pageable) ([]PortalLink, PaginationData, error)
 	RevokePortalLink(ctx context.Context, projectID string, id string) error
+}
+
+type ExportRepository interface {
+	ExportRecords(ctx context.Context, tableName, projectID string, createdAt time.Time, dest interface{}) (int64, error)
 }

@@ -47,11 +47,9 @@ func TestProjectService_CreateProject(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				newProject: &models.Project{
-					Name:              "test_project",
-					Type:              "outgoing",
-					LogoURL:           "https://google.com",
-					RateLimit:         1000,
-					RateLimitDuration: "1m",
+					Name:    "test_project",
+					Type:    "outgoing",
+					LogoURL: "https://google.com",
 					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
@@ -86,12 +84,10 @@ func TestProjectService_CreateProject(t *testing.T) {
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
-				Name:              "test_project",
-				Type:              "outgoing",
-				LogoURL:           "https://google.com",
-				RateLimit:         1000,
-				OrganisationID:    "1234",
-				RateLimitDuration: "1m",
+				Name:           "test_project",
+				Type:           "outgoing",
+				LogoURL:        "https://google.com",
+				OrganisationID: "1234",
 				Config: &datastore.ProjectConfig{
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
@@ -105,8 +101,8 @@ func TestProjectService_CreateProject(t *testing.T) {
 						Count:    1000,
 						Duration: 60,
 					},
-					RetentionPolicy: &datastore.DefaultRetentionPolicy,
-					ReplayAttacks:   true,
+					// RetentionPolicy: &datastore.DefaultRetentionPolicy,
+					ReplayAttacks: true,
 				},
 			},
 			wantErr: false,
@@ -116,11 +112,9 @@ func TestProjectService_CreateProject(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				newProject: &models.Project{
-					Name:              "test_project",
-					Type:              "incoming",
-					LogoURL:           "https://google.com",
-					RateLimit:         1000,
-					RateLimitDuration: "1m",
+					Name:    "test_project",
+					Type:    "incoming",
+					LogoURL: "https://google.com",
 					Config: &datastore.ProjectConfig{
 						Signature: &datastore.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
@@ -155,12 +149,10 @@ func TestProjectService_CreateProject(t *testing.T) {
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
-				Name:              "test_project",
-				Type:              "incoming",
-				LogoURL:           "https://google.com",
-				OrganisationID:    "1234",
-				RateLimit:         1000,
-				RateLimitDuration: "1m",
+				Name:           "test_project",
+				Type:           "incoming",
+				LogoURL:        "https://google.com",
+				OrganisationID: "1234",
 				Config: &datastore.ProjectConfig{
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
@@ -174,8 +166,8 @@ func TestProjectService_CreateProject(t *testing.T) {
 						Count:    1000,
 						Duration: 60,
 					},
-					RetentionPolicy: &datastore.DefaultRetentionPolicy,
-					ReplayAttacks:   true,
+					// RetentionPolicy: &datastore.DefaultRetentionPolicy,
+					ReplayAttacks: true,
 				},
 			},
 			wantErr: false,
@@ -188,7 +180,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Name:    "test_project_1",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config:  &datastore.ProjectConfig{},
+					Config:  nil,
 				},
 				org: &datastore.Organisation{UID: "1234"},
 				member: &datastore.OrganisationMember{
@@ -208,13 +200,12 @@ func TestProjectService_CreateProject(t *testing.T) {
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
-				Name:              "test_project_1",
-				Type:              "incoming",
-				LogoURL:           "https://google.com",
-				OrganisationID:    "1234",
-				RateLimit:         5000,
-				RateLimitDuration: "1m",
+				Name:           "test_project_1",
+				Type:           "incoming",
+				LogoURL:        "https://google.com",
+				OrganisationID: "1234",
 				Config: &datastore.ProjectConfig{
+					MaxIngestSize: 51200,
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 						Versions: []datastore.SignatureVersion{
@@ -240,11 +231,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Name:    "test_project",
 					Type:    "outgoing",
 					LogoURL: "https://google.com",
-					Config: &datastore.ProjectConfig{
-						Signature: &datastore.SignatureConfiguration{
-							Header: "X-Convoy-Signature",
-						},
-					},
+					Config:  nil,
 				},
 				org: &datastore.Organisation{UID: "1234"},
 				member: &datastore.OrganisationMember{
@@ -264,15 +251,21 @@ func TestProjectService_CreateProject(t *testing.T) {
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
-				Name:              "test_project",
-				Type:              "outgoing",
-				LogoURL:           "https://google.com",
-				RateLimit:         5000,
-				OrganisationID:    "1234",
-				RateLimitDuration: "1m",
+				Name:           "test_project",
+				Type:           "outgoing",
+				LogoURL:        "https://google.com",
+				OrganisationID: "1234",
+
 				Config: &datastore.ProjectConfig{
+					MaxIngestSize: 51200,
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
+						Versions: []datastore.SignatureVersion{
+							{
+								Hash:     "SHA256",
+								Encoding: datastore.HexEncoding,
+							},
+						},
 					},
 					Strategy:        &datastore.DefaultStrategyConfig,
 					RateLimit:       &datastore.DefaultRateLimitConfig,
@@ -322,7 +315,15 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Name:    "test_project_1",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config:  &datastore.ProjectConfig{},
+					Config: &datastore.ProjectConfig{Signature: &datastore.SignatureConfiguration{
+						Header: "X-Convoy-Signature",
+						Versions: []datastore.SignatureVersion{
+							{
+								Hash:     "SHA256",
+								Encoding: datastore.HexEncoding,
+							},
+						},
+					}},
 				},
 				org: &datastore.Organisation{UID: "1234"},
 				member: &datastore.OrganisationMember{
@@ -400,7 +401,6 @@ func TestProjectService_CreateProject(t *testing.T) {
 			// fmt.Println("eee", err.Error())
 			require.Nil(t, err)
 			require.NotEmpty(t, project.UID)
-			require.NotEmpty(t, project.ID)
 			require.NotEmpty(t, project.CreatedAt)
 			require.NotEmpty(t, project.UpdatedAt)
 			require.Empty(t, project.DeletedAt)
@@ -408,7 +408,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 			require.Equal(t, project.Name+"'s default key", apiKey.Name)
 			require.Equal(t, project.UID, apiKey.Role.Project)
 			require.Equal(t, auth.RoleAdmin, apiKey.Role.Type)
-			require.NotEmpty(t, apiKey.ExpiresAt)
+			require.Empty(t, apiKey.ExpiresAt)
 			require.NotEmpty(t, apiKey.UID)
 			require.NotEmpty(t, apiKey.Key)
 			require.NotEmpty(t, apiKey.CreatedAt)
@@ -606,11 +606,11 @@ func TestProjectService_GetProjects(t *testing.T) {
 			name: "should_get_projects",
 			args: args{
 				ctx:    ctx,
-				filter: &datastore.ProjectFilter{Names: []string{"default_project"}},
+				filter: &datastore.ProjectFilter{OrgID: "default_project"},
 			},
 			dbFn: func(gs *ProjectService) {
 				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
-				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{Names: []string{"default_project"}}).
+				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{OrgID: "default_project"}).
 					Times(1).Return([]*datastore.Project{
 					{UID: "123"},
 					{UID: "abc"},
@@ -618,8 +618,8 @@ func TestProjectService_GetProjects(t *testing.T) {
 
 				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
 					project.Statistics = &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
+						MessagesSent:   1,
+						TotalEndpoints: 1,
 					}
 
 					return nil
@@ -629,97 +629,15 @@ func TestProjectService_GetProjects(t *testing.T) {
 				{
 					UID: "123",
 					Statistics: &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
+						MessagesSent:   1,
+						TotalEndpoints: 1,
 					},
 				},
 				{
 					UID: "abc",
 					Statistics: &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
-					},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "should_get_projects_trims-whitespaces-from-query",
-			args: args{
-				ctx:    ctx,
-				filter: &datastore.ProjectFilter{Names: []string{" default_project "}},
-			},
-			dbFn: func(gs *ProjectService) {
-				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
-				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{Names: []string{"default_project"}}).
-					Times(1).Return([]*datastore.Project{
-					{UID: "123"},
-					{UID: "abc"},
-				}, nil)
-
-				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
-					project.Statistics = &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
-					}
-
-					return nil
-				})
-			},
-			wantProjects: []*datastore.Project{
-				{
-					UID: "123",
-					Statistics: &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
-					},
-				},
-				{
-					UID: "abc",
-					Statistics: &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
-					},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "should_get_projects_trims-whitespaces-from-query-retains-case",
-			args: args{
-				ctx:    ctx,
-				filter: &datastore.ProjectFilter{Names: []string{"  deFault_Project"}},
-			},
-			dbFn: func(gs *ProjectService) {
-				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
-				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{Names: []string{"deFault_Project"}}).
-					Times(1).Return([]*datastore.Project{
-					{UID: "123"},
-					{UID: "abc"},
-				}, nil)
-
-				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
-					project.Statistics = &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
-					}
-
-					return nil
-				})
-			},
-			wantProjects: []*datastore.Project{
-				{
-					UID: "123",
-					Statistics: &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
-					},
-				},
-				{
-					UID: "abc",
-					Statistics: &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
+						MessagesSent:   1,
+						TotalEndpoints: 1,
 					},
 				},
 			},
@@ -729,11 +647,11 @@ func TestProjectService_GetProjects(t *testing.T) {
 			name: "should_fail_to_get_projects",
 			args: args{
 				ctx:    ctx,
-				filter: &datastore.ProjectFilter{Names: []string{"default_project"}},
+				filter: &datastore.ProjectFilter{OrgID: "default_project"},
 			},
 			dbFn: func(gs *ProjectService) {
 				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
-				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{Names: []string{"default_project"}}).
+				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{OrgID: "default_project"}).
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			wantErr:     true,
@@ -793,8 +711,8 @@ func TestProjectService_FillProjectStatistics(t *testing.T) {
 				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
 				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
 					project.Statistics = &datastore.ProjectStatistics{
-						MessagesSent: 1,
-						TotalApps:    1,
+						MessagesSent:   1,
+						TotalEndpoints: 1,
 					}
 					return nil
 				})
@@ -802,8 +720,8 @@ func TestProjectService_FillProjectStatistics(t *testing.T) {
 			wantProject: &datastore.Project{
 				UID: "1234",
 				Statistics: &datastore.ProjectStatistics{
-					MessagesSent: 1,
-					TotalApps:    1,
+					MessagesSent:   1,
+					TotalEndpoints: 1,
 				},
 			},
 			wantErr: false,

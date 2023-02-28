@@ -14,10 +14,8 @@ import (
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/oklog/ulid/v2"
 )
 
 type CreateEvent struct {
@@ -78,7 +76,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			headers := event.Headers
 
 			if s.Type == datastore.SubscriptionTypeAPI {
-				endpoint, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID)
+				endpoint, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID, project.UID)
 				if err != nil {
 					log.Errorf("Error fetching endpoint %s", err)
 					return &EndpointError{Err: err, delay: 10 * time.Second}
@@ -105,11 +103,11 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 				Raw:             event.Raw,
 				IntervalSeconds: rc.Duration,
 				Strategy:        rc.Type,
-				NextSendTime:    primitive.NewDateTimeFromTime(time.Now()),
+				NextSendTime:    time.Now(),
 			}
 
 			eventDelivery := &datastore.EventDelivery{
-				UID:            uuid.New().String(),
+				UID:            ulid.Make().String(),
 				SubscriptionID: s.UID,
 				Metadata:       metadata,
 				ProjectID:      project.UID,
@@ -121,8 +119,8 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 
 				Status:           getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},
-				CreatedAt:        primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt:        primitive.NewDateTimeFromTime(time.Now()),
+				CreatedAt:        time.Now(),
+				UpdatedAt:        time.Now(),
 			}
 
 			if s.Type == datastore.SubscriptionTypeCLI {
@@ -191,7 +189,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 			// cache miss, load from db
 			if endpoint == nil {
-				endpoint, err = endpointRepo.FindEndpointByID(ctx, endpointID)
+				endpoint, err = endpointRepo.FindEndpointByID(ctx, endpointID, project.UID)
 				if err != nil {
 					return subscriptions, &EndpointError{Err: err, delay: 10 * time.Second}
 				}
@@ -317,13 +315,19 @@ func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscri
 
 func generateSubscription(project *datastore.Project, endpoint *datastore.Endpoint) *datastore.Subscription {
 	return &datastore.Subscription{
-		ProjectID:    project.UID,
-		UID:          uuid.New().String(),
-		Name:         fmt.Sprintf("%s-subscription", endpoint.Title),
-		Type:         datastore.SubscriptionTypeAPI,
-		EndpointID:   endpoint.UID,
-		FilterConfig: &datastore.FilterConfiguration{EventTypes: []string{"*"}},
-		CreatedAt:    primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:    primitive.NewDateTimeFromTime(time.Now()),
+		ProjectID:  project.UID,
+		UID:        ulid.Make().String(),
+		Name:       fmt.Sprintf("%s-subscription", endpoint.Title),
+		Type:       datastore.SubscriptionTypeAPI,
+		EndpointID: endpoint.UID,
+		FilterConfig: &datastore.FilterConfiguration{
+			EventTypes: []string{"*"},
+			Filter: datastore.FilterSchema{
+				Headers: datastore.M{},
+				Body:    datastore.M{},
+			},
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 }
