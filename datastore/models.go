@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -15,10 +14,8 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/lib/pq"
-	"github.com/oklog/ulid/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/guregu/null.v4"
 )
 
 type Pageable struct {
@@ -573,7 +570,7 @@ type Event struct {
 	ProjectID        string                `json:"project_id,omitempty" db:"project_id"`
 	Endpoints        pq.StringArray        `json:"endpoints" db:"endpoints"`
 	Headers          httpheader.HTTPHeader `json:"headers" db:"headers"`
-  QueryParams      url.Values            `json:"query_params" bson:"query_params"`
+	QueryParams      url.Values            `json:"query_params" bson:"query_params"`
 	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Source           *Source               `json:"source_metadata,omitempty" db:"source_metadata"`
 

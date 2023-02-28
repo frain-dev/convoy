@@ -411,16 +411,16 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 	}
 
 	event := &datastore.Event{
-		UID:       ulid.Make().String(),
-		EventType: datastore.EventType(newMessage.EventType),
-		Data:      newMessage.Data,
-		Raw:       newMessage.Raw,
-		Headers:   e.getCustomHeaders(newMessage.CustomHeaders),
-    QueryParams: newMessage.QueryParams,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		Endpoints: endpointIDs,
-		ProjectID: g.UID,
+		UID:         ulid.Make().String(),
+		EventType:   datastore.EventType(newMessage.EventType),
+		Data:        newMessage.Data,
+		Raw:         newMessage.Raw,
+		Headers:     e.getCustomHeaders(newMessage.CustomHeaders),
+		QueryParams: newMessage.QueryParams,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+		Endpoints:   endpointIDs,
+		ProjectID:   g.UID,
 	}
 
 	if (g.Config == nil || g.Config.Strategy == nil) ||
