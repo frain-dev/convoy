@@ -144,6 +144,8 @@ func (s *SourceLoader) handler(source *datastore.Source, msg string) error {
 		Data:      ev.Data,
 		Headers:   getCustomHeaders(ev.CustomHeaders),
 		Endpoints: endpoints,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	createEvent := task.CreateEvent{
