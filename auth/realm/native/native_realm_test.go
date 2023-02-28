@@ -7,14 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/util"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestNativeRealm_Authenticate(t *testing.T) {
@@ -49,8 +48,8 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
 					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt: 0,
-					CreatedAt: 0,
+					ExpiresAt: null.Time{},
+					CreatedAt: time.Time{},
 				}, nil)
 			},
 			want: &auth.AuthenticatedUser{
@@ -72,8 +71,8 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
 					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt: 0,
-					CreatedAt: 0,
+					ExpiresAt: null.Time{},
+					CreatedAt: time.Time{},
 				},
 			},
 			wantErr: false,
@@ -100,8 +99,8 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
 					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt: 0,
-					CreatedAt: 0,
+					ExpiresAt: null.Time{},
+					CreatedAt: time.Time{},
 				}, nil)
 
 				userRepo.EXPECT().FindUserByID(gomock.Any(), "1234").Times(1).Return(&datastore.User{UID: "1234"}, nil)
@@ -129,8 +128,8 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
 					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt: 0,
-					CreatedAt: 0,
+					ExpiresAt: null.Time{},
+					CreatedAt: time.Time{},
 				},
 			},
 			wantErr: false,
@@ -157,8 +156,8 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
 					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt: 0,
-					CreatedAt: 0,
+					ExpiresAt: null.Time{},
+					CreatedAt: time.Time{},
 				}, nil)
 
 				userRepo.EXPECT().FindUserByID(gomock.Any(), "1234").Times(1).Return(nil, errors.New("failed"))
@@ -198,9 +197,9 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
 					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					DeletedAt: util.NewDateTime(),
-					ExpiresAt: 0,
-					CreatedAt: 0,
+					DeletedAt: null.NewTime(time.Now(), true),
+					ExpiresAt: null.Time{},
+					CreatedAt: time.Time{},
 				}, nil)
 			},
 			want:       nil,
@@ -234,14 +233,14 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					UID: "abcd",
 					Role: auth.Role{
 						Type:    auth.RoleAdmin,
-						Project: "paystackx",
+						Project: "paystack",
 					},
 					MaskID:    "DkwB9HnZxy4DqZMi",
 					Hash:      "R4rtPIELUaJ9fx6suLreIpH3IaLzbxRcODy3a0Zm1qM=",
 					Salt:      "6y9yQZWqbE1AMHvfUewuYwasycmoe_zg5g==",
-					ExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Second * -10)),
-					DeletedAt: nil,
-					CreatedAt: 0,
+					ExpiresAt: null.NewTime(time.Now().Add(time.Second*-10), true),
+					DeletedAt: null.Time{},
+					CreatedAt: time.Time{},
 				}, nil)
 			},
 			want:       nil,

@@ -2,11 +2,12 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/services"
 
 	"github.com/frain-dev/convoy/server/models"
@@ -18,10 +19,10 @@ import (
 )
 
 func CreateOrganisationInviteService(a *ApplicationHandler) *services.OrganisationInviteService {
-	userRepo := mongo.NewUserRepo(a.A.Store)
-	orgRepo := mongo.NewOrgRepo(a.A.Store)
-	orgMemberRepo := mongo.NewOrgMemberRepo(a.A.Store)
-	orgInviteRepo := mongo.NewOrgInviteRepo(a.A.Store)
+	userRepo := postgres.NewUserRepo(a.A.DB)
+	orgRepo := postgres.NewOrgRepo(a.A.DB)
+	orgMemberRepo := postgres.NewOrgMemberRepo(a.A.DB)
+	orgInviteRepo := postgres.NewOrgInviteRepo(a.A.DB)
 
 	return services.NewOrganisationInviteService(
 		orgRepo, userRepo, orgMemberRepo,
@@ -86,6 +87,7 @@ func (a *ApplicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 	organisationInviteService := CreateOrganisationInviteService(a)
 
 	err = organisationInviteService.ProcessOrganisationMemberInvite(r.Context(), token, accepted, newUser)
+	fmt.Println("ff", err)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to process organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

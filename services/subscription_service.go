@@ -4,16 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var (
@@ -43,7 +43,7 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, project *da
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	endpoint, err := s.findEndpoint(ctx, newSubscription.AppID, newSubscription.EndpointID)
+	endpoint, err := s.findEndpoint(ctx, newSubscription.AppID, newSubscription.EndpointID, project)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to find endpoint by id")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find endpoint by id"))
@@ -67,8 +67,8 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, project *da
 	}
 
 	subscription := &datastore.Subscription{
+		UID:        ulid.Make().String(),
 		ProjectID:  project.UID,
-		UID:        uuid.New().String(),
 		Name:       newSubscription.Name,
 		Type:       datastore.SubscriptionTypeAPI,
 		SourceID:   newSubscription.SourceID,
@@ -79,8 +79,8 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, project *da
 		FilterConfig:    newSubscription.FilterConfig,
 		RateLimitConfig: newSubscription.RateLimitConfig,
 
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	if subscription.FilterConfig == nil {
@@ -92,7 +92,10 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, project *da
 	}
 
 	if len(subscription.FilterConfig.Filter.Body) == 0 && len(subscription.FilterConfig.Filter.Headers) == 0 {
-		subscription.FilterConfig.Filter = datastore.FilterSchema{}
+		subscription.FilterConfig.Filter = datastore.FilterSchema{
+			Headers: datastore.M{},
+			Body:    datastore.M{},
+		}
 	} else {
 		// validate that the filter is a json string
 		_, err := json.Marshal(subscription.FilterConfig.Filter)
@@ -118,6 +121,7 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, projectId s
 	}
 
 	subscription, err := s.subRepo.FindSubscriptionByID(ctx, projectId, subscriptionId)
+	fmt.Println("ff", err)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrSubscriptionNotFound.Error())
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)
@@ -269,7 +273,7 @@ func (s *SubcriptionService) FindSubscriptionByID(ctx context.Context, project *
 	}
 
 	if sub.EndpointID != "" {
-		endpoint, err := s.endpointRepo.FindEndpointByID(ctx, sub.EndpointID)
+		endpoint, err := s.endpointRepo.FindEndpointByID(ctx, sub.EndpointID, project.UID)
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error("failed to find subscription app endpoint")
 			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find subscription app endpoint"))
@@ -295,9 +299,9 @@ func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter 
 	return subscriptions, paginatedData, nil
 }
 
-func (s *SubcriptionService) findEndpoint(ctx context.Context, appID, endpointID string) (*datastore.Endpoint, error) {
+func (s *SubcriptionService) findEndpoint(ctx context.Context, appID, endpointID string, project *datastore.Project) (*datastore.Endpoint, error) {
 	if !util.IsStringEmpty(appID) {
-		endpoints, err := s.endpointRepo.FindEndpointsByAppID(ctx, appID)
+		endpoints, err := s.endpointRepo.FindEndpointsByAppID(ctx, appID, project.UID)
 		if err != nil {
 			return nil, err
 		}
@@ -315,7 +319,7 @@ func (s *SubcriptionService) findEndpoint(ctx context.Context, appID, endpointID
 		return nil, datastore.ErrEndpointNotFound
 	}
 
-	endpoint, err := s.endpointRepo.FindEndpointByID(ctx, endpointID)
+	endpoint, err := s.endpointRepo.FindEndpointByID(ctx, endpointID, project.UID)
 	if err != nil {
 		return nil, datastore.ErrEndpointNotFound
 	}

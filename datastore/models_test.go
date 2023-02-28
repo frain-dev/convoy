@@ -4,14 +4,14 @@ import (
 	"testing"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestProject_IsDeleted(t *testing.T) {
-	d := primitive.DateTime(39487)
-	deletedAt := primitive.NewDateTimeFromTime(time.Now())
+	d := null.NewTime(time.Unix(39487, 0), true)
+	deletedAt := null.NewTime(time.Now(), true)
 
 	tt := []struct {
 		name      string
@@ -20,7 +20,7 @@ func TestProject_IsDeleted(t *testing.T) {
 	}{
 		{
 			name:    "set deleted_at to zero",
-			project: &Project{UID: "123456", DeletedAt: nil},
+			project: &Project{UID: "123456", DeletedAt: null.NewTime(time.Now(), false)},
 		},
 		{
 			name:    "skip deleted_at field",
@@ -28,12 +28,12 @@ func TestProject_IsDeleted(t *testing.T) {
 		},
 		{
 			name:      "set deleted_at to random integer",
-			project:   &Project{UID: "123456", DeletedAt: &d},
+			project:   &Project{UID: "123456", DeletedAt: d},
 			isDeleted: true,
 		},
 		{
 			name:      "set deleted_at to current timestamp",
-			project:   &Project{UID: "123456", DeletedAt: &deletedAt},
+			project:   &Project{UID: "123456", DeletedAt: deletedAt},
 			isDeleted: true,
 		},
 	}
@@ -54,13 +54,13 @@ func TestProject_IsOwner(t *testing.T) {
 	}{
 		{
 			name:     "right owner",
-			project:  &Project{UID: "123456", DeletedAt: nil},
+			project:  &Project{UID: "123456", DeletedAt: null.NewTime(time.Now(), false)},
 			endpoint: &Endpoint{ProjectID: "123456"},
 			isOwner:  true,
 		},
 		{
 			name:     "wrong owner",
-			project:  &Project{UID: "123456", DeletedAt: nil},
+			project:  &Project{UID: "123456", DeletedAt: null.NewTime(time.Now(), false)},
 			endpoint: &Endpoint{ProjectID: "1234567"},
 		},
 	}

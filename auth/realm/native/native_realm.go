@@ -56,11 +56,11 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	}
 
 	// if the current time is after the specified expiry date then the key has expired
-	if apiKey.ExpiresAt != 0 && time.Now().After(apiKey.ExpiresAt.Time()) {
+	if !apiKey.ExpiresAt.IsZero() && time.Now().After(apiKey.ExpiresAt.ValueOrZero()) {
 		return nil, errors.New("api key has expired")
 	}
 
-	if apiKey.DeletedAt != nil {
+	if !apiKey.DeletedAt.IsZero() {
 		return nil, errors.New("api key has been revoked")
 	}
 

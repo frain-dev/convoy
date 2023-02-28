@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/util"
@@ -247,7 +248,7 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 			}
 
 			require.Nil(t, err)
-			member.UpdatedAt = 0
+			member.UpdatedAt = time.Time{}
 			require.Equal(t, tt.want, member)
 		})
 	}

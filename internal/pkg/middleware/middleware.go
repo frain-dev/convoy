@@ -203,7 +203,8 @@ func (m *Middleware) RequireEndpoint() func(next http.Handler) http.Handler {
 			}
 
 			if endpoint == nil {
-				endpoint, err = m.endpointRepo.FindEndpointByID(r.Context(), endpointID)
+				project := GetProjectFromContext(r.Context())
+				endpoint, err = m.endpointRepo.FindEndpointByID(r.Context(), endpointID, project.UID)
 				if err != nil {
 					if errors.Is(err, datastore.ErrEndpointNotFound) {
 						event = err.Error()
@@ -314,7 +315,7 @@ func (m *Middleware) RequirePortalLinkEndpoint() func(next http.Handler) http.Ha
 func FilterDeletedEndpoints(endpoints []datastore.Endpoint) []datastore.Endpoint {
 	activeEndpoints := make([]datastore.Endpoint, 0)
 	for _, endpoint := range endpoints {
-		if endpoint.DeletedAt == nil {
+		if endpoint.DeletedAt.IsZero() {
 			activeEndpoints = append(activeEndpoints, endpoint)
 		}
 	}
@@ -523,6 +524,7 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 			eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
 
 			eventDelivery, err := m.eventDeliveryRepo.FindEventDeliveryByID(r.Context(), eventDeliveryID)
+			fmt.Println("Ff", err)
 			if err != nil {
 
 				eventDelivery := "an error occurred while retrieving event delivery details"
@@ -559,19 +561,6 @@ func (m *Middleware) RequireDeliveryAttempt() func(next http.Handler) http.Handl
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-func (m *Middleware) GetDefaultProject(r *http.Request, projectRepo datastore.ProjectRepository) (*datastore.Project, error) {
-	projects, err := projectRepo.LoadProjects(r.Context(), &datastore.ProjectFilter{Names: []string{"default-project"}})
-	if err != nil {
-		return nil, err
-	}
-
-	if !(len(projects) > 0) {
-		return nil, errors.New("no default project, please your config")
-	}
-
-	return projects[0], err
 }
 
 func (m *Middleware) RequirePersonalAccessToken() func(next http.Handler) http.Handler {
@@ -1003,10 +992,10 @@ func EnsurePeriod(start time.Time, end time.Time) error {
 	return nil
 }
 
-func (m *Middleware) ComputeDashboardMessages(ctx context.Context, orgId string, searchParams datastore.SearchParams, period datastore.Period) (uint64, []datastore.EventInterval, error) {
+func (m *Middleware) ComputeDashboardMessages(ctx context.Context, projectID string, searchParams datastore.SearchParams, period datastore.Period) (uint64, []datastore.EventInterval, error) {
 	var messagesSent uint64
 
-	messages, err := m.eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, orgId, searchParams, period, 1)
+	messages, err := m.eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, projectID, searchParams, period, 1)
 	if err != nil {
 		m.logger.WithError(err).Error("failed to load message intervals - ")
 		return 0, nil, err
@@ -1032,14 +1021,14 @@ func (m *Middleware) RateLimitByProjectID() func(next http.Handler) http.Handler
 
 			var rateLimitDuration time.Duration
 			var err error
-			if util.IsStringEmpty(project.RateLimitDuration) {
+			if project.Config.RateLimit.Duration == 0 {
 				rateLimitDuration, err = time.ParseDuration(convoy.RATE_LIMIT_DURATION)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse("an error occured parsing rate limit duration", http.StatusBadRequest))
 					return
 				}
 			} else {
-				rateLimitDuration, err = time.ParseDuration(project.RateLimitDuration)
+				rateLimitDuration = time.Second * time.Duration(project.Config.RateLimit.Duration)
 				if err != nil {
 					_ = render.Render(w, r, util.NewErrorResponse("an error occured parsing rate limit duration", http.StatusBadRequest))
 					return
@@ -1047,10 +1036,10 @@ func (m *Middleware) RateLimitByProjectID() func(next http.Handler) http.Handler
 			}
 
 			var rateLimit int
-			if project.RateLimit == 0 {
+			if project.Config.RateLimit.Count == 0 {
 				rateLimit = convoy.RATE_LIMIT
 			} else {
-				rateLimit = project.RateLimit
+				rateLimit = project.Config.RateLimit.Count
 			}
 
 			res, err := m.limiter.Allow(r.Context(), project.UID, rateLimit, int(rateLimitDuration))
@@ -1084,8 +1073,9 @@ func (m *Middleware) RequireApp() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			appID := chi.URLParam(r, "appID")
+			project := GetProjectFromContext(r.Context())
 
-			endpoints, err := m.endpointRepo.FindEndpointsByAppID(r.Context(), appID)
+			endpoints, err := m.endpointRepo.FindEndpointsByAppID(r.Context(), appID, project.UID)
 			if err != nil {
 				_ = render.Render(w, r, util.NewErrorResponse("an error occurred while retrieving app details", http.StatusBadRequest))
 				return

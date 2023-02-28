@@ -3,8 +3,8 @@ package server
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -14,10 +14,10 @@ import (
 )
 
 func createProjectService(a *ApplicationHandler) *services.ProjectService {
-	apiKeyRepo := mongo.NewApiKeyRepo(a.A.Store)
-	projectRepo := mongo.NewProjectRepo(a.A.Store)
-	eventRepo := mongo.NewEventRepository(a.A.Store)
-	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
+	apiKeyRepo := postgres.NewAPIKeyRepo(a.A.DB)
+	projectRepo := postgres.NewProjectRepo(a.A.DB)
+	eventRepo := postgres.NewEventRepo(a.A.DB)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
 
 	return services.NewProjectService(
 		apiKeyRepo, projectRepo, eventRepo,
@@ -70,8 +70,8 @@ func (a *ApplicationHandler) DeleteProject(w http.ResponseWriter, r *http.Reques
 	projectService := createProjectService(a)
 
 	//opts := &policies.ProjectPolicyOpts{
-	//	OrganisationRepo:       mongo.NewOrgRepo(a.A.Store),
-	//	OrganisationMemberRepo: mongo.NewOrgMemberRepo(a.A.Store),
+	//	OrganisationRepo:       mongo.NewOrgRepo(a.A.DB),
+	//	OrganisationMemberRepo: mongo.NewOrgMemberRepo(a.A.DB),
 	//}
 	//gp := policies.NewProjectPolicy(opts)
 	//if err := gp.Delete(r.Context(), group); err != nil {
@@ -179,10 +179,8 @@ func _() {}
 
 func (a *ApplicationHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	org := m.GetOrganisationFromContext(r.Context())
-	name := r.URL.Query().Get("name")
 
 	filter := &datastore.ProjectFilter{OrgID: org.UID}
-	filter.Names = append(filter.Names, name)
 	projectService := createProjectService(a)
 
 	projects, err := projectService.GetProjects(r.Context(), filter)

@@ -3,8 +3,8 @@ package server
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/services"
 
@@ -16,9 +16,9 @@ import (
 )
 
 func createSubscriptionService(a *ApplicationHandler) *services.SubcriptionService {
-	subRepo := mongo.NewSubscriptionRepo(a.A.Store)
-	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
-	sourceRepo := mongo.NewSourceRepo(a.A.Store)
+	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+	sourceRepo := postgres.NewSourceRepo(a.A.DB)
 
 	return services.NewSubscriptionService(subRepo, endpointRepo, sourceRepo)
 }
@@ -72,7 +72,7 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 
 	baseUrl := m.GetHostFromContext(r.Context())
 	for i := range subscriptions {
-		fillSourceURL(subscriptions[i].Source, baseUrl, org.CustomDomain)
+		fillSourceURL(subscriptions[i].Source, baseUrl, org.CustomDomain.ValueOrZero())
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Subscriptions fetched successfully",

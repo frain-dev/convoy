@@ -10,19 +10,25 @@ jobs:
         if: ${{ !(contains(github.head_ref, 'ui/')) || !(contains(github.head_ref, 'cms/')) }}
         strategy:
             matrix:
-                go-version: [1.16.x, 1.17.x]
+                go-version: [1.18.x]
                 os: [ubuntu-latest, macos-latest]
-                mongodb-version: ["5.0"]
+                postgres-version: ["5.0"]
                 redis-version: ["6.2.6"]
 
         runs-on: ubuntu-latest
+        services:
+            postgres:
+                image: postgres:15
+                ports:
+                    - 5432:5432
+                env:
+                    POSTGRES_USER: admin
+                    POSTGRES_DB: convoy
+                    POSTGRES_PASSWORD: password
+                    POSTGRES_MAX_CONNECTIONS: 2000
+                    # set up health check for postgres
+                options: --health-cmd pg_isready --health-interval 10ms --health-timeout 500ms --health-retries 15
         steps:
-            - name: Start MongoDB
-              uses: supercharge/mongodb-github-action@1.4.1
-              with:
-                  mongodb-replica-set: test
-                  mongodb-version: ${{ matrix.mongodb-version }}
-
             - name: Start Redis v${{ matrix.redis-version }}
               uses: supercharge/redis-github-action@1.4.0
               with:
@@ -63,10 +69,16 @@ jobs:
             - name: Go vet
               run: go vet ./...
 
+            - name: Migrate Postgres
+              run: go run ./cmd migrate up
+              env:
+                  CONVOY_DB_DSN: "postgres://admin:password@localhost:5432/convoy?sslmode=disable"
+                  CONVOY_REDIS_DSN: "redis://localhost:6379"
+
             - name: Run integration tests
               run: make integration_tests
               env:
-                  TEST_MONGO_DSN: "mongodb://localhost:27017/testdb?rs=test"
+                  TEST_POSTGRES_DSN: "postgres://admin:password@localhost:5432/convoy?sslmode=disable"
                   TEST_REDIS_DSN: "redis://localhost:6379"
                   TEST_CONVOY_TYPESENSE_HOST: "http://localhost:8108"
                   TEST_CONVOY_TYPESENSE_API_KEY: "some-api-key"

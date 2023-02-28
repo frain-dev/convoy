@@ -8,8 +8,8 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/pkg/crc"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/verifier"
@@ -18,8 +18,7 @@ import (
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/oklog/ulid/v2"
 )
 
 func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +84,8 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	projectRepo := mongo.NewProjectRepo(a.A.Store)
+	projectRepo := postgres.NewProjectRepo(a.A.DB)
+
 	g, err := projectRepo.FetchProjectByID(r.Context(), source.ProjectID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -126,15 +126,15 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// Attach Source to Event.
 	// Write Event to the Ingestion Queue.
 	event := &datastore.Event{
-		UID:       uuid.New().String(),
+		UID:       ulid.Make().String(),
 		EventType: datastore.EventType(maskID),
 		SourceID:  source.UID,
 		ProjectID: source.ProjectID,
 		Raw:       string(payload),
 		Data:      payload,
 		Headers:   httpheader.HTTPHeader(r.Header),
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	createEvent := task.CreateEvent{
@@ -208,7 +208,7 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	sourceRepo := mongo.NewSourceRepo(a.A.Store)
+	sourceRepo := postgres.NewSourceRepo(a.A.DB)
 	err = c.HandleRequest(w, r, source, sourceRepo)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))

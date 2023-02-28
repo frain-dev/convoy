@@ -8,8 +8,8 @@ import (
 
 	"github.com/cip8/autoname"
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -20,8 +20,8 @@ import (
 )
 
 func createSecurityService(a *ApplicationHandler) *services.SecurityService {
-	projectRepo := mongo.NewProjectRepo(a.A.Store)
-	apiKeyRepo := mongo.NewApiKeyRepo(a.A.Store)
+	projectRepo := postgres.NewProjectRepo(a.A.DB)
+	apiKeyRepo := postgres.NewAPIKeyRepo(a.A.DB)
 
 	return services.NewSecurityService(projectRepo, apiKeyRepo)
 }
@@ -52,10 +52,10 @@ func (a *ApplicationHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request
 				Project: apiKey.Role.Project,
 			},
 			Type:      apiKey.Type,
-			ExpiresAt: apiKey.ExpiresAt.Time(),
+			ExpiresAt: apiKey.ExpiresAt,
 		},
 		UID:       apiKey.UID,
-		CreatedAt: apiKey.CreatedAt.Time(),
+		CreatedAt: apiKey.CreatedAt,
 		Key:       keyString,
 	}
 
@@ -92,11 +92,11 @@ func (a *ApplicationHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http
 				Project: apiKey.Role.Project,
 			},
 			Type:      apiKey.Type,
-			ExpiresAt: apiKey.ExpiresAt.Time(),
+			ExpiresAt: apiKey.ExpiresAt,
 		},
 		UserID:    apiKey.UserID,
 		UID:       apiKey.UID,
-		CreatedAt: apiKey.CreatedAt.Time(),
+		CreatedAt: apiKey.CreatedAt,
 		Key:       keyString,
 	}
 
@@ -242,10 +242,10 @@ func (a *ApplicationHandler) RegenerateProjectAPIKey(w http.ResponseWriter, r *h
 				Project: apiKey.Role.Project,
 			},
 			Type:      apiKey.Type,
-			ExpiresAt: apiKey.ExpiresAt.Time(),
+			ExpiresAt: apiKey.ExpiresAt,
 		},
 		UID:       apiKey.UID,
-		CreatedAt: apiKey.CreatedAt.Time(),
+		CreatedAt: apiKey.CreatedAt,
 		Key:       keyString,
 	}
 

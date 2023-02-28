@@ -12,10 +12,9 @@ import (
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/golang/mock/gomock"
-	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestIndexDocument(t *testing.T) {
@@ -30,14 +29,14 @@ func TestIndexDocument(t *testing.T) {
 		{
 			name: "should_index_ducment",
 			event: &datastore.Event{
-				UID:       uuid.NewString(),
+				UID:       ulid.Make().String(),
 				EventType: "*",
 				SourceID:  "source-id-1",
 				ProjectID: "project-id-1",
 				Endpoints: []string{"endpoint-id-1"},
 				Data:      []byte(`{}`),
-				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
 			},
 			dbFn: func(args *args) {
 				s, _ := args.search.(*mocks.MockSearcher)
@@ -48,14 +47,14 @@ func TestIndexDocument(t *testing.T) {
 		{
 			name: "should_not_index_ducment",
 			event: &datastore.Event{
-				UID:       uuid.NewString(),
+				UID:       ulid.Make().String(),
 				EventType: "*",
 				SourceID:  "source-id-1",
 				ProjectID: "project-id-1",
 				Endpoints: []string{"endpoint-id-1"},
 				Data:      []byte(`{}`),
-				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
 			},
 			dbFn: func(args *args) {
 				srh, _ := args.search.(*mocks.MockSearcher)
@@ -69,14 +68,14 @@ func TestIndexDocument(t *testing.T) {
 		{
 			name: "should_not_index_ducment_missing_project_id",
 			event: &datastore.Event{
-				UID:       uuid.NewString(),
+				UID:       ulid.Make().String(),
 				EventType: "*",
 				SourceID:  "source-id-1",
 				ProjectID: "project-id-1",
 				Endpoints: []string{"endpoint-id-1"},
 				Data:      []byte(`{}`),
-				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
 			},
 			dbFn: func(args *args) {
 				srh, _ := args.search.(*mocks.MockSearcher)

@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/datastore/mongo"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/spf13/cobra"
@@ -20,8 +20,8 @@ func addIngestCommand(a *app) *cobra.Command {
 				return err
 			}
 
-			sourceRepo := mongo.NewSourceRepo(a.store)
-			endpointRepo := mongo.NewEndpointRepo(a.store)
+			sourceRepo := postgres.NewSourceRepo(a.db)
+			endpointRepo := postgres.NewEndpointRepo(a.db)
 
 			lo := a.logger.(*log.Logger)
 			lo.SetPrefix("ingester")

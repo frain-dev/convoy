@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -19,12 +19,12 @@ import (
 )
 
 func createEventService(a *ApplicationHandler) *services.EventService {
-	sourceRepo := mongo.NewSourceRepo(a.A.Store)
-	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
-	subRepo := mongo.NewSubscriptionRepo(a.A.Store)
-	eventRepo := mongo.NewEventRepository(a.A.Store)
-	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
-	deviceRepo := mongo.NewDeviceRepository(a.A.Store)
+	sourceRepo := postgres.NewSourceRepo(a.A.DB)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
+	eventRepo := postgres.NewEventRepo(a.A.DB)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
+	deviceRepo := postgres.NewDeviceRepo(a.A.DB)
 
 	return services.NewEventService(
 		endpointRepo, eventRepo, eventDeliveryRepo,
@@ -617,7 +617,7 @@ func fetchDeliveryAttempts() func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			e := m.GetEventDeliveryFromContext(r.Context())
 
-			r = r.WithContext(m.SetDeliveryAttemptsInContext(r.Context(), &e.DeliveryAttempts))
+			r = r.WithContext(m.SetDeliveryAttemptsInContext(r.Context(), (*[]datastore.DeliveryAttempt)(&e.DeliveryAttempts)))
 			next.ServeHTTP(w, r)
 		})
 	}

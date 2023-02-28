@@ -9,7 +9,7 @@ import (
 	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
-	cm "github.com/frain-dev/convoy/datastore/mongo"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -147,8 +147,8 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 	start := time.Now()
 	a.logger.Info("Starting Convoy server...")
 
-	apiKeyRepo := cm.NewApiKeyRepo(a.store)
-	userRepo := cm.NewUserRepo(a.store)
+	apiKeyRepo := postgres.NewAPIKeyRepo(a.db)
+	userRepo := postgres.NewUserRepo(a.db)
 	err := realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, a.cache)
 	if err != nil {
 		a.logger.WithError(err).Fatal("failed to initialize realm chain")
@@ -171,7 +171,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 
 	handler := route.NewApplicationHandler(
 		route.App{
-			Store:    a.store,
+			DB:       a.db,
 			Queue:    a.queue,
 			Logger:   lo,
 			Tracer:   a.tracer,
@@ -199,13 +199,13 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		// register worker.
 		consumer := worker.NewConsumer(a.queue, lo)
 
-		endpointRepo := cm.NewEndpointRepo(a.store)
-		eventRepo := cm.NewEventRepository(a.store)
-		eventDeliveryRepo := cm.NewEventDeliveryRepository(a.store)
-		projectRepo := cm.NewProjectRepo(a.store)
-		subRepo := cm.NewSubscriptionRepo(a.store)
-		deviceRepo := cm.NewDeviceRepository(a.store)
-		configRepo := cm.NewConfigRepo(a.store)
+		endpointRepo := postgres.NewEndpointRepo(a.db)
+		eventRepo := postgres.NewEventRepo(a.db)
+		eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.db)
+		projectRepo := postgres.NewProjectRepo(a.db)
+		subRepo := postgres.NewSubscriptionRepo(a.db)
+		deviceRepo := postgres.NewDeviceRepo(a.db)
+		configRepo := postgres.NewConfigRepo(a.db)
 
 		consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 			endpointRepo,
@@ -226,22 +226,23 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			a.searcher,
 			deviceRepo))
 
-		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RententionPolicies(
-			cfg,
+		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
 			configRepo,
 			projectRepo,
 			eventRepo,
 			eventDeliveryRepo,
-			a.searcher))
+			postgres.NewExportRepo(a.db),
+			a.searcher,
+		))
 
 		consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(
-			a.store,
+			a.db,
 			a.queue))
 
 		consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(
 			endpointRepo))
 
-		consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.store, cfg))
+		consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.db, cfg))
 		consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 		consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.searcher))
 		consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))

@@ -15,9 +15,8 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
 )
 
 type OrganisationService struct {
@@ -41,11 +40,11 @@ func (os *OrganisationService) CreateOrganisation(ctx context.Context, newOrg *m
 	}
 
 	org := &datastore.Organisation{
-		UID:       uuid.NewString(),
+		UID:       ulid.Make().String(),
 		OwnerID:   user.UID,
 		Name:      newOrg.Name,
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	cfg, err := config.Get()
@@ -55,7 +54,7 @@ func (os *OrganisationService) CreateOrganisation(ctx context.Context, newOrg *m
 	}
 
 	if len(cfg.CustomDomainSuffix) > 0 {
-		org.AssignedDomain = fmt.Sprintf("%s.%s", uniuri.New(), cfg.CustomDomainSuffix)
+		org.AssignedDomain = null.NewString(fmt.Sprintf("%s.%s", uniuri.New(), cfg.CustomDomainSuffix), true)
 	}
 
 	err = os.orgRepo.CreateOrganisation(ctx, org)
@@ -95,7 +94,7 @@ func (os *OrganisationService) UpdateOrganisation(ctx context.Context, org *data
 			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to validate hostname - malformatted url"))
 		}
 
-		org.CustomDomain = u.Host
+		org.CustomDomain = null.NewString(u.Host, true)
 	}
 
 	err = os.orgRepo.UpdateOrganisation(ctx, org)

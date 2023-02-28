@@ -62,6 +62,9 @@
 					"event_type": {
 						"type": "string"
 					},
+					"host_name": {
+						"type": "string"
+					},
 					"source_id": {
 						"type": "string"
 					}
@@ -426,12 +429,10 @@
 			"datastore.FilterSchema": {
 				"properties": {
 					"body": {
-						"additionalProperties": true,
-						"type": "object"
+						"$ref": "#/components/schemas/datastore.M"
 					},
 					"headers": {
-						"additionalProperties": true,
-						"type": "object"
+						"$ref": "#/components/schemas/datastore.M"
 					}
 				},
 				"type": "object"
@@ -476,6 +477,10 @@
 				},
 				"type": "object"
 			},
+			"datastore.M": {
+				"additionalProperties": true,
+				"type": "object"
+			},
 			"datastore.Metadata": {
 				"properties": {
 					"data": {
@@ -489,7 +494,7 @@
 						"type": "integer"
 					},
 					"next_send_time": {
-						"type": "integer"
+						"type": "string"
 					},
 					"num_trials": {
 						"description": "NumTrials: number of times we have tried to deliver this Event to\nan application",
@@ -502,7 +507,7 @@
 						"type": "integer"
 					},
 					"strategy": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.StrategyProvider"
 					}
 				},
 				"type": "object"
@@ -510,18 +515,21 @@
 			"datastore.Organisation": {
 				"properties": {
 					"assigned_domain": {
-						"type": "string"
+						"$ref": "#/components/schemas/null.String"
 					},
 					"created_at": {
 						"type": "string"
 					},
 					"custom_domain": {
-						"type": "string"
+						"$ref": "#/components/schemas/null.String"
 					},
 					"deleted_at": {
 						"type": "string"
 					},
 					"name": {
+						"type": "string"
+					},
+					"ownerID": {
 						"type": "string"
 					},
 					"uid": {
@@ -570,21 +578,14 @@
 					"logo_url": {
 						"type": "string"
 					},
-					"metadata": {
-						"$ref": "#/components/schemas/datastore.ProjectMetadata"
-					},
 					"name": {
 						"type": "string"
 					},
 					"organisation_id": {
 						"type": "string"
 					},
-					"rate_limit": {
-						"description": "TODO(subomi): refactor this into the Instance API.",
+					"retained_events": {
 						"type": "integer"
-					},
-					"rate_limit_duration": {
-						"type": "string"
 					},
 					"statistics": {
 						"$ref": "#/components/schemas/datastore.ProjectStatistics"
@@ -603,34 +604,26 @@
 			},
 			"datastore.ProjectConfig": {
 				"properties": {
-					"is_retention_policy_enabled": {
-						"type": "boolean"
-					},
 					"max_payload_read_size": {
 						"type": "integer"
 					},
 					"ratelimit": {
 						"$ref": "#/components/schemas/datastore.RateLimitConfiguration"
 					},
-					"replay_attacks": {
+					"replay_attacks_prevention_enabled": {
 						"type": "boolean"
 					},
 					"retention_policy": {
 						"$ref": "#/components/schemas/datastore.RetentionPolicyConfiguration"
+					},
+					"retention_policy_enabled": {
+						"type": "boolean"
 					},
 					"signature": {
 						"$ref": "#/components/schemas/datastore.SignatureConfiguration"
 					},
 					"strategy": {
 						"$ref": "#/components/schemas/datastore.StrategyConfiguration"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.ProjectMetadata": {
-				"properties": {
-					"retained_events": {
-						"type": "integer"
 					}
 				},
 				"type": "object"
@@ -721,7 +714,7 @@
 						"type": "integer"
 					},
 					"type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.StrategyProvider"
 					}
 				},
 				"type": "object"
@@ -805,6 +798,12 @@
 					"deleted_at": {
 						"type": "string"
 					},
+					"forward_headers": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
 					"is_disabled": {
 						"type": "boolean"
 					},
@@ -881,10 +880,23 @@
 						"type": "integer"
 					},
 					"type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.StrategyProvider"
 					}
 				},
 				"type": "object"
+			},
+			"datastore.StrategyProvider": {
+				"enum": [
+					"linear",
+					"linear",
+					"exponential"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"DefaultStrategyProvider",
+					"LinearStrategyProvider",
+					"ExponentialStrategyProvider"
+				]
 			},
 			"datastore.Subscription": {
 				"properties": {
@@ -949,7 +961,7 @@
 			"datastore.TwitterProviderConfig": {
 				"properties": {
 					"crc_verified_at": {
-						"type": "integer"
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -976,9 +988,6 @@
 					},
 					"reset_password_expires_at": {
 						"type": "string"
-					},
-					"role": {
-						"$ref": "#/components/schemas/auth.Role"
 					},
 					"uid": {
 						"type": "string"
@@ -1182,10 +1191,10 @@
 			"models.PortalLinkResponse": {
 				"properties": {
 					"created_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"deleted_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"endpoint_count": {
 						"type": "integer"
@@ -1215,7 +1224,7 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"url": {
 						"type": "string"
@@ -1232,12 +1241,6 @@
 						"type": "string"
 					},
 					"name": {
-						"type": "string"
-					},
-					"rate_limit": {
-						"type": "integer"
-					},
-					"rate_limit_duration": {
 						"type": "string"
 					},
 					"type": {
@@ -1269,7 +1272,7 @@
 						"type": "integer"
 					},
 					"type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.StrategyProvider"
 					}
 				},
 				"type": "object"
@@ -1300,10 +1303,10 @@
 			"models.SourceResponse": {
 				"properties": {
 					"created_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"deleted_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"is_disabled": {
 						"type": "boolean"
@@ -1333,7 +1336,7 @@
 						"type": "string"
 					},
 					"updated_at": {
-						"type": "integer"
+						"type": "string"
 					},
 					"url": {
 						"type": "string"
@@ -1381,6 +1384,18 @@
 					},
 					"schema": {
 						"$ref": "#/components/schemas/models.FilterSchema"
+					}
+				},
+				"type": "object"
+			},
+			"null.String": {
+				"properties": {
+					"string": {
+						"type": "string"
+					},
+					"valid": {
+						"description": "Valid is true if String is not NULL",
+						"type": "boolean"
 					}
 				},
 				"type": "object"

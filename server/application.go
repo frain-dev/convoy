@@ -7,15 +7,14 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/oklog/ulid/v2"
 
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
@@ -40,7 +39,7 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	project := m.GetProjectFromContext(r.Context())
-	uid := uuid.New().String()
+	uid := ulid.Make().String()
 	endpoint := &datastore.Endpoint{
 		UID:             uid,
 		ProjectID:       project.UID,
@@ -49,15 +48,16 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		SlackWebhookURL: newApp.SlackWebhookURl,
 		Status:          datastore.ActiveEndpointStatus,
 		AppID:           uid,
-		CreatedAt:       primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt:       primitive.NewDateTimeFromTime(time.Now()),
+		Secrets:         datastore.Secrets{},
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}
 
 	if newApp.IsDisabled {
 		endpoint.Status = datastore.InactiveEndpointStatus
 	}
 
-	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 	err = endpointRepo.CreateEndpoint(r.Context(), endpoint, project.UID)
 	if err != nil {
 		msg := "failed to create application"
@@ -75,7 +75,7 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 
 func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())
-	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 	q := r.URL.Query().Get("q")
 	pageable := m.GetPageableFromContext(r.Context())
 
@@ -129,7 +129,7 @@ func (a *ApplicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	endpoints := m.GetEndpointsFromContext(r.Context())
 	project := m.GetProjectFromContext(r.Context())
-	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 
 	appUpdate := struct {
 		Name            *string `json:"name" valid:"required~please provide your appName"`
@@ -182,11 +182,12 @@ func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *ApplicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
-	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+	project := m.GetProjectFromContext(r.Context())
 
 	endpoints := m.GetEndpointsFromContext(r.Context())
 	for _, endpoint := range endpoints {
-		err := endpointRepo.DeleteEndpoint(r.Context(), &endpoint)
+		err := endpointRepo.DeleteEndpoint(r.Context(), &endpoint, project.UID)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
@@ -288,18 +289,18 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 
 			endpoint.Secrets = []datastore.Secret{
 				{
-					UID:       uuid.NewString(),
+					UID:       ulid.Make().String(),
 					Value:     sc,
-					CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-					UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
 				},
 			}
 		} else {
 			endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
-				UID:       uuid.NewString(),
+				UID:       ulid.Make().String(),
 				Value:     req.Secret,
-				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
 			})
 		}
 
@@ -307,7 +308,7 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 		endpoint.TargetURL = req.URL
 		endpoint.RateLimit = req.RateLimit
 		endpoint.RateLimitDuration = duration.String()
-		endpoint.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+		endpoint.UpdatedAt = time.Now()
 		auth, err := services.ValidateEndpointAuthentication(req.Authentication)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -316,7 +317,7 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 
 		endpoint.Authentication = auth
 
-		endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+		endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 		err = endpointRepo.UpdateEndpoint(r.Context(), endpoint, project.UID)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -356,6 +357,7 @@ func (a *ApplicationHandler) GetAppEndpoint(w http.ResponseWriter, r *http.Reque
 
 func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint := m.GetEndpointFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	endpointService := createEndpointService(a)
 
 	req := struct {
@@ -396,7 +398,7 @@ func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 		Authentication:     req.Authentication,
 	}
 
-	endpoint, err = endpointService.UpdateEndpoint(r.Context(), e, endpoint)
+	endpoint, err = endpointService.UpdateEndpoint(r.Context(), e, endpoint, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -408,9 +410,10 @@ func (a *ApplicationHandler) UpdateAppEndpoint(w http.ResponseWriter, r *http.Re
 
 func (a *ApplicationHandler) DeleteAppEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint := m.GetEndpointFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	es := createEndpointService(a)
 
-	err := es.DeleteEndpoint(r.Context(), endpoint)
+	err := es.DeleteEndpoint(r.Context(), endpoint, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return

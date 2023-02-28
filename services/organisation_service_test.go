@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"testing"
 
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
@@ -134,7 +136,7 @@ func TestOrganisationService_UpdateOrganisation(t *testing.T) {
 			name: "should_update_organisation name",
 			args: args{
 				ctx:    ctx,
-				org:    &datastore.Organisation{UID: "abc", Name: "test_org", DeletedAt: nil},
+				org:    &datastore.Organisation{UID: "abc", Name: "test_org"},
 				update: &models.Organisation{Name: "test_update_org"},
 			},
 			dbFn: func(os *OrganisationService) {
@@ -149,7 +151,7 @@ func TestOrganisationService_UpdateOrganisation(t *testing.T) {
 			name: "should_update_organisation custom domain",
 			args: args{
 				ctx:    ctx,
-				org:    &datastore.Organisation{UID: "abc", Name: "test_org", DeletedAt: nil},
+				org:    &datastore.Organisation{UID: "abc", Name: "test_org"},
 				update: &models.Organisation{CustomDomain: "http://abc.com"},
 			},
 			dbFn: func(os *OrganisationService) {
@@ -158,15 +160,14 @@ func TestOrganisationService_UpdateOrganisation(t *testing.T) {
 					&datastore.Organisation{
 						UID:          "abc",
 						Name:         "test_org",
-						CustomDomain: "abc.com",
+						CustomDomain: null.NewString("abc.com", true),
 					}).
 					Times(1).Return(nil)
 			},
 			want: &datastore.Organisation{
 				UID:          "abc",
 				Name:         "test_org",
-				CustomDomain: "abc.com",
-				DeletedAt:    nil,
+				CustomDomain: null.NewString("abc.com", true),
 			},
 			wantErr: false,
 		},

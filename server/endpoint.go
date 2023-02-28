@@ -5,8 +5,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -17,10 +17,10 @@ import (
 )
 
 func createEndpointService(a *ApplicationHandler) *services.EndpointService {
-	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
-	eventRepo := mongo.NewEventRepository(a.A.Store)
-	eventDeliveryRepo := mongo.NewEventDeliveryRepository(a.A.Store)
-	projectRepo := mongo.NewProjectRepo(a.A.Store)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+	eventRepo := postgres.NewEventRepo(a.A.DB)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
+	projectRepo := postgres.NewProjectRepo(a.A.DB)
 
 	return services.NewEndpointService(
 		projectRepo, endpointRepo, eventRepo, eventDeliveryRepo, a.A.Cache, a.A.Queue,
@@ -94,7 +94,7 @@ func (a *ApplicationHandler) GetEndpoint(w http.ResponseWriter, r *http.Request)
 // @Router /api/v1/projects/{projectID}/endpoints [get]
 func (a *ApplicationHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())
-	endpointRepo := mongo.NewEndpointRepo(a.A.Store)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 	q := r.URL.Query().Get("q")
 	pageable := m.GetPageableFromContext(r.Context())
 
@@ -132,9 +132,10 @@ func (a *ApplicationHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Reque
 	}
 
 	endpoint := m.GetEndpointFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	endpointService := createEndpointService(a)
 
-	endpoint, err = endpointService.UpdateEndpoint(r.Context(), e, endpoint)
+	endpoint, err = endpointService.UpdateEndpoint(r.Context(), e, endpoint, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -158,8 +159,9 @@ func (a *ApplicationHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Reque
 func (a *ApplicationHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint := m.GetEndpointFromContext(r.Context())
 	endpointService := createEndpointService(a)
+	project := m.GetProjectFromContext(r.Context())
 
-	err := endpointService.DeleteEndpoint(r.Context(), endpoint)
+	err := endpointService.DeleteEndpoint(r.Context(), endpoint, project)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to delete endpoint")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -190,9 +192,10 @@ func (a *ApplicationHandler) ExpireSecret(w http.ResponseWriter, r *http.Request
 	}
 
 	endpoint := m.GetEndpointFromContext(r.Context())
+	project := m.GetProjectFromContext(r.Context())
 	endpointService := createEndpointService(a)
 
-	endpoint, err = endpointService.ExpireSecret(r.Context(), e, endpoint)
+	endpoint, err = endpointService.ExpireSecret(r.Context(), e, endpoint, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

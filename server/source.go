@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -16,7 +16,7 @@ import (
 )
 
 func createSourceService(a *ApplicationHandler) *services.SourceService {
-	sourceRepo := mongo.NewSourceRepo(a.A.Store)
+	sourceRepo := postgres.NewSourceRepo(a.A.DB)
 
 	return services.NewSourceService(sourceRepo, a.A.Cache)
 }
@@ -57,7 +57,7 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 	}
 
 	baseUrl := m.GetHostFromContext(r.Context())
-	fillSourceURL(source, baseUrl, org.CustomDomain)
+	fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
 	_ = render.Render(w, r, util.NewServerResponse("Source created successfully", source, http.StatusCreated))
 }
 
@@ -91,7 +91,7 @@ func (a *ApplicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Reques
 	}
 
 	baseUrl := m.GetHostFromContext(r.Context())
-	fillSourceURL(source, baseUrl, org.CustomDomain)
+	fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
 
 	_ = render.Render(w, r, util.NewServerResponse("Source fetched successfully", source, http.StatusOK))
 }
@@ -140,7 +140,7 @@ func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 	}
 
 	baseUrl := m.GetHostFromContext(r.Context())
-	fillSourceURL(source, baseUrl, org.CustomDomain)
+	fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
 
 	_ = render.Render(w, r, util.NewServerResponse("Source updated successfully", source, http.StatusAccepted))
 }
@@ -215,7 +215,7 @@ func (a *ApplicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Req
 	}
 
 	for i := range sources {
-		fillSourceURL(&sources[i], baseUrl, org.CustomDomain)
+		fillSourceURL(&sources[i], baseUrl, org.CustomDomain.ValueOrZero())
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Sources fetched successfully", pagedResponse{Content: sources, Pagination: &paginationData}, http.StatusOK))

@@ -3,8 +3,8 @@ package server
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -14,7 +14,7 @@ import (
 )
 
 func createUserService(a *ApplicationHandler) *services.UserService {
-	userRepo := mongo.NewUserRepo(a.A.Store)
+	userRepo := postgres.NewUserRepo(a.A.DB)
 	configService := createConfigService(a)
 	orgService := createOrganisationService(a)
 
@@ -47,7 +47,6 @@ func (a *ApplicationHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		Token:         models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
 		CreatedAt:     user.CreatedAt,
 		UpdatedAt:     user.UpdatedAt,
-		DeletedAt:     user.DeletedAt,
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Login successful", u, http.StatusOK))
@@ -75,7 +74,6 @@ func (a *ApplicationHandler) RegisterUser(w http.ResponseWriter, r *http.Request
 		Token:     models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
-		DeletedAt: user.DeletedAt,
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Registration successful", u, http.StatusCreated))

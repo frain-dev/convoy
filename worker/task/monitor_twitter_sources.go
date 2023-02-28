@@ -5,21 +5,22 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/datastore/mongo"
 	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 )
 
-func MonitorTwitterSources(store datastore.Store, queue queue.Queuer) func(context.Context, *asynq.Task) error {
-	sourceRepo := mongo.NewSourceRepo(store)
-	subRepo := mongo.NewSubscriptionRepo(store)
-	endpointRepo := mongo.NewEndpointRepo(store)
+func MonitorTwitterSources(db database.Database, queue queue.Queuer) func(context.Context, *asynq.Task) error {
+	sourceRepo := postgres.NewSourceRepo(db)
+	subRepo := postgres.NewSubscriptionRepo(db)
+	endpointRepo := postgres.NewEndpointRepo(db)
 
 	return func(ctx context.Context, t *asynq.Task) error {
 		p := datastore.Pageable{Page: 1, PerPage: 100}
@@ -36,9 +37,10 @@ func MonitorTwitterSources(store datastore.Store, queue queue.Queuer) func(conte
 			crcExpiry := time.Now().Add(time.Hour * -2)
 
 			// the source needs to have been created at least one hour ago
-			if now.After(source.CreatedAt.Time().Add(time.Hour)) {
+			if now.After(source.CreatedAt.Add(time.Hour)) {
+				expiry := source.ProviderConfig.Twitter.CrcVerifiedAt.Time
 				// the crc verified at timestamp must not be less than two hours ago
-				if crcExpiry.After(source.ProviderConfig.Twitter.CrcVerifiedAt.Time()) {
+				if crcExpiry.After(expiry) {
 					subscriptions, err := subRepo.FindSubscriptionsBySourceID(ctx, source.ProjectID, source.UID)
 					if err != nil {
 						log.Error("Failed to load sources paged")
@@ -46,7 +48,7 @@ func MonitorTwitterSources(store datastore.Store, queue queue.Queuer) func(conte
 					}
 
 					for _, s := range subscriptions {
-						app, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID)
+						app, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID, s.ProjectID)
 						if err != nil {
 							log.Error("Failed to load sources paged")
 							return err
@@ -73,7 +75,7 @@ func sendNotificationEmail(source datastore.Source, endpoint *datastore.Endpoint
 		Subject:      "Twitter Custom Source",
 		TemplateName: email.TemplateTwitterSource,
 		Params: map[string]string{
-			"crc_verified_at": source.ProviderConfig.Twitter.CrcVerifiedAt.Time().String(),
+			"crc_verified_at": source.ProviderConfig.Twitter.CrcVerifiedAt.Time.String(),
 			"source_name":     source.Name,
 		},
 	}

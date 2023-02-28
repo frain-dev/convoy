@@ -14,8 +14,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/oklog/ulid/v2"
 )
 
 type SourceService struct {
@@ -57,7 +56,7 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 	}
 
 	source := &datastore.Source{
-		UID:       uuid.New().String(),
+		UID:       ulid.Make().String(),
 		ProjectID: g.UID,
 		MaskID:    uniuri.NewLen(16),
 		Name:      newSource.Name,
@@ -65,8 +64,8 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		Provider:  newSource.Provider,
 		Verifier:  &newSource.Verifier,
 		PubSub:    &newSource.PubSub,
-		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-		UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	if source.Provider == datastore.TwitterSourceProvider {
@@ -195,8 +194,7 @@ func (s *SourceService) LoadSourcesPaged(ctx context.Context, g *datastore.Proje
 }
 
 func (s *SourceService) DeleteSource(ctx context.Context, g *datastore.Project, source *datastore.Source) error {
-	// ToDo: add check here to ensure the source doesn't have any existing subscriptions
-	err := s.sourceRepo.DeleteSourceByID(ctx, g.UID, source.UID)
+	err := s.sourceRepo.DeleteSourceByID(ctx, g.UID, source.UID, source.VerifierID)
 	if err != nil {
 		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete source"))
 	}

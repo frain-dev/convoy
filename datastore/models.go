@@ -1,28 +1,40 @@
 package datastore
 
 import (
-	"bytes"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
-	"strings"
 	"time"
-
-	"github.com/google/uuid"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/pkg/httpheader"
+	"github.com/lib/pq"
+	"github.com/oklog/ulid/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/guregu/null.v4"
 )
 
 type Pageable struct {
 	Page    int `json:"page" bson:"page"`
 	PerPage int `json:"per_page" bson:"per_page"`
 	Sort    int `json:"sort" bson:"sort"`
+}
+
+func (p Pageable) Limit() int {
+	return p.PerPage
+}
+
+func (p Pageable) Offset() int {
+	v := (p.Page - 1) * p.PerPage
+	if v < 0 {
+		return 0
+	}
+	return v
 }
 
 type PaginationData struct {
@@ -164,12 +176,22 @@ func (k KeyType) IsValid() bool {
 }
 
 const (
-	DefaultStrategyProvider     = LinearStrategyProvider
-	LinearStrategyProvider      = "linear"
-	ExponentialStrategyProvider = "exponential"
+	DefaultStrategyProvider                      = LinearStrategyProvider
+	LinearStrategyProvider      StrategyProvider = "linear"
+	ExponentialStrategyProvider StrategyProvider = "exponential"
 )
 
 var (
+	DefaultProjectConfig = ProjectConfig{
+		RetentionPolicy:          &DefaultRetentionPolicy,
+		MaxIngestSize:            config.MaxResponseSize,
+		ReplayAttacks:            false,
+		IsRetentionPolicyEnabled: false,
+		RateLimit:                &DefaultRateLimitConfig,
+		Strategy:                 &DefaultStrategyConfig,
+		Signature:                GetDefaultSignatureConfig(),
+	}
+
 	DefaultStrategyConfig = StrategyConfiguration{
 		Type:       DefaultStrategyProvider,
 		Duration:   100,
@@ -194,7 +216,7 @@ var (
 	DefaultStoragePolicy = StoragePolicyConfiguration{
 		Type: OnPrem,
 		OnPrem: &OnPremStorage{
-			Path: convoy.DefaultOnPremDir,
+			Path: null.NewString(convoy.DefaultOnPremDir, true),
 		},
 	}
 
@@ -208,10 +230,10 @@ func GetDefaultSignatureConfig() *SignatureConfiguration {
 		Header: "X-Convoy-Signature",
 		Versions: []SignatureVersion{
 			{
-				UID:       uuid.NewString(),
+				UID:       ulid.Make().String(),
 				Hash:      "SHA256",
 				Encoding:  HexEncoding,
-				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				CreatedAt: time.Now(),
 			},
 		},
 	}
@@ -223,38 +245,110 @@ const (
 	PendingEndpointStatus  EndpointStatus = "pending"
 )
 
-type EndpointStatus string
+type (
+	EndpointStatus string
+	Secrets        []Secret
+)
+
+func (s *Secrets) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var secrets []Secret
+	err := json.Unmarshal(b, &secrets)
+	if err != nil {
+		return err
+	}
+
+	// Filter the deleted secrets out, start from the
+	// last secret in the slice that hasn't been deleted
+	ix := 0
+	for i := range secrets {
+		if secrets[i].DeletedAt.IsZero() {
+			ix = i
+			break
+		}
+	}
+
+	*s = secrets[ix:]
+	return nil
+}
+
+func (s Secrets) Value() (driver.Value, error) {
+	if s == nil {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
 
 type Endpoint struct {
-	ID                 primitive.ObjectID `json:"-" bson:"_id"`
-	UID                string             `json:"uid" bson:"uid"`
-	ProjectID          string             `json:"project_id" bson:"project_id"`
-	OwnerID            string             `json:"owner_id,omitempty" bson:"owner_id"`
-	TargetURL          string             `json:"target_url" bson:"target_url"`
-	Title              string             `json:"title" bson:"title"`
-	Secrets            []Secret           `json:"secrets" bson:"secrets"`
-	AdvancedSignatures bool               `json:"advanced_signatures" bson:"advanced_signatures"`
-	Description        string             `json:"description" bson:"description"`
-	SlackWebhookURL    string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
-	SupportEmail       string             `json:"support_email,omitempty" bson:"support_email"`
-	AppID              string             `json:"-" bson:"app_id"` // Deprecated but necessary for backward compatibility
+	UID                string  `json:"uid" db:"id"`
+	ProjectID          string  `json:"project_id" db:"project_id"`
+	OwnerID            string  `json:"owner_id,omitempty" db:"owner_id"`
+	TargetURL          string  `json:"target_url" db:"target_url"`
+	Title              string  `json:"title" db:"title"`
+	Secrets            Secrets `json:"secrets" db:"secrets"`
+	AdvancedSignatures bool    `json:"advanced_signatures" db:"advanced_signatures"`
+	Description        string  `json:"description" db:"description"`
+	SlackWebhookURL    string  `json:"slack_webhook_url,omitempty" db:"slack_webhook_url"`
+	SupportEmail       string  `json:"support_email,omitempty" db:"support_email"`
+	AppID              string  `json:"-" db:"app_id"` // Deprecated but necessary for backward compatibility
 
-	HttpTimeout string         `json:"http_timeout" bson:"http_timeout"`
-	RateLimit   int            `json:"rate_limit" bson:"rate_limit"`
-	Events      int64          `json:"events,omitempty" bson:"-"`
-	Status      EndpointStatus `json:"status" bson:"status"`
+	HttpTimeout string         `json:"http_timeout" db:"http_timeout"`
+	RateLimit   int            `json:"rate_limit" db:"rate_limit"`
+	Events      int64          `json:"events,omitempty" db:"-"`
+	Status      EndpointStatus `json:"status" db:"status"`
 
-	RateLimitDuration string                  `json:"rate_limit_duration" bson:"rate_limit_duration"`
-	Authentication    *EndpointAuthentication `json:"authentication" bson:"authentication"`
+	RateLimitDuration string                  `json:"rate_limit_duration" db:"rate_limit_duration"`
+	Authentication    *EndpointAuthentication `json:"authentication" db:"authentication"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+func (e *Endpoint) FindSecret(secretID string) *Secret {
+	for i := range e.Secrets {
+		secret := &e.Secrets[i]
+		if secret.UID == secretID {
+			return secret
+		}
+	}
+	return nil
+}
+
+type EndpointConfig struct {
+	AdvancedSignatures bool                    `json:"advanced_signatures" db:"advanced_signatures"`
+	Secrets            []Secret                `json:"secrets" db:"secrets"`
+	RateLimit          *RateLimitConfiguration `json:"ratelimit" db:"ratelimit"`
+	Authentication     *EndpointAuthentication `json:"authentication" db:"authentication"`
+}
+
+func (e *Endpoint) GetAuthConfig() EndpointAuthentication {
+	if e.Authentication != nil {
+		if e.Authentication.ApiKey != nil {
+			return *e.Authentication
+		}
+	}
+
+	return EndpointAuthentication{ApiKey: &ApiKey{}}
 }
 
 func (e *Endpoint) GetActiveSecretIndex() (int, error) {
 	for idx, secret := range e.Secrets {
-		if secret.ExpiresAt == 0 {
+		if secret.ExpiresAt.IsZero() {
 			return idx, nil
 		}
 	}
@@ -262,18 +356,18 @@ func (e *Endpoint) GetActiveSecretIndex() (int, error) {
 }
 
 type Secret struct {
-	UID   string `json:"uid" bson:"uid"`
-	Value string `json:"value" bson:"value"`
+	UID   string `json:"uid" db:"id"`
+	Value string `json:"value" db:"value"`
 
-	ExpiresAt primitive.DateTime  `json:"expires_at,omitempty" bson:"expires_at,omitempty" swaggertype:"string"`
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	ExpiresAt null.Time `json:"expires_at,omitempty" db:"expires_at,omitempty" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type EndpointAuthentication struct {
-	Type   EndpointAuthenticationType `json:"type,omitempty" bson:"type" valid:"optional,in(api_key)~unsupported authentication type"`
-	ApiKey *ApiKey                    `json:"api_key" bson:"api_key"`
+	Type   EndpointAuthenticationType `json:"type,omitempty" db:"type" valid:"optional,in(api_key)~unsupported authentication type"`
+	ApiKey *ApiKey                    `json:"api_key" db:"api_key"`
 }
 
 var (
@@ -284,77 +378,118 @@ var (
 )
 
 type Project struct {
-	ID             primitive.ObjectID `json:"-" bson:"_id"`
-	UID            string             `json:"uid" bson:"uid"`
-	Name           string             `json:"name" bson:"name"`
-	LogoURL        string             `json:"logo_url" bson:"logo_url"`
-	OrganisationID string             `json:"organisation_id" bson:"organisation_id"`
-	Type           ProjectType        `json:"type" bson:"type"`
-	Config         *ProjectConfig     `json:"config" bson:"config"`
-	Statistics     *ProjectStatistics `json:"statistics" bson:"-"`
+	UID             string             `json:"uid" db:"id"`
+	Name            string             `json:"name" db:"name"`
+	LogoURL         string             `json:"logo_url" db:"logo_url"`
+	OrganisationID  string             `json:"organisation_id" db:"organisation_id"`
+	ProjectConfigID string             `json:"-" db:"project_configuration_id"`
+	Type            ProjectType        `json:"type" db:"type"`
+	Config          *ProjectConfig     `json:"config" db:"config"`
+	Statistics      *ProjectStatistics `json:"statistics" db:"-"`
 
-	// TODO(subomi): refactor this into the Instance API.
-	RateLimit         int              `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string           `json:"rate_limit_duration" bson:"rate_limit_duration"`
-	Metadata          *ProjectMetadata `json:"metadata" bson:"metadata"`
+	RetainedEvents int `json:"retained_events" db:"retained_events"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type ProjectMetadata struct {
 	RetainedEvents int `json:"retained_events" bson:"retained_events"`
 }
 
+type SignatureVersions []SignatureVersion
+
+func (s *SignatureVersions) Scan(v interface{}) error {
+	b, ok := v.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", v)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	return json.Unmarshal(b, s)
+}
+
+func (s SignatureVersions) Value() (driver.Value, error) {
+	return json.Marshal(s)
+}
+
 type ProjectConfig struct {
-	RateLimit                *RateLimitConfiguration       `json:"ratelimit"`
-	Strategy                 *StrategyConfiguration        `json:"strategy"`
-	Signature                *SignatureConfiguration       `json:"signature"`
-	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" bson:"retention_policy"`
-	MaxIngestSize            uint64                        `json:"max_payload_read_size" bson:"max_payload_read_size"`
-	ReplayAttacks            bool                          `json:"replay_attacks" bson:"replay_attacks"`
-	IsRetentionPolicyEnabled bool                          `json:"is_retention_policy_enabled" bson:"is_retention_policy_enabled"`
+	MaxIngestSize            uint64                        `json:"max_payload_read_size" db:"max_payload_read_size"`
+	ReplayAttacks            bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
+	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
+	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
+	RateLimit                *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
+	Strategy                 *StrategyConfiguration        `json:"strategy" db:"strategy"`
+	Signature                *SignatureConfiguration       `json:"signature" db:"signature"`
+}
+
+func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {
+	if p.RateLimit != nil {
+		return *p.RateLimit
+	}
+	return RateLimitConfiguration{}
+}
+
+func (p *ProjectConfig) GetStrategyConfig() StrategyConfiguration {
+	if p.Strategy != nil {
+		return *p.Strategy
+	}
+	return StrategyConfiguration{}
+}
+
+func (p *ProjectConfig) GetSignatureConfig() SignatureConfiguration {
+	if p.Signature != nil {
+		return *p.Signature
+	}
+	return SignatureConfiguration{}
+}
+
+func (p *ProjectConfig) GetRetentionPolicyConfig() RetentionPolicyConfiguration {
+	if p.RetentionPolicy != nil {
+		return *p.RetentionPolicy
+	}
+	return RetentionPolicyConfiguration{}
 }
 
 type RateLimitConfiguration struct {
-	Count    int    `json:"count" bson:"count"`
-	Duration uint64 `json:"duration" bson:"duration"`
+	Count    int    `json:"count" db:"count"`
+	Duration uint64 `json:"duration" db:"duration"`
 }
 
 type StrategyConfiguration struct {
-	Type       StrategyProvider `json:"type" valid:"optional~please provide a valid strategy type, in(linear|exponential)~unsupported strategy type"`
-	Duration   uint64           `json:"duration" valid:"optional~please provide a valid duration in seconds,int"`
-	RetryCount uint64           `json:"retry_count" valid:"optional~please provide a valid retry count,int"`
+	Type       StrategyProvider `json:"type" db:"type" valid:"optional~please provide a valid strategy type, in(linear|exponential)~unsupported strategy type"`
+	Duration   uint64           `json:"duration" db:"duration" valid:"optional~please provide a valid duration in seconds,int"`
+	RetryCount uint64           `json:"retry_count" db:"retry_count" valid:"optional~please provide a valid retry count,int"`
 }
 
 type SignatureConfiguration struct {
+	Hash     string                         `json:"-" db:"hash"` // Deprecated
 	Header   config.SignatureHeaderProvider `json:"header,omitempty" valid:"required~please provide a valid signature header"`
-	Versions []SignatureVersion             `json:"versions" bson:"versions"`
-
-	Hash string `json:"-" bson:"hash"`
+	Versions SignatureVersions              `json:"versions" db:"versions"`
 }
 
 type SignatureVersion struct {
-	UID       string             `json:"uid" bson:"uid"`
-	Hash      string             `json:"hash,omitempty" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
-	Encoding  EncodingType       `json:"encoding" bson:"encoding" valid:"required~please provide a valid signature header"`
-	CreatedAt primitive.DateTime `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
+	UID       string       `json:"uid" db:"id"`
+	Hash      string       `json:"hash,omitempty" db:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
+	Encoding  EncodingType `json:"encoding" db:"encoding" valid:"required~please provide a valid signature header"`
+	CreatedAt time.Time    `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 }
 
 type RetentionPolicyConfiguration struct {
-	Policy string `json:"policy" valid:"required~please provide a valid retention policy"`
+	Policy string `json:"policy" db:"policy" valid:"required~please provide a valid retention policy"`
 }
 
 type ProjectStatistics struct {
-	ProjectID    string `json:"-" bson:"project_id"`
-	MessagesSent int64  `json:"messages_sent" bson:"messages_sent"`
-	TotalApps    int64  `json:"total_endpoints" bson:"total_endpoints"`
+	MessagesSent   int64 `json:"messages_sent" db:"messages_sent"`
+	TotalEndpoints int64 `json:"total_endpoints" db:"total_endpoints"`
 }
 
 type ProjectFilter struct {
-	OrgID string   `json:"org_id" bson:"org_id"`
-	Names []string `json:"name" bson:"name"`
+	OrgID string `json:"org_id" bson:"org_id"`
 }
 
 type EventFilter struct {
@@ -369,26 +504,26 @@ type EventDeliveryFilter struct {
 	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
 }
 
-func (g *ProjectFilter) WithNamesTrimmed() *ProjectFilter {
-	f := ProjectFilter{OrgID: g.OrgID, Names: []string{}}
+// func (g *ProjectFilter) WithNamesTrimmed() *ProjectFilter {
+// 	f := ProjectFilter{OrgID: g.OrgID, Names: []string{}}
 
-	for _, s := range g.Names {
-		s = strings.TrimSpace(s)
-		if len(s) == 0 {
-			continue
-		}
-		f.Names = append(f.Names, s)
-	}
+// 	for _, s := range g.Names {
+// 		s = strings.TrimSpace(s)
+// 		if len(s) == 0 {
+// 			continue
+// 		}
+// 		f.Names = append(f.Names, s)
+// 	}
 
-	return &f
-}
+// 	return &f
+// }
 
-func (g *ProjectFilter) ToGenericMap() map[string]interface{} {
-	m := map[string]interface{}{"name": g.Names}
-	return m
-}
+// func (g *ProjectFilter) ToGenericMap() map[string]interface{} {
+// 	m := map[string]interface{}{"name": g.Names}
+// 	return m
+// }
 
-func (o *Project) IsDeleted() bool { return o.DeletedAt != nil }
+func (o *Project) IsDeleted() bool { return o.DeletedAt.Valid }
 
 func (o *Project) IsOwner(e *Endpoint) bool { return o.UID == e.ProjectID }
 
@@ -409,6 +544,7 @@ var (
 	ErrDuplicateProjectName          = errors.New("a project with this name already exists")
 	ErrDuplicateEmail                = errors.New("a user with this email already exists")
 	ErrNoActiveSecret                = errors.New("no active secret found")
+	ErrSecretNotFound                = errors.New("secret not found")
 )
 
 type AppMetadata struct {
@@ -426,27 +562,26 @@ type EventType string
 
 // Event defines a payload to be sent to an application
 type Event struct {
-	ID               primitive.ObjectID `json:"-" bson:"_id"`
-	UID              string             `json:"uid" bson:"uid"`
-	EventType        EventType          `json:"event_type" bson:"event_type"`
-	MatchedEndpoints int                `json:"matched_endpoints" bson:"matched_enpoints"` // TODO(all) remove this field
+	UID              string    `json:"uid" db:"id"`
+	EventType        EventType `json:"event_type" db:"event_type"`
+	MatchedEndpoints int       `json:"matched_endpoints" db:"matched_enpoints"` // TODO(all) remove this field
 
-	SourceID         string                `json:"source_id,omitempty" bson:"source_id"`
-	AppID            string                `json:"app_id,omitempty" bson:"app_id"` // Deprecated
-	ProjectID        string                `json:"project_id,omitempty" bson:"project_id"`
-	Endpoints        []string              `json:"endpoints" bson:"endpoints"`
-	Headers          httpheader.HTTPHeader `json:"headers" bson:"headers"`
-	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" bson:"endpoint_metadata"`
-	Source           *Source               `json:"source_metadata,omitempty" bson:"source_metadata"`
+	SourceID         string                `json:"source_id,omitempty" db:"source_id"`
+	AppID            string                `json:"app_id,omitempty" db:"app_id"` // Deprecated
+	ProjectID        string                `json:"project_id,omitempty" db:"project_id"`
+	Endpoints        pq.StringArray        `json:"endpoints" db:"endpoints"`
+	Headers          httpheader.HTTPHeader `json:"headers" db:"headers"`
+	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
+	Source           *Source               `json:"source_metadata,omitempty" db:"source_metadata"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data json.RawMessage `json:"data,omitempty" bson:"data"`
-	Raw  string          `json:"raw,omitempty" bson:"raw"`
+	Data json.RawMessage `json:"data,omitempty" db:"data"`
+	Raw  string          `json:"raw,omitempty" db:"raw"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 func (e *Event) GetRawHeaders() map[string]interface{} {
@@ -513,7 +648,7 @@ type Metadata struct {
 	Raw      string           `json:"raw" bson:"raw"`
 	Strategy StrategyProvider `json:"strategy" bson:"strategy"`
 
-	NextSendTime primitive.DateTime `json:"next_send_time" bson:"next_send_time"`
+	NextSendTime time.Time `json:"next_send_time" bson:"next_send_time"`
 
 	// NumTrials: number of times we have tried to deliver this Event to
 	// an application
@@ -524,294 +659,464 @@ type Metadata struct {
 	RetryLimit uint64 `json:"retry_limit" bson:"retry_limit"`
 }
 
-func (em Metadata) Value() (driver.Value, error) {
-	b := new(bytes.Buffer)
-
-	if err := json.NewEncoder(b).Encode(em); err != nil {
-		return driver.Value(""), err
+func (m *Metadata) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
 	}
 
-	return driver.Value(b.String()), nil
+	if string(b) == "null" {
+		return nil
+	}
+
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Metadata) Value() (driver.Value, error) {
+	if m == nil {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 type EventIntervalData struct {
-	Interval int64  `json:"index" bson:"index"`
-	Time     string `json:"date" bson:"total_time"`
+	Interval  int64  `json:"index" db:"index"`
+	Time      string `json:"date" db:"total_time"`
+	GroupStub string `json:"-" db:"group_only"` // ugnore
 }
 
 type EventInterval struct {
-	Data  EventIntervalData `json:"data" bson:"_id"`
-	Count uint64            `json:"count" bson:"count"`
+	Data  EventIntervalData `json:"data" db:"data"`
+	Count uint64            `json:"count" db:"count"`
 }
 
 type DeliveryAttempt struct {
-	ID         primitive.ObjectID `json:"-" bson:"_id"`
-	UID        string             `json:"uid" bson:"uid"`
-	MsgID      string             `json:"msg_id" bson:"msg_id"`
-	URL        string             `json:"url" bson:"url"`
-	Method     string             `json:"method" bson:"method"`
-	EndpointID string             `json:"endpoint_id" bson:"endpoint_id"`
-	APIVersion string             `json:"api_version" bson:"api_version"`
+	UID        string `json:"uid" db:"id"`
+	MsgID      string `json:"msg_id" db:"msg_id"`
+	URL        string `json:"url" db:"url"`
+	Method     string `json:"method" db:"method"`
+	EndpointID string `json:"endpoint_id" db:"endpoint_id"`
+	APIVersion string `json:"api_version" db:"api_version"`
 
-	IPAddress        string     `json:"ip_address,omitempty" bson:"ip_address,omitempty"`
-	RequestHeader    HttpHeader `json:"request_http_header,omitempty" bson:"request_http_header,omitempty"`
-	ResponseHeader   HttpHeader `json:"response_http_header,omitempty" bson:"response_http_header,omitempty"`
-	HttpResponseCode string     `json:"http_status,omitempty" bson:"http_status,omitempty"`
-	ResponseData     string     `json:"response_data,omitempty" bson:"response_data,omitempty"`
-	Error            string     `json:"error,omitempty" bson:"error,omitempty"`
-	Status           bool       `json:"status,omitempty" bson:"status,omitempty"`
+	IPAddress        string     `json:"ip_address,omitempty" db:"ip_address"`
+	RequestHeader    HttpHeader `json:"request_http_header,omitempty" db:"request_http_header"`
+	ResponseHeader   HttpHeader `json:"response_http_header,omitempty" db:"response_http_header"`
+	HttpResponseCode string     `json:"http_status,omitempty" db:"http_status"`
+	ResponseData     string     `json:"response_data,omitempty" db:"response_data"`
+	Error            string     `json:"error,omitempty" db:"error"`
+	Status           bool       `json:"status,omitempty" db:"statu,"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
-// EventDelivery defines a payload to be sent to an application
+type DeliveryAttempts []DeliveryAttempt
+
+func (h *DeliveryAttempts) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	if err := json.Unmarshal(b, &h); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (h DeliveryAttempts) Value() (driver.Value, error) {
+	if h == nil {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(h)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+// EventDelivery defines a payload to be sent to an endpoint
 type EventDelivery struct {
-	ID             primitive.ObjectID    `json:"-" bson:"_id"`
-	UID            string                `json:"uid" bson:"uid"`
-	ProjectID      string                `json:"project_id,omitempty" bson:"project_id"`
-	EventID        string                `json:"event_id,omitempty" bson:"event_id"`
-	EndpointID     string                `json:"endpoint_id,omitempty" bson:"endpoint_id"`
-	DeviceID       string                `json:"device_id" bson:"device_id"`
-	SubscriptionID string                `json:"subscription_id,omitempty" bson:"subscription_id"`
-	Headers        httpheader.HTTPHeader `json:"headers" bson:"headers"`
+	UID            string                `json:"uid" db:"id"`
+	ProjectID      string                `json:"project_id,omitempty" db:"project_id"`
+	EventID        string                `json:"event_id,omitempty" db:"event_id"`
+	EndpointID     string                `json:"endpoint_id,omitempty" db:"endpoint_id"`
+	DeviceID       string                `json:"device_id" db:"device_id"`
+	SubscriptionID string                `json:"subscription_id,omitempty" db:"subscription_id"`
+	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 
-	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" bson:"endpoint_metadata"`
-	Event    *Event    `json:"event_metadata,omitempty" bson:"event_metadata"`
+	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
+	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`
 
-	DeliveryAttempts []DeliveryAttempt   `json:"-" bson:"attempts"`
-	Status           EventDeliveryStatus `json:"status" bson:"status"`
-	Metadata         *Metadata           `json:"metadata" bson:"metadata"`
-	CLIMetadata      *CLIMetadata        `json:"cli_metadata" bson:"cli_metadata"`
-	Description      string              `json:"description,omitempty" bson:"description"`
-	CreatedAt        primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt        primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt        *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	DeliveryAttempts DeliveryAttempts    `json:"-" db:"attempts"`
+	Status           EventDeliveryStatus `json:"status" db:"status"`
+	Metadata         *Metadata           `json:"metadata" db:"metadata"`
+	CLIMetadata      *CLIMetadata        `json:"cli_metadata" db:"cli_metadata"`
+	Description      string              `json:"description,omitempty" db:"description"`
+	CreatedAt        time.Time           `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt        time.Time           `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt        null.Time           `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type CLIMetadata struct {
-	EventType string `json:"event_type" bson:"event_type"`
-	SourceID  string `json:"source_id" bson:"source_id"`
+	EventType string `json:"event_type" db:"event_type"`
+	SourceID  string `json:"source_id" db:"source_id"`
+	HostName  string `json:"host_name,omitempty" db:"host_name"`
+}
+
+func (m *CLIMetadata) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *CLIMetadata) Value() (driver.Value, error) {
+	if m == nil {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 type APIKey struct {
-	ID        primitive.ObjectID  `json:"-" bson:"_id"`
-	UID       string              `json:"uid" bson:"uid"`
-	MaskID    string              `json:"mask_id,omitempty" bson:"mask_id"`
-	Name      string              `json:"name" bson:"name"`
-	Role      auth.Role           `json:"role" bson:"role"`
-	Hash      string              `json:"hash,omitempty" bson:"hash"`
-	Salt      string              `json:"salt,omitempty" bson:"salt"`
-	Type      KeyType             `json:"key_type" bson:"key_type"`
-	UserID    string              `json:"user_id" bson:"user_id"`
-	ExpiresAt primitive.DateTime  `json:"expires_at,omitempty" bson:"expires_at,omitempty"`
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at"`
+	UID       string    `json:"uid" db:"id"`
+	MaskID    string    `json:"mask_id,omitempty" db:"mask_id"`
+	Name      string    `json:"name" db:"name"`
+	Role      auth.Role `json:"role" db:"role"`
+	Hash      string    `json:"hash,omitempty" db:"hash"`
+	Salt      string    `json:"salt,omitempty" db:"salt"`
+	Type      KeyType   `json:"key_type" db:"key_type"`
+	UserID    string    `json:"user_id" db:"user_id"`
+	ExpiresAt null.Time `json:"expires_at,omitempty" db:"expires_at"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at"`
 }
 
 type Subscription struct {
-	ID         primitive.ObjectID `json:"-" bson:"_id"`
-	UID        string             `json:"uid" bson:"uid"`
-	Name       string             `json:"name" bson:"name"`
-	Type       SubscriptionType   `json:"type" bson:"type"`
-	ProjectID  string             `json:"-" bson:"project_id"`
-	SourceID   string             `json:"-" bson:"source_id"`
-	EndpointID string             `json:"-" bson:"endpoint_id"`
-	DeviceID   string             `json:"device_id" bson:"device_id"`
+	UID        string           `json:"uid" db:"id"`
+	Name       string           `json:"name" db:"name"`
+	Type       SubscriptionType `json:"type" db:"type"`
+	ProjectID  string           `json:"-" db:"project_id"`
+	SourceID   string           `json:"-" db:"source_id"`
+	EndpointID string           `json:"-" db:"endpoint_id"`
+	DeviceID   string           `json:"device_id" db:"device_id"`
 
-	Source   *Source   `json:"source_metadata" bson:"source_metadata"`
-	Endpoint *Endpoint `json:"endpoint_metadata" bson:"endpoint_metadata"`
+	Source   *Source   `json:"source_metadata" db:"source_metadata"`
+	Endpoint *Endpoint `json:"endpoint_metadata" db:"endpoint_metadata"`
 
 	// subscription config
-	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
-	RetryConfig     *RetryConfiguration     `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
-	FilterConfig    *FilterConfiguration    `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
-	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty" bson:"rate_limit_config,omitempty"`
+	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" db:"alert_config"`
+	RetryConfig     *RetryConfiguration     `json:"retry_config,omitempty" db:"retry_config"`
+	FilterConfig    *FilterConfiguration    `json:"filter_config,omitempty" db:"filter_config"`
+	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty" db:"rate_limit_config"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+// For DB access
+func (s *Subscription) GetAlertConfig() AlertConfiguration {
+	if s.AlertConfig != nil {
+		return *s.AlertConfig
+	}
+	return AlertConfiguration{}
+}
+
+func (s *Subscription) GetRetryConfig() RetryConfiguration {
+	if s.RetryConfig != nil {
+		return *s.RetryConfig
+	}
+	return RetryConfiguration{}
+}
+
+func (s *Subscription) GetFilterConfig() FilterConfiguration {
+	if s.FilterConfig != nil {
+		return *s.FilterConfig
+	}
+	return FilterConfiguration{
+		EventTypes: []string{},
+		Filter: FilterSchema{
+			Headers: M{},
+			Body:    M{},
+		},
+	}
+}
+
+func (s *Subscription) GetRateLimitConfig() RateLimitConfiguration {
+	if s.RateLimitConfig != nil {
+		return *s.RateLimitConfig
+	}
+	return RateLimitConfiguration{}
 }
 
 type Source struct {
-	ID             primitive.ObjectID `json:"-" bson:"_id"`
-	UID            string             `json:"uid" bson:"uid"`
-	ProjectID      string             `json:"project_id" bson:"project_id"`
-	MaskID         string             `json:"mask_id" bson:"mask_id"`
-	Name           string             `json:"name" bson:"name"`
-	Type           SourceType         `json:"type" bson:"type"`
-	Provider       SourceProvider     `json:"provider" bson:"provider"`
-	IsDisabled     bool               `json:"is_disabled" bson:"is_disabled"`
-	Verifier       *VerifierConfig    `json:"verifier" bson:"verifier"`
-	ProviderConfig *ProviderConfig    `json:"provider_config" bson:"provider_config"`
-	ForwardHeaders []string           `json:"-" bson:"forward_headers"`
-	URL            string             `json:"url" bson:"-"`
-	PubSub         *PubSubConfig      `json:"pub_sub" bson:"pub_sub"`
+	UID            string          `json:"uid" db:"id"`
+	ProjectID      string          `json:"project_id" db:"project_id"`
+	MaskID         string          `json:"mask_id" db:"mask_id"`
+	Name           string          `json:"name" db:"name"`
+	URL            string          `json:"url" db:"-"`
+	Type           SourceType      `json:"type" db:"type"`
+	Provider       SourceProvider  `json:"provider" db:"provider"`
+	IsDisabled     bool            `json:"is_disabled" db:"is_disabled"`
+	VerifierID     string          `json:"-" db:"source_verifier_id"`
+	Verifier       *VerifierConfig `json:"verifier" db:"verifier"`
+	ProviderConfig *ProviderConfig `json:"provider_config" db:"provider_config"`
+	ForwardHeaders pq.StringArray  `json:"forward_headers" db:"forward_headers"`
+	PubSub         *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type PubSubConfig struct {
-	Type    PubSubType          `json:"type" bson:"type"`
-	Workers int                 `json:"workers" bson:"workers"`
-	Sqs     *SQSPubSubConfig    `json:"sqs" bson:"sqs"`
-	Google  *GooglePubSubConfig `json:"google" bson:"google"`
+	Type    PubSubType          `json:"type" db:"type"`
+	Workers int                 `json:"workers" db:"workers"`
+	Sqs     *SQSPubSubConfig    `json:"sqs" db:"sqs"`
+	Google  *GooglePubSubConfig `json:"google" db:"google"`
+}
+
+func (p *PubSubConfig) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	var ps PubSubConfig
+	err := json.Unmarshal(b, &ps)
+	if err != nil {
+		return err
+	}
+
+	*p = ps
+	return nil
+}
+
+func (p PubSubConfig) Value() (driver.Value, error) {
+	b, err := json.Marshal(p)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 type SQSPubSubConfig struct {
-	AccessKeyID   string `json:"access_key_id" bson:"access_key_id"`
-	SecretKey     string `json:"secret_key" bson:"secret_key"`
-	DefaultRegion string `json:"default_region" bson:"default_region"`
-	QueueName     string `json:"queue_name" bson:"queue_name"`
+	AccessKeyID   string `json:"access_key_id" db:"access_key_id"`
+	SecretKey     string `json:"secret_key" db:"secret_key"`
+	DefaultRegion string `json:"default_region" db:"default_region"`
+	QueueName     string `json:"queue_name" db:"queue_name"`
 }
 
 type GooglePubSubConfig struct {
-	SubscriptionID string `json:"subscription_id" bson:"subscription_id"`
-	ServiceAccount []byte `json:"service_account" bson:"service_account"`
-	ProjectID      string `json:"project_id" bson:"project_id"`
+	SubscriptionID string `json:"subscription_id" db:"subscription_id"`
+	ServiceAccount []byte `json:"service_account" db:"service_account"`
+	ProjectID      string `json:"project_id" db:"project_id"`
 }
 
 type User struct {
-	ID                         primitive.ObjectID  `json:"-" bson:"_id"`
-	UID                        string              `json:"uid" bson:"uid"`
-	FirstName                  string              `json:"first_name" bson:"first_name"`
-	LastName                   string              `json:"last_name" bson:"last_name"`
-	Email                      string              `json:"email" bson:"email"`
-	EmailVerified              bool                `json:"email_verified" bson:"email_verified"`
-	Password                   string              `json:"-" bson:"password"`
-	Role                       auth.Role           `json:"role" bson:"role"`
-	ResetPasswordToken         string              `json:"-" bson:"reset_password_token"`
-	EmailVerificationToken     string              `json:"-" bson:"email_verification_token"`
-	CreatedAt                  primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt                  primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt                  *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
-	ResetPasswordExpiresAt     primitive.DateTime  `json:"reset_password_expires_at,omitempty" bson:"reset_password_expires_at,omitempty" swaggertype:"string"`
-	EmailVerificationExpiresAt primitive.DateTime  `json:"-" bson:"email_verification_expires_at,omitempty" swaggertype:"string"`
+	UID                        string    `json:"uid" db:"id"`
+	FirstName                  string    `json:"first_name" db:"first_name"`
+	LastName                   string    `json:"last_name" db:"last_name"`
+	Email                      string    `json:"email" db:"email"`
+	EmailVerified              bool      `json:"email_verified" db:"email_verified"`
+	Password                   string    `json:"-" db:"password"`
+	ResetPasswordToken         string    `json:"-" db:"reset_password_token"`
+	EmailVerificationToken     string    `json:"-" db:"email_verification_token"`
+	CreatedAt                  time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt                  time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt                  null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	ResetPasswordExpiresAt     time.Time `json:"reset_password_expires_at,omitempty" db:"reset_password_expires_at,omitempty" swaggertype:"string"`
+	EmailVerificationExpiresAt time.Time `json:"-" db:"email_verification_expires_at,omitempty" swaggertype:"string"`
 }
 
 type RetryConfiguration struct {
-	Type       StrategyProvider `json:"type,omitempty" bson:"type,omitempty" valid:"supported_retry_strategy~please provide a valid retry strategy type"`
-	Duration   uint64           `json:"duration,omitempty" bson:"duration,omitempty" valid:"duration~please provide a valid time duration"`
-	RetryCount uint64           `json:"retry_count" bson:"retry_count" valid:"int~please provide a valid retry count"`
+	Type       StrategyProvider `json:"type,omitempty" db:"type" valid:"supported_retry_strategy~please provide a valid retry strategy type"`
+	Duration   uint64           `json:"duration,omitempty" db:"duration" valid:"duration~please provide a valid time duration"`
+	RetryCount uint64           `json:"retry_count" db:"retry_count" valid:"int~please provide a valid retry count"`
 }
 
 type AlertConfiguration struct {
-	Count     int    `json:"count" bson:"count,omitempty"`
-	Threshold string `json:"threshold" bson:"threshold,omitempty" valid:"duration~please provide a valid time duration"`
+	Count     int    `json:"count" db:"count"`
+	Threshold string `json:"threshold" db:"threshold" valid:"duration~please provide a valid time duration"`
 }
 
 type FilterConfiguration struct {
-	EventTypes []string     `json:"event_types" bson:"event_types,omitempty"`
-	Filter     FilterSchema `json:"filter" bson:"filter"`
+	EventTypes pq.StringArray `json:"event_types" db:"event_types"`
+	Filter     FilterSchema   `json:"filter" db:"filter"`
+}
+
+type M map[string]interface{}
+
+func (h *M) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	return json.Unmarshal(b, h)
+}
+
+func (h M) Value() (driver.Value, error) {
+	if h == nil {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(h)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 type FilterSchema struct {
-	Headers map[string]interface{} `json:"headers" bson:"headers"`
-	Body    map[string]interface{} `json:"body" bson:"body"`
+	Headers M `json:"headers" db:"headers"`
+	Body    M `json:"body" db:"body"`
 }
 
 type ProviderConfig struct {
-	Twitter *TwitterProviderConfig `json:"twitter" bson:"twitter"`
+	Twitter *TwitterProviderConfig `json:"twitter" db:"twitter"`
 }
 
 type TwitterProviderConfig struct {
-	CrcVerifiedAt primitive.DateTime `json:"crc_verified_at" bson:"crc_verified_at"`
+	CrcVerifiedAt null.Time `json:"crc_verified_at" db:"crc_verified_at"`
 }
 
 type VerifierConfig struct {
-	Type      VerifierType `json:"type,omitempty" bson:"type" valid:"supported_verifier~please provide a valid verifier type"`
-	HMac      *HMac        `json:"hmac" bson:"hmac"`
-	BasicAuth *BasicAuth   `json:"basic_auth" bson:"basic_auth"`
-	ApiKey    *ApiKey      `json:"api_key" bson:"api_key"`
+	Type      VerifierType `json:"type,omitempty" db:"type" valid:"supported_verifier~please provide a valid verifier type"`
+	HMac      *HMac        `json:"hmac" db:"hmac"`
+	BasicAuth *BasicAuth   `json:"basic_auth" db:"basic_auth"`
+	ApiKey    *ApiKey      `json:"api_key" db:"api_key"`
 }
 
 type HMac struct {
-	Header   string       `json:"header" bson:"header" valid:"required"`
-	Hash     string       `json:"hash" bson:"hash" valid:"supported_hash,required"`
-	Secret   string       `json:"secret" bson:"secret" valid:"required"`
-	Encoding EncodingType `json:"encoding" bson:"encoding" valid:"supported_encoding~please provide a valid encoding type,required"`
+	Header   string       `json:"header" db:"header" valid:"required"`
+	Hash     string       `json:"hash" db:"hash" valid:"supported_hash,required"`
+	Secret   string       `json:"secret" db:"secret" valid:"required"`
+	Encoding EncodingType `json:"encoding" db:"encoding" valid:"supported_encoding~please provide a valid encoding type,required"`
 }
 
 type BasicAuth struct {
-	UserName string `json:"username" bson:"username" valid:"required" `
-	Password string `json:"password" bson:"password" valid:"required"`
+	UserName string `json:"username" db:"username" valid:"required" `
+	Password string `json:"password" db:"password" valid:"required"`
 }
 
 type ApiKey struct {
-	HeaderValue string `json:"header_value" bson:"header_value" valid:"required"`
-	HeaderName  string `json:"header_name" bson:"header_name" valid:"required"`
+	HeaderValue string `json:"header_value" db:"header_value" valid:"required"`
+	HeaderName  string `json:"header_name" db:"header_name" valid:"required"`
 }
 
 type Organisation struct {
-	ID             primitive.ObjectID  `json:"-" bson:"_id"`
-	UID            string              `json:"uid" bson:"uid"`
-	OwnerID        string              `json:"-" bson:"owner_id"`
-	Name           string              `json:"name" bson:"name"`
-	CustomDomain   string              `json:"custom_domain" bson:"custom_domain"`
-	AssignedDomain string              `json:"assigned_domain" bson:"assigned_domain"`
-	CreatedAt      primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt      primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt      *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	UID            string      `json:"uid" db:"id"`
+	OwnerID        string      `json:"" db:"owner_id"`
+	Name           string      `json:"name" db:"name"`
+	CustomDomain   null.String `json:"custom_domain" db:"custom_domain"`
+	AssignedDomain null.String `json:"assigned_domain" db:"assigned_domain"`
+	CreatedAt      time.Time   `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      time.Time   `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      null.Time   `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type Configuration struct {
-	ID                 primitive.ObjectID          `json:"-" bson:"_id"`
-	UID                string                      `json:"uid" bson:"uid"`
-	IsAnalyticsEnabled bool                        `json:"is_analytics_enabled" bson:"is_analytics_enabled"`
-	IsSignupEnabled    bool                        `json:"is_signup_enabled" bson:"is_signup_enabled"`
-	StoragePolicy      *StoragePolicyConfiguration `json:"storage_policy" bson:"storage_policy"`
+	UID                string                      `json:"uid" db:"id"`
+	IsAnalyticsEnabled bool                        `json:"is_analytics_enabled" db:"is_analytics_enabled"`
+	IsSignupEnabled    bool                        `json:"is_signup_enabled" db:"is_signup_enabled"`
+	StoragePolicy      *StoragePolicyConfiguration `json:"storage_policy" db:"storage_policy"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type StoragePolicyConfiguration struct {
-	Type   StorageType    `json:"type,omitempty" bson:"type" valid:"supported_storage~please provide a valid storage type,required"`
-	S3     *S3Storage     `json:"s3" bson:"s3"`
-	OnPrem *OnPremStorage `json:"on_prem" bson:"on_prem"`
+	Type   StorageType    `json:"type,omitempty" db:"type" valid:"supported_storage~please provide a valid storage type,required"`
+	S3     *S3Storage     `json:"s3" db:"s3"`
+	OnPrem *OnPremStorage `json:"on_prem" db:"on_prem"`
 }
 
 type S3Storage struct {
-	Bucket       string `json:"bucket" bson:"bucket" valid:"required~please provide a bucket name"`
-	AccessKey    string `json:"access_key,omitempty" bson:"access_key" valid:"required~please provide an access key"`
-	SecretKey    string `json:"secret_key,omitempty" bson:"secret_key" valid:"required~please provide a secret key"`
-	Region       string `json:"region,omitempty" bson:"region"`
-	SessionToken string `json:"-" bson:"session_token"`
-	Endpoint     string `json:"endpoint,omitempty" bson:"endpoint"`
+	Bucket       null.String `json:"bucket" db:"bucket" valid:"required~please provide a bucket name"`
+	AccessKey    null.String `json:"access_key,omitempty" db:"access_key" valid:"required~please provide an access key"`
+	SecretKey    null.String `json:"secret_key,omitempty" db:"secret_key" valid:"required~please provide a secret key"`
+	Region       null.String `json:"region,omitempty" db:"region"`
+	SessionToken null.String `json:"session_token" db:"session_token"`
+	Endpoint     null.String `json:"endpoint,omitempty" db:"endpoint"`
 }
 
 type OnPremStorage struct {
-	Path string `json:"path" bson:"path"`
+	Path null.String `json:"path" db:"path"`
 }
 
 type OrganisationMember struct {
-	ID             primitive.ObjectID  `json:"-" bson:"_id"`
-	UID            string              `json:"uid" bson:"uid"`
-	OrganisationID string              `json:"organisation_id" bson:"organisation_id"`
-	UserID         string              `json:"user_id" bson:"user_id"`
-	Role           auth.Role           `json:"role" bson:"role"`
-	UserMetadata   *UserMetadata       `json:"user_metadata" bson:"-"`
-	CreatedAt      primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt      primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt      *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	UID            string       `json:"uid" db:"id"`
+	OrganisationID string       `json:"organisation_id" db:"organisation_id"`
+	UserID         string       `json:"user_id" db:"user_id"`
+	Role           auth.Role    `json:"role" db:"role"`
+	UserMetadata   UserMetadata `json:"user_metadata" db:"user_metadata"`
+	CreatedAt      time.Time    `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      time.Time    `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      null.Time    `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type Device struct {
-	ID         primitive.ObjectID  `json:"-" bson:"_id"`
-	UID        string              `json:"uid" bson:"uid"`
-	ProjectID  string              `json:"project_id,omitempty" bson:"project_id"`
-	EndpointID string              `json:"endpoint_id,omitempty" bson:"endpoint_id"`
-	HostName   string              `json:"host_name,omitempty" bson:"host_name"`
-	Status     DeviceStatus        `json:"status,omitempty" bson:"status"`
-	LastSeenAt primitive.DateTime  `json:"last_seen_at,omitempty" bson:"last_seen_at,omitempty" swaggertype:"string"`
-	CreatedAt  primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt  primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt  *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	UID        string       `json:"uid" db:"id"`
+	ProjectID  string       `json:"project_id,omitempty" db:"project_id"`
+	EndpointID string       `json:"endpoint_id,omitempty" db:"endpoint_id"`
+	HostName   string       `json:"host_name,omitempty" db:"host_name"`
+	Status     DeviceStatus `json:"status,omitempty" db:"status"`
+	LastSeenAt time.Time    `json:"last_seen_at,omitempty" db:"last_seen_at,omitempty" swaggertype:"string"`
+	CreatedAt  time.Time    `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt  time.Time    `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt  null.Time    `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type DeviceStatus string
@@ -823,10 +1128,10 @@ const (
 )
 
 type UserMetadata struct {
-	UserID    string `json:"-" bson:"user_id"`
-	FirstName string `json:"first_name" bson:"first_name"`
-	LastName  string `json:"last_name" bson:"last_name"`
-	Email     string `json:"email" bson:"email"`
+	UserID    string `json:"-" db:"user_id"`
+	FirstName string `json:"first_name" db:"first_name"`
+	LastName  string `json:"last_name" db:"last_name"`
+	Email     string `json:"email" db:"email"`
 }
 
 type InviteStatus string
@@ -843,69 +1148,67 @@ func (i InviteStatus) String() string {
 }
 
 type OrganisationInvite struct {
-	ID               primitive.ObjectID  `json:"-" bson:"_id"`
-	UID              string              `json:"uid" bson:"uid"`
-	OrganisationID   string              `json:"organisation_id" bson:"organisation_id"`
-	InviteeEmail     string              `json:"invitee_email" bson:"invitee_email"`
-	Token            string              `json:"token" bson:"token"`
-	Role             auth.Role           `json:"role" bson:"role"`
-	Status           InviteStatus        `json:"status" bson:"status"`
-	ExpiresAt        primitive.DateTime  `json:"-" bson:"expires_at"`
-	CreatedAt        primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt        primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	OrganisationName string              `json:"organisation_name,omitempty" bson:"-"`
-	DeletedAt        *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at" swaggertype:"string"`
+	UID              string       `json:"uid" db:"id"`
+	OrganisationID   string       `json:"organisation_id" db:"organisation_id"`
+	OrganisationName string       `json:"organisation_name,omitempty" db:"-"`
+	InviteeEmail     string       `json:"invitee_email" db:"invitee_email"`
+	Token            string       `json:"token" db:"token"`
+	Role             auth.Role    `json:"role" db:"role"`
+	Status           InviteStatus `json:"status" db:"status"`
+	ExpiresAt        time.Time    `json:"-" db:"expires_at"`
+	CreatedAt        time.Time    `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt        time.Time    `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt        null.Time    `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type PortalLink struct {
-	ID                primitive.ObjectID `json:"-" bson:"_id"`
-	UID               string             `json:"uid" bson:"uid"`
-	Name              string             `json:"name" bson:"name"`
-	ProjectID         string             `json:"project_id" bson:"project_id"`
-	Token             string             `json:"-" bson:"token"`
-	Endpoints         []string           `json:"endpoints" bson:"endpoints"`
-	EndpointsMetadata []Endpoint         `json:"endpoints_metadata" bson:"endpoints_metadata"`
+	UID               string         `json:"uid" db:"id"`
+	Name              string         `json:"name" db:"name"`
+	ProjectID         string         `json:"project_id" db:"project_id"`
+	Token             string         `json:"-" db:"token"`
+	Endpoints         pq.StringArray `json:"endpoints" db:"endpoints"`
+	EndpointsMetadata []Endpoint     `json:"endpoints_metadata" db:"endpoints_metadata"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at,omitempty" swaggertype:"string"`
 }
 
 // Deprecated
 type Application struct {
-	ID              primitive.ObjectID `json:"-" bson:"_id"`
-	UID             string             `json:"uid" bson:"uid"`
-	ProjectID       string             `json:"project_id" bson:"project_id"`
-	Title           string             `json:"name" bson:"title"`
-	SupportEmail    string             `json:"support_email,omitempty" bson:"support_email"`
-	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" bson:"slack_webhook_url"`
-	IsDisabled      bool               `json:"is_disabled,omitempty" bson:"is_disabled"`
+	ID              primitive.ObjectID `json:"-" db:"_id"`
+	UID             string             `json:"uid" db:"uid"`
+	ProjectID       string             `json:"project_id" db:"project_id"`
+	Title           string             `json:"name" db:"title"`
+	SupportEmail    string             `json:"support_email,omitempty" db:"support_email"`
+	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" db:"slack_webhook_url"`
+	IsDisabled      bool               `json:"is_disabled,omitempty" db:"is_disabled"`
 
-	Endpoints []DeprecatedEndpoint `json:"endpoints,omitempty" bson:"endpoints"`
-	CreatedAt primitive.DateTime   `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime   `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime  `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+	Endpoints []DeprecatedEndpoint `json:"endpoints,omitempty" db:"endpoints"`
+	CreatedAt time.Time            `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time            `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time            `json:"deleted_at,omitempty" db:"deleted_at,omitempty" swaggertype:"string"`
 
-	Events int64 `json:"events,omitempty" bson:"-"`
+	Events int64 `json:"events,omitempty" db:"-"`
 }
 
 // Deprecated
 type DeprecatedEndpoint struct {
-	UID                string   `json:"uid" bson:"uid"`
-	TargetURL          string   `json:"target_url" bson:"target_url"`
-	Description        string   `json:"description" bson:"description"`
-	Secret             string   `json:"-" bson:"secret"`
-	Secrets            []Secret `json:"secrets" bson:"secrets"`
-	AdvancedSignatures bool     `json:"advanced_signatures" bson:"advanced_signatures"`
+	UID                string   `json:"uid" db:"uid"`
+	TargetURL          string   `json:"target_url" db:"target_url"`
+	Description        string   `json:"description" db:"description"`
+	Secret             string   `json:"-" db:"secret"`
+	Secrets            []Secret `json:"secrets" db:"secrets"`
+	AdvancedSignatures bool     `json:"advanced_signatures" db:"advanced_signatures"`
 
-	HttpTimeout       string                  `json:"http_timeout" bson:"http_timeout"`
-	RateLimit         int                     `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string                  `json:"rate_limit_duration" bson:"rate_limit_duration"`
-	Authentication    *EndpointAuthentication `json:"authentication" bson:"authentication"`
+	HttpTimeout       string                  `json:"http_timeout" db:"http_timeout"`
+	RateLimit         int                     `json:"rate_limit" db:"rate_limit"`
+	RateLimitDuration string                  `json:"rate_limit_duration" db:"rate_limit_duration"`
+	Authentication    *EndpointAuthentication `json:"authentication" db:"authentication,omitempty"`
 
-	CreatedAt primitive.DateTime  `json:"created_at,omitempty" bson:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt primitive.DateTime  `json:"updated_at,omitempty" bson:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt *primitive.DateTime `json:"deleted_at,omitempty" bson:"deleted_at,omitempty" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at,omitempty" swaggertype:"string"`
 }
 
 type Password struct {
