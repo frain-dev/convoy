@@ -16,7 +16,7 @@ const cacheSize = 128000
 
 func NewMemoryCache() *MemoryCache {
 	c := cache.New(&cache.Options{
-		LocalCache: cache.NewTinyLFU(cacheSize, time.Hour),
+		LocalCache: cache.NewTinyLFU(cacheSize, 0),
 	})
 
 	return &MemoryCache{cache: c}
