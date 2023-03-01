@@ -59,7 +59,7 @@ func getConfig() config.Configuration {
 			},
 		},
 		Database: config.DatabaseConfiguration{
-			Type: config.MongodbDatabaseProvider,
+			Type: config.PostgresDatabaseProvider,
 			Dsn:  getPostgresDSN(),
 		},
 	}

@@ -16,7 +16,7 @@ type DBExporter interface {
 	Export() (int64, error)
 }
 
-type MongoExporter struct {
+type FileExporter struct {
 	Args      []string
 	TableName string
 	ProjectID string
@@ -24,7 +24,7 @@ type MongoExporter struct {
 	Out       string
 }
 
-func (me *MongoExporter) Export(ctx context.Context, exportRepo datastore.ExportRepository) (int64, error) {
+func (me *FileExporter) Export(ctx context.Context, exportRepo datastore.ExportRepository) (int64, error) {
 	var data json.RawMessage
 
 	numDocs, err := exportRepo.ExportRecords(ctx, me.TableName, me.ProjectID, me.CreatedAt, &data)

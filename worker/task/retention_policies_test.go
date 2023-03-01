@@ -210,7 +210,7 @@ func getPostgresDSN() string {
 func getConfig() config.Configuration {
 	return config.Configuration{
 		Database: config.DatabaseConfiguration{
-			Type: config.MongodbDatabaseProvider,
+			Type: config.PostgresDatabaseProvider,
 			Dsn:  getPostgresDSN(),
 		},
 	}

@@ -286,7 +286,7 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 
 	cmd.PersistentFlags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
 	cmd.PersistentFlags().StringVar(&queue, "queue", "", "Queue provider (\"redis\")")
-	cmd.PersistentFlags().StringVar(&dbDsn, "db", "", "Database dsn or path to in-memory file")
+	cmd.PersistentFlags().StringVar(&dbDsn, "db", "", "Postgres database dsn")
 	cmd.PersistentFlags().StringVar(&redisDsn, "redis", "", "Redis dsn")
 
 	cmd.AddCommand(addVersionCommand())
@@ -338,7 +338,7 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 
 	if !util.IsStringEmpty(dbDsn) {
 		c.Database = config.DatabaseConfiguration{
-			Type: config.MongodbDatabaseProvider,
+			Type: config.PostgresDatabaseProvider,
 			Dsn:  dbDsn,
 		}
 	}

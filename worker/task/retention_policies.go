@@ -125,7 +125,7 @@ func ExportCollection(
 ) error {
 	out := GetArgsByCollection(tableName, exportDir, project)
 
-	dbExporter := &exporter.MongoExporter{
+	dbExporter := &exporter.FileExporter{
 		TableName: tableName,
 		ProjectID: project.UID,
 		CreatedAt: expDate,
