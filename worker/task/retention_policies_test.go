@@ -97,7 +97,12 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	duration, err := time.ParseDuration("80h")
 	require.NoError(r.T(), err)
 
-	event, err := seedEvent(r.ConvoyApp.database, endpoint.UID, project.UID, "", "*", []byte(`{}`), SeedFilter{
+	event1, err := seedEvent(r.ConvoyApp.database, endpoint.UID, project.UID, "", "*", []byte(`{}`), SeedFilter{
+		CreatedAt: time.Now().UTC().Add(-duration),
+	})
+	require.NoError(r.T(), err)
+
+	event2, err := seedEvent(r.ConvoyApp.database, endpoint.UID, project.UID, "", "*", []byte(`{}`), SeedFilter{
 		CreatedAt: time.Now().UTC().Add(-duration),
 	})
 	require.NoError(r.T(), err)
@@ -105,9 +110,15 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	subscription, err := testdb.SeedSubscription(r.DB, project, "", project.Type, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
 	require.NoError(r.T(), err)
 
+	now := time.Now().UTC().Add(-duration)
 	// seed eventdelivery
-	eventDelivery, err := seedEventDelivery(r.ConvoyApp.database, event.UID, endpoint.UID, project.UID, "", datastore.SuccessEventStatus, subscription.UID, SeedFilter{
-		CreatedAt: time.Now().UTC().Add(-duration),
+	eventDelivery1, err := seedEventDelivery(r.ConvoyApp.database, event1.UID, endpoint.UID, project.UID, "", datastore.SuccessEventStatus, subscription.UID, SeedFilter{
+		CreatedAt: now,
+	})
+	require.NoError(r.T(), err)
+
+	eventDelivery2, err := seedEventDelivery(r.ConvoyApp.database, event2.UID, endpoint.UID, project.UID, "", datastore.SuccessEventStatus, subscription.UID, SeedFilter{
+		CreatedAt: now,
 	})
 	require.NoError(r.T(), err)
 
@@ -119,16 +130,19 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	require.NoError(r.T(), err)
 
 	// check that event and eventdelivery repos are empty
-	_, err = r.ConvoyApp.eventRepo.FindEventByID(context.Background(), event.UID)
+	_, err = r.ConvoyApp.eventRepo.FindEventByID(context.Background(), event1.UID)
 	require.ErrorIs(r.T(), err, datastore.ErrEventNotFound)
 
-	_, err = r.ConvoyApp.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), eventDelivery.UID)
+	_, err = r.ConvoyApp.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), eventDelivery1.UID)
+	require.ErrorIs(r.T(), err, datastore.ErrEventDeliveryNotFound)
+
+	_, err = r.ConvoyApp.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), eventDelivery2.UID)
 	require.ErrorIs(r.T(), err, datastore.ErrEventDeliveryNotFound)
 
 	// check the number of retained events on projects
 	p, err := r.ConvoyApp.projectRepo.FetchProjectByID(context.Background(), project.UID)
 	require.NoError(r.T(), err)
-	require.Equal(r.T(), p.RetainedEvents, 1)
+	require.Equal(r.T(), 2, p.RetainedEvents)
 }
 
 func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Documents() {
