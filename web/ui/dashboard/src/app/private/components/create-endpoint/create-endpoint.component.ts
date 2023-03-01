@@ -97,7 +97,7 @@ export class CreateEndpointComponent implements OnInit {
 			});
 
 			if (endpointDetails.support_email) this.toggleConfigForm('alert-config');
-			if (this.addNewEndpointForm.get('authentication.api_key')?.valid) this.toggleConfigForm('auth');
+			if (endpointDetails.authentication) this.toggleConfigForm('auth');
 
 			this.isLoadingEndpointDetails = false;
 		} catch {

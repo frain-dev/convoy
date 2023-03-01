@@ -27,7 +27,7 @@
 					<button convoy-button fill="clear" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" [disabled]="isSendingTestEvent" [ngClass]="{ 'cursor-wait': isSendingTestEvent }" size="sm" class="!px-8px !py-0 my-8px" (click)="sendTestEvent()">
 						{{ isSendingTestEvent ? 'Sending Event' : 'Send Test Event' }}
 					</button>
-					<div convoy-dropdown position="right" size="md" [ngClass]="{'border-l border-primary-100': privateService.activeProjectDetails?.type === 'outgoing'}">
+					<div convoy-dropdown position="right" size="md" [ngClass]="{ 'border-l border-primary-100': privateService.activeProjectDetails?.type === 'outgoing' }">
 						<button dropdownTrigger convoy-button size="sm" fill="clear" class="!px-6px !py-0">
 							<svg width="16" height="16" class="fill-primary-100">
 								<use xlink:href="#angle-arrow-down-icon"></use>
@@ -111,11 +111,11 @@
 			</div>
 			<div>
 				<p class="text-grey-40 text-12 font-light">AUTHENTICATION</p>
-				<p class="text-black text-14 font-normal">{{ 'Inactive' }}</p>
+				<p class="text-black text-14 font-normal">{{ endpointDetails.authentication ? 'Api Key' : '-' }}</p>
 			</div>
 			<div>
 				<p class="text-grey-40 text-12 font-light">SIGNATURE FORMAT</p>
-				<p class="text-black text-14 font-normal">{{ endpointDetails.advanced_signatures ? 'Active' : 'Inactive' }}</p>
+				<p class="text-black text-14 font-normal">{{ endpointDetails.advanced_signatures ? 'Advanced' : 'Simple' }}</p>
 			</div>
 			<div>
 				<p class="text-grey-40 text-12 font-light">ALERT CONFIG</p>
