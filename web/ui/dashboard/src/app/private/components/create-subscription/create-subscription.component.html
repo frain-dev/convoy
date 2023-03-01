@@ -106,7 +106,7 @@
 						</svg>
 					</a>
 					<button convoy-button fill="text" size="sm" className="font-medium" type="button" (click)="setupFilter()">
-						Setup Filter
+						{{ action === 'update' ? 'Edit' : 'Setup' }} Filter
 						<svg width="16" height="16" class="ml-10px" class="fill-primary-100">
 							<use xlink:href="#plus-icon"></use>
 						</svg>

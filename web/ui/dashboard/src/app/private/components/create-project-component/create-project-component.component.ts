@@ -149,7 +149,10 @@ export class CreateProjectComponent implements OnInit {
 			this.projectForm.get('config.strategy')?.patchValue(response.data.config.strategy);
 			this.projectForm.get('config.signature')?.patchValue(response.data.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(response.data.config.ratelimit);
-
+			this.configurations.forEach(config => {
+				if (this.privateService.activeProjectDetails?.type === 'outgoing') this.toggleConfigForm(config.uid);
+				else if (config.uid !== 'signature') this.toggleConfigForm(config.uid);
+			});
 			const versions = response.data.config.signature.versions;
 			if (!versions?.length) return;
 			this.signatureVersions = this.generalService.setContentDisplayed(versions);

@@ -112,6 +112,12 @@ export class CreateSubscriptionComponent implements OnInit {
 			this.subscriptionForm.patchValue(response.data);
 			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
 			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
+			const filterConfig = response.data.filter_config?.filter;
+
+			if (this.action === 'update' && ('body' in filterConfig || 'headers' in filterConfig))
+				this.configurations.forEach(config => {
+					if (config.uid === 'filter_config') config.show = true;
+				});
 			if (this.token) this.projectType = 'outgoing';
 			if (response.data?.retry_config) {
 				const duration = this.formatSeconds.transform(response.data.retry_config.duration);
