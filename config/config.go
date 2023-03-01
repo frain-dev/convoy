@@ -37,7 +37,7 @@ var DefaultConfiguration = Configuration{
 	},
 	Database: DatabaseConfiguration{
 		Type: PostgresDatabaseProvider,
-		Dsn:  "postgres://admin:password@localhost/convoy",
+		Dsn:  "postgres://postgres:postgres@localhost/convoy",
 	},
 	Queue: QueueConfiguration{
 		Type: RedisQueueProvider,

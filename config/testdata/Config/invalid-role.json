@@ -15,7 +15,7 @@
         }
     },
     "database": {
-        "dsn": "mongodb://inside-config-file"
+        "dsn": "postgres://inside-config-file"
     },
     "queue": {
         "type": "redis",
