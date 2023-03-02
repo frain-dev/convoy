@@ -25,6 +25,7 @@ services:
         depends_on:
             - postgres
             - redis_server
+            - typesense
         networks:
             - backendCluster
 
@@ -37,8 +38,22 @@ services:
         depends_on:
             - postgres
             - redis_server
+            - typesense
         networks:
             - backendCluster
+
+    ingest:
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:$VERSION
+        command: ["./cmd", "ingest", "--config", "convoy.json"]
+        volumes:
+          - ./convoy.json:/convoy.json
+        restart: on-failure
+        depends_on:
+          - postgres
+          - redis_server
+          - typesense
+        networks:
+          - backendCluster
 
     postgres:
       image: postgres:15.2-alpine

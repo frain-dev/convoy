@@ -36,6 +36,17 @@ services:
             - redis_server
             - typesense
 
+    ingest:
+      image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.1
+      command: ["./cmd", "ingest", "--config", "convoy.json"]
+      volumes:
+        - ./convoy.json:/convoy.json
+      restart: on-failure
+      depends_on:
+        - postgres
+        - redis_server
+        - typesense
+
     postgres:
       image: postgres:15.2-alpine
       restart: unless-stopped
