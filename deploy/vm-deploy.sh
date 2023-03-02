@@ -136,27 +136,6 @@ EOF
 	# rewrite docker compose
 	envsubst < docker-compose.templ.yml > docker-compose.yml
 	rm docker-compose.templ.yml
-
-	# Fix compose start command
-	cat > $COMPOSECONFDIR/start <<EOF
-#!/bin/bash
-./cmd migrate up
-./cmd server --config convoy.json -w false
-EOF
-chmod +x $COMPOSECONFDIR/start
-}
-
-# setup replica set on mongo db clusters
-setup_replica_set() {
-	echo
-	docker exec mongo1 mongosh --eval "rs.initiate({
-   _id: \"myReplicaSet\",
-   members: [
-     {_id: 0, host: \"mongo1\"},
-     {_id: 1, host: \"mongo2\"},
-     {_id: 2, host: \"mongo3\"}
-   ]
-	})"
 }
 
 # start system
@@ -220,9 +199,6 @@ start() {
 
 	# start containers
 	start_containers
-
-	# setup replica set
-	setup_replica_set
 
 	# check if services are up
 	check_if_containers_are_up

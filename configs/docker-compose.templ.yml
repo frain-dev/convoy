@@ -3,8 +3,7 @@ version: "3"
 services:
     web:
         image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:$VERSION
-        entrypoint: [ "/bin/sh" ]
-        command: /compose/start
+        command: [ "/start.sh" ]
         hostname: web
         container_name: web
         volumes:
@@ -12,9 +11,7 @@ services:
             - ./compose:/compose
         restart: on-failure
         depends_on:
-            - mongo1
-            - mongo2
-            - mongo3
+            - postgres
             - redis_server
             - typesense
         networks:
@@ -22,90 +19,40 @@ services:
 
     scheduler:
         image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:$VERSION
-        entrypoint: ["./cmd", "scheduler", "--config", "convoy.json"]
+        command: ["./cmd", "scheduler", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
         depends_on:
-            - mongo1
+            - postgres
             - redis_server
         networks:
             - backendCluster
 
     worker:
         image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:$VERSION
-        entrypoint: ["./cmd", "worker", "--config", "convoy.json"]
+        command: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
         depends_on:
-            - mongo1
+            - postgres
             - redis_server
         networks:
             - backendCluster
 
-    mongo1:
-        image: mongo:latest
-        hostname: mongo1
-        container_name: mongo1
-        restart: always
-        entrypoint:
-            [
-                "/usr/bin/mongod",
-                "--bind_ip",
-                "localhost,mongo1",
-                "--replSet",
-                "myReplicaSet",
-                "--journal",
-                "--dbpath",
-                "/data/db",
-            ]
-        volumes:
-            - ./mongo1-data:/data/db
-        networks:
-            - backendCluster
-
-    mongo2:
-        image: mongo:latest
-        hostname: mongo2
-        container_name: mongo2
-        restart: always
-        entrypoint:
-            [
-                "/usr/bin/mongod",
-                "--bind_ip",
-                "localhost,mongo2",
-                "--replSet",
-                "myReplicaSet",
-                "--journal",
-                "--dbpath",
-                "/data/db",
-            ]
-        volumes:
-            - ./mongo2-data:/data/db
-        networks:
-            - backendCluster
-
-    mongo3:
-        image: mongo:latest
-        hostname: mongo3
-        container_name: mongo3
-        restart: always
-        entrypoint:
-            [
-                "/usr/bin/mongod",
-                "--bind_ip",
-                "localhost,mongo3",
-                "--replSet",
-                "myReplicaSet",
-                "--journal",
-                "--dbpath",
-                "/data/db",
-            ]
-        volumes:
-            - ./mongo3-data:/data/db
-        networks:
-            - backendCluster
+    postgres:
+      image: postgres:15.2-alpine
+      restart: unless-stopped
+      environment:
+        POSTGRES_DB: convoy
+        POSTGRES_USER: convoy
+        POSTGRES_PASSWORD: convoy
+        PGDATA: /data/postgres
+      volumes:
+        - ./postgres_data:/data/postgres
+      networks:
+        - backendCluster
 
     redis_server:
         image: redis:alpine
