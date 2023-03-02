@@ -14,6 +14,7 @@ export class HttpService {
 	APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
 	APP_PORTAL_APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/portal-api`;
 	portalToken = this.route.snapshot.queryParams?.token;
+	checkTokenTimeout: any;
 
 	public jwtHelper: JwtHelperService = new JwtHelperService();
 
@@ -31,6 +32,9 @@ export class HttpService {
 
 	async request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; token?: string; hideNotification?: boolean }): Promise<HTTP_RESPONSE> {
 		requestDetails.hideNotification = !!requestDetails.hideNotification;
+		this.checkTokenTimeout = setTimeout(() => {
+			this.checkIfTokenIsExpired();
+		}, 3000);
 		return new Promise(async (resolve, reject) => {
 			try {
 				const http = axios.create();
@@ -38,7 +42,6 @@ export class HttpService {
 				// Interceptor
 				http.interceptors.response.use(
 					request => {
-						this.checkIfTokenIsExpired();
 						return request;
 					},
 					error => {
@@ -115,7 +118,10 @@ export class HttpService {
 		const tokenExpiryTime = this.jwtHelper.getTokenExpirationDate(this.authDetails().access_token);
 		if (tokenExpiryTime) {
 			const expiryPeriodInSeconds = differenceInSeconds(tokenExpiryTime, currentTime);
-			if (expiryPeriodInSeconds <= 180) this.getRefreshToken();
+			if (expiryPeriodInSeconds <= 180) {
+				clearTimeout(this.checkTokenTimeout);
+				this.getRefreshToken();
+			}
 		}
 	}
 

@@ -201,6 +201,7 @@ func Test_LoadEndpointsPaged(t *testing.T) {
 	defer closeFn()
 
 	endpointRepo := NewEndpointRepo(db)
+	eventRepo := NewEventRepo(db)
 
 	project := seedProject(t, db)
 
@@ -212,6 +213,10 @@ func Test_LoadEndpointsPaged(t *testing.T) {
 
 		err := endpointRepo.CreateEndpoint(context.Background(), endpoint, project.UID)
 		require.NoError(t, err)
+
+		event := generateEvent(t, db)
+		event.Endpoints = []string{endpoint.UID}
+		require.NoError(t, eventRepo.CreateEvent(context.Background(), event))
 	}
 
 	endpoints, _, err := endpointRepo.LoadEndpointsPaged(context.Background(), project.UID, "daniel", datastore.Pageable{
@@ -230,6 +235,9 @@ func Test_LoadEndpointsPaged(t *testing.T) {
 	require.NoError(t, err)
 
 	require.True(t, len(endpoints) == 7)
+	for _, endpoint := range endpoints {
+		require.Equal(t, int64(1), endpoint.Events)
+	}
 }
 
 func Test_FindEndpointsByID(t *testing.T) {
@@ -237,6 +245,7 @@ func Test_FindEndpointsByID(t *testing.T) {
 	defer closeFn()
 
 	endpointRepo := NewEndpointRepo(db)
+	eventRepo := NewEventRepo(db)
 
 	project := seedProject(t, db)
 	ids := []string{}
@@ -252,6 +261,10 @@ func Test_FindEndpointsByID(t *testing.T) {
 
 		err := endpointRepo.CreateEndpoint(context.Background(), endpoint, project.UID)
 		require.NoError(t, err)
+
+		event := generateEvent(t, db)
+		event.Endpoints = []string{endpoint.UID}
+		require.NoError(t, eventRepo.CreateEvent(context.Background(), event))
 	}
 
 	emptyEndpoints, err := endpointRepo.FindEndpointsByID(context.Background(), ids, "")
@@ -280,6 +293,8 @@ func Test_FindEndpointsByID(t *testing.T) {
 			endpoint.Secrets[i].CreatedAt, endpoint.Secrets[i].UpdatedAt = time.Time{}, time.Time{}
 		}
 
+		require.Equal(t, int64(1), dbEndpoint.Events)
+		dbEndpoint.Events = 0
 		require.Equal(t, *endpoint, dbEndpoint)
 	}
 }
@@ -289,6 +304,7 @@ func Test_FindEndpointsByAppID(t *testing.T) {
 	defer closeFn()
 
 	endpointRepo := NewEndpointRepo(db)
+	eventRepo := NewEventRepo(db)
 
 	project := seedProject(t, db)
 	appID := "vvbbbb"
@@ -303,6 +319,10 @@ func Test_FindEndpointsByAppID(t *testing.T) {
 
 		err := endpointRepo.CreateEndpoint(context.Background(), endpoint, project.UID)
 		require.NoError(t, err)
+
+		event := generateEvent(t, db)
+		event.Endpoints = []string{endpoint.UID}
+		require.NoError(t, eventRepo.CreateEvent(context.Background(), event))
 	}
 
 	emptyEndpoints, err := endpointRepo.FindEndpointsByAppID(context.Background(), appID, "")
@@ -331,6 +351,8 @@ func Test_FindEndpointsByAppID(t *testing.T) {
 			endpoint.Secrets[i].CreatedAt, endpoint.Secrets[i].UpdatedAt = time.Time{}, time.Time{}
 		}
 
+		require.Equal(t, int64(1), dbEndpoint.Events)
+		dbEndpoint.Events = 0
 		require.Equal(t, *endpoint, dbEndpoint)
 	}
 }
@@ -340,6 +362,7 @@ func Test_FindEndpointsByOwnerID(t *testing.T) {
 	defer closeFn()
 
 	endpointRepo := NewEndpointRepo(db)
+	eventRepo := NewEventRepo(db)
 
 	project := seedProject(t, db)
 	ownerID := "owner-ffdjj"
@@ -354,6 +377,10 @@ func Test_FindEndpointsByOwnerID(t *testing.T) {
 
 		err := endpointRepo.CreateEndpoint(context.Background(), endpoint, project.UID)
 		require.NoError(t, err)
+
+		event := generateEvent(t, db)
+		event.Endpoints = []string{endpoint.UID}
+		require.NoError(t, eventRepo.CreateEvent(context.Background(), event))
 	}
 
 	emptyEndpoints, err := endpointRepo.FindEndpointsByOwnerID(context.Background(), "", ownerID)
@@ -382,6 +409,8 @@ func Test_FindEndpointsByOwnerID(t *testing.T) {
 			endpoint.Secrets[i].CreatedAt, endpoint.Secrets[i].UpdatedAt = time.Time{}, time.Time{}
 		}
 
+		require.Equal(t, int64(1), dbEndpoint.Events)
+		dbEndpoint.Events = 0
 		require.Equal(t, *endpoint, dbEndpoint)
 	}
 }
@@ -419,6 +448,7 @@ func Test_FindEndpointByID(t *testing.T) {
 	defer closeFn()
 
 	endpointRepo := NewEndpointRepo(db)
+	eventRepo := NewEventRepo(db)
 
 	_, err := endpointRepo.FindEndpointByID(context.Background(), ulid.Make().String(), "")
 	require.Equal(t, datastore.ErrEndpointNotFound, err)
@@ -428,6 +458,10 @@ func Test_FindEndpointByID(t *testing.T) {
 
 	err = endpointRepo.CreateEndpoint(context.Background(), endpoint, project.UID)
 	require.NoError(t, err)
+
+	event := generateEvent(t, db)
+	event.Endpoints = []string{endpoint.UID}
+	require.NoError(t, eventRepo.CreateEvent(context.Background(), event))
 
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, project.UID)
 	require.NoError(t, err)
@@ -449,6 +483,8 @@ func Test_FindEndpointByID(t *testing.T) {
 		endpoint.Secrets[i].CreatedAt, endpoint.Secrets[i].UpdatedAt = time.Time{}, time.Time{}
 	}
 
+	require.Equal(t, int64(1), dbEndpoint.Events)
+	dbEndpoint.Events = 0
 	require.Equal(t, endpoint, dbEndpoint)
 }
 

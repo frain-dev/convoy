@@ -33,17 +33,10 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		event = createEvent.Event
-		_, err = eventRepo.FindEventByID(ctx, event.UID)
-		if err != nil {
-			err = eventRepo.CreateEvent(ctx, &event)
-			if err != nil {
-				return &EndpointError{Err: err, delay: 10 * time.Second}
-			}
-		}
-
 		var project *datastore.Project
 		var subscriptions []datastore.Subscription
+
+		event = createEvent.Event
 
 		projectCacheKey := convoy.ProjectsCacheKey.Get(event.ProjectID).String()
 		err = cache.Get(ctx, projectCacheKey, &project)
@@ -66,6 +59,22 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 		subscriptions, err = findSubscriptions(ctx, endpointRepo, cache, subRepo, project, &createEvent)
 		if err != nil {
 			return err
+		}
+
+		_, err = eventRepo.FindEventByID(ctx, event.UID)
+		if err != nil {
+			if len(event.Endpoints) < 1 {
+				var endpointIDs []string
+				for _, s := range subscriptions {
+					endpointIDs = append(endpointIDs, s.EndpointID)
+				}
+				event.Endpoints = endpointIDs
+			}
+
+			err = eventRepo.CreateEvent(ctx, &event)
+			if err != nil {
+				return &EndpointError{Err: err, delay: 10 * time.Second}
+			}
 		}
 
 		event.MatchedEndpoints = len(subscriptions)
