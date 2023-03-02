@@ -2,7 +2,6 @@ package exporter
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
@@ -16,7 +15,7 @@ type DBExporter interface {
 	Export() (int64, error)
 }
 
-type MongoExporter struct {
+type Exporter struct {
 	Args      []string
 	TableName string
 	ProjectID string
@@ -24,16 +23,14 @@ type MongoExporter struct {
 	Out       string
 }
 
-func (me *MongoExporter) Export(ctx context.Context, exportRepo datastore.ExportRepository) (int64, error) {
-	var data json.RawMessage
-
-	numDocs, err := exportRepo.ExportRecords(ctx, me.TableName, me.ProjectID, me.CreatedAt, &data)
+func (ex *Exporter) Export(ctx context.Context, exportRepo datastore.ExportRepository) (int64, error) {
+	data, numDocs, err := exportRepo.ExportRecords(ctx, ex.TableName, ex.ProjectID, ex.CreatedAt)
 	if err != nil {
 		log.WithError(err).Error("failed to export records")
 		return 0, err
 	}
 
-	writer, err := GetOutputWriter(me.Out)
+	writer, err := GetOutputWriter(ex.Out)
 	if err != nil {
 		log.WithError(err).Error("error opening output stream")
 		return 0, err
@@ -47,11 +44,11 @@ func (me *MongoExporter) Export(ctx context.Context, exportRepo datastore.Export
 
 	_, err = writer.Write(data)
 	if err != nil {
-		log.WithError(err).Errorf("failed to write export data to output file %s", me.Out)
+		log.WithError(err).Errorf("failed to write export data to output file %s", ex.Out)
 		return 0, err
 	}
 
-	log.Printf("exported %v record(s) from %v", numDocs, me.TableName)
+	log.Printf("exported %v record(s) from %v", numDocs, ex.TableName)
 
 	return numDocs, nil
 }
