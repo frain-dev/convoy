@@ -1,8 +1,7 @@
 {
-    "environment": "dev",
     "database": {
-        "type": "mongodb",
-	"dsn": "mongodb://mongo:27017/convoy?replicaSet=localhost"
+        "type": "postgres",
+	"dsn": "postgres://convoy:convoy@postgres/convoy?sslmode=disable"
     },
     "queue": {
         "type": "redis",

@@ -13,6 +13,7 @@ COPY ./go.mod /go/src/frain-dev/convoy
 COPY ./go.sum /go/src/frain-dev/convoy
 
 COPY --from=node-env /app/dist /go/src/frain-dev/convoy/server/ui/build
+
 # Get dependancies - will also be cached if we don't change mod/sum
 RUN go mod download
 RUN go mod verify
@@ -23,11 +24,12 @@ COPY . .
 RUN CGO_ENABLED=0
 RUN go install ./cmd
 
-FROM gcr.io/distroless/base
+FROM alpine:3.16.2
 COPY --from=build-env /go/bin/cmd /
 COPY --from=build-env /go/src/frain-dev/convoy/internal/email/templates/* templates/
+COPY --from=build-env /go/src/frain-dev/convoy/configs/local/start.sh /
 
-ENTRYPOINT ["/cmd"]
-CMD [ "server", "--config", "convoy.json" ]
+RUN chmod +x /cmd
+RUN apk add --no-cache gcompat 
 
 EXPOSE 8080

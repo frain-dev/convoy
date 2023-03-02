@@ -1,9 +1,16 @@
 version: "3"
 
+volumes:
+  postgres_data:
+  redis_data:
+  typesense_data:
+
 services:
     web:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.1
-        command: ["/start.sh"]
+        build:
+          context: ./
+          dockerfile: Dockerfile.dev
+        command: [ "/start.sh" ]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
@@ -15,26 +22,28 @@ services:
             - typesense
 
     scheduler:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.1
-        command: ["./cmd", "scheduler", "--config", "convoy.json"]
+        build:
+          context: ./
+          dockerfile: Dockerfile.dev
+        entrypoint: ["./cmd", "scheduler", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
         depends_on:
             - postgres
             - redis_server
-            - typesense
 
     worker:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.1
-        command: ["./cmd", "worker", "--config", "convoy.json"]
+        build:
+          context: ./
+          dockerfile: Dockerfile.dev
+        entrypoint: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
         depends_on:
             - postgres
             - redis_server
-            - typesense
 
     postgres:
       image: postgres:15.2-alpine
