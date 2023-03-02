@@ -63,7 +63,7 @@ jobs:
       - uses: actions/setup-go@v2
         name: Setup go
         with:
-          go-version: 1.17
+          go-version: 1.18
 
       - uses: actions/setup-python@v3
         name: Setup Python
@@ -75,6 +75,7 @@ jobs:
          echo $(pip --version)
          pip install --upgrade cloudsmith-cli
          echo $(cloudsmith --version)
+
       - uses: goreleaser/goreleaser-action@v2
         name: Release & Upload
         if: needs.analyze-tags.outputs.publish == 'false' # action coerces booleans as strings
