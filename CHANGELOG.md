@@ -1,3 +1,9 @@
+## 0.9.0-rc.1
+- [Feature] Add new message broker source. #1285
+- [Enhancement] Switched backing store to PostgreSQL. #1287
+- [Enhancement] Add modal to confirm before regenerating API Keys. #1378
+- [Enhancement] Implement new wait screens #1398
+
 ## 0.8.2
 - [Feature] Set Advanced Signatures by default for Incoming projects. 
 - [Enhancement] Refactored Convoy CLI Implementation. #1290

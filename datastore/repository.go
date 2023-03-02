@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 )
 
@@ -155,5 +156,5 @@ type PortalLinkRepository interface {
 }
 
 type ExportRepository interface {
-	ExportRecords(ctx context.Context, tableName, projectID string, createdAt time.Time, dest interface{}) (int64, error)
+	ExportRecords(ctx context.Context, tableName, projectID string, createdAt time.Time) (json.RawMessage, int64, error)
 }
