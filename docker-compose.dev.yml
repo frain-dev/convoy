@@ -1,0 +1,74 @@
+version: "3"
+
+volumes:
+  postgres_data:
+  redis_data:
+  typesense_data:
+
+services:
+    web:
+        build:
+          context: ./
+          dockerfile: Dockerfile.dev
+        command: [ "/start.sh" ]
+        volumes:
+            - ./convoy.json:/convoy.json
+        restart: on-failure
+        ports:
+          - "5005:5005"
+        depends_on:
+            - postgres
+            - redis_server
+            - typesense
+
+    scheduler:
+        build:
+          context: ./
+          dockerfile: Dockerfile.dev
+        entrypoint: ["./cmd", "scheduler", "--config", "convoy.json"]
+        volumes:
+            - ./convoy.json:/convoy.json
+        restart: on-failure
+        depends_on:
+            - postgres
+            - redis_server
+
+    worker:
+        build:
+          context: ./
+          dockerfile: Dockerfile.dev
+        entrypoint: ["./cmd", "worker", "--config", "convoy.json"]
+        volumes:
+            - ./convoy.json:/convoy.json
+        restart: on-failure
+        depends_on:
+            - postgres
+            - redis_server
+
+    postgres:
+      image: postgres:15.2-alpine
+      restart: unless-stopped
+      environment:
+        POSTGRES_DB: convoy
+        POSTGRES_USER: convoy
+        POSTGRES_PASSWORD: convoy
+        PGDATA: /data/postgres
+      volumes:
+        - ./postgres_data:/data/postgres
+
+    redis_server:
+        image: redis:alpine
+        restart: always
+        volumes:
+          - ./redis_data:/data
+
+    typesense:
+        image: typesense/typesense:0.22.2
+        restart: always
+        environment:
+            TYPESENSE_DATA_DIR: /data/typesense
+            TYPESENSE_ENABLE_CORS: "true"
+            TYPESENSE_API_KEY: "convoy"
+        volumes:
+            - ./typesense_data:/data/typesense
+
