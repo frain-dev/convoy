@@ -19,7 +19,7 @@ Convoy provides several key features:
 
 - **Security:** Convoy ships with several security features for webhooks, such as payload signing to ensure message integrity, bearer token authentication for authenticated webhook endpoints, and static ips for network environments with strict firewall rules.
 
-- **Fan Out:** Convoy is able to route an events to multiple endpoints based on the event type or payload structure. It relies on a subset of [MongoDB's Extended JSON v2](https://www.mongodb.com/docs/manual/reference/mongodb-extended-json/) to match event payload structure and route events to their respective destination(s).
+- **Fan Out:** Convoy is able to route an events to multiple endpoints based on the event type or payload structure.
 
 - **Rate Limiting:** While Convoy is able to ingest events at a massive rate, it throttles the delivery of these events to the endpoints at a configurable rate per endpoint. 
 

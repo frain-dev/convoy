@@ -21,7 +21,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
@@ -38,10 +37,6 @@ import (
 )
 
 // TEST HELPERS.
-func getMongoDSN() string {
-	return os.Getenv("TEST_MONGO_DSN")
-}
-
 func getPostgresDSN() string {
 	return os.Getenv("TEST_POSTGRES_DSN")
 }
@@ -73,11 +68,6 @@ func getDB() database.Database {
 	_ = os.Setenv("TZ", "") // Use UTC by default :)
 
 	return db
-}
-
-func getStore(db *mongo.Database) datastore.Store {
-	store := datastore.New(db)
-	return store
 }
 
 func getQueueOptions(name string) (queue.QueueOptions, error) {

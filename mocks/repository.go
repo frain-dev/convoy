@@ -6,7 +6,9 @@ package mocks
 
 import (
 	context "context"
+	json "encoding/json"
 	reflect "reflect"
+	time "time"
 
 	datastore "github.com/frain-dev/convoy/datastore"
 	gomock "github.com/golang/mock/gomock"
@@ -1904,4 +1906,43 @@ func (m *MockPortalLinkRepository) UpdatePortalLink(ctx context.Context, project
 func (mr *MockPortalLinkRepositoryMockRecorder) UpdatePortalLink(ctx, projectID, portal interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePortalLink", reflect.TypeOf((*MockPortalLinkRepository)(nil).UpdatePortalLink), ctx, projectID, portal)
+}
+
+// MockExportRepository is a mock of ExportRepository interface.
+type MockExportRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockExportRepositoryMockRecorder
+}
+
+// MockExportRepositoryMockRecorder is the mock recorder for MockExportRepository.
+type MockExportRepositoryMockRecorder struct {
+	mock *MockExportRepository
+}
+
+// NewMockExportRepository creates a new mock instance.
+func NewMockExportRepository(ctrl *gomock.Controller) *MockExportRepository {
+	mock := &MockExportRepository{ctrl: ctrl}
+	mock.recorder = &MockExportRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockExportRepository) EXPECT() *MockExportRepositoryMockRecorder {
+	return m.recorder
+}
+
+// ExportRecords mocks base method.
+func (m *MockExportRepository) ExportRecords(ctx context.Context, tableName, projectID string, createdAt time.Time) (json.RawMessage, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExportRecords", ctx, tableName, projectID, createdAt)
+	ret0, _ := ret[0].(json.RawMessage)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ExportRecords indicates an expected call of ExportRecords.
+func (mr *MockExportRepositoryMockRecorder) ExportRecords(ctx, tableName, projectID, createdAt interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportRecords", reflect.TypeOf((*MockExportRepository)(nil).ExportRecords), ctx, tableName, projectID, createdAt)
 }
