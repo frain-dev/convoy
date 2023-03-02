@@ -82,7 +82,7 @@ func addUpCommand() *cobra.Command {
 }
 
 func addDownCommand() *cobra.Command {
-	var migrationID string
+	var max int
 
 	cmd := &cobra.Command{
 		Use:     "down",
@@ -102,14 +102,14 @@ func addDownCommand() *cobra.Command {
 			defer db.GetDB().Close()
 
 			m := migrator.New(db)
-			err = m.Down()
+			err = m.Down(max)
 			if err != nil {
 				log.Fatalf("migration down failed with error: %+v", err)
 			}
 		},
 	}
 
-	cmd.Flags().StringVar(&migrationID, "id", "", "Migration ID")
+	cmd.Flags().IntVar(&max, "max", 1, "The maximum number of migrations to rollback")
 
 	return cmd
 }

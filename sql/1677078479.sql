@@ -156,7 +156,9 @@ CREATE TABLE IF NOT EXISTS convoy.organisation_invites (
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	expires_at TIMESTAMPTZ NOT NULL,
-	deleted_at TIMESTAMPTZ
+	deleted_at TIMESTAMPTZ,
+
+	CONSTRAINT token_key UNIQUE NULLS NOT DISTINCT (token, deleted_at)
 );
 
 -- +migrate Up
@@ -318,7 +320,9 @@ CREATE TABLE IF NOT EXISTS convoy.api_keys (
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	expires_at TIMESTAMPTZ,
-	deleted_at TIMESTAMPTZ
+	deleted_at TIMESTAMPTZ,
+
+	CONSTRAINT mask_id_key UNIQUE NULLS NOT DISTINCT (mask_id, deleted_at)
 );
 
 -- +migrate Up
