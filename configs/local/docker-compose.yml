@@ -2,56 +2,56 @@ version: "3"
 
 services:
     web:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.8.2
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.1
+        command: ["/start.sh"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
         ports:
           - "5005:5005"
         depends_on:
-            - mongo
+            - postgres
             - redis_server
             - typesense
 
     scheduler:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.8.2
-        entrypoint: ["./cmd", "scheduler", "--config", "convoy.json"]
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.1
+        command: ["./cmd", "scheduler", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
         depends_on:
-            - mongo
+            - postgres
             - redis_server
+            - typesense
 
     worker:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.8.2
-        entrypoint: ["./cmd", "worker", "--config", "convoy.json"]
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.1
+        command: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
         depends_on:
-            - mongo
+            - postgres
             - redis_server
+            - typesense
 
-    mongo:
-      image: mongo:5.0.14
-      command: "--replSet localhost"
-      restart: always
-      ports:
-        - "27017:27017"
-        - "27018:27018"
-        - "27019:27019"
-
-    mongosetup:
-        image: mongo:5.0.14
-        depends_on:
-          - mongo
-        restart: "no"
-        entrypoint: [ "bash", "-c", "sleep 10 && mongo --host mongo:27017 --eval 'rs.initiate()'"]
+    postgres:
+      image: postgres:15.2-alpine
+      restart: unless-stopped
+      environment:
+        POSTGRES_DB: convoy
+        POSTGRES_USER: convoy
+        POSTGRES_PASSWORD: convoy
+        PGDATA: /data/postgres
+      volumes:
+        - ./postgres_data:/data/postgres
 
     redis_server:
         image: redis:alpine
         restart: always
+        volumes:
+          - ./redis_data:/data
 
     typesense:
         image: typesense/typesense:0.22.2
