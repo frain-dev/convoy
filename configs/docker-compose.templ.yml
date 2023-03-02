@@ -8,7 +8,6 @@ services:
         container_name: web
         volumes:
             - ./convoy.json:/convoy.json
-            - ./compose:/compose
         restart: on-failure
         depends_on:
             - postgres
