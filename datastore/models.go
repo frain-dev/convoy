@@ -587,7 +587,7 @@ type Event struct {
 func (e *Event) GetRawHeaders() map[string]interface{} {
 	h := map[string]interface{}{}
 	for k, v := range e.Headers {
-		h[k] = v
+		h[k] = v[0]
 	}
 	return h
 }
@@ -595,7 +595,7 @@ func (e *Event) GetRawHeaders() map[string]interface{} {
 func (e *Event) GetRawHeadersJSON() ([]byte, error) {
 	h := map[string]interface{}{}
 	for k, v := range e.Headers {
-		h[k] = v
+		h[k] = v[0]
 	}
 
 	return json.Marshal(h)
@@ -991,6 +991,15 @@ type FilterConfiguration struct {
 }
 
 type M map[string]interface{}
+
+func (h M) Map() map[string]interface{} {
+	m := map[string]interface{}{}
+	x := map[string]interface{}(h)
+	for k, v := range x {
+		m[k] = v
+	}
+	return h
+}
 
 func (h *M) Scan(value interface{}) error {
 	b, ok := value.([]byte)
