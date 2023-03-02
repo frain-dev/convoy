@@ -61,5 +61,5 @@ services:
             TYPESENSE_ENABLE_CORS: "true"
             TYPESENSE_API_KEY: "convoy"
         volumes:
-            - ./typesense-data:/data/typesense
+            - ./typesense_data:/data/typesense
 
