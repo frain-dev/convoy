@@ -32,6 +32,7 @@ services:
         depends_on:
             - postgres
             - redis_server
+            - typesense
 
     worker:
         build:
@@ -44,6 +45,20 @@ services:
         depends_on:
             - postgres
             - redis_server
+            - typesense
+
+    ingest:
+      build:
+        context: ./
+        dockerfile: Dockerfile.dev
+      entrypoint: ["./cmd", "ingest", "--config", "convoy.json"]
+      volumes:
+        - ./convoy.json:/convoy.json
+      restart: on-failure
+      depends_on:
+        - postgres
+        - redis_server
+        - typesense
 
     postgres:
       image: postgres:15.2-alpine
