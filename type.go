@@ -109,4 +109,4 @@ const (
 	Concurrency = 100
 )
 
-var ErrUnsupportedDatebase = fmt.Errorf("unsupported database for search detected, remove search configuration or use a supported database (mongodb)")
+var ErrUnsupportedDatebase = fmt.Errorf("unsupported database for search detected, remove search configuration or use a supported database (postgres)")

@@ -36,8 +36,8 @@ var DefaultConfiguration = Configuration{
 		},
 	},
 	Database: DatabaseConfiguration{
-		Type: MongodbDatabaseProvider,
-		Dsn:  "mongodb://localhost:27017/convoy",
+		Type: PostgresDatabaseProvider,
+		Dsn:  "postgres://postgres:postgres@localhost/convoy",
 	},
 	Queue: QueueConfiguration{
 		Type: RedisQueueProvider,
@@ -220,7 +220,7 @@ const (
 	NewRelicTracerProvider             TracerProvider          = "new_relic"
 	RedisCacheProvider                 CacheProvider           = "redis"
 	RedisLimiterProvider               LimiterProvider         = "redis"
-	MongodbDatabaseProvider            DatabaseProvider        = "mongodb"
+	PostgresDatabaseProvider           DatabaseProvider        = "postgres"
 	InMemoryDatabaseProvider           DatabaseProvider        = "in-memory"
 )
 

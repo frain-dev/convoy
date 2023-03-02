@@ -102,8 +102,8 @@ func TestLoadConfig(t *testing.T) {
 			wantCfg: Configuration{
 				Host: "localhost:5005",
 				Database: DatabaseConfiguration{
-					Type: MongodbDatabaseProvider,
-					Dsn:  "mongodb://inside-config-file",
+					Type: PostgresDatabaseProvider,
+					Dsn:  "postgres://inside-config-file",
 				},
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
@@ -147,8 +147,8 @@ func TestLoadConfig(t *testing.T) {
 			wantCfg: Configuration{
 				Host: "localhost:5005",
 				Database: DatabaseConfiguration{
-					Type: MongodbDatabaseProvider,
-					Dsn:  "mongodb://inside-config-file",
+					Type: PostgresDatabaseProvider,
+					Dsn:  "postgres://inside-config-file",
 				},
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
@@ -192,8 +192,8 @@ func TestLoadConfig(t *testing.T) {
 			wantCfg: Configuration{
 				Host: "localhost:5005",
 				Database: DatabaseConfiguration{
-					Type: MongodbDatabaseProvider,
-					Dsn:  "mongodb://inside-config-file",
+					Type: PostgresDatabaseProvider,
+					Dsn:  "postgres://inside-config-file",
 				},
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
@@ -310,7 +310,7 @@ func TestOverride(t *testing.T) {
 			},
 			config: &Configuration{
 				Database: DatabaseConfiguration{
-					Type: MongodbDatabaseProvider,
+					Type: PostgresDatabaseProvider,
 					Dsn:  "localhost",
 				},
 			},
@@ -323,7 +323,7 @@ func TestOverride(t *testing.T) {
 			},
 			config: &Configuration{
 				Database: DatabaseConfiguration{
-					Type: MongodbDatabaseProvider,
+					Type: PostgresDatabaseProvider,
 					Dsn:  "localhost",
 				},
 				Queue: QueueConfiguration{
