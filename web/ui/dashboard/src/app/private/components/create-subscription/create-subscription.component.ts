@@ -3,7 +3,6 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/endpoint.model';
 import { SOURCE } from 'src/app/models/group.model';
-import { FormatSecondsPipe } from 'src/app/pipes/formatSeconds/format-seconds.pipe';
 import { PrivateService } from '../../private.service';
 import { CreateEndpointComponent } from '../create-endpoint/create-endpoint.component';
 import { CreateSourceComponent } from '../create-source/create-source.component';
@@ -13,7 +12,7 @@ import { CreateSubscriptionService } from './create-subscription.service';
 	selector: 'convoy-create-subscription',
 	templateUrl: './create-subscription.component.html',
 	styleUrls: ['./create-subscription.component.scss'],
-	providers: [FormatSecondsPipe]
+	providers: []
 })
 export class CreateSubscriptionComponent implements OnInit {
 	@Output() onAction = new EventEmitter();
@@ -70,11 +69,11 @@ export class CreateSubscriptionComponent implements OnInit {
 	];
 	createdSubscription = false;
 
-	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, private formatSeconds: FormatSecondsPipe) {}
+	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router) {}
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
-		await Promise.all([, this.getGetProjectDetails(), this.getSubscriptionDetails()]);
+		await Promise.all([this.getGetProjectDetails(), this.getSubscriptionDetails()]);
 		this.isLoadingForm = false;
 
 		// add required validation on source input for incoming projects
@@ -84,16 +83,16 @@ export class CreateSubscriptionComponent implements OnInit {
 			this.configurations.splice(2, 1);
 		}
 
-		if (this.configSetting) this.toggleConfigForm(this.configSetting);
+		if (this.configSetting) this.toggleConfigForm(this.configSetting, true);
 	}
 
 	toggleConfig(configValue: string) {
 		this.action === 'view' ? this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions/' + this.subscriptionId], { queryParams: { configSetting: configValue } }) : this.toggleConfigForm(configValue);
 	}
 
-	toggleConfigForm(configValue: string) {
+	toggleConfigForm(configValue: string, value?: boolean) {
 		this.configurations.forEach(config => {
-			if (config.uid === configValue) config.show = !config.show;
+			if (config.uid === configValue) config.show = value ? value : !config.show;
 		});
 
 		this.onToggleConfig();
@@ -114,19 +113,15 @@ export class CreateSubscriptionComponent implements OnInit {
 			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
 			const filterConfig = response.data.filter_config?.filter;
 
-			if (this.action === 'update' && ('body' in filterConfig || 'headers' in filterConfig))
+			if (this.action === 'update' && (Object.keys(filterConfig.body).length > 0 || Object.keys(filterConfig.headers).length > 0)) {
 				this.configurations.forEach(config => {
 					if (config.uid === 'filter_config') config.show = true;
 				});
-			if (this.token) this.projectType = 'outgoing';
-			if (response.data?.retry_config) {
-				const duration = this.formatSeconds.transform(response.data.retry_config.duration);
-				this.subscriptionForm.patchValue({
-					retry_config: {
-						duration: duration
-					}
-				});
 			}
+
+			if (this.token) this.projectType = 'outgoing';
+
+			if (response.data?.retry_config) this.toggleConfigForm('retry_config');
 			return;
 		} catch (error) {
 			return error;
@@ -223,8 +218,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		// create subscription
 		try {
-			const response =
-				this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.subscriptionId, token: this.token }) : await this.createSubscriptionService.createSubscription(subscriptionData, this.token);
+			const response = this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: subscriptionData, id: this.subscriptionId, token: this.token }) : await this.createSubscriptionService.createSubscription(subscriptionData, this.token);
 			this.onAction.emit({ data: response.data, action: this.action == 'update' ? 'update' : 'create' });
 			this.createdSubscription = true;
 		} catch (error) {
