@@ -20,15 +20,21 @@ import (
 )
 
 type Pageable struct {
-	Page    int `json:"page" bson:"page"`
-	PerPage int `json:"per_page" bson:"per_page"`
-	Sort    int `json:"sort" bson:"sort"`
+	// deprecated
+	Page int `json:"page"`
+	// deprecated
+	Sort int `json:"sort"`
+
+	PerPage     int    `json:"per_page"`
+	StartCursor string `json:"start_cursor"`
+	EndCursor   string `json:"end_cursor"`
 }
 
 func (p Pageable) Limit() int {
 	return p.PerPage
 }
 
+// deprecated
 func (p Pageable) Offset() int {
 	v := (p.Page - 1) * p.PerPage
 	if v < 0 {
@@ -40,10 +46,15 @@ func (p Pageable) Offset() int {
 type PaginationData struct {
 	Total     int64 `json:"total"`
 	Page      int64 `json:"page"`
-	PerPage   int64 `json:"perPage"`
 	Prev      int64 `json:"prev"`
 	Next      int64 `json:"next"`
 	TotalPage int64 `json:"totalPage"`
+
+	PerPage         int64  `json:"perPage"`
+	HasNextPage     bool   `json:"has_next_page"`
+	HasPreviousPage bool   `json:"has_previous_page"`
+	StartCursor     string `json:"start_cursor"`
+	EndCursor       string `json:"end_cursor"`
 }
 
 type Period int

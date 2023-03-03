@@ -75,10 +75,17 @@ const (
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
 	WHERE ev.deleted_at IS NULL
 	%s
-	ORDER BY ev.created_at DESC LIMIT :limit OFFSET :offset
+	%s
 	`
 
-	baseEventFilter = `AND (ev.project_id = :project_id OR :project_id = '') AND (ev.source_id = :source_id OR :source_id = '') AND ev.created_at >= :start_date AND ev.created_at <= :end_date`
+	forwardPaginationQuery = `AND ev.id <= :cursor ORDER BY ev.id DESC LIMIT :limit + 1`
+	// backwardPaginationQuery = `AND ev.id > :cursor ORDER BY ev.id DESC LIMIT :limit + 1`
+
+	baseEventFilter = `
+	AND (ev.project_id = :project_id OR :project_id = '') 
+	AND (ev.source_id = :source_id OR :source_id = '') 
+	AND ev.created_at >= :start_date 
+	AND ev.created_at <= :end_date`
 
 	softDeleteProjectEvents = `
 	UPDATE convoy.events SET deleted_at = now()
@@ -231,12 +238,12 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 		"start_date":   startDate,
 		"end_date":     endDate,
 		"limit":        filter.Pageable.Limit(),
-		"offset":       filter.Pageable.Offset(),
+		"cursor":       filter.Pageable.StartCursor,
 	}
 
 	if len(filter.EndpointIDs) > 0 {
 		filterQuery := `AND ee.endpoint_id IN (:endpoint_ids) ` + baseEventFilter
-		q := fmt.Sprintf(baseEventsCount, filterQuery) + fmt.Sprintf(baseEventsPaged, filterQuery)
+		q := fmt.Sprintf(baseEventsCount, filterQuery) + fmt.Sprintf(baseEventsPaged, filterQuery, forwardPaginationQuery)
 		query, args, err = sqlx.Named(q, arg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -249,7 +256,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 		query = e.db.Rebind(query)
 
 	} else {
-		q := fmt.Sprintf(baseEventsCount, baseEventFilter) + fmt.Sprintf(baseEventsPaged, baseEventFilter)
+		q := fmt.Sprintf(baseEventsCount, baseEventFilter) + fmt.Sprintf(baseEventsPaged, baseEventFilter, forwardPaginationQuery)
 		query, args, err = sqlx.Named(q, arg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -263,7 +270,6 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 		return nil, datastore.PaginationData{}, err
 	}
 
-	count := 0
 	eventMap := make(map[string]*datastore.Event)
 	events := make([]datastore.Event, 0)
 	for rows.Next() {
@@ -298,8 +304,6 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 
 			eventMap[event.UID] = event
 		}
-
-		count = data.Count
 	}
 
 	for _, event := range eventMap {
@@ -307,11 +311,26 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 	}
 
 	sort.SliceStable(events, func(i, j int) bool {
-		return events[i].CreatedAt.After(events[j].CreatedAt)
+		return events[i].UID > events[j].UID
 	})
 
-	pagination := calculatePaginationData(count, filter.Pageable.Page, filter.Pageable.PerPage)
-	return events, pagination, nil
+	var startCursor string
+	if len(events) > 0 {
+		startCursor = events[0].UID
+	}
+
+	var endCursor string
+	if len(events) == filter.Pageable.PerPage {
+		endCursor = events[filter.Pageable.PerPage-1].UID
+	}
+
+	return events, datastore.PaginationData{
+		PerPage:         int64(filter.Pageable.PerPage),
+		HasNextPage:     false,
+		HasPreviousPage: false,
+		StartCursor:     startCursor,
+		EndCursor:       endCursor,
+	}, nil
 }
 
 func (e *eventRepo) DeleteProjectEvents(ctx context.Context, filter *datastore.EventFilter, hardDelete bool) error {
