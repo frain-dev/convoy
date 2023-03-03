@@ -145,7 +145,7 @@
 									</span>
 								</td>
 								<td convoy-table-cell>
-									<span (click)="viewSource(event?.source_metadata?.uid || '')" [ngClass]="{ underline: !portalToken }" class="max-w-[150px] overflow-hidden overflow-ellipsis text-primary-100">{{ event.source_metadata?.name || 'API' }}</span>
+									<span (click)="viewSource(event?.source_metadata?.uid || '')" [ngClass]="{ underline: !portalToken }" class="max-w-[150px] overflow-hidden overflow-ellipsis text-primary-100">{{ event.source_metadata.name || 'API' }}</span>
 								</td>
 								<td convoy-table-cell>{{ event.created_at | date: 'mediumTime' }}</td>
 

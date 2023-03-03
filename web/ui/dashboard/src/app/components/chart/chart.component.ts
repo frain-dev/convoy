@@ -15,11 +15,43 @@ interface PAGE_DATA extends CHARTDATA {
 export class ChartComponent implements OnInit {
 	@Input('chartData') chartData!: CHARTDATA[];
 	@Input('isLoading') isLoading: boolean = false;
-	paginatedData: PAGE_DATA[] = [];
 	pageSize = 31;
 	pageNumber = 1;
 	pages = 1;
 	loaderSizes!: number[];
+	paginatedData: PAGE_DATA[] = [
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' },
+		{ label: '', data: 0, size: '4px' }
+	];
 
 	constructor() {}
 
@@ -44,6 +76,7 @@ export class ChartComponent implements OnInit {
 		this.pageNumber--;
 		this.paginate();
 	}
+
 	nextPage() {
 		if (this.pageNumber === this.pages) return;
 		this.pageNumber++;
@@ -55,8 +88,8 @@ export class ChartComponent implements OnInit {
 		const dataSet: number[] = chartData.map(data => data.data);
 		const maxData = Math.max(...dataSet);
 
-		this.paginatedData = chartData.map(data => {
-			return { ...data, size: `${Math.round((100 / maxData) * data.data) || 4}px` };
+		chartData.map((data, index) => {
+			this.paginatedData[this.paginatedData.length - 1 - index] = { ...data, size: `${Math.round((100 / maxData) * data.data) || 4}px` };
 		});
 	}
 

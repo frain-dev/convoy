@@ -6,7 +6,7 @@
 	</div>
 
 	<ng-container *ngIf="!isLoading">
-		<div class="flex justify-between">
+		<div class="flex gap-x-1 justify-end">
 			<div class="mr-2px last-of-type:mr-0 w-full group" *ngFor="let data of paginatedData; let i = index">
 				<div class="flex items-end h-100px hover:cursor-pointer">
 					<div [class]="data.data > 0 ? 'bg-primary-100 bg-opacity-70 rounded-tl-8px rounded-tr-8px' : 'bg-grey-10 rounded-4px group-hover:bg-grey-40'" class="min-h-[4px] w-full transition-all duration-300 relative" [ngStyle]="{ height: data.size }">
@@ -24,7 +24,6 @@
 								w-120px
 								px-14px
 								py-8px
-								text-black text-12 text-left
 								bottom-[calc(100%+8px)]
 								left-1/2
 								-translate-x-1/2
@@ -50,8 +49,8 @@
 							"
 							[ngClass]="{ 'before:hidden': data.data === 0 }"
 						>
-							<h3 class="font-semibold">{{ data.label }}</h3>
-							<p class="text-14">Events: {{ data.data }}</p>
+							<h3 class="font-semibold text-12">{{ data.label }}</h3>
+							<p class="text-12">Events: {{ data.data }}</p>
 						</div>
 					</div>
 				</div>
@@ -60,6 +59,7 @@
 
 		<div class="line flex items-center justify-between mt-14px border-t border-grey-10 pt-4px">
 			<div class="text-grey-40 text-10">{{ paginatedData[0].label }}</div>
+			<div class="text-grey-40 text-10">{{ paginatedData[15].label }}</div>
 			<div class="text-grey-40 text-10">{{ paginatedData[paginatedData.length - 1].label }}</div>
 		</div>
 
