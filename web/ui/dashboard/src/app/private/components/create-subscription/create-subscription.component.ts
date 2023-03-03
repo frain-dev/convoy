@@ -106,14 +106,6 @@ export class CreateSubscriptionComponent implements OnInit {
 			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
 			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
 			if (this.token) this.projectType = 'outgoing';
-			if (response.data?.retry_config) {
-				const duration = this.formatSeconds.transform(response.data.retry_config.duration);
-				this.subscriptionForm.patchValue({
-					retry_config: {
-						duration: duration
-					}
-				});
-			}
 			return;
 		} catch (error) {
 			return error;
@@ -208,10 +200,15 @@ export class CreateSubscriptionComponent implements OnInit {
 		const retryDuration = this.subscriptionForm.get('retry_config.duration');
 		this.configurations[1].show ? (subscriptionData.retry_config.duration = retryDuration?.value + 's') : delete subscriptionData.retry_config;
 
+		// update duration with 's' when updating subscripition
+		const updateSubscriptionData = this.subscriptionForm.value;
+		if (this.action === 'update') {
+			updateSubscriptionData.retry_config.duration = updateSubscriptionData.retry_config.duration + 's';
+		}
+
 		// create subscription
 		try {
-			const response =
-				this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.subscriptionId, token: this.token }) : await this.createSubscriptionService.createSubscription(subscriptionData, this.token);
+			const response = this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: updateSubscriptionData, id: this.subscriptionId, token: this.token }) : await this.createSubscriptionService.createSubscription(subscriptionData, this.token);
 			this.onAction.emit({ data: response.data, action: this.action == 'update' ? 'update' : 'create' });
 			this.createdSubscription = true;
 		} catch (error) {
