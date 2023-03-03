@@ -74,7 +74,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
-		await Promise.all([, this.getGetProjectDetails(), this.getSubscriptionDetails()]);
+		await Promise.all([this.getGetProjectDetails(), this.getSubscriptionDetails()]);
 		this.isLoadingForm = false;
 
 		// add required validation on source input for incoming projects
@@ -114,19 +114,15 @@ export class CreateSubscriptionComponent implements OnInit {
 			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
 			const filterConfig = response.data.filter_config?.filter;
 
-			if (this.action === 'update' && ('body' in filterConfig || 'headers' in filterConfig))
+			if (this.action === 'update' && (Object.keys(filterConfig.body).length > 0 || Object.keys(filterConfig.headers).length > 0)) {
 				this.configurations.forEach(config => {
 					if (config.uid === 'filter_config') config.show = true;
 				});
-			if (this.token) this.projectType = 'outgoing';
-			if (response.data?.retry_config) {
-				const duration = this.formatSeconds.transform(response.data.retry_config.duration);
-				this.subscriptionForm.patchValue({
-					retry_config: {
-						duration: duration
-					}
-				});
 			}
+
+			if (this.token) this.projectType = 'outgoing';
+
+			if (response.data?.retry_config) this.toggleConfigForm('retry_config');
 			return;
 		} catch (error) {
 			return error;
