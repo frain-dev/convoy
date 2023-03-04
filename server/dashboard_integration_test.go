@@ -284,6 +284,9 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 
 			s.Router.ServeHTTP(w, req)
 
+			fmt.Println("type", tc.urlQuery.Type)
+			fmt.Println("body", w.Body.String())
+
 			if w.Code != tc.statusCode {
 				t.Errorf("Want status '%d', got '%d'", tc.statusCode, w.Code)
 			}
