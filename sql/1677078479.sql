@@ -199,9 +199,7 @@ CREATE TABLE IF NOT EXISTS convoy.devices (
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 	last_seen_at TIMESTAMPTZ NOT NULL,
-	deleted_at TIMESTAMPTZ,
-
-	CONSTRAINT devices_project_id_endpoint_id_key UNIQUE NULLS NOT DISTINCT(project_id, endpoint_id, host_name, deleted_at)
+	deleted_at TIMESTAMPTZ
 );
 
 -- +migrate Up
