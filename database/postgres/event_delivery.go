@@ -9,8 +9,6 @@ import (
 	"math"
 	"time"
 
-	"github.com/kr/pretty"
-
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -539,10 +537,10 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 }
 
 const (
-	dailyIntervalFormat   = "yyyy-mm-dd"          // 1 day
-	weeklyIntervalFormat  = monthlyIntervalFormat // 1 week
-	monthlyIntervalFormat = "yyyy-mm"             // 1 month
-	yearlyIntervalFormat  = "yyyy"                // 1 month
+	dailyIntervalFormat   = "yyyy-mm-dd"        // 1 day
+	weeklyIntervalFormat  = dailyIntervalFormat // 1 week
+	monthlyIntervalFormat = "yyyy-mm"           // 1 month
+	yearlyIntervalFormat  = "yyyy"              // 1 month
 )
 
 func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, i int) ([]datastore.EventInterval, error) {
@@ -591,7 +589,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, pr
 		intervals = append(intervals, interval)
 	}
 
-	if len(intervals) < 10 {
+	if len(intervals) < 30 {
 		var d time.Duration
 		switch period {
 		case datastore.Daily:
@@ -609,7 +607,6 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, pr
 		}
 	}
 
-	pretty.Println("intervals", intervals)
 	return intervals, nil
 }
 
@@ -622,7 +619,7 @@ func padIntervals(intervals []datastore.EventInterval, duration time.Duration, p
 	case datastore.Daily:
 		format = "2006-01-02"
 	case datastore.Weekly:
-		format = "2006-01"
+		format = "2006-01-02"
 	case datastore.Monthly:
 		format = "2006-01"
 	case datastore.Yearly:
@@ -635,14 +632,14 @@ func padIntervals(intervals []datastore.EventInterval, duration time.Duration, p
 	if len(intervals) > 0 {
 		start, err = time.Parse(format, intervals[0].Data.Time)
 		if err != nil {
-			fmt.Println("time.Parse", err)
 			return nil, err
 		}
 		start = start.Add(-duration) // take it back once here, since we getting it from the original slice
 	}
 
-	paddedIntervals := make([]datastore.EventInterval, 10)
-	for i := 10; i > 0; i-- {
+	const numPadding = 30
+	paddedIntervals := make([]datastore.EventInterval, numPadding, numPadding+len(intervals))
+	for i := numPadding; i > 0; i-- {
 		paddedIntervals[i-1] = datastore.EventInterval{
 			Data: datastore.EventIntervalData{
 				Interval: 0,
