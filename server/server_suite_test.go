@@ -38,11 +38,11 @@ import (
 
 // TEST HELPERS.
 func getPostgresDSN() string {
-	return "postgres://admin:password@localhost:5432/convoy?sslmode=disable"
+	return os.Getenv("TEST_POSTGRES_DSN")
 }
 
 func getRedisDSN() string {
-	return "redis://localhost:6379"
+	return os.Getenv("TEST_REDIS_DSN")
 }
 
 func getConfig() config.Configuration {
