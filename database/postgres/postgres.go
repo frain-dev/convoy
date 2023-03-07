@@ -18,7 +18,9 @@ import (
 const pkgName = "postgres"
 
 type Postgres struct {
-	dbx *sqlx.DB
+	dbx    *sqlx.DB
+	done   chan bool
+	ticker *time.Ticker
 }
 
 func NewDB(cfg config.Configuration) (*Postgres, error) {
@@ -31,11 +33,42 @@ func NewDB(cfg config.Configuration) (*Postgres, error) {
 	db.SetMaxOpenConns(1000)                  // The default is 0 (unlimited)
 	db.SetConnMaxLifetime(3600 * time.Second) // The default is 0 (connections reused forever)
 
-	return &Postgres{dbx: db}, nil
+	ticker := time.NewTicker(5 * time.Second)
+	done := make(chan bool)
+	p := &Postgres{dbx: db, ticker: ticker, done: done}
+
+	// go p.refreshViews()
+	return p, nil
 }
 
 func (p *Postgres) GetDB() *sqlx.DB {
 	return p.dbx
+}
+
+func (p *Postgres) Close() error {
+	close(p.done)
+	return p.dbx.Close()
+}
+
+func (p *Postgres) refreshViews() {
+	done := make(chan bool)
+	for {
+		select {
+		case <-p.ticker.C:
+			start := time.Now()
+			_, err := p.dbx.Exec(refreshEventMetdataView)
+			if err != nil {
+				log.WithError(err).Error("failed to refresh event metdata view")
+			}
+
+			diff := time.Since(start)
+			fmt.Printf("\nDiff is %v\n", diff)
+
+		case <-done:
+			p.ticker.Stop()
+		}
+
+	}
 }
 
 // getPrevPage returns calculated value for the prev page
