@@ -5,12 +5,13 @@ import (
 	"fmt"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/spf13/cobra"
 )
 
-func addConfigCommand(a *app) *cobra.Command {
+func addConfigCommand(a *cli.App) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "config",

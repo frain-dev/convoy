@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/log"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -16,7 +17,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func addSchedulerCommand(a *app) *cobra.Command {
+func addSchedulerCommand(a *cli.App) *cobra.Command {
 	var exportCronSpec string
 	var port uint32
 	var logLevel string
@@ -26,11 +27,11 @@ func addSchedulerCommand(a *app) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()
 			if err != nil {
-				a.logger.Errorf("Failed to retrieve config: %v", err)
+				a.Logger.Errorf("Failed to retrieve config: %v", err)
 				return err
 			}
 
-			lo := a.logger.(*log.Logger)
+			lo := a.Logger.(*log.Logger)
 			lo.SetPrefix("scheduler")
 
 			lvl, err := log.ParseLevel(cfg.Logger.Level)
@@ -42,7 +43,7 @@ func addSchedulerCommand(a *app) *cobra.Command {
 			ctx := context.Background()
 
 			//initialize scheduler
-			s := worker.NewScheduler(a.queue, lo)
+			s := worker.NewScheduler(a.Queue, lo)
 
 			//register tasks
 			s.RegisterTask("30 * * * *", convoy.ScheduleQueue, convoy.MonitorTwitterSources)
@@ -53,7 +54,7 @@ func addSchedulerCommand(a *app) *cobra.Command {
 			s.Start()
 
 			router := chi.NewRouter()
-			router.Handle("/queue/monitoring/*", a.queue.(*redisqueue.RedisQueue).Monitor())
+			router.Handle("/queue/monitoring/*", a.Queue.(*redisqueue.RedisQueue).Monitor())
 			router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
 
 			srv := &http.Server{
@@ -63,7 +64,7 @@ func addSchedulerCommand(a *app) *cobra.Command {
 
 			e := srv.ListenAndServe()
 			if e != nil {
-				a.logger.Fatalf("scheduler crashed: %v", e)
+				a.Logger.Fatalf("scheduler crashed: %v", e)
 			}
 			<-ctx.Done()
 

@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -20,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func addWorkerCommand(a *app) *cobra.Command {
+func addWorkerCommand(a *cli.App) *cobra.Command {
 	var workerPort uint32
 	var logLevel string
 
@@ -30,11 +31,11 @@ func addWorkerCommand(a *app) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()
 			if err != nil {
-				a.logger.Errorf("Failed to retrieve config: %v", err)
+				a.Logger.Errorf("Failed to retrieve config: %v", err)
 				return err
 			}
 
-			lo := a.logger.(*log.Logger)
+			lo := a.Logger.(*log.Logger)
 			lo.SetPrefix("worker")
 
 			lvl, err := log.ParseLevel(cfg.Logger.Level)
@@ -45,40 +46,40 @@ func addWorkerCommand(a *app) *cobra.Command {
 
 			sc, err := smtp.NewClient(&cfg.SMTP)
 			if err != nil {
-				a.logger.WithError(err).Error("Failed to create smtp client")
+				a.Logger.WithError(err).Error("Failed to create smtp client")
 				return err
 			}
 
 			ctx := context.Background()
 
 			// register worker.
-			consumer := worker.NewConsumer(a.queue, lo)
+			consumer := worker.NewConsumer(a.Queue, lo)
 
-			endpointRepo := postgres.NewEndpointRepo(a.db)
-			eventRepo := postgres.NewEventRepo(a.db)
-			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.db)
-			projectRepo := postgres.NewProjectRepo(a.db)
-			subRepo := postgres.NewSubscriptionRepo(a.db)
-			deviceRepo := postgres.NewDeviceRepo(a.db)
-			configRepo := postgres.NewConfigRepo(a.db)
+			endpointRepo := postgres.NewEndpointRepo(a.DB)
+			eventRepo := postgres.NewEventRepo(a.DB)
+			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
+			projectRepo := postgres.NewProjectRepo(a.DB)
+			subRepo := postgres.NewSubscriptionRepo(a.DB)
+			deviceRepo := postgres.NewDeviceRepo(a.DB)
+			configRepo := postgres.NewConfigRepo(a.DB)
 
 			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 				endpointRepo,
 				eventDeliveryRepo,
 				projectRepo,
-				a.limiter,
+				a.Limiter,
 				subRepo,
-				a.queue))
+				a.Queue))
 
 			consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
 				endpointRepo,
 				eventRepo,
 				projectRepo,
 				eventDeliveryRepo,
-				a.cache,
-				a.queue,
+				a.Cache,
+				a.Queue,
 				subRepo,
-				a.searcher,
+				a.Searcher,
 				deviceRepo))
 
 			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
@@ -86,27 +87,27 @@ func addWorkerCommand(a *app) *cobra.Command {
 				projectRepo,
 				eventRepo,
 				eventDeliveryRepo,
-				postgres.NewExportRepo(a.db),
-				a.searcher,
+				postgres.NewExportRepo(a.DB),
+				a.Searcher,
 			))
 
 			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(
-				a.db,
-				a.queue))
+				a.DB,
+				a.Queue))
 
 			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(
 				endpointRepo))
 
-			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.db, cfg))
+			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, cfg))
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
-			consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.searcher))
+			consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.Searcher))
 			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 
 			// start worker
 			lo.Infof("Starting Convoy workers...")
 			consumer.Start()
 
-			metrics.RegisterQueueMetrics(a.queue)
+			metrics.RegisterQueueMetrics(a.Queue)
 
 			router := chi.NewRouter()
 			router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
@@ -119,7 +120,7 @@ func addWorkerCommand(a *app) *cobra.Command {
 				Addr:    fmt.Sprintf(":%d", workerPort),
 			}
 
-			a.logger.Infof("Worker running on port %v", workerPort)
+			a.Logger.Infof("Worker running on port %v", workerPort)
 
 			e := srv.ListenAndServe()
 			if e != nil {

@@ -17,7 +17,7 @@ type CacheKey string
 type GenericMap map[string]interface{}
 
 //go:embed VERSION
-var f embed.FS
+var F embed.FS
 
 //go:embed sql/*.sql
 var MigrationFiles embed.FS
@@ -48,8 +48,8 @@ func (c CacheKey) String() string {
 	return string(c)
 }
 
-func ReadVersion() ([]byte, error) {
-	data, err := f.ReadFile("VERSION")
+func readVersion(fs embed.FS) ([]byte, error) {
+	data, err := fs.ReadFile("VERSION")
 	if err != nil {
 		return nil, err
 	}
@@ -57,10 +57,24 @@ func ReadVersion() ([]byte, error) {
 	return data, nil
 }
 
+// TODO(subomi): This needs to be refactored for everywhere we depend
+// on this code.
 func GetVersion() string {
 	v := "0.1.0"
 
-	f, err := ReadVersion()
+	f, err := readVersion(F)
+	if err != nil {
+		return v
+	}
+
+	v = strings.TrimSuffix(string(f), "\n")
+	return v
+}
+
+func GetVersionFromFS(fs embed.FS) string {
+	v := "0.1.0"
+
+	f, err := readVersion(fs)
 	if err != nil {
 		return v
 	}

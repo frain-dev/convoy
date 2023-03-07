@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -18,7 +19,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func addDomainCommand(a *app) *cobra.Command {
+func addDomainCommand(a *cli.App) *cobra.Command {
 	var domainPort uint32
 	var logLevel string
 	var allowedRoutes = []string{
@@ -31,13 +32,13 @@ func addDomainCommand(a *app) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := config.Get()
 			if err != nil {
-				a.logger.WithError(err).Fatal("failed to load config")
+				a.Logger.WithError(err).Fatal("failed to load config")
 				return err
 			}
 
-			orgRepo := postgres.NewOrgRepo(a.db)
+			orgRepo := postgres.NewOrgRepo(a.DB)
 
-			lo := a.logger.(*log.Logger)
+			lo := a.Logger.(*log.Logger)
 			lo.SetPrefix("domain server")
 
 			lvl, err := log.ParseLevel(c.Logger.Level)

@@ -3,12 +3,13 @@ package main
 import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/spf13/cobra"
 )
 
-func addIngestCommand(a *app) *cobra.Command {
+func addIngestCommand(a *cli.App) *cobra.Command {
 	var interval int
 	cmd := &cobra.Command{
 		Use:   "ingest",
@@ -16,14 +17,14 @@ func addIngestCommand(a *app) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()
 			if err != nil {
-				a.logger.Errorf("Failed to retrieve config: %v", err)
+				a.Logger.Errorf("Failed to retrieve config: %v", err)
 				return err
 			}
 
-			sourceRepo := postgres.NewSourceRepo(a.db)
-			endpointRepo := postgres.NewEndpointRepo(a.db)
+			sourceRepo := postgres.NewSourceRepo(a.DB)
+			endpointRepo := postgres.NewEndpointRepo(a.DB)
 
-			lo := a.logger.(*log.Logger)
+			lo := a.Logger.(*log.Logger)
 			lo.SetPrefix("ingester")
 
 			lvl, err := log.ParseLevel(cfg.Logger.Level)
@@ -34,7 +35,7 @@ func addIngestCommand(a *app) *cobra.Command {
 			lo.SetLevel(lvl)
 
 			sourcePool := pubsub.NewSourcePool(lo)
-			sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, a.queue, sourcePool, lo)
+			sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, a.Queue, sourcePool, lo)
 
 			sourceLoader.Run(interval)
 

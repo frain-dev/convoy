@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -140,11 +139,7 @@ func updateDispatchHeaders(r *Response, res *http.Response) {
 }
 
 func defaultUserAgent() string {
-	f, err := convoy.ReadVersion()
-	if err != nil {
-		return "Convoy/v0.1.0"
-	}
-	return "Convoy/" + strings.TrimSuffix(string(f), "\n")
+	return "Convoy/" + convoy.GetVersion()
 }
 
 func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64) error {

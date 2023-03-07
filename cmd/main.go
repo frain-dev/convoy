@@ -8,7 +8,6 @@ import (
 	"time"
 	_ "time/tzdata"
 
-	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -19,6 +18,7 @@ import (
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/internal/pkg/apm"
+	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -41,19 +41,45 @@ func main() {
 		slog.Fatal("failed to set env - ", err)
 	}
 
-	app := &app{}
+	app := &cli.App{}
+	app.Version = convoy.GetVersionFromFS(convoy.F)
 	db := &postgres.Postgres{}
 
-	cli := NewCli(app, db)
+	cli := cli.NewCli(app, db)
+
+	var redisDsn string
+	var dbDsn string
+	var queue string
+	var configFile string
+
+	cli.Flags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
+	cli.Flags().StringVar(&queue, "queue", "", "Queue provider (\"redis\")")
+	cli.Flags().StringVar(&dbDsn, "db", "", "Postgres database dsn")
+	cli.Flags().StringVar(&redisDsn, "redis", "", "Redis dsn")
+
+	cli.AddCommand(addVersionCommand())
+	cli.AddCommand(addServerCommand(app))
+	cli.AddCommand(addWorkerCommand(app))
+	cli.AddCommand(addRetryCommand(app))
+	cli.AddCommand(addSchedulerCommand(app))
+	cli.AddCommand(addMigrateCommand(app))
+	cli.AddCommand(addConfigCommand(app))
+	// cli.AddCommand(addStreamCommand(app))
+	cli.AddCommand(addDomainCommand(app))
+	cli.AddCommand(addIngestCommand(app))
+
+	cli.PersistentPreRunE(preRun(app, db))
+	cli.PersistentPostRunE(postRun(app, db))
+
 	if err := cli.Execute(); err != nil {
 		slog.Fatal(err)
 	}
 }
 
-func ensureDefaultUser(ctx context.Context, a *app) error {
+func ensureDefaultUser(ctx context.Context, a *cli.App) error {
 	pageable := datastore.Pageable{Page: 1, PerPage: 10}
 
-	userRepo := postgres.NewUserRepo(a.db)
+	userRepo := postgres.NewUserRepo(a.DB)
 	users, _, err := userRepo.LoadUsersPaged(ctx, pageable)
 	if err != nil {
 		return fmt.Errorf("failed to load users - %w", err)
@@ -86,13 +112,13 @@ func ensureDefaultUser(ctx context.Context, a *app) error {
 		return fmt.Errorf("failed to create user - %w", err)
 	}
 
-	a.logger.Infof("Created Superuser with username: %s and password: %s", defaultUser.Email, p.Plaintext)
+	a.Logger.Infof("Created Superuser with username: %s and password: %s", defaultUser.Email, p.Plaintext)
 
 	return nil
 }
 
-func ensureInstanceConfig(ctx context.Context, a *app, cfg config.Configuration) error {
-	configRepo := postgres.NewConfigRepo(a.db)
+func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configuration) error {
+	configRepo := postgres.NewConfigRepo(a.DB)
 
 	s3 := datastore.S3Storage{
 		Bucket:       null.NewString(cfg.StoragePolicy.S3.Bucket, true),
@@ -116,7 +142,7 @@ func ensureInstanceConfig(ctx context.Context, a *app, cfg config.Configuration)
 	config, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {
 		if errors.Is(err, datastore.ErrConfigNotFound) {
-			a.logger.Info("Creating Instance Config")
+			a.Logger.Info("Creating Instance Config")
 			return configRepo.CreateConfiguration(ctx, &datastore.Configuration{
 				UID:                ulid.Make().String(),
 				StoragePolicy:      storagePolicy,
@@ -138,17 +164,7 @@ func ensureInstanceConfig(ctx context.Context, a *app, cfg config.Configuration)
 	return nil
 }
 
-type app struct {
-	db       database.Database
-	queue    queue.Queuer
-	logger   log.StdLogger
-	tracer   tracer.Tracer
-	cache    cache.Cache
-	limiter  limiter.RateLimiter
-	searcher searcher.Searcher
-}
-
-func preRun(app *app, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
+func preRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		cfgPath, err := cmd.Flags().GetString("config")
 		if err != nil {
@@ -246,13 +262,13 @@ func preRun(app *app, db *postgres.Postgres) func(cmd *cobra.Command, args []str
 
 		*db = *postgresDB
 
-		app.db = postgresDB
-		app.queue = q
-		app.logger = lo
-		app.tracer = tr
-		app.cache = ca
-		app.limiter = li
-		app.searcher = se
+		app.DB = postgresDB
+		app.Queue = q
+		app.Logger = lo
+		app.Tracer = tr
+		app.Cache = ca
+		app.Limiter = li
+		app.Searcher = se
 
 		err = ensureDefaultUser(context.Background(), app)
 		if err != nil {
@@ -268,7 +284,7 @@ func preRun(app *app, db *postgres.Postgres) func(cmd *cobra.Command, args []str
 	}
 }
 
-func postRun(app *app, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
+func postRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		err := db.GetDB().Close()
 		if err == nil {
@@ -276,55 +292,6 @@ func postRun(app *app, db *postgres.Postgres) func(cmd *cobra.Command, args []st
 		}
 		return err
 	}
-}
-
-func parsePersistentArgs(app *app, cmd *cobra.Command) {
-	var redisDsn string
-	var dbDsn string
-	var queue string
-	var configFile string
-
-	cmd.PersistentFlags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
-	cmd.PersistentFlags().StringVar(&queue, "queue", "", "Queue provider (\"redis\")")
-	cmd.PersistentFlags().StringVar(&dbDsn, "db", "", "Postgres database dsn")
-	cmd.PersistentFlags().StringVar(&redisDsn, "redis", "", "Redis dsn")
-
-	cmd.AddCommand(addVersionCommand())
-	cmd.AddCommand(addServerCommand(app))
-	cmd.AddCommand(addWorkerCommand(app))
-	cmd.AddCommand(addRetryCommand(app))
-	cmd.AddCommand(addSchedulerCommand(app))
-	cmd.AddCommand(addMigrateCommand(app))
-	cmd.AddCommand(addConfigCommand(app))
-	// cmd.AddCommand(addStreamCommand(app))
-	cmd.AddCommand(addDomainCommand(app))
-	cmd.AddCommand(addIngestCommand(app))
-}
-
-type ConvoyCli struct {
-	cmd *cobra.Command
-}
-
-func NewCli(app *app, db *postgres.Postgres) ConvoyCli {
-	cmd := &cobra.Command{
-		Use:     "Convoy",
-		Version: convoy.GetVersion(),
-		Short:   "Fast & reliable webhooks service",
-	}
-
-	cmd.PersistentPreRunE = preRun(app, db)
-	cmd.PersistentPostRunE = postRun(app, db)
-	parsePersistentArgs(app, cmd)
-
-	return ConvoyCli{cmd: cmd}
-}
-
-func (c *ConvoyCli) SetArgs(args []string) {
-	c.cmd.SetArgs(args)
-}
-
-func (c *ConvoyCli) Execute() error {
-	return c.cmd.Execute()
 }
 
 func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
@@ -364,30 +331,3 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 
 	return c, nil
 }
-
-//
-//func checkPendingMigrations(dbDsn string, db *cm.Client) error {
-//	c := db.Client().(*mongo.Database).Client()
-//	u, err := url.Parse(dbDsn)
-//	if err != nil {
-//		return err
-//	}
-//
-//	dbName := strings.TrimPrefix(u.Path, "/")
-//	opts := &migrate.Options{
-//		DatabaseName: dbName,
-//	}
-//
-//	m := migrate.NewMigrator(c, opts, migrate.Migrations, nil)
-//
-//	pm, err := m.CheckPendingMigrations(context.Background())
-//	if err != nil {
-//		return err
-//	}
-//
-//	if pm {
-//		return migrate.ErrPendingMigrationsFound
-//	}
-//
-//	return nil
-//}

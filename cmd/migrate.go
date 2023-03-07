@@ -3,12 +3,13 @@ package main
 import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/migrator"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/spf13/cobra"
 )
 
-func addMigrateCommand(a *app) *cobra.Command {
+func addMigrateCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "migrate",
 		Short: "Convoy migrations",
