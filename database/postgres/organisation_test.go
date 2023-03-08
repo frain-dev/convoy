@@ -31,8 +31,8 @@ func TestLoadOrganisationsPaged(t *testing.T) {
 			UID:            ulid.Make().String(),
 			OwnerID:        user.UID,
 			Name:           fmt.Sprintf("org%d", i),
-			CustomDomain:   null.NewString("https://google.com", true),
-			AssignedDomain: null.NewString("https://google.com", true),
+			CustomDomain:   null.NewString(ulid.Make().String(), true),
+			AssignedDomain: null.NewString(ulid.Make().String(), true),
 		}
 
 		err := orgRepo.CreateOrganisation(context.Background(), org)
@@ -80,8 +80,8 @@ func TestUpdateOrganisation(t *testing.T) {
 	org := &datastore.Organisation{
 		Name:           "new org",
 		OwnerID:        user.UID,
-		CustomDomain:   null.NewString("https://google.com", true),
-		AssignedDomain: null.NewString("https://google.com", true),
+		CustomDomain:   null.NewString(ulid.Make().String(), true),
+		AssignedDomain: null.NewString(ulid.Make().String(), true),
 	}
 
 	err := orgRepo.CreateOrganisation(context.Background(), org)

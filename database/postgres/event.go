@@ -3,17 +3,13 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
-	"sort"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
-	"gopkg.in/guregu/null.v4"
 )
 
 var ErrEventNotCreated = errors.New("event could not be created")
@@ -49,16 +45,6 @@ const (
 	LEFT JOIN convoy.endpoints e on ee.endpoint_id = e.id
 	WHERE (ev.project_id = $1 OR $1 = '') AND (e.id = $2 OR $2 = '' )
 	AND (ev.source_id = $3 OR $3 = '') AND ev.created_at >= $4 AND ev.created_at <= $5 AND ev.deleted_at IS NULL;
-	`
-
-	baseEventsCount = `
-	WITH table_count AS (
-		SELECT count(distinct(ev.id)) as count
-		FROM convoy.events ev LEFT JOIN convoy.events_endpoints
-		ee ON ee.event_id = ev.id
-		WHERE ev.deleted_at IS NULL
-		%s
-	)
 	`
 
 	baseEventsPaged = `
@@ -136,7 +122,6 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		if err != nil {
 			return err
 		}
-
 	}
 
 	return tx.Commit()
@@ -270,67 +255,22 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 		return nil, datastore.PaginationData{}, err
 	}
 
-	eventMap := make(map[string]*datastore.Event)
+
+	count := 0
 	events := make([]datastore.Event, 0)
 	for rows.Next() {
-		var data EventPaginated
+		var data datastore.Event
 
 		err = rows.StructScan(&data)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 
-		record, exists := eventMap[data.UID]
-		if exists {
-			endpoint := data.Endpoint
-			if !util.IsStringEmpty(endpoint.UID.String) {
-				record.EndpointMetadata = append(record.EndpointMetadata, getEventEndpoint(endpoint))
-			}
-
-		} else {
-			event := getEvent(data)
-			endpoint := data.Endpoint
-			if !util.IsStringEmpty(endpoint.UID.String) {
-				event.EndpointMetadata = append(event.EndpointMetadata, getEventEndpoint(endpoint))
-			}
-
-			source := data.Source
-			if !util.IsStringEmpty(source.UID.String) {
-				event.Source = &datastore.Source{
-					UID:  source.UID.String,
-					Name: source.Name.String,
-				}
-			}
-
-			eventMap[event.UID] = event
-		}
+		events = append(events, data)
 	}
 
-	for _, event := range eventMap {
-		events = append(events, *event)
-	}
-
-	sort.SliceStable(events, func(i, j int) bool {
-		return events[i].UID > events[j].UID
-	})
-
-	var startCursor string
-	if len(events) > 0 {
-		startCursor = events[0].UID
-	}
-
-	var endCursor string
-	if len(events) == filter.Pageable.PerPage {
-		endCursor = events[filter.Pageable.PerPage-1].UID
-	}
-
-	return events, datastore.PaginationData{
-		PerPage:         int64(filter.Pageable.PerPage),
-		HasNextPage:     false,
-		HasPreviousPage: false,
-		StartCursor:     startCursor,
-		EndCursor:       endCursor,
-	}, nil
+	pagination := calculatePaginationData(count, filter.Pageable.Page, filter.Pageable.PerPage)
+	return events, pagination, nil
 }
 
 func (e *eventRepo) DeleteProjectEvents(ctx context.Context, filter *datastore.EventFilter, hardDelete bool) error {
@@ -353,63 +293,7 @@ func getCreatedDateFilter(startDate, endDate int64) (time.Time, time.Time) {
 	return time.Unix(startDate, 0), time.Unix(endDate, 0)
 }
 
-func getEvent(data EventPaginated) *datastore.Event {
-	return &datastore.Event{
-		UID:              data.UID,
-		EventType:        datastore.EventType(data.EventType),
-		SourceID:         data.SourceID.String,
-		AppID:            data.AppID,
-		ProjectID:        data.ProjectID,
-		Headers:          data.Headers,
-		Data:             data.Data,
-		Raw:              data.Raw,
-		EndpointMetadata: []*datastore.Endpoint{},
-		CreatedAt:        data.CreatedAt,
-		UpdatedAt:        data.UpdatedAt,
-	}
-}
-
-func getEventEndpoint(endpoint *Endpoint) *datastore.Endpoint {
-	return &datastore.Endpoint{
-		UID:          endpoint.UID.String,
-		Title:        endpoint.Title.String,
-		ProjectID:    endpoint.ProjectID.String,
-		SupportEmail: endpoint.SupportEmail.String,
-		TargetURL:    endpoint.TargetUrl.String,
-	}
-}
-
 type EventEndpoint struct {
 	EventID    string `db:"event_id"`
 	EndpointID string `db:"endpoint_id"`
-}
-
-type EventPaginated struct {
-	Count     int                   `db:"count"`
-	UID       string                `db:"id"`
-	EventType string                `db:"event_type"`
-	SourceID  null.String           `db:"source_id"`
-	AppID     string                `db:"app_id"`
-	ProjectID string                `db:"project_id"`
-	Headers   httpheader.HTTPHeader `db:"headers"`
-	Data      json.RawMessage       `db:"data"`
-	Raw       string                `db:"raw"`
-	CreatedAt time.Time             `db:"created_at"`
-	UpdatedAt time.Time             `db:"updated_at"`
-	DeletedAt null.Time             `db:"deleted_at"`
-	Endpoint  *Endpoint             `db:"endpoint"`
-	Source    *Source               `db:"source"`
-}
-
-type Endpoint struct {
-	UID          null.String `db:"id"`
-	Title        null.String `db:"title"`
-	ProjectID    null.String `db:"project_id"`
-	SupportEmail null.String `db:"support_email"`
-	TargetUrl    null.String `db:"target_url"`
-}
-
-type Source struct {
-	UID  null.String `db:"id"`
-	Name null.String `db:"name"`
 }

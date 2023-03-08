@@ -18,7 +18,7 @@ import (
 const pkgName = "postgres"
 
 type Postgres struct {
-	dbx *sqlx.DB
+	dbx    *sqlx.DB
 }
 
 func NewDB(cfg config.Configuration) (*Postgres, error) {
@@ -31,11 +31,16 @@ func NewDB(cfg config.Configuration) (*Postgres, error) {
 	db.SetMaxOpenConns(1000)                  // The default is 0 (unlimited)
 	db.SetConnMaxLifetime(3600 * time.Second) // The default is 0 (connections reused forever)
 
+
 	return &Postgres{dbx: db}, nil
 }
 
 func (p *Postgres) GetDB() *sqlx.DB {
 	return p.dbx
+}
+
+func (p *Postgres) Close() error {
+	return p.dbx.Close()
 }
 
 // getPrevPage returns calculated value for the prev page
