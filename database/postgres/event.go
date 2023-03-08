@@ -61,10 +61,10 @@ const (
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
     WHERE ev.deleted_at IS NULL`
 
-	baseEventFilter = ` AND ev.project_id = :project_id AND (ev.source_id = :source_id OR :source_id = '') AND ev.created_at >= :start_date AND ev.created_at <= :end_date group by ev.id, s.id order by ev.id desc`
+	baseEventFilter = ` AND ev.project_id = :project_id AND (ev.source_id = :source_id OR :source_id = '') AND ev.created_at >= :start_date AND ev.created_at <= :end_date`
 
-	forwardPaginationQuery  = `AND ev.id < :cursor ORDER BY ev.id DESC LIMIT :limit`
-	backwardPaginationQuery = `AND ev.id > :cursor ORDER BY ev.id DESC LIMIT :limit`
+	forwardPaginationQuery  = ` AND ev.id < :cursor GROUP BY ev.id, s.id ORDER BY ev.id DESC LIMIT :limit`
+	backwardPaginationQuery = ` AND ev.id > :cursor GROUP BY ev.id, s.id ORDER BY ev.id DESC LIMIT :limit`
 
 	softDeleteProjectEvents = `
 	UPDATE convoy.events SET deleted_at = now()
