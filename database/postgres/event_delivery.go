@@ -429,7 +429,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		args = append(args, status)
 	}
 
-	query += `  ORDER BY ed.id DESC LIMIT ? OFFSET ?`
+	query += ` ORDER BY ed.id DESC LIMIT ? OFFSET ?`
 	args = append(args, pageable.Limit(), pageable.Offset())
 
 	query, args, err := sqlx.In(query, args...)

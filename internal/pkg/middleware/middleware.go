@@ -357,11 +357,26 @@ func (m *Middleware) RequireOrganisation() func(next http.Handler) http.Handler 
 				orgID = r.URL.Query().Get("orgID")
 			}
 
-			org, err := m.orgRepo.FetchOrganisationByID(r.Context(), orgID)
+			var org *datastore.Organisation
+
+			orgCacheKey := convoy.OrganisationsCacheKey.Get(orgID).String()
+			err := m.cache.Get(r.Context(), orgCacheKey, &org)
 			if err != nil {
-				m.logger.WithError(err).Error("failed to fetch organisation")
-				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 				return
+			}
+
+			if org == nil {
+				org, err = m.orgRepo.FetchOrganisationByID(r.Context(), orgID)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation by id", http.StatusBadRequest))
+					return
+				}
+				err = m.cache.Set(r.Context(), orgCacheKey, &org, time.Minute*5)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+					return
+				}
 			}
 
 			r = r.WithContext(setOrganisationInContext(r.Context(), org))
@@ -464,11 +479,28 @@ func (m *Middleware) RequireOrganisationMembership() func(next http.Handler) htt
 			user := GetUserFromContext(r.Context())
 			org := GetOrganisationFromContext(r.Context())
 
-			member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
+			var member *datastore.OrganisationMember
+
+			orgMemberCacheKey := convoy.OrganisationMemberCacheKey.Get(org.UID).String()
+			err := m.cache.Get(r.Context(), orgMemberCacheKey, &member)
 			if err != nil {
-				m.logger.WithError(err).Error("failed to find organisation member by user id")
-				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation member", http.StatusBadRequest))
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 				return
+			}
+
+			if member == nil {
+				member, err = m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
+				if err != nil {
+					m.logger.WithError(err).Error("failed to find organisation member by user id")
+					_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation member", http.StatusBadRequest))
+					return
+				}
+
+				err = m.cache.Set(r.Context(), orgMemberCacheKey, &member, time.Minute*5)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+					return
+				}
 			}
 
 			r = r.WithContext(setOrganisationMemberInContext(r.Context(), member))
@@ -808,7 +840,7 @@ func (m *Middleware) Pagination(next http.Handler) http.Handler {
 		}
 
 		if len(rawDirection) == 0 {
-			rawEndCursor = "next"
+			rawDirection = "next"
 		}
 
 		if len(rawStartCursor) == 0 {
@@ -826,8 +858,6 @@ func (m *Middleware) Pagination(next http.Handler) http.Handler {
 			EndCursor:   rawEndCursor,
 			StartCursor: rawStartCursor,
 		}
-
-		fmt.Printf("\np: %+v\n\n", pageable)
 
 		r = r.WithContext(setPageableInContext(r.Context(), pageable))
 		next.ServeHTTP(w, r)
