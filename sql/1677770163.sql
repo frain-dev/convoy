@@ -46,6 +46,22 @@ CREATE INDEX IF NOT EXISTS idx_organisation_invites_token_key ON convoy.organisa
 -- convoy.api_keys
 CREATE INDEX IF NOT EXISTS idx_api_keys_mask_id ON convoy.api_keys (mask_id);
 
+--+ migrate Up
+-- convoy.sources
+CREATE INDEX IF NOT EXISTS idx_sources_source_verifier_id ON convoy.sources (source_verifier_id);
+CREATE INDEX IF NOT EXISTS idx_sources_project_id ON convoy.sources (project_id);
+CREATE INDEX IF NOT EXISTS idx_sources_mask_id ON convoy.sources (mask_id);
+
+--+ migrate Up
+-- convoy.portal_links
+CREATE INDEX IF NOT EXISTS idx_portal_links_project_id ON convoy.portal_links (project_id);
+CREATE INDEX IF NOT EXISTS idx_portal_links_token ON convoy.portal_links (token);
+
+--+ migrate Up
+-- convoy.portal_links_endpoints
+CREATE INDEX IF NOT EXISTS idx_portal_links_endpoints_enpdoint_id ON convoy.portal_links_endpoints (endpoint_id);
+CREATE INDEX IF NOT EXISTS idx_portal_links_endpoints_portal_link_id ON convoy.portal_links_endpoints (portal_link_id);
+
 
 -- +migrate Down
 DROP INDEX IF EXISTS convoy.idx_endpoints_project_id_key, convoy.idx_endpoints_owner_id_key, convoy.idx_endpoints_app_id_key;
@@ -56,3 +72,6 @@ DROP INDEX IF EXISTS convoy.idx_event_deliveries_project_id_key, convoy.idx_even
 DROP INDEX IF EXISTS convoy.organisations_custom_domain;
 DROP INDEX IF EXISTS convoy.organisation_invites_invitee_email, convoy.idx_organisation_invites_token_key;
 DROP INDEX IF EXISTS convoy.idx_api_keys_mask_id;
+DROP INDEX IF EXISTS convoy.idx_sources_source_verifier_id, convoy.idx_sources_project_id, convoy.idx_sources_mask_id;
+DROP INDEX IF EXISTS convoy.idx_portal_links_project_id, convoy.idx_portal_links_token;
+DROP INDEX IF EXISTS convoy.idx_portal_links_endpoints_enpdoint_id, convoy.idx_portal_links_endpoints_portal_link_id;

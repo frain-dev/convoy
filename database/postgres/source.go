@@ -110,7 +110,7 @@ const (
 	WHERE source_id = $1 AND deleted_at IS NULL;
 	`
 
-	fetchSourcesPaginated = baseFetchSource + ` WHERE s.deleted_at IS NULL AND (s.type = :type OR :type = '') AND (s.provider = :provider OR :provider = '') AND (s.project_id = :project_id OR :project_id = '') ORDER BY s.id LIMIT :limit OFFSET :offset;`
+	fetchSourcesPaginated = baseFetchSource + ` WHERE s.deleted_at IS NULL AND (s.type = :type OR :type = '') AND (s.provider = :provider OR :provider = '') AND (s.project_id = :project_id OR :project_id = '') ORDER BY s.id desc LIMIT :limit OFFSET :offset;`
 
 	countSources = `
 	SELECT COUNT(id) FROM convoy.sources WHERE deleted_at IS NULL
@@ -336,6 +336,7 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 	}
 
 	query = s.db.Rebind(query)
+	fmt.Println("Source QUery is >>>>", query)
 	rows, err := s.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
@@ -353,17 +354,6 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 	}
 
 	var count int
-	query, args, err = sqlx.Named(countSources, arg)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
-
-	query = s.db.Rebind(query)
-	err = s.db.Get(&count, query, args...)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
-
 	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
 	return sources, pagination, nil
 }
