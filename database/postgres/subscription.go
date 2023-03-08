@@ -89,9 +89,9 @@ const (
 	COALESCE(sv.hmac_header, '') as "source_metadata.verifier.hmac.header",
 	COALESCE(sv.hmac_secret, '') as "source_metadata.verifier.hmac.secret",
 	COALESCE(sv.hmac_encoding, '') as "source_metadata.verifier.hmac.encoding"
-	FROM convoy.subscriptions s LEFT JOIN convoy.endpoints endpoint_metadata
-    ON s.endpoint_id = endpoint_metadata.id LEFT JOIN convoy.sources source_metadata
-    ON s.source_id = source_metadata.id 
+	FROM convoy.subscriptions s 
+	LEFT JOIN convoy.endpoints endpoint_metadata ON s.endpoint_id = endpoint_metadata.id 
+	LEFT JOIN convoy.sources source_metadata ON s.source_id = source_metadata.id 
 	LEFT JOIN convoy.source_verifiers sv ON sv.id = source_metadata.source_verifier_id 
 	WHERE s.deleted_at IS NULL `
 
@@ -101,7 +101,7 @@ const (
 
 	fetchCLISubscriptions = baseFetch + `AND %s = $1 AND %s = $2`
 
-	fetchSubscriptionsPaginated = baseFetch + ` AND s.project_id = $1 ORDER BY id LIMIT $2 OFFSET $3;`
+	fetchSubscriptionsPaginated = baseFetch + ` AND s.project_id = $1 ORDER BY id desc LIMIT $2 OFFSET $3;`
 
 	fetchSubscriptionsPaginatedFilterByEndpoints = baseFetch + ` AND s.endpoint_id IN (?) AND s.project_id = ? ORDER BY id LIMIT ? OFFSET ?;`
 
@@ -242,17 +242,6 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 	}
 
 	var count int
-	if len(filter.EndpointIDs) > 0 {
-		query, args, inerr := sqlx.In(countSubscriptionsFilterByEndpoints, filter.EndpointIDs, projectID)
-		if inerr != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-
-		query = s.db.Rebind(query)
-		err = s.db.Get(&count, query, args...)
-	} else {
-		err = s.db.Get(&count, countSubscriptions, projectID)
-	}
 
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
