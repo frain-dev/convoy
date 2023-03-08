@@ -11,10 +11,15 @@ CREATE INDEX IF NOT EXISTS idx_organisation_members_user_id_key ON convoy.organi
 -- +migrate Up
 -- convoy.events
 CREATE INDEX IF NOT EXISTS idx_events_project_id_key ON convoy.events (project_id);
+CREATE INDEX IF NOT EXISTS idx_events_source_id_key ON convoy.events (source_id);
+CREATE INDEX IF NOT EXISTS idx_events_created_at_key ON convoy.events (created_at);
+CREATE INDEX IF NOT EXISTS idx_events_deleted_at_key ON convoy.events (deleted_at);
+
 
 -- +migrate Up
 -- convoy.events_endpoints
 CREATE INDEX IF NOT EXISTS idx_events_endpoints_endpoint_id_key ON convoy.events_endpoints (endpoint_id);
+CREATE INDEX IF NOT EXISTS idx_events_endpoints_event_id_key ON convoy.events_endpoints (event_id);
 
 -- +migrate Up
 -- convoy.event_deliveries

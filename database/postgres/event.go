@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
@@ -48,9 +47,21 @@ const (
 	AND (ev.source_id = $3 OR $3 = '') AND ev.created_at >= $4 AND ev.created_at <= $5 AND ev.deleted_at IS NULL;
 	`
 
-	baseEventsPaged = `SELECT * from convoy.event_metadata`
+	baseEventsPaged = `
+	SELECT ev.id, ev.project_id, ev.event_type,
+	COALESCE(ev.source_id, '') AS source_id,
+	ev.headers, ev.raw, ev.data, ev.created_at, 
+	ev.updated_at, ev.deleted_at,
+	array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url))) AS endpoint_metadata,
+	COALESCE(s.id, '') AS "source_metadata.id",
+	COALESCE(s.name, '') AS "source_metadata.name"
+    FROM convoy.events ev
+	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
+	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+	LEFT JOIN convoy.sources s ON s.id = ev.source_id
+    WHERE ev.deleted_at IS NULL`
 
-	baseEventFilter = ` WHERE project_id = :project_id AND (source_id = :source_id OR :source_id = '') AND created_at >= :start_date AND created_at <= :end_date order by id desc LIMIT :limit OFFSET :offset`
+	baseEventFilter = ` AND ev.project_id = :project_id AND (ev.source_id = :source_id OR :source_id = '') AND ev.created_at >= :start_date AND ev.created_at <= :end_date group by ev.id, s.id order by ev.id desc LIMIT :limit OFFSET :offset`
 
 	softDeleteProjectEvents = `
 	UPDATE convoy.events SET deleted_at = now()
@@ -61,8 +72,6 @@ const (
 	DELETE from convoy.events WHERE project_id = $1 AND created_at
 	>= $2 AND created_at <= $3 AND deleted_at IS NULL
 	`
-
-	refreshEventMetdataView = `REFRESH MATERIALIZED VIEW CONCURRENTLY convoy.event_metadata`
 )
 
 type eventRepo struct {
@@ -230,8 +239,6 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 
 		query = e.db.Rebind(query)
 	}
-
-	fmt.Println("query is >>>>", query)
 
 	rows, err := e.db.QueryxContext(ctx, query, args...)
 	if err != nil {
