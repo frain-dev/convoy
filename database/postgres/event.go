@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sort"
 	"time"
 
@@ -63,29 +62,23 @@ const (
 	`
 
 	baseEventsPaged = `
-	SELECT table_count.count, ev.id,
-	ev.project_id, ev.event_type, ev.source_id, ev.headers, ev.raw,
-	ev.data, ev.created_at, ev.updated_at, ev.deleted_at,
-	e.id AS "endpoint.id", e.title AS "endpoint.title",
-	e.project_id AS "endpoint.project_id", e.support_email AS "endpoint.support_email",
-	e.target_url AS "endpoint.target_url", s.id AS "source.id",
-	s.name AS "source.name" FROM table_count, convoy.events AS ev
+	SELECT ev.id, ev.project_id, ev.event_type,
+	COALESCE(ev.source_id, '') AS source_id,
+	ev.headers, ev.raw, ev.data, ev.created_at, 
+	ev.updated_at, ev.deleted_at,
+	array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url))) AS endpoint_metadata,
+	COALESCE(s.id, '') AS "source_metadata.id",
+	COALESCE(s.name, '') AS "source_metadata.name"
+    FROM convoy.events ev
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
 	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
-	WHERE ev.deleted_at IS NULL
-	%s
-	%s
-	`
+    WHERE ev.deleted_at IS NULL`
 
-	forwardPaginationQuery = `AND ev.id <= :cursor ORDER BY ev.id DESC LIMIT :limit + 1`
-	// backwardPaginationQuery = `AND ev.id > :cursor ORDER BY ev.id DESC LIMIT :limit + 1`
+	baseEventFilter = ` AND ev.project_id = :project_id AND (ev.source_id = :source_id OR :source_id = '') AND ev.created_at >= :start_date AND ev.created_at <= :end_date group by ev.id, s.id order by ev.id desc`
 
-	baseEventFilter = `
-	AND (ev.project_id = :project_id OR :project_id = '') 
-	AND (ev.source_id = :source_id OR :source_id = '') 
-	AND ev.created_at >= :start_date 
-	AND ev.created_at <= :end_date`
+	forwardPaginationQuery  = `AND ev.id < :cursor ORDER BY ev.id DESC LIMIT :limit`
+	backwardPaginationQuery = `AND ev.id > :cursor ORDER BY ev.id DESC LIMIT :limit`
 
 	softDeleteProjectEvents = `
 	UPDATE convoy.events SET deleted_at = now()
@@ -235,15 +228,22 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 		"endpoint_ids": filter.EndpointIDs,
 		"project_id":   projectID,
 		"source_id":    filter.SourceID,
+		"limit":        filter.Pageable.Limit(),
 		"start_date":   startDate,
 		"end_date":     endDate,
-		"limit":        filter.Pageable.Limit(),
-		"cursor":       filter.Pageable.StartCursor,
+		"cursor":       filter.Pageable.Cursor(),
+	}
+
+	var pagingationQuery string
+	if filter.Pageable.Direction == datastore.Next {
+		pagingationQuery = forwardPaginationQuery
+	} else {
+		pagingationQuery = backwardPaginationQuery
 	}
 
 	if len(filter.EndpointIDs) > 0 {
-		filterQuery := `AND ee.endpoint_id IN (:endpoint_ids) ` + baseEventFilter
-		q := fmt.Sprintf(baseEventsCount, filterQuery) + fmt.Sprintf(baseEventsPaged, filterQuery, forwardPaginationQuery)
+		filterQuery := ` AND ee.endpoint_id IN (:endpoint_ids) ` + baseEventFilter
+		q := baseEventsPaged + filterQuery + pagingationQuery
 		query, args, err = sqlx.Named(q, arg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -256,7 +256,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 		query = e.db.Rebind(query)
 
 	} else {
-		q := fmt.Sprintf(baseEventsCount, baseEventFilter) + fmt.Sprintf(baseEventsPaged, baseEventFilter, forwardPaginationQuery)
+		q := baseEventsPaged + baseEventFilter + pagingationQuery
 		query, args, err = sqlx.Named(q, arg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err

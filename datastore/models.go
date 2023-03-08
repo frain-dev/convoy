@@ -25,9 +25,23 @@ type Pageable struct {
 	// deprecated
 	Sort int `json:"sort"`
 
-	PerPage     int    `json:"per_page"`
-	StartCursor string `json:"start_cursor"`
-	EndCursor   string `json:"end_cursor"`
+	PerPage     int           `json:"per_page"`
+	Direction   PageDirection `json:"direction"`
+	StartCursor string        `json:"start_cursor"`
+	EndCursor   string        `json:"end_cursor"`
+}
+
+type PageDirection string
+
+const Next PageDirection = "next"
+const Prev PageDirection = "prev"
+
+func (p Pageable) Cursor() string {
+	if p.Direction == Next {
+		return p.StartCursor
+	}
+
+	return p.EndCursor
 }
 
 func (p Pageable) Limit() int {

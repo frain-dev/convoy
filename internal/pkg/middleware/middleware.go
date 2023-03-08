@@ -795,6 +795,7 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 func (m *Middleware) Pagination(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawPerPage := r.URL.Query().Get("perPage")
+		rawDirection := r.URL.Query().Get("direction")
 		rawEndCursor := r.URL.Query().Get("endCursor")
 		rawStartCursor := r.URL.Query().Get("startCursor")
 
@@ -804,6 +805,10 @@ func (m *Middleware) Pagination(next http.Handler) http.Handler {
 
 		if len(rawEndCursor) == 0 {
 			rawEndCursor = "0"
+		}
+
+		if len(rawDirection) == 0 {
+			rawEndCursor = "next"
 		}
 
 		if len(rawStartCursor) == 0 {
@@ -817,6 +822,7 @@ func (m *Middleware) Pagination(next http.Handler) http.Handler {
 
 		pageable := datastore.Pageable{
 			PerPage:     perPage,
+			Direction:   datastore.PageDirection(rawDirection),
 			EndCursor:   rawEndCursor,
 			StartCursor: rawStartCursor,
 		}
