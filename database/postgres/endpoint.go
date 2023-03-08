@@ -291,11 +291,6 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 	}
 
 	var count int
-	err = e.db.Get(&count, countEndpoints, projectId)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
-
 	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
 	return endpoints, pagination, nil
 }
