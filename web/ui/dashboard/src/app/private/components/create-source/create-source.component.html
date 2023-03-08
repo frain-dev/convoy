@@ -205,6 +205,14 @@
 	</div>
 </form>
 
+<convoy-token-modal
+	title="Source URL Generated"
+	description="Use this URL in your source platform to receive your webhook events."
+	notificationText="Source URL has been copied to your clipboard."
+	[token]="sourceData.url"
+	(closeModal)="showSourceUrl = false; onAction.emit({ action: this.action, data: sourceData })"
+	*ngIf="showSourceUrl"
+></convoy-token-modal>
 
 <div convoy-modal position="center" size="sm" *ngIf="confirmModal" (closeModal)="confirmModal = false">
 	<div class="px-20px py-30px" modalBody>
