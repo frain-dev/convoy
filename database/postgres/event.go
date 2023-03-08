@@ -217,7 +217,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 	}
 
 	if len(filter.EndpointIDs) > 0 {
-		filterQuery := `AND ee.endpoint_id IN (:endpoint_ids) ` + baseEventFilter
+		filterQuery := ` AND ee.endpoint_id IN (:endpoint_ids) ` + baseEventFilter
 		q := baseEventsPaged + filterQuery
 		query, args, err = sqlx.Named(q, arg)
 		if err != nil {
