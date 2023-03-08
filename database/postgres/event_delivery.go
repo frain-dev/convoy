@@ -490,48 +490,15 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 			DeletedAt:        ev.DeletedAt,
 		})
 	}
-
-	args = []interface{}{
-		projectID, projectID,
-		eventID, eventID,
-		start, end,
-	}
-
-	q := countEventDeliveries
-
-	if len(endpointIDs) > 0 {
-		q += ` AND endpoint_id IN (?)`
-		args = append(args, endpointIDs)
-	}
-
-	if len(status) > 0 {
-		q += ` AND status IN (?)`
-		args = append(args, status)
-	}
-
-	query, args, err = sqlx.In(q, args...)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
-
-	query = e.db.Rebind(query)
-
-	count := struct {
-		Count int64
-	}{}
-
-	err = e.db.QueryRowxContext(ctx, query, args...).StructScan(&count)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
-
+	
+	count := 0
 	pagination := datastore.PaginationData{
-		Total:     count.Count,
+		Total:     int64(count),
 		Page:      int64(pageable.Page),
 		PerPage:   int64(pageable.PerPage),
 		Prev:      int64(getPrevPage(pageable.Page)),
 		Next:      int64(pageable.Page + 1),
-		TotalPage: int64(math.Ceil(float64(count.Count) / float64(pageable.PerPage))),
+		TotalPage: int64(math.Ceil(float64(count) / float64(pageable.PerPage))),
 	}
 	return eventDeliveries, pagination, nil
 }

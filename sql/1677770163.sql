@@ -2,11 +2,13 @@
 -- convoy.endpoints
 CREATE INDEX IF NOT EXISTS idx_endpoints_project_id_key ON convoy.endpoints (project_id);
 CREATE INDEX IF NOT EXISTS idx_endpoints_owner_id_key ON convoy.endpoints (owner_id);
+CREATE INDEX IF NOT EXISTS idx_endpoints_app_id_key ON convoy.endpoints (app_id);
 
 -- +migrate Up
 -- convoy.organisation_members
 CREATE INDEX IF NOT EXISTS idx_organisation_members_organisation_id_key ON convoy.organisation_members (organisation_id);
 CREATE INDEX IF NOT EXISTS idx_organisation_members_user_id_key ON convoy.organisation_members (user_id);
+CREATE INDEX IF NOT EXISTS idx_organisation_members_deleted_at_key ON convoy.organisation_members (deleted_at);
 
 -- +migrate Up
 -- convoy.events
@@ -26,6 +28,10 @@ CREATE INDEX IF NOT EXISTS idx_events_endpoints_event_id_key ON convoy.events_en
 CREATE INDEX IF NOT EXISTS idx_event_deliveries_project_id_key ON convoy.event_deliveries (project_id);
 CREATE INDEX IF NOT EXISTS idx_event_deliveries_status_key ON convoy.event_deliveries (status);
 CREATE INDEX IF NOT EXISTS idx_event_deliveries_event_id_key ON convoy.event_deliveries(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_deliveries_created_at_key ON convoy.event_deliveries(created_at);
+CREATE INDEX IF NOT EXISTS idx_event_deliveries_deleted_at_key ON convoy.event_deliveries(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_event_deliveries_endpoint_id_key ON convoy.event_deliveries(endpoint_id);
+CREATE INDEX IF NOT EXISTS idx_event_deliveries_device_id_key ON convoy.event_deliveries(device_id);
 
 --+ migrate Up
 -- convoy.organisations
@@ -42,11 +48,11 @@ CREATE INDEX IF NOT EXISTS idx_api_keys_mask_id ON convoy.api_keys (mask_id);
 
 
 -- +migrate Down
-DROP INDEX IF EXISTS convoy.idx_endpoints_project_id_key, convoy.idx_endpoints_owner_id_key;
-DROP INDEX IF EXISTS convoy.idx_organisation_members_organisation_id_key, convoy.idx_organisation_members_user_id_key;
-DROP INDEX IF EXISTS convoy.idx_events_project_id_key;
+DROP INDEX IF EXISTS convoy.idx_endpoints_project_id_key, convoy.idx_endpoints_owner_id_key, convoy.idx_endpoints_app_id_key;
+DROP INDEX IF EXISTS convoy.idx_organisation_members_organisation_id_key, convoy.idx_organisation_members_user_id_key, convoy.idx_organisation_members_deleted_at_key;
+DROP INDEX IF EXISTS convoy.idx_events_project_id_key, convoy.idx_events_endpoints_event_id_key;
 DROP INDEX IF EXISTS convoy.idx_events_endpoints_endpoint_id_key;
-DROP INDEX IF EXISTS convoy.idx_event_deliveries_project_id_key, convoy.idx_event_deliveries_status_key, convoy.idx_event_deliveries_event_id_key;
+DROP INDEX IF EXISTS convoy.idx_event_deliveries_project_id_key, convoy.idx_event_deliveries_status_key, convoy.idx_event_deliveries_event_id_key, convoy.idx_event_deliveries_created_at_key, convoy.idx_event_deliveries_deleted_at_key, convoy.idx_event_deliveries_endpoint_id_key, convoy.idx_event_deliveries_device_id_key;
 DROP INDEX IF EXISTS convoy.organisations_custom_domain;
 DROP INDEX IF EXISTS convoy.organisation_invites_invitee_email, convoy.idx_organisation_invites_token_key;
 DROP INDEX IF EXISTS convoy.idx_api_keys_mask_id;
