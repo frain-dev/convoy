@@ -795,40 +795,40 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 func (m *Middleware) Pagination(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawPerPage := r.URL.Query().Get("perPage")
-		rawPage := r.URL.Query().Get("page")
-		rawSort := r.URL.Query().Get("sort")
+		rawDirection := r.URL.Query().Get("direction")
+		rawEndCursor := r.URL.Query().Get("endCursor")
+		rawStartCursor := r.URL.Query().Get("startCursor")
 
 		if len(rawPerPage) == 0 {
 			rawPerPage = "20"
 		}
-		if len(rawPage) == 0 {
-			rawPage = "0"
-		}
-		if len(rawSort) == 0 {
-			rawSort = "-1"
+
+		if len(rawEndCursor) == 0 {
+			rawEndCursor = "0"
 		}
 
-		var err error
-		sort := -1 // desc by default
-		order := strings.ToLower(rawSort)
-		if order == "asc" {
-			sort = 1
+		if len(rawDirection) == 0 {
+			rawEndCursor = "next"
 		}
 
-		var perPage int
-		if perPage, err = strconv.Atoi(rawPerPage); err != nil {
+		if len(rawStartCursor) == 0 {
+			rawStartCursor = fmt.Sprintf("%d", math.MaxInt)
+		}
+
+		perPage, err := strconv.Atoi(rawPerPage)
+		if err != nil {
 			perPage = 20
 		}
 
-		var page int
-		if page, err = strconv.Atoi(rawPage); err != nil {
-			page = 0
-		}
 		pageable := datastore.Pageable{
-			Page:    page,
-			PerPage: perPage,
-			Sort:    sort,
+			PerPage:     perPage,
+			Direction:   datastore.PageDirection(rawDirection),
+			EndCursor:   rawEndCursor,
+			StartCursor: rawStartCursor,
 		}
+
+		fmt.Printf("\np: %+v\n\n", pageable)
+
 		r = r.WithContext(setPageableInContext(r.Context(), pageable))
 		next.ServeHTTP(w, r)
 	})

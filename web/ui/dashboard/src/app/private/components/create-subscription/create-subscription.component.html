@@ -24,7 +24,7 @@
 							before the next retry attempt.
 						</convoy-tooltip>
 					</p>
-					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('events')">
+					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" *ngIf="action !== 'view'" (click)="toggleConfigForm('events')">
 						<svg width="16" height="16" class="fill-grey-60">
 							<use xlink:href="#delete-icon"></use>
 						</svg>
@@ -51,7 +51,7 @@
 						the next retry attempt.
 					</convoy-tooltip>
 				</p>
-				<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('retry_config')">
+				<button convoy-button type="button" size="xs" fill="outline" color="grey" *ngIf="action !== 'view'" texture="light" (click)="toggleConfigForm('retry_config')">
 					<svg width="16" height="16" class="fill-grey-60">
 						<use xlink:href="#delete-icon"></use>
 					</svg>
@@ -91,7 +91,7 @@
 			<div class="border border-grey-20 rounded-4px p-16px mb-24px">
 				<div class="flex justify-between items-center mb-14px">
 					<h4 class="text-grey-60 font-medium">Events Filter</h4>
-					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('filter_config')">
+					<button convoy-button type="button" size="xs" *ngIf="action !== 'view'" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('filter_config')">
 						<svg width="16" height="16" class="fill-grey-60">
 							<use xlink:href="#delete-icon"></use>
 						</svg>

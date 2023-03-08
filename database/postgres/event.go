@@ -61,7 +61,10 @@ const (
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
     WHERE ev.deleted_at IS NULL`
 
-	baseEventFilter = ` AND ev.project_id = :project_id AND (ev.source_id = :source_id OR :source_id = '') AND ev.created_at >= :start_date AND ev.created_at <= :end_date group by ev.id, s.id order by ev.id desc LIMIT :limit OFFSET :offset`
+	baseEventFilter = ` AND ev.project_id = :project_id AND (ev.source_id = :source_id OR :source_id = '') AND ev.created_at >= :start_date AND ev.created_at <= :end_date group by ev.id, s.id order by ev.id desc`
+
+	forwardPaginationQuery  = `AND ev.id < :cursor ORDER BY ev.id DESC LIMIT :limit`
+	backwardPaginationQuery = `AND ev.id > :cursor ORDER BY ev.id DESC LIMIT :limit`
 
 	softDeleteProjectEvents = `
 	UPDATE convoy.events SET deleted_at = now()
@@ -211,14 +214,21 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 		"project_id":   projectID,
 		"source_id":    filter.SourceID,
 		"limit":        filter.Pageable.Limit(),
-		"offset":       filter.Pageable.Offset(),
 		"start_date":   startDate,
 		"end_date":     endDate,
+		"cursor":       filter.Pageable.Cursor(),
+	}
+
+	var pagingationQuery string
+	if filter.Pageable.Direction == datastore.Next {
+		pagingationQuery = forwardPaginationQuery
+	} else {
+		pagingationQuery = backwardPaginationQuery
 	}
 
 	if len(filter.EndpointIDs) > 0 {
 		filterQuery := ` AND ee.endpoint_id IN (:endpoint_ids) ` + baseEventFilter
-		q := baseEventsPaged + filterQuery
+		q := baseEventsPaged + filterQuery + pagingationQuery
 		query, args, err = sqlx.Named(q, arg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -231,7 +241,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 		query = e.db.Rebind(query)
 
 	} else {
-		q := baseEventsPaged + baseEventFilter
+		q := baseEventsPaged + baseEventFilter + pagingationQuery
 		query, args, err = sqlx.Named(q, arg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -244,6 +254,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
+
 
 	count := 0
 	events := make([]datastore.Event, 0)
