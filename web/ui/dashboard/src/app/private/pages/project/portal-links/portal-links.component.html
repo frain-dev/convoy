@@ -11,9 +11,9 @@
 </div>
 
 <div class="flex justify-between items-end mt-24px border-b border-b-grey-10 pb-20px mb-24px">
-	<div>
-		<h1 class="text-24 font-bold text-grey-80">Portal Links</h1>
-		<p class="text-grey-60 text-14 mt-6px max-w-3xl">Portals links allows you to view and debug webhook events sent to selected endpoints on a streamlined dashboard. On a portal page only events sent to the endpoints you've selected will be shown.</p>
+	<div class="flex items-center">
+		<h1 class="text-24 font-bold text-grey-80 mr-10px">Portal Links</h1>
+		<convoy-tooltip tooltipContent="Portals links allows you to view and debug webhook events sent to selected endpoints on a streamlined dashboard. On a portal page only events sent to the endpoints you've selected will be shown." position="right"></convoy-tooltip>
 	</div>
 </div>
 
@@ -97,7 +97,8 @@
 <!-- empty state  -->
 <convoy-empty-state
 	*ngIf="!isLoadingPortalLinks && portalLinks?.content?.length === 0"
-	imgSrc="/assets/img/new-empty-state.png"
+	imgSrc="/assets/img/portal-link-empty-state.png"
+	heading="You currently do not have any portal links"
 	description="Portal Links enable you create customer-facing dashboards for your user endpoints. You can link a portal link to more than one endpoint at a time."
 	buttonText="Create Portal Link"
 	className="min-h-[65vh] mt-16px"
@@ -108,23 +109,27 @@
 <div convoy-modal *ngIf="activeLink?.uid" position="right" [id]="'source-details'" [title]="activeLink?.name || 'Portal Link Details'" (closeModal)="router.navigate([], { queryParams: {} })">
 	<ng-container modalBody>
 		<ul>
-			<li convoy-list-item class="p-0" *ngFor="let endpoint of activeLink?.endpoints_metadata">
-				<div class="w-1/2 text-14 font-medium">{{ endpoint?.title }}</div>
+			<li convoy-list-item class="!p-0" *ngFor="let endpoint of activeLink?.endpoints_metadata">
+				<div class="w-1/2 text-14 text-grey-40 font-medium">{{ endpoint?.title }}</div>
 				<div class="w-1/2 flex justify-end">
-					<button convoy-button fill="link" size="sm" (click)="viewEndpoint(endpoint)">View Endpoint</button>
+					<button class="!px-0" convoy-button fill="clear" (click)="viewEndpoint(endpoint)">
+						<svg width="20" height="20" class="fill-grey-60">
+							<use xlink:href="#arrow-right-icon"></use>
+						</svg>
+					</button>
 				</div>
 			</li>
 		</ul>
 
 		<div class="flex justify-end mt-40px mr-16px">
 			<button convoy-button fill="outline" color="danger" size="sm" (click)="showDeleteModal = true">
-				Revoke
+				Delete Portal Link
 				<svg width="18" height="18" class="ml-8px fill-danger-100">
 					<use xlink:href="#delete-icon"></use>
 				</svg>
 			</button>
 			<button convoy-button size="sm" class="ml-24px" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/portal-links/' + activeLink?.uid + '/edit'">
-				Edit
+				Edit Portal Link
 				<svg width="18" height="18" class="ml-8px fill-white-100">
 					<use xlink:href="#edit-icon"></use>
 				</svg>

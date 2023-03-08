@@ -181,19 +181,14 @@
 	></convoy-empty-state>
 </convoy-page>
 
-<div convoy-modal position="full" title="Add Team Member" (closeModal)="goToTeams()" *ngIf="showInviteTeamMemberModal">
+<div convoy-modal title="Add Team Member" (closeModal)="goToTeams()" *ngIf="showInviteTeamMemberModal">
 	<ng-container modalBody>
 		<form [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()">
-			<convoy-card className="p-24px mt-24px">
-				<h3 class="font-semibold">Basic info</h3>
-				<div class="text-grey-40 text-14 font-normal mb-16px">Invite other members of your team to your organisation.</div>
-
-				<convoy-input-field>
-					<label for="email" convoy-label required="true">Email</label>
-					<input type="email" id="email" convoy-input autocomplete="email" formControlName="invitee_email" placeholder="Enter member email" />
-					<convoy-input-error *ngIf="inviteUserForm.get('invitee_email')?.touched && inviteUserForm.get('invitee_email')?.invalid">Please enter a valid email</convoy-input-error>
-				</convoy-input-field>
-			</convoy-card>
+			<convoy-input-field>
+				<label for="email" convoy-label required="true">Email</label>
+				<input type="email" id="email" convoy-input autocomplete="email" formControlName="invitee_email" placeholder="Enter member email" />
+				<convoy-input-error *ngIf="inviteUserForm.get('invitee_email')?.touched && inviteUserForm.get('invitee_email')?.invalid">Please enter a valid email</convoy-input-error>
+			</convoy-input-field>
 			<div class="flex justify-end pt-24px pb-40px">
 				<button convoy-button fill="outline" type="button" routerLink="/team">Discard</button>
 				<button convoy-button class="ml-16px" [disabled]="invitingUser">

@@ -18,11 +18,12 @@ import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/d
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 
 @Component({
 	selector: 'convoy-portal-links',
 	standalone: true,
-	imports: [CommonModule, RouterModule, FormsModule, ButtonComponent, DropdownComponent, DropdownOptionDirective, CardComponent, EmptyStateComponent, CreatePortalLinkComponent, ListItemComponent, CopyButtonComponent, DeleteModalComponent, ModalComponent],
+	imports: [CommonModule, RouterModule, FormsModule, ButtonComponent, DropdownComponent, DropdownOptionDirective, CardComponent, EmptyStateComponent, CreatePortalLinkComponent, ListItemComponent, CopyButtonComponent, DeleteModalComponent, ModalComponent, TooltipComponent],
 	templateUrl: './portal-links.component.html',
 	styleUrls: ['./portal-links.component.scss']
 })
