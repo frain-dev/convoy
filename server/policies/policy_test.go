@@ -1,10 +1,13 @@
 package policies
 
-import "github.com/frain-dev/convoy/auth"
+import (
+	"github.com/frain-dev/convoy/auth"
+	"github.com/stretchr/testify/require"
+)
 
 type basetest struct {
 	name          string
 	authCtx       *auth.AuthenticatedUser
-	wantErr       bool
+	assertion     require.ErrorAssertionFunc
 	expectedError error
 }

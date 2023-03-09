@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/database"
@@ -20,6 +21,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/server/policies"
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
@@ -31,6 +33,7 @@ type ApplicationHandler struct {
 	M      *middleware.Middleware
 	Router http.Handler
 	A      App
+	Authz  *authz.Authz
 }
 
 type App struct {
@@ -86,6 +89,8 @@ func NewApplicationHandler(a App) *ApplicationHandler {
 		PortalLinkRepo:    postgres.NewPortalLinkRepo(a.DB),
 	})
 
+	az, _ := authz.NewAuthz(&authz.AuthzOpts{})
+
 	return &ApplicationHandler{
 		M: m,
 		A: App{
@@ -97,7 +102,41 @@ func NewApplicationHandler(a App) *ApplicationHandler {
 			Tracer:   a.Tracer,
 			Limiter:  a.Limiter,
 		},
+		Authz: az,
 	}
+}
+
+func (a *ApplicationHandler) RegisterPolicy() error {
+	var err error
+
+	// Register Organisation Policy.
+	err = a.Authz.RegisterPolicy(func() authz.Policy {
+		po := &policies.OrganisationPolicy{
+			BasePolicy:             authz.NewBasePolicy(),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+		}
+
+		po.SetRule("update", authz.RuleFunc(po.Update))
+		po.SetRule("delete", authz.RuleFunc(po.Delete))
+
+		return po
+	}())
+
+	err = a.Authz.RegisterPolicy(func() authz.Policy {
+		po := &policies.ProjectPolicy{
+			BasePolicy:             authz.NewBasePolicy(),
+			OrganisationRepo:       postgres.NewOrgRepo(a.A.DB),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+		}
+
+		po.SetRule("get", authz.RuleFunc(po.Get))
+		po.SetRule("update", authz.RuleFunc(po.Update))
+		po.SetRule("delete", authz.RuleFunc(po.Delete))
+
+		return po
+	}())
+
+	return err
 }
 
 func (a *ApplicationHandler) BuildRoutes() http.Handler {

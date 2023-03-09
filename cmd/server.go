@@ -252,6 +252,11 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		consumer.Start()
 	}
 
+	err != handler.RegisterPolicy()
+	if err != nil {
+		return err
+	}
+
 	srv.SetHandler(handler.BuildRoutes())
 
 	a.logger.Infof("Started convoy server in %s", time.Since(start))
