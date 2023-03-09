@@ -8,6 +8,14 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	configCmd "github.com/frain-dev/convoy/cmd/config"
+	"github.com/frain-dev/convoy/cmd/ingest"
+	"github.com/frain-dev/convoy/cmd/migrate"
+	"github.com/frain-dev/convoy/cmd/retry"
+	"github.com/frain-dev/convoy/cmd/scheduler"
+	"github.com/frain-dev/convoy/cmd/server"
+	"github.com/frain-dev/convoy/cmd/version"
+	"github.com/frain-dev/convoy/cmd/worker"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -57,16 +65,15 @@ func main() {
 	cli.Flags().StringVar(&dbDsn, "db", "", "Postgres database dsn")
 	cli.Flags().StringVar(&redisDsn, "redis", "", "Redis dsn")
 
-	cli.AddCommand(addVersionCommand())
-	cli.AddCommand(addServerCommand(app))
-	cli.AddCommand(addWorkerCommand(app))
-	cli.AddCommand(addRetryCommand(app))
-	cli.AddCommand(addSchedulerCommand(app))
-	cli.AddCommand(addMigrateCommand(app))
-	cli.AddCommand(addConfigCommand(app))
+	cli.AddCommand(version.AddVersionCommand())
+	cli.AddCommand(server.AddServerCommand(app))
+	cli.AddCommand(worker.AddWorkerCommand(app))
+	cli.AddCommand(retry.AddRetryCommand(app))
+	cli.AddCommand(scheduler.AddSchedulerCommand(app))
+	cli.AddCommand(migrate.AddMigrateCommand(app))
+	cli.AddCommand(configCmd.AddConfigCommand(app))
 	// cli.AddCommand(addStreamCommand(app))
-	cli.AddCommand(addDomainCommand(app))
-	cli.AddCommand(addIngestCommand(app))
+	cli.AddCommand(ingest.AddIngestCommand(app))
 
 	cli.PersistentPreRunE(preRun(app, db))
 	cli.PersistentPostRunE(postRun(app, db))

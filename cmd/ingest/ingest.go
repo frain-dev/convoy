@@ -1,4 +1,4 @@
-package main
+package ingest
 
 import (
 	"github.com/frain-dev/convoy/config"
@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func addIngestCommand(a *cli.App) *cobra.Command {
+func AddIngestCommand(a *cli.App) *cobra.Command {
 	var interval int
 	cmd := &cobra.Command{
 		Use:   "ingest",

@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"errors"
@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func addServerCommand(a *cli.App) *cobra.Command {
+func AddServerCommand(a *cli.App) *cobra.Command {
 	var env string
 	var host string
 	var proxy string

@@ -1,4 +1,4 @@
-package main
+package scheduler
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func addSchedulerCommand(a *cli.App) *cobra.Command {
+func AddSchedulerCommand(a *cli.App) *cobra.Command {
 	var exportCronSpec string
 	var port uint32
 	var logLevel string

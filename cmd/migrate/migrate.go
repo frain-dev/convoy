@@ -1,4 +1,4 @@
-package main
+package migrate
 
 import (
 	"github.com/frain-dev/convoy/config"
@@ -9,36 +9,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func addMigrateCommand(a *cli.App) *cobra.Command {
+func AddMigrateCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "migrate",
 		Short: "Convoy migrations",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			cfgPath, err := cmd.Flags().GetString("config")
-			if err != nil {
-				return err
-			}
-
-			err = config.LoadConfig(cfgPath)
-			if err != nil {
-				return err
-			}
-
-			_, err = config.Get()
-			if err != nil {
-				return err
-			}
-
-			// Override with CLI Flags
-			cliConfig, err := buildCliConfiguration(cmd)
-			if err != nil {
-				return err
-			}
-
-			if err = config.Override(cliConfig); err != nil {
-				return err
-			}
-
 			return nil
 
 		},

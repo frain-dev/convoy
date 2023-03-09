@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func addConfigCommand(a *cli.App) *cobra.Command {
+func AddConfigCommand(a *cli.App) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "config",

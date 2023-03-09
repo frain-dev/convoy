@@ -1,4 +1,4 @@
-package main
+package domain
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func addDomainCommand(a *cli.App) *cobra.Command {
+func AddDomainCommand(a *cli.App) *cobra.Command {
 	var domainPort uint32
 	var logLevel string
 	var allowedRoutes = []string{

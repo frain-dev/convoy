@@ -1,4 +1,4 @@
-package main
+package worker
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func addWorkerCommand(a *cli.App) *cobra.Command {
+func AddWorkerCommand(a *cli.App) *cobra.Command {
 	var workerPort uint32
 	var logLevel string
 

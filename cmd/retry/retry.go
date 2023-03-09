@@ -1,4 +1,4 @@
-package main
+package retry
 
 import (
 	"github.com/frain-dev/convoy/config"
@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func addRetryCommand(a *cli.App) *cobra.Command {
+func AddRetryCommand(a *cli.App) *cobra.Command {
 	var status string
 	var timeInterval string
 

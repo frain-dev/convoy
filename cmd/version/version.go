@@ -1,10 +1,10 @@
-package main
+package version
 
 import (
 	"github.com/spf13/cobra"
 )
 
-func addVersionCommand() *cobra.Command {
+func AddVersionCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:              "version",
 		Short:            "Print the version",

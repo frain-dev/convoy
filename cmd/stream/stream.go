@@ -1,4 +1,4 @@
-package main
+package stream
 
 //func addStreamCommand(a *app) *cobra.Command {
 //	var socketPort uint32
