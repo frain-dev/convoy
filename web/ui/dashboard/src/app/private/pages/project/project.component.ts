@@ -2,6 +2,7 @@ import { Component, HostListener, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { GROUP } from 'src/app/models/group.model';
 import { PrivateService } from '../../private.service';
+import { ProjectService } from './project.service';
 
 @Component({
 	selector: 'app-project',
@@ -47,9 +48,10 @@ export class ProjectComponent implements OnInit {
 	isLoadingProjectDetails: boolean = true;
 	showHelpDropdown = false;
 
-	constructor(private route: ActivatedRoute, private privateService: PrivateService) {
+	constructor(private route: ActivatedRoute, private privateService: PrivateService, private projectService: ProjectService) {
 		const data: any = { uid: this.route.snapshot.params.id, ...this.privateService.activeProjectDetails };
 		this.privateService.activeProjectDetails = data;
+		this.projectService.activeProjectDetails = data;
 		this.getSubscriptions();
 	}
 

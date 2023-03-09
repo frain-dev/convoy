@@ -14,6 +14,7 @@ import { PrivateService } from 'src/app/private/private.service';
 import { SOURCE } from 'src/app/models/group.model';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
 import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.component';
+import { ProjectService } from '../../project.service';
 
 @Component({
 	selector: 'app-event-deliveries',
@@ -54,7 +55,7 @@ export class EventDeliveriesComponent implements OnInit {
 	portalToken = this.route.snapshot.queryParams?.token;
 	filterSources: SOURCE[] = [];
 
-	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService) {}
+	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, private router: Router, public projectService: ProjectService, public privateService: PrivateService) {}
 
 	ngAfterViewInit() {
 		if (!this.portalToken) {
@@ -134,20 +135,17 @@ export class EventDeliveriesComponent implements OnInit {
 	}
 
 	async eventDeliveriesRequest(requestDetails: { pageNo?: number; eventId?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
-		let eventDeliveryStatusFilterQuery = '';
 		this.eventDeliveryFilteredByStatus.length > 0 ? (this.eventDeliveriesStatusFilterActive = true) : (this.eventDeliveriesStatusFilterActive = false);
-		this.eventDeliveryFilteredByStatus.forEach((status: string) => (eventDeliveryStatusFilterQuery += `&status=${status}`));
 
 		try {
 			const eventDeliveriesResponse = await this.eventsService.getEventDeliveries({
 				eventId: requestDetails.eventId || this.eventDeliveryFilteredByEventId || '',
-				pageNo: requestDetails.pageNo || 1,
+				page: requestDetails.pageNo,
 				startDate: requestDetails.startDate,
 				endDate: requestDetails.endDate,
 				endpointId: this.eventDeliveriesEndpoint || '',
-				statusQuery: eventDeliveryStatusFilterQuery || '',
-				token: this.portalToken,
-				sourceId: this.eventDeliveriesSource || ''
+				sourceId: this.eventDeliveriesSource || '',
+				status: this.eventDeliveryFilteredByStatus
 			});
 			return eventDeliveriesResponse;
 		} catch (error: any) {
@@ -242,7 +240,6 @@ export class EventDeliveriesComponent implements OnInit {
 				break;
 		}
 
-
 		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
 		this.router.navigate(['./'], { relativeTo: this.route, queryParams: activeFilters });
 		this.getEventDeliveries();
@@ -257,12 +254,11 @@ export class EventDeliveriesComponent implements OnInit {
 		try {
 			const response = await this.eventsService.getRetryCount({
 				eventId: this.eventDeliveryFilteredByEventId || '',
-				pageNo: this.eventDeliveriesPage || 1,
+				page: this.eventDeliveriesPage || 1,
 				startDate: startDate,
 				endDate: endDate,
 				endpointId: this.eventDeliveriesEndpoint || '',
-				statusQuery: eventDeliveryStatusFilterQuery || '',
-				token: this.portalToken
+				status: this.eventDeliveryFilteredByStatus
 			});
 
 			this.batchRetryCount = response.data.num;
@@ -275,7 +271,7 @@ export class EventDeliveriesComponent implements OnInit {
 
 	async getEndpointsForFilter(search: string): Promise<ENDPOINT[]> {
 		return await (
-			await this.eventsService.getEndpoints({ pageNo: 1, searchString: search })
+			await this.privateService.getEndpoints({ page: 1, q: search })
 		).data.content;
 	}
 
@@ -300,7 +296,7 @@ export class EventDeliveriesComponent implements OnInit {
 		requestDetails.e.stopPropagation();
 
 		try {
-			const response = await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId, token: this.portalToken });
+			const response = await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.getEventDeliveries();
 		} catch (error) {
@@ -316,7 +312,7 @@ export class EventDeliveriesComponent implements OnInit {
 		};
 
 		try {
-			const response = await this.eventsService.forceRetryEvent({ body: payload, token: this.portalToken });
+			const response = await this.eventsService.forceRetryEvent({ body: payload });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.getEventDeliveries();
 		} catch (error) {
@@ -327,19 +323,17 @@ export class EventDeliveriesComponent implements OnInit {
 	async batchRetryEvent() {
 		let eventDeliveryStatusFilterQuery = '';
 		this.eventDeliveryFilteredByStatus.length > 0 ? (this.eventDeliveriesStatusFilterActive = true) : (this.eventDeliveriesStatusFilterActive = false);
-		this.eventDeliveryFilteredByStatus.forEach((status: string) => (eventDeliveryStatusFilterQuery += `&status=${status}`));
 		const { startDate, endDate } = this.setDateForFilter(this.dateFiltersFromURL);
 		this.isRetrying = true;
 
 		try {
 			const response = await this.eventsService.batchRetryEvent({
 				eventId: this.eventDeliveryFilteredByEventId || '',
-				pageNo: this.eventDeliveriesPage || 1,
+				page: this.eventDeliveriesPage || 1,
 				startDate: startDate,
 				endDate: endDate,
 				endpointId: this.eventDeliveriesEndpoint || '',
-				statusQuery: eventDeliveryStatusFilterQuery || '',
-				token: this.portalToken
+				status: this.eventDeliveryFilteredByStatus
 			});
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });

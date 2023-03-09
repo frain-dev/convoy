@@ -23,7 +23,7 @@ export class PersonalSettingsComponent implements OnInit {
 	accessKey!: string;
 	loaderIndex: number[] = [0, 1, 2];
 	personalAccessKeys?: { content: any; pagination: PAGINATION };
-    expirationDates = [
+	expirationDates = [
 		{ name: '7 days', uid: 7 },
 		{ name: '14 days', uid: 14 },
 		{ name: '30 days', uid: 30 },
@@ -55,7 +55,7 @@ export class PersonalSettingsComponent implements OnInit {
 			this.generateKeyForm.markAllAsTouched();
 			return;
 		}
-        this.generateKeyForm.value.expiration = parseInt(this.generateKeyForm.value.expiration)
+		this.generateKeyForm.value.expiration = parseInt(this.generateKeyForm.value.expiration);
 		this.isGeneratingNewKey = true;
 		try {
 			const response = await this.accountService.generatePersonalKey(this.userId, this.generateKeyForm.value);
@@ -75,7 +75,7 @@ export class PersonalSettingsComponent implements OnInit {
 		this.isFetchingKeys = true;
 		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
 		try {
-			const response = await this.accountService.fetchPersonalKeys({ userId: this.userId, pageNo: page });
+			const response = await this.accountService.fetchPersonalKeys({ userId: this.userId, page: page });
 			this.personalAccessKeys = response.data;
 			this.isFetchingKeys = false;
 		} catch {

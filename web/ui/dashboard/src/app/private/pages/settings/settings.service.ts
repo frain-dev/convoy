@@ -52,7 +52,7 @@ export class SettingsService {
 		});
 	}
 
-	updateConfigSettings(requestDetails: {}): Promise<HTTP_RESPONSE> {
+	updateConfigSettings(requestDetails?: {}): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({

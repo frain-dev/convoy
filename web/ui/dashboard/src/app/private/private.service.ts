@@ -50,42 +50,13 @@ export class PrivateService {
 		});
 	}
 
-	getApps(requestDetails?: { pageNo?: number; searchString?: string }): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: `${this.urlFactory('org_project')}/apps?sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
-					method: 'get'
-				});
-
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
-
-	deleteApp(appID: string): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: `${this.urlFactory('org_project')}/apps/${appID}`,
-					method: 'delete'
-				});
-
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
-
 	deleteSubscription(subscriptionId: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const sourceResponse = await this.http.request({
-					url: `${this.urlFactory('org_project')}/subscriptions/${subscriptionId}`,
-					method: 'delete'
+					url: `/subscriptions/${subscriptionId}`,
+					method: 'delete',
+					level: 'org_project'
 				});
 
 				return resolve(sourceResponse);
@@ -99,26 +70,13 @@ export class PrivateService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const subscriptionsResponse = await this.http.request({
-					url: `${this.urlFactory('org_project')}/subscriptions?page=${requestDetails?.page || 1}&perPage=20`,
-					method: 'get'
+					url: `/subscriptions`,
+					method: 'get',
+					level: 'org_project',
+					query: requestDetails
 				});
 
 				return resolve(subscriptionsResponse);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
-
-	getSources(requestDetails?: { page?: number }): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const sourcesResponse = await this.http.request({
-					url: `${this.urlFactory('org_project')}/sources?groupId=${this.activeProjectDetails?.uid}&page=${requestDetails?.page || 1}&perPage=20`,
-					method: 'get'
-				});
-
-				return resolve(sourcesResponse);
 			} catch (error) {
 				return reject(error);
 			}
@@ -131,8 +89,9 @@ export class PrivateService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const projectResponse = await this.http.request({
-					url: `${this.urlFactory('org')}/projects/${this.activeProjectDetails?.uid || projectId}`,
-					method: 'get'
+					url: `/projects/${this.activeProjectDetails?.uid || projectId}`,
+					method: 'get',
+					level: 'org'
 				});
 
 				this.activeProjectDetails = projectResponse.data;
@@ -191,8 +150,9 @@ export class PrivateService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const projectsResponse = await this.http.request({
-					url: `${this.urlFactory('org')}/projects`,
-					method: 'get'
+					url: `/projects`,
+					method: 'get',
+					level: 'org'
 				});
 
 				this.projects = projectsResponse.data;
@@ -227,7 +187,7 @@ export class PrivateService {
 			);
 
 			try {
-				const response: any = await this.http.request({ url: `/flags`, method: 'post', body: { requests }, hideNotification: true });
+				const response: any = await this.http.request({ url: `/flags`, method: 'post', body: { requests }, hideNotification: true, isOut: true });
 				this.apiFlagResponse = response;
 				return resolve(response);
 			} catch (error) {
@@ -246,13 +206,28 @@ export class PrivateService {
 		}
 	}
 
-	getEndpoints(requestDetails?: { pageNo?: number; searchString?: string; token?: string }): Promise<HTTP_RESPONSE> {
+	getUserDetails(requestDetails: { userId: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: requestDetails?.token ? '/endpoints' : this.urlFactory('org_project') + `/endpoints?sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
+					url: `/users/${requestDetails.userId}/profile`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getEndpoints(requestDetails?: { page?: number; q?: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/endpoints`,
 					method: 'get',
-					token: requestDetails?.token
+					query: requestDetails,
+					level: 'org_project'
 				});
 
 				return resolve(response);
@@ -262,14 +237,17 @@ export class PrivateService {
 		});
 	}
 
-	getUserDetails(requestDetails: { userId: string }): Promise<HTTP_RESPONSE> {
+	getSources(requestDetails?: { page?: number }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				const response = await this.http.request({
-					url: `/users/${requestDetails.userId}/profile`,
-					method: 'get'
+				const sourcesResponse = await this.http.request({
+					url: `/sources`,
+					method: 'get',
+					level: 'org_project',
+					query: requestDetails
 				});
-				return resolve(response);
+
+				return resolve(sourcesResponse);
 			} catch (error) {
 				return reject(error);
 			}

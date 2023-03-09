@@ -107,7 +107,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (this.action === 'create') return;
 
 		try {
-			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId, this.token);
+			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId);
 			this.subscriptionForm.patchValue(response.data);
 			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
 			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
@@ -130,7 +130,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async getEndpoints() {
 		try {
-			const response = await this.createSubscriptionService.getEndpoints({ token: this.token });
+			const response = await this.privateService.getEndpoints();
 			this.endpoints = this.token ? response.data : response.data.content;
 			this.modifyEndpointData(this.token ? response.data : response.data.content);
 		} catch (error) {
@@ -218,7 +218,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		// create subscription
 		try {
-			const response = this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: subscriptionData, id: this.subscriptionId, token: this.token }) : await this.createSubscriptionService.createSubscription(subscriptionData, this.token);
+			const response = this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: subscriptionData, id: this.subscriptionId }) : await this.createSubscriptionService.createSubscription(subscriptionData);
 			this.onAction.emit({ data: response.data, action: this.action == 'update' ? 'update' : 'create' });
 			this.createdSubscription = true;
 		} catch (error) {

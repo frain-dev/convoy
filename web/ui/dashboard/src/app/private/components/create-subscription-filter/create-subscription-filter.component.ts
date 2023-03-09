@@ -38,7 +38,6 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 	isFilterTestPassed = false;
 	payload: any;
 	header: any;
-	token: string = this.route.snapshot.queryParams.token;
 
 	constructor(private formBuilder: FormBuilder, private createSubscriptionService: CreateSubscriptionService, private generalService: GeneralService, private route: ActivatedRoute) {}
 
@@ -64,7 +63,7 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 		});
 
 		try {
-			const response = await this.createSubscriptionService.testSubsriptionFilter(this.subscriptionFilterForm.value, this.token);
+			const response = await this.createSubscriptionService.testSubsriptionFilter(this.subscriptionFilterForm.value);
 			const testResponse = `The sample data was ${!response.data ? 'not' : ''} accepted by the filter`;
 			this.generalService.showNotification({ message: testResponse, style: !response.data ? 'error' : 'success' });
 			this.isFilterTestPassed = !!response.data;

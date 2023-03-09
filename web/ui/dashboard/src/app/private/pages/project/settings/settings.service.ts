@@ -13,8 +13,9 @@ export class SettingsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const sourceResponse = await this.http.request({
-					url: `${this.privateService.urlFactory('org')}/projects/${this.privateService.activeProjectDetails?.uid}`,
-					method: 'delete'
+					url: `/projects/${this.privateService.activeProjectDetails?.uid}`,
+					method: 'delete',
+					level: 'org_project'
 				});
 
 				return resolve(sourceResponse);

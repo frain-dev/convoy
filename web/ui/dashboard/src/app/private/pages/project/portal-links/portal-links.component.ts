@@ -62,7 +62,7 @@ export class PortalLinksComponent implements OnInit {
 		this.isLoadingPortalLinks = true;
 		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
 		try {
-			const response = await this.portalLinksService.getPortalLinks({ pageNo: page, searchString: requestDetails?.search, endpointId: this.linkEndpoint });
+			const response = await this.portalLinksService.getPortalLinks({ page: page, q: requestDetails?.search, endpointId: this.linkEndpoint });
 			this.portalLinks = response.data;
 			if ((this.portalLinks?.pagination?.total || 0) > 0) this.activeLink = this.portalLinks?.content.find(link => link.uid === this.route.snapshot.queryParams?.id);
 			this.isLoadingPortalLinks = false;
@@ -93,7 +93,7 @@ export class PortalLinksComponent implements OnInit {
 
 	async getEndpointsForFilter(search: string): Promise<ENDPOINT[]> {
 		return await (
-			await this.privateService.getEndpoints({ pageNo: 1, searchString: search })
+			await this.privateService.getEndpoints({ page: 1, q: search })
 		).data.content;
 	}
 

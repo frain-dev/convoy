@@ -49,11 +49,13 @@ export class EventsComponent implements OnInit, OnDestroy {
 		this.checkEventsOnFirstLoad();
 		this.isloadingDashboardData = false;
 
-		if (this.privateService.activeProjectDetails?.type === 'incoming') {
-			this.eventDelievryIntervalTime = setInterval(() => {
-				this.getLatestEvent();
-			}, 2000);
-		}
+		console.log(Number.MAX_SAFE_INTEGER);
+
+		// if (this.privateService.activeProjectDetails?.type === 'incoming') {
+		// 	this.eventDelievryIntervalTime = setInterval(() => {
+		// 		this.getLatestEvent();
+		// 	}, 2000);
+		// }
 	}
 
 	ngOnDestroy(): void {
@@ -72,7 +74,7 @@ export class EventsComponent implements OnInit, OnDestroy {
 
 	async getLatestEvent() {
 		try {
-			const eventDeliveries = await this.eventsService.getEventDeliveries({ pageNo: 1 });
+			const eventDeliveries = await this.eventsService.getEventDeliveries();
 			this.lastestEventDeliveries = eventDeliveries.data.content;
 			this.privateService.activeProjectDetails?.type === 'outgoing' && this.lastestEventDeliveries.length > 0;
 			return;
@@ -90,7 +92,7 @@ export class EventsComponent implements OnInit, OnDestroy {
 		try {
 			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 
-			const dashboardResponse = await this.eventsService.dashboardSummary({ startDate: startDate || '', endDate: endDate || '', frequency: this.dashboardFrequency });
+			const dashboardResponse = await this.eventsService.dashboardSummary({ startDate: startDate || '', endDate: endDate || '', type: this.dashboardFrequency });
 			this.dashboardData = dashboardResponse.data;
 			this.initConvoyChart(dashboardResponse);
 

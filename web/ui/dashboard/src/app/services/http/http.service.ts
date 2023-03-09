@@ -6,6 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { GeneralService } from '../general/general.service';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { differenceInSeconds } from 'date-fns';
+import { ProjectService } from 'src/app/private/pages/project/project.service';
 
 @Injectable({
 	providedIn: 'root'
@@ -13,12 +14,12 @@ import { differenceInSeconds } from 'date-fns';
 export class HttpService {
 	APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
 	APP_PORTAL_APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/portal-api`;
-	portalToken = this.route.snapshot.queryParams?.token;
+	token = this.route.snapshot.queryParams?.token;
 	checkTokenTimeout: any;
 
 	public jwtHelper: JwtHelperService = new JwtHelperService();
 
-	constructor(private router: Router, private generalService: GeneralService, private route: ActivatedRoute) {}
+	constructor(private router: Router, private generalService: GeneralService, private route: ActivatedRoute, private projectService: ProjectService) {}
 
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH_TOKENS');
@@ -30,11 +31,52 @@ export class HttpService {
 		}
 	}
 
-	async request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; token?: string; hideNotification?: boolean }): Promise<HTTP_RESPONSE> {
+	buildRequestQuery(query?: { [k: string]: any }) {
+		if (!query || (query && Object.getOwnPropertyNames(query).length == 0)) return '';
+
+		// add portal link query if available
+		if (this.token) query.token = this.token;
+
+		// remove empty data and objects in object
+		const cleanedQuery = Object.fromEntries(Object.entries(query).filter(([_, q]) => q !== '' && q !== undefined && q !== null && typeof q !== 'object'));
+
+		// for query items with arrays, process them into a string
+		let queryString = '';
+		Object.keys(query).forEach((key: any) => (typeof query[key] === 'object' ? query[key]?.forEach((item: any) => (queryString += `&${key}=${item}`)) : false));
+
+		// convert object to query param
+		return new URLSearchParams(cleanedQuery).toString() + queryString;
+	}
+
+	getOrganisation() {
+		let org = localStorage.getItem('CONVOY_ORG');
+		return org ? JSON.parse(org) : null;
+	}
+
+	buildRequestPath(level?: 'org' | 'org_project'): string {
+		const orgId = this.getOrganisation().uid;
+
+		switch (level) {
+			case 'org':
+				return `/organisations/${orgId}`;
+			case 'org_project':
+				return `/organisations/${orgId}/projects/${this.projectService.activeProjectDetails?.uid}`;
+			default:
+				return '';
+		}
+	}
+
+	buildURL(requestDetails: any): string {
+		if (requestDetails.isOut) return requestDetails.url;
+
+		if (this.token) return `${this.token ? this.APP_PORTAL_APIURL : this.APIURL}${requestDetails.url}?${this.buildRequestQuery(requestDetails.query)}}`;
+
+		return `${this.APIURL}${this.buildRequestPath(requestDetails.level)}${requestDetails.url}?${this.buildRequestQuery(requestDetails.query)}}`;
+	}
+
+	async request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; hideNotification?: boolean; query?: { [param: string]: any }; level?: 'org' | 'org_project'; isOut?: boolean }): Promise<HTTP_RESPONSE> {
 		requestDetails.hideNotification = !!requestDetails.hideNotification;
-		this.checkTokenTimeout = setTimeout(() => {
-			this.checkIfTokenIsExpired();
-		}, 3000);
+
 		return new Promise(async (resolve, reject) => {
 			try {
 				const http = axios.create();
@@ -76,14 +118,14 @@ export class HttpService {
 				);
 
 				const requestHeader = {
-					Authorization: `Bearer ${this.portalToken || this.authDetails()?.access_token}`
+					Authorization: `Bearer ${this.token || this.authDetails()?.access_token}`
 				};
 
 				// make request
-				const { data, status } = await http.request({
+				const { data } = await http.request({
 					method: requestDetails.method,
 					headers: requestHeader,
-					url: (requestDetails.token ? this.APP_PORTAL_APIURL : this.APIURL) + requestDetails.url,
+					url: this.buildURL(requestDetails),
 					data: requestDetails.body
 				});
 				resolve(data);
