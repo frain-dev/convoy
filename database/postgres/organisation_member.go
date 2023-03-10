@@ -212,11 +212,6 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 	}
 
 	var count int
-	err = o.db.GetContext(ctx, &count, countOrgMemberOrganisations, userID)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
-
 	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
 	return organisations, pagination, nil
 }

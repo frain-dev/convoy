@@ -83,6 +83,7 @@ func (o *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organis
 
 func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
 	skip := (pageable.Page - 1) * pageable.PerPage
+	fmt.Println("query is", fetchOrganisationsPaginated)
 	rows, err := o.db.QueryxContext(ctx, fetchOrganisationsPaginated, pageable.PerPage, skip)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
@@ -102,11 +103,6 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 	}
 
 	var count int
-	err = o.db.Get(&count, countOrganizations)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
-
 	pagination := datastore.PaginationData{
 		Total:     int64(count),
 		Page:      int64(pageable.Page),
