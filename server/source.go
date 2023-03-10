@@ -207,13 +207,7 @@ func (a *ApplicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Req
 
 	baseUrl := m.GetHostFromContext(r.Context())
 
-	orgService := createOrganisationService(a)
-	org, err := orgService.FindOrganisationByID(r.Context(), project.OrganisationID)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
+	org := m.GetOrganisationFromContext(r.Context())
 	for i := range sources {
 		fillSourceURL(&sources[i], baseUrl, org.CustomDomain.ValueOrZero())
 	}

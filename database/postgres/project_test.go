@@ -410,8 +410,8 @@ func seedOrg(t *testing.T, db database.Database) *datastore.Organisation {
 		UID:            ulid.Make().String(),
 		Name:           ulid.Make().String() + "-new_org",
 		OwnerID:        user.UID,
-		CustomDomain:   null.NewString("https://google.com", true),
-		AssignedDomain: null.NewString("https://google.com", true),
+		CustomDomain:   null.NewString(ulid.Make().String(), true),
+		AssignedDomain: null.NewString(ulid.Make().String(), true),
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}

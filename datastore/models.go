@@ -20,15 +20,35 @@ import (
 )
 
 type Pageable struct {
-	Page    int `json:"page" bson:"page"`
-	PerPage int `json:"per_page" bson:"per_page"`
-	Sort    int `json:"sort" bson:"sort"`
+	// deprecated
+	Page int `json:"page"`
+	// deprecated
+	Sort int `json:"sort"`
+
+	PerPage    int           `json:"per_page"`
+	Direction  PageDirection `json:"direction"`
+	PrevCursor string        `json:"prev_page_cursor"`
+	NextCursor string        `json:"next_page_cursor"`
+}
+
+type PageDirection string
+
+const Next PageDirection = "next"
+const Prev PageDirection = "prev"
+
+func (p Pageable) Cursor() string {
+	if p.Direction == Next {
+		return p.PrevCursor
+	}
+
+	return p.NextCursor
 }
 
 func (p Pageable) Limit() int {
-	return p.PerPage
+	return p.PerPage + 1
 }
 
+// deprecated
 func (p Pageable) Offset() int {
 	v := (p.Page - 1) * p.PerPage
 	if v < 0 {
@@ -40,10 +60,43 @@ func (p Pageable) Offset() int {
 type PaginationData struct {
 	Total     int64 `json:"total"`
 	Page      int64 `json:"page"`
-	PerPage   int64 `json:"perPage"`
 	Prev      int64 `json:"prev"`
 	Next      int64 `json:"next"`
 	TotalPage int64 `json:"totalPage"`
+
+	PerPage         int64  `json:"per_page"`
+	HasNextPage     bool   `json:"has_next_page"`
+	HasPreviousPage bool   `json:"has_previous_page"`
+	PrevPageCursor  string `json:"prev_page_cursor"`
+	NextPageCursor  string `json:"next_page_cursor"`
+}
+
+func (p *PaginationData) Build(pageable Pageable, items []string) PaginationData {
+	p.PerPage = int64(pageable.PerPage)
+
+	var s, e string
+
+	if len(items) > 0 {
+		s = items[0]
+	}
+
+	if len(items) > 1 {
+		e = items[len(items)-1]
+	}
+
+	// there's an extra item. We use it to find out if there is more data to be loaded
+	if len(items) > pageable.PerPage {
+		if pageable.Direction == Next {
+			p.HasNextPage = true
+		} else if pageable.Direction == Prev {
+			p.HasPreviousPage = true
+		}
+	}
+
+	p.PrevPageCursor = s
+	p.NextPageCursor = e
+
+	return *p
 }
 
 type Period int
@@ -560,6 +613,21 @@ type AppMetadata struct {
 // Makes it easy to filter by a list of events
 type EventType string
 
+type EndpointMetadata []*Endpoint
+
+func (s *EndpointMetadata) Scan(v interface{}) error {
+	b, ok := v.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", v)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	return json.Unmarshal(b, s)
+}
+
 // Event defines a payload to be sent to an application
 type Event struct {
 	UID              string    `json:"uid" db:"id"`
@@ -571,7 +639,7 @@ type Event struct {
 	ProjectID        string                `json:"project_id,omitempty" db:"project_id"`
 	Endpoints        pq.StringArray        `json:"endpoints" db:"endpoints"`
 	Headers          httpheader.HTTPHeader `json:"headers" db:"headers"`
-	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
+	EndpointMetadata EndpointMetadata      `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Source           *Source               `json:"source_metadata,omitempty" db:"source_metadata"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the

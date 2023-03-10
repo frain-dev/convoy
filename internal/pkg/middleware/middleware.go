@@ -357,11 +357,26 @@ func (m *Middleware) RequireOrganisation() func(next http.Handler) http.Handler 
 				orgID = r.URL.Query().Get("orgID")
 			}
 
-			org, err := m.orgRepo.FetchOrganisationByID(r.Context(), orgID)
+			var org *datastore.Organisation
+
+			orgCacheKey := convoy.OrganisationsCacheKey.Get(orgID).String()
+			err := m.cache.Get(r.Context(), orgCacheKey, &org)
 			if err != nil {
-				m.logger.WithError(err).Error("failed to fetch organisation")
-				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 				return
+			}
+
+			if org == nil {
+				org, err = m.orgRepo.FetchOrganisationByID(r.Context(), orgID)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation by id", http.StatusBadRequest))
+					return
+				}
+				err = m.cache.Set(r.Context(), orgCacheKey, &org, time.Minute*5)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+					return
+				}
 			}
 
 			r = r.WithContext(setOrganisationInContext(r.Context(), org))
@@ -464,11 +479,28 @@ func (m *Middleware) RequireOrganisationMembership() func(next http.Handler) htt
 			user := GetUserFromContext(r.Context())
 			org := GetOrganisationFromContext(r.Context())
 
-			member, err := m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
+			var member *datastore.OrganisationMember
+
+			orgMemberCacheKey := convoy.OrganisationMemberCacheKey.Get(org.UID).String()
+			err := m.cache.Get(r.Context(), orgMemberCacheKey, &member)
 			if err != nil {
-				m.logger.WithError(err).Error("failed to find organisation member by user id")
-				_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation member", http.StatusBadRequest))
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 				return
+			}
+
+			if member == nil {
+				member, err = m.orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
+				if err != nil {
+					m.logger.WithError(err).Error("failed to find organisation member by user id")
+					_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation member", http.StatusBadRequest))
+					return
+				}
+
+				err = m.cache.Set(r.Context(), orgMemberCacheKey, &member, time.Minute*5)
+				if err != nil {
+					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+					return
+				}
 			}
 
 			r = r.WithContext(setOrganisationMemberInContext(r.Context(), member))
@@ -795,40 +827,39 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 func (m *Middleware) Pagination(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawPerPage := r.URL.Query().Get("perPage")
-		rawPage := r.URL.Query().Get("page")
-		rawSort := r.URL.Query().Get("sort")
+		rawDirection := r.URL.Query().Get("direction")
+		rawNextCursor := r.URL.Query().Get("endCursor")
+		rawPrevCursor := r.URL.Query().Get("startCursor")
 
 		if len(rawPerPage) == 0 {
 			rawPerPage = "20"
 		}
-		if len(rawPage) == 0 {
-			rawPage = "0"
-		}
-		if len(rawSort) == 0 {
-			rawSort = "-1"
+
+		if len(rawNextCursor) == 0 {
+			rawNextCursor = ""
 		}
 
-		var err error
-		sort := -1 // desc by default
-		order := strings.ToLower(rawSort)
-		if order == "asc" {
-			sort = 1
+		if len(rawDirection) == 0 {
+			rawDirection = "next"
 		}
 
-		var perPage int
-		if perPage, err = strconv.Atoi(rawPerPage); err != nil {
+		if len(rawPrevCursor) == 0 {
+			const jsMaxInt = ^uint64(0) >> 1
+			rawPrevCursor = fmt.Sprintf("%d", jsMaxInt)
+		}
+
+		perPage, err := strconv.Atoi(rawPerPage)
+		if err != nil {
 			perPage = 20
 		}
 
-		var page int
-		if page, err = strconv.Atoi(rawPage); err != nil {
-			page = 0
-		}
 		pageable := datastore.Pageable{
-			Page:    page,
-			PerPage: perPage,
-			Sort:    sort,
+			PerPage:    perPage,
+			Direction:  datastore.PageDirection(rawDirection),
+			NextCursor: rawNextCursor,
+			PrevCursor: rawPrevCursor,
 		}
+
 		r = r.WithContext(setPageableInContext(r.Context(), pageable))
 		next.ServeHTTP(w, r)
 	})
