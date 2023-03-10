@@ -213,7 +213,7 @@ export class CreateSourceComponent implements OnInit {
 			const response = this.action === 'update' ? await this.createSourceService.updateSource({ data: sourceData, id: this.sourceId }) : await this.createSourceService.createSource({ sourceData });
 			document.getElementById('configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
             this.sourceData = response.data
-			if (this.showAction) this.showSourceUrl = true;
+			this.showAction ? this.showSourceUrl = true : this.onAction.emit({ action: this.action, data: sourceData });
 			this.sourceCreated = true;
 			return response;
 		} catch (error) {
