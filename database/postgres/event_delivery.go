@@ -537,10 +537,10 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 }
 
 const (
-	dailyIntervalFormat   = "yyyy-mm-dd"          // 1 day
-	weeklyIntervalFormat  = monthlyIntervalFormat // 1 week
-	monthlyIntervalFormat = "yyyy-mm"             // 1 month
-	yearlyIntervalFormat  = "yyyy"                // 1 month
+	dailyIntervalFormat   = "yyyy-mm-dd"        // 1 day
+	weeklyIntervalFormat  = dailyIntervalFormat // 1 week
+	monthlyIntervalFormat = "yyyy-mm"           // 1 month
+	yearlyIntervalFormat  = "yyyy"              // 1 month
 )
 
 func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, i int) ([]datastore.EventInterval, error) {
@@ -589,7 +589,70 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, pr
 		intervals = append(intervals, interval)
 	}
 
+	if len(intervals) < 30 {
+		var d time.Duration
+		switch period {
+		case datastore.Daily:
+			d = time.Hour * 24
+		case datastore.Weekly:
+			d = time.Hour * 24 * 7
+		case datastore.Monthly:
+			d = time.Hour * 24 * 30
+		case datastore.Yearly:
+			d = time.Hour * 24 * 365
+		}
+		intervals, err = padIntervals(intervals, d, period)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return intervals, nil
+}
+
+func padIntervals(intervals []datastore.EventInterval, duration time.Duration, period datastore.Period) ([]datastore.EventInterval, error) {
+	var err error
+
+	var format string
+
+	switch period {
+	case datastore.Daily:
+		format = "2006-01-02"
+	case datastore.Weekly:
+		format = "2006-01-02"
+	case datastore.Monthly:
+		format = "2006-01"
+	case datastore.Yearly:
+		format = "2006"
+	default:
+		return nil, errors.New("specified data cannot be generated for period")
+	}
+
+	start := time.Now()
+	if len(intervals) > 0 {
+		start, err = time.Parse(format, intervals[0].Data.Time)
+		if err != nil {
+			return nil, err
+		}
+		start = start.Add(-duration) // take it back once here, since we getting it from the original slice
+	}
+
+	const numPadding = 30
+	paddedIntervals := make([]datastore.EventInterval, numPadding, numPadding+len(intervals))
+	for i := numPadding; i > 0; i-- {
+		paddedIntervals[i-1] = datastore.EventInterval{
+			Data: datastore.EventIntervalData{
+				Interval: 0,
+				Time:     start.Format(format),
+			},
+			Count: 0,
+		}
+		start = start.Add(-duration)
+	}
+
+	paddedIntervals = append(paddedIntervals, intervals...)
+
+	return paddedIntervals, nil
 }
 
 type EndpointMetadata struct {
