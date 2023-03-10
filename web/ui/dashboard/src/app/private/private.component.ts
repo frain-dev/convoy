@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
 import { GeneralService } from '../services/general/general.service';
 import { PrivateService } from './private.service';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 
 @Component({
 	selector: 'app-private',
@@ -14,15 +15,20 @@ export class PrivateComponent implements OnInit {
 	showOrgDropdown = false;
 	showMoreDropdown = false;
 	showOverlay = false;
-	showAddOrganisationModal = false;
 	showVerifyEmailModal = false;
 	isEmailVerified = true;
 	apiURL = this.generalService.apiURL();
 	organisations?: ORGANIZATION_DATA[];
 	userOrganization?: ORGANIZATION_DATA;
 	convoyVersion: string = '';
+	isLoadingOrganisations = false;
+	showCreateOrganisationModal = this.privateService.showCreateOrgModal;
+	addOrganisationForm: FormGroup = this.formBuilder.group({
+		name: ['', Validators.required]
+	});
+	creatingOrganisation = false;
 
-	constructor(private generalService: GeneralService, private router: Router, public privateService: PrivateService) {}
+	constructor(private generalService: GeneralService, private router: Router, public privateService: PrivateService, private formBuilder: FormBuilder) {}
 
 	async ngOnInit() {
 		await Promise.all([this.getConfiguration(), this.getUserDetails(), this.getOrganizations()]);
@@ -47,24 +53,18 @@ export class PrivateComponent implements OnInit {
 		} catch {}
 	}
 
-	async getOrganizations() {
+	async getOrganizations(refresh: boolean = false) {
+		this.isLoadingOrganisations = true;
+
 		try {
-			const response = await this.privateService.getOrganizations();
+			const response = await this.privateService.getOrganizations({ refresh });
 			this.organisations = response.data.content;
 			if (this.organisations?.length === 0) return this.router.navigateByUrl('/get-started');
 			this.checkForSelectedOrganisation();
-			return this.getProjects();
-		} catch (error) {
-			return error;
-		}
-	}
-
-	async getProjects() {
-		try {
-			const projectsResponse = await this.privateService.getProjects();
-			if (projectsResponse.data?.length === 0) return this.router.navigateByUrl('/get-started');
+			this.isLoadingOrganisations = false;
 			return;
 		} catch (error) {
+			this.isLoadingOrganisations = false;
 			return error;
 		}
 	}
@@ -84,7 +84,7 @@ export class PrivateComponent implements OnInit {
 		this.userOrganization = organisation;
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		this.showOrgDropdown = false;
-		location.replace('./projects');
+		this.router.navigateByUrl('/projects');
 	}
 
 	checkForSelectedOrganisation() {
@@ -110,12 +110,6 @@ export class PrivateComponent implements OnInit {
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
 	}
 
-	closeAddOrganisationModal(event?: { action: 'created' | 'cancel' }) {
-		this.showAddOrganisationModal = false;
-		this.getOrganizations();
-		if (event?.action === 'created' && this.userOrganization) this.selectOrganisation(this.userOrganization);
-	}
-
 	get isProjectDetailsPage() {
 		return this.router.url.includes('/projects/');
 	}
@@ -124,5 +118,29 @@ export class PrivateComponent implements OnInit {
 		const formUrls = ['apps/new', 'sources/new', 'subscriptions/new'];
 		const checkForCreateForms = formUrls.some(url => this.router.url.includes(url));
 		return this.router.url === '/projects/new' || checkForCreateForms;
+	}
+
+	async addNewOrganisation() {
+		if (this.addOrganisationForm.invalid) {
+			(<any>this.addOrganisationForm).values(this.addOrganisationForm.controls).forEach((control: FormControl) => {
+				control?.markAsTouched();
+			});
+			return;
+		}
+		this.creatingOrganisation = true;
+
+		try {
+			const response = await this.privateService.addOrganisation(this.addOrganisationForm.value);
+
+			this.generalService.showNotification({ style: 'success', message: response.message });
+			this.creatingOrganisation = false;
+			this.showCreateOrganisationModal = false;
+			this.privateService.showCreateOrgModal = false;
+
+			await this.getOrganizations(true);
+			this.selectOrganisation(response.data);
+		} catch {
+			this.creatingOrganisation = false;
+		}
 	}
 }

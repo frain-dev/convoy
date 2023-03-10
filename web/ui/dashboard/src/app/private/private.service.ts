@@ -14,6 +14,9 @@ export class PrivateService {
 	organisationDetails!: ORGANIZATION_DATA;
 	apiFlagResponse!: FLIPT_API_RESPONSE;
 	projects: GROUP[] = [];
+	organisations!: HTTP_RESPONSE;
+	configutation!: HTTP_RESPONSE;
+	showCreateOrgModal = false;
 
 	constructor(private http: HttpService, private router: Router) {}
 
@@ -37,12 +40,15 @@ export class PrivateService {
 
 	getConfiguration(): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
+			if (this.configutation) return resolve(this.configutation);
+
 			try {
 				const response = await this.http.request({
 					url: `/configuration`,
 					method: 'get'
 				});
 
+				this.configutation = response;
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
@@ -102,13 +108,32 @@ export class PrivateService {
 		});
 	}
 
-	getOrganizations(): Promise<HTTP_RESPONSE> {
+	organisationConfig(organisations: ORGANIZATION_DATA[]) {
+		if (!organisations || (organisations && organisations?.length == 0)) return;
+
+		const selectedOrganisation = localStorage.getItem('CONVOY_ORG');
+		if (!selectedOrganisation || selectedOrganisation === 'undefined') return;
+
+		const organisationDetails = JSON.parse(selectedOrganisation);
+		if (organisations.find((org: { uid: string }) => org.uid === organisationDetails?.uid)) return;
+
+		this.organisationDetails = organisations[0];
+		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisations[0]));
+		return;
+	}
+
+	getOrganizations(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
+			if (this.organisations && !requestDetails?.refresh) return resolve(this.organisations);
+
 			try {
 				const response = await this.http.request({
 					url: `/organisations`,
 					method: 'get'
 				});
+
+				this.organisationConfig(response.data?.content);
+				this.organisations = response;
 				return resolve(response);
 			} catch (error) {
 				return reject(error);

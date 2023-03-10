@@ -1,11 +1,15 @@
-import { NgModule } from '@angular/core';
+import { inject, NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { PrivateComponent } from './private.component';
+import { PrivateService } from './private.service';
+
+export const canActivate = async (privateService = inject(PrivateService)) => await privateService.getOrganizations();
 
 const routes: Routes = [
 	{
 		path: '',
 		component: PrivateComponent,
+		canActivate: [() => canActivate()],
 		children: [
 			{
 				path: '',
@@ -20,7 +24,7 @@ const routes: Routes = [
 				path: 'projects/new',
 				loadChildren: () => import('./pages/create-project/create-project.module').then(m => m.CreateProjectModule)
 			},
-            {
+			{
 				path: 'projects/:id/setup',
 				loadComponent: () => import('./pages/setup-project/setup-project.component').then(mod => mod.SetupProjectComponent)
 			},

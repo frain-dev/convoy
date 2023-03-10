@@ -1,11 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ButtonComponent } from 'src/app/components/button/button.component';
 import { PrivateService } from '../../private.service';
-import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ModalComponent } from 'src/app/components/modal/modal.component';
-import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
-import { GeneralService } from 'src/app/services/general/general.service';
 import { Router } from '@angular/router';
 import { LoaderModule } from '../../components/loader/loader.module';
 
@@ -14,7 +9,7 @@ export type STAGES = 'organisation' | 'project';
 @Component({
 	selector: 'convoy-onboarding',
 	standalone: true,
-	imports: [CommonModule, ButtonComponent, ReactiveFormsModule, ModalComponent, LoaderModule, InputFieldDirective, InputErrorComponent, InputDirective, LabelComponent],
+	imports: [CommonModule, LoaderModule],
 	templateUrl: './onboarding.component.html',
 	styleUrls: ['./onboarding.component.scss']
 })
@@ -30,52 +25,29 @@ export class OnboardingComponent implements OnInit {
 			currentStage: 'pending'
 		}
 	];
-	showCreateOrganisationModal = false;
-	creatingOrganisation = false;
 	hasProjects: boolean = true;
 	isloading = false;
-	addOrganisationForm: FormGroup = this.formBuilder.group({
-		name: ['', Validators.required]
-	});
 
-	constructor(private privateService: PrivateService, private formBuilder: FormBuilder, private generalService: GeneralService, public router: Router) {}
+	constructor(public privateService: PrivateService, public router: Router) {}
 
 	ngOnInit() {
 		this.getOrganizations();
 	}
 
-	async addNewOrganisation() {
-		if (this.addOrganisationForm.invalid) {
-			(<any>this.addOrganisationForm).values(this.addOrganisationForm.controls).forEach((control: FormControl) => {
-				control?.markAsTouched();
-			});
-			return;
-		}
-		this.creatingOrganisation = true;
-
-		try {
-			const response = await this.privateService.addOrganisation(this.addOrganisationForm.value);
-			this.generalService.showNotification({ style: 'success', message: response.message });
-			this.creatingOrganisation = false;
-			location.reload();
-			this.showCreateOrganisationModal = false;
-		} catch {
-			this.creatingOrganisation = false;
-		}
-	}
-
-	async getOrganizations() {
+	async getOrganizations(refresh: boolean = false) {
 		this.isloading = true;
+
 		try {
-			const response = await this.privateService.getOrganizations();
+			const response = await this.privateService.getOrganizations({ refresh });
 			const organisations = response.data.content;
+
 			if (organisations?.length) {
 				this.updateStep({ currentStep: 'project', prevStep: 'organisation' });
 				this.isloading = false;
-				return this.getProjects();
+				return this.router.navigateByUrl('/projects');
 			}
 
-			this.showCreateOrganisationModal = true;
+			this.privateService.showCreateOrgModal = true;
 			this.isloading = false;
 			return;
 		} catch (error) {

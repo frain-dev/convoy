@@ -54,7 +54,7 @@
 							</ul>
 
 							<li class="border-t border-t-grey-10">
-								<button convoy-dropdown-option convoy-button fill="text" class="px-30px py-16px" (click)="showAddOrganisationModal = true">
+								<button convoy-dropdown-option convoy-button fill="text" class="px-30px py-16px" (click)="privateService.showCreateOrgModal = true">
 									<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
 									Add {{ organisations?.length ? 'another' : 'an' }} Organization
 								</button>
@@ -90,10 +90,9 @@
 
 		<convoy-github-star></convoy-github-star>
 
-		<app-create-organisation *ngIf="showAddOrganisationModal" (closeModal)="closeAddOrganisationModal($event)"></app-create-organisation>
-
 		<convoy-verify-email *ngIf="showVerifyEmailModal" (closeModal)="showVerifyEmailModal = false"></convoy-verify-email>
 
+		<convoy-loader *ngIf="isLoadingOrganisations" position="fixed"></convoy-loader>
 		<router-outlet></router-outlet>
 	</div>
 
@@ -109,4 +108,21 @@
 <div class="fixed left-30px top-[90vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex justify-center items-center rounded-12px px-24px py-16px z-[5] hover:cursor-pointer" *ngIf="!isEmailVerified" (click)="showVerifyEmailModal = true">
 	<img src="/assets/img/svg/lock_open.svg" alt="lock icon" class="w-24px h-24px mr-16px" />
 	<span class="text-warning-100 text-14 font-medium">Please remember to verify your email.</span>
+</div>
+
+<div convoy-modal position="center" *ngIf="privateService.showCreateOrgModal">
+	<div class="p-40px" modalBody>
+		<img src="/assets/img/organisation-icon.svg" alt="organisation icon" class="pb-12px" />
+		<p class="text-grey-40 text-16 max-w-[423px] pb-40px">Your organization information will help us to know how to get you set up.</p>
+		<form [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
+			<convoy-input-field>
+				<label for="name" required="true" convoy-label>What's your bussiness name?</label>
+				<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="e.g. Kuda" />
+				<convoy-input-error *ngIf="addOrganisationForm.get('name')?.touched && addOrganisationForm.get('name')?.invalid">Organisation name is required</convoy-input-error>
+			</convoy-input-field>
+			<div class="flex items-center justify-end w-full">
+				<button convoy-button [disabled]="creatingOrganisation" class="self-stretch px-66px">Submit</button>
+			</div>
+		</form>
+	</div>
 </div>

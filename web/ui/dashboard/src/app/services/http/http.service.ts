@@ -54,7 +54,11 @@ export class HttpService {
 	}
 
 	buildRequestPath(level?: 'org' | 'org_project'): string {
+		if (!level) return '';
 		const orgId = this.getOrganisation().uid;
+
+		if (level === 'org' && !orgId) return 'error';
+		if (level === 'org_project' && (orgId === '' || !this.projectService.activeProjectDetails?.uid)) return 'error';
 
 		switch (level) {
 			case 'org':
@@ -71,7 +75,12 @@ export class HttpService {
 
 		if (this.token) return `${this.token ? this.APP_PORTAL_APIURL : this.APIURL}${requestDetails.url}?${this.buildRequestQuery(requestDetails.query)}`;
 
-		return `${this.APIURL}${this.buildRequestPath(requestDetails.level)}${requestDetails.url}?${this.buildRequestQuery(requestDetails.query)}`;
+		if (!requestDetails.level) return `${this.APIURL}${requestDetails.url}?${this.buildRequestQuery(requestDetails.query)}`;
+
+		const requestPath = this.buildRequestPath(requestDetails.level);
+		if (requestPath === 'error') return 'error';
+
+		return `${this.APIURL}${requestPath}${requestDetails.url}?${this.buildRequestQuery(requestDetails.query)}`;
 	}
 
 	async request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; hideNotification?: boolean; query?: { [param: string]: any }; level?: 'org' | 'org_project'; isOut?: boolean }): Promise<HTTP_RESPONSE> {
@@ -121,13 +130,12 @@ export class HttpService {
 					Authorization: `Bearer ${this.token || this.authDetails()?.access_token}`
 				};
 
+				// process URL
+				const url = this.buildURL(requestDetails);
+				if (url === 'error') return;
+
 				// make request
-				const { data } = await http.request({
-					method: requestDetails.method,
-					headers: requestHeader,
-					url: this.buildURL(requestDetails),
-					data: requestDetails.body
-				});
+				const { data } = await http.request({ method: requestDetails.method, headers: requestHeader, url, data: requestDetails.body });
 				resolve(data);
 			} catch (error) {
 				if (axios.isAxiosError(error)) {
