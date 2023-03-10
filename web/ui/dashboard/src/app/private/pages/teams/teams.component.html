@@ -174,7 +174,7 @@
 	<convoy-empty-state
 		className="h-[50vh]"
 		(onAction)="openCreateTeamModal()"
-		imgSrc="/assets/img/team-empty-img.svg"
+		imgSrc="/assets/img/teams-empty-state.png"
 		[buttonText]="!searchString ? 'Add team member' : ''"
 		[heading]="searchString ? 'You have no one with the name ' + searchString + ' on your team' : selectedFilterOption === 'active' ? 'You have no one on your team yet' : 'You have no pending invites'"
 		[description]="!searchString ? 'You can invite team members to join your organization and assign them roles to projects' : ''"

@@ -1,13 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { ButtonComponent } from '../button/button.component'
+import { ButtonComponent } from '../button/button.component';
 
 @Component({
-	selector: 'convoy-empty-state',
+	selector: 'convoy-empty-state, [convoy-empty-state]',
 	standalone: true,
 	imports: [CommonModule, ButtonComponent],
-	templateUrl: './empty-state.component.html',
-	styleUrls: ['./empty-state.component.scss']
+	templateUrl: './empty-state.component.html'
 })
 export class EmptyStateComponent implements OnInit {
 	@Input('imgSrc') imgSrc!: string;
@@ -15,7 +14,6 @@ export class EmptyStateComponent implements OnInit {
 	@Input('description') description!: string;
 	@Input('buttonText') buttonText!: string;
 	@Input('type') type: 'normal' | 'table' = 'normal';
-	@Input('className') class!: string;
 	@Output('onAction') onAction = new EventEmitter<any>();
 
 	constructor() {}
