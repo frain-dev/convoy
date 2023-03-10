@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 @Component({
 	selector: 'convoy-list-item, [convoy-list-item]',
 	standalone: true,
-	host: { class: 'flex items-center justify-between py-10px px-14px transition-all duration-300 hover:bg-primary-500', '[class]': 'class' },
+	host: { class: 'flex items-center justify-between py-10px transition-all duration-300 hover:bg-primary-500', '[class]': 'class' },
 	imports: [CommonModule],
 	template: `
 		<ng-content></ng-content>
