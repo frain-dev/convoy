@@ -104,9 +104,8 @@ const (
 	e.project_id, e.secrets, e.created_at, e.updated_at,
 	e.authentication_type AS "authentication.type",
 	e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
-	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value",
-	COUNT(ee.event_id) AS event_count
-	FROM convoy.endpoints AS e LEFT JOIN convoy.events_endpoints AS ee  ON e.id = ee.endpoint_id
+	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value"
+	FROM convoy.endpoints AS e 
 	WHERE e.deleted_at IS NULL AND e.project_id = $3 AND (e.title ILIKE $4 OR $4 = '')
 	GROUP BY e.id ORDER BY e.id LIMIT $1 OFFSET $2;
 	`

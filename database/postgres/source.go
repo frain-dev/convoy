@@ -336,7 +336,6 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 	}
 
 	query = s.db.Rebind(query)
-	fmt.Println("Source QUery is >>>>", query)
 	rows, err := s.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
