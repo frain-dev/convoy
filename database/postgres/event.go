@@ -255,8 +255,6 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 		return nil, datastore.PaginationData{}, err
 	}
 
-
-	count := 0
 	events := make([]datastore.Event, 0)
 	for rows.Next() {
 		var data datastore.Event
@@ -269,8 +267,17 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 		events = append(events, data)
 	}
 
-	pagination := calculatePaginationData(count, filter.Pageable.Page, filter.Pageable.PerPage)
-	return events, pagination, nil
+	pagination := &datastore.PaginationData{}
+	ids := make([]string, len(events))
+	for i := range events {
+		ids[i] = events[i].UID
+	}
+
+	if len(events) > filter.Pageable.PerPage {
+		events = events[:len(events)-1]
+	}
+
+	return events, pagination.Build(filter.Pageable, ids), nil
 }
 
 func (e *eventRepo) DeleteProjectEvents(ctx context.Context, filter *datastore.EventFilter, hardDelete bool) error {

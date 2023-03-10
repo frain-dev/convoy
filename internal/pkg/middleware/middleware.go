@@ -828,23 +828,24 @@ func (m *Middleware) Pagination(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawPerPage := r.URL.Query().Get("perPage")
 		rawDirection := r.URL.Query().Get("direction")
-		rawEndCursor := r.URL.Query().Get("endCursor")
-		rawStartCursor := r.URL.Query().Get("startCursor")
+		rawNextCursor := r.URL.Query().Get("endCursor")
+		rawPrevCursor := r.URL.Query().Get("startCursor")
 
 		if len(rawPerPage) == 0 {
 			rawPerPage = "20"
 		}
 
-		if len(rawEndCursor) == 0 {
-			rawEndCursor = "0"
+		if len(rawNextCursor) == 0 {
+			rawNextCursor = ""
 		}
 
 		if len(rawDirection) == 0 {
 			rawDirection = "next"
 		}
 
-		if len(rawStartCursor) == 0 {
-			rawStartCursor = fmt.Sprintf("%d", math.MaxInt)
+		if len(rawPrevCursor) == 0 {
+			const jsMaxInt = ^uint64(0) >> 1
+			rawPrevCursor = fmt.Sprintf("%d", jsMaxInt)
 		}
 
 		perPage, err := strconv.Atoi(rawPerPage)
@@ -853,10 +854,10 @@ func (m *Middleware) Pagination(next http.Handler) http.Handler {
 		}
 
 		pageable := datastore.Pageable{
-			PerPage:     perPage,
-			Direction:   datastore.PageDirection(rawDirection),
-			EndCursor:   rawEndCursor,
-			StartCursor: rawStartCursor,
+			PerPage:    perPage,
+			Direction:  datastore.PageDirection(rawDirection),
+			NextCursor: rawNextCursor,
+			PrevCursor: rawPrevCursor,
 		}
 
 		r = r.WithContext(setPageableInContext(r.Context(), pageable))
