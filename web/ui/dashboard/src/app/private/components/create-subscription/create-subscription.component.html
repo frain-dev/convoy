@@ -210,7 +210,21 @@
 	<button convoy-button size="sm" class="mt-20px" (click)="onAction.emit({ action: 'cancel' })">Close</button>
 </div>
 
-<div convoy-modal position="full" [title]="action === 'update' ? 'Edit Subscription Filter' : 'Create Subscription Filter'" *ngIf="showFilterForm" (closeModal)="showFilterForm = false">
+<div convoy-modal position="full" *ngIf="showFilterForm" (closeModal)="showFilterForm = false">
+	<div modalHeader convoy-modal-header>
+		<div class="flex items-center">
+			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="showFilterForm = false">
+				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
+			</button>
+
+			<h2 class="font-semibold capitalize ml-2">{{ action === 'update' ? 'Edit Subscription Filter' : 'Create Subscription Filter' }}</h2>
+		</div>
+
+		<a convoy-button fill="text" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+			<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+			<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
+		</a>
+	</div>
 	<div class="max-w-[1312px] m-auto">
 		<convoy-create-subscription-filter [schema]="subscriptionForm.get('filter_config.filter')?.value" [action]="action" (filterSchema)="getFilterSchema($event)"></convoy-create-subscription-filter>
 	</div>

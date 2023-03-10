@@ -73,7 +73,7 @@
 				</tbody>
 			</table>
 
-			<convoy-empty-state className="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" description="No subscription to show here" *ngIf="showSubscriptionError || (!isloadingSubscriptions && subscriptions?.content?.length === 0)"></convoy-empty-state>
+			<convoy-empty-state class="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" description="No subscription to show here" *ngIf="showSubscriptionError || (!isloadingSubscriptions && subscriptions?.content?.length === 0)"></convoy-empty-state>
 		</convoy-card>
 	</ng-container>
 
@@ -90,8 +90,22 @@
 	<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event"></app-event-deliveries>
 </convoy-page>
 
-<div convoy-modal position="full" *ngIf="showCreateSubscriptionModal || subscriptionId" [title]="subscriptionId ? 'Update Subscription' : 'Create New Subscription'" (closeModal)="closeCreateSubscriptionModal()">
-	<ng-container modalBody>
+<div convoy-modal position="full" *ngIf="showCreateSubscriptionModal || subscriptionId" (closeModal)="closeCreateSubscriptionModal()">
+	<div modalHeader convoy-modal-header>
+		<div class="flex items-center">
+			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="closeCreateSubscriptionModal()">
+				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
+			</button>
+
+			<h2 class="font-semibold capitalize ml-2">{{ subscriptionId ? 'Update Subscription' : 'Create New Subscription' }}</h2>
+		</div>
+
+		<a convoy-button fill="text" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+			<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+			<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
+		</a>
+	</div>
+    <ng-container modalBody>
 		<convoy-create-subscription [action]="subscriptionId ? 'update' : 'create'" (onAction)="$event?.action === 'cancel' ? closeCreateSubscriptionModal() : getSubscripions()"></convoy-create-subscription>
 	</ng-container>
 </div>

@@ -1,5 +1,12 @@
 <!-- send event modal  -->
 <div convoy-modal title="Send Event" (closeModal)="cancel()">
+    <div modalHeader convoy-modal-header>
+		<h2 class="font-semibold capitalize">Send Event</h2>
+
+		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="cancel()">
+			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+		</button>
+	</div>
 	<ng-container modalBody>
 		<form [formGroup]="sendEventForm">
 			<convoy-select

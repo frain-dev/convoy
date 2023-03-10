@@ -1,5 +1,20 @@
-<div convoy-modal position="full" [id]="'configureProjectForm'" [title]="projectType === 'outgoing' ? 'Configure Outgoing Project' : 'Configure Incoming Project'" (closeModal)="cancel()">
-	<div modalBody class="pb-60px flex flex-col">
+<div convoy-modal position="full" [id]="'configureProjectForm'" (closeModal)="cancel()">
+	<div modalHeader convoy-modal-header>
+		<div class="flex items-center">
+			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="cancel()">
+				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
+			</button>
+
+			<h2 class="font-semibold capitalize ml-2">{{ projectType === 'outgoing' ? 'Configure Outgoing Project' : 'Configure Incoming Project' }}</h2>
+		</div>
+
+		<a convoy-button fill="text" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+			<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+			<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
+		</a>
+	</div>
+
+    <div modalBody class="pb-60px flex flex-col">
 		<convoy-loader *ngIf="showLoader"></convoy-loader>
 
 		<ng-container *ngIf="projectType === 'incoming'">

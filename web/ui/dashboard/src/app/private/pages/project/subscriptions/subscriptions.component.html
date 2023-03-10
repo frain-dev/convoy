@@ -114,12 +114,26 @@
 	imgSrc="/assets/img/subscriptions-empty-state.png"
 	heading="You currently do not have any subscriptions"
 	description="Webhook subscriptions lets you define the source of your webhook and the destination where any webhook event should be sent. It is what allows Convoy to identify and proxy your webhooks."
-	className="min-h-[65vh] mt-16px"
+	class="min-h-[65vh] mt-16px"
 	id="subscriptions-empty-state"
 	*ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length === 0"
 ></convoy-empty-state>
 
-<div convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [id]="'subscriptionForm'" [title]="showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription'" (closeModal)="createSubscription('cancel')">
+<div convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [id]="'subscriptionForm'" (closeModal)="createSubscription('cancel')">
+	<div modalHeader convoy-modal-header>
+		<div class="flex items-center">
+			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="createSubscription('cancel')">
+				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
+			</button>
+
+			<h2 class="font-semibold capitalize ml-2">{{ showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription' }}</h2>
+		</div>
+
+		<a convoy-button fill="text" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+			<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+			<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
+		</a>
+	</div>
 	<ng-container modalBody>
 		<convoy-create-subscription showAction="true" (onAction)="createSubscription($event.action)" [action]="showUpdateSubscriptionModal ? 'update' : 'create'"></convoy-create-subscription>
 	</ng-container>
@@ -127,8 +141,15 @@
 
 <app-delete-modal *ngIf="showDeleteSubscriptionModal" [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="showDeleteSubscriptionModal = false" (deleteData)="deleteSubscripton()"></app-delete-modal>
 
-<div convoy-modal *ngIf="!isLoadindingSubscriptions && activeSubscription?.uid" position="right" [id]="'subscription-details'" [title]="activeSubscription?.name || 'Subscription Details'" (closeModal)="closeModal()">
-	<ng-container modalBody>
+<div convoy-modal *ngIf="!isLoadindingSubscriptions && activeSubscription?.uid" position="right" [id]="'subscription-details'" (closeModal)="closeModal()">
+	<div modalHeader convoy-modal-header>
+		<h2 class="font-semibold capitalize">{{ activeSubscription?.name || 'Subscription Details' }}</h2>
+
+		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="closeModal()">
+			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+		</button>
+	</div>
+    <ng-container modalBody>
 		<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
 			<h2 class="font-medium mb-10px">Source</h2>
 			<convoy-card hover="true" class="w-full cursor-pointer py-20px mb-24px">

@@ -83,7 +83,7 @@
 	imgSrc="/assets/img/events-log-empty-state.png"
 	buttonText="Create Endpoint"
 	description="You have not created an endpoint"
-	className="mt-16px min-h-[65vh]"
+	class="mt-16px min-h-[65vh]"
 	id="endpoints-empty-state"
 	(onAction)="router.navigate(['./new'], { relativeTo: this.route })"
 ></convoy-empty-state>
@@ -122,7 +122,21 @@
 	</button>
 </div>
 
-<div convoy-modal *ngIf="showCreateEndpointModal || showEditEndpointModal" position="full" [title]="showEditEndpointModal ? 'Edit Endpoint' : 'Create Endpoint'" (closeModal)="cancel()">
+<div convoy-modal *ngIf="showCreateEndpointModal || showEditEndpointModal" position="full" (closeModal)="cancel()">
+	<div modalHeader convoy-modal-header>
+		<div class="flex items-center">
+			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="cancel()">
+				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
+			</button>
+
+			<h2 class="font-semibold capitalize ml-2">{{ showEditEndpointModal ? 'Edit Endpoint' : 'Create Endpoint' }}</h2>
+		</div>
+
+		<a convoy-button fill="text" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+			<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+			<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
+		</a>
+	</div>
 	<ng-container modalBody>
 		<convoy-create-endpoint showAction="true" (onAction)="$event.action === 'close' ? cancel() : getEndpoints(); cancel()" [editMode]="showEditEndpointModal"></convoy-create-endpoint>
 	</ng-container>

@@ -172,7 +172,7 @@
 
 <convoy-page className="pt-0" *ngIf="((selectedFilterOption === 'active' && noData) || (selectedFilterOption === 'pending' && noInvitesData)) && (!isFetchingTeamMembers || !isFetchingPendingInvites)">
 	<convoy-empty-state
-		className="h-[50vh]"
+		class="h-[50vh]"
 		(onAction)="openCreateTeamModal()"
 		imgSrc="/assets/img/teams-empty-state.png"
 		[buttonText]="!searchString ? 'Add team member' : ''"

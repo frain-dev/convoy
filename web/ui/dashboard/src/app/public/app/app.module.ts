@@ -5,7 +5,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { EventDeliveriesModule } from 'src/app/private/pages/project/events/event-deliveries/event-deliveries.module';
 import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
 import { CreateSubscriptionModule } from 'src/app/private/components/create-subscription/create-subscription.module';
-import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { PageComponent } from 'src/app/components/page/page.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
@@ -34,6 +34,7 @@ const routes: Routes = [{ path: '', component: AppComponent }];
 		CreateEndpointComponent,
 		DeleteModalComponent,
 		ModalComponent,
+        ModalHeaderComponent,
 		PageComponent,
 		ButtonComponent,
 		CardComponent,

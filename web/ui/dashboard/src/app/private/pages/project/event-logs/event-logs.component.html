@@ -116,7 +116,7 @@
 		Clear Filters
 	</button>
 </div>
-<convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" className="min-h-[70vh]" heading="You currently do not have any event logs" *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0)"></convoy-empty-state>
+<convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" class="min-h-[70vh]" heading="You currently do not have any event logs" *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0)"></convoy-empty-state>
 
 <convoy-card class="flex" *ngIf="!isloadingEvents && displayedEvents && displayedEvents.length > 0">
 	<div class="min-w-[605px] w-full h-full overflow-hidden relative">
