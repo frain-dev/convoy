@@ -49,13 +49,11 @@ export class EventsComponent implements OnInit, OnDestroy {
 		this.checkEventsOnFirstLoad();
 		this.isloadingDashboardData = false;
 
-		console.log(Number.MAX_SAFE_INTEGER);
-
-		// if (this.privateService.activeProjectDetails?.type === 'incoming') {
-		// 	this.eventDelievryIntervalTime = setInterval(() => {
-		// 		this.getLatestEvent();
-		// 	}, 2000);
-		// }
+		if (this.privateService.activeProjectDetails?.type === 'incoming' && !this.lastestEventDeliveries) {
+			this.eventDelievryIntervalTime = setInterval(() => {
+				this.getLatestEvent();
+			}, 2000);
+		}
 	}
 
 	ngOnDestroy(): void {

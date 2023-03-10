@@ -12,7 +12,7 @@ export class EventDeliveryDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/eventdeliveries/${eventId}$`,
+					url: `/eventdeliveries/${eventId}`,
 					method: 'get',
 					level: 'org_project'
 				});
