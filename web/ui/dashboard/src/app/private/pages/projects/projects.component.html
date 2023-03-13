@@ -1,18 +1,9 @@
-<convoy-loader *ngIf="isloadingOrganisations" position="fixed"></convoy-loader>
+<convoy-page>
+	<ng-container *ngIf="isLoadingProjects">
+		<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-20 mb-20px"></div>
+		<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60 mb-24px"></div>
 
-<ng-container *ngIf="!isloadingOrganisations && organisations.length">
-	<convoy-page>
-		<ng-container *ngIf="!isLoadingProjects && projects.length">
-			<h3 class="mb-2 font-semibold">Projects</h3>
-			<p class="text-grey-40 text-14 font-medium mb-24px">All your project's summary at a glance</p>
-		</ng-container>
-
-		<ng-container *ngIf="isLoadingProjects">
-			<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-20 mb-20px"></div>
-			<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60 mb-24px"></div>
-		</ng-container>
-
-		<div class="grid grid-cols-3 desktop:grid-cols-2 gap-6" *ngIf="isLoadingProjects">
+		<div class="grid grid-cols-3 desktop:grid-cols-2 gap-6">
 			<div *ngFor="let index of projectsLoaderIndex" class="rounded-8px bg-white-100 block border border-grey-10">
 				<div class="px-6 py-4 flex items-center justify-between border-b border-b-grey-10">
 					<div class="flex items-center">
@@ -38,16 +29,22 @@
 				</div>
 			</div>
 		</div>
+	</ng-container>
 
-		<div class="grid grid-cols-3 desktop:grid-cols-2 gap-6" *ngIf="!isLoadingProjects">
-			<a routerLink="./new" class="rounded-8px bg-white-100 border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]" *ngIf="projects.length">
+	<ng-container *ngIf="!isLoadingProjects && projects.length">
+		<h3 class="mb-2 font-semibold">Projects</h3>
+		<p class="text-grey-40 text-14 font-medium mb-24px">All your project's summary at a glance</p>
+
+		<div class="grid grid-cols-3 desktop:grid-cols-2 gap-6">
+			<a routerLink="./new" class="rounded-8px bg-white-100 border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]">
 				<svg width="22" height="22" class="mr-2" fill="#477db3">
 					<use xlink:href="#plus-icon"></use>
 				</svg>
 				<span class="text-primary-100 font-medium text-16">Create new project</span>
 			</a>
+
 			<ng-container *ngFor="let project of projects">
-				<a [routerLink]="'/projects/' + project.uid" class="rounded-8px bg-white-100 block border border-grey-10 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]">
+				<button (click)="getProjectDetails(project.uid)" class="rounded-8px bg-white-100 block border border-grey-10 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)] text-left">
 					<div class="px-6 py-4 flex items-center justify-between border-b border-b-grey-10">
 						<div class="flex items-center">
 							<div class="bg-primary-500 w-6 h-6 rounded-[50px] mr-2 flex items-center justify-center">
@@ -76,8 +73,10 @@
 							</svg>
 						</div>
 					</div>
-				</a>
+				</button>
 			</ng-container>
 		</div>
-	</convoy-page>
-</ng-container>
+	</ng-container>
+
+	<convoy-loader *ngIf="isLoadingProject" position="fixed"></convoy-loader>
+</convoy-page>

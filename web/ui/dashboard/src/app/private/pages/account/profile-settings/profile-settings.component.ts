@@ -22,7 +22,7 @@ export class ProfileSettingsComponent implements OnInit {
 		email: ['', Validators.compose([Validators.required, Validators.email])]
 	});
 
-	constructor(private formBuilder: FormBuilder, private router: Router, private accountService: AccountService, private privateService:PrivateService, private generalService: GeneralService) {}
+	constructor(private formBuilder: FormBuilder, private router: Router, private accountService: AccountService, private privateService: PrivateService, private generalService: GeneralService) {}
 
 	ngOnInit() {
 		this.getAuthDetails();
@@ -38,11 +38,11 @@ export class ProfileSettingsComponent implements OnInit {
 		}
 	}
 
-	async getUserDetails(userId: string) {
+	async getUserDetails(userId: string, refresh: boolean = false) {
 		this.isFetchingUserDetails = true;
 
 		try {
-			const response = await this.privateService.getUserDetails({ userId: userId });
+			const response = await this.privateService.getUserDetails({ userId: userId, refresh });
 			this.userId = response.data?.uid;
 			this.editBasicInfoForm.patchValue({
 				first_name: response.data?.first_name,
@@ -61,7 +61,7 @@ export class ProfileSettingsComponent implements OnInit {
 		try {
 			const response = await this.accountService.editBasicInfo({ userId: this.userId, body: this.editBasicInfoForm.value });
 			this.generalService.showNotification({ style: 'success', message: 'Changes saved successfully!' });
-			this.getUserDetails(this.userId);
+			this.getUserDetails(this.userId, true);
 			this.isSavingUserDetails = false;
 		} catch {
 			this.isSavingUserDetails = false;

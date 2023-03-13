@@ -26,6 +26,7 @@ import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { FormsModule } from '@angular/forms';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { EventsService } from '../events/events.service';
 
 @Component({
 	selector: 'convoy-event-logs',
@@ -91,7 +92,7 @@ export class EventLogsComponent implements OnInit {
 	isRetrying = false;
 	batchRetryCount: any;
 
-	constructor(private eventsLogService: EventLogsService, private generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService) {}
+	constructor(private eventsLogService: EventLogsService, private generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService) {}
 
 	async ngOnInit() {
 		this.getFiltersFromURL();
@@ -153,7 +154,7 @@ export class EventLogsComponent implements OnInit {
 
 	async getEndpointsForFilter(search: string): Promise<ENDPOINT[]> {
 		return await (
-			await this.privateService.getEndpoints({ pageNo: 1, searchString: search })
+			await this.privateService.getEndpoints({ page: 1, q: search })
 		).data.content;
 	}
 
@@ -265,14 +266,13 @@ export class EventLogsComponent implements OnInit {
 		const { startDate, endDate } = this.setDateForFilter({ ...this.eventsDateFilterFromURL, ...this.eventsTimeFilterData });
 
 		try {
-			const eventsResponse = await this.eventsLogService.getEvents({
-				pageNo: page,
+			const eventsResponse = await this.eventsService.getEvents({
+				page: page,
 				startDate,
 				endDate,
 				endpointId: this.eventEndpoint || '',
 				sourceId: this.eventSource || '',
-				query: this.eventsSearchString || '',
-				token: this.portalToken
+				query: this.eventsSearchString || ''
 			});
 			this.events = eventsResponse.data;
 
@@ -294,15 +294,7 @@ export class EventLogsComponent implements OnInit {
 		this.sidebarEventDeliveries = [];
 
 		try {
-			const response = await this.eventsLogService.getEventDeliveries({
-				eventId,
-				startDate: '',
-				endDate: '',
-				pageNo: 1,
-				endpointId: '',
-				statusQuery: '',
-				token: this.portalToken
-			});
+			const response = await this.eventsService.getEventDeliveries({ eventId });
 			this.sidebarEventDeliveries = response.data.content;
 			this.isLoadingSidebarDeliveries = false;
 
@@ -319,12 +311,11 @@ export class EventLogsComponent implements OnInit {
 		this.fetchingCount = true;
 		try {
 			const response = await this.eventsLogService.getRetryCount({
-				pageNo: page,
+				page: page,
 				startDate: startDate,
 				endDate: endDate,
 				endpointId: this.eventEndpoint || '',
-				sourceId: this.eventSource || '',
-				token: this.portalToken
+				sourceId: this.eventSource || ''
 			});
 
 			this.batchRetryCount = response.data.num;
@@ -337,7 +328,7 @@ export class EventLogsComponent implements OnInit {
 
 	async retryEvent(requestDetails: { eventId: string }) {
 		try {
-			const response = await this.eventsLogService.retryEvent({ eventId: requestDetails.eventId, token: this.portalToken });
+			const response = await this.eventsLogService.retryEvent({ eventId: requestDetails.eventId });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.getEvents();
 		} catch (error) {
@@ -352,12 +343,11 @@ export class EventLogsComponent implements OnInit {
 
 		try {
 			const response = await this.eventsLogService.batchRetryEvent({
-				pageNo: page || 1,
+				page: page || 1,
 				startDate: startDate,
 				endDate: endDate,
 				endpointId: this.eventEndpoint || '',
-				sourceId: this.eventSource || '',
-				token: this.portalToken
+				sourceId: this.eventSource || ''
 			});
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });

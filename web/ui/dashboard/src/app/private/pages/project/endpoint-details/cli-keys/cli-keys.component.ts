@@ -17,6 +17,7 @@ import { SelectComponent } from 'src/app/components/select/select.component';
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 import { CliKeysService } from './cli-keys.service';
 import { TokenModalComponent } from 'src/app/private/components/token-modal/token-modal.component';
+import { PrivateService } from 'src/app/private/private.service';
 
 @Component({
 	selector: 'convoy-cli-keys',
@@ -38,7 +39,7 @@ import { TokenModalComponent } from 'src/app/private/components/token-modal/toke
 		InputFieldDirective,
 		InputDirective,
 		LabelComponent,
-        TokenModalComponent
+		TokenModalComponent
 	],
 	templateUrl: './cli-keys.component.html',
 	styleUrls: ['./cli-keys.component.scss']
@@ -73,28 +74,10 @@ export class CliKeysComponent implements OnInit {
 		endpoint_id: []
 	});
 
-	constructor(private route: ActivatedRoute, private generalService: GeneralService, private formBuilder: FormBuilder, private cliKeyService: CliKeysService) {}
+	constructor(private route: ActivatedRoute, private generalService: GeneralService, private privateService: PrivateService, private formBuilder: FormBuilder, private cliKeyService: CliKeysService) {}
 
 	async ngOnInit() {
 		await Promise.all([this.getApiKeys(), this.getEndpoints()]);
-	}
-
-	async getAppPortalApp() {
-		this.cliError.emit(false);
-		this.showError = false;
-		this.isloadingAppPortalAppDetails = true;
-
-		try {
-			const app = await this.cliKeyService.getAppPortalApp(this.token);
-			this.endpointId = app.data.uid;
-			this.getApiKeys();
-			return;
-		} catch (error) {
-			this.cliError.emit(true);
-			this.showError = true;
-			this.isloadingAppPortalAppDetails = false;
-			return error;
-		}
 	}
 
 	async getApiKeys() {
@@ -117,7 +100,7 @@ export class CliKeysComponent implements OnInit {
 		this.isGeneratingNewKey = true;
 		this.generateKeyForm.value.expiration = parseInt(this.generateKeyForm.value.expiration);
 		try {
-			const response = await this.cliKeyService.generateKey({ endpointId: this.endpointId, body: this.generateKeyForm.value, token: this.token });
+			const response = await this.cliKeyService.generateKey({ endpointId: this.endpointId, body: this.generateKeyForm.value });
 			this.apiKey = response.data.key;
 			this.generateKeyModal = false;
 			this.showApiKey = true;
@@ -138,7 +121,7 @@ export class CliKeysComponent implements OnInit {
 
 		this.isRevokingApiKey = true;
 		try {
-			const response = await this.cliKeyService.revokeApiKey({ endpointId: this.selectedApiKey?.role.endpoint, keyId: this.selectedApiKey?.uid, token: this.token });
+			const response = await this.cliKeyService.revokeApiKey({ endpointId: this.selectedApiKey?.role.endpoint, keyId: this.selectedApiKey?.uid });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.isRevokingApiKey = false;
 			this.showRevokeApiModal = false;
@@ -151,7 +134,7 @@ export class CliKeysComponent implements OnInit {
 	async getEndpoints() {
 		if (!this.token) return;
 		try {
-			const response = await this.cliKeyService.getEndpoints(this.token);
+			const response = await this.privateService.getEndpoints();
 			const endpointData = response.data;
 			endpointData.forEach((data: ENDPOINT) => {
 				data.name = data.title;

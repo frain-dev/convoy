@@ -69,7 +69,7 @@ export class AppComponent implements OnInit {
 	async getSubscripions() {
 		this.isloadingSubscriptions = true;
 		try {
-			const subscriptions = await this.appService.getSubscriptions(this.token);
+			const subscriptions = await this.appService.getSubscriptions();
 			this.subscriptions = subscriptions.data;
 			this.isloadingSubscriptions = false;
 			this.showCreateSubscriptionModal = false;
@@ -96,7 +96,7 @@ export class AppComponent implements OnInit {
 	async deleteSubscription() {
 		this.isDeletingSubscription = true;
 		try {
-			await this.appService.deleteSubscription(this.token, this.activeSubscription?.uid || '');
+			await this.appService.deleteSubscription(this.activeSubscription?.uid || '');
 			this.getSubscripions();
 			this.isDeletingSubscription = false;
 		} catch (error) {

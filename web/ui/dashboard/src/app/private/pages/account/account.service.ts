@@ -51,13 +51,13 @@ export class AccountService {
 		});
 	}
 
-
-	fetchPersonalKeys(requestDetails: { userId: string; pageNo: number }): Promise<HTTP_RESPONSE> {
+	fetchPersonalKeys(requestDetails: { userId: string; page: number }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/users/${requestDetails.userId}/security/personal_api_keys?keyType=personal_key&sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=10`,
-					method: 'get'
+					url: `/users/${requestDetails.userId}/security/personal_api_keys`,
+					method: 'get',
+					query: { keyType: 'personal_key', page: requestDetails.page }
 				});
 				return resolve(response);
 			} catch (error) {
@@ -87,7 +87,7 @@ export class AccountService {
 				const response = await this.http.request({
 					url: `/users/${requestDetails.userId}/security/personal_api_keys/${requestDetails.keyId}/revoke`,
 					method: 'put',
-                    body: null
+					body: null
 				});
 				return resolve(response);
 			} catch (error) {

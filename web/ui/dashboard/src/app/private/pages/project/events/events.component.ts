@@ -35,7 +35,7 @@ export class EventsComponent implements OnInit, OnDestroy {
 	hasEvents: boolean = false;
 	chartData!: CHARTDATA[];
 	showAddEventModal = false;
-	lastestSource!: SOURCE;
+	lastestSource?: SOURCE;
 	lastestEventDeliveries: EVENT_DELIVERY[] = [];
 	eventDelTableHead: string[] = ['Status', 'Event Type', 'Event Time', 'Next Attempt'];
 	eventDelievryIntervalTime: any;
@@ -45,11 +45,11 @@ export class EventsComponent implements OnInit, OnDestroy {
 
 	async ngOnInit() {
 		this.isloadingDashboardData = true;
-		await Promise.all([this.fetchDashboardData(), this.getLatestSource(), this.getLatestEvent()]);
-		this.checkEventsOnFirstLoad();
+		await this.getLatestEvent();
+		await this.checkEventsOnFirstLoad();
 		this.isloadingDashboardData = false;
 
-		if (this.privateService.activeProjectDetails?.type === 'incoming') {
+		if (this.privateService.activeProjectDetails?.type === 'incoming' && !this.lastestEventDeliveries.length) {
 			this.eventDelievryIntervalTime = setInterval(() => {
 				this.getLatestEvent();
 			}, 2000);
@@ -72,9 +72,8 @@ export class EventsComponent implements OnInit, OnDestroy {
 
 	async getLatestEvent() {
 		try {
-			const eventDeliveries = await this.eventsService.getEventDeliveries({ pageNo: 1 });
+			const eventDeliveries = await this.eventsService.getEventDeliveries();
 			this.lastestEventDeliveries = eventDeliveries.data.content;
-			this.privateService.activeProjectDetails?.type === 'outgoing' && this.lastestEventDeliveries.length > 0;
 			return;
 		} catch (error) {
 			return error;
@@ -83,6 +82,19 @@ export class EventsComponent implements OnInit, OnDestroy {
 
 	async checkEventsOnFirstLoad() {
 		this.hasEvents = this.lastestEventDeliveries.length === 0 ? false : true;
+
+		if (this.hasEvents) {
+			clearInterval(this.eventDelievryIntervalTime);
+			await this.fetchDashboardData();
+			return;
+		}
+
+		if (this.privateService.activeProjectDetails?.type === 'incoming' && this.isProjectConfigurationComplete) await this.getLatestSource();
+	}
+
+	continueToDashboard() {
+		this.fetchDashboardData();
+		this.hasEvents = true;
 		clearInterval(this.eventDelievryIntervalTime);
 	}
 
@@ -90,7 +102,7 @@ export class EventsComponent implements OnInit, OnDestroy {
 		try {
 			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 
-			const dashboardResponse = await this.eventsService.dashboardSummary({ startDate: startDate || '', endDate: endDate || '', frequency: this.dashboardFrequency });
+			const dashboardResponse = await this.eventsService.dashboardSummary({ startDate: startDate || '', endDate: endDate || '', type: this.dashboardFrequency });
 			this.dashboardData = dashboardResponse.data;
 			this.initConvoyChart(dashboardResponse);
 

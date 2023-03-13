@@ -12,13 +12,13 @@ import { DropdownComponent } from 'src/app/components/dropdown/dropdown.componen
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CreateEndpointComponent } from 'src/app/private/components/create-endpoint/create-endpoint.component';
-import { EndpointsService } from './endpoints.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { FormsModule } from '@angular/forms';
 import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
+import { ProjectService } from '../project.service';
 
 @Component({
 	selector: 'convoy-endpoints',
@@ -57,7 +57,7 @@ export class EndpointsComponent implements OnInit {
 	isLoadingEndpoints = false;
 	endpointSearchString!: string;
 
-	constructor(public privateService: PrivateService, public router: Router, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute) {}
+	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private generalService: GeneralService, public route: ActivatedRoute) {}
 
 	ngOnInit() {
 		this.getEndpoints();
@@ -67,7 +67,7 @@ export class EndpointsComponent implements OnInit {
 		this.isLoadingEndpoints = true;
 		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
 		try {
-			const response = await this.endpointService.getEndpoints({ pageNo: page, searchString: requestDetails?.search });
+			const response = await this.privateService.getEndpoints({ page: page, q: requestDetails?.search });
 			this.endpoints = response.data;
 			this.displayedEndpoints = this.generalService.setContentDisplayed(response.data.content);
 			this.isLoadingEndpoints = false;
@@ -82,6 +82,6 @@ export class EndpointsComponent implements OnInit {
 	}
 
 	cancel() {
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/endpoints');
+		this.router.navigateByUrl('/projects/' + this.projectService.activeProjectDetails?.uid + '/endpoints');
 	}
 }

@@ -9,12 +9,14 @@ import { PrivateService } from '../../private.service';
 export class TeamsService {
 	constructor(private http: HttpService, private privateService: PrivateService) {}
 
-	getTeamMembers(requestDetails: { searchString?: string; pageNo?: number }): Promise<HTTP_RESPONSE> {
+	getTeamMembers(requestDetails: { q?: string; page?: number }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org')}/members?sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
-					method: 'get'
+					url: `/members`,
+					method: 'get',
+					level: 'org',
+					query: requestDetails
 				});
 				return resolve(response);
 			} catch (error) {
@@ -23,12 +25,14 @@ export class TeamsService {
 		});
 	}
 
-	getPendingTeamMembers(requestDetails: { pageNo?: number }): Promise<HTTP_RESPONSE> {
+	getPendingTeamMembers(requestDetails: { page?: number }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org')}/invites/pending?sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20`,
-					method: 'get'
+					url: `/invites/pending`,
+					method: 'get',
+					level: 'org',
+					query: requestDetails
 				});
 				return resolve(response);
 			} catch (error) {
@@ -41,9 +45,10 @@ export class TeamsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org')}/invites/${inviteID}/resend`,
+					url: `/invites/${inviteID}/resend`,
 					method: 'post',
-					body: null
+					body: null,
+					level: 'org'
 				});
 				return resolve(response);
 			} catch (error) {
@@ -56,9 +61,10 @@ export class TeamsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org')}/invites/${inviteID}/cancel`,
+					url: `/invites/${inviteID}/cancel`,
 					method: 'post',
-					body: null
+					body: null,
+					level: 'org'
 				});
 				return resolve(response);
 			} catch (error) {
@@ -71,9 +77,10 @@ export class TeamsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org')}/invites`,
+					url: `/invites`,
 					body: requestDetails,
-					method: 'post'
+					method: 'post',
+					level: 'org'
 				});
 				return resolve(response);
 			} catch (error) {
@@ -86,8 +93,9 @@ export class TeamsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org')}/members/${requestOptions.memberId}`,
-					method: 'delete'
+					url: `/members/${requestOptions.memberId}`,
+					method: 'delete',
+					level: 'org'
 				});
 				return resolve(response);
 			} catch (error) {
