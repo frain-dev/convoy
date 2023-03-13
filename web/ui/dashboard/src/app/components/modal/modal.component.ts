@@ -20,23 +20,10 @@ export class ModalHeaderComponent {
 	constructor() {}
 }
 
-
-@Directive({
-	selector: '[convoy-modal-body]',
-	standalone: true,
-	host: { class: 'm-auto empty:hidden', '[class]': "position === 'full' ? 'max-w-[834px]' : 'w-full p-20px'" }
-})
-export class ModalBodyDirective {
-	@Input('position') position: 'full' | 'left' | 'right' | 'center' = 'right';
-
-	constructor() {}
-}
-
-
 @Component({
 	selector: 'convoy-modal, [convoy-modal]',
 	standalone: true,
-	imports: [CommonModule, ButtonComponent, OverlayDirective, ModalDialogComponent, ModalBodyDirective],
+	imports: [CommonModule, ButtonComponent, OverlayDirective, ModalDialogComponent],
 	templateUrl: './modal.component.html',
 	styleUrls: ['./modal.component.scss']
 })
