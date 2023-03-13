@@ -6,7 +6,7 @@ import { EventDeliveriesModule } from 'src/app/private/pages/project/events/even
 import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
 import { CreateSubscriptionModule } from 'src/app/private/components/create-subscription/create-subscription.module';
 import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
-import { PageComponent } from 'src/app/components/page/page.component';
+import { PageDirective } from 'src/app/components/page/page.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
 import { CardComponent } from 'src/app/components/card/card.component';
@@ -35,7 +35,7 @@ const routes: Routes = [{ path: '', component: AppComponent }];
 		DeleteModalComponent,
 		ModalComponent,
         ModalHeaderComponent,
-		PageComponent,
+		PageDirective,
 		ButtonComponent,
 		CardComponent,
 		EmptyStateComponent,

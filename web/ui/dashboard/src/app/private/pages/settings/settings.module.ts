@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { SettingsComponent } from './settings.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { CardComponent } from 'src/app/components/card/card.component';
-import { PageComponent } from 'src/app/components/page/page.component';
+import { PageDirective } from 'src/app/components/page/page.component';
 import { DeleteModalComponent } from '../../components/delete-modal/delete-modal.component';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
@@ -30,7 +30,7 @@ const routes: Routes = [{ path: '', component: SettingsComponent }];
 		RouterModule.forChild(routes),
 		ReactiveFormsModule,
 		CardComponent,
-		PageComponent,
+		PageDirective,
 		DeleteModalComponent,
 
 		SelectComponent,

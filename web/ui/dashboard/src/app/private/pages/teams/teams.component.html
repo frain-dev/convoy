@@ -1,4 +1,4 @@
-<convoy-page className="pb-2">
+<div convoy-page class="pb-2">
 	<div class="flex justify-between items-center">
 		<div>
 			<h3 class="mb-2 font-semibold">Teams</h3>
@@ -168,9 +168,9 @@
 			</button>
 		</div>
 	</ng-container>
-</convoy-page>
+</div>
 
-<convoy-page className="pt-0" *ngIf="((selectedFilterOption === 'active' && noData) || (selectedFilterOption === 'pending' && noInvitesData)) && (!isFetchingTeamMembers || !isFetchingPendingInvites)">
+<div convoy-page class="pt-0" *ngIf="((selectedFilterOption === 'active' && noData) || (selectedFilterOption === 'pending' && noInvitesData)) && (!isFetchingTeamMembers || !isFetchingPendingInvites)">
 	<convoy-empty-state
 		class="h-[50vh]"
 		(onAction)="openCreateTeamModal()"
@@ -179,7 +179,7 @@
 		[heading]="searchString ? 'You have no one with the name ' + searchString + ' on your team' : selectedFilterOption === 'active' ? 'You have no one on your team yet' : 'You have no pending invites'"
 		[description]="!searchString ? 'You can invite team members to join your organization and assign them roles to projects' : ''"
 	></convoy-empty-state>
-</convoy-page>
+</div>
 
 <div convoy-modal (closeModal)="goToTeams()" *ngIf="showInviteTeamMemberModal">
 	<div convoy-modal-header>

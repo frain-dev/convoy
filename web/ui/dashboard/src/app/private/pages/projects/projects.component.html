@@ -1,7 +1,7 @@
 <convoy-loader *ngIf="isloadingOrganisations" position="fixed"></convoy-loader>
 
 <ng-container *ngIf="!isloadingOrganisations && organisations.length">
-	<convoy-page>
+	<div convoy-page>
 		<ng-container *ngIf="!isLoadingProjects && projects.length">
 			<h3 class="mb-2 font-semibold">Projects</h3>
 			<p class="text-grey-40 text-14 font-medium mb-24px">All your project's summary at a glance</p>
@@ -79,5 +79,5 @@
 				</a>
 			</ng-container>
 		</div>
-	</convoy-page>
+	</div>
 </ng-container>

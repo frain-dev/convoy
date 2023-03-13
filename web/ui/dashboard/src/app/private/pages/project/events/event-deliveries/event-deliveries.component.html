@@ -47,7 +47,7 @@
 
 				<ng-container dropdownOptions>
 					<ul class="pt-10px">
-						<li convoy-list-item *ngFor="let status of eventDeliveryStatuses" convoy-dropdown-option>
+						<li class="px-20px" *ngFor="let status of eventDeliveryStatuses" convoy-list-item convoy-dropdown-option>
 							<label class="text-12 block w-full" [for]="status">{{ status || 'None' }}</label>
 							<input type="checkbox" name="status" [value]="status" [id]="status" [checked]="checkIfEventDeliveryStatusFilterOptionIsSelected(status)" (change)="updateEventDevliveryStatusFilter(status, $event)" />
 						</li>
@@ -73,8 +73,8 @@
 						<input type="search" placeholder="Search endpoints here" #eventDelsEndpointFilter class="w-full outline-none text-12" />
 					</div>
 
-					<ul class="min-h-[100px] px-10px pb-10px">
-						<li convoy-list-item *ngFor="let endpoint of eventsDelEndpointFilter$ | async" class="pt-4px pb-4px" convoy-dropdown-option>
+					<ul class="min-h-[100px] py-10px">
+						<li class="py-4px px-20px" *ngFor="let endpoint of eventsDelEndpointFilter$ | async" convoy-list-item convoy-dropdown-option>
 							<label [for]="endpoint.uid + 'eventDel'" class="text-12 block w-full">{{ endpoint.title }}</label>
 							<input type="checkbox" name="endpoint" [value]="endpoint.uid" [id]="endpoint.uid + 'eventDel'" [checked]="endpoint.uid === eventDeliveriesEndpoint" (change)="updateEndpointFilter(endpoint.uid, $event)" />
 						</li>
@@ -95,7 +95,7 @@
 
 				<ng-container dropdownOptions>
 					<ul class="min-h-[100px] pt-10px">
-						<li convoy-list-item *ngFor="let source of filterSources" convoy-dropdown-option>
+						<li class="py-4px px-20px" *ngFor="let source of filterSources" convoy-list-item convoy-dropdown-option>
 							<label [for]="source.uid + 'eventDel'" class="text-12 block w-full">{{ source.name }}</label>
 							<input type="checkbox" name="source" [value]="source.uid" [id]="source.uid + 'eventDel'" [checked]="source.uid === eventDeliveriesSource" (change)="updateSourceFilter(source.uid, $event)" />
 						</li>
