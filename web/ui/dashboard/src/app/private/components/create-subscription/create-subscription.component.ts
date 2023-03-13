@@ -54,7 +54,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	];
 	isCreatingSubscription = false;
 
-	projectType!: 'incoming' | 'outgoing';
+	projectType?: 'incoming' | 'outgoing' = this.privateService.activeProjectDetails?.type;
 	isLoadingForm = true;
 	subscriptionId = this.route.snapshot.params.id || this.route.snapshot.queryParams.id;
 	isLoadingPortalProject = false;
@@ -73,7 +73,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
-		await Promise.all([this.getGetProjectDetails(), this.getSubscriptionDetails()]);
+		await Promise.all([this.getSubscriptionDetails()]);
 		this.isLoadingForm = false;
 
 		// add required validation on source input for incoming projects
@@ -150,18 +150,6 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
-	async getGetProjectDetails() {
-		if (this.token) return;
-
-		try {
-			const response = await this.privateService.getProjectDetails();
-			this.projectType = response.data.type;
-			return;
-		} catch (error) {
-			return;
-		}
-	}
-
 	async onCreateSource(newSource: SOURCE) {
 		await this.getSources();
 		this.subscriptionForm.patchValue({ source_id: newSource.uid });
@@ -219,6 +207,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		// create subscription
 		try {
 			const response = this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: subscriptionData, id: this.subscriptionId }) : await this.createSubscriptionService.createSubscription(subscriptionData);
+			this.privateService.getSubscriptions({ refresh: true });
 			this.onAction.emit({ data: response.data, action: this.action == 'update' ? 'update' : 'create' });
 			this.createdSubscription = true;
 		} catch (error) {

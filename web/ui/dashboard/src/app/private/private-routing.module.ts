@@ -3,13 +3,13 @@ import { RouterModule, Routes } from '@angular/router';
 import { PrivateComponent } from './private.component';
 import { PrivateService } from './private.service';
 
-export const canActivate = async (privateService = inject(PrivateService)) => await privateService.getOrganizations();
+export const fetchOrganisations = async (privateService = inject(PrivateService)) => await privateService.getOrganizations();
 
 const routes: Routes = [
 	{
 		path: '',
 		component: PrivateComponent,
-		canActivate: [() => canActivate()],
+		resolve: [() => fetchOrganisations()],
 		children: [
 			{
 				path: '',

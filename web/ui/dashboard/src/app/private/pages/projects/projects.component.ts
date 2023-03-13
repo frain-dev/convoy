@@ -14,6 +14,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 	projectsLoaderIndex: number[] = [0, 1, 2, 3, 4];
 	showOrganisationModal = false;
 	reloadSubscription: any;
+	isLoadingProject: boolean = false;
 
 	constructor(private privateService: PrivateService, private router: Router) {
 		// for reloading this component when the same route is called again
@@ -46,6 +47,20 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 			this.isLoadingProjects = false;
 		} catch (error) {
 			this.isLoadingProjects = false;
+		}
+	}
+
+	// We're calling project details ahead because every page under project has a guard that requires project details to be present and to also prevent multiple calls
+	async getProjectDetails(projectId: string) {
+		this.isLoadingProject = true;
+
+		try {
+			await this.privateService.getProjectDetails({ refresh: true, projectId });
+			this.router.navigate([`/projects/${projectId}`]);
+			this.isLoadingProject = false;
+		} catch (error) {
+			this.isLoadingProject = false;
+			return error;
 		}
 	}
 }
