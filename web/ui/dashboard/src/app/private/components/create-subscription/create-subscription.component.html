@@ -211,7 +211,7 @@
 </div>
 
 <div convoy-modal position="full" *ngIf="showFilterForm" (closeModal)="showFilterForm = false">
-	<div modalHeader convoy-modal-header>
+	<div convoy-modal-header>
 		<div class="flex items-center">
 			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="showFilterForm = false">
 				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
@@ -231,7 +231,7 @@
 </div>
 
 <div convoy-modal position="center" size="sm" *ngIf="confirmModal" (closeModal)="confirmModal = false">
-	<div class="px-20px py-30px" modalBody>
+	<div class="px-20px py-30px">
 		<p class="text-16 font-semibold text-black mb-8px">Confirm Action</p>
 		<p class="text-14 font-medium text-grey-40 mb-24px">You are about to discard this process, please confirm this action.</p>
 		<div class="flex items-center">

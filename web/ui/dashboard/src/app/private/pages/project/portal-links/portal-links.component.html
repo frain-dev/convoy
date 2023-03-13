@@ -107,14 +107,14 @@
 ></convoy-empty-state>
 
 <div convoy-modal *ngIf="activeLink?.uid" position="right" [id]="'source-details'" (closeModal)="router.navigate([], { queryParams: {} })">
-	<div modalHeader convoy-modal-header>
+	<div convoy-modal-header>
 		<h2 class="font-semibold capitalize">{{ activeLink?.name || 'Portal Link Details' }}</h2>
 
 		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="router.navigate([], { queryParams: {} })">
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</button>
 	</div>
-	<ng-container modalBody>
+	<div class="p-20px">
 		<ul>
 			<li convoy-list-item class="!p-0" *ngFor="let endpoint of activeLink?.endpoints_metadata">
 				<div class="w-1/2 text-14 text-grey-40 font-medium">{{ endpoint?.title }}</div>
@@ -142,7 +142,7 @@
 				</svg>
 			</button>
 		</div>
-	</ng-container>
+	</div>
 </div>
 
 <convoy-create-portal-link *ngIf="showCreatePortalLinkModal || showEditPortalLinkModal"></convoy-create-portal-link>

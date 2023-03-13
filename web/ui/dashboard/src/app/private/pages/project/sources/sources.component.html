@@ -98,14 +98,14 @@
 ></convoy-empty-state>
 
 <div convoy-modal *ngIf="showSourceDetails" position="right" [id]="'source-details'" (closeModal)="closeModal()">
-	<div modalHeader convoy-modal-header>
+	<div convoy-modal-header>
 		<h2 class="font-semibold capitalize">{{ activeSource?.name || 'Source Details' }}</h2>
 
 		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="closeModal()">
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</button>
 	</div>
-	<ng-container modalBody>
+	<div class="p-20px">
 		<ul>
 			<li convoy-list-item>
 				<div class="w-1/2 text-14 font-medium">Source type</div>
@@ -193,11 +193,11 @@
 				</svg>
 			</button>
 		</div>
-	</ng-container>
+	</div>
 </div>
 
 <div convoy-modal *ngIf="shouldShowCreateSourceModal || shouldShowUpdateSourceModal" position="full" [id]="'sourceForm'" (closeModal)="closeCreateSourceModal({ action: 'close' })">
-	<div modalHeader convoy-modal-header>
+	<div convoy-modal-header>
 		<div class="flex items-center">
 			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="closeCreateSourceModal({ action: 'close' })">
 				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
@@ -211,9 +211,9 @@
 			<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
 		</a>
 	</div>
-	<ng-container modalBody>
+	<div class="max-w-[834px] m-auto">
 		<convoy-create-source showAction="true" (onAction)="closeCreateSourceModal($event)" [action]="shouldShowUpdateSourceModal ? 'update' : 'create'"></convoy-create-source>
-	</ng-container>
+	</div>
 </div>
 
 <app-delete-modal *ngIf="showDeleteSourceModal" [isLoading]="isDeletingSource" [deleteText]="'delete “' + activeSource?.name + '”'" (closeModal)="showDeleteSourceModal = false" (deleteData)="deleteSource()"></app-delete-modal>

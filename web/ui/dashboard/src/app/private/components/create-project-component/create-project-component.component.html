@@ -227,8 +227,16 @@
 	</ng-container>
 </form>
 
-<div convoy-modal *ngIf="showNewSignatureModal" title="New Signature" (closeModal)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">
-	<div modalBody>
+<div convoy-modal *ngIf="showNewSignatureModal" (closeModal)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">
+	<div convoy-modal-header>
+		<h2 class="font-semibold capitalize">New Signature</h2>
+
+		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">
+			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+		</button>
+	</div>
+
+	<div class="p-20px">
 		<form [formGroup]="newSignatureForm">
 			<convoy-select className="mb-24px" label="Encoding" name="encoding" formControlName="encoding" [options]="encodings" errorMessage="Select encoding type" [required]="true" (selectedOption)="newSignatureForm.patchValue({ encoding: $event })"></convoy-select>
 			<div class="spacer mb-24px"></div>
@@ -252,7 +260,7 @@
 ></convoy-token-modal>
 
 <div convoy-modal position="center" size="sm" *ngIf="confirmModal || confirmRegenerateKey" (closeModal)="confirmModal = false; confirmRegenerateKey = false">
-	<div class="px-20px py-30px" modalBody>
+	<div class="px-20px py-30px">
 		<p class="text-16 font-semibold text-black mb-8px">Confirm Action</p>
 		<p class="text-14 font-medium text-grey-40 mb-24px">
 			<span>{{ confirmModal ? 'You are about to discard this process, please confirm this action.' : 'You are about to regenerate a new Api Key for this project' }}</span>

@@ -120,7 +120,7 @@
 ></convoy-empty-state>
 
 <div convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [id]="'subscriptionForm'" (closeModal)="createSubscription('cancel')">
-	<div modalHeader convoy-modal-header>
+	<div convoy-modal-header>
 		<div class="flex items-center">
 			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="createSubscription('cancel')">
 				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
@@ -134,22 +134,22 @@
 			<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
 		</a>
 	</div>
-	<ng-container modalBody>
+	<div class="max-w-[834px] m-auto">
 		<convoy-create-subscription showAction="true" (onAction)="createSubscription($event.action)" [action]="showUpdateSubscriptionModal ? 'update' : 'create'"></convoy-create-subscription>
-	</ng-container>
+	</div>
 </div>
 
 <app-delete-modal *ngIf="showDeleteSubscriptionModal" [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="showDeleteSubscriptionModal = false" (deleteData)="deleteSubscripton()"></app-delete-modal>
 
 <div convoy-modal *ngIf="!isLoadindingSubscriptions && activeSubscription?.uid" position="right" [id]="'subscription-details'" (closeModal)="closeModal()">
-	<div modalHeader convoy-modal-header>
+	<div convoy-modal-header>
 		<h2 class="font-semibold capitalize">{{ activeSubscription?.name || 'Subscription Details' }}</h2>
 
 		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="closeModal()">
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</button>
 	</div>
-    <ng-container modalBody>
+    <div class="p-20px">
 		<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
 			<h2 class="font-medium mb-10px">Source</h2>
 			<convoy-card hover="true" class="w-full cursor-pointer py-20px mb-24px">
@@ -207,5 +207,5 @@
 				</svg>
 			</button>
 		</div>
-	</ng-container>
+	</div>
 </div>

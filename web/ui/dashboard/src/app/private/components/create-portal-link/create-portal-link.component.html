@@ -1,5 +1,5 @@
 <div convoy-modal position="full" (closeModal)="goBack()">
-	<div modalHeader convoy-modal-header>
+	<div convoy-modal-header>
 		<div class="flex items-center">
 			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="goBack()">
 				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
@@ -13,7 +13,7 @@
 			<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
 		</a>
 	</div>
-	<div modalBody>
+	<div class="max-w-[834px] m-auto">
 		<form [formGroup]="portalLinkForm" (ngSubmit)="savePortalLink()">
 			<convoy-card className="p-24px mt-40px">
 				<h2 class="font-semibold mb-8px">{{ linkUid ? 'Update' : 'Create' }} Portal Link</h2>

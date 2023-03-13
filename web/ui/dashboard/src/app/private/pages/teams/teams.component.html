@@ -181,22 +181,27 @@
 	></convoy-empty-state>
 </convoy-page>
 
-<div convoy-modal title="Add Team Member" (closeModal)="goToTeams()" *ngIf="showInviteTeamMemberModal">
-	<ng-container modalBody>
-		<form [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()">
-			<convoy-input-field>
-				<label for="email" convoy-label required="true">Email</label>
-				<input type="email" id="email" convoy-input autocomplete="email" formControlName="invitee_email" placeholder="Enter member email" />
-				<convoy-input-error *ngIf="inviteUserForm.get('invitee_email')?.touched && inviteUserForm.get('invitee_email')?.invalid">Please enter a valid email</convoy-input-error>
-			</convoy-input-field>
-			<div class="flex justify-end pt-24px pb-40px">
-				<button convoy-button fill="outline" type="button" routerLink="/team">Discard</button>
-				<button convoy-button class="ml-16px" [disabled]="invitingUser">
-					{{ invitingUser ? 'Inviting User..' : 'Send Invite' }}
-				</button>
-			</div>
-		</form>
-	</ng-container>
+<div convoy-modal (closeModal)="goToTeams()" *ngIf="showInviteTeamMemberModal">
+	<div convoy-modal-header>
+		<h2 class="font-semibold capitalize">Add Team Member</h2>
+
+		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="goToTeams()">
+			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+		</button>
+	</div>
+	<form class="p-20px" [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()">
+		<convoy-input-field>
+			<label for="email" convoy-label required="true">Email</label>
+			<input type="email" id="email" convoy-input autocomplete="email" formControlName="invitee_email" placeholder="Enter member email" />
+			<convoy-input-error *ngIf="inviteUserForm.get('invitee_email')?.touched && inviteUserForm.get('invitee_email')?.invalid">Please enter a valid email</convoy-input-error>
+		</convoy-input-field>
+		<div class="flex justify-end pt-24px pb-40px">
+			<button convoy-button fill="outline" type="button" routerLink="/team">Discard</button>
+			<button convoy-button class="ml-16px" [disabled]="invitingUser">
+				{{ invitingUser ? 'Inviting User..' : 'Send Invite' }}
+			</button>
+		</div>
+	</form>
 </div>
 
 <app-delete-modal

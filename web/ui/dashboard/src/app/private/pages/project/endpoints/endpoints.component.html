@@ -123,7 +123,7 @@
 </div>
 
 <div convoy-modal *ngIf="showCreateEndpointModal || showEditEndpointModal" position="full" (closeModal)="cancel()">
-	<div modalHeader convoy-modal-header>
+	<div convoy-modal-header>
 		<div class="flex items-center">
 			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="cancel()">
 				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
@@ -137,7 +137,7 @@
 			<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
 		</a>
 	</div>
-	<ng-container modalBody>
+	<div class="max-w-[834px] m-auto">
 		<convoy-create-endpoint showAction="true" (onAction)="$event.action === 'close' ? cancel() : getEndpoints(); cancel()" [editMode]="showEditEndpointModal"></convoy-create-endpoint>
-	</ng-container>
+	</div>
 </div>

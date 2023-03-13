@@ -5,7 +5,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, Routes } from '@angular/router';
 import { TableLoaderModule } from '../../components/table-loader/table-loader.module';
 import { PageComponent } from 'src/app/components/page/page.component';
-import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { CardComponent } from 'src/app/components/card/card.component';
@@ -31,6 +31,7 @@ const routes: Routes = [
 		DeleteModalComponent,
 		PageComponent,
 		ModalComponent,
+        ModalHeaderComponent,
 		DropdownComponent,
 		ButtonComponent,
 		BadgeComponent,

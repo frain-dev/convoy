@@ -37,7 +37,7 @@
 <convoy-token-modal *ngIf="showApiKey" title="Cli Key Generated Successfully" description="Your Cli Key has been created. Please copy this key and save it somewhere safe." [token]="apiKey" (closeModal)="showApiKey = false; getApiKeys()"></convoy-token-modal>
 
 <div convoy-modal (closeModal)="generateKeyModal = false; generateKeyForm.reset()" *ngIf="generateKeyModal">
-	<div modalHeader convoy-modal-header>
+	<div convoy-modal-header>
 		<h2 class="font-semibold capitalize">Generate CLI key</h2>
 
 		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="generateKeyModal = false; generateKeyForm.reset()">
@@ -45,7 +45,7 @@
 		</button>
 	</div>
 
-    <form [formGroup]="generateKeyForm" (ngSubmit)="generateNewKey()" modalBody>
+    <form class="p-20px" [formGroup]="generateKeyForm" (ngSubmit)="generateNewKey()">
 		<ng-container *ngIf="token">
 			<convoy-select label="Endpoint" name="endpoint_id" formControlName="endpoint_id" [options]="endpoints" [value]="endpointId" [required]="true" errorMessage="Endpoint Id is required" (selectedOption)="setEndpointId($event)"></convoy-select>
 		</ng-container>
