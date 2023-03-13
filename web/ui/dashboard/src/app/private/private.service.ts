@@ -5,17 +5,23 @@ import { HttpService } from 'src/app/services/http/http.service';
 import { FLIPT_API_RESPONSE } from '../models/flipt.model';
 import { GROUP } from '../models/group.model';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
+import { ProjectService } from './pages/project/project.service';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class PrivateService {
-	activeProjectDetails?: GROUP;
+	activeProjectDetails?: GROUP; // we should depricate this
 	organisationDetails!: ORGANIZATION_DATA;
 	apiFlagResponse!: FLIPT_API_RESPONSE;
 	projects: GROUP[] = [];
+	organisations!: HTTP_RESPONSE;
+	configutation!: HTTP_RESPONSE;
+	showCreateOrgModal = false;
+	projectDetails!: HTTP_RESPONSE;
+	profileDetails!: HTTP_RESPONSE;
 
-	constructor(private http: HttpService, private router: Router) {}
+	constructor(private http: HttpService, private router: Router, private projectService: ProjectService) {}
 
 	getOrganisation(): ORGANIZATION_DATA {
 		let org = localStorage.getItem('CONVOY_ORG');
@@ -37,12 +43,15 @@ export class PrivateService {
 
 	getConfiguration(): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
+			if (this.configutation) return resolve(this.configutation);
+
 			try {
 				const response = await this.http.request({
 					url: `/configuration`,
 					method: 'get'
 				});
 
+				this.configutation = response;
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
@@ -83,18 +92,23 @@ export class PrivateService {
 		});
 	}
 
-	getProjectDetails(): Promise<HTTP_RESPONSE> {
+	getProjectDetails(requestDetails?: { refresh?: boolean; projectId?: string }): Promise<HTTP_RESPONSE> {
 		const projectId = this.router.url.split('/')[2];
 
 		return new Promise(async (resolve, reject) => {
+			if (this.projectDetails && !requestDetails?.refresh) return resolve(this.projectDetails);
+
 			try {
 				const projectResponse = await this.http.request({
-					url: `/projects/${this.activeProjectDetails?.uid || projectId}`,
+					url: `/projects/${requestDetails?.projectId || this.activeProjectDetails?.uid || projectId}`,
 					method: 'get',
 					level: 'org'
 				});
 
-				this.activeProjectDetails = projectResponse.data;
+				this.activeProjectDetails = projectResponse.data; // we should depricate this
+				this.projectService.activeProjectDetails = projectResponse.data;
+
+				this.projectDetails = projectResponse;
 				return resolve(projectResponse);
 			} catch (error) {
 				return reject(error);
@@ -102,13 +116,33 @@ export class PrivateService {
 		});
 	}
 
-	getOrganizations(): Promise<HTTP_RESPONSE> {
+	async organisationConfig(organisations: ORGANIZATION_DATA[]) {
+		if (!organisations || (organisations && organisations?.length == 0)) return;
+
+		const selectedOrganisation = localStorage.getItem('CONVOY_ORG');
+		if (!selectedOrganisation || selectedOrganisation === 'undefined') return;
+
+		const organisationDetails = JSON.parse(selectedOrganisation);
+		const existingOrg = organisations.find((org: { uid: string }) => org.uid === organisationDetails?.uid);
+		if (existingOrg) return localStorage.setItem('CONVOY_ORG', JSON.stringify(existingOrg));
+
+		this.organisationDetails = organisations[0];
+		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisations[0]));
+		return;
+	}
+
+	getOrganizations(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
+			if (this.organisations && !requestDetails?.refresh) return resolve(this.organisations);
+
 			try {
 				const response = await this.http.request({
 					url: `/organisations`,
 					method: 'get'
 				});
+
+				await this.organisationConfig(response.data?.content);
+				this.organisations = response;
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
@@ -206,13 +240,17 @@ export class PrivateService {
 		}
 	}
 
-	getUserDetails(requestDetails: { userId: string }): Promise<HTTP_RESPONSE> {
+	getUserDetails(requestDetails: { userId: string; refresh?: boolean }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
+			if (this.profileDetails && !requestDetails.refresh) return resolve(this.profileDetails);
+
 			try {
 				const response = await this.http.request({
 					url: `/users/${requestDetails.userId}/profile`,
 					method: 'get'
 				});
+
+				this.profileDetails = response;
 				return resolve(response);
 			} catch (error) {
 				return reject(error);

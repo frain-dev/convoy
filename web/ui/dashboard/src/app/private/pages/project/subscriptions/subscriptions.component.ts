@@ -71,15 +71,6 @@ export class SubscriptionsComponent implements OnInit {
 		}
 	}
 
-	activeProjectConfig() {
-		const projectDetails = localStorage.getItem('PROJECT_CONFIG');
-		if (projectDetails && projectDetails !== 'undefined') {
-			const config = JSON.parse(projectDetails);
-			return config;
-		}
-		return null;
-	}
-
 	getEndpointSecret(endpointSecrets: any) {
 		return endpointSecrets?.length === 1 ? endpointSecrets[0].value : endpointSecrets[endpointSecrets?.length - 1].value;
 	}

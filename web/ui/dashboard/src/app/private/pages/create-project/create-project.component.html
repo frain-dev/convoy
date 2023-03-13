@@ -1,18 +1,5 @@
 <div convoy-modal position="full" [id]="'projectForm'" title="Create Project" (closeModal)="cancel()">
 	<div class="pt-40px pb-60px" modalBody>
-		<convoy-loader *ngIf="isLoadingProjects"></convoy-loader>
-		<ng-container *ngIf="!isLoadingProjects">
-			<app-create-project-component (onAction)="$event?.action == 'cancel' ? cancel() : createProject($event)"></app-create-project-component>
-		</ng-container>
-	</div>
-
-	<div convoy-modal position="center" *ngIf="showInfo">
-		<div class="p-30px" modalBody>
-			<img src="/assets/img/svg/project-info.svg" alt="Projects Info" />
-			<p class="font-bold text-16 mb-18px mt-12px">What to know about projects</p>
-			<p class="text-16 text-grey-40 mb-14px">Projects allow you to scope your webhook events to a specific use case or project in your organization.</p>
-			<p class="text-16 text-grey-40 mb-24px">For example, you might have separate projects for your different products; one for sending events for your payment product, another one for receiving events from your providers for your payment product, e.t.c</p>
-			<button convoy-button size="sm" class="px-36px" (click)="showInfo = false">Done</button>
-		</div>
+		<app-create-project-component (onAction)="$event?.action == 'cancel' ? cancel() : createProject($event)"></app-create-project-component>
 	</div>
 </div>

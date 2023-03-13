@@ -8,7 +8,7 @@
 			<img src="/assets/img/events-empty-state-image.svg" alt="events empty state image" class="mb-48px" />
 			<h3 class="mb-10px text-16 font-bold">{{ privateService.activeProjectDetails?.type === 'incoming' ? 'You have no incoming events.' : 'You have no outgoing events yet' }}</h3>
 			<p class="text-14 text-grey-40 max-w-[428px]" *ngIf="isProjectConfigurationComplete">
-				{{ privateService.activeProjectDetails?.type === 'incoming' ? 'Start receiving webhooks by adding your webhook URL into your webhook sender platform "' + lastestSource.name + '"' : 'You have not sent any webhook events yet. Learn how to do that in our docs' }}
+				{{ privateService.activeProjectDetails?.type === 'incoming' ? 'Start receiving webhooks by adding your webhook URL into your webhook sender platform "' + lastestSource?.name + '"' : 'You have not sent any webhook events yet. Learn how to do that in our docs' }}
 			</p>
 			<p class="text-14 text-grey-40 max-w-[428px]" *ngIf="!isProjectConfigurationComplete">
 				{{ privateService.activeProjectDetails?.type === 'incoming' ? 'You need to create an endpoint subscribe it to an event source (sender of your webhooks) to start receiving events' : 'You need to create an endpoint and subscribe it to listen to events' }}
@@ -16,8 +16,8 @@
 
 			<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming' && isProjectConfigurationComplete">
 				<div class="flex items-center justify-between w-full h-50px border border-grey-10 bg-[#F7F9FC] rounded-[6px] px-16px mb-32px max-w-[500px] mt-42px">
-					<span class="text-14 text-grey-40 font-normal whitespace-nowrap w-[440px] overflow-hidden text-ellipsis">{{ lastestSource.url }}</span>
-					<convoy-copy-button [text]="lastestSource.url" notificationText="Source URL copied to clipboard"></convoy-copy-button>
+					<span class="text-14 text-grey-40 font-normal whitespace-nowrap w-[440px] overflow-hidden text-ellipsis">{{ lastestSource?.url }}</span>
+					<convoy-copy-button [text]="lastestSource?.url || ''" notificationText="Source URL copied to clipboard"></convoy-copy-button>
 				</div>
 
 				<ng-container *ngIf="lastestEventDeliveries.length === 0">
@@ -47,7 +47,7 @@
 						</div>
 					</div>
 
-					<button (click)="checkEventsOnFirstLoad()" convoy-button class="mt-48px font-medium">Continue to Dashboard</button>
+					<button (click)="continueToDashboard()" convoy-button class="mt-48px font-medium">Continue to Dashboard</button>
 				</ng-container>
 			</ng-container>
 

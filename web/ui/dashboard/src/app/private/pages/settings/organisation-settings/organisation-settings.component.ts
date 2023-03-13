@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SettingsService } from '../settings.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { Router } from '@angular/router';
+import { PrivateService } from 'src/app/private/private.service';
 
 @Component({
 	selector: 'organisation-settings',
@@ -18,20 +19,20 @@ export class OrganisationSettingsComponent implements OnInit {
 	editOrganisationForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required]
 	});
-	constructor(private formBuilder: FormBuilder, private settingService: SettingsService, private generalService: GeneralService, private router:Router) {}
+
+	constructor(private formBuilder: FormBuilder, private settingService: SettingsService, private generalService: GeneralService, private router: Router, private privateService: PrivateService) {}
 
 	ngOnInit() {
-        this.getOrganisationDetails()
-    }
+		this.getOrganisationDetails();
+	}
 
 	async updateOrganisation() {
 		if (this.editOrganisationForm.invalid) return this.editOrganisationForm.markAllAsTouched();
 		this.isEditingOrganisation = true;
 		try {
 			const response = await this.settingService.updateOrganisation({ org_id: this.organisationId, body: this.editOrganisationForm.value });
+			this.privateService.getOrganizations({ refresh: true });
 			this.generalService.showNotification({ style: 'success', message: response.message });
-			localStorage.setItem('CONVOY_ORG', JSON.stringify(response.data));
-			window.location.reload();
 			this.isEditingOrganisation = false;
 		} catch {
 			this.isEditingOrganisation = false;
