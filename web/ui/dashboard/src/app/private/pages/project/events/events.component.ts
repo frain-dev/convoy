@@ -46,7 +46,7 @@ export class EventsComponent implements OnInit, OnDestroy {
 	async ngOnInit() {
 		this.isloadingDashboardData = true;
 		await this.getLatestEvent();
-		this.checkEventsOnFirstLoad();
+		await this.checkEventsOnFirstLoad();
 		this.isloadingDashboardData = false;
 
 		if (this.privateService.activeProjectDetails?.type === 'incoming' && !this.lastestEventDeliveries.length) {
@@ -85,11 +85,11 @@ export class EventsComponent implements OnInit, OnDestroy {
 
 		if (this.hasEvents) {
 			clearInterval(this.eventDelievryIntervalTime);
-			this.fetchDashboardData();
+			await this.fetchDashboardData();
 			return;
 		}
 
-		if (this.privateService.activeProjectDetails?.type === 'incoming' && this.isProjectConfigurationComplete) this.getLatestSource();
+		if (this.privateService.activeProjectDetails?.type === 'incoming' && this.isProjectConfigurationComplete) await this.getLatestSource();
 	}
 
 	continueToDashboard() {
