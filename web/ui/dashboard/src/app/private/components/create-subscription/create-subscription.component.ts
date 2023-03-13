@@ -207,7 +207,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		// create subscription
 		try {
 			const response = this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: subscriptionData, id: this.subscriptionId }) : await this.createSubscriptionService.createSubscription(subscriptionData);
-			this.privateService.getSubscriptions({ refresh: true });
+			this.privateService.getSubscriptions();
 			this.onAction.emit({ data: response.data, action: this.action == 'update' ? 'update' : 'create' });
 			this.createdSubscription = true;
 		} catch (error) {

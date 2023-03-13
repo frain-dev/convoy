@@ -20,8 +20,6 @@ export class PrivateService {
 	showCreateOrgModal = false;
 	projectDetails!: HTTP_RESPONSE;
 	profileDetails!: HTTP_RESPONSE;
-	subscriptions!: HTTP_RESPONSE;
-	sources!: HTTP_RESPONSE;
 
 	constructor(private http: HttpService, private router: Router, private projectService: ProjectService) {}
 
@@ -77,19 +75,16 @@ export class PrivateService {
 		});
 	}
 
-	getSubscriptions(requestDetails?: { page?: number; refresh?: boolean }): Promise<HTTP_RESPONSE> {
+	getSubscriptions(requestDetails?: { page?: number }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
-			if (this.subscriptions && !requestDetails?.refresh) return resolve(this.subscriptions);
-
 			try {
 				const subscriptionsResponse = await this.http.request({
 					url: `/subscriptions`,
 					method: 'get',
 					level: 'org_project',
-					query: { page: requestDetails?.page }
+					query: requestDetails
 				});
 
-				this.subscriptions = subscriptionsResponse;
 				return resolve(subscriptionsResponse);
 			} catch (error) {
 				return reject(error);
