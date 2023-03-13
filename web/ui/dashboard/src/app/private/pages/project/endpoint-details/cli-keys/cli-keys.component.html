@@ -1,7 +1,7 @@
-<convoy-card className="mb-20px min-h-[30vh] rounded-tl-[0] rounded-tr-[0]">
+<convoy-card class="mb-20px min-h-[30vh] rounded-tl-[0] rounded-tr-[0]">
 	<!-- empty state for api keys  -->
 	<ng-container *ngIf="showError || (!isFetchingApiKeys && apiKeys?.length === 0)">
-		<convoy-empty-state imgSrc="/assets/img/empty-state.svg" description="No CLI keys yet" type="table" class="h-[30vh] py-200px" id="empty-state"></convoy-empty-state>
+		<div convoy-empty-state imgSrc="/assets/img/events-log-empty-state.png" heading="You do not have any keys" class="py-54px" id="empty-state"></div>
 	</ng-container>
 
 	<!-- loader for api keys  -->

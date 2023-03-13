@@ -1,5 +1,5 @@
 <form class="pb-40px" [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'" [formGroup]="sourceForm" (ngSubmit)="saveSource()">
-	<convoy-card className="p-24px relative">
+	<convoy-card class="p-24px relative">
 		<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
 			<h4 class="font-medium mb-20px">Pre-configured Sources</h4>
 			<ul class="flex flex-row w-full mb-20px">

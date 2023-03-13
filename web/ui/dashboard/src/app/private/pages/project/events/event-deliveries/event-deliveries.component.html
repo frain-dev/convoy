@@ -212,10 +212,12 @@
 			</tbody>
 		</table>
 	</div>
-
-	<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" class="min-h-[70vh]" description="No event to show here" *ngIf="!isloadingEventDeliveries && (!displayedEventDeliveries || displayedEventDeliveries?.length === 0)"></convoy-empty-state>
 </convoy-card>
 
+<!-- empty state  -->
+<convoy-empty-state imgSrc="/assets/img/empty-state.svg" class="min-h-[70vh] rounded-tr-[0] rounded-tl-[0]" description="No event to show here" *ngIf="!isloadingEventDeliveries && (!displayedEventDeliveries || displayedEventDeliveries?.length === 0)"></convoy-empty-state>
+
+<!-- paginator  -->
 <div class="flex items-center mt-16px mb-24px">
 	<button
 		convoy-button

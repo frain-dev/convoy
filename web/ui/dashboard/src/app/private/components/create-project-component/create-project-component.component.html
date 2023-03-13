@@ -1,7 +1,7 @@
 <p class="text-14 text-grey-60 mb-24px">A project represents the top level namespace for grouping event sources, applications, endpoints and events.</p>
 
 <form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()">
-	<convoy-card className="p-24px mt-24px">
+	<convoy-card class="p-24px mt-24px">
 		<convoy-input-field>
 			<label for="project-name" required="true" convoy-label>Project name</label>
 			<input type="text" id="project-name" convoy-input autocomplete="project-name" formControlName="name" placeholder="Enter project name here" />

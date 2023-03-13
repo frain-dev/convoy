@@ -131,7 +131,7 @@
 		<ng-container *ngIf="projectType === 'incoming' && !token">
 			<h3 class="font-semibold mb-6px">Source</h3>
 			<p class="text-14 text-grey-60">Incoming event source this subscription is connected to.</p>
-			<convoy-card className="px-24px py-24px mb-70px mt-20px" *ngIf="!showCreateSourceForm">
+			<convoy-card class="px-24px py-24px mb-70px mt-20px" *ngIf="!showCreateSourceForm">
 				<convoy-select
 					[options]="sources"
 					name="source"
@@ -163,7 +163,7 @@
 
 		<h3 class="font-semibold mb-6px">Endpoint</h3>
 		<p class="text-14 text-grey-60">Endpoint this subscription routes events into.</p>
-		<convoy-card className="px-24px py-24px mt-20px" *ngIf="!showCreateEndpointForm">
+		<convoy-card class="px-24px py-24px mt-20px" *ngIf="!showCreateEndpointForm">
 			<convoy-select
 				className="mb-0 mt-24px"
 				[options]="endPoints"

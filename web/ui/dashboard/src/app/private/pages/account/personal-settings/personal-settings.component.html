@@ -47,7 +47,7 @@
 
 <!-- empty state  -->
 <ng-container *ngIf="!isFetchingKeys && personalAccessKeys?.content?.length === 0 && !showCreateNewTokenForm">
-	<convoy-empty-state imgSrc="/assets/img/new-empty-state.png" description="You currently do not have any personal access tokens." type="table" buttonText="Generate New Token" class="min-h-[50vh]" (onAction)="showCreateNewTokenForm = true"></convoy-empty-state>
+	<div convoy-empty-state imgSrc="/assets/img/new-empty-state.png" heading="You currently do not have any personal access tokens." buttonText="Generate New Token" class="py-100px" (onAction)="showCreateNewTokenForm = true"></div>
 </ng-container>
 
 <!-- generate personal access token form  -->
@@ -103,7 +103,14 @@
 </div>
 
 <!-- token generated  -->
-<convoy-token-modal *ngIf="showAccessKey" title="Generate Token" description="Your personal API key has been generated successfully" notificationText="Personal API key has been copied to your clipboard." [token]="accessKey" (closeModal)="showAccessKey = false; fetchPersonalKeys()"></convoy-token-modal>
+<convoy-token-modal
+	*ngIf="showAccessKey"
+	title="Generate Token"
+	description="Your personal API key has been generated successfully"
+	notificationText="Personal API key has been copied to your clipboard."
+	[token]="accessKey"
+	(closeModal)="showAccessKey = false; fetchPersonalKeys()"
+></convoy-token-modal>
 
 <!-- revoke token modal  -->
 <app-delete-modal *ngIf="showRevokeKeyModal" [isLoading]="isRevokingKey" [deleteText]="'revoke “' + selectedKey?.name + 'api key”'" deleteButtonText="revoke" (closeModal)="showRevokeKeyModal = false" (deleteData)="revokeKey()"></app-delete-modal>

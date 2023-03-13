@@ -10,14 +10,12 @@
 	<span class="text-primary-100 font-medium">Sources</span>
 </div>
 
-<div class="flex justify-between items-end mt-24px border-b border-b-grey-10 pb-20px mb-24px">
-	<div class="flex items-center">
-		<h1 class="text-24 font-bold text-grey-80 mr-10px">Sources</h1>
-		<convoy-tooltip tooltipContent="Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints" position="right"></convoy-tooltip>
-	</div>
-	<button convoy-button size="sm" routerLink="./new">Connect a source</button>
+<!-- empty state  -->
+<div class="py-100px mt-24px" convoy-card *ngIf="!isLoadingSources && sources?.content?.length == 0">
+	<convoy-empty-state imgSrc="/assets/img/sources-empty-state.png" heading="Create your first source" description="Sources are how your webhook events are routed into the Convoy." id="sources-empty-state"></convoy-empty-state>
 </div>
 
+<!-- loader  -->
 <div class="flex flex-wrap gap-24px" *ngIf="isLoadingSources">
 	<div class="bg-grey-10 rounded-8px animate-pulse w-348px h-128px"></div>
 	<div class="bg-grey-10 rounded-8px animate-pulse w-348px h-128px"></div>
@@ -28,6 +26,15 @@
 </div>
 
 <ng-container *ngIf="!isLoadingSources && sources?.content?.length">
+	<div class="flex justify-between items-end mt-24px border-b border-b-grey-10 pb-20px mb-24px">
+		<div class="flex items-center">
+			<h1 class="text-24 font-bold text-grey-80 mr-10px">Sources</h1>
+			<convoy-tooltip tooltipContent="Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints" position="right"></convoy-tooltip>
+		</div>
+		<button convoy-button size="sm" routerLink="./new">Connect a source</button>
+	</div>
+
+	<!-- list of sources  -->
 	<div class="flex flex-wrap gap-24px">
 		<ng-container *ngFor="let source of sources?.content; let i = index">
 			<convoy-card [id]="'source' + i" hover="true" class="w-full max-w-[348px] cursor-pointer py-20px">
@@ -87,15 +94,6 @@
 		</ng-container>
 	</div>
 </ng-container>
-
-<convoy-empty-state
-	imgSrc="/assets/img/sources-empty-state.png"
-	heading="Create your first source"
-	description="Sources are how your webhook events are routed into the Convoy."
-	class="min-h-[65vh] mt-16px"
-	id="sources-empty-state"
-	*ngIf="!isLoadingSources && sources?.content?.length == 0"
-></convoy-empty-state>
 
 <div convoy-modal *ngIf="showSourceDetails" position="right" [id]="'source-details'" (closeModal)="closeModal()">
 	<div convoy-modal-header>

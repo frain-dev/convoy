@@ -18,6 +18,7 @@ import { ENDPOINT, SECRET } from 'src/app/models/endpoint.model';
 })
 export class EndpointSecretComponent implements OnInit {
 	@Input('endpointDetails') endpointDetails!: ENDPOINT;
+	@Output() expireCurrentSecret = new EventEmitter<any>();
 	@Output() closeSecretModal = new EventEmitter<any>();
 	expireSecretForm: FormGroup = this.formBuilder.group({
 		expiration: ['', Validators.required]
@@ -51,7 +52,7 @@ export class EndpointSecretComponent implements OnInit {
 			const response = await this.endpointDetailsService.expireSecret({ endpointId: this.endpointDetails?.uid || '', body: this.expireSecretForm.value });
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.isExpiringSecret = false;
-			this.closeSecretModal.emit();
+			this.expireCurrentSecret.emit();
 			this.showExpireSecret = false;
 		} catch {
 			this.isExpiringSecret = false;

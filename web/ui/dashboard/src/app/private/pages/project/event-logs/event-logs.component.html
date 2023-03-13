@@ -10,6 +10,8 @@
 	<span class="text-primary-100 font-medium">Events Log</span>
 </div>
 
+
+<!-- filters  -->
 <div class="flex py-24px items-center justify-between">
 	<div class="flex">
 		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-transparent" [ngClass]="{ 'text-primary-100 !bg-primary-500': eventsSearchString != undefined && eventsSearchString != '' }">
@@ -116,9 +118,14 @@
 		Clear Filters
 	</button>
 </div>
-<convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" class="min-h-[70vh]" heading="You currently do not have any event logs" *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0)"></convoy-empty-state>
 
-<convoy-card class="flex" *ngIf="!isloadingEvents && displayedEvents && displayedEvents.length > 0">
+<!-- empty state  -->
+<div class="py-100px mt-24px" convoy-card *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0)">
+	<convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" class="min-h-[70vh]" heading="You currently do not have any event logs"></convoy-empty-state>
+</div>
+
+<!-- list of endpoints  -->
+<div convoy-card class="flex" *ngIf="!isloadingEvents && displayedEvents && displayedEvents.length > 0">
 	<div class="min-w-[605px] w-full h-full overflow-hidden relative">
 		<convoy-table-loader id="events_loader_loader" [tableHead]="eventLogsTableHead" *ngIf="isloadingEvents"></convoy-table-loader>
 
@@ -218,9 +225,10 @@
 			</ul>
 		</div>
 	</div>
-</convoy-card>
+</div>
 
-<div class="flex items-center mt-16px mb-24px">
+<!-- pagination  -->
+<div class="flex items-center mt-16px mb-24px" *ngIf="!isloadingEvents && displayedEvents?.length">
 	<button convoy-button fill="outline" size="sm" class="pl-4px pr-16px py-4px border-primary-300" (click)="getEvents({ page: events?.pagination?.prev })" routerLink="./" [queryParams]="{ page: events?.pagination?.prev }" [disabled]="!events || events.pagination.prev === 0">
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>

@@ -28,7 +28,18 @@
 		</form>
 	</div>
 
-	<button *ngIf="!isLoadingEndpoints && displayedEndpoints?.length" convoy-button size="sm" class="h-36px" id="create-endpoint-modal-button" routerLink="./new">Create Endpoint</button>
+	<button *ngIf="displayedEndpoints?.length" convoy-button size="sm" class="h-36px" id="create-endpoint-modal-button" routerLink="./new">Create Endpoint</button>
+</div>
+
+<!-- empty state  -->
+<div class="py-100px mt-24px" convoy-card *ngIf="!isLoadingEndpoints && displayedEndpoints?.length === 0">
+	<convoy-empty-state
+		imgSrc="/assets/img/events-log-empty-state.png"
+		[buttonText]="!endpointSearchString ? 'Create Endpoint' : ''"
+		[heading]="endpointSearchString ? endpointSearchString + ' endpoint does not exist' : 'You currently do not have any endpoints'"
+		id="endpoints-empty-state"
+		(onAction)="router.navigate(['./new'], { relativeTo: this.route })"
+	></convoy-empty-state>
 </div>
 
 <convoy-card *ngIf="isLoadingEndpoints">
@@ -77,16 +88,6 @@
 		</table>
 	</div>
 </convoy-card>
-
-<convoy-empty-state
-	*ngIf="!isLoadingEndpoints && displayedEndpoints?.length === 0"
-	imgSrc="/assets/img/events-log-empty-state.png"
-	buttonText="Create Endpoint"
-	description="You have not created an endpoint"
-	class="mt-16px min-h-[65vh]"
-	id="endpoints-empty-state"
-	(onAction)="router.navigate(['./new'], { relativeTo: this.route })"
-></convoy-empty-state>
 
 <div class="flex items-center mt-16px" *ngIf="!isLoadingEndpoints && displayedEndpoints?.length">
 	<button
