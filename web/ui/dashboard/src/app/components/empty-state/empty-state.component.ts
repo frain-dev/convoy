@@ -13,7 +13,6 @@ export class EmptyStateComponent implements OnInit {
 	@Input('heading') heading!: string;
 	@Input('description') description!: string;
 	@Input('buttonText') buttonText!: string;
-	@Input('type') type: 'normal' | 'table' = 'normal';
 	@Output('onAction') onAction = new EventEmitter<any>();
 
 	constructor() {}
