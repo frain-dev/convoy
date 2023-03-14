@@ -165,6 +165,8 @@ func Test_CreateEndpoint(t *testing.T) {
 		OrganisationID: seedOrg(t, db).UID,
 		Type:           datastore.IncomingProject,
 		Config:         &datastore.DefaultProjectConfig,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	require.NoError(t, projectRepo.CreateProject(context.Background(), project))
@@ -179,8 +181,8 @@ func Test_CreateEndpoint(t *testing.T) {
 	require.NotEmpty(t, dbEndpoint.CreatedAt)
 	require.NotEmpty(t, dbEndpoint.UpdatedAt)
 
-	dbEndpoint.CreatedAt = time.Time{}
-	dbEndpoint.UpdatedAt = time.Time{}
+	dbEndpoint.CreatedAt, dbEndpoint.UpdatedAt = time.Time{}, time.Time{}
+	endpoint.CreatedAt, endpoint.UpdatedAt = time.Time{}, time.Time{}
 
 	for i := range dbEndpoint.Secrets {
 		secret := &dbEndpoint.Secrets[i]
@@ -279,6 +281,8 @@ func Test_FindEndpointsByID(t *testing.T) {
 		endpoint, ok := endpointMap[dbEndpoint.UID]
 		require.True(t, ok)
 
+		endpoint.CreatedAt, endpoint.UpdatedAt = time.Time{}, time.Time{}
+
 		require.NotEmpty(t, dbEndpoint.CreatedAt)
 		require.NotEmpty(t, dbEndpoint.UpdatedAt)
 
@@ -337,6 +341,8 @@ func Test_FindEndpointsByAppID(t *testing.T) {
 		endpoint, ok := endpointMap[dbEndpoint.UID]
 		require.True(t, ok)
 
+		endpoint.CreatedAt, endpoint.UpdatedAt = time.Time{}, time.Time{}
+
 		require.NotEmpty(t, dbEndpoint.CreatedAt)
 		require.NotEmpty(t, dbEndpoint.UpdatedAt)
 
@@ -377,6 +383,7 @@ func Test_FindEndpointsByOwnerID(t *testing.T) {
 
 		err := endpointRepo.CreateEndpoint(context.Background(), endpoint, project.UID)
 		require.NoError(t, err)
+		endpoint.CreatedAt, endpoint.UpdatedAt = time.Time{}, time.Time{}
 
 		event := generateEvent(t, db)
 		event.Endpoints = []string{endpoint.UID}
@@ -394,6 +401,7 @@ func Test_FindEndpointsByOwnerID(t *testing.T) {
 	for _, dbEndpoint := range dbEndpoints {
 		endpoint, ok := endpointMap[dbEndpoint.UID]
 		require.True(t, ok)
+		endpoint.CreatedAt, endpoint.UpdatedAt = time.Time{}, time.Time{}
 
 		require.NotEmpty(t, dbEndpoint.CreatedAt)
 		require.NotEmpty(t, dbEndpoint.UpdatedAt)
@@ -485,6 +493,8 @@ func Test_FindEndpointByID(t *testing.T) {
 
 	require.Equal(t, int64(1), dbEndpoint.Events)
 	dbEndpoint.Events = 0
+
+	endpoint.CreatedAt, endpoint.UpdatedAt = time.Time{}, time.Time{}
 	require.Equal(t, endpoint, dbEndpoint)
 }
 
@@ -588,6 +598,8 @@ func generateEndpoint(project *datastore.Project) *datastore.Endpoint {
 		RateLimit:          300,
 		Status:             datastore.ActiveEndpointStatus,
 		RateLimitDuration:  "4s",
+		CreatedAt:          time.Now(),
+		UpdatedAt:          time.Now(),
 		Secrets: []datastore.Secret{
 			{
 				UID:       ulid.Make().String(),

@@ -20,8 +20,8 @@ var (
 
 const (
 	createOrganization = `
-	INSERT INTO convoy.organisations (id, name, owner_id, custom_domain, assigned_domain)
-	VALUES ($1, $2, $3, $4, $5);
+	INSERT INTO convoy.organisations (id, name, owner_id, custom_domain, assigned_domain, created_at, updated_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7);
 	`
 
 	fetchOrganisation = `
@@ -64,7 +64,7 @@ func NewOrgRepo(db database.Database) datastore.OrganisationRepository {
 }
 
 func (o *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organisation) error {
-	result, err := o.db.ExecContext(ctx, createOrganization, org.UID, org.Name, org.OwnerID, org.CustomDomain, org.AssignedDomain)
+	result, err := o.db.ExecContext(ctx, createOrganization, org.UID, org.Name, org.OwnerID, org.CustomDomain, org.AssignedDomain, org.CreatedAt, org.UpdatedAt)
 	if err != nil {
 		return err
 	}

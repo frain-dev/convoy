@@ -16,8 +16,8 @@ import (
 
 const (
 	createAPIKey = `
-    INSERT INTO convoy.api_keys (id,name,key_type,mask_id,role_type,role_project,role_endpoint,hash,salt,user_id,expires_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11);
+    INSERT INTO convoy.api_keys (id,name,key_type,mask_id,role_type,role_project,role_endpoint,hash,salt,user_id,expires_at,created_at,updated_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13);
     `
 
 	updateAPIKeyById = `
@@ -128,7 +128,7 @@ func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) er
 	result, err := a.db.ExecContext(
 		ctx, createAPIKey, key.UID, key.Name, key.Type, key.MaskID,
 		roleType, projectID, endpointID, key.Hash,
-		key.Salt, userID, key.ExpiresAt,
+		key.Salt, userID, key.ExpiresAt, key.CreatedAt, key.UpdatedAt,
 	)
 	if err != nil {
 		return err

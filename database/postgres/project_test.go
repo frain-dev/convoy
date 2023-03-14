@@ -32,6 +32,8 @@ func Test_FetchProjectByID(t *testing.T) {
 		OrganisationID: org.UID,
 		Type:           datastore.IncomingProject,
 		Config:         &datastore.DefaultProjectConfig,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	require.NoError(t, projectRepo.CreateProject(context.Background(), newProject))
@@ -56,6 +58,7 @@ func Test_FetchProjectByID(t *testing.T) {
 		version.CreatedAt = time.Time{}
 	}
 
+	newProject.CreatedAt, newProject.UpdatedAt = time.Time{}, time.Time{}
 	require.Equal(t, newProject, dbProject)
 }
 
@@ -127,6 +130,8 @@ func Test_UpdateProject(t *testing.T) {
 		Name:           name,
 		OrganisationID: org.UID,
 		Config:         &datastore.DefaultProjectConfig,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	err := projectRepo.CreateProject(context.Background(), project)
@@ -190,6 +195,8 @@ func Test_UpdateProject(t *testing.T) {
 		require.NotEmpty(t, version.CreatedAt)
 		version.CreatedAt = time.Time{}
 	}
+
+	project.CreatedAt, project.UpdatedAt = time.Time{}, time.Time{}
 
 	require.Equal(t, updatedProject, dbProject)
 }

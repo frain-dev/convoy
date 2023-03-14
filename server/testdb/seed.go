@@ -457,6 +457,8 @@ func SeedSource(db database.Database, g *datastore.Project, uid, maskID, ds stri
 		Name:      "Convoy-Prod",
 		Type:      datastore.SourceType(ds),
 		Verifier:  v,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	// Seed Data
@@ -532,6 +534,8 @@ func SeedUser(db database.Database, email, password string) (*datastore.User, er
 		LastName:  "test",
 		Password:  string(p.Hash),
 		Email:     email,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	// Seed Data
@@ -550,6 +554,8 @@ func SeedConfiguration(db database.Database) (*datastore.Configuration, error) {
 		IsAnalyticsEnabled: true,
 		IsSignupEnabled:    true,
 		StoragePolicy:      &datastore.DefaultStoragePolicy,
+		CreatedAt:          time.Now(),
+		UpdatedAt:          time.Now(),
 	}
 
 	// Seed Data
@@ -587,6 +593,8 @@ func SeedPortalLink(db database.Database, g *datastore.Project, endpoints []stri
 		Name:      fmt.Sprintf("TestPortalLink-%s", ulid.Make().String()),
 		Token:     ulid.Make().String(),
 		Endpoints: endpoints,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	portalLinkRepo := postgres.NewPortalLinkRepo(db)

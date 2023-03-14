@@ -26,12 +26,12 @@ const (
 		id, title, status, secrets, owner_id, target_url, description, http_timeout,
 		rate_limit, rate_limit_duration, advanced_signatures, slack_webhook_url,
 		support_email, app_id, project_id, authentication_type, authentication_type_api_key_header_name,
-		authentication_type_api_key_header_value
+		authentication_type_api_key_header_value, created_at, updated_at
 	)
 	VALUES
 	  (
 		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-		$14, $15, $16, $17, $18
+		$14, $15, $16, $17, $18, $19, $20
 	  );
 	`
 
@@ -136,7 +136,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		endpoint.UID, endpoint.Title, endpoint.Status, endpoint.Secrets, endpoint.OwnerID, endpoint.TargetURL,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail, endpoint.AppID,
-		projectID, ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue,
+		projectID, ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, endpoint.CreatedAt, endpoint.UpdatedAt,
 	}
 
 	result, err := tx.ExecContext(ctx, createEndpoint, args...)

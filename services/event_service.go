@@ -415,10 +415,10 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 		Data:      newMessage.Data,
 		Raw:       newMessage.Raw,
 		Headers:   e.getCustomHeaders(newMessage.CustomHeaders),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
 		Endpoints: endpointIDs,
 		ProjectID: g.UID,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	if (g.Config == nil || g.Config.Strategy == nil) ||

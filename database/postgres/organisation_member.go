@@ -20,8 +20,8 @@ var (
 
 const (
 	createOrgMember = `
-	INSERT INTO convoy.organisation_members (id, organisation_id, user_id, role_type, role_project, role_endpoint)
-	VALUES ($1, $2, $3, $4, $5, $6);
+	INSERT INTO convoy.organisation_members (id, organisation_id, user_id, role_type, role_project, role_endpoint, created_at, updated_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
 	`
 
 	updateOrgMember = `
@@ -148,6 +148,8 @@ func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *da
 		member.Role.Type,
 		projectID,
 		endpointID,
+		member.CreatedAt,
+		member.UpdatedAt,
 	)
 	if err != nil {
 		return err

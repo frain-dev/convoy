@@ -20,8 +20,8 @@ var (
 
 const (
 	createDevice = `
-	INSERT INTO convoy.devices (id, project_id, endpoint_id, host_name, status, last_seen_at)
-	VALUES ($1, $2, $3, $4, $5, $6)
+	INSERT INTO convoy.devices (id, project_id, endpoint_id, host_name, status, last_seen_at, created_at, updated_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 
 	updateDevice = `
@@ -82,6 +82,8 @@ func (d *deviceRepo) CreateDevice(ctx context.Context, device *datastore.Device)
 		device.HostName,
 		device.Status,
 		device.LastSeenAt,
+		device.CreatedAt,
+		device.UpdatedAt,
 	)
 	if err != nil {
 		return err

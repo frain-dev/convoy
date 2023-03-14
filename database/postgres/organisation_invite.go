@@ -20,8 +20,8 @@ var (
 
 const (
 	createOrganisationInvite = `
-	INSERT INTO convoy.organisation_invites (id, organisation_id, invitee_email, token, role_type, role_project, role_endpoint, status, expires_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
+	INSERT INTO convoy.organisation_invites (id, organisation_id, invitee_email, token, role_type, role_project, role_endpoint, status, expires_at, created_at, updated_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
 	`
 
 	updateOrganisationInvite = `
@@ -122,6 +122,8 @@ func (i *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datast
 		endpointID,
 		iv.Status,
 		iv.ExpiresAt,
+		iv.CreatedAt,
+		iv.UpdatedAt,
 	)
 	if err != nil {
 		return err

@@ -18,8 +18,8 @@ import (
 
 const (
 	createSource = `
-    INSERT INTO convoy.sources (id, source_verifier_id, name,type,mask_id,provider,is_disabled,forward_headers,project_id, pub_sub)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10);
+    INSERT INTO convoy.sources (id, source_verifier_id, name,type,mask_id,provider,is_disabled,forward_headers,project_id, pub_sub, created_at, updated_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12);
     `
 
 	createSourceVerifier = `
@@ -183,7 +183,7 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 
 	result1, err := tx.ExecContext(
 		ctx, createSource, source.UID, sourceVerifierID, source.Name, source.Type, source.MaskID,
-		source.Provider, source.IsDisabled, pq.Array(source.ForwardHeaders), source.ProjectID, source.PubSub,
+		source.Provider, source.IsDisabled, pq.Array(source.ForwardHeaders), source.ProjectID, source.PubSub, source.CreatedAt, source.UpdatedAt,
 	)
 	if err != nil {
 		return err

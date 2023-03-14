@@ -24,9 +24,10 @@ const (
 	retry_config_type,retry_config_duration,
 	retry_config_retry_count,filter_config_event_types,
 	filter_config_filter_headers,filter_config_filter_body,
-	rate_limit_config_count,rate_limit_config_duration
+	rate_limit_config_count,rate_limit_config_duration,
+	created_at, updated_at
 	)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17);
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19);
     `
 
 	updateSubscription = `
@@ -91,8 +92,8 @@ const (
 	COALESCE(sv.hmac_encoding, '') as "source_metadata.verifier.hmac.encoding"
 	FROM convoy.subscriptions s LEFT JOIN convoy.endpoints endpoint_metadata
     ON s.endpoint_id = endpoint_metadata.id LEFT JOIN convoy.sources source_metadata
-    ON s.source_id = source_metadata.id 
-	LEFT JOIN convoy.source_verifiers sv ON sv.id = source_metadata.source_verifier_id 
+    ON s.source_id = source_metadata.id
+	LEFT JOIN convoy.source_verifiers sv ON sv.id = source_metadata.source_verifier_id
 	WHERE s.deleted_at IS NULL `
 
 	fetchSubscriptionByID = baseFetch + ` AND %s = $1 AND %s = $2;`
@@ -165,7 +166,8 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		subscription.Name, subscription.Type, subscription.ProjectID,
 		endpointID, deviceID, sourceID,
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
-		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, rlc.Count, rlc.Duration,
+		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, rlc.Count,
+		rlc.Duration, subscription.CreatedAt, subscription.UpdatedAt,
 	)
 	if err != nil {
 		return err

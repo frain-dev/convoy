@@ -19,8 +19,8 @@ var (
 
 const (
 	createPortalLink = `
-	INSERT INTO convoy.portal_links (id, project_id, name, token, endpoints)
-	VALUES ($1, $2, $3, $4, $5);
+	INSERT INTO convoy.portal_links (id, project_id, name, token, endpoints, created_at, updated_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7);
 	`
 
 	createPortalLinkEndpoints = `
@@ -41,21 +41,21 @@ const (
 	`
 
 	fetchPortalLinkById = `
-	SELECT * FROM convoy.portal_links 
+	SELECT * FROM convoy.portal_links
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	fetchPortalLinkByToken = `
-	SELECT * FROM convoy.portal_links 
+	SELECT * FROM convoy.portal_links
 	WHERE token = $1 AND deleted_at IS NULL;
 	`
 
 	basePortalLinksCount = `
 	WITH table_count AS (
-		SELECT count(distinct(p.id)) as count 
-		FROM convoy.portal_links p 
+		SELECT count(distinct(p.id)) as count
+		FROM convoy.portal_links p
 		LEFT JOIN convoy.portal_links_endpoints pe ON p.id = pe.portal_link_id
-		LEFT JOIN convoy.endpoints e ON e.id = pe.endpoint_id 
+		LEFT JOIN convoy.endpoints e ON e.id = pe.endpoint_id
 		WHERE p.deleted_at IS NULL
 		%s
 	)
@@ -65,10 +65,10 @@ const (
 	SELECT table_count.count as count, p.id, p.project_id, p.name, p.token, p.endpoints, p.created_at, p.updated_at,
 	e.id AS "endpoint.id", e.title AS "endpoint.title",
 	e.project_id AS "endpoint.project_id", e.support_email AS "endpoint.support_email",
-	e.target_url AS "endpoint.target_url" 
-	FROM table_count, convoy.portal_links p 
+	e.target_url AS "endpoint.target_url"
+	FROM table_count, convoy.portal_links p
 	LEFT JOIN convoy.portal_links_endpoints pe ON p.id = pe.portal_link_id
-	LEFT JOIN convoy.endpoints e ON e.id = pe.endpoint_id 
+	LEFT JOIN convoy.endpoints e ON e.id = pe.endpoint_id
 	WHERE p.deleted_at IS NULL
 	%s
 	ORDER BY p.id LIMIT :limit OFFSET :offset
@@ -77,7 +77,7 @@ const (
 	basePortalLinkFilter = `AND (p.project_id = :project_id OR :project_id = '') AND (pe.endpoint_id = :endpoint_id OR :endpoint_id = '')`
 
 	deletePortalLink = `
-	UPDATE convoy.portal_links SET 
+	UPDATE convoy.portal_links SET
 	deleted_at = now()
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
@@ -103,6 +103,8 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 		portal.Name,
 		portal.Token,
 		portal.Endpoints,
+		portal.CreatedAt,
+		portal.UpdatedAt,
 	)
 	if err != nil {
 		return err

@@ -14,16 +14,16 @@ import (
 const (
 	createConfiguration = `
 	INSERT INTO convoy.configurations(
-		id, is_analytics_enabled, is_signup_enabled, 
-		storage_policy_type, on_prem_path, 
-		s3_bucket, s3_access_key, s3_secret_key, 
-		s3_region, s3_session_token, s3_endpoint
-	  ) 
-	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
+		id, is_analytics_enabled, is_signup_enabled,
+		storage_policy_type, on_prem_path,
+		s3_bucket, s3_access_key, s3_secret_key,
+		s3_region, s3_session_token, s3_endpoint, created_at, updated_at
+	  )
+	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);
 	`
 
 	fetchConfiguration = `
-	SELECT 
+	SELECT
 		id,
 		is_analytics_enabled,
 		is_signup_enabled,
@@ -54,7 +54,7 @@ const (
 		s3_access_key = $7,
 		s3_secret_key = $8,
 		s3_region = $9,
-		s3_session_token = $10, 
+		s3_session_token = $10,
 		s3_endpoint = $11,
 		updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL;
@@ -97,6 +97,8 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 		config.StoragePolicy.S3.Region,
 		config.StoragePolicy.S3.SessionToken,
 		config.StoragePolicy.S3.Endpoint,
+		config.CreatedAt,
+		config.UpdatedAt,
 	)
 	if err != nil {
 		return err
@@ -156,7 +158,6 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 		cfg.StoragePolicy.S3.SessionToken,
 		cfg.StoragePolicy.S3.Endpoint,
 	)
-
 	if err != nil {
 		return err
 	}

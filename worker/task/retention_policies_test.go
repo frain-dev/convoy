@@ -347,6 +347,8 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 		UID:                ulid.Make().String(),
 		IsAnalyticsEnabled: true,
 		StoragePolicy:      defaultStorage,
+		CreatedAt:          time.Now(),
+		UpdatedAt:          time.Now(),
 	}
 
 	// Seed Data

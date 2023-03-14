@@ -39,6 +39,8 @@ func generateSubscription(project *datastore.Project, source *datastore.Source, 
 				Body:    datastore.M{},
 			},
 		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 }
 
@@ -62,6 +64,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		newSub := generateSubscription(project, source, endpoint, device)
 		require.NoError(t, subRepo.CreateSubscription(context.Background(), project.UID, newSub))
+		newSub.CreatedAt, newSub.UpdatedAt = time.Time{}, time.Time{}
 		subMap[newSub.UID] = newSub
 	}
 
@@ -224,6 +227,8 @@ func Test_CreateSubscription(t *testing.T) {
 	dbSub.CreatedAt, dbSub.UpdatedAt = time.Time{}, time.Time{}
 	dbSub.Source, dbSub.Endpoint = nil, nil
 
+	newSub.CreatedAt, newSub.UpdatedAt = time.Time{}, time.Time{}
+
 	require.Equal(t, dbSub, newSub)
 }
 
@@ -309,6 +314,7 @@ func Test_FindSubscriptionByID(t *testing.T) {
 
 	dbSub.Source, dbSub.Endpoint = nil, nil
 
+	newSub.CreatedAt, newSub.UpdatedAt = time.Time{}, time.Time{}
 	require.Equal(t, dbSub, newSub)
 }
 
@@ -332,6 +338,7 @@ func Test_FindSubscriptionsBySourceID(t *testing.T) {
 		}
 
 		require.NoError(t, subRepo.CreateSubscription(context.Background(), project.UID, newSub))
+		newSub.CreatedAt, newSub.UpdatedAt = time.Time{}, time.Time{}
 		subMap[newSub.UID] = newSub
 	}
 
@@ -384,6 +391,7 @@ func Test_FindSubscriptionByEndpointID(t *testing.T) {
 		}
 
 		require.NoError(t, subRepo.CreateSubscription(context.Background(), project.UID, newSub))
+		newSub.CreatedAt, newSub.UpdatedAt = time.Time{}, time.Time{}
 		subMap[newSub.UID] = newSub
 	}
 
@@ -452,6 +460,8 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 
 	dbSub.Source, dbSub.Endpoint = nil, nil
 
+	newSub.CreatedAt, newSub.UpdatedAt = time.Time{}, time.Time{}
+
 	require.Equal(t, dbSub, newSub)
 }
 
@@ -514,6 +524,8 @@ func seedDevice(t *testing.T, db database.Database) *datastore.Device {
 		EndpointID: endpoint.UID,
 		HostName:   "host1",
 		Status:     datastore.DeviceStatusOnline,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
 	}
 
 	err := NewDeviceRepo(db).CreateDevice(context.Background(), d)

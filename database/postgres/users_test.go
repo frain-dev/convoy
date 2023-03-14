@@ -116,6 +116,7 @@ func Test_FindUserByEmail(t *testing.T) {
 	user.EmailVerificationExpiresAt, user.ResetPasswordExpiresAt = time.Time{}, time.Time{}
 	newUser.EmailVerificationExpiresAt, newUser.ResetPasswordExpiresAt = time.Time{}, time.Time{}
 
+	user.CreatedAt, user.UpdatedAt = time.Time{}, time.Time{}
 	require.Equal(t, user, newUser)
 }
 
@@ -147,6 +148,8 @@ func Test_FindUserByID(t *testing.T) {
 	user.EmailVerificationExpiresAt, user.ResetPasswordExpiresAt = time.Time{}, time.Time{}
 	newUser.EmailVerificationExpiresAt, newUser.ResetPasswordExpiresAt = time.Time{}, time.Time{}
 
+	user.CreatedAt, user.UpdatedAt = time.Time{}, time.Time{}
+
 	require.Equal(t, user, newUser)
 }
 
@@ -176,6 +179,8 @@ func Test_FindUserByToken(t *testing.T) {
 
 	user.EmailVerificationExpiresAt, user.ResetPasswordExpiresAt = time.Time{}, time.Time{}
 	newUser.EmailVerificationExpiresAt, newUser.ResetPasswordExpiresAt = time.Time{}, time.Time{}
+
+	user.CreatedAt, user.UpdatedAt = time.Time{}, time.Time{}
 
 	require.Equal(t, user, newUser)
 }
@@ -207,6 +212,7 @@ func Test_FindUserByEmailVerificationToken(t *testing.T) {
 	user.EmailVerificationExpiresAt, user.ResetPasswordExpiresAt = time.Time{}, time.Time{}
 	newUser.EmailVerificationExpiresAt, newUser.ResetPasswordExpiresAt = time.Time{}, time.Time{}
 
+	user.CreatedAt, user.UpdatedAt = time.Time{}, time.Time{}
 	require.Equal(t, user, newUser)
 }
 
@@ -351,5 +357,7 @@ func generateUser(t *testing.T) *datastore.User {
 		EmailVerificationToken:     "v878678768686868",
 		ResetPasswordExpiresAt:     time.Now(),
 		EmailVerificationExpiresAt: time.Now(),
+		CreatedAt:                  time.Now(),
+		UpdatedAt:                  time.Now(),
 	}
 }

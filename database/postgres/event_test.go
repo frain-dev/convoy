@@ -155,10 +155,10 @@ func Test_CountProjectMessages(t *testing.T) {
 }
 
 func Test_CountEvents(t *testing.T) {
-	data := json.RawMessage([]byte(`{
+	data := json.RawMessage(`{
 		"event_id": "123456",
 		"endpoint_id": "123456"
-	}`))
+	}`)
 
 	tests := []struct {
 		name  string
@@ -224,6 +224,7 @@ func Test_CountEvents(t *testing.T) {
 
 			require.NoError(t, err)
 			require.Equal(t, tc.count, int(count))
+			time.Sleep(time.Second)
 		})
 	}
 }

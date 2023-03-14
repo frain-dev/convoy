@@ -119,6 +119,8 @@ func TestFetchOrganisationByID(t *testing.T) {
 		OwnerID:        user.UID,
 		CustomDomain:   null.NewString("https://google.com", true),
 		AssignedDomain: null.NewString("https://google.com", true),
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	err := orgRepo.CreateOrganisation(context.Background(), org)
@@ -132,6 +134,7 @@ func TestFetchOrganisationByID(t *testing.T) {
 	dbOrg.CreatedAt = time.Time{}
 	dbOrg.UpdatedAt = time.Time{}
 
+	org.CreatedAt, org.UpdatedAt = time.Time{}, time.Time{}
 	require.Equal(t, org, dbOrg)
 }
 
@@ -149,6 +152,8 @@ func TestFetchOrganisationByAssignedDomain(t *testing.T) {
 		OwnerID:        user.UID,
 		CustomDomain:   null.NewString("https://yt.com", true),
 		AssignedDomain: null.NewString("https://google.com", true),
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	err := orgRepo.CreateOrganisation(context.Background(), org)
@@ -162,6 +167,7 @@ func TestFetchOrganisationByAssignedDomain(t *testing.T) {
 	dbOrg.CreatedAt = time.Time{}
 	dbOrg.UpdatedAt = time.Time{}
 
+	org.CreatedAt, org.UpdatedAt = time.Time{}, time.Time{}
 	require.Equal(t, org, dbOrg)
 }
 
@@ -179,6 +185,8 @@ func TestFetchOrganisationByCustomDomain(t *testing.T) {
 		OwnerID:        user.UID,
 		CustomDomain:   null.NewString("https://yt.com", true),
 		AssignedDomain: null.NewString("https://google.com", true),
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	err := orgRepo.CreateOrganisation(context.Background(), org)
@@ -189,9 +197,9 @@ func TestFetchOrganisationByCustomDomain(t *testing.T) {
 	require.NotEmpty(t, dbOrg.CreatedAt)
 	require.NotEmpty(t, dbOrg.UpdatedAt)
 
-	dbOrg.CreatedAt = time.Time{}
-	dbOrg.UpdatedAt = time.Time{}
+	dbOrg.CreatedAt, dbOrg.UpdatedAt = time.Time{}, time.Time{}
 
+	org.CreatedAt, org.UpdatedAt = time.Time{}, time.Time{}
 	require.Equal(t, org, dbOrg)
 }
 

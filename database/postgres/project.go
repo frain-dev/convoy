@@ -23,8 +23,8 @@ var (
 
 const (
 	createProject = `
-	INSERT INTO convoy.projects (id, name, type, logo_url, organisation_id, project_configuration_id)
-	VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;
+	INSERT INTO convoy.projects (id, name, type, logo_url, organisation_id, project_configuration_id, created_at, updated_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
 	`
 
 	createProjectConfiguration = `
@@ -182,7 +182,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 	}
 
 	project.ProjectConfigID = configID
-	proResult, err := tx.ExecContext(ctx, createProject, project.UID, project.Name, project.Type, project.LogoURL, project.OrganisationID, project.ProjectConfigID)
+	proResult, err := tx.ExecContext(ctx, createProject, project.UID, project.Name, project.Type, project.LogoURL, project.OrganisationID, project.ProjectConfigID, project.CreatedAt, project.UpdatedAt)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate") {
 			return datastore.ErrDuplicateProjectName
