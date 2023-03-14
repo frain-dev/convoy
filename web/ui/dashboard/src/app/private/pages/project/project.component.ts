@@ -49,7 +49,7 @@ export class ProjectComponent implements OnInit {
 	constructor(private privateService: PrivateService) {}
 
 	ngOnInit() {
-		Promise.all([this.checkScreenSize(), this.getProjectDetails(), this.getSubscriptions()]);
+		Promise.all([this.checkScreenSize(), this.getProjectDetails()]);
 	}
 
 	async getProjectDetails() {
@@ -62,15 +62,6 @@ export class ProjectComponent implements OnInit {
 			this.isLoadingProjectDetails = false;
 		} catch (error) {
 			this.isLoadingProjectDetails = false;
-		}
-	}
-
-	async getSubscriptions() {
-		try {
-			const subscriptionsResponse = await this.privateService.getSubscriptions({ page: 1 });
-			subscriptionsResponse.data?.content?.length === 0 ? localStorage.setItem('isActiveProjectConfigurationComplete', 'false') : localStorage.setItem('isActiveProjectConfigurationComplete', 'true');
-		} catch (error) {
-			return error;
 		}
 	}
 

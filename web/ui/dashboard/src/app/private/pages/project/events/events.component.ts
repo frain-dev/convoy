@@ -40,12 +40,12 @@ export class EventsComponent implements OnInit, OnDestroy {
 	eventDelTableHead: string[] = ['Status', 'Event Type', 'Event Time', 'Next Attempt'];
 	eventDelievryIntervalTime: any;
 	labelsDateFormat!: string;
-
+	isProjectConfigurationComplete = false;
 	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, public router: Router) {}
 
 	async ngOnInit() {
 		this.isloadingDashboardData = true;
-		await this.getLatestEvent();
+		await Promise.all([this.getLatestEvent(), this.getSubscriptions()]);
 		await this.checkEventsOnFirstLoad();
 		this.isloadingDashboardData = false;
 
@@ -164,8 +164,12 @@ export class EventsComponent implements OnInit, OnDestroy {
 		return labelsDateFormat;
 	}
 
-	get isProjectConfigurationComplete() {
-		const configurationComplete = localStorage.getItem('isActiveProjectConfigurationComplete');
-		return configurationComplete ? JSON.parse(configurationComplete) : false;
+	async getSubscriptions() {
+		try {
+			const subscriptionsResponse = await this.privateService.getSubscriptions();
+			this.isProjectConfigurationComplete = subscriptionsResponse.data?.content?.length > 0;
+		} catch (error) {
+			return error;
+		}
 	}
 }
