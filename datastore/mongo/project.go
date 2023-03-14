@@ -126,6 +126,11 @@ func (db *projectRepo) FillProjectsStatistics(ctx context.Context, project *data
 						},
 					},
 				},
+				bson.D{
+					{
+						Key: "$count", Value: "count",
+					},
+				},
 			}},
 			{Key: "as", Value: "project_endpoints"},
 		}},
@@ -144,6 +149,11 @@ func (db *projectRepo) FillProjectsStatistics(ctx context.Context, project *data
 						},
 					},
 				},
+				bson.D{
+					{
+						Key: "$count", Value: "count",
+					},
+				},
 			}},
 			{Key: "as", Value: "project_events"},
 		}},
@@ -154,8 +164,8 @@ func (db *projectRepo) FillProjectsStatistics(ctx context.Context, project *data
 			Key: "$project",
 			Value: bson.D{
 				{Key: "project_id", Value: "$uid"},
-				{Key: "total_endpoints", Value: bson.D{{Key: "$size", Value: "$project_endpoints"}}},
-				{Key: "messages_sent", Value: bson.D{{Key: "$size", Value: "$project_events"}}},
+				{Key: "total_endpoints", Value: bson.D{{Key: "$first", Value: "$project_endpoints.count"}}},
+				{Key: "messages_sent", Value: bson.D{{Key: "$first", Value: "$project_events.count"}}},
 			},
 		},
 	}
