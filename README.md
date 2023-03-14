@@ -42,7 +42,7 @@ $ cd convoy
 # Start Services
 docker compose -f configs/local/docker-compose.yml up
 ```
-### Convoy Cloud
+## Convoy Cloud
 Get started with our free Cloud version -- Sign up for [Convoy Cloud](https://dashboard.getconvoy.io/signup) account 
 
 ## Contributing
