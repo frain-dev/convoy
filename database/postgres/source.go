@@ -238,21 +238,23 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 		hmac = *source.Verifier.HMac
 	}
 
-	result2, err := tx.ExecContext(
-		ctx, updateSourceVerifierById, source.VerifierID, source.Verifier.Type, basic.UserName, basic.Password,
-		apiKey.HeaderName, apiKey.HeaderValue, hmac.Hash, hmac.Header, hmac.Secret, hmac.Encoding,
-	)
-	if err != nil {
-		return err
-	}
+	if !util.IsStringEmpty(string(source.Verifier.Type)) {
+		result2, err := tx.ExecContext(
+			ctx, updateSourceVerifierById, source.VerifierID, source.Verifier.Type, basic.UserName, basic.Password,
+			apiKey.HeaderName, apiKey.HeaderValue, hmac.Hash, hmac.Header, hmac.Secret, hmac.Encoding,
+		)
+		if err != nil {
+			return err
+		}
 
-	rowsAffected, err = result2.RowsAffected()
-	if err != nil {
-		return err
-	}
+		rowsAffected, err = result2.RowsAffected()
+		if err != nil {
+			return err
+		}
 
-	if rowsAffected < 1 {
-		return ErrSourceVerifierNotUpdated
+		if rowsAffected < 1 {
+			return ErrSourceVerifierNotUpdated
+		}
 	}
 
 	return tx.Commit()
