@@ -1,10 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, Directive, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { ButtonComponent } from '../button/button.component';
-import { ModalDialogComponent } from '../modal-dialog/modal-dialog.component';
 import { OverlayDirective } from '../overlay/overlay.directive';
 
-
+// modal header
 @Component({
 	selector: '[convoy-modal-header]',
 	standalone: true,
@@ -20,10 +19,39 @@ export class ModalHeaderComponent {
 	constructor() {}
 }
 
+
+// modal dialog
+@Directive({
+	selector: '[convoy-modal-dialog]',
+	standalone: true,
+	host: { class: 'fixed w-full shadow z-50', '[class]': 'classes', '[id]': 'id' }
+})
+export class ModalDialogDirective implements OnInit {
+	@Input('position') position: 'full' | 'left' | 'right' | 'center' = 'right';
+	@Input('size') size: 'sm' | 'md' | 'lg' = 'md';
+	@Input('id') id!: string;
+	modalSizes = { sm: 'max-w-[380px]', md: 'max-w-[460px]', lg: 'max-w-[600px]' };
+	modalType = {
+		full: ` h-screen w-screen top-0 right-0 bottom-0 overflow-y-auto translate-x-0`,
+		left: ` h-screen top-0 left-0 bottom-0 overflow-y-auto translate-x-0`,
+		right: ` h-screen top-0 right-0 bottom-0 overflow-y-auto translate-x-0`,
+		center: ` h-fit top-[50%] left-[50%] -translate-x-2/4 -translate-y-2/4 rounded-[16px]`
+	};
+	constructor() {}
+
+	ngOnInit(): void {}
+
+	get classes(): string {
+		return `${this.modalType[this.position]} ${this.position === 'full' ? 'bg-[#fafafe]' : 'bg-white-100 ' + this.modalSizes[this.size]}`;
+	}
+}
+
+
+// modal component
 @Component({
 	selector: '[convoy-modal]',
 	standalone: true,
-	imports: [CommonModule, ButtonComponent, OverlayDirective, ModalDialogComponent],
+	imports: [CommonModule, ButtonComponent, OverlayDirective, ModalDialogDirective],
 	templateUrl: './modal.component.html',
 	styleUrls: ['./modal.component.scss']
 })
@@ -44,5 +72,3 @@ export class ModalComponent implements OnInit {
 		}
 	}
 }
-
-
