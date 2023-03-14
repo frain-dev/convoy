@@ -1,7 +1,7 @@
 import { Directive, Input } from '@angular/core';
 
 @Directive({
-	selector: 'convoy-page, [convoy-page]',
+	selector: '[convoy-page]',
 	standalone: true,
 	host: { class: 'w-full m-auto', '[class]': 'types[size]' }
 })

@@ -6,7 +6,7 @@ import { OverlayDirective } from '../overlay/overlay.directive';
 
 
 @Component({
-	selector: 'convoy-modal-header, [convoy-modal-header]',
+	selector: '[convoy-modal-header]',
 	standalone: true,
 	template: `
 		<div class="px-20px pt-20px pb-16px border-y border-y-grey-10 bg-white-100 rounded-tr-16px rounded-tl-16px w-full ">
@@ -21,7 +21,7 @@ export class ModalHeaderComponent {
 }
 
 @Component({
-	selector: 'convoy-modal, [convoy-modal]',
+	selector: '[convoy-modal]',
 	standalone: true,
 	imports: [CommonModule, ButtonComponent, OverlayDirective, ModalDialogComponent],
 	templateUrl: './modal.component.html',
