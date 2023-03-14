@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { CreateSourceModule } from '../../components/create-source/create-source.module';
@@ -20,7 +20,7 @@ import { LoaderModule } from '../../components/loader/loader.module';
 @Component({
 	selector: 'convoy-setup-project',
 	standalone: true,
-	imports: [CommonModule, ModalComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, CardComponent],
+	imports: [CommonModule, ModalComponent, ModalHeaderComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, CardComponent],
 	templateUrl: './setup-project.component.html',
 	styleUrls: ['./setup-project.component.scss']
 })

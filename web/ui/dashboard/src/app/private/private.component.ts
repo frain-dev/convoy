@@ -10,10 +10,6 @@ import { PrivateService } from './private.service';
 	styleUrls: ['./private.component.scss']
 })
 export class PrivateComponent implements OnInit {
-	showDropdown = false;
-	showOrgDropdown = false;
-	showMoreDropdown = false;
-	showOverlay = false;
 	showAddOrganisationModal = false;
 	showVerifyEmailModal = false;
 	isEmailVerified = true;
@@ -83,7 +79,6 @@ export class PrivateComponent implements OnInit {
 		this.privateService.organisationDetails = organisation;
 		this.userOrganization = organisation;
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
-		this.showOrgDropdown = false;
 		location.replace('./projects');
 	}
 

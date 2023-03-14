@@ -17,7 +17,7 @@
 	</div>
 </form>
 <hr class="border-t border-t-grey-10 mt-32px mb-20px" />
-<convoy-card color="danger" className="p-26px my-24px">
+<div convoy-card color="danger" class="p-26px my-24px">
 	<h2 class="text-danger font-semibold mb-20px">Danger zone</h2>
 	<p class="text-14">Deleting your organisation means you will lose all workspaces created by you and all your every other organisation information.</p>
 	<button convoy-button color="danger" size="sm" class="mt-32px" (click)="showDeleteModal = !showDeleteModal">
@@ -26,5 +26,5 @@
 		</svg>
 		Delete Organisation
 	</button>
-</convoy-card>
+</div>
 <app-delete-modal *ngIf="showDeleteModal" [isLoading]="isDeletingOrganisation" [deleteText]="'deactivate “' + organisationName + '”'" [deleteButtonText]="'Deactivate'" (closeModal)="showDeleteModal = false" (deleteData)="deleteOrganisation()"></app-delete-modal>

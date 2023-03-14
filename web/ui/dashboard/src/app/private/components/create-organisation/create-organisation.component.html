@@ -1,6 +1,13 @@
+<div convoy-modal (closeModal)="close()">
+	<div convoy-modal-header>
+		<h2 class="font-semibold capitalize">Add an organisation</h2>
 
-<div convoy-modal title="Add an organisation" (closeModal)="close()">
-	<form modalBody [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
+		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="close()">
+			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+		</button>
+	</div>
+
+	<form class="p-20px" [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
 		<convoy-input-field>
 			<label for="organisation" required="true" convoy-label>Organisation name</label>
 			<input type="text" id="organisation" convoy-input autocomplete="organisation" formControlName="name" placeholder="e.g Kuda" />

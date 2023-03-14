@@ -49,6 +49,7 @@ export class EndpointDetailsComponent implements OnInit {
 	showEndpointSecret = false;
 	endpointDetails?: ENDPOINT;
 	secretKey: any;
+    endpointId = this.route.snapshot.params.id;
 	screenWidth = window.innerWidth;
 	tabs: ['Keys', 'devices'] = ['Keys', 'devices'];
 	activeTab: 'Keys' | 'devices' = 'Keys';
@@ -59,14 +60,14 @@ export class EndpointDetailsComponent implements OnInit {
 	async ngOnInit() {
 		this.isLoadingEndpointDetails = true;
 		this.isCliAvailable = await this.privateService.getFlag('can_create_cli_api_key');
-		this.getEndpointDetails(this.route.snapshot.params.id);
+		this.getEndpointDetails();
 	}
 
-	async getEndpointDetails(endpointId: string) {
+	async getEndpointDetails() {
 		this.isLoadingEndpointDetails = true;
 
 		try {
-			const response = await this.endpointDetailsService.getEndpoint(endpointId);
+			const response = await this.endpointDetailsService.getEndpoint(this.endpointId);
 			this.endpointDetails = response.data;
 			const secrets = response.data.secrets;
 			this.secretKey = secrets[secrets.length - 1];

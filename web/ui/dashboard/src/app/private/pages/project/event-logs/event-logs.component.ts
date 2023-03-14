@@ -26,6 +26,7 @@ import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { FormsModule } from '@angular/forms';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 
 @Component({
 	selector: 'convoy-event-logs',
@@ -50,7 +51,8 @@ import { ModalComponent } from 'src/app/components/modal/modal.component';
 		TimePickerComponent,
 		DatePickerComponent,
 		DropdownComponent,
-		ModalComponent
+		ModalComponent,
+        ListItemComponent
 	],
 	templateUrl: './event-logs.component.html',
 	styleUrls: ['./event-logs.component.scss']
@@ -97,8 +99,6 @@ export class EventLogsComponent implements OnInit {
 		this.getFiltersFromURL();
 		this.getEvents();
 		if (!this.portalToken) this.getSourcesForFilter();
-
-		if (this.privateService.activeProjectDetails?.type === 'incoming') this.eventLogsTableHead.splice(1, 1);
 	}
 
 	ngAfterViewInit() {

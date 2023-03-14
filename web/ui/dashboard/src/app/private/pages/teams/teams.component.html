@@ -1,4 +1,4 @@
-<convoy-page className="pb-2">
+<div convoy-page class="pb-2">
 	<div class="flex justify-between items-center">
 		<div>
 			<h3 class="mb-2 font-semibold">Teams</h3>
@@ -22,7 +22,7 @@
 				</button>
 
 				<ul dropdownOptions>
-					<li convoy-list-item convoy-dropdown-option *ngFor="let filterOption of filterOptions" [active]="selectedFilterOption == filterOption ? 'true' : 'false'">
+					<li class="px-20px" convoy-list-item convoy-dropdown-option *ngFor="let filterOption of filterOptions" [active]="selectedFilterOption == filterOption ? 'true' : 'false'">
 						<button convoy-button fill="text" class="w-full text-12 text-black !justify-start capitalize" (click)="toggleFilter(filterOption); dropdownComponent.show = false">{{ filterOption }} Invites</button>
 					</li>
 				</ul>
@@ -33,13 +33,13 @@
 	</div>
 
 	<ng-container *ngIf="(selectedFilterOption === 'active' && isFetchingTeamMembers) || (selectedFilterOption === 'pending' && isFetchingPendingInvites)">
-		<convoy-card>
+		<div convoy-card>
 			<convoy-table-loader [withDate]="false" [tableHead]="tableHead"></convoy-table-loader>
-		</convoy-card>
+		</div>
 	</ng-container>
 
 	<ng-container *ngIf="selectedFilterOption === 'active' && !isFetchingTeamMembers && !noData">
-		<convoy-card>
+		<div convoy-card>
 			<div class="min-h-[70vh]">
 				<table convoy-table>
 					<thead convoy-table-head>
@@ -71,7 +71,7 @@
 					</tbody>
 				</table>
 			</div>
-		</convoy-card>
+		</div>
 
 		<div class="flex items-center mt-16px">
 			<button convoy-button fill="outline" size="sm" class="pl-4px pr-16px py-4px border-primary-300" routerLink="./" [queryParams]="{ page: teams.pagination.prev }" [disabled]="teams.pagination.prev === 0" (click)="fetchTeamMembers({ page: teams.pagination.prev })">
@@ -100,40 +100,38 @@
 
 	<!-- Invites -->
 	<ng-container *ngIf="selectedFilterOption === 'pending' && !isFetchingPendingInvites && !noInvitesData">
-		<convoy-card>
-			<div class="min-h-[70vh]">
-				<table convoy-table>
-					<thead convoy-table-head>
-						<th convoy-table-head-cell [ngClass]="{ 'pl-20px': i === 0 }" *ngFor="let head of tableHead; let i = index">{{ selectedFilterOption === 'pending' && head === 'Name' ? 'Email' : head }}</th>
-					</thead>
-					<tbody>
-						<tr convoy-table-row *ngFor="let team of pendingInvites?.content; let i = index" [id]="'pendingInvite' + i">
-							<td convoy-table-cell class="pl-20px">
-								{{ team.invitee_email }}
-							</td>
-							<td convoy-table-cell>{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</td>
-							<td convoy-table-cell>All projects</td>
-							<td convoy-table-cell>
-								<div convoy-dropdown>
-									<button dropdownTrigger convoy-button size="sm" fill="clear">
-										<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
-									</button>
+		<div convoy-card class="min-h-[70vh]">
+			<table convoy-table>
+				<thead convoy-table-head>
+					<th convoy-table-head-cell [ngClass]="{ 'pl-20px': i === 0 }" *ngFor="let head of tableHead; let i = index">{{ selectedFilterOption === 'pending' && head === 'Name' ? 'Email' : head }}</th>
+				</thead>
+				<tbody>
+					<tr convoy-table-row *ngFor="let team of pendingInvites?.content; let i = index" [id]="'pendingInvite' + i">
+						<td convoy-table-cell class="pl-20px">
+							{{ team.invitee_email }}
+						</td>
+						<td convoy-table-cell>{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</td>
+						<td convoy-table-cell>All projects</td>
+						<td convoy-table-cell>
+							<div convoy-dropdown>
+								<button dropdownTrigger convoy-button size="sm" fill="clear">
+									<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
+								</button>
 
-									<ul dropdownOptions>
-										<li class="border-b border-b-grey-10">
-											<button convoy-dropdown-option convoy-button fill="clear" color="grey" class="w-full" (click)="resendInvite(team.uid); currentId = ''">Resend Invite</button>
-										</li>
-										<li>
-											<button convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
-										</li>
-									</ul>
-								</div>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
-		</convoy-card>
+								<ul dropdownOptions>
+									<li class="border-b border-b-grey-10">
+										<button convoy-dropdown-option convoy-button fill="clear" color="grey" class="w-full" (click)="resendInvite(team.uid); currentId = ''">Resend Invite</button>
+									</li>
+									<li>
+										<button convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
+									</li>
+								</ul>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 
 		<div class="flex items-center mt-16px">
 			<button
@@ -168,40 +166,41 @@
 			</button>
 		</div>
 	</ng-container>
-</convoy-page>
 
-<convoy-page className="pt-0" *ngIf="((selectedFilterOption === 'active' && noData) || (selectedFilterOption === 'pending' && noInvitesData)) && (!isFetchingTeamMembers || !isFetchingPendingInvites)">
-	<convoy-empty-state
-		className="h-[50vh]"
-		(onAction)="openCreateTeamModal()"
-		imgSrc="/assets/img/team-empty-img.svg"
-		[buttonText]="!searchString ? 'Add team member' : ''"
-		[heading]="searchString ? 'You have no one with the name ' + searchString + ' on your team' : selectedFilterOption === 'active' ? 'You have no one on your team yet' : 'You have no pending invites'"
-		[description]="!searchString ? 'You can invite team members to join your organization and assign them roles to projects' : ''"
-	></convoy-empty-state>
-</convoy-page>
+	<div convoy-card class="py-100px" *ngIf="((selectedFilterOption === 'active' && noData) || (selectedFilterOption === 'pending' && noInvitesData)) && (!isFetchingTeamMembers || !isFetchingPendingInvites)">
+		<div
+			convoy-empty-state
+			(onAction)="openCreateTeamModal()"
+			imgSrc="/assets/img/teams-empty-state.png"
+			[buttonText]="!searchString ? 'Add team member' : ''"
+			[heading]="searchString ? 'You have no one with the name ' + searchString + ' on your team' : selectedFilterOption === 'active' ? 'You have no one on your team yet' : 'You have no pending invites'"
+			[description]="!searchString ? 'You can invite team members to join your organization and assign them roles to projects' : ''"
+		></div>
+	</div>
+</div>
 
-<div convoy-modal position="full" title="Add Team Member" (closeModal)="goToTeams()" *ngIf="showInviteTeamMemberModal">
-	<ng-container modalBody>
-		<form [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()">
-			<convoy-card className="p-24px mt-24px">
-				<h3 class="font-semibold">Basic info</h3>
-				<div class="text-grey-40 text-14 font-normal mb-16px">Invite other members of your team to your organisation.</div>
+<div convoy-modal (closeModal)="goToTeams()" *ngIf="showInviteTeamMemberModal">
+	<div convoy-modal-header>
+		<h2 class="font-semibold capitalize">Add Team Member</h2>
 
-				<convoy-input-field>
-					<label for="email" convoy-label required="true">Email</label>
-					<input type="email" id="email" convoy-input autocomplete="email" formControlName="invitee_email" placeholder="Enter member email" />
-					<convoy-input-error *ngIf="inviteUserForm.get('invitee_email')?.touched && inviteUserForm.get('invitee_email')?.invalid">Please enter a valid email</convoy-input-error>
-				</convoy-input-field>
-			</convoy-card>
-			<div class="flex justify-end pt-24px pb-40px">
-				<button convoy-button fill="outline" type="button" routerLink="/team">Discard</button>
-				<button convoy-button class="ml-16px" [disabled]="invitingUser">
-					{{ invitingUser ? 'Inviting User..' : 'Send Invite' }}
-				</button>
-			</div>
-		</form>
-	</ng-container>
+		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="goToTeams()">
+			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+		</button>
+	</div>
+
+	<form class="p-20px" [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()">
+		<convoy-input-field>
+			<label for="email" convoy-label required="true">Email</label>
+			<input type="email" id="email" convoy-input autocomplete="email" formControlName="invitee_email" placeholder="Enter member email" />
+			<convoy-input-error *ngIf="inviteUserForm.get('invitee_email')?.touched && inviteUserForm.get('invitee_email')?.invalid">Please enter a valid email</convoy-input-error>
+		</convoy-input-field>
+		<div class="flex justify-end pt-24px pb-40px">
+			<button convoy-button fill="outline" type="button" routerLink="/team">Discard</button>
+			<button convoy-button class="ml-16px" [disabled]="invitingUser">
+				{{ invitingUser ? 'Inviting User..' : 'Send Invite' }}
+			</button>
+		</div>
+	</form>
 </div>
 
 <app-delete-modal

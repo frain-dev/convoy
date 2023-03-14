@@ -1,4 +1,4 @@
-<convoy-card>
+<div convoy-card>
 	<div class="flex justify-between mt-20px px-20px">
 		<div class="flex items-center">
 			<h4 class="font-semibold mr-6px">Event Deliveries</h4>
@@ -47,7 +47,7 @@
 
 				<ng-container dropdownOptions>
 					<ul class="pt-10px">
-						<li convoy-list-item *ngFor="let status of eventDeliveryStatuses" convoy-dropdown-option>
+						<li class="px-20px" *ngFor="let status of eventDeliveryStatuses" convoy-list-item convoy-dropdown-option>
 							<label class="text-12 block w-full" [for]="status">{{ status || 'None' }}</label>
 							<input type="checkbox" name="status" [value]="status" [id]="status" [checked]="checkIfEventDeliveryStatusFilterOptionIsSelected(status)" (change)="updateEventDevliveryStatusFilter(status, $event)" />
 						</li>
@@ -73,8 +73,8 @@
 						<input type="search" placeholder="Search endpoints here" #eventDelsEndpointFilter class="w-full outline-none text-12" />
 					</div>
 
-					<ul class="min-h-[100px] px-10px pb-10px">
-						<li convoy-list-item *ngFor="let endpoint of eventsDelEndpointFilter$ | async" class="pt-4px pb-4px" convoy-dropdown-option>
+					<ul class="min-h-[100px] py-10px">
+						<li class="py-4px px-20px" *ngFor="let endpoint of eventsDelEndpointFilter$ | async" convoy-list-item convoy-dropdown-option>
 							<label [for]="endpoint.uid + 'eventDel'" class="text-12 block w-full">{{ endpoint.title }}</label>
 							<input type="checkbox" name="endpoint" [value]="endpoint.uid" [id]="endpoint.uid + 'eventDel'" [checked]="endpoint.uid === eventDeliveriesEndpoint" (change)="updateEndpointFilter(endpoint.uid, $event)" />
 						</li>
@@ -95,7 +95,7 @@
 
 				<ng-container dropdownOptions>
 					<ul class="min-h-[100px] pt-10px">
-						<li convoy-list-item *ngFor="let source of filterSources" convoy-dropdown-option>
+						<li class="py-4px px-20px" *ngFor="let source of filterSources" convoy-list-item convoy-dropdown-option>
 							<label [for]="source.uid + 'eventDel'" class="text-12 block w-full">{{ source.name }}</label>
 							<input type="checkbox" name="source" [value]="source.uid" [id]="source.uid + 'eventDel'" [checked]="source.uid === eventDeliveriesSource" (change)="updateSourceFilter(source.uid, $event)" />
 						</li>
@@ -212,10 +212,14 @@
 			</tbody>
 		</table>
 	</div>
+</div>
 
-	<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="!isloadingEventDeliveries && (!displayedEventDeliveries || displayedEventDeliveries?.length === 0)"></convoy-empty-state>
-</convoy-card>
+<!-- empty state  -->
+<div convoy-card class="py-60px rounded-tr-[0] rounded-tl-[0]" *ngIf="!isloadingEventDeliveries && (!displayedEventDeliveries || displayedEventDeliveries?.length === 0)">
+	<div convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No event to show here"></div>
+</div>
 
+<!-- paginator  -->
 <div class="flex items-center mt-16px mb-24px">
 	<button
 		convoy-button
@@ -251,7 +255,7 @@
 </div>
 
 <div convoy-modal position="center" size="sm" *ngIf="showBatchRetryModal">
-	<div class="text-center py-30px" modalBody>
+	<div class="text-center py-30px">
 		<img src="/assets/img/filter.gif" alt="filter icon" class="w-50px m-auto mb-16px" />
 		<div class="text-center text-16 font-medium text-grey-60 mb-8px">The filters applied will affect</div>
 		<div class="text-center text-16 font-semibold mb-32px">{{ batchRetryCount || 0 }} event deliver{{ batchRetryCount > 1 ? 'ies' : 'y' }}</div>

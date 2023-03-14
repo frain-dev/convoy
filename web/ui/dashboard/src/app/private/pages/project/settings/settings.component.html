@@ -15,7 +15,7 @@
 
 <hr class="border-t border-grey-10 my-40px" />
 
-<convoy-card color="danger" className="p-26px my-24px">
+<div convoy-card color="danger" class="p-26px my-24px">
 	<h2 class="text-danger font-semibold mb-20px">Danger zone</h2>
 	<p class="text-14">
 		Deleting this project will delete all of it's data including events, apps, subscriptions and config.
@@ -27,6 +27,6 @@
 		</svg>
 		Delete Project
 	</button>
-</convoy-card>
+</div>
 
 <app-delete-modal *ngIf="showDeleteProjectModal" [isLoading]="isloading" [deleteText]="'delete this project'" (closeModal)="showDeleteProjectModal = false" (deleteData)="deleteProject()"></app-delete-modal>
