@@ -36,12 +36,12 @@ type EventDeliveryRepository interface {
 
 type EventRepository interface {
 	CreateEvent(context.Context, *Event) error
-	FindEventByID(ctx context.Context, id string) (*Event, error)
-	FindEventsByIDs(context.Context, []string) ([]Event, error)
+	FindEventByID(ctx context.Context, projectID string, id string) (*Event, error)
+	FindEventsByIDs(ctx context.Context, projectID string, ids []string) ([]Event, error)
 	CountProjectMessages(ctx context.Context, projectID string) (int64, error)
-	CountEvents(ctx context.Context, f *Filter) (int64, error)
-	LoadEventsPaged(context.Context, *Filter) ([]Event, PaginationData, error)
-	DeleteProjectEvents(context.Context, *EventFilter, bool) error
+	CountEvents(ctx context.Context, projectID string, f *Filter) (int64, error)
+	LoadEventsPaged(ctx context.Context, projectID string, f *Filter) ([]Event, PaginationData, error)
+	DeleteProjectEvents(ctx context.Context, projectID string, f *EventFilter, hardDelete bool) error
 }
 
 type ProjectRepository interface {

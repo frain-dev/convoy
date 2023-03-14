@@ -393,18 +393,18 @@ func (m *MockEventRepository) EXPECT() *MockEventRepositoryMockRecorder {
 }
 
 // CountEvents mocks base method.
-func (m *MockEventRepository) CountEvents(ctx context.Context, f *datastore.Filter) (int64, error) {
+func (m *MockEventRepository) CountEvents(ctx context.Context, projectID string, f *datastore.Filter) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CountEvents", ctx, f)
+	ret := m.ctrl.Call(m, "CountEvents", ctx, projectID, f)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CountEvents indicates an expected call of CountEvents.
-func (mr *MockEventRepositoryMockRecorder) CountEvents(ctx, f interface{}) *gomock.Call {
+func (mr *MockEventRepositoryMockRecorder) CountEvents(ctx, projectID, f interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountEvents", reflect.TypeOf((*MockEventRepository)(nil).CountEvents), ctx, f)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountEvents", reflect.TypeOf((*MockEventRepository)(nil).CountEvents), ctx, projectID, f)
 }
 
 // CountProjectMessages mocks base method.
@@ -437,53 +437,53 @@ func (mr *MockEventRepositoryMockRecorder) CreateEvent(arg0, arg1 interface{}) *
 }
 
 // DeleteProjectEvents mocks base method.
-func (m *MockEventRepository) DeleteProjectEvents(arg0 context.Context, arg1 *datastore.EventFilter, arg2 bool) error {
+func (m *MockEventRepository) DeleteProjectEvents(ctx context.Context, projectID string, f *datastore.EventFilter, hardDelete bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteProjectEvents", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "DeleteProjectEvents", ctx, projectID, f, hardDelete)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteProjectEvents indicates an expected call of DeleteProjectEvents.
-func (mr *MockEventRepositoryMockRecorder) DeleteProjectEvents(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockEventRepositoryMockRecorder) DeleteProjectEvents(ctx, projectID, f, hardDelete interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProjectEvents", reflect.TypeOf((*MockEventRepository)(nil).DeleteProjectEvents), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProjectEvents", reflect.TypeOf((*MockEventRepository)(nil).DeleteProjectEvents), ctx, projectID, f, hardDelete)
 }
 
 // FindEventByID mocks base method.
-func (m *MockEventRepository) FindEventByID(ctx context.Context, id string) (*datastore.Event, error) {
+func (m *MockEventRepository) FindEventByID(ctx context.Context, projectID, id string) (*datastore.Event, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindEventByID", ctx, id)
+	ret := m.ctrl.Call(m, "FindEventByID", ctx, projectID, id)
 	ret0, _ := ret[0].(*datastore.Event)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindEventByID indicates an expected call of FindEventByID.
-func (mr *MockEventRepositoryMockRecorder) FindEventByID(ctx, id interface{}) *gomock.Call {
+func (mr *MockEventRepositoryMockRecorder) FindEventByID(ctx, projectID, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventByID", reflect.TypeOf((*MockEventRepository)(nil).FindEventByID), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventByID", reflect.TypeOf((*MockEventRepository)(nil).FindEventByID), ctx, projectID, id)
 }
 
 // FindEventsByIDs mocks base method.
-func (m *MockEventRepository) FindEventsByIDs(arg0 context.Context, arg1 []string) ([]datastore.Event, error) {
+func (m *MockEventRepository) FindEventsByIDs(ctx context.Context, projectID string, ids []string) ([]datastore.Event, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindEventsByIDs", arg0, arg1)
+	ret := m.ctrl.Call(m, "FindEventsByIDs", ctx, projectID, ids)
 	ret0, _ := ret[0].([]datastore.Event)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindEventsByIDs indicates an expected call of FindEventsByIDs.
-func (mr *MockEventRepositoryMockRecorder) FindEventsByIDs(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockEventRepositoryMockRecorder) FindEventsByIDs(ctx, projectID, ids interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventsByIDs", reflect.TypeOf((*MockEventRepository)(nil).FindEventsByIDs), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventsByIDs", reflect.TypeOf((*MockEventRepository)(nil).FindEventsByIDs), ctx, projectID, ids)
 }
 
 // LoadEventsPaged mocks base method.
-func (m *MockEventRepository) LoadEventsPaged(arg0 context.Context, arg1 *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
+func (m *MockEventRepository) LoadEventsPaged(ctx context.Context, projectID string, f *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadEventsPaged", arg0, arg1)
+	ret := m.ctrl.Call(m, "LoadEventsPaged", ctx, projectID, f)
 	ret0, _ := ret[0].([]datastore.Event)
 	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
@@ -491,9 +491,9 @@ func (m *MockEventRepository) LoadEventsPaged(arg0 context.Context, arg1 *datast
 }
 
 // LoadEventsPaged indicates an expected call of LoadEventsPaged.
-func (mr *MockEventRepositoryMockRecorder) LoadEventsPaged(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockEventRepositoryMockRecorder) LoadEventsPaged(ctx, projectID, f interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventsPaged", reflect.TypeOf((*MockEventRepository)(nil).LoadEventsPaged), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventsPaged", reflect.TypeOf((*MockEventRepository)(nil).LoadEventsPaged), ctx, projectID, f)
 }
 
 // MockProjectRepository is a mock of ProjectRepository interface.

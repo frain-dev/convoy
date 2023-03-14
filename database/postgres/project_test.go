@@ -393,7 +393,7 @@ func Test_DeleteProject(t *testing.T) {
 	_, err = projectRepo.FetchProjectByID(context.Background(), project.UID)
 	require.Equal(t, datastore.ErrProjectNotFound, err)
 
-	_, err = NewEventRepo(db).FindEventByID(context.Background(), event.UID)
+	_, err = NewEventRepo(db).FindEventByID(context.Background(), event.ProjectID, event.UID)
 	require.Equal(t, datastore.ErrEventNotFound, err)
 
 	_, err = NewEndpointRepo(db).FindEndpointByID(context.Background(), project.UID, endpoint.UID)

@@ -27,13 +27,13 @@ const (
 	fetchEventById = `
 	SELECT id, event_type, endpoints, project_id,
 	COALESCE(source_id, '') AS source_id, headers, raw, data
-	FROM convoy.events WHERE id = $1 AND deleted_at is NULL;
+	FROM convoy.events WHERE id = $1 AND project_id = $2 AND deleted_at is NULL;
 	`
 
 	fetchEventsByIds = `
 	SELECT id, event_type, endpoints, project_id,
 	COALESCE(source_id, '') AS source_id, headers, raw, data
-	FROM convoy.events WHERE id IN (?) AND deleted_at IS NULL;
+	FROM convoy.events WHERE id IN (?) AND project_id = ? AND deleted_at IS NULL;
 	`
 
 	countProjectMessages = `
@@ -43,7 +43,7 @@ const (
 	SELECT count(distinct(ev.id)) from convoy.events ev
 	LEFT JOIN convoy.events_endpoints ee on ee.event_id = ev.id
 	LEFT JOIN convoy.endpoints e on ee.endpoint_id = e.id
-	WHERE (ev.project_id = $1 OR $1 = '') AND (e.id = $2 OR $2 = '' )
+	WHERE ev.project_id = $1 AND (e.id = $2 OR $2 = '' )
 	AND (ev.source_id = $3 OR $3 = '') AND ev.created_at >= $4 AND ev.created_at <= $5 AND ev.deleted_at IS NULL;
 	`
 
@@ -127,9 +127,9 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 	return tx.Commit()
 }
 
-func (e *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.Event, error) {
+func (e *eventRepo) FindEventByID(ctx context.Context, projectID string, id string) (*datastore.Event, error) {
 	event := &datastore.Event{}
-	err := e.db.QueryRowxContext(ctx, fetchEventById, id).StructScan(event)
+	err := e.db.QueryRowxContext(ctx, fetchEventById, id, projectID).StructScan(event)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrEventNotFound
@@ -140,8 +140,8 @@ func (e *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.Ev
 	return event, nil
 }
 
-func (e *eventRepo) FindEventsByIDs(ctx context.Context, ids []string) ([]datastore.Event, error) {
-	query, args, err := sqlx.In(fetchEventsByIds, ids)
+func (e *eventRepo) FindEventsByIDs(ctx context.Context, projectID string, ids []string) ([]datastore.Event, error) {
+	query, args, err := sqlx.In(fetchEventsByIds, ids, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -178,14 +178,9 @@ func (e *eventRepo) CountProjectMessages(ctx context.Context, projectID string) 
 	return count, nil
 }
 
-func (e *eventRepo) CountEvents(ctx context.Context, filter *datastore.Filter) (int64, error) {
+func (e *eventRepo) CountEvents(ctx context.Context, projectID string, filter *datastore.Filter) (int64, error) {
 	var count int64
-	var projectID string
 	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
-
-	if filter.Project != nil {
-		projectID = filter.Project.UID
-	}
 
 	err := e.db.QueryRowxContext(ctx, countEvents, projectID, filter.EndpointID, filter.SourceID, startDate, endDate).Scan(&count)
 	if err != nil {
@@ -195,16 +190,12 @@ func (e *eventRepo) CountEvents(ctx context.Context, filter *datastore.Filter) (
 	return count, nil
 }
 
-func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
-	var query, projectID string
+func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
+	var query string
 	var err error
 	var args []interface{}
 
 	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
-	if filter.Project != nil {
-		projectID = filter.Project.UID
-	}
-
 	if !util.IsStringEmpty(filter.EndpointID) {
 		filter.EndpointIDs = append(filter.EndpointIDs, filter.EndpointID)
 	}
@@ -280,7 +271,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 	return events, pagination.Build(filter.Pageable, ids), nil
 }
 
-func (e *eventRepo) DeleteProjectEvents(ctx context.Context, filter *datastore.EventFilter, hardDelete bool) error {
+func (e *eventRepo) DeleteProjectEvents(ctx context.Context, projectID string, filter *datastore.EventFilter, hardDelete bool) error {
 	query := softDeleteProjectEvents
 	startDate, endDate := getCreatedDateFilter(filter.CreatedAtStart, filter.CreatedAtEnd)
 
@@ -288,7 +279,7 @@ func (e *eventRepo) DeleteProjectEvents(ctx context.Context, filter *datastore.E
 		query = hardDeleteProjectEvents
 	}
 
-	_, err := e.db.ExecContext(ctx, query, filter.ProjectID, startDate, endDate)
+	_, err := e.db.ExecContext(ctx, query, projectID, startDate, endDate)
 	if err != nil {
 		return err
 	}

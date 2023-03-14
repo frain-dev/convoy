@@ -51,7 +51,6 @@ func (ea *EventAnalytics) track(perPage, page int) error {
 
 		for _, project := range projects {
 			filter := &datastore.Filter{
-				Project:  project,
 				Pageable: datastore.Pageable{PerPage: 20, Page: 1, Sort: -1},
 				SearchParams: datastore.SearchParams{
 					CreatedAtStart: time.Unix(0, 0).Unix(),
@@ -59,7 +58,7 @@ func (ea *EventAnalytics) track(perPage, page int) error {
 				},
 			}
 
-			_, pagination, err := ea.eventRepo.LoadEventsPaged(ctx, filter)
+			_, pagination, err := ea.eventRepo.LoadEventsPaged(ctx, project.UID, filter)
 			if err != nil {
 				log.WithError(err).Error("failed to load events paged")
 				continue

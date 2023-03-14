@@ -130,7 +130,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	require.NoError(r.T(), err)
 
 	// check that event and eventdelivery repos are empty
-	_, err = r.ConvoyApp.eventRepo.FindEventByID(context.Background(), event1.UID)
+	_, err = r.ConvoyApp.eventRepo.FindEventByID(context.Background(), project.UID, event1.UID)
 	require.ErrorIs(r.T(), err, datastore.ErrEventNotFound)
 
 	_, err = r.ConvoyApp.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), eventDelivery1.UID)
@@ -204,7 +204,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	require.NoError(r.T(), err)
 
 	// check that event and eventdelivery is not empty
-	e, err := r.ConvoyApp.eventRepo.FindEventByID(context.Background(), event.UID)
+	e, err := r.ConvoyApp.eventRepo.FindEventByID(context.Background(), project.UID, event.UID)
 	require.NoError(r.T(), err)
 	require.Equal(r.T(), e.UID, event.UID)
 

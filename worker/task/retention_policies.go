@@ -150,12 +150,11 @@ func ExportCollection(
 
 	switch tableName {
 	case eventsTable:
-		evntFilter := &datastore.EventFilter{
-			ProjectID:      project.UID,
+		eventFilter := &datastore.EventFilter{
 			CreatedAtStart: 0,
 			CreatedAtEnd:   expDate.Unix(),
 		}
-		err = eventRepo.DeleteProjectEvents(ctx, evntFilter, true)
+		err = eventRepo.DeleteProjectEvents(ctx, project.UID, eventFilter, true)
 		if err != nil {
 			return err
 		}

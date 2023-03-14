@@ -61,7 +61,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			return err
 		}
 
-		_, err = eventRepo.FindEventByID(ctx, event.UID)
+		_, err = eventRepo.FindEventByID(ctx, project.UID, event.UID)
 		if err != nil {
 			if len(event.Endpoints) < 1 {
 				var endpointIDs []string

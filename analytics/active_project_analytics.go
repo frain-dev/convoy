@@ -51,7 +51,6 @@ func (a *ActiveProjectAnalytics) track(perPage, page, count int) error {
 
 		for _, project := range projects {
 			filter := &datastore.Filter{
-				Project:  project,
 				Pageable: datastore.Pageable{Sort: -1, PerPage: 1, Page: 1},
 				SearchParams: datastore.SearchParams{
 					CreatedAtStart: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix(),
@@ -59,7 +58,7 @@ func (a *ActiveProjectAnalytics) track(perPage, page, count int) error {
 				},
 			}
 
-			events, _, err := a.eventRepo.LoadEventsPaged(ctx, filter)
+			events, _, err := a.eventRepo.LoadEventsPaged(ctx, project.UID, filter)
 			if err != nil {
 				log.WithError(err).Error("failed to load events paged")
 				continue

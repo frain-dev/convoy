@@ -483,8 +483,9 @@ func TestEventService_CreateFanoutEvent(t *testing.T) {
 func TestEventService_GetEvent(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
-		ctx context.Context
-		id  string
+		ctx       context.Context
+		projectID string
+		id        string
 	}
 	tests := []struct {
 		name        string
@@ -499,11 +500,12 @@ func TestEventService_GetEvent(t *testing.T) {
 			name: "should_get_app_event",
 			args: args{
 				ctx: ctx,
+				projectID: "1234",
 				id:  "123",
 			},
 			dbFn: func(es *EventService) {
 				e, _ := es.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().FindEventByID(gomock.Any(), "123").
+				e.EXPECT().FindEventByID(gomock.Any(), "1234", "123").
 					Times(1).Return(&datastore.Event{UID: "123"}, nil)
 			},
 			wantEvent: &datastore.Event{UID: "123"},
@@ -512,11 +514,12 @@ func TestEventService_GetEvent(t *testing.T) {
 			name: "should_fail_to_get_app_event",
 			args: args{
 				ctx: ctx,
+				projectID: "1234",
 				id:  "123",
 			},
 			dbFn: func(es *EventService) {
 				e, _ := es.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().FindEventByID(gomock.Any(), "123").
+				e.EXPECT().FindEventByID(gomock.Any(), "1234", "123").
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			wantErr:     true,
@@ -534,7 +537,7 @@ func TestEventService_GetEvent(t *testing.T) {
 				tc.dbFn(es)
 			}
 
-			event, err := es.GetEvent(tc.args.ctx, tc.args.id)
+			event, err := es.GetEvent(tc.args.ctx, tc.args.projectID, tc.args.id)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -1143,7 +1146,7 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 						CreatedAtEnd:   1213,
 					},
 				}
-				ed.EXPECT().LoadEventsPaged(gomock.Any(), f).
+				ed.EXPECT().LoadEventsPaged(gomock.Any(), f.Project.UID, f).
 					Times(1).
 					Return([]datastore.Event{
 						{
@@ -1204,7 +1207,7 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventRepo.(*mocks.MockEventRepository)
 				ed.EXPECT().
-					LoadEventsPaged(gomock.Any(), gomock.Any()).
+					LoadEventsPaged(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil, datastore.PaginationData{}, errors.New("failed"))
 			},
 			wantErr:     true,
@@ -1285,7 +1288,7 @@ func TestEventService_SearchEvents(t *testing.T) {
 					}, nil)
 
 				ed, _ := es.eventRepo.(*mocks.MockEventRepository)
-				ed.EXPECT().FindEventsByIDs(gomock.Any(), gomock.Any()).
+				ed.EXPECT().FindEventsByIDs(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
 					Return([]datastore.Event{{UID: "1234"}}, nil)
 			},
