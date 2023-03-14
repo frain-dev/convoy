@@ -1,4 +1,4 @@
-<convoy-card class="mb-20px min-h-[30vh] rounded-tl-[0] rounded-tr-[0]">
+<div convoy-card class="mb-20px min-h-[30vh] rounded-tl-[0] rounded-tr-[0]">
 	<!-- empty state for api keys  -->
 	<ng-container *ngIf="showError || (!isFetchingApiKeys && apiKeys?.length === 0)">
 		<div convoy-empty-state imgSrc="/assets/img/events-log-empty-state.png" heading="You do not have any keys" class="py-54px" id="empty-state"></div>
@@ -32,7 +32,7 @@
 			<button convoy-button size="xs" fill="text" color="danger" class="font-medium" (click)="selectedApiKey = key; showRevokeApiModal = true" *ngIf="getKeyStatus(key.expires_at) === 'active'">Revoke</button>
 		</div>
 	</ng-container>
-</convoy-card>
+</div>
 
 <convoy-token-modal *ngIf="showApiKey" title="Cli Key Generated Successfully" description="Your Cli Key has been created. Please copy this key and save it somewhere safe." [token]="apiKey" (closeModal)="showApiKey = false; getApiKeys()"></convoy-token-modal>
 

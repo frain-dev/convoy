@@ -1,4 +1,4 @@
-<convoy-card class="mb-20px min-h-[30vh] rounded-tl-[0] rounded-tr-[0]">
+<div convoy-card class="mb-20px min-h-[30vh] rounded-tl-[0] rounded-tr-[0]">
 	<!-- empty state for both devices -->
 	<ng-container *ngIf="showError || (!isFetchingDevices && devices?.length === 0)">
 		<div convoy-empty-state imgSrc="/assets/img/events-log-empty-state.png" heading="You have no devices" class="py-54px" id="empty-state"></div>
@@ -33,4 +33,4 @@
 			</div>
 		</div>
 	</ng-container>
-</convoy-card>
+</div>

@@ -1,5 +1,5 @@
 <form class="pb-40px" [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'" [formGroup]="sourceForm" (ngSubmit)="saveSource()">
-	<convoy-card class="p-24px relative">
+	<div convoy-card class="p-24px relative">
 		<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
 			<h4 class="font-medium mb-20px">Pre-configured Sources</h4>
 			<ul class="flex flex-row w-full mb-20px">
@@ -192,7 +192,7 @@
 		</div>
 
 		<div *ngIf="isloading" convoy-form-loader [loading]="!sourceCreated"></div>
-	</convoy-card>
+	</div>
 
 	<div class="flex justify-end mt-32px" [ngClass]="{ hidden: showAction === 'false' }">
 		<button convoy-button fill="outline" type="button" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" (click)="cancel()">Cancel</button>

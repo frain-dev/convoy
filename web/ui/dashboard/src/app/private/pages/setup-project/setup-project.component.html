@@ -43,7 +43,7 @@
 		</div>
 
 		<ng-container *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
-			<convoy-card class="p-24px mb-40px order-9">
+			<div convoy-card class="p-24px mb-40px order-9">
 				<div class="flex justify-between">
 					<div>
 						<h2 class="font-semibold mb-8px">Connect Pub/sub as event source</h2>
@@ -59,7 +59,7 @@
 					</div>
 					<convoy-toggle name="connectPubSub" (onChange)="connectPubSub = !connectPubSub" [isChecked]="connectPubSub"></convoy-toggle>
 				</div>
-			</convoy-card>
+			</div>
 		</ng-container>
 
 		<div class="flex justify-end order-11 mt-32px">

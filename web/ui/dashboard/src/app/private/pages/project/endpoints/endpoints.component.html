@@ -42,11 +42,11 @@
 	></convoy-empty-state>
 </div>
 
-<convoy-card *ngIf="isLoadingEndpoints">
+<div convoy-card *ngIf="isLoadingEndpoints">
 	<convoy-table-loader id="endpoints_loader_loader" [tableHead]="endpointsTableHead"></convoy-table-loader>
-</convoy-card>
+</div>
 
-<convoy-card *ngIf="!isLoadingEndpoints && displayedEndpoints?.length">
+<div convoy-card *ngIf="!isLoadingEndpoints && displayedEndpoints?.length">
 	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container">
 		<table convoy-table>
 			<thead convoy-table-head>
@@ -87,7 +87,7 @@
 			</tbody>
 		</table>
 	</div>
-</convoy-card>
+</div>
 
 <div class="flex items-center mt-16px" *ngIf="!isLoadingEndpoints && displayedEndpoints?.length">
 	<button

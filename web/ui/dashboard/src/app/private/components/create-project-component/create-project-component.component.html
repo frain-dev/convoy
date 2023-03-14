@@ -1,7 +1,7 @@
 <p class="text-14 text-grey-60 mb-24px">A project represents the top level namespace for grouping event sources, applications, endpoints and events.</p>
 
 <form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()">
-	<convoy-card class="p-24px mt-24px">
+	<div convoy-card class="p-24px mt-24px">
 		<convoy-input-field>
 			<label for="project-name" required="true" convoy-label>Project name</label>
 			<input type="text" id="project-name" convoy-input autocomplete="project-name" formControlName="name" placeholder="Enter project name here" />
@@ -171,7 +171,7 @@
 				</ng-container>
 			</div>
 		</div>
-	</convoy-card>
+	</div>
 
 	<div class="flex justify-end mt-48px">
 		<button convoy-button fill="outline" *ngIf="action !== 'update'" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" type="button" (click)="cancel()">Cancel</button>
@@ -197,7 +197,7 @@
 			</button>
 		</div>
 
-		<convoy-card>
+		<div convoy-card>
 			<table convoy-table>
 				<thead convoy-table-head>
 					<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of signatureTableHead; let i = index">{{ head }}</th>
@@ -223,7 +223,7 @@
 					</ng-container>
 				</tbody>
 			</table>
-		</convoy-card>
+		</div>
 	</ng-container>
 </form>
 

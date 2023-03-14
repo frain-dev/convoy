@@ -14,7 +14,7 @@
 	<span class="font-medium text-primary-100">{{ endpointDetails?.title || 'Endpoint' }}</span>
 </div>
 
-<convoy-card class="p-20px mb-20px">
+<div convoy-card class="p-20px mb-20px">
 	<div class="flex justify-between items-center mb-24px border-b border-b-grey-20 pb-12px">
 		<ng-container *ngIf="!isLoadingEndpointDetails && endpointDetails">
 			<div>
@@ -130,11 +130,11 @@
 			</div>
 		</div>
 	</div>
-</convoy-card>
+</div>
 
 <ng-container *ngIf="isCliAvailable">
 	<!-- app api keys and devices list  -->
-	<convoy-card class="mt-24px rounded-bl-[0] rounded-br-[0]">
+	<div convoy-card class="mt-24px rounded-bl-[0] rounded-br-[0]">
 		<div class="flex justify-between items-center px-24px pt-24px">
 			<h3 class="font-semibold">Command Line</h3>
 			<div class="text-grey-40 text-14 font-medium whitespace-nowrap ml-auto pr-14px" *ngIf="activeTab === 'Keys'">
@@ -150,7 +150,7 @@
 				</li>
 			</ul>
 		</div>
-	</convoy-card>
+	</div>
 
 	<ng-container *ngIf="activeTab === 'Keys'">
 		<convoy-cli-keys></convoy-cli-keys>

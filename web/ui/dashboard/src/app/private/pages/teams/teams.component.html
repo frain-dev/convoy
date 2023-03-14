@@ -33,13 +33,13 @@
 	</div>
 
 	<ng-container *ngIf="(selectedFilterOption === 'active' && isFetchingTeamMembers) || (selectedFilterOption === 'pending' && isFetchingPendingInvites)">
-		<convoy-card>
+		<div convoy-card>
 			<convoy-table-loader [withDate]="false" [tableHead]="tableHead"></convoy-table-loader>
-		</convoy-card>
+		</div>
 	</ng-container>
 
 	<ng-container *ngIf="selectedFilterOption === 'active' && !isFetchingTeamMembers && !noData">
-		<convoy-card>
+		<div convoy-card>
 			<div class="min-h-[70vh]">
 				<table convoy-table>
 					<thead convoy-table-head>
@@ -71,7 +71,7 @@
 					</tbody>
 				</table>
 			</div>
-		</convoy-card>
+		</div>
 
 		<div class="flex items-center mt-16px">
 			<button convoy-button fill="outline" size="sm" class="pl-4px pr-16px py-4px border-primary-300" routerLink="./" [queryParams]="{ page: teams.pagination.prev }" [disabled]="teams.pagination.prev === 0" (click)="fetchTeamMembers({ page: teams.pagination.prev })">
@@ -100,40 +100,38 @@
 
 	<!-- Invites -->
 	<ng-container *ngIf="selectedFilterOption === 'pending' && !isFetchingPendingInvites && !noInvitesData">
-		<convoy-card>
-			<div class="min-h-[70vh]">
-				<table convoy-table>
-					<thead convoy-table-head>
-						<th convoy-table-head-cell [ngClass]="{ 'pl-20px': i === 0 }" *ngFor="let head of tableHead; let i = index">{{ selectedFilterOption === 'pending' && head === 'Name' ? 'Email' : head }}</th>
-					</thead>
-					<tbody>
-						<tr convoy-table-row *ngFor="let team of pendingInvites?.content; let i = index" [id]="'pendingInvite' + i">
-							<td convoy-table-cell class="pl-20px">
-								{{ team.invitee_email }}
-							</td>
-							<td convoy-table-cell>{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</td>
-							<td convoy-table-cell>All projects</td>
-							<td convoy-table-cell>
-								<div convoy-dropdown>
-									<button dropdownTrigger convoy-button size="sm" fill="clear">
-										<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
-									</button>
+		<div convoy-card class="min-h-[70vh]">
+			<table convoy-table>
+				<thead convoy-table-head>
+					<th convoy-table-head-cell [ngClass]="{ 'pl-20px': i === 0 }" *ngFor="let head of tableHead; let i = index">{{ selectedFilterOption === 'pending' && head === 'Name' ? 'Email' : head }}</th>
+				</thead>
+				<tbody>
+					<tr convoy-table-row *ngFor="let team of pendingInvites?.content; let i = index" [id]="'pendingInvite' + i">
+						<td convoy-table-cell class="pl-20px">
+							{{ team.invitee_email }}
+						</td>
+						<td convoy-table-cell>{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</td>
+						<td convoy-table-cell>All projects</td>
+						<td convoy-table-cell>
+							<div convoy-dropdown>
+								<button dropdownTrigger convoy-button size="sm" fill="clear">
+									<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
+								</button>
 
-									<ul dropdownOptions>
-										<li class="border-b border-b-grey-10">
-											<button convoy-dropdown-option convoy-button fill="clear" color="grey" class="w-full" (click)="resendInvite(team.uid); currentId = ''">Resend Invite</button>
-										</li>
-										<li>
-											<button convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
-										</li>
-									</ul>
-								</div>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
-		</convoy-card>
+								<ul dropdownOptions>
+									<li class="border-b border-b-grey-10">
+										<button convoy-dropdown-option convoy-button fill="clear" color="grey" class="w-full" (click)="resendInvite(team.uid); currentId = ''">Resend Invite</button>
+									</li>
+									<li>
+										<button convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
+									</li>
+								</ul>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 
 		<div class="flex items-center mt-16px">
 			<button

@@ -1,7 +1,7 @@
 <form class="relative" [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()">
 	<convoy-loader *ngIf="isLoadingForm"></convoy-loader>
 
-	<convoy-card class="px-24px py-24px relative" [ngClass]="{ 'mb-70px': action !== 'view' }">
+	<div convoy-card class="px-24px py-24px relative" [ngClass]="{ 'mb-70px': action !== 'view' }">
 		<ng-container *ngIf="action !== 'view'">
 			<convoy-input-field>
 				<label for="subscription-name" required="true" convoy-label>Subscription name</label>
@@ -125,13 +125,13 @@
 		</div>
 
 		<div *ngIf="isCreatingSubscription" convoy-form-loader></div>
-	</convoy-card>
+	</div>
 
 	<ng-container *ngIf="showAction === 'true'">
 		<ng-container *ngIf="projectType === 'incoming' && !token">
 			<h3 class="font-semibold mb-6px">Source</h3>
 			<p class="text-14 text-grey-60">Incoming event source this subscription is connected to.</p>
-			<convoy-card class="px-24px py-24px mb-70px mt-20px" *ngIf="!showCreateSourceForm">
+			<div convoy-card class="px-24px py-24px mb-70px mt-20px" *ngIf="!showCreateSourceForm">
 				<convoy-select
 					[options]="sources"
 					name="source"
@@ -149,7 +149,7 @@
 					</svg>
 					Create New Source
 				</button>
-			</convoy-card>
+			</div>
 
 			<convoy-create-source *ngIf="showCreateSourceForm" (onAction)="$event?.action === 'close' ? (showCreateSourceForm = false) : onCreateSource($event.data)">
 				<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateSourceForm = false; subscriptionForm.patchValue({ source_id: null })">
@@ -163,7 +163,7 @@
 
 		<h3 class="font-semibold mb-6px">Endpoint</h3>
 		<p class="text-14 text-grey-60">Endpoint this subscription routes events into.</p>
-		<convoy-card class="px-24px py-24px mt-20px" *ngIf="!showCreateEndpointForm">
+		<div convoy-card class="px-24px py-24px mt-20px" *ngIf="!showCreateEndpointForm">
 			<convoy-select
 				className="mb-0 mt-24px"
 				[options]="endPoints"
@@ -182,7 +182,7 @@
 				</svg>
 				Create New Endpoint
 			</button>
-		</convoy-card>
+		</div>
 
 		<convoy-create-endpoint *ngIf="showCreateEndpointForm" (onAction)="$event.action === 'close' ? (showCreateEndpointForm = false) : onCreateEndpoint($event.data)">
 			<button convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateEndpointForm = false; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">

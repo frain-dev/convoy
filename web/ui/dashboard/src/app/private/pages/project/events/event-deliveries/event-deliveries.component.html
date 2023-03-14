@@ -1,4 +1,4 @@
-<convoy-card>
+<div convoy-card>
 	<div class="flex justify-between mt-20px px-20px">
 		<div class="flex items-center">
 			<h4 class="font-semibold mr-6px">Event Deliveries</h4>
@@ -212,10 +212,12 @@
 			</tbody>
 		</table>
 	</div>
-</convoy-card>
+</div>
 
 <!-- empty state  -->
-<convoy-empty-state imgSrc="/assets/img/empty-state.svg" class="min-h-[70vh] rounded-tr-[0] rounded-tl-[0]" description="No event to show here" *ngIf="!isloadingEventDeliveries && (!displayedEventDeliveries || displayedEventDeliveries?.length === 0)"></convoy-empty-state>
+<div convoy-card class="py-60px rounded-tr-[0] rounded-tl-[0]" *ngIf="!isloadingEventDeliveries && (!displayedEventDeliveries || displayedEventDeliveries?.length === 0)">
+	<div convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No event to show here"></div>
+</div>
 
 <!-- paginator  -->
 <div class="flex items-center mt-16px mb-24px">

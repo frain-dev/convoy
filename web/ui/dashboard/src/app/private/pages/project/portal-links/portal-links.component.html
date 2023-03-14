@@ -95,17 +95,18 @@
 </ng-container>
 
 <!-- empty state  -->
-<convoy-empty-state
-	*ngIf="!isLoadingPortalLinks && portalLinks?.content?.length === 0"
-	imgSrc="/assets/img/portal-link-empty-state.png"
-	heading="You currently do not have any portal links"
-	description="Portal Links enable you create customer-facing dashboards for your user endpoints. You can link a portal link to more than one endpoint at a time."
-	buttonText="Create Portal Link"
-	class="min-h-[65vh] mt-16px"
-	id="links-empty-state"
-	(onAction)="openCreateLinkModal()"
-></convoy-empty-state>
-
+<div convoy-card class="py-54px mt-24px">
+	<div
+		convoy-empty-state
+		*ngIf="!isLoadingPortalLinks && portalLinks?.content?.length === 0"
+		imgSrc="/assets/img/portal-link-empty-state.png"
+		heading="You currently do not have any portal links"
+		description="Portal Links enable you create customer-facing dashboards for your user endpoints. You can link a portal link to more than one endpoint at a time."
+		buttonText="Create Portal Link"
+		id="links-empty-state"
+		(onAction)="openCreateLinkModal()"
+	></div>
+</div>
 <div convoy-modal *ngIf="activeLink?.uid" position="right" [id]="'source-details'" (closeModal)="router.navigate([], { queryParams: {} })">
 	<div convoy-modal-header>
 		<h2 class="font-semibold capitalize">{{ activeLink?.name || 'Portal Link Details' }}</h2>

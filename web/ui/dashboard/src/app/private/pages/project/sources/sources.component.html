@@ -12,7 +12,7 @@
 
 <!-- empty state  -->
 <div class="py-100px mt-24px" convoy-card *ngIf="!isLoadingSources && sources?.content?.length == 0">
-	<convoy-empty-state imgSrc="/assets/img/sources-empty-state.png" heading="Create your first source" description="Sources are how your webhook events are routed into the Convoy." id="sources-empty-state"></convoy-empty-state>
+	<div convoy-empty-state imgSrc="/assets/img/sources-empty-state.png" heading="Create your first source" description="Sources are how your webhook events are routed into the Convoy." id="sources-empty-state"></div>
 </div>
 
 <!-- loader  -->
@@ -37,7 +37,7 @@
 	<!-- list of sources  -->
 	<div class="flex flex-wrap gap-24px">
 		<ng-container *ngFor="let source of sources?.content; let i = index">
-			<convoy-card [id]="'source' + i" hover="true" class="w-full max-w-[348px] cursor-pointer py-20px">
+			<div convoy-card [id]="'source' + i" hover="true" class="w-full max-w-[348px] cursor-pointer py-20px">
 				<!-- outgoing project sources -->
 				<ng-container *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
 					<div class="flex items-center justify-between px-24px">
@@ -90,7 +90,7 @@
 						<convoy-copy-button [text]="source.url" size="md" className="ml-2px" [notificationText]="source.name + ' URL has been copied to clipboard'"><span class="text-14 ml-8px font-medium">Copy URL</span></convoy-copy-button>
 					</div>
 				</ng-container>
-			</convoy-card>
+			</div>
 		</ng-container>
 	</div>
 </ng-container>
