@@ -1,5 +1,5 @@
 <div convoy-modal position="full" (closeModal)="goBack()">
-	<div convoy-modal-header>
+	<div convoy-modal-header fullscreen="true">
 		<div class="flex items-center">
 			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="goBack()">
 				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
@@ -7,11 +7,6 @@
 
 			<h2 class="font-semibold capitalize ml-2">{{ linkUid ? 'Update Portal Link' : 'Create Portal Link' }}</h2>
 		</div>
-
-		<a convoy-button fill="text" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
-			<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
-			<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
-		</a>
 	</div>
 	<div class="max-w-[834px] m-auto">
 		<form [formGroup]="portalLinkForm" (ngSubmit)="savePortalLink()">

@@ -12,7 +12,9 @@
 
 <!-- empty state  -->
 <div class="py-100px mt-24px" convoy-card *ngIf="!isLoadingSources && sources?.content?.length == 0">
-	<div convoy-empty-state imgSrc="/assets/img/sources-empty-state.png" heading="Create your first source" description="Sources are how your webhook events are routed into the Convoy." id="sources-empty-state"></div>
+	<div convoy-empty-state imgSrc="/assets/img/sources-empty-state.png" heading="Create your first source" description="Sources are how your webhook events are routed into the Convoy." id="sources-empty-state">
+		<button convoy-button emptyStateCTA routerLink="./new" class="mt-36px">Connect a source</button>
+    </div>
 </div>
 
 <!-- loader  -->
@@ -195,7 +197,7 @@
 </div>
 
 <div convoy-modal *ngIf="shouldShowCreateSourceModal || shouldShowUpdateSourceModal" position="full" [id]="'sourceForm'" (closeModal)="closeCreateSourceModal({ action: 'close' })">
-	<div convoy-modal-header>
+	<div convoy-modal-header fullscreen="true">
 		<div class="flex items-center">
 			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="closeCreateSourceModal({ action: 'close' })">
 				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
@@ -203,12 +205,8 @@
 
 			<h2 class="font-semibold capitalize ml-2">{{ shouldShowUpdateSourceModal ? 'Update Source' : 'Create source' }}</h2>
 		</div>
-
-		<a convoy-button fill="text" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
-			<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
-			<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
-		</a>
 	</div>
+
 	<div class="max-w-[834px] m-auto">
 		<convoy-create-source showAction="true" (onAction)="closeCreateSourceModal($event)" [action]="shouldShowUpdateSourceModal ? 'update' : 'create'"></convoy-create-source>
 	</div>

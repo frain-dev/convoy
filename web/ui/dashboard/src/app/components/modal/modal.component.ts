@@ -6,19 +6,25 @@ import { OverlayDirective } from '../overlay/overlay.directive';
 // modal header
 @Component({
 	selector: '[convoy-modal-header]',
+	imports: [CommonModule, ButtonComponent],
 	standalone: true,
 	template: `
 		<div class="px-20px pt-20px pb-16px border-y border-y-grey-10 bg-white-100 rounded-tr-16px rounded-tl-16px w-full ">
 			<div class="flex justify-between items-center max-w-[834px] m-auto">
 				<ng-content></ng-content>
+
+				<a *ngIf="fullscreen === 'true'" convoy-button fill="text" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+					<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
+					<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
+				</a>
 			</div>
 		</div>
 	`
 })
 export class ModalHeaderComponent {
+	@Input('fullscreen') fullscreen: 'true' | 'false' = 'false';
 	constructor() {}
 }
-
 
 // modal dialog
 @Directive({
@@ -45,7 +51,6 @@ export class ModalDialogDirective implements OnInit {
 		return `${this.modalType[this.position]} ${this.position === 'full' ? 'bg-[#fafafe]' : 'bg-white-100 ' + this.modalSizes[this.size]}`;
 	}
 }
-
 
 // modal component
 @Component({
