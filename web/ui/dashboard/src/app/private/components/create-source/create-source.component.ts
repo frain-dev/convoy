@@ -212,8 +212,8 @@ export class CreateSourceComponent implements OnInit {
 		try {
 			const response = this.action === 'update' ? await this.createSourceService.updateSource({ data: sourceData, id: this.sourceId }) : await this.createSourceService.createSource({ sourceData });
 			document.getElementById('configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
-            this.sourceData = response.data
-			this.showAction ? this.showSourceUrl = true : this.onAction.emit({ action: this.action, data: sourceData });
+			this.sourceData = response.data;
+			this.showAction === 'true' ? this.onAction.emit({ action: this.action, data: sourceData }) : (this.showSourceUrl = true);
 			this.sourceCreated = true;
 			return response;
 		} catch (error) {
@@ -271,5 +271,4 @@ export class CreateSourceComponent implements OnInit {
 	setRegionValue(value: any) {
 		this.sourceForm.get('pub_sub.sqs')?.patchValue({ default_region: value });
 	}
-
 }
