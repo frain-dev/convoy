@@ -589,7 +589,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, pr
 		intervals = append(intervals, interval)
 	}
 
-	if len(intervals) < 30 {
+	if len(intervals) < minLen {
 		var d time.Duration
 		switch period {
 		case datastore.Daily:
@@ -609,6 +609,8 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, pr
 
 	return intervals, nil
 }
+
+const minLen = 30
 
 func padIntervals(intervals []datastore.EventInterval, duration time.Duration, period datastore.Period) ([]datastore.EventInterval, error) {
 	var err error
@@ -637,7 +639,7 @@ func padIntervals(intervals []datastore.EventInterval, duration time.Duration, p
 		start = start.Add(-duration) // take it back once here, since we getting it from the original slice
 	}
 
-	const numPadding = 30
+	numPadding := minLen - (len(intervals))
 	paddedIntervals := make([]datastore.EventInterval, numPadding, numPadding+len(intervals))
 	for i := numPadding; i > 0; i-- {
 		paddedIntervals[i-1] = datastore.EventInterval{
