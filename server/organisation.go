@@ -22,6 +22,18 @@ func createOrganisationService(a *ApplicationHandler) *services.OrganisationServ
 }
 
 func (a *ApplicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	err = a.Authz.Authorize(r.Context(), "organisations.get", org)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		return
+	}
+
 	_ = render.Render(w, r, util.NewServerResponse("Organisation fetched successfully",
 		m.GetOrganisationFromContext(r.Context()), http.StatusOK))
 }
@@ -42,8 +54,14 @@ func (a *ApplicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Requ
 func _() {}
 
 func (a *ApplicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) { // TODO: change to GetUserOrganisationsPaged
+
+	user, err := a.retrieveUser(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	pageable := m.GetPageableFromContext(r.Context())
-	user := m.GetUserFromContext(r.Context())
 	orgService := createOrganisationService(a)
 
 	organisations, paginationData, err := orgService.LoadUserOrganisationsPaged(r.Context(), user, pageable)
@@ -58,7 +76,11 @@ func (a *ApplicationHandler) GetOrganisationsPaged(w http.ResponseWriter, r *htt
 }
 
 func (a *ApplicationHandler) GetUserOrganisations(w http.ResponseWriter, r *http.Request) { // TODO: change to GetUserOrganisationsPaged
-	user := m.GetUserFromContext(r.Context())
+	user, err := a.retrieveUser(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	orgService := createOrganisationService(a)
 	organisations, _, err := orgService.LoadUserOrganisationsPaged(r.Context(), user, datastore.Pageable{Sort: -1})
@@ -80,7 +102,12 @@ func (a *ApplicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	user := m.GetUserFromContext(r.Context())
+	user, err := a.retrieveUser(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	orgService := createOrganisationService(a)
 
 	organisation, err := orgService.CreateOrganisation(r.Context(), &newOrg, user)
@@ -93,15 +120,28 @@ func (a *ApplicationHandler) CreateOrganisation(w http.ResponseWriter, r *http.R
 }
 
 func (a *ApplicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
+
 	var orgUpdate models.Organisation
-	err := util.ReadJSON(r, &orgUpdate)
+	err = util.ReadJSON(r, &orgUpdate)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+
+	err = a.Authz.Authorize(r.Context(), "organisations.update", org)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		return
+	}
+
 	orgService := createOrganisationService(a)
 
-	org, err := orgService.UpdateOrganisation(r.Context(), m.GetOrganisationFromContext(r.Context()), &orgUpdate)
+	org, err = orgService.UpdateOrganisation(r.Context(), m.GetOrganisationFromContext(r.Context()), &orgUpdate)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -111,9 +151,20 @@ func (a *ApplicationHandler) UpdateOrganisation(w http.ResponseWriter, r *http.R
 }
 
 func (a *ApplicationHandler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
+
+	err = a.Authz.Authorize(r.Context(), "organisations.delete", org)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		return
+	}
+
 	orgService := createOrganisationService(a)
-	err := orgService.DeleteOrganisation(r.Context(), org.UID)
+	err = orgService.DeleteOrganisation(r.Context(), org.UID)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to delete organisation")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

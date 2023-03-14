@@ -12,7 +12,6 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/fflag/flipt"
-	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
@@ -40,7 +39,9 @@ func newFliptClient(cfg config.Configuration) *flipt.Flipt {
 
 var Features = map[string]IsEnabledFunc{
 	CanCreateCLIAPIKey: func(r *http.Request) error {
-		project := middleware.GetProjectFromContext(r.Context())
+		// TODO(subomi) Fix this.
+		// project := middleware.GetProjectFromContext(r.Context())
+		project := &datastore.Project{}
 
 		cfg, err := config.Get()
 		if err != nil {

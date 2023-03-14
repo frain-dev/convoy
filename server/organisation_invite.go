@@ -2,10 +2,10 @@ package server
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/services"
@@ -31,19 +31,39 @@ func CreateOrganisationInviteService(a *ApplicationHandler) *services.Organisati
 }
 
 func (a *ApplicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *http.Request) {
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
+
+	err = a.Authz.Authorize(r.Context(), "organisation.get", org)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		return
+	}
+
 	var newIV models.OrganisationInvite
-	err := util.ReadJSON(r, &newIV)
+	err = util.ReadJSON(r, &newIV)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	baseUrl := m.GetHostFromContext(r.Context())
-	user := m.GetUserFromContext(r.Context())
-	org := m.GetOrganisationFromContext(r.Context())
+	cfg, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	user, err := a.retrieveUser(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	organisationInviteService := CreateOrganisationInviteService(a)
-	_, err = organisationInviteService.CreateOrganisationMemberInvite(r.Context(), &newIV, org, user, baseUrl)
+	_, err = organisationInviteService.CreateOrganisationMemberInvite(r.Context(), &newIV, org, user, cfg.Host)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to create organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -54,7 +74,18 @@ func (a *ApplicationHandler) InviteUserToOrganisation(w http.ResponseWriter, r *
 }
 
 func (a *ApplicationHandler) GetPendingOrganisationInvites(w http.ResponseWriter, r *http.Request) {
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
+
+	err = a.Authz.Authorize(r.Context(), "organisation.get", org)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		return
+	}
+
 	pageable := m.GetPageableFromContext(r.Context())
 	organisationInviteService := CreateOrganisationInviteService(a)
 
@@ -87,7 +118,6 @@ func (a *ApplicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 	organisationInviteService := CreateOrganisationInviteService(a)
 
 	err = organisationInviteService.ProcessOrganisationMemberInvite(r.Context(), token, accepted, newUser)
-	fmt.Println("ff", err)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to process organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -114,12 +144,33 @@ func (a *ApplicationHandler) FindUserByInviteToken(w http.ResponseWriter, r *htt
 }
 
 func (a *ApplicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *http.Request) {
-	baseUrl := m.GetHostFromContext(r.Context())
-	user := m.GetUserFromContext(r.Context())
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation", http.StatusBadRequest))
+		return
+	}
+
+	cfg, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	user, err := a.retrieveUser(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	organisationInviteService := CreateOrganisationInviteService(a)
 
-	_, err := organisationInviteService.ResendOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"), org, user, baseUrl)
+	err = a.Authz.Authorize(r.Context(), "organisation.get", org)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		return
+	}
+
+	_, err = organisationInviteService.ResendOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"), org, user, cfg.Host)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to resend organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -130,9 +181,30 @@ func (a *ApplicationHandler) ResendOrganizationInvite(w http.ResponseWriter, r *
 }
 
 func (a *ApplicationHandler) CancelOrganizationInvite(w http.ResponseWriter, r *http.Request) {
+	inviteID := chi.URLParam(r, "inviteID")
+	orgInviteRepo := postgres.NewOrgInviteRepo(a.A.DB)
+	iv, err := orgInviteRepo.FetchOrganisationInviteByID(r.Context(), inviteID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	orgRepo := postgres.NewOrgRepo(a.A.DB)
+	org, err := orgRepo.FetchOrganisationByID(r.Context(), iv.OrganisationID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	err = a.Authz.Authorize(r.Context(), "organisation.get", org)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		return
+	}
+
 	organisationInviteService := CreateOrganisationInviteService(a)
 
-	iv, err := organisationInviteService.CancelOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"))
+	iv, err = organisationInviteService.CancelOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"))
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to cancel organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

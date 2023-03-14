@@ -252,7 +252,7 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		consumer.Start()
 	}
 
-	err != handler.RegisterPolicy()
+	err = handler.RegisterPolicy()
 	if err != nil {
 		return err
 	}

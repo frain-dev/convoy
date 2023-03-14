@@ -21,7 +21,18 @@ func createOrganisationMemberService(a *ApplicationHandler) *services.Organisati
 
 func (a *ApplicationHandler) GetOrganisationMembers(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	err = a.Authz.Authorize(r.Context(), "organisation.get", org)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		return
+	}
+
 	orgMemberService := createOrganisationMemberService(a)
 
 	members, paginationData, err := orgMemberService.LoadOrganisationMembersPaged(r.Context(), org, pageable)
@@ -37,9 +48,19 @@ func (a *ApplicationHandler) GetOrganisationMembers(w http.ResponseWriter, r *ht
 
 func (a *ApplicationHandler) GetOrganisationMember(w http.ResponseWriter, r *http.Request) {
 	memberID := chi.URLParam(r, "memberID")
-	org := m.GetOrganisationFromContext(r.Context())
-	orgMemberService := createOrganisationMemberService(a)
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	err = a.Authz.Authorize(r.Context(), "organisation.get", org)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		return
+	}
+
+	orgMemberService := createOrganisationMemberService(a)
 	member, err := orgMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -57,8 +78,19 @@ func (a *ApplicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *
 		return
 	}
 
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	err = a.Authz.Authorize(r.Context(), "organisation.update", org)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		return
+	}
+
 	memberID := chi.URLParam(r, "memberID")
-	org := m.GetOrganisationFromContext(r.Context())
 	orgMemberService := createOrganisationMemberService(a)
 
 	member, err := orgMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
@@ -77,11 +109,22 @@ func (a *ApplicationHandler) UpdateOrganisationMember(w http.ResponseWriter, r *
 }
 
 func (a *ApplicationHandler) DeleteOrganisationMember(w http.ResponseWriter, r *http.Request) {
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	err = a.Authz.Authorize(r.Context(), "organisation.delete", org)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		return
+	}
+
 	memberID := chi.URLParam(r, "memberID")
-	org := m.GetOrganisationFromContext(r.Context())
 	orgMemberService := createOrganisationMemberService(a)
 
-	err := orgMemberService.DeleteOrganisationMember(r.Context(), memberID, org)
+	err = orgMemberService.DeleteOrganisationMember(r.Context(), memberID, org)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
