@@ -1,3 +1,8 @@
+## 0.9.0-rc.2
+- [Bugfix] Fix issue with updating PubSub Sources #1440
+- [Enhancement] Fix toggle and view subscription. #1424
+- [Enhancement] Create room for empty data on chart. #1422 #1425
+
 ## 0.9.0-rc.1
 - [Feature] Add new message broker source. #1285
 - [Enhancement] Switched backing store to PostgreSQL. #1287
