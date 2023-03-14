@@ -18,7 +18,7 @@
 				type="search"
 				placeholder="Search events"
 				[(ngModel)]="eventsSearchString"
-				(change)="getEvents({ addToURL: true, page: 1 })"
+				(change)="getEvents({ addToURL: true })"
 				[ngModelOptions]="{ standalone: true }"
 				class="w-full text-grey-40 text-14 outline-none bg-transparent"
 				[ngClass]="{ 'bg-primary-500': eventsSearchString != undefined && eventsSearchString != '' }"
@@ -227,8 +227,17 @@
 	</div>
 </convoy-card>
 
-<div class="flex items-center mt-16px mb-24px">
-	<button convoy-button fill="outline" size="sm" class="pl-4px pr-16px py-4px border-primary-300" (click)="getEvents({ page: events?.pagination?.prev })" routerLink="./" [queryParams]="{ page: events?.pagination?.prev }" [disabled]="!events || events.pagination.prev === 0">
+<!-- <div class="flex items-center mt-16px mb-24px">
+	<button
+		convoy-button
+		fill="outline"
+		size="sm"
+		class="pl-4px pr-16px py-4px border-primary-300"
+		(click)="getEvents({ cursor: events?.pagination?.prev_page_cursor })"
+		routerLink="./"
+		[queryParams]="{ cursor: events?.pagination?.prev_page_cursor }"
+		[disabled]="!events || !events.pagination.has_previous_page"
+	>
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
@@ -241,16 +250,18 @@
 		size="sm"
 		class="pr-4px pl-16px py-4px border-primary-300 ml-16px"
 		routerLink="./"
-		[queryParams]="{ page: events?.pagination?.next }"
-		(click)="getEvents({ page: events?.pagination?.next })"
-		[disabled]="!events || events.pagination.next === 0"
+		[queryParams]="{ cursor: events?.pagination?.next_page_cursor }"
+		(click)="getEvents({ cursor: events?.pagination?.next_page_cursor })"
+		[disabled]="!events || !events.pagination.has_next_page"
 	>
 		Next
 		<svg width="24" height="24" class="ml-8px fill-primary-100">
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>
 	</button>
-</div>
+</div> -->
+
+<convoy-pagination [pagination]="events?.pagination" (paginate)="paginateEvents($event)"></convoy-pagination>
 
 <!-- bacth retry modal -->
 <div convoy-modal position="center" size="sm" *ngIf="showBatchRetryModal">

@@ -5,8 +5,8 @@ import { ModalComponent } from 'src/app/components/modal/modal.component';
 
 @Component({
 	selector: 'app-delete-modal',
-    standalone: true,
-    imports: [CommonModule, ModalComponent,ButtonComponent],
+	standalone: true,
+	imports: [CommonModule, ModalComponent, ButtonComponent],
 	templateUrl: './delete-modal.component.html',
 	styleUrls: ['./delete-modal.component.scss']
 })
