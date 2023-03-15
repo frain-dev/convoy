@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -121,7 +120,6 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, projectId s
 	}
 
 	subscription, err := s.subRepo.FindSubscriptionByID(ctx, projectId, subscriptionId)
-	fmt.Println("ff", err)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrSubscriptionNotFound.Error())
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)

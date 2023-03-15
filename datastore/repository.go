@@ -20,11 +20,11 @@ type APIKeyRepository interface {
 type EventDeliveryRepository interface {
 	CreateEventDelivery(context.Context, *EventDelivery) error
 	FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*EventDelivery, error)
-	FindEventDeliveriesByIDs(ctx context.Context, projectID string,  ids []string) ([]EventDelivery, error)
+	FindEventDeliveriesByIDs(ctx context.Context, projectID string, ids []string) ([]EventDelivery, error)
 	FindEventDeliveriesByEventID(ctx context.Context, projectID string, id string) ([]EventDelivery, error)
 	CountDeliveriesByStatus(ctx context.Context, projectID string, status EventDeliveryStatus, params SearchParams) (int64, error)
 	UpdateStatusOfEventDelivery(ctx context.Context, projectID string, eventDelivery EventDelivery, status EventDeliveryStatus) error
-	UpdateStatusOfEventDeliveries(ctx context.Context, projectID string,  ids []string, status EventDeliveryStatus) error
+	UpdateStatusOfEventDeliveries(ctx context.Context, projectID string, ids []string, status EventDeliveryStatus) error
 	FindDiscardedEventDeliveries(ctx context.Context, projectID, endpointId, deviceId string, params SearchParams) ([]EventDelivery, error)
 
 	UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, eventDelivery EventDelivery, attempt DeliveryAttempt) error
@@ -99,11 +99,11 @@ type EndpointRepository interface {
 }
 type SubscriptionRepository interface {
 	CreateSubscription(context.Context, string, *Subscription) error
-	UpdateSubscription(context.Context, string, *Subscription) error
-	LoadSubscriptionsPaged(context.Context, string, *FilterBy, Pageable) ([]Subscription, PaginationData, error)
-	DeleteSubscription(context.Context, string, *Subscription) error
-	FindSubscriptionByID(context.Context, string, string) (*Subscription, error)
-	FindSubscriptionsBySourceID(context.Context, string, string) ([]Subscription, error)
+	UpdateSubscription(ctx context.Context, projectID string, subscription *Subscription) error
+	LoadSubscriptionsPaged(ctx context.Context, projectID string, filter *FilterBy, pageable Pageable) ([]Subscription, PaginationData, error)
+	DeleteSubscription(ctx context.Context, projectID string, subscription *Subscription) error
+	FindSubscriptionByID(ctx context.Context, projectID, id string) (*Subscription, error)
+	FindSubscriptionsBySourceID(ctx context.Context, projectID, sourceID string) ([]Subscription, error)
 	FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]Subscription, error)
 	FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string, subscriptionType SubscriptionType) (*Subscription, error)
 	FindCLISubscriptions(ctx context.Context, projectID string) ([]Subscription, error)

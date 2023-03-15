@@ -31,20 +31,21 @@ const (
 
 	updateSubscription = `
     UPDATE convoy.subscriptions SET
-    name=$2,
-  	endpoint_id=$3,
- 	source_id=$4,
-	alert_config_count=$5,
-	alert_config_threshold=$6,
-	retry_config_type=$7,
-	retry_config_duration=$8,
-	retry_config_retry_count=$9,
-	filter_config_event_types=$10,
-	filter_config_filter_headers=$11,
-	filter_config_filter_body=$12,
-	rate_limit_config_count=$13,
-	rate_limit_config_duration=$14
-    WHERE id = $1;
+    name=$3,
+  	endpoint_id=$4,
+ 	source_id=$5,
+	alert_config_count=$6,
+	alert_config_threshold=$7,
+	retry_config_type=$8,
+	retry_config_duration=$9,
+	retry_config_retry_count=$10,
+	filter_config_event_types=$11,
+	filter_config_filter_headers=$12,
+	filter_config_filter_body=$13,
+	rate_limit_config_count=$14,
+	rate_limit_config_duration=$15
+    WHERE id = $1 AND project_id = $2 
+	AND deleted_at IS NULL;
     `
 
 	baseFetch = `
@@ -184,18 +185,19 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 }
 
 func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {
-	if projectID != subscription.ProjectID {
-		return datastore.ErrNotAuthorisedToAccessDocument
-	}
-
 	ac := subscription.GetAlertConfig()
 	rc := subscription.GetRetryConfig()
 	fc := subscription.GetFilterConfig()
 	rlc := subscription.GetRateLimitConfig()
 
+	var sourceID *string
+	if !util.IsStringEmpty(subscription.SourceID) {
+		sourceID = &subscription.SourceID
+	}
+
 	result, err := s.db.ExecContext(
-		ctx, updateSubscription, subscription.UID,
-		subscription.Name, subscription.EndpointID, subscription.SourceID,
+		ctx, updateSubscription, subscription.UID, projectID,
+		subscription.Name, subscription.EndpointID, sourceID,
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
 		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, rlc.Count, rlc.Duration,
 	)
