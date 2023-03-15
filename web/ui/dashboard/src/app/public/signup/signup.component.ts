@@ -36,6 +36,7 @@ export class SignupComponent implements OnInit {
 		try {
 			const response: any = await this.signupService.signup(this.signupForm.value);
 			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
+			localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
 
 			if (window.location.hostname === 'dashboard.getconvoy.io') await this.hubspotService.sendWelcomeEmail({ email: this.signupForm.value.email, firstname: this.signupForm.value.first_name, lastname: this.signupForm.value.last_name });
 
