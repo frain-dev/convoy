@@ -19,19 +19,19 @@ type APIKeyRepository interface {
 
 type EventDeliveryRepository interface {
 	CreateEventDelivery(context.Context, *EventDelivery) error
-	FindEventDeliveryByID(context.Context, string) (*EventDelivery, error)
-	FindEventDeliveriesByIDs(context.Context, []string) ([]EventDelivery, error)
-	FindEventDeliveriesByEventID(context.Context, string) ([]EventDelivery, error)
-	CountDeliveriesByStatus(context.Context, EventDeliveryStatus, SearchParams) (int64, error)
-	UpdateStatusOfEventDelivery(context.Context, EventDelivery, EventDeliveryStatus) error
-	UpdateStatusOfEventDeliveries(context.Context, []string, EventDeliveryStatus) error
-	FindDiscardedEventDeliveries(ctx context.Context, endpointId, deviceId string, searchParams SearchParams) ([]EventDelivery, error)
+	FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*EventDelivery, error)
+	FindEventDeliveriesByIDs(ctx context.Context, projectID string,  ids []string) ([]EventDelivery, error)
+	FindEventDeliveriesByEventID(ctx context.Context, projectID string, id string) ([]EventDelivery, error)
+	CountDeliveriesByStatus(ctx context.Context, projectID string, status EventDeliveryStatus, params SearchParams) (int64, error)
+	UpdateStatusOfEventDelivery(ctx context.Context, projectID string, eventDelivery EventDelivery, status EventDeliveryStatus) error
+	UpdateStatusOfEventDeliveries(ctx context.Context, projectID string,  ids []string, status EventDeliveryStatus) error
+	FindDiscardedEventDeliveries(ctx context.Context, projectID, endpointId, deviceId string, params SearchParams) ([]EventDelivery, error)
 
-	UpdateEventDeliveryWithAttempt(context.Context, EventDelivery, DeliveryAttempt) error
+	UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, eventDelivery EventDelivery, attempt DeliveryAttempt) error
 	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
-	DeleteProjectEventDeliveries(ctx context.Context, filter *EventDeliveryFilter, hardDelete bool) error
+	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error
 	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable) ([]EventDelivery, PaginationData, error)
-	LoadEventDeliveriesIntervals(context.Context, string, SearchParams, Period, int) ([]EventInterval, error)
+	LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params SearchParams, period Period, interval int) ([]EventInterval, error)
 }
 
 type EventRepository interface {

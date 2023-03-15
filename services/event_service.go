@@ -209,8 +209,8 @@ func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]
 	return events, paginationData, err
 }
 
-func (e *EventService) GetEventDelivery(ctx context.Context, id string) (*datastore.EventDelivery, error) {
-	eventDelivery, err := e.eventDeliveryRepo.FindEventDeliveryByID(ctx, id)
+func (e *EventService) GetEventDelivery(ctx context.Context, projectID, id string) (*datastore.EventDelivery, error) {
+	eventDelivery, err := e.eventDeliveryRepo.FindEventDeliveryByID(ctx, projectID, id)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to find event delivery by id")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find event delivery by id"))
@@ -260,7 +260,7 @@ func (e *EventService) CountAffectedEventDeliveries(ctx context.Context, filter 
 }
 
 func (e *EventService) ForceResendEventDeliveries(ctx context.Context, ids []string, g *datastore.Project) (int, int, error) {
-	deliveries, err := e.eventDeliveryRepo.FindEventDeliveriesByIDs(ctx, ids)
+	deliveries, err := e.eventDeliveryRepo.FindEventDeliveriesByIDs(ctx, g.UID, ids)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch event deliveries by ids")
 		return 0, 0, util.NewServiceError(http.StatusInternalServerError, errors.New("failed to fetch event deliveries"))
@@ -369,7 +369,7 @@ func (e *EventService) validateEventDeliveryStatus(deliveries []datastore.EventD
 
 func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Project) error {
 	eventDelivery.Status = datastore.ScheduledEventStatus
-	err := e.eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, *eventDelivery, datastore.ScheduledEventStatus)
+	err := e.eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, g.UID, *eventDelivery, datastore.ScheduledEventStatus)
 	if err != nil {
 		return errors.New("an error occurred while trying to resend event")
 	}

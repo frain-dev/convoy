@@ -133,10 +133,10 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	_, err = r.ConvoyApp.eventRepo.FindEventByID(context.Background(), project.UID, event1.UID)
 	require.ErrorIs(r.T(), err, datastore.ErrEventNotFound)
 
-	_, err = r.ConvoyApp.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), eventDelivery1.UID)
+	_, err = r.ConvoyApp.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), project.UID, eventDelivery1.UID)
 	require.ErrorIs(r.T(), err, datastore.ErrEventDeliveryNotFound)
 
-	_, err = r.ConvoyApp.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), eventDelivery2.UID)
+	_, err = r.ConvoyApp.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), project.UID, eventDelivery2.UID)
 	require.ErrorIs(r.T(), err, datastore.ErrEventDeliveryNotFound)
 
 	// check the number of retained events on projects
@@ -208,7 +208,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	require.NoError(r.T(), err)
 	require.Equal(r.T(), e.UID, event.UID)
 
-	ed, err := r.ConvoyApp.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), eventDelivery.UID)
+	ed, err := r.ConvoyApp.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), project.UID, eventDelivery.UID)
 	require.NoError(r.T(), err)
 	require.Equal(r.T(), ed.UID, eventDelivery.UID)
 }

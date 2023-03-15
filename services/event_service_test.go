@@ -499,9 +499,9 @@ func TestEventService_GetEvent(t *testing.T) {
 		{
 			name: "should_get_app_event",
 			args: args{
-				ctx: ctx,
+				ctx:       ctx,
 				projectID: "1234",
-				id:  "123",
+				id:        "123",
 			},
 			dbFn: func(es *EventService) {
 				e, _ := es.eventRepo.(*mocks.MockEventRepository)
@@ -513,9 +513,9 @@ func TestEventService_GetEvent(t *testing.T) {
 		{
 			name: "should_fail_to_get_app_event",
 			args: args{
-				ctx: ctx,
+				ctx:       ctx,
 				projectID: "1234",
-				id:  "123",
+				id:        "123",
 			},
 			dbFn: func(es *EventService) {
 				e, _ := es.eventRepo.(*mocks.MockEventRepository)
@@ -624,8 +624,9 @@ func TestEventService_GetEventDelivery(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
-		ctx context.Context
-		id  string
+		ctx       context.Context
+		projectID string
+		id        string
 	}
 	tests := []struct {
 		name              string
@@ -639,12 +640,13 @@ func TestEventService_GetEventDelivery(t *testing.T) {
 		{
 			name: "should_get_event_delivery",
 			args: args{
-				ctx: ctx,
-				id:  "123",
+				ctx:       ctx,
+				projectID: "1234",
+				id:        "123",
 			},
 			dbFn: func(es *EventService) {
 				e, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				e.EXPECT().FindEventDeliveryByID(gomock.Any(), "123").
+				e.EXPECT().FindEventDeliveryByID(gomock.Any(), "1234", "123").
 					Times(1).Return(&datastore.EventDelivery{UID: "123"}, nil)
 			},
 			wantEventDelivery: &datastore.EventDelivery{UID: "123"},
@@ -652,12 +654,13 @@ func TestEventService_GetEventDelivery(t *testing.T) {
 		{
 			name: "should_fail_to_get_event_delivery",
 			args: args{
-				ctx: ctx,
-				id:  "123",
+				ctx:       ctx,
+				projectID: "1234",
+				id:        "123",
 			},
 			dbFn: func(es *EventService) {
 				e, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				e.EXPECT().FindEventDeliveryByID(gomock.Any(), "123").
+				e.EXPECT().FindEventDeliveryByID(gomock.Any(), "1234", "123").
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			wantErr:     true,
@@ -675,7 +678,7 @@ func TestEventService_GetEventDelivery(t *testing.T) {
 				tc.dbFn(es)
 			}
 
-			eventDelivery, err := es.GetEventDelivery(tc.args.ctx, tc.args.id)
+			eventDelivery, err := es.GetEventDelivery(tc.args.ctx, tc.args.projectID, tc.args.id)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -768,7 +771,7 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 						nil,
 					)
 
-				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
+				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(2).Return(nil)
 
 				q, _ := es.queue.(*mocks.MockQueuer)
@@ -838,7 +841,7 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 						nil,
 					)
 
-				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
+				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 
 				q, _ := es.queue.(*mocks.MockQueuer)
@@ -1003,7 +1006,7 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				ed.EXPECT().FindEventDeliveriesByIDs(
-					gomock.Any(), []string{"oop", "ref"}).
+					gomock.Any(), gomock.Any(), []string{"oop", "ref"}).
 					Times(1).
 					Return(
 						[]datastore.EventDelivery{
@@ -1026,7 +1029,7 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 					Status: datastore.ActiveEndpointStatus,
 				}, nil)
 
-				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
+				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(2).Return(nil)
 
 				q, _ := es.queue.(*mocks.MockQueuer)
@@ -1046,7 +1049,7 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				ed.EXPECT().FindEventDeliveriesByIDs(
-					gomock.Any(), []string{"ref", "oop"}).
+					gomock.Any(), gomock.Any(), []string{"ref", "oop"}).
 					Times(1).
 					Return(
 						[]datastore.EventDelivery{
@@ -1549,7 +1552,7 @@ func TestEventService_ResendEventDelivery(t *testing.T) {
 					Times(1).Return(&datastore.Endpoint{Status: datastore.ActiveEndpointStatus}, nil)
 
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus)
+				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus)
 
 				q, _ := es.queue.(*mocks.MockQueuer)
 				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -1622,7 +1625,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					Times(1).Return(&datastore.Endpoint{Status: datastore.ActiveEndpointStatus}, nil)
 
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus)
+				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus)
 
 				q, _ := es.queue.(*mocks.MockQueuer)
 				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -1740,7 +1743,7 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 					Times(1).Return(nil)
 
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus)
+				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus)
 
 				q, _ := es.queue.(*mocks.MockQueuer)
 				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -1825,7 +1828,7 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 				}, nil)
 
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus).
+				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus).
 					Times(1).Return(nil)
 
 				q, _ := es.queue.(*mocks.MockQueuer)
@@ -1925,7 +1928,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 			},
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus).
+				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus).
 					Times(1).Return(nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)
@@ -1942,7 +1945,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 			},
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus).
+				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus).
 					Times(1).Return(errors.New("failed"))
 			},
 			wantErr:    true,
@@ -1957,7 +1960,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 			},
 			dbFn: func(es *EventService) {
 				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus).
+				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus).
 					Times(1).Return(nil)
 
 				eq, _ := es.queue.(*mocks.MockQueuer)

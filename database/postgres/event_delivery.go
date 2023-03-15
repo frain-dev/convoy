@@ -54,7 +54,7 @@ const (
     LEFT JOIN convoy.devices d ON ed.device_id = d.id
     `
 
-	fetchEventDeliveryByID = baseFetchEventDelivery + ` WHERE ed.id = $1 AND ed.deleted_at IS NULL`
+	fetchEventDeliveryByID = baseFetchEventDelivery + ` WHERE ed.id = $1 AND ed.project_id = $2 AND ed.deleted_at IS NULL`
 
 	loadEventDeliveriesPaged = baseFetchEventDelivery + ` WHERE (ed.project_id = ? OR ? = '') AND (ed.event_id = ? OR ? = '') AND ed.created_at >= ? AND ed.created_at <= ?  AND ed.deleted_at IS NULL`
 
@@ -94,11 +94,15 @@ const (
         description,created_at,updated_at,
         COALESCE(device_id,'') as "device_id",
         COALESCE(endpoint_id,'') as "endpoint_id"
-    FROM convoy.event_deliveries WHERE status=$1 AND device_id = $2 AND (endpoint_id = $3 or $3 = '') AND created_at >= $4 AND created_at <= $5 AND deleted_at IS NULL;
+    FROM convoy.event_deliveries 
+	WHERE status=$1 AND project_id = $2 AND device_id = $3 
+	AND (endpoint_id = $4 or $4 = '') 
+	AND created_at >= $5 AND created_at <= $6
+	AND deleted_at IS NULL;
     `
 
 	countEventDeliveriesByStatus = `
-    SELECT COUNT(id) FROM convoy.event_deliveries WHERE status = $1 AND created_at > $2 AND created_at < $3 AND deleted_at IS NULL;
+    SELECT COUNT(id) FROM convoy.event_deliveries WHERE status = $1 AND (project_id = $2 OR $2 = '') AND created_at >= $3 AND created_at <= $4 AND deleted_at IS NULL;
     `
 
 	countEventDeliveries = `
@@ -106,11 +110,11 @@ const (
     `
 
 	updateEventDeliveriesStatus = `
-    UPDATE convoy.event_deliveries SET status = ?, updated_at = now() WHERE id IN (?) AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET status = ?, updated_at = now() WHERE project_id = ? AND id IN (?) AND deleted_at IS NULL;
     `
 
 	updateEventDeliveryAttempts = `
-    UPDATE convoy.event_deliveries SET attempts = $1, status = $2, metadata = $3,  updated_at = now() WHERE id = $4 AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET attempts = $1, status = $2, metadata = $3,  updated_at = now() WHERE id = $4 AND project_id = $5 AND deleted_at IS NULL;
     `
 
 	softDeleteProjectEventDeliveries = `
@@ -160,9 +164,9 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 	return nil
 }
 
-func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, id string) (*datastore.EventDelivery, error) {
+func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*datastore.EventDelivery, error) {
 	eventDelivery := &datastore.EventDelivery{}
-	err := e.db.QueryRowxContext(ctx, fetchEventDeliveryByID, id).StructScan(eventDelivery)
+	err := e.db.QueryRowxContext(ctx, fetchEventDeliveryByID, id, projectID).StructScan(eventDelivery)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrEventDeliveryNotFound
@@ -173,10 +177,10 @@ func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, id string
 	return eventDelivery, nil
 }
 
-func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, ids []string) ([]datastore.EventDelivery, error) {
+func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, projectID string, ids []string) ([]datastore.EventDelivery, error) {
 	eventDeliveries := make([]datastore.EventDelivery, 0)
 
-	query, args, err := sqlx.In(fmt.Sprintf(fetchEventDeliveries, "id IN (?)"), ids)
+	query, args, err := sqlx.In(fmt.Sprintf(fetchEventDeliveries, "id IN (?) AND project_id = ?"), ids, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -202,11 +206,11 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, ids []
 	return eventDeliveries, nil
 }
 
-func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, eventID string) ([]datastore.EventDelivery, error) {
+func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, projectID string, eventID string) ([]datastore.EventDelivery, error) {
 	eventDeliveries := make([]datastore.EventDelivery, 0)
 
-	q := fmt.Sprintf(fetchEventDeliveries, "event_id = $1")
-	rows, err := e.db.QueryxContext(ctx, q, eventID)
+	q := fmt.Sprintf(fetchEventDeliveries, "event_id = $1 AND project_id = $2")
+	rows, err := e.db.QueryxContext(ctx, q, eventID, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -225,14 +229,14 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, ev
 	return eventDeliveries, nil
 }
 
-func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, status datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
+func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, projectID string, status datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
 	count := struct {
 		Count int64
 	}{}
 
 	start := time.Unix(params.CreatedAtStart, 0)
 	end := time.Unix(params.CreatedAtEnd, 0)
-	err := e.db.QueryRowxContext(ctx, countEventDeliveriesByStatus, status, start, end).StructScan(&count)
+	err := e.db.QueryRowxContext(ctx, countEventDeliveriesByStatus, status, projectID, start, end).StructScan(&count)
 	if err != nil {
 		return 0, err
 	}
@@ -240,8 +244,8 @@ func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, status 
 	return count.Count, nil
 }
 
-func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, delivery datastore.EventDelivery, status datastore.EventDeliveryStatus) error {
-	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, []string{delivery.UID})
+func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, projectID string, delivery datastore.EventDelivery, status datastore.EventDeliveryStatus) error {
+	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, projectID, []string{delivery.UID})
 	if err != nil {
 		return err
 	}
@@ -265,8 +269,8 @@ func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, del
 	return nil
 }
 
-func (e *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, ids []string, status datastore.EventDeliveryStatus) error {
-	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, ids)
+func (e *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, projectID string, ids []string, status datastore.EventDeliveryStatus) error {
+	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, projectID, ids)
 	if err != nil {
 		return err
 	}
@@ -290,13 +294,13 @@ func (e *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, i
 	return nil
 }
 
-func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, endpointID, deviceId string, searchParams datastore.SearchParams) ([]datastore.EventDelivery, error) {
+func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, projectID, endpointID, deviceId string, searchParams datastore.SearchParams) ([]datastore.EventDelivery, error) {
 	eventDeliveries := make([]datastore.EventDelivery, 0)
 
 	start := time.Unix(searchParams.CreatedAtStart, 0)
 	end := time.Unix(searchParams.CreatedAtEnd, 0)
 
-	rows, err := e.db.QueryxContext(ctx, fetchDiscardedEventDeliveries, datastore.DiscardedEventStatus, deviceId, endpointID, start, end)
+	rows, err := e.db.QueryxContext(ctx, fetchDiscardedEventDeliveries, datastore.DiscardedEventStatus, projectID, deviceId, endpointID, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -315,10 +319,10 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, en
 	return eventDeliveries, nil
 }
 
-func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, delivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
+func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, delivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
 	delivery.DeliveryAttempts = append(delivery.DeliveryAttempts, attempt)
 
-	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, delivery.DeliveryAttempts, delivery.Status, delivery.Metadata, delivery.UID)
+	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, delivery.DeliveryAttempts, delivery.Status, delivery.Metadata, delivery.UID, projectID)
 	if err != nil {
 		return err
 	}
@@ -376,7 +380,7 @@ func (e *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, projectID 
 	return count.Count, nil
 }
 
-func (e *eventDeliveryRepo) DeleteProjectEventDeliveries(ctx context.Context, filter *datastore.EventDeliveryFilter, hardDelete bool) error {
+func (e *eventDeliveryRepo) DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *datastore.EventDeliveryFilter, hardDelete bool) error {
 	var result sql.Result
 	var err error
 
@@ -384,9 +388,9 @@ func (e *eventDeliveryRepo) DeleteProjectEventDeliveries(ctx context.Context, fi
 	end := time.Unix(filter.CreatedAtEnd, 0)
 
 	if hardDelete {
-		result, err = e.db.ExecContext(ctx, hardDeleteProjectEventDeliveries, filter.ProjectID, start, end)
+		result, err = e.db.ExecContext(ctx, hardDeleteProjectEventDeliveries, projectID, start, end)
 	} else {
-		result, err = e.db.ExecContext(ctx, softDeleteProjectEventDeliveries, filter.ProjectID, start, end)
+		result, err = e.db.ExecContext(ctx, softDeleteProjectEventDeliveries, projectID, start, end)
 	}
 
 	if err != nil {
@@ -490,7 +494,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 			DeletedAt:        ev.DeletedAt,
 		})
 	}
-	
+
 	count := 0
 	pagination := datastore.PaginationData{
 		Total:     int64(count),
@@ -510,7 +514,7 @@ const (
 	yearlyIntervalFormat  = "yyyy"                // 1 month
 )
 
-func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, i int) ([]datastore.EventInterval, error) {
+func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, t int) ([]datastore.EventInterval, error) {
 	intervals := make([]datastore.EventInterval, 0)
 
 	start := time.Unix(params.CreatedAtStart, 0)

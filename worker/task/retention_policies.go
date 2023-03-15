@@ -166,12 +166,11 @@ func ExportCollection(
 		}
 
 	case eventDeliveriesTable:
-		evntDeliveryFilter := &datastore.EventDeliveryFilter{
-			ProjectID:      project.UID,
+		eventDeliveryFilter := &datastore.EventDeliveryFilter{
 			CreatedAtStart: 0,
 			CreatedAtEnd:   expDate.Unix(),
 		}
-		err = eventDeliveriesRepo.DeleteProjectEventDeliveries(ctx, evntDeliveryFilter, true)
+		err = eventDeliveriesRepo.DeleteProjectEventDeliveries(ctx, project.UID, eventDeliveryFilter, true)
 		if err != nil {
 			return err
 		}

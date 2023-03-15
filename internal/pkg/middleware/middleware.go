@@ -555,8 +555,9 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
+			project := GetProjectFromContext(r.Context())
 
-			eventDelivery, err := m.eventDeliveryRepo.FindEventDeliveryByID(r.Context(), eventDeliveryID)
+			eventDelivery, err := m.eventDeliveryRepo.FindEventDeliveryByID(r.Context(), project.UID, eventDeliveryID)
 			if err != nil {
 
 				eventDelivery := "an error occurred while retrieving event delivery details"
