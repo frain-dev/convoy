@@ -828,24 +828,24 @@ func (m *Middleware) Pagination(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawPerPage := r.URL.Query().Get("perPage")
 		rawDirection := r.URL.Query().Get("direction")
-		rawNextCursor := r.URL.Query().Get("endCursor")
-		rawPrevCursor := r.URL.Query().Get("startCursor")
+		rawNextCursor := r.URL.Query().Get("next_page_cursor")
+		rawPrevCursor := r.URL.Query().Get("prev_page_cursor")
 
 		if len(rawPerPage) == 0 {
 			rawPerPage = "20"
-		}
-
-		if len(rawNextCursor) == 0 {
-			rawNextCursor = ""
 		}
 
 		if len(rawDirection) == 0 {
 			rawDirection = "next"
 		}
 
-		if len(rawPrevCursor) == 0 {
+		if len(rawNextCursor) == 0 {
 			const jsMaxInt = ^uint64(0) >> 1
-			rawPrevCursor = fmt.Sprintf("%d", jsMaxInt)
+			rawNextCursor = fmt.Sprintf("%d", jsMaxInt)
+		}
+
+		if len(rawPrevCursor) == 0 {
+			rawPrevCursor = ""
 		}
 
 		perPage, err := strconv.Atoi(rawPerPage)
@@ -859,6 +859,8 @@ func (m *Middleware) Pagination(next http.Handler) http.Handler {
 			NextCursor: rawNextCursor,
 			PrevCursor: rawPrevCursor,
 		}
+
+		// fmt.Printf("middleware %+v\n", pageable)
 
 		r = r.WithContext(setPageableInContext(r.Context(), pageable))
 		next.ServeHTTP(w, r)

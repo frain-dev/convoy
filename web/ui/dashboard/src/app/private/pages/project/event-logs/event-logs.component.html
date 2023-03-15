@@ -236,7 +236,7 @@
 		(click)="getEvents({ cursor: events?.pagination?.prev_page_cursor })"
 		routerLink="./"
 		[queryParams]="{ cursor: events?.pagination?.prev_page_cursor }"
-		[disabled]="!events || !events.pagination.has_previous_page"
+		[disabled]="!events || !events.pagination.has_prev_page"
 	>
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>

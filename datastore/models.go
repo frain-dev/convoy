@@ -38,10 +38,10 @@ const Prev PageDirection = "prev"
 
 func (p Pageable) Cursor() string {
 	if p.Direction == Next {
-		return p.PrevCursor
+		return p.NextCursor
 	}
 
-	return p.NextCursor
+	return p.PrevCursor
 }
 
 func (p Pageable) Limit() int {
@@ -64,14 +64,19 @@ type PaginationData struct {
 	Next      int64 `json:"next"`
 	TotalPage int64 `json:"totalPage"`
 
-	PerPage         int64  `json:"per_page"`
-	HasNextPage     bool   `json:"has_next_page"`
-	HasPreviousPage bool   `json:"has_previous_page"`
-	PrevPageCursor  string `json:"prev_page_cursor"`
-	NextPageCursor  string `json:"next_page_cursor"`
+	PrevRowCount    PrevRowCount `json:"-"`
+	PerPage         int64        `json:"per_page"`
+	HasNextPage     bool         `json:"has_next_page"`
+	HasPreviousPage bool         `json:"has_prev_page"`
+	PrevPageCursor  string       `json:"prev_page_cursor"`
+	NextPageCursor  string       `json:"next_page_cursor"`
 }
 
-func (p *PaginationData) Build(pageable Pageable, items []string) PaginationData {
+type PrevRowCount struct {
+	Count int
+}
+
+func (p *PaginationData) Build(pageable Pageable, items []string) *PaginationData {
 	p.PerPage = int64(pageable.PerPage)
 
 	var s, e string
@@ -84,19 +89,19 @@ func (p *PaginationData) Build(pageable Pageable, items []string) PaginationData
 		e = items[len(items)-1]
 	}
 
-	// there's an extra item. We use it to find out if there is more data to be loaded
-	if len(items) > pageable.PerPage {
-		if pageable.Direction == Next {
-			p.HasNextPage = true
-		} else if pageable.Direction == Prev {
-			p.HasPreviousPage = true
-		}
-	}
-
 	p.PrevPageCursor = s
 	p.NextPageCursor = e
 
-	return *p
+	// there's an extra item. We use it to find out if there is more data to be loaded
+	if len(items) > pageable.PerPage {
+		p.HasNextPage = true
+	}
+
+	if p.PrevRowCount.Count > 0 {
+		p.HasPreviousPage = true
+	}
+
+	return p
 }
 
 type Period int

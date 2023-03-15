@@ -1,9 +1,9 @@
 <div class="flex items-center mt-16px mb-24px" *ngIf="paginationData">
-	<button convoy-button fill="outline" size="sm" class="pl-4px pr-16px py-4px border-primary-300" (click)="prev({ prev_page_cursor: paginationData.prev_page_cursor })" [disabled]="!paginationData.has_previous_page">
+	<button convoy-button fill="outline" size="sm" class="pl-4px pr-16px py-4px border-primary-300" (click)="prev({ prev_page_cursor: paginationData.prev_page_cursor })" [disabled]="!paginationData.has_prev_page">
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
-		Previous {{ paginationData.has_previous_page }}
+		Previous {{ paginationData.has_prev_page }}
 	</button>
 
 	<button convoy-button fill="outline" size="sm" class="pr-4px pl-16px py-4px border-primary-300 ml-16px" (click)="next({ next_page_cursor: paginationData.next_page_cursor })" [disabled]="!paginationData.has_next_page">

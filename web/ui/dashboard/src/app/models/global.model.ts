@@ -6,7 +6,7 @@ export interface PAGINATION {
 	total: number;
 	totalPage: number;
 	has_next_page: boolean;
-	has_previous_page: boolean;
+	has_prev_page: boolean;
 	next_page_cursor: string;
 	per_page: number;
 	prev_page_cursor: string;
