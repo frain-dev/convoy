@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { environment } from 'src/environments/environment';
-import axios from 'axios';
+import axios, { Axios, AxiosInstance } from 'axios';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GeneralService } from '../general/general.service';
 
@@ -31,47 +31,7 @@ export class HttpService {
 
 		return new Promise(async (resolve, reject) => {
 			try {
-				const http = axios.create();
-
-				// Interceptor
-				http.interceptors.response.use(
-					request => {
-						return request;
-					},
-					error => {
-						if (axios.isAxiosError(error)) {
-							const errorResponse: any = error.response;
-							let errorMessage: any = errorResponse?.data ? errorResponse.data.message : error.message;
-
-							if (error.response?.status == 401 && !this.router.url.split('/')[1].includes('portal')) {
-								// save previous location before session timeout
-								if (this.router.url.split('/')[1] !== 'login') localStorage.setItem('CONVOY_LAST_AUTH_LOCATION', location.href);
-
-								// then logout
-								this.router.navigate(['/login'], { replaceUrl: true });
-								return Promise.reject(error);
-							}
-
-							if (!requestDetails.hideNotification) {
-								this.generalService.showNotification({
-									message: errorMessage,
-									style: 'error'
-								});
-							}
-							return Promise.reject(error);
-						}
-
-						if (!requestDetails.hideNotification) {
-							let errorMessage: string;
-							error.error?.message ? (errorMessage = error.error?.message) : (errorMessage = 'An error occured, please try again');
-							this.generalService.showNotification({
-								message: errorMessage,
-								style: 'error'
-							});
-						}
-						return Promise.reject(error);
-					}
-				);
+				const http = this.setupAxios({ hideNotification: requestDetails.hideNotification });
 
 				const requestHeader = {
 					Authorization: `Bearer ${this.portalToken || this.authDetails()?.access_token}`
@@ -95,5 +55,55 @@ export class HttpService {
 				}
 			}
 		});
+	}
+
+	setupAxios(requestDetails: { hideNotification: any }) {
+		const http = axios.create();
+
+		// Interceptor
+		http.interceptors.response.use(
+			request => {
+				return request;
+			},
+			error => {
+				if (axios.isAxiosError(error)) {
+					const errorResponse: any = error.response;
+					let errorMessage: any = errorResponse?.data ? errorResponse.data.message : error.message;
+
+					if (error.response?.status == 401 && !this.router.url.split('/')[1].includes('portal')) {
+						this.logUserOut();
+						return Promise.reject(error);
+					}
+
+					if (!requestDetails.hideNotification) {
+						this.generalService.showNotification({
+							message: errorMessage,
+							style: 'error'
+						});
+					}
+					return Promise.reject(error);
+				}
+
+				if (!requestDetails.hideNotification) {
+					let errorMessage: string;
+					error.error?.message ? (errorMessage = error.error?.message) : (errorMessage = 'An error occured, please try again');
+					this.generalService.showNotification({
+						message: errorMessage,
+						style: 'error'
+					});
+				}
+				return Promise.reject(error);
+			}
+		);
+
+		return http;
+	}
+
+	logUserOut() {
+		// save previous location before session timeout
+		if (this.router.url.split('/')[1] !== 'login') localStorage.setItem('CONVOY_LAST_AUTH_LOCATION', location.href);
+
+		// then logout
+		this.router.navigate(['/login'], { replaceUrl: true });
 	}
 }
