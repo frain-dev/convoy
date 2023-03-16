@@ -1,15 +1,15 @@
 package typesense
 
 import (
-	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/jeremywohl/flatten"
+	"github.com/frain-dev/convoy/pkg/flatten"
 	"github.com/typesense/typesense-go/typesense"
 	"github.com/typesense/typesense-go/typesense/api"
 )
@@ -66,6 +66,15 @@ func (t *Typesense) Search(collection string, f *datastore.SearchFilter) ([]stri
 
 	sp := &api.MultiSearchParams{}
 
+	fmt.Printf("%+v", api.MultiSearchParameters{
+		Q:        &f.Query,
+		QueryBy:  &queryBy,
+		SortBy:   &sortBy,
+		FilterBy: f.FilterBy.String(),
+		Page:     &f.Pageable.Page,
+		PerPage:  &f.Pageable.PerPage,
+	})
+
 	msp := api.MultiSearchSearchesParameter{
 		Searches: []api.MultiSearchCollectionParameters{
 			{
@@ -85,6 +94,10 @@ func (t *Typesense) Search(collection string, f *datastore.SearchFilter) ([]stri
 	results, err := t.client.MultiSearch.Perform(sp, msp)
 	if err != nil {
 		return docs, data, err
+	}
+
+	if len(results.Results) == 0 {
+		return docs, data, nil
 	}
 
 	result := results.Results[0]
@@ -152,18 +165,7 @@ func (t *Typesense) Index(collection string, document convoy.GenericMap) error {
 		return ErrUpdatedAtFieldIsRequired
 	}
 
-	jsonDoc, err := json.Marshal(document)
-	if err != nil {
-		return err
-	}
-
-	flattened, err := flatten.FlattenString(string(jsonDoc), "", flatten.DotStyle)
-	if err != nil {
-		return err
-	}
-
-	var indexedDoc *convoy.GenericMap
-	err = json.Unmarshal([]byte(flattened), &indexedDoc)
+	indexedDoc, err := flatten.Flatten(document)
 	if err != nil {
 		return err
 	}
