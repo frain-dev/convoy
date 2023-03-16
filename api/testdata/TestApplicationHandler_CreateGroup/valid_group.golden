@@ -1,0 +1,1 @@
+{"uid":"","name":"ABC_DEF_TEST_UPDATE","logo_url":"","config":{"strategy":{"type":"default","default":{"intervalSeconds":10,"retryLimit":3},"exponentialBackoff":{"retryLimit":0}},"signature":{"header":"X-Company-Signature","hash":"SHA1"},"disable_endpoint":false,"replay_attacks":false},"statistics":null,"rate_limit":5000,"rate_limit_duration":"1m"}

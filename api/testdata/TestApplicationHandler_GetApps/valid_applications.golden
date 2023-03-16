@@ -1,0 +1,1 @@
+{"status":true,"message":"Apps fetched successfully","data":{"content":[{"uid":"123456789","group_id":"1234567890","name":"Valid application - 0","support_email":"","is_disabled":false,"endpoints":[],"events":0}],"pagination":{"total":0,"page":0,"perPage":0,"prev":0,"next":0,"totalPage":0}}}
