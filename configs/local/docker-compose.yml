@@ -2,7 +2,7 @@ version: "3"
 
 services:
     web:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.2
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.3
         command: ["/start.sh"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -15,7 +15,7 @@ services:
             - typesense
 
     scheduler:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.2
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.3
         command: ["./cmd", "scheduler", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -26,7 +26,7 @@ services:
             - typesense
 
     worker:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.2
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.3
         command: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -37,7 +37,7 @@ services:
             - typesense
 
     ingest:
-      image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.2
+      image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.3
       command: ["./cmd", "ingest", "--config", "convoy.json"]
       volumes:
         - ./convoy.json:/convoy.json
@@ -65,7 +65,7 @@ services:
           - ./redis_data:/data
 
     typesense:
-        image: typesense/typesense:0.22.2
+        image: typesense/typesense:0.24.0
         restart: always
         environment:
             TYPESENSE_DATA_DIR: /data/typesense
