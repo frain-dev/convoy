@@ -24,16 +24,11 @@ func SearchIndex(search searcher.Searcher) func(ctx context.Context, t *asynq.Ta
 
 		buf := t.Payload()
 
-		var payload map[string]interface{}
-		err := json.Unmarshal(buf, &payload)
+		var event map[string]interface{}
+		err := json.Unmarshal(buf, &event)
 		if err != nil {
 			log.WithError(err).Error("[json]: failed to unmarshal event payload")
 			return &EndpointError{Err: err, delay: defaultDelay}
-		}
-
-		event, ok := payload["Event"].(map[string]interface{})
-		if !ok {
-			log.WithError(err).Error("[type cast]: type could not be cast to map[string]interface{}")
 		}
 
 		event["id"] = event["uid"]
