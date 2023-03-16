@@ -7,7 +7,6 @@ package mocks
 import (
 	reflect "reflect"
 
-	convoy "github.com/frain-dev/convoy"
 	datastore "github.com/frain-dev/convoy/datastore"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -36,7 +35,7 @@ func (m *MockSearcher) EXPECT() *MockSearcherMockRecorder {
 }
 
 // Index mocks base method.
-func (m *MockSearcher) Index(collection string, document convoy.GenericMap) error {
+func (m *MockSearcher) Index(collection string, document map[string]interface{}) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Index", collection, document)
 	ret0, _ := ret[0].(error)

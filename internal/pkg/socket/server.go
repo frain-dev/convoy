@@ -156,7 +156,7 @@ func (h *Hub) watchEventDeliveriesCollection() func(doc map[string]interface{}) 
 		}
 
 		// map[Data:base64Str Subtype:int]
-		var dataMap convoy.GenericMap
+		var dataMap map[string]interface{}
 		err = json.Unmarshal(ed.Metadata.Data, &dataMap)
 		if err != nil {
 			log.WithError(err).Error("failed to unmarshal metadata")
@@ -287,14 +287,14 @@ func watchCollection(fn func(map[string]interface{}), collection string, stop ch
 		default:
 			ok := cs.Next(ctx)
 			if ok {
-				var document *convoy.GenericMap
+				var document *map[string]interface{}
 				err := cs.Decode(&document)
 				if err != nil {
 					return err
 				}
 
 				if (*document)["operationType"].(string) == "insert" {
-					doc := (*document)["fullDocument"].(convoy.GenericMap)
+					doc := (*document)["fullDocument"].(map[string]interface{})
 					fn(doc)
 				}
 			}
