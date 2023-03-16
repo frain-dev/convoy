@@ -3,7 +3,7 @@
 		<svg width="24" height="24" class="mr-8px fill-primary-100">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
-		Previous {{ paginationData.has_prev_page }}
+		Previous
 	</button>
 
 	<button convoy-button fill="outline" size="sm" class="pr-4px pl-16px py-4px border-primary-300 ml-16px" (click)="next({ next_page_cursor: paginationData.next_page_cursor })" [disabled]="!paginationData.has_next_page">

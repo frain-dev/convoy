@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CardComponent } from 'src/app/components/card/card.component';
@@ -94,7 +94,7 @@ export class EventLogsComponent implements OnInit {
 	isRetrying = false;
 	batchRetryCount: any;
 
-	constructor(private eventsLogService: EventLogsService, private generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService) {}
+	constructor(private eventsLogService: EventLogsService, private generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService, private _location: Location) {}
 
 	async ngOnInit() {
 		this.getFiltersFromURL();
@@ -251,7 +251,10 @@ export class EventLogsComponent implements OnInit {
 		queryParams.eventsSource = this.eventSource;
 		queryParams.eventsSearch = this.eventsSearchString;
 
-		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams, params) });
+		const paramsObject = Object.assign({}, currentURLfilters, queryParams, params);
+		const cleanedQuery: any = Object.fromEntries(Object.entries(paramsObject).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
+		const queryParamss = new URLSearchParams(cleanedQuery).toString();
+		this._location.go(`${location.pathname}?${queryParamss}`);
 	}
 
 	async getEvents(requestDetails?: { endpointId?: string; addToURL?: boolean }, pagination?: { next_page_cursor?: string; prev_page_cursor?: string; direction?: 'next' | 'prev' }): Promise<HTTP_RESPONSE> {

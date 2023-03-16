@@ -17,15 +17,13 @@ export class PaginationComponent implements OnInit {
 
 	constructor() {}
 
-	ngOnInit(): void {
-		console.log(this.paginationData);
-	}
+	ngOnInit(): void {}
 
 	next(details: { next_page_cursor: string }) {
-		this.paginate.emit({ ...details, direction: 'next' });
+		this.paginate.emit({ ...details, direction: 'next', prev_page_cursor: '' });
 	}
 
 	prev(details: { prev_page_cursor: string }) {
-		this.paginate.emit({ ...details, direction: 'prev' });
+		this.paginate.emit({ ...details, direction: 'prev', next_page_cursor: '' });
 	}
 }
