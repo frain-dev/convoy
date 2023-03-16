@@ -1,1 +1,0 @@
-{"status":true,"message":"App event processed for retry successfully","data":{"uid":"1122333444456","app_id":"12345","event_type":"","provider_id":"","data":null,"metadata":null,"status":"Scheduled","app_metadata":{"group_id":"","secret":"","support_email":"","endpoints":[{"uid":"","target_url":"http://localhost","status":"active","sent":false}]}}}

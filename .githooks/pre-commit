@@ -5,7 +5,7 @@
 
 echo $(pwd)
 
-changed=$(git status -s | grep server/)
+changed=$(git status -s | grep api/)
 
 echo "$changed"
 
@@ -15,7 +15,7 @@ then
       exit 0
 else
   # regenerate docs
-  swag init --generatedTime --parseDependency --parseInternal -d server/ server/*
+  swag init --generatedTime --parseDependency --parseInternal -d api/ api/*
   go run v3gen/main.go
   git add docs/ # add all files under the generated doc folder to git
 fi

@@ -24,10 +24,10 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
 	"github.com/felixge/httpsnoop"
+	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/server/policies"
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/go-chi/chi/v5"

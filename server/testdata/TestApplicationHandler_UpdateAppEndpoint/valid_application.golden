@@ -1,1 +1,0 @@
-{"uid":"","target_url":"https://google.com","description":"Correct endpoint","status":"active","secret":"","http_timeout":"10s","rate_limit":3000,"rate_limit_duration":"1h0m0s","events":["payment.created"]}
