@@ -26,7 +26,7 @@ export class EventDeliveriesComponent implements OnInit {
 	eventDeliveryFilteredByEventId?: string;
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
-	eventDelTableHead: string[] = this.privateService.activeProjectDetails?.type === 'incoming' ? ['Status', 'Subscription', 'Attempts', 'Next Attempts', 'Time', '', ''] : ['Status', 'Subscription', 'Attempts', 'Next Attempt', 'Time', '', ''];
+	eventDelTableHead: string[] = this.privateService.activeProjectDetails?.type === 'incoming' ? ['Status', 'Subscription', 'Attempts', 'Next Attempt', 'Time', '', ''] : ['Status', 'Subscription', 'Attempts', 'Next Attempt', 'Time', '', ''];
 	eventDeliveriesStatusFilterActive = false;
 	fetchingCount = false;
 	showBatchRetryModal = false;
