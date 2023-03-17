@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { PrivateService } from '../../private.service';
 import { Router } from '@angular/router';
 import { LoaderModule } from '../../components/loader/loader.module';
+import { ButtonComponent } from 'src/app/components/button/button.component';
 
 export type STAGES = 'organisation' | 'project';
 
 @Component({
 	selector: 'convoy-onboarding',
 	standalone: true,
-	imports: [CommonModule, LoaderModule],
+	imports: [CommonModule, LoaderModule, ButtonComponent],
 	templateUrl: './onboarding.component.html',
 	styleUrls: ['./onboarding.component.scss']
 })
@@ -44,10 +45,8 @@ export class OnboardingComponent implements OnInit {
 			if (organisations?.length) {
 				this.updateStep({ currentStep: 'project', prevStep: 'organisation' });
 				this.isloading = false;
-				return this.router.navigateByUrl('/projects');
 			}
 
-			this.privateService.showCreateOrgModal = true;
 			this.isloading = false;
 			return;
 		} catch (error) {
