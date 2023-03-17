@@ -2,6 +2,7 @@
 
 -   [Bugfix] Fix search indexer #1448 #1449
 -   [Bugfix] Fix refresh token issue #1447
+-   [Bugfix] Fix event graph length #1443
 
 ## 0.9.0-rc.2
 
