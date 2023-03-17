@@ -1,4 +1,4 @@
-<convoy-page>
+<div convoy-page>
 	<ng-container *ngIf="isLoadingProjects">
 		<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-20 mb-20px"></div>
 		<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60 mb-24px"></div>
@@ -78,5 +78,12 @@
 		</div>
 	</ng-container>
 
+	<!-- empty state  -->
+	<div class="py-100px mt-24px" convoy-card *ngIf="!isLoadingProjects && !projects.length">
+		<div convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" heading="You currently have no projects" description="Your incoming and outgoing projects appear here." id="subscriptions-empty-state">
+			<button convoy-button emptyStateCTA routerLink="./new" class="mt-36px">Create a Project</button>
+		</div>
+	</div>
+
 	<convoy-loader *ngIf="isLoadingProject" position="fixed"></convoy-loader>
-</convoy-page>
+</div>

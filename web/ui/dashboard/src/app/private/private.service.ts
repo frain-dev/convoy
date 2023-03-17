@@ -291,4 +291,26 @@ export class PrivateService {
 			}
 		});
 	}
+
+	async getRefreshToken() {
+		let authTokens = localStorage.CONVOY_AUTH_TOKENS;
+		authTokens = authTokens ? JSON.parse(authTokens) : false;
+
+		return new Promise(async (resolve, reject) => {
+			if (!authTokens) return reject();
+
+			try {
+				const refreshedTokens = await this.http.request({
+					url: `/auth/token/refresh`,
+					method: 'post',
+					body: authTokens
+				});
+				localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(refreshedTokens.data));
+
+				return resolve(refreshedTokens);
+			} catch (error) {
+				reject(error);
+			}
+		});
+	}
 }

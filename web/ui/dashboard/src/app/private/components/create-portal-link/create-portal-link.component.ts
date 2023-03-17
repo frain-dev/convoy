@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -16,7 +16,7 @@ import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.
 @Component({
 	selector: 'convoy-create-portal-link',
 	standalone: true,
-	imports: [CommonModule, ModalComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, SelectComponent, CardComponent, ButtonComponent, ReactiveFormsModule, CopyButtonComponent],
+	imports: [CommonModule, ModalComponent, ModalHeaderComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, SelectComponent, CardComponent, ButtonComponent, ReactiveFormsModule, CopyButtonComponent],
 	templateUrl: './create-portal-link.component.html',
 	styleUrls: ['./create-portal-link.component.scss']
 })

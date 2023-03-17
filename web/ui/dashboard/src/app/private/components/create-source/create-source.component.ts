@@ -120,6 +120,8 @@ export class CreateSourceComponent implements OnInit {
 	confirmModal = false;
 	sourceDetails!: SOURCE;
 	sourceCreated: boolean = false;
+	showSourceUrl = false;
+	sourceData!: SOURCE;
 
 	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
 
@@ -209,8 +211,9 @@ export class CreateSourceComponent implements OnInit {
 		this.isloading = true;
 		try {
 			const response = this.action === 'update' ? await this.createSourceService.updateSource({ data: sourceData, id: this.sourceId }) : await this.createSourceService.createSource({ sourceData });
-			this.onAction.emit({ action: this.action, data: response.data });
 			document.getElementById('configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
+			this.sourceData = response.data;
+			this.showAction === 'true' ? this.onAction.emit({ action: this.action, data: sourceData }) : (this.showSourceUrl = true);
 			this.sourceCreated = true;
 			return response;
 		} catch (error) {

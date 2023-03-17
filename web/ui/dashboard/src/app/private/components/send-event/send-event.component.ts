@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
@@ -12,7 +12,7 @@ import { PrivateService } from '../../private.service';
 @Component({
 	selector: 'send-event',
 	standalone: true,
-	imports: [CommonModule, ModalComponent, SelectComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, ButtonComponent, ReactiveFormsModule],
+	imports: [CommonModule, ModalComponent, ModalHeaderComponent, SelectComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, ButtonComponent, ReactiveFormsModule],
 	templateUrl: './send-event.component.html',
 	styleUrls: ['./send-event.component.scss']
 })

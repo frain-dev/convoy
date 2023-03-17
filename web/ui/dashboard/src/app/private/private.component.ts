@@ -4,6 +4,8 @@ import { ORGANIZATION_DATA } from '../models/organisation.model';
 import { GeneralService } from '../services/general/general.service';
 import { PrivateService } from './private.service';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { JwtHelperService } from '@auth0/angular-jwt';
+import { differenceInSeconds } from 'date-fns';
 
 @Component({
 	selector: 'app-private',
@@ -15,6 +17,7 @@ export class PrivateComponent implements OnInit {
 	showOrgDropdown = false;
 	showMoreDropdown = false;
 	showOverlay = false;
+	showAddOrganisationModal = false;
 	showVerifyEmailModal = false;
 	isEmailVerified = true;
 	apiURL = this.generalService.apiURL();
@@ -27,10 +30,13 @@ export class PrivateComponent implements OnInit {
 		name: ['', Validators.required]
 	});
 	creatingOrganisation = false;
+	checkTokenInterval: any;
+	private jwtHelper: JwtHelperService = new JwtHelperService();
 
 	constructor(private generalService: GeneralService, private router: Router, public privateService: PrivateService, private formBuilder: FormBuilder) {}
 
 	async ngOnInit() {
+		this.checkIfTokenIsExpired();
 		await Promise.all([this.getConfiguration(), this.getUserDetails(), this.getOrganizations()]);
 	}
 
@@ -141,5 +147,37 @@ export class PrivateComponent implements OnInit {
 		} catch {
 			this.creatingOrganisation = false;
 		}
+	}
+
+	getRefreshToken() {
+		console.log('??');
+
+		try {
+			this.privateService.getRefreshToken();
+		} catch (error) {
+			clearTimeout(this.checkTokenInterval);
+		}
+	}
+
+	checkIfTokenIsExpired() {
+		let authTokens = localStorage.CONVOY_AUTH_TOKENS;
+		authTokens = authTokens ? JSON.parse(authTokens) : false;
+
+		const currentTime = new Date();
+		const tokenExpiryTime = this.jwtHelper.getTokenExpirationDate(authTokens.access_token);
+
+		if (tokenExpiryTime) {
+			const expiryPeriodInSeconds = differenceInSeconds(tokenExpiryTime, currentTime);
+			if (expiryPeriodInSeconds <= 600) return this.getRefreshToken();
+
+			this.inTimeoutCheck(expiryPeriodInSeconds - 600);
+		}
+	}
+
+	inTimeoutCheck(time: number) {
+		this.checkTokenInterval = setTimeout(() => {
+			this.checkIfTokenIsExpired();
+			console.log('run');
+		}, time * 1000 + 1000);
 	}
 }

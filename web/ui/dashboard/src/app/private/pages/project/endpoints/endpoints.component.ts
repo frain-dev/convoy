@@ -10,7 +10,7 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
-import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { CreateEndpointComponent } from 'src/app/private/components/create-endpoint/create-endpoint.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { FormsModule } from '@angular/forms';
@@ -38,6 +38,7 @@ import { ProjectService } from '../project.service';
 		DropdownComponent,
 		ListItemComponent,
 		ModalComponent,
+        ModalHeaderComponent,
 		CreateEndpointComponent,
 		TagComponent,
 		FormsModule,

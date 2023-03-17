@@ -68,13 +68,14 @@ export class TeamsComponent implements OnInit {
 		this.selectedFilterOption === 'active' ? this.fetchTeamMembers() : this.fetchPendingTeamMembers();
 		if (!this.router.url.split('/')[2]) this.addFilterToUrl();
 	}
+
 	async fetchPendingTeamMembers(requestDetails?: { page?: number }) {
 		this.isFetchingPendingInvites = true;
 		const page = requestDetails?.page || this.route.snapshot.queryParams.pendingInvites || 1;
 		try {
 			const response = await this.teamService.getPendingTeamMembers({ page: page });
 			this.pendingInvites = response.data;
-			response.data.pagination.total > 0 ? (this.noInvitesData = false) : (this.noInvitesData = true);
+			response.data.content ? (this.noInvitesData = false) : (this.noInvitesData = true);
 			this.isFetchingPendingInvites = false;
 		} catch {
 			this.isFetchingPendingInvites = false;

@@ -4,7 +4,7 @@ import { SubscriptionsComponent } from './subscriptions.component';
 import { Routes, RouterModule } from '@angular/router';
 import { CreateSubscriptionModule } from 'src/app/private/components/create-subscription/create-subscription.module';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
@@ -25,6 +25,7 @@ const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 		CreateSubscriptionModule,
 		ButtonComponent,
 		ModalComponent,
+        ModalHeaderComponent,
 		CardComponent,
 		ListItemComponent,
 		TagComponent,

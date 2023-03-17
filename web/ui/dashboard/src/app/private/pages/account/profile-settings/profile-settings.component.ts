@@ -31,37 +31,28 @@ export class ProfileSettingsComponent implements OnInit {
 	getAuthDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
 		if (authDetails && authDetails !== 'undefined') {
-			const userId = JSON.parse(authDetails)?.uid;
-			this.getUserDetails(userId);
+			const userDetails = JSON.parse(authDetails);
+			this.editBasicInfoForm.patchValue({
+				first_name: userDetails?.first_name,
+				last_name: userDetails?.last_name,
+				email: userDetails?.email
+			});
+			this.userId = userDetails?.uid;
 		} else {
 			this.router.navigateByUrl('/login');
-		}
-	}
-
-	async getUserDetails(userId: string, refresh: boolean = false) {
-		this.isFetchingUserDetails = true;
-
-		try {
-			const response = await this.privateService.getUserDetails({ userId: userId, refresh });
-			this.userId = response.data?.uid;
-			this.editBasicInfoForm.patchValue({
-				first_name: response.data?.first_name,
-				last_name: response.data?.last_name,
-				email: response.data?.email
-			});
-			this.isFetchingUserDetails = false;
-		} catch {
-			this.isFetchingUserDetails = false;
 		}
 	}
 
 	async editBasicUserInfo() {
 		if (this.editBasicInfoForm.invalid) return this.editBasicInfoForm.markAllAsTouched();
 		this.isSavingUserDetails = true;
+
 		try {
 			const response = await this.accountService.editBasicInfo({ userId: this.userId, body: this.editBasicInfoForm.value });
+
 			this.generalService.showNotification({ style: 'success', message: 'Changes saved successfully!' });
-			this.getUserDetails(this.userId, true);
+			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
+
 			this.isSavingUserDetails = false;
 		} catch {
 			this.isSavingUserDetails = false;
