@@ -177,16 +177,26 @@
 								<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="assets/img/retry-icon.svg" alt="retry icon" title="manually retried" class="w-12px absolute top-[50%] -translate[3px] -translate-y-[50%] opacity-50" />
 								<convoy-tag className="ml-20px" [type]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
 							</td>
+
 							<td convoy-table-cell>
 								<div class="flex items-center">
 									<svg width="16" height="14" class="mr-10px" *ngIf="event.device_id">
 										<use xlink:href="#cli-icon"></use>
 									</svg>
-									<convoy-tag type="grey">{{ event?.event_metadata?.event_type }}</convoy-tag>
+
+									<span class="min-w-[60px] max-w-[146px] overflow-hidden overflow-ellipsis">
+										{{ event?.source_metadata?.name || 'API' }}
+									</span>
+
+									<span class="px-10px font-light">→</span>
+
+									<span class="min-w-[120px] max-w-[146px] text-right overflow-hidden overflow-ellipsis">
+										{{ event.endpoint_metadata.title }}
+									</span>
 								</div>
 							</td>
 							<td convoy-table-cell>{{ event.metadata.num_trials }}</td>
-							<td convoy-table-cell>{{ event.metadata.retry_limit }}</td>
+							<td convoy-table-cell>{{ event.metadata.num_trials >= event.metadata.retry_limit ? '-' : (event.metadata.next_send_time | date: 'mediumTime') }}</td>
 							<td convoy-table-cell>{{ event.created_at | date: 'mediumTime' }}</td>
 							<td convoy-table-cell>
 								<button

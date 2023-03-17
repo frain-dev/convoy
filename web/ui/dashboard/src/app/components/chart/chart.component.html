@@ -50,7 +50,7 @@
 							[ngClass]="{ 'before:hidden': data.data === 0 }"
 						>
 							<h3 class="font-semibold text-12">{{ data.label }}</h3>
-							<p class="text-12">Events: {{ data.data }}</p>
+							<p class="text-12">Events: {{ data.data | number }}</p>
 						</div>
 					</div>
 				</div>

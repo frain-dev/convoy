@@ -57,7 +57,6 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 		try {
 			await this.privateService.getProjectDetails({ refresh: true, projectId });
 			this.router.navigate([`/projects/${projectId}`]);
-			this.isLoadingProject = false;
 		} catch (error) {
 			this.isLoadingProject = false;
 			return error;

@@ -26,7 +26,7 @@ export class EventDeliveriesComponent implements OnInit {
 	eventDeliveryFilteredByEventId?: string;
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
-	eventDelTableHead: string[] = ['Status', 'Event Type', 'Attempts', 'Max Attempts', 'Time Created', '', ''];
+	eventDelTableHead: string[] = this.privateService.activeProjectDetails?.type === 'incoming' ? ['Status', 'Subscription', 'Attempts', 'Next Attempts', 'Time', '', ''] : ['Status', 'Subscription', 'Attempts', 'Next Attempt', 'Time', '', ''];
 	eventDeliveriesStatusFilterActive = false;
 	fetchingCount = false;
 	showBatchRetryModal = false;
@@ -58,7 +58,7 @@ export class EventDeliveriesComponent implements OnInit {
 	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, private router: Router, public projectService: ProjectService, public privateService: PrivateService) {}
 
 	ngAfterViewInit() {
-		if (!this.portalToken) {
+		if (!this.portalToken && this.projectService.activeProjectDetails?.type == 'outgoing') {
 			this.eventsDelEndpointFilter$ = fromEvent<any>(this.eventDelsEndpointFilter?.nativeElement, 'keyup').pipe(
 				map(event => event.target.value),
 				startWith(''),
@@ -72,7 +72,7 @@ export class EventDeliveriesComponent implements OnInit {
 	ngOnInit() {
 		this.getFiltersFromURL();
 		this.getEventDeliveries();
-		if (!this.portalToken) this.getSourcesForFilter();
+		if (!this.portalToken || this.projectService.activeProjectDetails?.type == 'incoming') this.getSourcesForFilter();
 	}
 
 	getFiltersFromURL() {
