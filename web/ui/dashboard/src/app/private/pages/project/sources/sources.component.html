@@ -1,4 +1,4 @@
-<div class="text-12 font-medium flex items-center uppercase">
+<div class="text-12 font-medium flex items-center uppercase mb-24px">
 	<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
 	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
@@ -11,10 +11,10 @@
 </div>
 
 <!-- empty state  -->
-<div class="py-100px mt-24px" convoy-card *ngIf="!isLoadingSources && sources?.content?.length == 0">
+<div class="py-100px" convoy-card *ngIf="!isLoadingSources && sources?.content?.length == 0">
 	<div convoy-empty-state imgSrc="/assets/img/sources-empty-state.png" heading="Create your first source" description="Sources are how your webhook events are routed into the Convoy." id="sources-empty-state">
 		<button convoy-button emptyStateCTA routerLink="./new" class="mt-36px">Connect a source</button>
-    </div>
+	</div>
 </div>
 
 <!-- loader  -->
@@ -28,7 +28,7 @@
 </div>
 
 <ng-container *ngIf="!isLoadingSources && sources?.content?.length">
-	<div class="flex justify-between items-end mt-24px border-b border-b-grey-10 pb-20px mb-24px">
+	<div class="flex justify-between items-end border-b border-b-grey-10 pb-20px mb-24px">
 		<div class="flex items-center">
 			<h1 class="text-24 font-bold text-grey-80 mr-10px">Sources</h1>
 			<convoy-tooltip tooltipContent="Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints" position="right"></convoy-tooltip>
