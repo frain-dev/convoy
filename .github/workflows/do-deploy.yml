@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build image
-        run: docker build -t $REPO/convoy:edge .
+        run: docker build -t $REPO/convoy:edge -f Dockerfile.dev .
 
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
