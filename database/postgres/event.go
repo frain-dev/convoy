@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
@@ -47,8 +48,8 @@ const (
 	AND (ev.source_id = $3 OR $3 = '') AND ev.created_at >= $4 AND ev.created_at <= $5 AND ev.deleted_at IS NULL;
 	`
 
-	baseEventsPaged = `
-	SELECT ev.id, ev.project_id, ev.event_type,
+	baseEventsPagedForward = `
+	SELECT ev.id, ev.project_id, ev.id as event_type,
 	COALESCE(ev.source_id, '') AS source_id,
 	ev.headers, ev.raw, ev.data, ev.created_at, 
 	ev.updated_at, ev.deleted_at,
@@ -59,13 +60,34 @@ const (
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
 	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
-    WHERE ev.deleted_at IS NULL`
+    WHERE ev.deleted_at IS NULL
+	%s
+	AND ev.id <= :cursor GROUP BY ev.id, s.id ORDER BY ev.id DESC LIMIT :limit
+	`
+
+	baseEventsPagedBackward = `
+	WITH events AS ( 
+		SELECT ev.id, ev.project_id, ev.id as event_type,
+		COALESCE(ev.source_id, '') AS source_id,
+		ev.headers, ev.raw, ev.data, ev.created_at, 
+		ev.updated_at, ev.deleted_at,
+		array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url))) AS endpoint_metadata,
+		COALESCE(s.id, '') AS "source_metadata.id",
+		COALESCE(s.name, '') AS "source_metadata.name"
+		FROM convoy.events ev
+		LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
+		LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+		LEFT JOIN convoy.sources s ON s.id = ev.source_id
+		WHERE ev.deleted_at IS NULL 
+		%s
+		AND ev.id >= :cursor GROUP BY ev.id, s.id ORDER BY ev.id ASC LIMIT :limit
+	)
+
+	SELECT * FROM events ORDER BY id DESC
+	`
 
 	baseEventFilter = ` AND ev.project_id = :project_id AND (ev.source_id = :source_id OR :source_id = '') AND ev.created_at >= :start_date AND ev.created_at <= :end_date`
 	endpointFilter  = ` AND ee.endpoint_id IN (:endpoint_ids) `
-
-	forwardPaginationQuery  = ` AND ev.id <= :cursor GROUP BY ev.id, s.id ORDER BY ev.id DESC LIMIT :limit`
-	backwardPaginationQuery = ` AND ev.id >= :cursor GROUP BY ev.id, s.id ORDER BY ev.id DESC LIMIT :limit`
 
 	baseCountPrevEvents = `
 	SELECT count(distinct(ev.id)) as count
@@ -227,16 +249,16 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 		"cursor":       filter.Pageable.Cursor(),
 	}
 
-	var pagingationQuery string
+	var baseQuery string
 	if filter.Pageable.Direction == datastore.Next {
-		pagingationQuery = forwardPaginationQuery
+		baseQuery = baseEventsPagedForward
 	} else {
-		pagingationQuery = backwardPaginationQuery
+		baseQuery = baseEventsPagedBackward
 	}
 
 	if len(filter.EndpointIDs) > 0 {
 		filterQuery := endpointFilter + baseEventFilter
-		q := baseEventsPaged + filterQuery + pagingationQuery
+		q := fmt.Sprintf(baseQuery, filterQuery)
 		query, args, err = sqlx.Named(q, arg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -248,7 +270,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 
 		query = e.db.Rebind(query)
 	} else {
-		q := baseEventsPaged + baseEventFilter + pagingationQuery
+		q := fmt.Sprintf(baseQuery, baseEventFilter)
 		query, args, err = sqlx.Named(q, arg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
