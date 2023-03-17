@@ -60,7 +60,7 @@ import { PaginationComponent } from 'src/app/private/components/pagination/pagin
 })
 export class EventLogsComponent implements OnInit {
 	eventsDateFilterFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
-	eventLogsTableHead: string[] = ['Event Type', 'Endpoint Name', 'Source Name', 'Time Created', ''];
+	eventLogsTableHead: string[] = this.privateService.activeProjectDetails?.type === 'incoming' ? ['Subscription', 'Time', ''] : ['Event Type', 'Subscription', 'Time', ''];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventsSearchString?: string;
 	eventEndpoint?: string;
@@ -80,7 +80,7 @@ export class EventLogsComponent implements OnInit {
 	events?: { pagination: PAGINATION; content: EVENT[] };
 	eventDetailsActiveTab = 'data';
 	eventsDetailsItem: any;
-	sidebarEventDeliveries!: EVENT_DELIVERY[];
+	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
 	eventsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 	@ViewChild('timeFilter', { static: true }) timeFilter!: TimePickerComponent;
 	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
@@ -88,7 +88,7 @@ export class EventLogsComponent implements OnInit {
 	eventsEndpointFilter$!: Observable<ENDPOINT[]>;
 	portalToken = this.route.snapshot.params?.token;
 	filterSources: SOURCE[] = [];
-	isLoadingSidebarDeliveries = false;
+	isLoadingSidebarDeliveries = true;
 	showBatchRetryModal = false;
 	fetchingCount = false;
 	isRetrying = false;
@@ -99,9 +99,7 @@ export class EventLogsComponent implements OnInit {
 	async ngOnInit() {
 		this.getFiltersFromURL();
 		this.getEvents();
-		if (!this.portalToken) this.getSourcesForFilter();
-
-		if (this.privateService.activeProjectDetails?.type === 'incoming') this.eventLogsTableHead.splice(1, 1);
+		if (!this.portalToken && this.privateService.activeProjectDetails?.type === 'incoming') this.getSourcesForFilter();
 	}
 
 	ngAfterViewInit() {
@@ -286,7 +284,7 @@ export class EventLogsComponent implements OnInit {
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
 
 			this.eventsDetailsItem = this.events?.content[0];
-			this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
+			this.eventsDetailsItem?.uid ? this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid) : (this.isLoadingSidebarDeliveries = false);
 
 			this.isloadingEvents = false;
 			return eventsResponse;
