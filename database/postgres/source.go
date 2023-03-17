@@ -110,7 +110,7 @@ const (
 	WHERE source_id = $1 AND deleted_at IS NULL;
 	`
 
-	fetchSourcesPaginated = baseFetchSource + ` WHERE s.deleted_at IS NULL AND (s.type = :type OR :type = '') AND (s.provider = :provider OR :provider = '') AND (s.project_id = :project_id OR :project_id = '') ORDER BY s.id desc LIMIT :limit OFFSET :offset;`
+	fetchSourcesPaginated = baseFetchSource + ` WHERE s.deleted_at IS NULL AND (s.type = :type OR :type = '') AND (s.provider = :provider OR :provider = '') AND s.project_id = :project_id ORDER BY s.id desc LIMIT :limit OFFSET :offset;`
 
 	countSources = `
 	SELECT COUNT(id) FROM convoy.sources WHERE deleted_at IS NULL

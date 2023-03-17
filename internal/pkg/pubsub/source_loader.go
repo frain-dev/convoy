@@ -25,15 +25,17 @@ const (
 type SourceLoader struct {
 	endpointRepo datastore.EndpointRepository
 	sourceRepo   datastore.SourceRepository
+	projectRepo  datastore.ProjectRepository
 	queue        queue.Queuer
 	sourcePool   *SourcePool
 	log          log.StdLogger
 }
 
-func NewSourceLoader(endpointRepo datastore.EndpointRepository, sourceRepo datastore.SourceRepository, queue queue.Queuer, sourcePool *SourcePool, log log.StdLogger) *SourceLoader {
+func NewSourceLoader(endpointRepo datastore.EndpointRepository, sourceRepo datastore.SourceRepository, projectRepo datastore.ProjectRepository, queue queue.Queuer, sourcePool *SourcePool, log log.StdLogger) *SourceLoader {
 	return &SourceLoader{
 		endpointRepo: endpointRepo,
 		sourceRepo:   sourceRepo,
+		projectRepo:  projectRepo,
 		queue:        queue,
 		sourcePool:   sourcePool,
 		log:          log,
@@ -49,8 +51,7 @@ func (s *SourceLoader) Run(interval int) {
 	for {
 		select {
 		case <-ticker.C:
-			page := 1
-			err := s.fetchSources(page)
+			err := s.fetchProjectSources()
 			if err != nil {
 				s.log.WithError(err).Error("failed to fetch sources")
 			}
@@ -66,7 +67,7 @@ func (s *SourceLoader) Run(interval int) {
 	}
 }
 
-func (s *SourceLoader) fetchSources(page int) error {
+func (s *SourceLoader) fetchSources(projectID string, page int) error {
 	filter := &datastore.SourceFilter{
 		Type: string(datastore.PubSubSource),
 	}
@@ -76,7 +77,7 @@ func (s *SourceLoader) fetchSources(page int) error {
 		PerPage: perPage,
 	}
 
-	sources, _, err := s.sourceRepo.LoadSourcesPaged(context.Background(), "", filter, pageable)
+	sources, _, err := s.sourceRepo.LoadSourcesPaged(context.Background(), projectID, filter, pageable)
 	if err != nil {
 		return err
 	}
@@ -95,7 +96,25 @@ func (s *SourceLoader) fetchSources(page int) error {
 	}
 
 	page += 1
-	return s.fetchSources(page)
+	return s.fetchSources(projectID, page)
+}
+
+func (s *SourceLoader) fetchProjectSources() error {
+	projects, err := s.projectRepo.LoadProjects(context.Background(), &datastore.ProjectFilter{})
+	if err != nil {
+		return err
+	}
+
+	page := 1
+	for _, project := range projects {
+		err := s.fetchSources(project.UID, page)
+		if err != nil {
+			s.log.WithError(err).Error("failed to load sources")
+			continue
+		}
+	}
+
+	return nil
 }
 
 func (s *SourceLoader) handler(source *datastore.Source, msg string) error {
