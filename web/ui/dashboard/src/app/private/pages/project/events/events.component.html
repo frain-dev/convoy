@@ -1,8 +1,8 @@
-<div class="h-[705px]" *ngIf="isloadingDashboardData">
+<div class="h-[705px]" *ngIf="isPageLoading">
 	<convoy-loader [isTransparent]="true"></convoy-loader>
 </div>
 
-<ng-container *ngIf="!isloadingDashboardData">
+<ng-container *ngIf="!isPageLoading">
 	<ng-container *ngIf="!hasEvents">
 		<div convoy-card class="flex items-center justify-center flex-col py-82px h-full text-center px-40px">
 			<img src="/assets/img/events-empty-state-image.svg" alt="events empty state image" class="mb-48px" />

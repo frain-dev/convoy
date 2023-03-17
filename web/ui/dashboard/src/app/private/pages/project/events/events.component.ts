@@ -41,18 +41,29 @@ export class EventsComponent implements OnInit, OnDestroy {
 	eventDelievryIntervalTime: any;
 	labelsDateFormat!: string;
 	isProjectConfigurationComplete = false;
+	isPageLoading = false;
 	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, public router: Router) {}
 
 	async ngOnInit() {
 		this.isloadingDashboardData = true;
-		await Promise.all([this.getLatestEvent(), this.getSubscriptions()]);
-		await this.checkEventsOnFirstLoad();
-		this.isloadingDashboardData = false;
+		this.isPageLoading = true;
+		await this.getSubscriptions();
 
-		if (this.privateService.activeProjectDetails?.type === 'incoming' && !this.lastestEventDeliveries.length) {
-			this.eventDelievryIntervalTime = setInterval(() => {
-				this.getLatestEvent();
-			}, 2000);
+		if (this.isProjectConfigurationComplete) {
+			await this.getLatestEvent();
+			await this.checkEventsOnFirstLoad();
+
+			if (this.privateService.activeProjectDetails?.type === 'incoming' && !this.lastestEventDeliveries.length) {
+				this.eventDelievryIntervalTime = setInterval(() => {
+					this.getLatestEvent();
+				}, 2000);
+			}
+
+			this.isPageLoading = false;
+			this.isloadingDashboardData = false;
+		} else {
+			this.isloadingDashboardData = false;
+			this.isPageLoading = false;
 		}
 	}
 
@@ -76,6 +87,8 @@ export class EventsComponent implements OnInit, OnDestroy {
 			this.lastestEventDeliveries = eventDeliveries.data.content;
 			return;
 		} catch (error) {
+			this.isloadingDashboardData = false;
+			this.isPageLoading = false;
 			return error;
 		}
 	}
@@ -85,6 +98,8 @@ export class EventsComponent implements OnInit, OnDestroy {
 
 		if (this.hasEvents) {
 			clearInterval(this.eventDelievryIntervalTime);
+			this.isPageLoading = false;
+
 			await this.fetchDashboardData();
 			return;
 		}
@@ -106,8 +121,11 @@ export class EventsComponent implements OnInit, OnDestroy {
 			this.dashboardData = dashboardResponse.data;
 			this.initConvoyChart(dashboardResponse);
 
+			this.isloadingDashboardData = false;
 			return;
 		} catch (error: any) {
+			this.isloadingDashboardData = false;
+			this.isPageLoading = false;
 			return;
 		}
 	}
@@ -168,6 +186,7 @@ export class EventsComponent implements OnInit, OnDestroy {
 		try {
 			const subscriptionsResponse = await this.privateService.getSubscriptions();
 			this.isProjectConfigurationComplete = subscriptionsResponse.data?.content?.length > 0;
+			return;
 		} catch (error) {
 			return error;
 		}
