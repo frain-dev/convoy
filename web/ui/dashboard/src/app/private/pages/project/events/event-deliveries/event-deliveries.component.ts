@@ -145,7 +145,8 @@ export class EventDeliveriesComponent implements OnInit {
 				endDate: requestDetails.endDate,
 				endpointId: this.eventDeliveriesEndpoint || '',
 				sourceId: this.eventDeliveriesSource || '',
-				status: this.eventDeliveryFilteredByStatus
+				status: this.eventDeliveryFilteredByStatus,
+				next_page_cursor: Number.MAX_SAFE_INTEGER
 			});
 			return eventDeliveriesResponse;
 		} catch (error: any) {

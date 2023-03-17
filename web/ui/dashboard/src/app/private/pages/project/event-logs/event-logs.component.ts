@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CardComponent } from 'src/app/components/card/card.component';
@@ -27,6 +27,7 @@ import { FormsModule } from '@angular/forms';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { EventsService } from '../events/events.service';
+import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 
 @Component({
 	selector: 'convoy-event-logs',
@@ -51,7 +52,8 @@ import { EventsService } from '../events/events.service';
 		TimePickerComponent,
 		DatePickerComponent,
 		DropdownComponent,
-		ModalComponent
+		ModalComponent,
+		PaginationComponent
 	],
 	templateUrl: './event-logs.component.html',
 	styleUrls: ['./event-logs.component.scss']
@@ -92,7 +94,7 @@ export class EventLogsComponent implements OnInit {
 	isRetrying = false;
 	batchRetryCount: any;
 
-	constructor(private eventsLogService: EventLogsService, private generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService) {}
+	constructor(private eventsLogService: EventLogsService, private generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService, private _location: Location) {}
 
 	async ngOnInit() {
 		this.getFiltersFromURL();
@@ -103,7 +105,7 @@ export class EventLogsComponent implements OnInit {
 	}
 
 	ngAfterViewInit() {
-		if (!this.portalToken) {
+		if (!this.portalToken && this.privateService.activeProjectDetails?.type !== 'incoming') {
 			this.eventsEndpointFilter$ = fromEvent<any>(this.eventsEndpointFilter?.nativeElement, 'keyup').pipe(
 				map(event => event.target.value),
 				startWith(''),
@@ -236,43 +238,48 @@ export class EventLogsComponent implements OnInit {
 		this.eventsTimeFilterData = { ...eventsTimeFilter };
 	}
 
-	addFilterToURL() {
+	addFilterToURL(params?: any) {
 		const currentURLfilters = this.route.snapshot.queryParams;
 		const queryParams: any = {};
 
 		const { startDate, endDate } = this.setDateForFilter({ ...this.eventsDateFilterFromURL, ...this.eventsTimeFilterData });
+
 		if (startDate) queryParams.eventsStartDate = startDate;
 		if (endDate) queryParams.eventsEndDate = endDate;
 		if (this.eventEndpoint) queryParams.eventsEndpoint = this.eventEndpoint;
+
 		queryParams.eventsSource = this.eventSource;
 		queryParams.eventsSearch = this.eventsSearchString;
 
-		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
+		const paramsObject = Object.assign({}, currentURLfilters, queryParams, params);
+		const cleanedQuery: any = Object.fromEntries(Object.entries(paramsObject).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
+		const queryParamss = new URLSearchParams(cleanedQuery).toString();
+		this._location.go(`${location.pathname}?${queryParamss}`);
 	}
 
-	async getEvents(requestDetails?: { endpointId?: string; addToURL?: boolean; page?: number }): Promise<HTTP_RESPONSE> {
+	async getEvents(requestDetails?: { endpointId?: string; addToURL?: boolean }, pagination?: { next_page_cursor?: string; prev_page_cursor?: string; direction?: 'next' | 'prev' }): Promise<HTTP_RESPONSE> {
 		this.isloadingEvents = true;
-
-		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
-		if (page <= 1) {
-			delete this.eventsDetailsItem;
-			this.sidebarEventDeliveries = [];
-		}
 
 		if (requestDetails?.endpointId) this.eventEndpoint = requestDetails.endpointId;
 		if (requestDetails?.addToURL) this.addFilterToURL();
+
+		if (!pagination) {
+			pagination = { next_page_cursor: String(Number.MAX_SAFE_INTEGER) };
+			delete this.eventsDetailsItem;
+			this.sidebarEventDeliveries = [];
+		}
 
 		if (this.eventsSearchString) this.displayedEvents = [];
 		const { startDate, endDate } = this.setDateForFilter({ ...this.eventsDateFilterFromURL, ...this.eventsTimeFilterData });
 
 		try {
 			const eventsResponse = await this.eventsService.getEvents({
-				page: page,
 				startDate,
 				endDate,
 				endpointId: this.eventEndpoint || '',
 				sourceId: this.eventSource || '',
-				query: this.eventsSearchString || ''
+				query: this.eventsSearchString || '',
+				...pagination
 			});
 			this.events = eventsResponse.data;
 
@@ -372,5 +379,10 @@ export class EventLogsComponent implements OnInit {
 
 	viewEventDeliveries(eventId: string) {
 		this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/events'], { queryParams: { eventId: eventId } });
+	}
+
+	paginateEvents(event: { next_page_cursor?: string; prev_page_cursor?: string; direction: 'next' | 'prev' }) {
+		this.addFilterToURL(event);
+		this.getEvents({}, event);
 	}
 }
