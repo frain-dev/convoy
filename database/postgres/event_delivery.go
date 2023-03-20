@@ -59,15 +59,18 @@ const (
     `
 
 	baseEventDeliveryPagedForward = `%s %s 
-	AND ed.id <= :cursor GROUP BY ed.id, ep.id, ev.id, d.host_name, s.id
+	AND ed.id <= :cursor 
+	GROUP BY ed.id, ep.id, ev.id, d.host_name, s.id
 	ORDER BY ed.id DESC 
 	LIMIT :limit
 	`
 
 	baseEventDeliveryPagedBackward = `
 	WITH event_deliveries AS (  
-		%s %s AND ed.id >= :cursor 
-		GROUP BY ed.id, ep.id, ev.id, d.host_name 
+		%s 
+		%s 
+		AND ed.id >= :cursor 
+		GROUP BY ed.id, ep.id, ev.id, d.host_name, s.id
 		ORDER BY ed.id ASC 
 		LIMIT :limit
 	)
