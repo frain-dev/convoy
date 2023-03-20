@@ -1,11 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { environment } from 'src/environments/environment';
-import axios from 'axios';
+import axios, { Axios, AxiosInstance } from 'axios';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GeneralService } from '../general/general.service';
-import { JwtHelperService } from '@auth0/angular-jwt';
-import { differenceInSeconds } from 'date-fns';
 
 @Injectable({
 	providedIn: 'root'
@@ -15,8 +13,6 @@ export class HttpService {
 	APP_PORTAL_APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/portal-api`;
 	portalToken = this.route.snapshot.queryParams?.token;
 	checkTokenTimeout: any;
-
-	public jwtHelper: JwtHelperService = new JwtHelperService();
 
 	constructor(private router: Router, private generalService: GeneralService, private route: ActivatedRoute) {}
 
@@ -32,48 +28,10 @@ export class HttpService {
 
 	async request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; token?: string; hideNotification?: boolean }): Promise<HTTP_RESPONSE> {
 		requestDetails.hideNotification = !!requestDetails.hideNotification;
-		this.checkTokenTimeout = setTimeout(() => {
-			this.checkIfTokenIsExpired();
-		}, 3000);
+
 		return new Promise(async (resolve, reject) => {
 			try {
-				const http = axios.create();
-
-				// Interceptor
-				http.interceptors.response.use(
-					request => {
-						return request;
-					},
-					error => {
-						if (axios.isAxiosError(error)) {
-							const errorResponse: any = error.response;
-							let errorMessage: any = errorResponse?.data ? errorResponse.data.message : error.message;
-
-							if (error.response?.status == 401 && !this.router.url.split('/')[1].includes('portal')) {
-								this.getRefreshToken();
-								return Promise.reject(error);
-							}
-
-							if (!requestDetails.hideNotification) {
-								this.generalService.showNotification({
-									message: errorMessage,
-									style: 'error'
-								});
-							}
-							return Promise.reject(error);
-						}
-
-						if (!requestDetails.hideNotification) {
-							let errorMessage: string;
-							error.error?.message ? (errorMessage = error.error?.message) : (errorMessage = 'An error occured, please try again');
-							this.generalService.showNotification({
-								message: errorMessage,
-								style: 'error'
-							});
-						}
-						return Promise.reject(error);
-					}
-				);
+				const http = this.setupAxios({ hideNotification: requestDetails.hideNotification });
 
 				const requestHeader = {
 					Authorization: `Bearer ${this.portalToken || this.authDetails()?.access_token}`
@@ -99,42 +57,53 @@ export class HttpService {
 		});
 	}
 
-	async getRefreshToken() {
-		try {
-			const refreshedTokens = await this.request({
-				url: `/auth/token/refresh`,
-				method: 'post',
-				body: this.authDetails()
-			});
-			localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(refreshedTokens.data));
-			window.location.reload();
-		} catch {
-			this.initiateLogout();
-		}
-	}
+	setupAxios(requestDetails: { hideNotification: any }) {
+		const http = axios.create();
 
-	checkIfTokenIsExpired() {
-		const currentTime = new Date();
-		const tokenExpiryTime = this.jwtHelper.getTokenExpirationDate(this.authDetails().access_token);
-		if (tokenExpiryTime) {
-			const expiryPeriodInSeconds = differenceInSeconds(tokenExpiryTime, currentTime);
-			if (expiryPeriodInSeconds <= 180) {
-				clearTimeout(this.checkTokenTimeout);
-				this.getRefreshToken();
+		// Interceptor
+		http.interceptors.response.use(
+			request => {
+				return request;
+			},
+			error => {
+				if (axios.isAxiosError(error)) {
+					const errorResponse: any = error.response;
+					let errorMessage: any = errorResponse?.data ? errorResponse.data.message : error.message;
+
+					if (error.response?.status == 401 && !this.router.url.split('/')[1].includes('portal')) {
+						this.logUserOut();
+						return Promise.reject(error);
+					}
+
+					if (!requestDetails.hideNotification) {
+						this.generalService.showNotification({
+							message: errorMessage,
+							style: 'error'
+						});
+					}
+					return Promise.reject(error);
+				}
+
+				if (!requestDetails.hideNotification) {
+					let errorMessage: string;
+					error.error?.message ? (errorMessage = error.error?.message) : (errorMessage = 'An error occured, please try again');
+					this.generalService.showNotification({
+						message: errorMessage,
+						style: 'error'
+					});
+				}
+				return Promise.reject(error);
 			}
-		}
+		);
+
+		return http;
 	}
 
-	initiateLogout() {
+	logUserOut() {
 		// save previous location before session timeout
 		if (this.router.url.split('/')[1] !== 'login') localStorage.setItem('CONVOY_LAST_AUTH_LOCATION', location.href);
 
 		// then logout
 		this.router.navigate(['/login'], { replaceUrl: true });
-		localStorage.removeItem('CONVOY_AUTH_TOKENS');
-		this.generalService.showNotification({
-			message: 'Authorization Failed',
-			style: 'error'
-		});
 	}
 }

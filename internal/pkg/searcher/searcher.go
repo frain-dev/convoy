@@ -1,7 +1,6 @@
 package searcher
 
 import (
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	noopsearcher "github.com/frain-dev/convoy/internal/pkg/searcher/noop"
@@ -14,7 +13,7 @@ type Searcher interface {
 
 	// Index upserts the collection and indexes documents in the typesense collection,
 	// each document must have the id, uid, created_at and updated_at fields
-	Index(collection string, document convoy.GenericMap) error
+	Index(collection string, document map[string]interface{}) error
 
 	// Remove removes documents from the typesense collection based on the search filters
 	Remove(collection string, filter *datastore.SearchFilter) error
