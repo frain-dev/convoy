@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
@@ -56,11 +55,40 @@ const (
 	LEFT JOIN convoy.events ev ON ed.event_id = ev.id
     LEFT JOIN convoy.devices d ON ed.device_id = d.id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
+	WHERE ed.deleted_at IS NULL
     `
 
-	fetchEventDeliveryByID = baseFetchEventDelivery + ` WHERE ed.id = $1 AND ed.deleted_at IS NULL`
+	baseEventDeliveryPagedForward = `%s %s 
+	AND ed.id <= :cursor GROUP BY ed.id, ep.id, ev.id, d.host_name, s.id
+	ORDER BY ed.id DESC 
+	LIMIT :limit
+	`
 
-	loadEventDeliveriesPaged = baseFetchEventDelivery + ` WHERE (ed.project_id = ? OR ? = '') AND (ed.event_id = ? OR ? = '') AND ed.created_at >= ? AND ed.created_at <= ?  AND ed.deleted_at IS NULL`
+	baseEventDeliveryPagedBackward = `
+	WITH event_deliveries AS (  
+		%s %s AND ed.id >= :cursor 
+		GROUP BY ed.id, ep.id, ev.id, d.host_name 
+		ORDER BY ed.id ASC 
+		LIMIT :limit
+	)
+
+	SELECT * FROM event_deliveries ORDER BY id DESC
+	`
+
+	fetchEventDeliveryByID = baseFetchEventDelivery + ` AND ed.id = $1`
+
+	baseEventDeliveryFilter = ` AND (ed.project_id = :project_id OR :project_id = '') 
+	AND (ed.event_id = :event_id OR :event_id = '') 
+	AND ed.created_at >= :start_date 
+	AND ed.created_at <= :end_date
+	AND ed.deleted_at IS NULL`
+
+	baseCountPrevEventDeliveries = `
+	SELECT count(distinct(ed.id)) as count
+	FROM convoy.event_deliveries ed
+	WHERE ed.deleted_at IS NULL
+	`
+	countPrevEventDeliveries = ` AND ed.id > :cursor GROUP BY ed.id ORDER BY ed.id DESC LIMIT 1`
 
 	loadEventDeliveriesIntervals = `
     SELECT
@@ -415,37 +443,48 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 	start := time.Unix(params.CreatedAtStart, 0)
 	end := time.Unix(params.CreatedAtEnd, 0)
 
-	args := []interface{}{
-		projectID, projectID,
-		eventID, eventID,
-		start, end,
+	arg := map[string]interface{}{
+		"endpoint_ids": endpointIDs,
+		"project_id":   projectID,
+		"limit":        pageable.Limit(),
+		"start_date":   start,
+		"event_id":     eventID,
+		"end_date":     end,
+		"status":       status,
+		"cursor":       pageable.Cursor(),
 	}
 
-	query := loadEventDeliveriesPaged
+	var query, filterQuery string
+	if pageable.Direction == datastore.Next {
+		query = baseEventDeliveryPagedForward
+	} else {
+		query = baseEventDeliveryPagedBackward
+	}
 
+	filterQuery = baseEventDeliveryFilter
 	if len(endpointIDs) > 0 {
-		query += ` AND ed.endpoint_id IN (?)`
-		args = append(args, endpointIDs)
+		filterQuery += ` AND ed.endpoint_id IN (:endpoint_ids)`
 	}
 
 	if len(status) > 0 {
-		query += ` AND ed.status IN (?)`
-		args = append(args, status)
+		filterQuery += ` AND ed.status IN (:status)`
 	}
 
-	query += ` ORDER BY ed.id DESC LIMIT ? OFFSET ?`
-	args = append(args, pageable.Limit(), pageable.Offset())
+	query = fmt.Sprintf(query, baseFetchEventDelivery, filterQuery)
 
-	query, args, err := sqlx.In(query, args...)
+	query, args, err := sqlx.Named(query, arg)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query, args, err = sqlx.In(query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
 
 	query = e.db.Rebind(query)
 
-	rows, err := e.db.QueryxContext(
-		ctx, query, args...,
-	)
+	rows, err := e.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -499,16 +538,48 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		})
 	}
 
-	count := 0
-	pagination := datastore.PaginationData{
-		Total:     int64(count),
-		Page:      int64(pageable.Page),
-		PerPage:   int64(pageable.PerPage),
-		Prev:      int64(getPrevPage(pageable.Page)),
-		Next:      int64(pageable.Page + 1),
-		TotalPage: int64(math.Ceil(float64(count) / float64(pageable.PerPage))),
+	var count datastore.PrevRowCount
+	if len(eventDeliveries) > 0 {
+		var countQuery string
+		var qargs []interface{}
+		first := eventDeliveries[0]
+		qarg := arg
+		qarg["cursor"] = first.UID
+
+		cq := baseCountPrevEventDeliveries + filterQuery + countPrevEventDeliveries
+		countQuery, qargs, err = sqlx.Named(cq, qarg)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		countQuery = e.db.Rebind(countQuery)
+
+		// count the row number before the first row
+		rows, err = e.db.QueryxContext(ctx, countQuery, qargs...)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		if rows.Next() {
+			err = rows.StructScan(&count)
+			if err != nil {
+				return nil, datastore.PaginationData{}, err
+			}
+		}
 	}
-	return eventDeliveries, pagination, nil
+
+	ids := make([]string, len(eventDeliveries))
+	for i := range eventDeliveries {
+		ids[i] = eventDeliveries[i].UID
+	}
+
+	if len(eventDeliveries) > pageable.PerPage {
+		eventDeliveries = eventDeliveries[:len(eventDeliveries)-1]
+	}
+
+	pagination := &datastore.PaginationData{PrevRowCount: count}
+	pagination = pagination.Build(pageable, ids)
+
+	return eventDeliveries, *pagination, nil
 }
 
 const (

@@ -48,7 +48,7 @@ const (
 	AND (ev.source_id = $3 OR $3 = '') AND ev.created_at >= $4 AND ev.created_at <= $5 AND ev.deleted_at IS NULL;
 	`
 
-	baseEventsPagedForward = `
+	baseEventsPaged = `
 	SELECT ev.id, ev.project_id, ev.id as event_type,
 	COALESCE(ev.source_id, '') AS source_id,
 	ev.headers, ev.raw, ev.data, ev.created_at, 
@@ -60,34 +60,27 @@ const (
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
 	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
-    WHERE ev.deleted_at IS NULL
-	%s
-	AND ev.id <= :cursor GROUP BY ev.id, s.id ORDER BY ev.id DESC LIMIT :limit
+    WHERE ev.deleted_at IS NULL`
+
+	baseEventsPagedForward = `%s %s AND ev.id <= :cursor
+	GROUP BY ev.id, s.id 
+	ORDER BY ev.id DESC 
+	LIMIT :limit
 	`
 
 	baseEventsPagedBackward = `
-	WITH events AS ( 
-		SELECT ev.id, ev.project_id, ev.id as event_type,
-		COALESCE(ev.source_id, '') AS source_id,
-		ev.headers, ev.raw, ev.data, ev.created_at, 
-		ev.updated_at, ev.deleted_at,
-		array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url))) AS endpoint_metadata,
-		COALESCE(s.id, '') AS "source_metadata.id",
-		COALESCE(s.name, '') AS "source_metadata.name"
-		FROM convoy.events ev
-		LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
-		LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
-		LEFT JOIN convoy.sources s ON s.id = ev.source_id
-		WHERE ev.deleted_at IS NULL 
-		%s
-		AND ev.id >= :cursor GROUP BY ev.id, s.id ORDER BY ev.id ASC LIMIT :limit
+	WITH events AS (  
+		%s %s AND ev.id >= :cursor GROUP BY ev.id, s.id ORDER BY ev.id ASC LIMIT :limit
 	)
 
 	SELECT * FROM events ORDER BY id DESC
 	`
 
-	baseEventFilter = ` AND ev.project_id = :project_id AND (ev.source_id = :source_id OR :source_id = '') AND ev.created_at >= :start_date AND ev.created_at <= :end_date`
-	endpointFilter  = ` AND ee.endpoint_id IN (:endpoint_ids) `
+	baseEventFilter = ` AND ev.project_id = :project_id 
+	AND (ev.source_id = :source_id OR :source_id = '') 
+	AND ev.created_at >= :start_date 
+	AND ev.created_at <= :end_date`
+	endpointFilter = ` AND ee.endpoint_id IN (:endpoint_ids) `
 
 	baseCountPrevEvents = `
 	SELECT count(distinct(ev.id)) as count
@@ -249,16 +242,16 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 		"cursor":       filter.Pageable.Cursor(),
 	}
 
-	var baseQuery string
+	var baseQueryPagination string
 	if filter.Pageable.Direction == datastore.Next {
-		baseQuery = baseEventsPagedForward
+		baseQueryPagination = baseEventsPagedForward
 	} else {
-		baseQuery = baseEventsPagedBackward
+		baseQueryPagination = baseEventsPagedBackward
 	}
 
 	if len(filter.EndpointIDs) > 0 {
 		filterQuery := endpointFilter + baseEventFilter
-		q := fmt.Sprintf(baseQuery, filterQuery)
+		q := fmt.Sprintf(baseQueryPagination, baseEventsPaged, filterQuery)
 		query, args, err = sqlx.Named(q, arg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -270,7 +263,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 
 		query = e.db.Rebind(query)
 	} else {
-		q := fmt.Sprintf(baseQuery, baseEventFilter)
+		q := fmt.Sprintf(baseQueryPagination, baseEventsPaged, baseEventFilter)
 		query, args, err = sqlx.Named(q, arg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -299,15 +292,8 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 	var count datastore.PrevRowCount
 	if len(events) > 0 {
 		first := events[0]
-		qarg := map[string]interface{}{
-			"endpoint_ids": filter.EndpointIDs,
-			"project_id":   projectID,
-			"source_id":    filter.SourceID,
-			"limit":        filter.Pageable.Limit(),
-			"start_date":   startDate,
-			"end_date":     endDate,
-			"cursor":       first.UID,
-		}
+		qarg := arg
+		qarg["cursor"] = first.UID
 
 		if len(filter.EndpointIDs) > 0 {
 			filterQuery := endpointFilter + baseEventFilter
