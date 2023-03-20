@@ -40,16 +40,7 @@ func _() {}
 
 func (a *ApplicationHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())
-	projectService := createProjectService(a)
-
-	err := projectService.FillProjectStatistics(r.Context(), []*datastore.Project{project})
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Project fetched successfully",
-		project, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Project fetched successfully", project, http.StatusOK))
 }
 
 // DeleteProject - this is a duplicate annotation for the api/v1 route of this handler

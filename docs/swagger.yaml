@@ -369,14 +369,22 @@ definitions:
     type: object
   datastore.PaginationData:
     properties:
+      has_next_page:
+        type: boolean
+      has_prev_page:
+        type: boolean
       next:
         type: integer
+      next_page_cursor:
+        type: string
       page:
         type: integer
-      perPage:
+      per_page:
         type: integer
       prev:
         type: integer
+      prev_page_cursor:
+        type: string
       total:
         type: integer
       totalPage:
