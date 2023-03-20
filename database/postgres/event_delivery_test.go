@@ -41,7 +41,7 @@ func Test_eventDeliveryRepo_CreateEventDelivery(t *testing.T) {
 	require.NotEmpty(t, dbEventDelivery.UpdatedAt)
 
 	dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt = time.Time{}, time.Time{}
-	dbEventDelivery.Event, dbEventDelivery.Endpoint = nil, nil
+	dbEventDelivery.Event, dbEventDelivery.Endpoint, dbEventDelivery.Source = nil, nil, nil
 
 	require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
 	ed.Metadata.NextSendTime = time.Time{}
@@ -123,7 +123,7 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
 		require.NotEmpty(t, dbEventDelivery.UpdatedAt)
 
 		dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt = time.Time{}, time.Time{}
-		dbEventDelivery.Event, dbEventDelivery.Endpoint = nil, nil
+		dbEventDelivery.Event, dbEventDelivery.Endpoint, dbEventDelivery.Source = nil, nil, nil
 
 		require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
 		ed.Metadata.NextSendTime = time.Time{}
@@ -178,7 +178,7 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByEventID(t *testing.T) {
 		require.NotEmpty(t, dbEventDelivery.UpdatedAt)
 
 		dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt = time.Time{}, time.Time{}
-		dbEventDelivery.Event, dbEventDelivery.Endpoint = nil, nil
+		dbEventDelivery.Event, dbEventDelivery.Endpoint, dbEventDelivery.Source = nil, nil, nil
 
 		require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
 		ed.Metadata.NextSendTime = time.Time{}
@@ -478,7 +478,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 
 		require.Equal(t, event.EventType, dbEventDelivery.Event.EventType)
 		require.Equal(t, endpoint.UID, dbEventDelivery.Endpoint.UID)
-		dbEventDelivery.Event, dbEventDelivery.Endpoint = nil, nil
+		dbEventDelivery.Event, dbEventDelivery.Endpoint, dbEventDelivery.Source = nil, nil, nil
 
 		require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
 		ed.Metadata.NextSendTime = time.Time{}

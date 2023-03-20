@@ -842,6 +842,7 @@ type EventDelivery struct {
 
 	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`
+	Source   *Source   `json:"source_metadata,omitempty" db:"source_metadata"`
 
 	DeliveryAttempts DeliveryAttempts    `json:"-" db:"attempts"`
 	Status           EventDeliveryStatus `json:"status" db:"status"`

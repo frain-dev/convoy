@@ -48,10 +48,14 @@ const (
         ep.target_url as "endpoint_metadata.target_url",
         ev.id as "event_metadata.id",
         ev.event_type as "event_metadata.event_type",
-        COALESCE(d.host_name,'') as "cli_metadata.host_name"
-    FROM convoy.event_deliveries ed LEFT JOIN convoy.endpoints ep
-    ON ed.endpoint_id = ep.id LEFT JOIN convoy.events ev ON ed.event_id = ev.id
+        COALESCE(d.host_name,'') as "cli_metadata.host_name",
+		COALESCE(s.id, '') AS "source_metadata.id",
+		COALESCE(s.name, '') AS "source_metadata.name"
+    FROM convoy.event_deliveries ed 
+	LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id 
+	LEFT JOIN convoy.events ev ON ed.event_id = ev.id
     LEFT JOIN convoy.devices d ON ed.device_id = d.id
+	LEFT JOIN convoy.sources s ON s.id = ev.source_id
     `
 
 	fetchEventDeliveryByID = baseFetchEventDelivery + ` WHERE ed.id = $1 AND ed.deleted_at IS NULL`
@@ -479,6 +483,10 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 				Title:        ev.Endpoint.Title.ValueOrZero(),
 				SupportEmail: ev.Endpoint.SupportEmail.ValueOrZero(),
 			},
+			Source: &datastore.Source{
+				UID:  ev.Source.UID.ValueOrZero(),
+				Name: ev.Source.Name.ValueOrZero(),
+			},
 			Event:            &datastore.Event{EventType: datastore.EventType(ev.Event.EventType.ValueOrZero())},
 			DeliveryAttempts: ev.DeliveryAttempts,
 			Status:           ev.Status,
@@ -490,7 +498,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 			DeletedAt:        ev.DeletedAt,
 		})
 	}
-	
+
 	count := 0
 	pagination := datastore.PaginationData{
 		Total:     int64(count),
@@ -633,8 +641,13 @@ type EndpointMetadata struct {
 }
 
 type EventMetadata struct {
-	UID       null.String ` db:"id"`
+	UID       null.String `db:"id"`
 	EventType null.String `db:"event_type"`
+}
+
+type SourceMetadata struct {
+	UID  null.String `db:"id"`
+	Name null.String `db:"name"`
 }
 
 type CLIMetadata struct {
@@ -652,6 +665,7 @@ type EventDeliveryPaginated struct {
 
 	Endpoint *EndpointMetadata `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *EventMetadata    `json:"event_metadata,omitempty" db:"event_metadata"`
+	Source   *SourceMetadata   `json:"source_metadata,omitempty" db:"source_metadata"`
 
 	DeliveryAttempts datastore.DeliveryAttempts    `json:"-" db:"attempts"`
 	Status           datastore.EventDeliveryStatus `json:"status" db:"status"`
