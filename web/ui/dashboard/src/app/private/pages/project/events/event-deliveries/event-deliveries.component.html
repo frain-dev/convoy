@@ -199,41 +199,8 @@
 	<div convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No event to show here"></div>
 </div>
 
-<!-- paginator  -->
-<!-- <div class="flex items-center mt-16px mb-24px">
-	<button
-		convoy-button
-		fill="outline"
-		size="sm"
-		class="pl-4px pr-16px py-4px border-primary-300"
-		routerLink="./"
-		[queryParams]="{ page: eventDeliveries?.pagination?.prev }"
-		[disabled]="!eventDeliveries || eventDeliveries.pagination.prev === 0"
-		(click)="getEventDeliveries({ page: eventDeliveries?.pagination?.prev })"
-	>
-		<svg width="24" height="24" class="mr-8px fill-primary-100">
-			<use xlink:href="#arrow-left-icon"></use>
-		</svg>
-		Previous
-	</button>
-
-	<button
-		convoy-button
-		fill="outline"
-		size="sm"
-		class="pr-4px pl-16px py-4px border-primary-300 ml-16px"
-		routerLink="./"
-		[queryParams]="{ page: eventDeliveries?.pagination?.next }"
-		[disabled]="!eventDeliveries || eventDeliveries.pagination.next === 0"
-		(click)="getEventDeliveries({ page: eventDeliveries?.pagination?.next })"
-	>
-		Next
-		<svg width="24" height="24" class="ml-8px fill-primary-100">
-			<use xlink:href="#arrow-right-icon"></use>
-		</svg>
-	</button>
-</div> -->
-<!-- <convoy-pagination [pagination]="eventDeliveries?.pagination" (paginate)="getEventDeliveries({ page: eventDeliveries?.pagination?.next })"></convoy-pagination> -->
+<!-- pagination -->
+<convoy-pagination *ngIf="eventDeliveries?.pagination?.has_next_page || eventDeliveries?.pagination?.has_prev_page" [pagination]="eventDeliveries?.pagination" (paginate)="paginateEvents($event)"></convoy-pagination>
 
 <div convoy-modal position="center" size="sm" *ngIf="showBatchRetryModal">
 	<div class="text-center py-30px">

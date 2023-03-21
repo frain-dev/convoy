@@ -142,6 +142,9 @@ export class EventDeliveriesComponent implements OnInit {
 	addFilterToURL(params?: FILTER_QUERY_PARAM) {
 		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams, ...params };
 
+		if (!params?.next_page_cursor) delete this.queryParams.next_page_cursor;
+		if (!params?.prev_page_cursor) delete this.queryParams.prev_page_cursor;
+
 		const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
 		const queryParams = new URLSearchParams(cleanedQuery).toString();
 		this._location.go(`${location.pathname}?${queryParams}`);
@@ -199,9 +202,9 @@ export class EventDeliveriesComponent implements OnInit {
 			const queryParams = new URLSearchParams(cleanedQuery).toString();
 			this._location.go(`${location.pathname}?${queryParams}`);
 		} else {
-			this.queryParams = {};
 			this.datePicker.clearDate();
 			this.eventDeliveryTimerFilter.clearFilter();
+			this.queryParams = {};
 			this._location.go(`${location.pathname}`);
 		}
 
@@ -292,7 +295,7 @@ export class EventDeliveriesComponent implements OnInit {
 	}
 
 	paginateEvents(event: { next_page_cursor?: string; prev_page_cursor?: string; direction: 'next' | 'prev' }) {
-		this.addFilterToURL(event);
-		// this.getEventDeliveries({}, event);
+		this.addFilterToURL({ next_page_cursor: event.next_page_cursor, prev_page_cursor: event.prev_page_cursor });
+		this.getEventDeliveries(event);
 	}
 }
