@@ -34,11 +34,11 @@ const (
 		retention_policy_enabled, ratelimit_count,
 		ratelimit_duration, strategy_type,
 		strategy_duration, strategy_retry_count,
-		signature_header, signature_versions
+		signature_header, signature_versions, disable_endpoint
 	  )
 	  VALUES
 		(
-		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
 		);
 	`
 
@@ -55,6 +55,7 @@ const (
 		strategy_retry_count = $10,
 		signature_header = $11,
 		signature_versions = $12,
+		disable_endpoint = $13
 		updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -78,6 +79,7 @@ const (
 		c.strategy_retry_count as "config.strategy.retry_count",
 		c.signature_header as "config.signature.header",
 		c.signature_versions as "config.signature.versions",
+		c.disable_endpoint as "config.disable_endpoint",
 		p.created_at,
 		p.updated_at,
 		p.deleted_at
@@ -192,6 +194,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 		sc.RetryCount,
 		sgc.Header,
 		sgc.Versions,
+		project.Config.DisableEndpoint,
 	)
 	if err != nil {
 		return err
@@ -283,6 +286,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		project.Config.Strategy.RetryCount,
 		project.Config.Signature.Header,
 		project.Config.Signature.Versions,
+		project.Config.DisableEndpoint,
 	)
 	if err != nil {
 		return err

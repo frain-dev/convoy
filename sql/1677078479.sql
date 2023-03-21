@@ -46,6 +46,8 @@ CREATE TABLE IF NOT EXISTS convoy.project_configurations (
 	replay_attacks_prevention_enabled BOOLEAN NOT NULL,
 	retention_policy_enabled BOOLEAN NOT NULL,
 
+	disable_endpoint BOOLEAN NOT NULL,
+
 	ratelimit_count INTEGER NOT NULL,
 	ratelimit_duration INTEGER NOT NULL,
 

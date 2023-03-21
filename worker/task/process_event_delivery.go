@@ -196,7 +196,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			log.Errorf("%s failed. Reason: %s", ed.UID, err)
 		}
 
-		if done && e.Status == datastore.PendingEndpointStatus {
+		if done && e.Status == datastore.PendingEndpointStatus && p.Config.DisableEndpoint {
 			endpointStatus := datastore.ActiveEndpointStatus
 			err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
 			if err != nil {
@@ -210,7 +210,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			}
 		}
 
-		if !done && e.Status == datastore.PendingEndpointStatus {
+		if !done && e.Status == datastore.PendingEndpointStatus && p.Config.DisableEndpoint {
 			endpointStatus := datastore.InactiveEndpointStatus
 			err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
 			if err != nil {
