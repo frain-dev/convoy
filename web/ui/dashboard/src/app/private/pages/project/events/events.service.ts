@@ -25,7 +25,7 @@ export class EventsService {
 		});
 	}
 
-	getEventDeliveries(requestDetails?: { page?: any; startDate?: string; endDate?: string; endpointId?: string; eventId?: string; sourceId?: string; status?: any; next_page_cursor?: number }): Promise<HTTP_RESPONSE> {
+	getEventDeliveries(requestDetails?: { page?: any; startDate?: string; endDate?: string; endpointId?: string; eventId?: string; sourceId?: string; status?: any; next_page_cursor?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -92,7 +92,7 @@ export class EventsService {
 		});
 	}
 
-	batchRetryEvent(requestDetails: { eventId: string; page: number; startDate: string; endDate: string; endpointId: string; status?: string[] }): Promise<HTTP_RESPONSE> {
+	batchRetryEvent(requestDetails: { eventId?: string; startDate?: string; endDate?: string; endpointId?: string; status?: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -110,7 +110,7 @@ export class EventsService {
 		});
 	}
 
-	getRetryCount(requestDetails: { endpointId: string; eventId: string; page: number; startDate: string; endDate: string; status: string[] }): Promise<HTTP_RESPONSE> {
+	getRetryCount(requestDetails: { endpointId?: string; eventId?: string; startDate?: string; endDate?: string; status?: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
