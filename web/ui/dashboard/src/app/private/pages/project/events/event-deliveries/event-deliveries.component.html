@@ -35,11 +35,11 @@
 
 	<div class="flex px-16px py-24px border-b border-grey-10 items-center justify-between">
 		<div class="flex">
-			<convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="dateFiltersFromURL" (clearDates)="clearFilters('date')" #datePicker></convoy-date-picker>
-			<convoy-time-picker class="ml-14px" (applyFilter)="eventDelsTimeFilterData = $event; getEventDeliveries({ addToURL: true, fromFilter: true })" #eventDeliveryTimerFilter></convoy-time-picker>
+			<convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="{ startDate: queryParams?.startDate || '', endDate: queryParams?.endDate || '' }" (clearDates)="clearFilters('startDate')" #datePicker></convoy-date-picker>
+			<convoy-time-picker class="ml-14px" [dateRangeValue]="{ startDate: queryParams?.startDate || '', endDate: queryParams?.endDate || '' }" (applyFilter)="getSelectedTimeRange($event)" #eventDeliveryTimerFilter></convoy-time-picker>
 
 			<div convoy-dropdown size="md" position="left" #statusDropdown>
-				<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px">
+				<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" [ngClass]="{ 'text-primary-100 !bg-primary-500': queryParams?.status }">
 					<img src="/assets/img/status-filter-icon.svg" class="w-14px mr-10px" alt="status filter icon" />
 					<span class="text-grey-40 w-full">Status</span>
 					<img class="ml-10px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
@@ -47,21 +47,21 @@
 
 				<ng-container dropdownOptions>
 					<ul class="pt-10px">
-						<li class="px-20px" *ngFor="let status of eventDeliveryStatuses" convoy-list-item convoy-dropdown-option>
+						<li class="px-20px" *ngFor="let status of eventDeliveryStatuses" convoy-list-item>
 							<label class="text-12 block w-full" [for]="status">{{ status || 'None' }}</label>
 							<input type="checkbox" name="status" [value]="status" [id]="status" [checked]="checkIfEventDeliveryStatusFilterOptionIsSelected(status)" (change)="updateEventDevliveryStatusFilter(status, $event)" />
 						</li>
 					</ul>
 
 					<div class="flex items-center justify-end mt-10px p-10px">
-						<button convoy-dropdown-option convoy-button size="sm" fill="outline" color="danger" class="mr-14px" *ngIf="eventDeliveryFilteredByStatus.length" (click)="clearFilters('status')">Clear</button>
-						<button convoy-dropdown-option convoy-button size="sm" (click)="statusDropdown.show = false; this.getEventDeliveries({ addToURL: true, fromFilter: true })">Apply</button>
+						<button convoy-dropdown-option convoy-button size="sm" fill="outline" color="danger" class="mr-14px" *ngIf="queryParams?.status" (click)="eventDeliveryFilteredByStatus = []; clearFilters('status')">Clear</button>
+						<button convoy-dropdown-option convoy-button size="sm" *ngIf="eventDeliveryFilteredByStatus.length" (click)="getSelectedStatusFilter()">Apply</button>
 					</div>
 				</ng-container>
 			</div>
 
 			<div convoy-dropdown size="lg" position="left" #endpointsFilterDropdown [hidden]="portalToken || this.projectService.activeProjectDetails?.type === 'incoming'">
-				<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" [ngClass]="{ 'text-primary-100 !bg-primary-500': !!eventDeliveriesEndpoint }">
+				<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" [ngClass]="{ 'text-primary-100 !bg-primary-500': queryParams?.endpointId }">
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
 					<span class="text-grey-40 w-full">All Endpoints</span>
 					<img class="ml-10px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
@@ -74,20 +74,21 @@
 					</div>
 
 					<ul class="min-h-[100px] py-10px">
-						<li class="py-4px px-20px" *ngFor="let endpoint of eventsDelEndpointFilter$ | async" convoy-list-item convoy-dropdown-option>
+						<li class="py-4px px-20px" *ngFor="let endpoint of eventsDelEndpointFilter$ | async" convoy-list-item>
 							<label [for]="endpoint.uid + 'eventDel'" class="text-12 block w-full">{{ endpoint.title }}</label>
-							<input type="checkbox" name="endpoint" [value]="endpoint.uid" [id]="endpoint.uid + 'eventDel'" [checked]="endpoint.uid === eventDeliveriesEndpoint" (change)="updateEndpointFilter(endpoint.uid, $event)" />
+							<input type="checkbox" name="endpoint" [value]="endpoint.uid" [id]="endpoint.uid + 'eventDel'" [checked]="endpoint.uid === eventDeliveriesEndpoint" (change)="eventDeliveriesEndpoint = endpoint.uid" />
 						</li>
 					</ul>
 
-					<div *ngIf="!!eventDeliveriesEndpoint" class="p-10px pb-10px flex justify-end">
-						<button convoy-button size="sm" fill="outline" color="danger" convoy-dropdown-option (click)="clearFilters('endpoint')">Clear</button>
+					<div class="p-10px pb-10px flex justify-end">
+						<button convoy-button size="sm" fill="outline" color="danger" class="mr-14px" convoy-dropdown-option *ngIf="queryParams?.endpointId" (click)="clearFilters('endpointId')">Clear</button>
+						<button convoy-button size="sm" convoy-dropdown-option *ngIf="eventDeliveriesEndpoint" (click)="updateEndpointFilter()">Apply</button>
 					</div>
 				</ng-container>
 			</div>
 
 			<div convoy-dropdown size="lg" position="left" #sourcesFilterDropdown [hidden]="portalToken || this.projectService.activeProjectDetails?.type === 'outgoing'">
-				<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" [ngClass]="{ 'text-primary-100 !bg-primary-500': !!eventDeliveriesSource }">
+				<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" [ngClass]="{ 'text-primary-100 !bg-primary-500': queryParams?.sourceId }">
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
 					<span class="text-grey-40 w-full">All Sources</span>
 					<img class="ml-10px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
@@ -95,63 +96,32 @@
 
 				<ng-container dropdownOptions>
 					<ul class="min-h-[100px] pt-10px">
-						<li class="py-4px px-20px" *ngFor="let source of filterSources" convoy-list-item convoy-dropdown-option>
+						<li class="py-4px px-20px" *ngFor="let source of filterSources" convoy-list-item>
 							<label [for]="source.uid + 'eventDel'" class="text-12 block w-full">{{ source.name }}</label>
-							<input type="checkbox" name="source" [value]="source.uid" [id]="source.uid + 'eventDel'" [checked]="source.uid === eventDeliveriesSource" (change)="updateSourceFilter(source.uid, $event)" />
+							<input type="checkbox" name="source" [value]="source.uid" [id]="source.uid + 'eventDel'" [checked]="source.uid === eventDeliveriesSource" (change)="eventDeliveriesSource = source.uid" />
 						</li>
 					</ul>
 
-					<div *ngIf="!!eventDeliveriesSource" class="p-10px pb-10px">
-						<button convoy-button convoy-dropdown-option size="sm" (click)="clearFilters('source')">Clear</button>
+					<div class="flex items-center justify-end mt-10px p-10px">
+						<button convoy-button convoy-dropdown-option size="sm" fill="outline" color="danger" class="mr-14px" *ngIf="queryParams?.sourceId" (click)="clearFilters('sourceId')">Clear</button>
+						<button convoy-dropdown-option convoy-button size="sm" *ngIf="eventDeliveriesSource" (click)="updateSourceFilter()">Apply</button>
 					</div>
 				</ng-container>
 			</div>
 
-			<div class="text-primary-100 bg-primary-500 border border-primary-100 ml-14px flex items-center justify-between text-12 rounded-[10px] h-36px py-4px px-10px min-w-[100px] font-medium" *ngIf="eventDeliveryFilteredByEventId">
+			<div class="text-primary-100 bg-primary-500 border border-primary-100 ml-14px flex items-center justify-between text-12 rounded-[10px] h-36px py-4px px-10px min-w-[100px] font-medium" *ngIf="queryParams?.eventId">
 				Event Filtered
 				<button class="ml-4px">
 					<img class="w-14px" src="assets/img/close-icon.svg" alt="close icon" (click)="clearFilters('eventId')" />
 				</button>
 			</div>
 
-			<button
-				convoy-button
-				size="sm"
-				fill="outline"
-				class="ml-14px px-10px border-primary-400 h-36px"
-				[disabled]="
-					(dateFiltersFromURL.startDate == '' || dateFiltersFromURL.endDate == '') &&
-					(eventDeliveriesEndpoint?.length == 0 || eventDeliveriesEndpoint == undefined) &&
-					(eventDeliveryFilteredByEventId?.length == 0 || eventDeliveryFilteredByEventId == undefined) &&
-					!eventDeliveriesStatusFilterActive &&
-					eventDelsTimeFilterData.startTime == 'T00:00:00' &&
-					eventDelsTimeFilterData.endTime == 'T23:59:59'
-				"
-				(click)="fetchRetryCount(); showBatchRetryModal = true"
-			>
+			<button convoy-button size="sm" fill="outline" class="ml-14px px-10px border-primary-400 h-36px" [disabled]="(!queryParams?.startDate || !queryParams?.endDate) && !queryParams?.endpointId && !queryParams?.eventId && !queryParams?.status" (click)="fetchRetryCount()">
 				Batch Retry
 			</button>
 		</div>
 
-		<button
-			convoy-button
-			fill="outline"
-			size="sm"
-			(click)="clearFilters()"
-			*ngIf="
-				!(
-					(dateFiltersFromURL.startDate == '' || dateFiltersFromURL.endDate == '') &&
-					(eventDeliveriesEndpoint?.length == 0 || eventDeliveriesEndpoint == undefined) &&
-					(eventDeliveryFilteredByEventId?.length == 0 || eventDeliveryFilteredByEventId == undefined) &&
-					!eventDeliveriesStatusFilterActive &&
-					eventDelsTimeFilterData.startTime == 'T00:00:00' &&
-					eventDelsTimeFilterData.endTime == 'T23:59:59' &&
-					(eventDeliveriesSource?.length == 0 || eventDeliveriesSource == undefined)
-				)
-			"
-		>
-			Clear Filters
-		</button>
+		<button convoy-button fill="outline" size="sm" (click)="clearFilters()" *ngIf="queryParams?.startDate || queryParams?.endDate || queryParams?.endpointId || queryParams?.eventId || queryParams?.status">Clear Filters</button>
 	</div>
 
 	<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
@@ -229,40 +199,8 @@
 	<div convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No event to show here"></div>
 </div>
 
-<!-- paginator  -->
-<div class="flex items-center mt-16px mb-24px">
-	<button
-		convoy-button
-		fill="outline"
-		size="sm"
-		class="pl-4px pr-16px py-4px border-primary-300"
-		routerLink="./"
-		[queryParams]="{ page: eventDeliveries?.pagination?.prev }"
-		[disabled]="!eventDeliveries || eventDeliveries.pagination.prev === 0"
-		(click)="getEventDeliveries({ page: eventDeliveries?.pagination?.prev })"
-	>
-		<svg width="24" height="24" class="mr-8px fill-primary-100">
-			<use xlink:href="#arrow-left-icon"></use>
-		</svg>
-		Previous
-	</button>
-
-	<button
-		convoy-button
-		fill="outline"
-		size="sm"
-		class="pr-4px pl-16px py-4px border-primary-300 ml-16px"
-		routerLink="./"
-		[queryParams]="{ page: eventDeliveries?.pagination?.next }"
-		[disabled]="!eventDeliveries || eventDeliveries.pagination.next === 0"
-		(click)="getEventDeliveries({ page: eventDeliveries?.pagination?.next })"
-	>
-		Next
-		<svg width="24" height="24" class="ml-8px fill-primary-100">
-			<use xlink:href="#arrow-right-icon"></use>
-		</svg>
-	</button>
-</div>
+<!-- pagination -->
+<convoy-pagination *ngIf="eventDeliveries?.pagination?.has_next_page || eventDeliveries?.pagination?.has_prev_page" [pagination]="eventDeliveries?.pagination" (paginate)="paginateEvents($event)"></convoy-pagination>
 
 <div convoy-modal position="center" size="sm" *ngIf="showBatchRetryModal">
 	<div class="text-center py-30px">

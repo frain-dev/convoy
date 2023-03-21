@@ -1,20 +1,32 @@
 import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
-import { EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
+import { EVENT_DELIVERY } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { EventsService } from '../events.service';
 import { PrivateService } from 'src/app/private/private.service';
 import { SOURCE } from 'src/app/models/group.model';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
 import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.component';
 import { ProjectService } from '../../project.service';
+import { Location } from '@angular/common';
+
+interface FILTER_QUERY_PARAM {
+	startDate?: string;
+	endDate?: string;
+	eventId?: string;
+	endpointId?: string;
+	status?: string;
+	sourceId?: string;
+	next_page_cursor?: string;
+	prev_page_cursor?: string;
+	direction?: 'next' | 'prev';
+}
 
 @Component({
 	selector: 'app-event-deliveries',
@@ -23,39 +35,27 @@ import { ProjectService } from '../../project.service';
 })
 export class EventDeliveriesComponent implements OnInit {
 	@Output() pushEventDeliveries = new EventEmitter<any>();
-	eventDeliveryFilteredByEventId?: string;
-	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
 	eventDelTableHead: string[] = this.privateService.activeProjectDetails?.type === 'incoming' ? ['Status', 'Subscription', 'Attempts', 'Next Attempt', 'Time', '', ''] : ['Status', 'Subscription', 'Attempts', 'Next Attempt', 'Time', '', ''];
-	eventDeliveriesStatusFilterActive = false;
 	fetchingCount = false;
 	showBatchRetryModal = false;
 	isloadingEventDeliveries = false;
-	isloadingDeliveryAttempts = false;
 	isRetrying = false;
-	dateFiltersFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
 	batchRetryCount!: number;
 	eventDeliveriesEndpoint?: string;
 	eventDeliveriesSource?: string;
-	eventDeliveryIndex!: number;
-	eventDeliveriesPage: number = 1;
-	selectedEventsFromEventDeliveriesTable: string[] = [];
 	displayedEventDeliveries!: { date: string; content: any[] }[];
 	eventDeliveries?: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
-	sidebarEventDeliveries!: EVENT_DELIVERY[];
-	eventDeliveryAtempt!: EVENT_DELIVERY_ATTEMPT;
 	eventDeliveryFilteredByStatus: string[] = [];
-	eventDelsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 	eventsDelEndpointFilter$!: Observable<ENDPOINT[]>;
 	@ViewChild('eventDelsEndpointFilter', { static: true }) eventDelsEndpointFilter!: ElementRef;
 	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
 	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimePickerComponent;
-	@ViewChild('endpointsFilterDropdown', { static: true }) endpointsFilterDropdown!: DropdownComponent;
-	@ViewChild('sourcesFilterDropdown', { static: true }) sourcesFilterDropdown!: DropdownComponent;
 	portalToken = this.route.snapshot.queryParams?.token;
 	filterSources: SOURCE[] = [];
+	queryParams?: FILTER_QUERY_PARAM;
 
-	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, private router: Router, public projectService: ProjectService, public privateService: PrivateService) {}
+	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, public projectService: ProjectService, public privateService: PrivateService, private _location: Location) {}
 
 	ngAfterViewInit() {
 		if (!this.portalToken && this.projectService.activeProjectDetails?.type == 'outgoing') {
@@ -70,8 +70,8 @@ export class EventDeliveriesComponent implements OnInit {
 	}
 
 	ngOnInit() {
-		this.getFiltersFromURL();
-		this.getEventDeliveries();
+		const data = this.getFiltersFromURL();
+		this.getEventDeliveries(data);
 		if (!this.portalToken || this.projectService.activeProjectDetails?.type == 'incoming') this.getSourcesForFilter();
 	}
 
@@ -79,23 +79,19 @@ export class EventDeliveriesComponent implements OnInit {
 		const filters = this.route.snapshot.queryParams;
 		if (Object.keys(filters).length == 0) return;
 
-		this.dateFiltersFromURL = {
-			startDate: filters.eventDelsStartDate ? new Date(filters.eventDelsStartDate) : '',
-			endDate: filters.eventDelsEndDate ? new Date(filters.eventDelsEndDate) : ''
-		};
-		this.eventDeliveryFilteredByEventId = filters.eventId ?? '';
-		this.eventDeliveriesEndpoint = filters.eventDelsEndpoint ?? '';
-		this.eventDeliveryFilteredByStatus = filters.eventDelsStatus ? JSON.parse(filters.eventDelsStatus) : [];
+		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams };
+
+		// set filter status if any exists in URL
+		this.eventDeliveryFilteredByStatus = this.queryParams.status ? JSON.parse(this.queryParams.status) : [];
+
+		return this.queryParams;
 	}
 
-	async getEventDeliveries(requestDetails?: { page?: number; addToURL?: boolean; fromFilter?: boolean }): Promise<HTTP_RESPONSE> {
-		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
-		if (requestDetails?.addToURL) this.addFilterToURL();
-		const { startDate, endDate } = this.setDateForFilter({ ...this.dateFiltersFromURL, ...this.eventDelsTimeFilterData });
+	async getEventDeliveries(requestDetails?: FILTER_QUERY_PARAM): Promise<HTTP_RESPONSE> {
 		this.isloadingEventDeliveries = true;
 
 		try {
-			const eventDeliveriesResponse = await this.eventDeliveriesRequest({ pageNo: page, eventId: this.eventDeliveryFilteredByEventId, startDate, endDate });
+			const eventDeliveriesResponse = await this.eventDeliveriesRequest(requestDetails);
 			this.eventDeliveries = eventDeliveriesResponse.data;
 
 			this.displayedEventDeliveries = this.setEventDeliveriesContent(eventDeliveriesResponse.data.content);
@@ -134,44 +130,32 @@ export class EventDeliveriesComponent implements OnInit {
 		return finalEventDels;
 	}
 
-	async eventDeliveriesRequest(requestDetails: { pageNo?: number; eventId?: string; startDate?: string; endDate?: string }): Promise<HTTP_RESPONSE> {
-		this.eventDeliveryFilteredByStatus.length > 0 ? (this.eventDeliveriesStatusFilterActive = true) : (this.eventDeliveriesStatusFilterActive = false);
-
+	async eventDeliveriesRequest(requestDetails?: FILTER_QUERY_PARAM): Promise<HTTP_RESPONSE> {
 		try {
-			const eventDeliveriesResponse = await this.eventsService.getEventDeliveries({
-				eventId: requestDetails.eventId || this.eventDeliveryFilteredByEventId || '',
-				page: requestDetails.pageNo,
-				startDate: requestDetails.startDate,
-				endDate: requestDetails.endDate,
-				endpointId: this.eventDeliveriesEndpoint || '',
-				sourceId: this.eventDeliveriesSource || '',
-				status: this.eventDeliveryFilteredByStatus,
-				next_page_cursor: Number.MAX_SAFE_INTEGER
-			});
+			const eventDeliveriesResponse = await this.eventsService.getEventDeliveries(requestDetails);
 			return eventDeliveriesResponse;
 		} catch (error: any) {
 			return error;
 		}
 	}
 
-	addFilterToURL() {
-		const currentURLfilters = this.route.snapshot.queryParams;
-		const queryParams: any = {};
-		const { startDate, endDate } = this.setDateForFilter({ ...this.dateFiltersFromURL, ...this.eventDelsTimeFilterData });
-		if (startDate) queryParams.eventDelsStartDate = startDate;
-		if (endDate) queryParams.eventDelsEndDate = endDate;
-		if (this.eventDeliveriesEndpoint) queryParams.eventDelsEndpoint = this.eventDeliveriesEndpoint;
-		if (this.eventDeliveryFilteredByEventId) queryParams.eventId = this.eventDeliveryFilteredByEventId;
-		queryParams.eventDelsSource = this.eventDeliveriesSource;
-		queryParams.eventDelsStatus = this.eventDeliveryFilteredByStatus.length > 0 ? JSON.stringify(this.eventDeliveryFilteredByStatus) : '';
+	addFilterToURL(params?: FILTER_QUERY_PARAM) {
+		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams, ...params };
 
-		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
+		if (!params?.next_page_cursor) delete this.queryParams.next_page_cursor;
+		if (!params?.prev_page_cursor) delete this.queryParams.prev_page_cursor;
+
+		const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
+		const queryParams = new URLSearchParams(cleanedQuery).toString();
+		this._location.go(`${location.pathname}?${queryParams}`);
+
+		return this.queryParams;
 	}
 
 	setDateForFilter(requestDetails: { startDate: any; endDate: any; startTime?: string; endTime?: string }) {
 		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
-		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-MM-dd')}${requestDetails?.startTime || 'T00:00:00'}` : '';
-		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}${requestDetails?.endTime || 'T23:59:59'}` : '';
+		const startDate = requestDetails.startDate ? `${format(typeof requestDetails.startDate == 'string' ? parseISO(requestDetails.startDate) : requestDetails.startDate, 'yyyy-MM-dd')}${requestDetails?.startTime || 'T00:00:00'}` : '';
+		const endDate = requestDetails.endDate ? `${format(typeof requestDetails.endDate == 'string' ? parseISO(requestDetails.endDate) : requestDetails.endDate, 'yyyy-MM-dd')}${requestDetails?.endTime || 'T23:59:59'}` : '';
 		return { startDate, endDate };
 	}
 
@@ -189,78 +173,50 @@ export class EventDeliveriesComponent implements OnInit {
 	}
 
 	getSelectedDateRange(dateRange: { startDate: Date; endDate: Date }) {
-		this.dateFiltersFromURL = { ...dateRange };
-		this.getEventDeliveries({ addToURL: true });
+		const dates = this.setDateForFilter(dateRange);
+		const data = this.addFilterToURL(dates);
+		this.getEventDeliveries(data);
 	}
 
-	clearFilters(filterType?: 'endpoint' | 'eventId' | 'time' | 'date' | 'status' | 'source') {
-		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
-		let filterItems: string[] = [];
-		this.datePicker.clearDate();
-		this.eventDeliveryTimerFilter.filterStartHour = 0;
-		this.eventDeliveryTimerFilter.filterStartMinute = 0;
-		this.eventDeliveryTimerFilter.filterEndHour = 23;
-		this.eventDeliveryTimerFilter.filterEndMinute = 59;
+	getSelectedTimeRange(timeRange: { startTime: any; endTime: any }) {
+		const dates = this.setDateForFilter({ startDate: this.queryParams?.startDate, endDate: this.queryParams?.endDate, ...timeRange });
+		const data = this.addFilterToURL(dates);
+		this.getEventDeliveries(data);
+	}
 
-		switch (filterType) {
-			case 'endpoint':
-				filterItems = ['eventDelsEndpoint'];
-				this.eventDeliveriesEndpoint = undefined;
-				this.endpointsFilterDropdown.show = false;
-				break;
-			case 'eventId':
-				filterItems = ['eventId'];
-				this.eventDeliveryFilteredByEventId = undefined;
-				break;
-			case 'date':
-				filterItems = ['eventDelsStartDate', 'eventDelsEndDate'];
-				this.dateFiltersFromURL = { startDate: '', endDate: '' };
-				break;
-			case 'status':
-				filterItems = ['eventDelsStatus'];
-				this.eventDeliveryFilteredByStatus = [];
-				break;
-			case 'time':
-				filterItems = ['eventDelsTime'];
-				this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
-				break;
-			case 'source':
-				this.sourcesFilterDropdown.show = false;
-				filterItems = ['eventDelsSource'];
-				this.eventDeliveriesSource = undefined;
-				break;
-			default:
-				filterItems = ['eventDelsStartDate', 'eventId', 'eventDelsTime', 'eventDelsEndDate', 'eventDelsEndpoint', 'eventDelsStatus', 'eventDelsSource'];
-				this.eventDeliveryFilteredByEventId = undefined;
-				this.eventDeliveriesEndpoint = undefined;
-				this.eventDeliveriesSource = undefined;
-				this.dateFiltersFromURL = { startDate: '', endDate: '' };
-				this.eventDeliveryFilteredByEventId = undefined;
-				this.eventDeliveryFilteredByStatus = [];
-				this.eventDelsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
-				break;
+	getSelectedStatusFilter() {
+		const eventDelsStatus = this.eventDeliveryFilteredByStatus.length > 0 ? JSON.stringify(this.eventDeliveryFilteredByStatus) : '';
+		const data = this.addFilterToURL({ status: eventDelsStatus });
+		this.getEventDeliveries(data);
+	}
+
+	clearFilters(filterType?: 'startDate' | 'endDate' | 'eventId' | 'endpointId' | 'status' | 'sourceId' | 'next_page_cursor' | 'prev_page_cursor' | 'direction') {
+		if (filterType && this.queryParams) {
+			// if filter to clear start date or end date, it means clear date filter. :)
+			if (filterType === 'startDate' || filterType === 'endDate') {
+				delete this.queryParams['startDate'];
+				delete this.queryParams['endDate'];
+			} else delete this.queryParams[filterType];
+
+			const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
+			const queryParams = new URLSearchParams(cleanedQuery).toString();
+			this._location.go(`${location.pathname}?${queryParams}`);
+		} else {
+			this.datePicker.clearDate();
+			this.eventDeliveryTimerFilter.clearFilter();
+			this.queryParams = {};
+			this._location.go(`${location.pathname}`);
 		}
 
-		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
-		this.router.navigate(['./'], { relativeTo: this.route, queryParams: activeFilters });
-		this.getEventDeliveries();
+		this.getEventDeliveries(this.queryParams);
 	}
 
 	async fetchRetryCount() {
-		let eventDeliveryStatusFilterQuery = '';
-		this.eventDeliveryFilteredByStatus.length > 0 ? (this.eventDeliveriesStatusFilterActive = true) : (this.eventDeliveriesStatusFilterActive = false);
-		this.eventDeliveryFilteredByStatus.forEach((status: string) => (eventDeliveryStatusFilterQuery += `&status=${status}`));
-		const { startDate, endDate } = this.setDateForFilter(this.dateFiltersFromURL);
+		if (!this.queryParams) return;
+
 		this.fetchingCount = true;
 		try {
-			const response = await this.eventsService.getRetryCount({
-				eventId: this.eventDeliveryFilteredByEventId || '',
-				page: this.eventDeliveriesPage || 1,
-				startDate: startDate,
-				endDate: endDate,
-				endpointId: this.eventDeliveriesEndpoint || '',
-				status: this.eventDeliveryFilteredByStatus
-			});
+			const response = await this.eventsService.getRetryCount(this.queryParams);
 
 			this.batchRetryCount = response.data.num;
 			this.fetchingCount = false;
@@ -283,14 +239,14 @@ export class EventDeliveriesComponent implements OnInit {
 		} catch (error) {}
 	}
 
-	updateEndpointFilter(endpointId: string, isChecked: any) {
-		isChecked.target.checked ? (this.eventDeliveriesEndpoint = endpointId) : (this.eventDeliveriesEndpoint = undefined);
-		this.getEventDeliveries({ addToURL: true, fromFilter: true });
+	updateEndpointFilter() {
+		const data = this.addFilterToURL({ endpointId: this.eventDeliveriesEndpoint });
+		this.getEventDeliveries(data);
 	}
 
-	updateSourceFilter(sourceId: string, isChecked: any) {
-		isChecked.target.checked ? (this.eventDeliveriesSource = sourceId) : (this.eventDeliveriesSource = undefined);
-		this.getEventDeliveries({ addToURL: true, fromFilter: true });
+	updateSourceFilter() {
+		const data = this.addFilterToURL({ sourceId: this.eventDeliveriesSource });
+		this.getEventDeliveries(data);
 	}
 
 	async retryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
@@ -322,20 +278,11 @@ export class EventDeliveriesComponent implements OnInit {
 	}
 
 	async batchRetryEvent() {
-		let eventDeliveryStatusFilterQuery = '';
-		this.eventDeliveryFilteredByStatus.length > 0 ? (this.eventDeliveriesStatusFilterActive = true) : (this.eventDeliveriesStatusFilterActive = false);
-		const { startDate, endDate } = this.setDateForFilter(this.dateFiltersFromURL);
+		if (!this.queryParams) return;
 		this.isRetrying = true;
 
 		try {
-			const response = await this.eventsService.batchRetryEvent({
-				eventId: this.eventDeliveryFilteredByEventId || '',
-				page: this.eventDeliveriesPage || 1,
-				startDate: startDate,
-				endDate: endDate,
-				endpointId: this.eventDeliveriesEndpoint || '',
-				status: this.eventDeliveryFilteredByStatus
-			});
+			const response = await this.eventsService.batchRetryEvent(this.queryParams);
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.getEventDeliveries();
@@ -345,5 +292,10 @@ export class EventDeliveriesComponent implements OnInit {
 			this.isRetrying = false;
 			return error;
 		}
+	}
+
+	paginateEvents(event: { next_page_cursor?: string; prev_page_cursor?: string; direction: 'next' | 'prev' }) {
+		this.addFilterToURL({ next_page_cursor: event.next_page_cursor, prev_page_cursor: event.prev_page_cursor });
+		this.getEventDeliveries(event);
 	}
 }
