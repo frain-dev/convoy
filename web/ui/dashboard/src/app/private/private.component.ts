@@ -150,8 +150,6 @@ export class PrivateComponent implements OnInit {
 	}
 
 	getRefreshToken() {
-		console.log('??');
-
 		try {
 			this.privateService.getRefreshToken();
 		} catch (error) {
@@ -177,7 +175,6 @@ export class PrivateComponent implements OnInit {
 	inTimeoutCheck(time: number) {
 		this.checkTokenInterval = setTimeout(() => {
 			this.checkIfTokenIsExpired();
-			console.log('run');
 		}, time * 1000 + 1000);
 	}
 }

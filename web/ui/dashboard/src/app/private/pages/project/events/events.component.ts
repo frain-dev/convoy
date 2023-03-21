@@ -42,18 +42,18 @@ export class EventsComponent implements OnInit, OnDestroy {
 	labelsDateFormat!: string;
 	isProjectConfigurationComplete = false;
 	isPageLoading = false;
+
 	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, public router: Router) {}
 
 	async ngOnInit() {
 		this.isloadingDashboardData = true;
 		this.isPageLoading = true;
-		await this.getSubscriptions();
+		await this.getProjectStats();
 
 		if (this.isProjectConfigurationComplete) {
-			await this.getLatestEvent();
 			await this.checkEventsOnFirstLoad();
 
-			if (this.privateService.activeProjectDetails?.type === 'incoming' && !this.lastestEventDeliveries.length) {
+			if (this.privateService.activeProjectDetails?.type === 'incoming' && !this.hasEvents) {
 				this.eventDelievryIntervalTime = setInterval(() => {
 					this.getLatestEvent();
 				}, 2000);
@@ -94,8 +94,6 @@ export class EventsComponent implements OnInit, OnDestroy {
 	}
 
 	async checkEventsOnFirstLoad() {
-		this.hasEvents = this.lastestEventDeliveries.length === 0 ? false : true;
-
 		if (this.hasEvents) {
 			clearInterval(this.eventDelievryIntervalTime);
 			this.isPageLoading = false;
@@ -182,10 +180,11 @@ export class EventsComponent implements OnInit, OnDestroy {
 		return labelsDateFormat;
 	}
 
-	async getSubscriptions() {
+	async getProjectStats() {
 		try {
-			const subscriptionsResponse = await this.privateService.getSubscriptions();
-			this.isProjectConfigurationComplete = subscriptionsResponse.data?.content?.length > 0;
+			const projectStats = await this.eventsService.getProjectStat();
+			this.isProjectConfigurationComplete = projectStats.data?.total_subscriptions > 0;
+			this.hasEvents = projectStats.data?.messages_sent > 0;
 			return;
 		} catch (error) {
 			return error;

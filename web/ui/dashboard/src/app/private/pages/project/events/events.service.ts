@@ -6,6 +6,8 @@ import { HttpService } from 'src/app/services/http/http.service';
 	providedIn: 'root'
 })
 export class EventsService {
+	projectStats!: HTTP_RESPONSE;
+
 	constructor(private http: HttpService) {}
 
 	getEvents(requestDetails: { page?: number; startDate: string; endDate: string; query?: string; sourceId?: string; endpointId?: string; next_page_cursor?: string; prev_page_cursor?: string; direction?: 'next' | 'prev' }): Promise<HTTP_RESPONSE> {
@@ -120,6 +122,25 @@ export class EventsService {
 					query: requestDetails
 				});
 
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getProjectStat(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			if (this.projectStats && !requestDetails?.refresh) return resolve(this.projectStats);
+
+			try {
+				const response = await this.http.request({
+					url: `/stats`,
+					method: 'get',
+					level: 'org_project'
+				});
+
+				this.projectStats = response;
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
