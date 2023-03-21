@@ -235,7 +235,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			}
 
 			// TODO(all): this block of code is unnecessary L215 - L 221 already caters for this case
-			if e.Status != datastore.PendingEndpointStatus {
+			if e.Status != datastore.PendingEndpointStatus && p.Config.DisableEndpoint {
 				endpointStatus := datastore.InactiveEndpointStatus
 
 				err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)

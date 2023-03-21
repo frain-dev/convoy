@@ -55,7 +55,7 @@ const (
 		strategy_retry_count = $10,
 		signature_header = $11,
 		signature_versions = $12,
-		disable_endpoint = $13
+		disable_endpoint = $13,
 		updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`

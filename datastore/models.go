@@ -245,6 +245,7 @@ var (
 		MaxIngestSize:            config.MaxResponseSize,
 		ReplayAttacks:            false,
 		IsRetentionPolicyEnabled: false,
+		DisableEndpoint:          false,
 		RateLimit:                &DefaultRateLimitConfig,
 		Strategy:                 &DefaultStrategyConfig,
 		Signature:                GetDefaultSignatureConfig(),
