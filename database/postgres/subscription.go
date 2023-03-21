@@ -296,7 +296,6 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
-		// fmt.Printf("\n%+v \n%+v\n\n", query, args)
 
 		countQuery = s.db.Rebind(countQuery)
 
