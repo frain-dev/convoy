@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dchest/uniuri"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/database"
@@ -294,31 +295,56 @@ func Test_FillProjectStatistics(t *testing.T) {
 	err = endpointRepo.CreateEndpoint(context.Background(), endpoint2, project2.UID)
 	require.NoError(t, err)
 
-	event := &datastore.Event{
-		ProjectID: endpoint1.ProjectID,
-		Endpoints: []string{endpoint1.UID},
-		Headers:   httpheader.HTTPHeader{},
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+	source1 := &datastore.Source{
+		UID:       ulid.Make().String(),
+		ProjectID: project1.UID,
+		Name:      "Convoy-Prod",
+		MaskID:    uniuri.NewLen(16),
+		Type:      datastore.HTTPSource,
+		Verifier:  &datastore.VerifierConfig{},
 	}
 
-	err = NewEventRepo(db).CreateEvent(context.Background(), event)
+	err = NewSourceRepo(db).CreateSource(context.Background(), source1)
+	require.NoError(t, err)
+
+	subscription := &datastore.Subscription{
+		UID:         ulid.Make().String(),
+		Name:        "Subscription",
+		Type:        datastore.SubscriptionTypeAPI,
+		ProjectID:   project2.UID,
+		EndpointID:  endpoint1.UID,
+		AlertConfig: &datastore.DefaultAlertConfig,
+		RetryConfig: &datastore.DefaultRetryConfig,
+		FilterConfig: &datastore.FilterConfiguration{
+			EventTypes: []string{"some.event"},
+			Filter: datastore.FilterSchema{
+				Headers: datastore.M{},
+				Body:    datastore.M{},
+			},
+		},
+	}
+
+	err = NewSubscriptionRepo(db).CreateSubscription(context.Background(), project2.UID, subscription)
 	require.NoError(t, err)
 
 	err = projectRepo.FillProjectsStatistics(context.Background(), project1)
 	require.NoError(t, err)
 
 	require.Equal(t, datastore.ProjectStatistics{
-		MessagesSent:   1,
-		TotalEndpoints: 1,
+		MessagesSent:       0,
+		TotalEndpoints:     1,
+		TotalSources:       1,
+		TotalSubscriptions: 0,
 	}, *project1.Statistics)
 
 	err = projectRepo.FillProjectsStatistics(context.Background(), project2)
 	require.NoError(t, err)
 
 	require.Equal(t, datastore.ProjectStatistics{
-		MessagesSent:   0,
-		TotalEndpoints: 1,
+		MessagesSent:       0,
+		TotalEndpoints:     1,
+		TotalSources:       0,
+		TotalSubscriptions: 1,
 	}, *project2.Statistics)
 }
 

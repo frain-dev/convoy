@@ -96,10 +96,6 @@ func (s *ProjectIntegrationTestSuite) TestGetProject() {
 	var respProject datastore.Project
 	parseResponse(s.T(), w.Result(), &respProject)
 	require.Equal(s.T(), project.UID, respProject.UID)
-	require.Equal(s.T(), datastore.ProjectStatistics{
-		MessagesSent:   1,
-		TotalEndpoints: 1,
-	}, *respProject.Statistics)
 }
 
 func (s *ProjectIntegrationTestSuite) TestGetProjectWithPersonalAPIKey() {
@@ -561,6 +557,40 @@ func (s *ProjectIntegrationTestSuite) TestGetProjectsWithPersonalAPIKey() {
 	require.Contains(s.T(), v, project1.UID)
 	require.Contains(s.T(), v, project2.UID)
 	require.Contains(s.T(), v, s.DefaultProject.UID)
+}
+
+func (s *ProjectIntegrationTestSuite) TestGetProjectStats() {
+	expectedStatusCode := http.StatusOK
+
+	for i := 0; i < 2; i++ {
+		source, err := testdb.SeedSource(s.DB, s.DefaultProject, "", "", "", nil)
+		require.NoError(s.T(), err)
+
+		endpoint, err := testdb.SeedEndpoint(s.DB, s.DefaultProject, "", "", "", false, datastore.ActiveEndpointStatus)
+		require.NoError(s.T(), err)
+
+		_, err = testdb.SeedSubscription(s.DB, s.DefaultProject, "", datastore.IncomingProject, source, endpoint, &datastore.DefaultRetryConfig, &datastore.DefaultAlertConfig, nil)
+		require.NoError(s.T(), err)
+	}
+
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/stats", s.DefaultOrg.UID, s.DefaultProject.UID)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var stats *datastore.ProjectStatistics
+	parseResponse(s.T(), w.Result(), &stats)
+
+	require.Equal(s.T(), int64(2), stats.TotalEndpoints)
+	require.Equal(s.T(), int64(2), stats.TotalSources)
+	require.Equal(s.T(), int64(2), stats.TotalSubscriptions)
 }
 
 func (s *ProjectIntegrationTestSuite) TearDownTest() {

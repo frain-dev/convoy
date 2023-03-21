@@ -443,7 +443,7 @@ type Project struct {
 	ProjectConfigID string             `json:"-" db:"project_configuration_id"`
 	Type            ProjectType        `json:"type" db:"type"`
 	Config          *ProjectConfig     `json:"config" db:"config"`
-	Statistics      *ProjectStatistics `json:"statistics" db:"-"`
+	Statistics      *ProjectStatistics `json:"statistics" db:"statistics"`
 
 	RetainedEvents int `json:"retained_events" db:"retained_events"`
 
@@ -542,8 +542,10 @@ type RetentionPolicyConfiguration struct {
 }
 
 type ProjectStatistics struct {
-	MessagesSent   int64 `json:"messages_sent" db:"messages_sent"`
-	TotalEndpoints int64 `json:"total_endpoints" db:"total_endpoints"`
+	MessagesSent       int64 `json:"messages_sent" db:"messages_sent"`
+	TotalEndpoints     int64 `json:"total_endpoints" db:"total_endpoints"`
+	TotalSubscriptions int64 `json:"total_subscriptions" db:"total_subscriptions"`
+	TotalSources       int64 `json:"total_sources" db:"total_sources"`
 }
 
 type ProjectFilter struct {
