@@ -58,7 +58,9 @@ const (
 	WHERE ed.deleted_at IS NULL
     `
 
-	baseEventDeliveryPagedForward = `%s %s 
+	baseEventDeliveryPagedForward = `
+	%s 
+	%s 
 	AND ed.id <= :cursor 
 	GROUP BY ed.id, ep.id, ev.id, d.host_name, s.id
 	ORDER BY ed.id DESC 
@@ -86,12 +88,12 @@ const (
 	AND ed.created_at <= :end_date
 	AND ed.deleted_at IS NULL`
 
-	baseCountPrevEventDeliveries = `
+	countPrevEventDeliveries = `
 	SELECT count(distinct(ed.id)) as count
 	FROM convoy.event_deliveries ed
 	WHERE ed.deleted_at IS NULL
-	`
-	countPrevEventDeliveries = ` AND ed.id > :cursor GROUP BY ed.id ORDER BY ed.id DESC LIMIT 1`
+	%s
+	AND ed.id > :cursor GROUP BY ed.id ORDER BY ed.id DESC LIMIT 1`
 
 	loadEventDeliveriesIntervals = `
     SELECT
@@ -549,7 +551,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		qarg := arg
 		qarg["cursor"] = first.UID
 
-		cq := baseCountPrevEventDeliveries + filterQuery + countPrevEventDeliveries
+		cq := fmt.Sprintf(countPrevEventDeliveries, filterQuery)
 		countQuery, qargs, err = sqlx.Named(cq, qarg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err

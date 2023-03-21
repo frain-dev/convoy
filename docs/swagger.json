@@ -6389,6 +6389,9 @@
                 "project_id": {
                     "type": "string"
                 },
+                "source_metadata": {
+                    "$ref": "#/definitions/datastore.Source"
+                },
                 "status": {
                     "$ref": "#/definitions/datastore.EventDeliveryStatus"
                 },
@@ -6657,6 +6660,12 @@
                     "type": "integer"
                 },
                 "total_endpoints": {
+                    "type": "integer"
+                },
+                "total_sources": {
+                    "type": "integer"
+                },
+                "total_subscriptions": {
                     "type": "integer"
                 }
             }
