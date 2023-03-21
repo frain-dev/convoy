@@ -47,7 +47,7 @@ const (
     WHERE id = $1;
     `
 
-	baseFetch = `
+	baseFetchSubscription = `
     SELECT
     s.id,s.name,s.type,
 	s.project_id,
@@ -68,18 +68,19 @@ const (
 	s.rate_limit_config_count as "rate_limit_config.count",
 	s.rate_limit_config_duration as "rate_limit_config.duration",
 
-	COALESCE(endpoint_metadata.id,'') as "endpoint_metadata.id",
-	COALESCE(endpoint_metadata.title,'') as "endpoint_metadata.title",
-	COALESCE(endpoint_metadata.project_id,'') as "endpoint_metadata.project_id",
-	COALESCE(endpoint_metadata.support_email,'') as "endpoint_metadata.support_email",
-	COALESCE(endpoint_metadata.target_url,'') as "endpoint_metadata.target_url",
+	COALESCE(em.id,'') as "endpoint_metadata.id",
+	COALESCE(em.title,'') as "endpoint_metadata.title",
+	COALESCE(em.project_id,'') as "endpoint_metadata.project_id",
+	COALESCE(em.support_email,'') as "endpoint_metadata.support_email",
+	COALESCE(em.target_url,'') as "endpoint_metadata.target_url",
 
-	COALESCE(source_metadata.id,'') as "source_metadata.id",
-	COALESCE(source_metadata.name,'') as "source_metadata.name",
-	COALESCE(source_metadata.type,'') as "source_metadata.type",
-	COALESCE(source_metadata.mask_id,'') as "source_metadata.mask_id",
-	COALESCE(source_metadata.project_id,'') as "source_metadata.project_id",
- 	COALESCE(source_metadata.is_disabled,false) as "source_metadata.is_disabled",
+	COALESCE(sm.id,'') as "source_metadata.id",
+	COALESCE(sm.name,'') as "source_metadata.name",
+	COALESCE(sm.type,'') as "source_metadata.type",
+	COALESCE(sm.mask_id,'') as "source_metadata.mask_id",
+	COALESCE(sm.project_id,'') as "source_metadata.project_id",
+ 	COALESCE(sm.is_disabled,false) as "source_metadata.is_disabled",
+
 	COALESCE(sv.type, '') as "source_metadata.verifier.type",
 	COALESCE(sv.basic_username, '') as "source_metadata.verifier.basic_auth.username",
 	COALESCE(sv.basic_password, '') as "source_metadata.verifier.basic_auth.password",
@@ -89,32 +90,47 @@ const (
 	COALESCE(sv.hmac_header, '') as "source_metadata.verifier.hmac.header",
 	COALESCE(sv.hmac_secret, '') as "source_metadata.verifier.hmac.secret",
 	COALESCE(sv.hmac_encoding, '') as "source_metadata.verifier.hmac.encoding"
+
 	FROM convoy.subscriptions s 
-	LEFT JOIN convoy.endpoints endpoint_metadata ON s.endpoint_id = endpoint_metadata.id 
-	LEFT JOIN convoy.sources source_metadata ON s.source_id = source_metadata.id 
-	LEFT JOIN convoy.source_verifiers sv ON sv.id = source_metadata.source_verifier_id 
+	LEFT JOIN convoy.endpoints em ON s.endpoint_id = em.id 
+	LEFT JOIN convoy.sources sm ON s.source_id = sm.id 
+	LEFT JOIN convoy.source_verifiers sv ON sv.id = sm.source_verifier_id 
 	WHERE s.deleted_at IS NULL `
 
-	fetchSubscriptionByID = baseFetch + ` AND %s = $1 AND %s = $2;`
-
-	fetchSubscriptionByDeviceID = baseFetch + ` AND %s = $1 AND %s = $2 AND %s = $3`
-
-	fetchCLISubscriptions = baseFetch + `AND %s = $1 AND %s = $2`
-
-	fetchSubscriptionsPaginated = baseFetch + ` AND s.project_id = $1 ORDER BY id desc LIMIT $2 OFFSET $3;`
-
-	fetchSubscriptionsPaginatedFilterByEndpoints = baseFetch + ` AND s.endpoint_id IN (?) AND s.project_id = ? ORDER BY id LIMIT ? OFFSET ?;`
-
-	countSubscriptions = `
-	SELECT COUNT(*) FROM convoy.subscriptions WHERE project_id = $1 AND deleted_at IS NULL;
+	baseFetchSubscriptionsPagedForward = `
+	%s 
+	%s 
+	AND s.id <= :cursor 
+	GROUP BY s.id, em.id, sm.id, sv.id
+	ORDER BY s.id DESC 
+	LIMIT :limit
 	`
 
-	countSubscriptionsFilterByEndpoints = `
-	SELECT COUNT(*) FROM convoy.subscriptions WHERE
-	endpoint_id IN (?) AND
-	project_id = ? AND
-	deleted_at IS NULL;
+	baseFetchSubscriptionsPagedBackward = `
+	WITH subscriptions AS (  
+		%s 
+		%s 
+		AND s.id >= :cursor 
+		GROUP BY s.id, em.id, sm.id, sv.id
+		ORDER BY s.id ASC 
+		LIMIT :limit
+	)
+
+	SELECT * FROM subscriptions ORDER BY id DESC
 	`
+
+	countPrevSubscriptions = `
+	SELECT count(distinct(s.id)) as count
+	FROM convoy.subscriptions s
+	WHERE s.deleted_at IS NULL
+	%s
+	AND s.id > :cursor GROUP BY s.id ORDER BY s.id DESC LIMIT 1`
+
+	fetchSubscriptionByID = baseFetchSubscription + ` AND %s = $1 AND %s = $2;`
+
+	fetchSubscriptionByDeviceID = baseFetchSubscription + ` AND %s = $1 AND %s = $2 AND %s = $3`
+
+	fetchCLISubscriptions = baseFetchSubscription + `AND %s = $1 AND %s = $2`
 
 	deleteSubscriptions = `
 	UPDATE convoy.subscriptions SET
@@ -219,16 +235,42 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 	var rows *sqlx.Rows
 	var err error
 
-	if len(filter.EndpointIDs) > 0 {
-		query, args, inerr := sqlx.In(fetchSubscriptionsPaginatedFilterByEndpoints, filter.EndpointIDs, projectID, pageable.Limit(), pageable.Offset())
-		if inerr != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-		query = s.db.Rebind(query)
+	arg := map[string]interface{}{
+		"project_id":   projectID,
+		"endpoint_ids": filter.EndpointIDs,
+		"limit":        pageable.Limit(),
+		"cursor":       pageable.Cursor(),
+	}
 
-		rows, err = s.db.QueryxContext(ctx, query, args...)
+	var query, filterQuery string
+	if pageable.Direction == datastore.Next {
+		query = baseFetchSubscriptionsPagedForward
 	} else {
-		rows, err = s.db.QueryxContext(ctx, fetchSubscriptionsPaginated, projectID, pageable.Limit(), pageable.Offset())
+		query = baseFetchSubscriptionsPagedBackward
+	}
+
+	filterQuery = ` AND s.project_id = :project_id`
+	if len(filter.EndpointIDs) > 0 {
+		filterQuery += ` AND s.endpoint_id IN (:endpoint_ids)`
+	}
+
+	query = fmt.Sprintf(query, baseFetchSubscription, filterQuery)
+
+	query, args, err := sqlx.Named(query, arg)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query = s.db.Rebind(query)
+
+	rows, err = s.db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
 	}
 
 	if err != nil {
@@ -241,14 +283,49 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 		return nil, datastore.PaginationData{}, err
 	}
 
-	var count int
+	var count datastore.PrevRowCount
+	if len(subscriptions) > 0 {
+		var countQuery string
+		var qargs []interface{}
+		first := subscriptions[0]
+		qarg := arg
+		qarg["cursor"] = first.UID
 
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
+		cq := fmt.Sprintf(countPrevSubscriptions, filterQuery)
+		countQuery, qargs, err = sqlx.Named(cq, qarg)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		// fmt.Printf("\n%+v \n%+v\n\n", query, args)
+
+		countQuery = s.db.Rebind(countQuery)
+
+		// count the row number before the first row
+		rows, err = s.db.QueryxContext(ctx, countQuery, qargs...)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		if rows.Next() {
+			err = rows.StructScan(&count)
+			if err != nil {
+				return nil, datastore.PaginationData{}, err
+			}
+		}
 	}
 
-	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
-	return subscriptions, pagination, err
+	ids := make([]string, len(subscriptions))
+	for i := range subscriptions {
+		ids[i] = subscriptions[i].UID
+	}
+
+	if len(subscriptions) > pageable.PerPage {
+		subscriptions = subscriptions[:len(subscriptions)-1]
+	}
+
+	pagination := &datastore.PaginationData{PrevRowCount: count}
+	pagination = pagination.Build(pageable, ids)
+
+	return subscriptions, *pagination, nil
 }
 
 func (s *subscriptionRepo) DeleteSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {

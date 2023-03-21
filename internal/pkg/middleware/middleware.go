@@ -1171,7 +1171,11 @@ func setOrganisationInContext(ctx context.Context,
 }
 
 func GetOrganisationFromContext(ctx context.Context) *datastore.Organisation {
-	return ctx.Value(orgCtx).(*datastore.Organisation)
+	org, ok := ctx.Value(orgCtx).(*datastore.Organisation)
+	if !ok {
+		return nil
+	}
+	return org
 }
 
 func setOrganisationMemberInContext(ctx context.Context,
