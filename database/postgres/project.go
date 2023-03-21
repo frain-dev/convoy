@@ -154,7 +154,8 @@ const (
 	SELECT 
 	(SELECT count(*) FROM convoy.subscriptions WHERE project_id = $1 AND deleted_at IS NULL) AS total_subscriptions,
 	(SELECT count(*) FROM convoy.endpoints WHERE project_id = $1 AND deleted_at IS NULL) AS total_endpoints,
-	(SELECT count(*) FROM convoy.sources WHERE project_id = $1 AND deleted_at IS NULL) AS total_sources;
+	(SELECT count(*) FROM convoy.sources WHERE project_id = $1 AND deleted_at IS NULL) AS total_sources,
+	(SELECT count(*) FROM convoy.events WHERE project_id = $1 AND deleted_at IS NULL) AS messages_sent;
 	`
 )
 
