@@ -129,9 +129,42 @@ const (
 	fetchOrgMemberOrganisations = `
 	SELECT o.* FROM convoy.organisation_members m
 	JOIN convoy.organisations o ON m.organisation_id = o.id
-	WHERE m.user_id = $3 AND o.deleted_at IS NULL AND m.deleted_at IS NULL
-	ORDER BY id LIMIT $1 OFFSET $2
+	WHERE m.user_id = :user_id
+	AND o.deleted_at IS NULL 
+	AND m.deleted_at IS NULL
 	`
+
+	baseFetchUserOrganisationsPagedForward = `
+	%s 
+	AND o.id <= :cursor 
+	GROUP BY o.id, m.id
+	ORDER BY o.id DESC 
+	LIMIT :limit
+	`
+
+	baseFetchUserOrganisationsPagedBackward = `
+	WITH user_organisations AS (  
+		%s 
+		AND o.id >= :cursor 
+		GROUP BY o.id, m.id
+		ORDER BY o.id ASC
+		LIMIT :limit
+	)
+
+	SELECT * FROM user_organisations ORDER BY id DESC
+	`
+
+	countPrevUserOrgs = `
+	SELECT count(distinct(o.id)) as count
+	FROM convoy.organisation_members m
+	JOIN convoy.organisations o ON m.organisation_id = o.id
+	WHERE m.user_id = :user_id
+	AND o.deleted_at IS NULL 
+	AND m.deleted_at IS NULL
+	AND o.id > :cursor
+	GROUP BY o.id, m.id
+	ORDER BY o.id DESC
+	LIMIT 1`
 
 	fetchUserProjects = `
 	SELECT p.id, p.name, p.type, p.retained_events, p.logo_url,
@@ -273,7 +306,33 @@ func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organi
 }
 
 func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID string, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
-	rows, err := o.db.QueryxContext(ctx, fetchOrgMemberOrganisations, pageable.Limit(), pageable.Offset(), userID)
+	var query string
+	if pageable.Direction == datastore.Next {
+		query = baseFetchUserOrganisationsPagedForward
+	} else {
+		query = baseFetchUserOrganisationsPagedBackward
+	}
+
+	query = fmt.Sprintf(query, fetchOrgMemberOrganisations)
+
+	arg := map[string]interface{}{
+		"limit":   pageable.Limit(),
+		"cursor":  pageable.Cursor(),
+		"user_id": userID,
+	}
+
+	query, args, err := sqlx.Named(query, arg)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query = o.db.Rebind(query)
+
+	rows, err := o.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -290,9 +349,47 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 		organisations = append(organisations, org)
 	}
 
-	var count int
-	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
-	return organisations, pagination, nil
+	var count datastore.PrevRowCount
+	if len(organisations) > 0 {
+		var countQuery string
+		var qargs []interface{}
+
+		arg["cursor"] = organisations[0].UID
+
+		countQuery, qargs, err = sqlx.Named(countPrevUserOrgs, arg)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		countQuery = o.db.Rebind(countQuery)
+
+		// count the row number before the first row
+		rows, err := o.db.QueryxContext(ctx, countQuery, qargs...)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		if rows.Next() {
+			err = rows.StructScan(&count)
+			if err != nil {
+				return nil, datastore.PaginationData{}, err
+			}
+		}
+		rows.Close()
+	}
+
+	ids := make([]string, len(organisations))
+	for i := range organisations {
+		ids[i] = organisations[i].UID
+	}
+
+	if len(organisations) > pageable.PerPage {
+		organisations = organisations[:len(organisations)-1]
+	}
+
+	pagination := &datastore.PaginationData{PrevRowCount: count}
+	pagination = pagination.Build(pageable, ids)
+
+	return organisations, *pagination, nil
 }
 
 func (o *orgMemberRepo) FindUserProjects(ctx context.Context, userID string) ([]datastore.Project, error) {
