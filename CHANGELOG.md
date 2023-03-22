@@ -1,3 +1,27 @@
+## 0.8.3
+
+-   [Bugfix] Fix search indexer job #1448
+
+## 0.8.2
+
+-   [Feature] Set Advanced Signatures by default for Incoming projects.
+-   [Enhancement] Refactored Convoy CLI Implementation. #1290
+-   [Enhancement] Improved Project Onboarding #1335
+-   [Enhancement] Improved Delivery Attempt Details page #1341
+-   [Enhancement] Update Subscriptions Card for Incoming Projects. #1349
+-   [Enhancement] Update portal links design #1348
+-   [Enhancement] Improve source, subscription and endpoint forms #1335
+-   [Bugfix] Event Log pagination bug #1346
+-   [Bugfix] Date picker bug fix #1355
+
+## 0.8.1
+
+-   [Enhancement] Improved stats query #1256
+-   [Enhancement] Add analytics and storage policy settings in convoy.josn #1284 #1324
+-   [Feature] Set notifications by default #1251
+-   [Feature] Add raw invite link in invite email #1279
+-   [Feature] Allow user re-generate api key for projects #1277
+
 ## 0.8.0
 
 -   [Enhancement] Deprecate subscription status field #1243 #1234
