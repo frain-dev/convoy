@@ -44,17 +44,19 @@ const (
 	e.project_id, e.secrets, e.created_at, e.updated_at,
 	e.authentication_type AS "authentication.type",
 	e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
-	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value",
-	FROM convoy.endpoints AS e LEFT JOIN convoy.events_endpoints AS ee ON e.id = ee.endpoint_id
+	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value"
+	FROM convoy.endpoints AS e 
+	LEFT JOIN convoy.events_endpoints AS ee ON e.id = ee.endpoint_id
+	WHERE e.deleted_at IS NULL
 	`
 
-	fetchEndpointById = baseEndpointFetch + `WHERE e.id = $1 AND e.project_id = $2 AND e.deleted_at IS NULL GROUP BY e.id ORDER BY e.id;`
+	fetchEndpointById = baseEndpointFetch + ` AND e.id = $1 AND e.project_id = $2 GROUP BY e.id ORDER BY e.id;`
 
-	fetchEndpointsById = baseEndpointFetch + `WHERE e.id IN (?) AND e.project_id = ? AND e.deleted_at IS NULL GROUP BY e.id ORDER BY e.id;`
+	fetchEndpointsById = baseEndpointFetch + ` AND e.id IN (?) AND e.project_id = ? GROUP BY e.id ORDER BY e.id;`
 
-	fetchEndpointsByAppId = baseEndpointFetch + `WHERE e.app_id = $1 AND e.project_id = $2 AND e.deleted_at IS NULL GROUP BY e.id ORDER BY e.id;`
+	fetchEndpointsByAppId = baseEndpointFetch + ` AND e.app_id = $1 AND e.project_id = $2 GROUP BY e.id ORDER BY e.id;`
 
-	fetchEndpointsByOwnerId = baseEndpointFetch + `WHERE e.project_id = $1 AND e.owner_id = $2 AND e.deleted_at IS NULL GROUP BY e.id ORDER BY e.id;`
+	fetchEndpointsByOwnerId = baseEndpointFetch + ` AND e.project_id = $1 AND e.owner_id = $2 GROUP BY e.id ORDER BY e.id;`
 
 	updateEndpoint = `
 	UPDATE convoy.endpoints SET
