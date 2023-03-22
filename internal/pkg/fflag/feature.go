@@ -10,10 +10,10 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/fflag/flipt"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 )
