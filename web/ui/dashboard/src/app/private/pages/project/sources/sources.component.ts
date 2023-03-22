@@ -22,20 +22,20 @@ export class SourcesComponent implements OnInit {
 	showDeleteSourceModal = false;
 	showSourceDetails = false;
 
-	constructor(private route: ActivatedRoute, public router: Router, private sourcesService: SourcesService, public privateService: PrivateService, private generalService: GeneralService) {
+	constructor(private route: ActivatedRoute, public router: Router, private sourcesService: SourcesService, public privateService: PrivateService, private generalService: GeneralService) {}
+
+	async ngOnInit() {
+		await this.getSources();
+
 		this.route.queryParams.subscribe(params => {
 			this.activeSource = this.sources?.content.find(source => source.uid === params?.id);
 			params?.id && this.activeSource ? (this.showSourceDetails = true) : (this.showSourceDetails = false);
 		});
 
-		const urlParam = route.snapshot.params.id;
+		const urlParam = this.route.snapshot.params.id;
 		if (urlParam && urlParam === 'new') this.shouldShowCreateSourceModal = true;
 		if (urlParam && urlParam !== 'new') this.shouldShowUpdateSourceModal = true;
-
-		this.getSources();
 	}
-
-	ngOnInit() {}
 
 	async getSources(requestDetails?: CURSOR) {
 		this.isLoadingSources = true;

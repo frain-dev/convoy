@@ -40,11 +40,11 @@
 	<!-- list of sources  -->
 	<div class="flex flex-wrap gap-24px">
 		<ng-container *ngFor="let source of sources?.content; let i = index">
-			<div convoy-card [id]="'source' + i" hover="true" class="w-full max-w-[348px] cursor-pointer py-20px">
+			<div convoy-card [id]="'source' + i" hover="true" class="w-full max-w-[348px] py-20px">
 				<!-- outgoing project sources -->
 				<ng-container *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
 					<div class="flex items-center justify-between px-24px">
-						<div class="flex items-center" [routerLink]="['./']" [queryParams]="{ id: source.uid }">
+						<div class="flex items-center">
 							<img [src]="'assets/img/' + source.pub_sub.type + '.png'" alt="icon" class="mr-12px" />
 							<div>
 								<p class="text-10 text-grey-40 capitalize mb-4px">{{ source.pub_sub.type | sourceValue: 'pub_sub' }}</p>
@@ -52,7 +52,7 @@
 							</div>
 						</div>
 
-						<div convoy-dropdown position="right" size="sm" class="ml-4px">
+						<div convoy-dropdown position="left" size="sm" class="ml-4px">
 							<button dropdownTrigger convoy-button size="sm" fill="clear" class="!p-0">
 								<img src="assets/img/more-icon-vertical.svg" class="h-5" alt="more icon" />
 							</button>
@@ -80,7 +80,7 @@
 
 				<!-- incoming project sources -->
 				<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
-					<div class="px-24px pb-12px border-b border-b-grey-10" [routerLink]="['./']" [queryParams]="{ id: source.uid }">
+					<div class="px-24px pb-12px border-b border-b-grey-1 cursor-pointer" [routerLink]="['./']" [queryParams]="{ id: source.uid }">
 						<div class="text-grey-40 text-10 mb-4px">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</div>
 						<div class="flex justify-between items-center">
 							<div class="text-14 font-medium">{{ source.name }}</div>
