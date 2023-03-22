@@ -123,6 +123,9 @@
 			</div>
 		</div>
 	</ng-container>
+
+	<!-- Pagination -->
+	<convoy-pagination *ngIf="subscriptions?.pagination?.has_next_page || subscriptions?.pagination?.has_prev_page" [pagination]="subscriptions?.pagination" (paginate)="getSubscriptions($event)"></convoy-pagination>
 </div>
 
 <div convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [id]="'subscriptionForm'" (closeModal)="createSubscription('cancel')">

@@ -1,11 +1,11 @@
 import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { format, parseISO } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { EVENT_DELIVERY } from 'src/app/models/event.model';
-import { PAGINATION } from 'src/app/models/global.model';
+import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { EventsService } from '../events.service';
@@ -228,7 +228,7 @@ export class EventDeliveriesComponent implements OnInit {
 
 	async getEndpointsForFilter(search: string): Promise<ENDPOINT[]> {
 		return await (
-			await this.privateService.getEndpoints({ page: 1, q: search })
+			await this.privateService.getEndpoints({ q: search })
 		).data.content;
 	}
 
@@ -294,7 +294,7 @@ export class EventDeliveriesComponent implements OnInit {
 		}
 	}
 
-	paginateEvents(event: { next_page_cursor?: string; prev_page_cursor?: string; direction: 'next' | 'prev' }) {
+	paginateEvents(event: CURSOR) {
 		this.addFilterToURL({ next_page_cursor: event.next_page_cursor, prev_page_cursor: event.prev_page_cursor });
 		this.getEventDeliveries(event);
 	}

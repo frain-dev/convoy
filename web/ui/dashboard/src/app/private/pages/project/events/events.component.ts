@@ -182,7 +182,7 @@ export class EventsComponent implements OnInit, OnDestroy {
 
 	async getProjectStats() {
 		try {
-			const projectStats = await this.eventsService.getProjectStat();
+			const projectStats = await this.privateService.getProjectStat();
 			this.isProjectConfigurationComplete = projectStats.data?.total_subscriptions > 0;
 			this.hasEvents = projectStats.data?.messages_sent > 0;
 			return;

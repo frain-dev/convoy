@@ -4,7 +4,7 @@ import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { PAGINATION } from 'src/app/models/global.model';
+import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
 import { TagComponent } from 'src/app/components/tag/tag.component';
@@ -73,10 +73,7 @@ export class EventLogsComponent implements OnInit {
 		{ id: 'response', label: 'Response' },
 		{ id: 'request', label: 'Request' }
 	];
-	displayedEvents?: {
-		date: string;
-		content: EVENT[];
-	}[];
+	displayedEvents: { date: string; content: EVENT[] }[] = [];
 	events?: { pagination: PAGINATION; content: EVENT[] };
 	eventDetailsActiveTab = 'data';
 	eventsDetailsItem: any;
@@ -154,7 +151,7 @@ export class EventLogsComponent implements OnInit {
 
 	async getEndpointsForFilter(search: string): Promise<ENDPOINT[]> {
 		return await (
-			await this.privateService.getEndpoints({ page: 1, q: search })
+			await this.privateService.getEndpoints({ q: search })
 		).data.content;
 	}
 
@@ -379,7 +376,7 @@ export class EventLogsComponent implements OnInit {
 		this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/events'], { queryParams: { eventId: eventId } });
 	}
 
-	paginateEvents(event: { next_page_cursor?: string; prev_page_cursor?: string; direction: 'next' | 'prev' }) {
+	paginateEvents(event: CURSOR) {
 		this.addFilterToURL(event);
 		this.getEvents({}, event);
 	}
