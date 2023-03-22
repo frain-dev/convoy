@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/oklog/ulid/v2"
@@ -187,7 +188,8 @@ func (s *SourceService) FindSourceByMaskID(ctx context.Context, maskID string) (
 func (s *SourceService) LoadSourcesPaged(ctx context.Context, g *datastore.Project, filter *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
 	sources, paginationData, err := s.sourceRepo.LoadSourcesPaged(ctx, g.UID, filter, pageable)
 	if err != nil {
-		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching sources"))
+		log.WithError(err).Error("an error occurred while fetching sources")
+		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching sources"))
 	}
 
 	return sources, paginationData, nil
