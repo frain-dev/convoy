@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { PAGINATION } from 'src/app/models/global.model';
+import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { SOURCE } from 'src/app/models/group.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
@@ -37,12 +37,11 @@ export class SourcesComponent implements OnInit {
 
 	ngOnInit() {}
 
-	async getSources(requestDetails?: { page?: number }) {
-		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
+	async getSources(requestDetails?: CURSOR) {
 		this.isLoadingSources = true;
 
 		try {
-			const sourcesResponse = await this.privateService.getSources({ page });
+			const sourcesResponse = await this.privateService.getSources(requestDetails);
 			this.sources = sourcesResponse.data;
 			if ((this.sources?.pagination?.total || 0) > 0) {
 				this.activeSource = this.sources?.content.find(source => source.uid === this.route.snapshot.queryParams?.id);
@@ -81,5 +80,9 @@ export class SourcesComponent implements OnInit {
 
 	closeModal() {
 		this.router.navigate([], { queryParams: {} });
+	}
+
+	paginate(event: PAGINATION) {
+		this.getSources();
 	}
 }

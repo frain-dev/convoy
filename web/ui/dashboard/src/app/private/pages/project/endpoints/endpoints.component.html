@@ -89,39 +89,8 @@
 	</div>
 </div>
 
-<div class="flex items-center mt-16px" *ngIf="!isLoadingEndpoints && displayedEndpoints?.length">
-	<button
-		convoy-button
-		fill="outline"
-		size="sm"
-		class="pl-4px pr-16px py-4px border-primary-300"
-		routerLink="./"
-		[queryParams]="{ page: endpoints?.pagination?.prev || 0 }"
-		[disabled]="endpoints?.pagination?.prev === 0"
-		(click)="getEndpoints({ page: endpoints?.pagination?.prev })"
-	>
-		<svg width="24" height="24" class="mr-8px fill-primary-100">
-			<use xlink:href="#arrow-left-icon"></use>
-		</svg>
-		Previous
-	</button>
-
-	<button
-		convoy-button
-		fill="outline"
-		size="sm"
-		class="pr-4px pl-16px py-4px border-primary-300 ml-16px"
-		routerLink="./"
-		[queryParams]="{ page: endpoints?.pagination?.next }"
-		[disabled]="endpoints?.pagination?.next === 0"
-		(click)="getEndpoints({ page: endpoints?.pagination?.next })"
-	>
-		Next
-		<svg width="24" height="24" class="ml-8px fill-primary-100">
-			<use xlink:href="#arrow-right-icon"></use>
-		</svg>
-	</button>
-</div>
+<!-- Pagination -->
+<convoy-pagination *ngIf="endpoints?.pagination?.has_next_page || endpoints?.pagination?.has_prev_page" [pagination]="endpoints?.pagination" (paginate)="getEndpoints($event)"></convoy-pagination>
 
 <div convoy-modal *ngIf="showCreateEndpointModal || showEditEndpointModal" position="full" (closeModal)="cancel()">
 	<div convoy-modal-header fullscreen="true">

@@ -19,3 +19,9 @@ export interface CHARTDATA {
 export type STATUS_COLOR = 'grey' | 'success' | 'warning' | 'danger';
 
 export type NOTIFICATION_STATUS = 'warning' | 'info' | 'success' | 'error';
+
+export interface CURSOR {
+	next_page_cursor?: string;
+	prev_page_cursor?: string;
+	direction?: 'next' | 'prev';
+}

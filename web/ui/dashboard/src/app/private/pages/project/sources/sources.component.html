@@ -33,6 +33,7 @@
 			<h1 class="text-24 font-bold text-grey-80 mr-10px">Sources</h1>
 			<convoy-tooltip tooltipContent="Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints" position="right"></convoy-tooltip>
 		</div>
+
 		<button convoy-button size="sm" routerLink="./new">Connect a source</button>
 	</div>
 
@@ -95,6 +96,9 @@
 			</div>
 		</ng-container>
 	</div>
+
+	<!-- Pagination -->
+	<convoy-pagination *ngIf="sources.pagination?.has_next_page || sources.pagination?.has_prev_page" [pagination]="sources.pagination" (paginate)="getSources($event)"></convoy-pagination>
 </ng-container>
 
 <div convoy-modal *ngIf="showSourceDetails" position="right" [id]="'source-details'" (closeModal)="closeModal()">
