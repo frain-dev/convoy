@@ -20,6 +20,7 @@ export class PrivateService {
 	showCreateOrgModal = false;
 	projectDetails!: HTTP_RESPONSE;
 	profileDetails!: HTTP_RESPONSE;
+	projectStats!: HTTP_RESPONSE;
 
 	constructor(private http: HttpService, private router: Router, private projectService: ProjectService) {}
 
@@ -310,6 +311,25 @@ export class PrivateService {
 				return resolve(refreshedTokens);
 			} catch (error) {
 				reject(error);
+			}
+		});
+	}
+
+	getProjectStat(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			if (this.projectStats && !requestDetails?.refresh) return resolve(this.projectStats);
+
+			try {
+				const response = await this.http.request({
+					url: `/stats`,
+					method: 'get',
+					level: 'org_project'
+				});
+
+				this.projectStats = response;
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
 			}
 		});
 	}
