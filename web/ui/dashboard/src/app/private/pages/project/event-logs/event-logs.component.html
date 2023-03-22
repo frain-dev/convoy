@@ -119,131 +119,133 @@
 </div>
 
 <!-- empty state  -->
-<div class="py-100px" convoy-card *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0)">
-	<convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" class="min-h-[70vh]" heading="You currently do not have any event logs"></convoy-empty-state>
+<div class="py-200px" convoy-card *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0); else eventsList">
+	<convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" class="min-h-[70vh]" description="You currently do not have any event logs"></convoy-empty-state>
 </div>
 
 <!-- list of events  -->
-<div convoy-card class="flex">
-	<div class="min-w-[605px] w-full h-full overflow-hidden relative">
-		<convoy-table-loader id="events_loader_loader" [tableHead]="eventLogsTableHead" *ngIf="isloadingEvents"></convoy-table-loader>
+<ng-template #eventsList>
+	<div convoy-card class="flex">
+		<div class="min-w-[605px] w-full h-full overflow-hidden relative">
+			<convoy-table-loader id="events_loader_loader" [tableHead]="eventLogsTableHead" *ngIf="isloadingEvents"></convoy-table-loader>
 
-		<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="events-table-container" *ngIf="!isloadingEvents && displayedEvents && displayedEvents.length > 0">
-			<table convoy-table>
-				<thead convoy-table-head>
-					<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of eventLogsTableHead; let i = index">{{ head }}</th>
-				</thead>
-				<tbody>
-					<ng-container *ngFor="let eventGroup of displayedEvents; let i = index">
-						<tr convoy-table-row [forDate]="true">
-							<td convoy-table-cell [forDate]="true">{{ eventGroup.date }}</td>
-							<td convoy-table-cell [forDate]="true"></td>
-							<td convoy-table-cell [forDate]="true"></td>
-						</tr>
-						<tr convoy-table-row *ngFor="let event of eventGroup.content; let index = index" (click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid)" [active]="event.uid === eventsDetailsItem?.uid">
-							<td convoy-table-cell class="w-130px pl-16px" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
-								<convoy-tag type="grey" className="max-w-[100px] overflow-hidden overflow-ellipsis mr-8px">{{ event.event_type }}</convoy-tag>
-							</td>
+			<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="events-table-container" *ngIf="!isloadingEvents && displayedEvents && displayedEvents.length > 0">
+				<table convoy-table>
+					<thead convoy-table-head>
+						<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of eventLogsTableHead; let i = index">{{ head }}</th>
+					</thead>
+					<tbody>
+						<ng-container *ngFor="let eventGroup of displayedEvents; let i = index">
+							<tr convoy-table-row [forDate]="true">
+								<td convoy-table-cell [forDate]="true">{{ eventGroup.date }}</td>
+								<td convoy-table-cell [forDate]="true"></td>
+								<td convoy-table-cell [forDate]="true"></td>
+							</tr>
+							<tr convoy-table-row *ngFor="let event of eventGroup.content; let index = index" (click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid)" [active]="event.uid === eventsDetailsItem?.uid">
+								<td convoy-table-cell class="w-130px pl-16px" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
+									<convoy-tag type="grey" className="max-w-[100px] overflow-hidden overflow-ellipsis mr-8px">{{ event.event_type }}</convoy-tag>
+								</td>
 
-							<td convoy-table-cell [ngClass]="{ 'w-340px': !event.source_metadata.name }" class="w-390px pl-16px">
-								<span
-									(click)="viewSource(event?.source_metadata?.uid || '')"
-									[ngClass]="{ 'underline text-primary-100': !portalToken || !event.source_metadata.name, 'max-w-[146px] min-w-[70px]': !event.source_metadata.name, 'w-146px': event.source_metadata.name }"
-									class="overflow-hidden overflow-ellipsis"
-								>
-									{{ event.source_metadata.name || 'API' }}
-								</span>
+								<td convoy-table-cell [ngClass]="{ 'w-340px': !event.source_metadata.name }" class="w-390px pl-16px">
+									<span
+										(click)="viewSource(event?.source_metadata?.uid || '')"
+										[ngClass]="{ 'underline text-primary-100': !portalToken || !event.source_metadata.name, 'max-w-[146px] min-w-[70px]': !event.source_metadata.name, 'w-146px': event.source_metadata.name }"
+										class="overflow-hidden overflow-ellipsis"
+									>
+										{{ event.source_metadata.name || 'API' }}
+									</span>
 
-								<span class="px-10px font-light">→</span>
+									<span class="px-10px font-light">→</span>
 
-								<span (click)="viewEndpoint(event.endpoint_metadata[0].uid || '')" [ngClass]="{ underline: !portalToken }" class="w-146px text-right overflow-hidden overflow-ellipsis text-primary-100">
-									{{ event.endpoint_metadata[0].title }}
-								</span>
-							</td>
+									<span (click)="viewEndpoint(event.endpoint_metadata[0].uid || '')" [ngClass]="{ underline: !portalToken }" class="w-146px text-right overflow-hidden overflow-ellipsis text-primary-100">
+										{{ event.endpoint_metadata[0].title }}
+									</span>
+								</td>
 
-							<td convoy-table-cell class="">{{ event.created_at | date: 'mediumTime' }}</td>
+								<td convoy-table-cell class="">{{ event.created_at | date: 'mediumTime' }}</td>
 
-							<td convoy-table-cell>
-								<button convoy-button fill="clear" size="sm" class="pr-0" (click)="viewEventDeliveries(event.uid)">
-									Deliveries
-									<img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px h-16px" alt="arrow right" />
-								</button>
-							</td>
-						</tr>
-					</ng-container>
-				</tbody>
-			</table>
-		</div>
-
-		<!-- <convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0)"></convoy-empty-state> -->
-	</div>
-
-	<div class="max-w-[450px] w-full max-h-[calc(100vh - 950px)] min-h-[707px] overflow-auto relative border-l border-grey-10">
-		<div class="p-16px">
-			<ng-container *ngIf="isloadingEvents">
-				<div class="bg-grey-10 rounded-8px animate-pulse h-150px w-full mr-40px mb-20px"></div>
-				<div class="bg-grey-10 rounded-8px animate-pulse h-150px w-full mr-40px"></div>
-			</ng-container>
-
-			<ng-container *ngIf="displayedEvents && displayedEvents.length > 0">
-				<div class="flex items-center justify-between mb-16px">
-					<h3 class="text-16 font-bold">Details</h3>
-					<button convoy-button size="xs" texture="light" (click)="retryEvent({ eventId: eventsDetailsItem.uid })">
-						<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
-						Retry
-					</button>
-				</div>
-				<prism language="json" [code]="getCodeSnippetString('res_data')" title="Event"></prism>
-				<div class="mb-20px"></div>
-				<prism language="json" [code]="getCodeSnippetString('header')" title="Header"></prism>
-			</ng-container>
-
-			<h3 class="text-16 font-bold mb-16px mt-26px" *ngIf="!(!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0))">Deliveries Overview</h3>
-
-			<div *ngIf="isLoadingSidebarDeliveries">
-				<div class="flex mb-20px">
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[60px] mr-40px"></div>
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[200px]"></div>
-				</div>
-				<div class="flex mb-20px">
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[60px] mr-40px"></div>
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[200px]"></div>
-				</div>
-				<div class="flex mb-20px">
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[60px] mr-40px"></div>
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[200px]"></div>
-				</div>
+								<td convoy-table-cell>
+									<button convoy-button fill="clear" size="sm" class="pr-0" (click)="viewEventDeliveries(event.uid)">
+										Deliveries
+										<img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px h-16px" alt="arrow right" />
+									</button>
+								</td>
+							</tr>
+						</ng-container>
+					</tbody>
+				</table>
 			</div>
 
-			<div class="mt-30px italic w-full text-grey-20" *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length == 0 && displayedEvents && displayedEvents?.length">...no event deliveries for this event</div>
+			<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0)"></convoy-empty-state>
+		</div>
 
-			<ul *ngIf="sidebarEventDeliveries.length > 0" class="-ml-10px">
-				<li
-					convoy-list-item
-					*ngFor="let delivery of sidebarEventDeliveries"
-					[title]="delivery?.endpoint_metadata?.target_url || ''"
-					[routerLink]="['../events/event-deliveries/' + delivery.uid]"
-					[relativeTo]="route"
-					class="cursor-pointer flex !justify-start mb-10px hover:bg-primary-500 p-10px rounded-4px transition-colors"
-				>
-					<div class="flex items-center">
-						<svg width="16" height="14" class="mr-6px" *ngIf="delivery.device_id">
-							<use xlink:href="#cli-icon"></use>
-						</svg>
-						<convoy-tag [type]="delivery.status | statuscolor" className="mr-8px">{{ delivery.status }}</convoy-tag>
-					</div>
-					<div class="text-14 ml-16px whitespace-nowrap overflow-ellipsis max-w-[300px] overflow-hidden text-grey-40">
-						{{ delivery?.device_id ? delivery?.cli_metadata?.host_name : delivery?.endpoint_metadata?.target_url }}
-					</div>
-				</li>
-			</ul>
+		<div class="max-w-[450px] w-full max-h-[calc(100vh - 950px)] min-h-[707px] overflow-auto relative border-l border-grey-10">
+			<div class="p-16px">
+				<ng-container *ngIf="isloadingEvents">
+					<div class="bg-grey-10 rounded-8px animate-pulse h-150px w-full mr-40px mb-20px"></div>
+					<div class="bg-grey-10 rounded-8px animate-pulse h-150px w-full mr-40px"></div>
+				</ng-container>
 
-			<!-- <convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event details to show here" *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0)"></convoy-empty-state> -->
+				<ng-container *ngIf="displayedEvents && displayedEvents.length > 0">
+					<div class="flex items-center justify-between mb-16px">
+						<h3 class="text-16 font-bold">Details</h3>
+						<button convoy-button size="xs" texture="light" (click)="retryEvent({ eventId: eventsDetailsItem.uid })">
+							<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
+							Retry
+						</button>
+					</div>
+					<prism language="json" [code]="getCodeSnippetString('res_data')" title="Event"></prism>
+					<div class="mb-20px"></div>
+					<prism language="json" [code]="getCodeSnippetString('header')" title="Header"></prism>
+				</ng-container>
+
+				<h3 class="text-16 font-bold mb-16px mt-26px" *ngIf="!(!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0))">Deliveries Overview</h3>
+
+				<div *ngIf="isLoadingSidebarDeliveries">
+					<div class="flex mb-20px">
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[60px] mr-40px"></div>
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[200px]"></div>
+					</div>
+					<div class="flex mb-20px">
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[60px] mr-40px"></div>
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[200px]"></div>
+					</div>
+					<div class="flex mb-20px">
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[60px] mr-40px"></div>
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-[200px]"></div>
+					</div>
+				</div>
+
+				<div class="mt-30px italic w-full text-grey-20" *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length == 0 && displayedEvents && displayedEvents?.length">...no event deliveries for this event</div>
+
+				<ul *ngIf="sidebarEventDeliveries.length > 0" class="-ml-10px">
+					<li
+						convoy-list-item
+						*ngFor="let delivery of sidebarEventDeliveries"
+						[title]="delivery?.endpoint_metadata?.target_url || ''"
+						[routerLink]="['../events/event-deliveries/' + delivery.uid]"
+						[relativeTo]="route"
+						class="cursor-pointer flex !justify-start mb-10px hover:bg-primary-500 p-10px rounded-4px transition-colors"
+					>
+						<div class="flex items-center">
+							<svg width="16" height="14" class="mr-6px" *ngIf="delivery.device_id">
+								<use xlink:href="#cli-icon"></use>
+							</svg>
+							<convoy-tag [type]="delivery.status | statuscolor" className="mr-8px">{{ delivery.status }}</convoy-tag>
+						</div>
+						<div class="text-14 ml-16px whitespace-nowrap overflow-ellipsis max-w-[300px] overflow-hidden text-grey-40">
+							{{ delivery?.device_id ? delivery?.cli_metadata?.host_name : delivery?.endpoint_metadata?.target_url }}
+						</div>
+					</li>
+				</ul>
+
+				<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event details to show here" *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0)"></convoy-empty-state>
+			</div>
 		</div>
 	</div>
-</div>
+</ng-template>
 
-<convoy-pagination [pagination]="events?.pagination" (paginate)="paginateEvents($event)"></convoy-pagination>
+<convoy-pagination *ngIf="events?.pagination?.has_next_page || events?.pagination?.has_prev_page" [pagination]="events?.pagination" (paginate)="paginateEvents($event)"></convoy-pagination>
 
 <!-- bacth retry modal -->
 <div convoy-modal position="center" size="sm" *ngIf="showBatchRetryModal">

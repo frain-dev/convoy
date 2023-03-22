@@ -73,10 +73,7 @@ export class EventLogsComponent implements OnInit {
 		{ id: 'response', label: 'Response' },
 		{ id: 'request', label: 'Request' }
 	];
-	displayedEvents?: {
-		date: string;
-		content: EVENT[];
-	}[];
+	displayedEvents: { date: string; content: EVENT[] }[] = [];
 	events?: { pagination: PAGINATION; content: EVENT[] };
 	eventDetailsActiveTab = 'data';
 	eventsDetailsItem: any;

@@ -36,7 +36,7 @@
 	<convoy-empty-state
 		imgSrc="/assets/img/events-log-empty-state.png"
 		[buttonText]="!endpointSearchString ? 'Create Endpoint' : ''"
-		[heading]="endpointSearchString ? endpointSearchString + ' endpoint does not exist' : 'You currently do not have any endpoints'"
+		[description]="endpointSearchString ? endpointSearchString + ' endpoint does not exist' : 'You currently do not have any endpoints'"
 		id="endpoints-empty-state"
 		(onAction)="router.navigate(['./new'], { relativeTo: this.route })"
 	></convoy-empty-state>
