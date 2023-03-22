@@ -265,7 +265,7 @@ export class PrivateService {
 	getEndpoints(requestDetails?: CURSOR & { q?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				if (!requestDetails?.next_page_cursor || !requestDetails.prev_page_cursor) requestDetails = { next_page_cursor: String(Number.MAX_SAFE_INTEGER), direction: 'next', q: requestDetails?.q };
+				if (!requestDetails?.next_page_cursor && !requestDetails?.prev_page_cursor) requestDetails = { next_page_cursor: String(Number.MAX_SAFE_INTEGER), direction: 'next', q: requestDetails?.q };
 
 				const response = await this.http.request({
 					url: `/endpoints`,
