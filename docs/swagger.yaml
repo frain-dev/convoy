@@ -8,15 +8,6 @@ definitions:
       pagination:
         $ref: '#/definitions/datastore.PaginationData'
     type: object
-  auth.Role:
-    properties:
-      endpoint:
-        type: string
-      project:
-        type: string
-      type:
-        type: string
-    type: object
   config.SignatureHeaderProvider:
     enum:
     - X-Convoy-Signature
@@ -88,37 +79,6 @@ definitions:
       url:
         type: string
     type: object
-  datastore.Device:
-    properties:
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      endpoint_id:
-        type: string
-      host_name:
-        type: string
-      last_seen_at:
-        type: string
-      project_id:
-        type: string
-      status:
-        $ref: '#/definitions/datastore.DeviceStatus'
-      uid:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  datastore.DeviceStatus:
-    enum:
-    - offline
-    - online
-    - disabled
-    type: string
-    x-enum-varnames:
-    - DeviceStatusOffline
-    - DeviceStatusOnline
-    - DeviceStatusDisabled
   datastore.EncodingType:
     enum:
     - base64
@@ -766,21 +726,6 @@ definitions:
         additionalProperties: true
         type: object
     type: object
-  models.PortalAPIKeyResponse:
-    properties:
-      endpoint_id:
-        type: string
-      key:
-        type: string
-      key_type:
-        type: string
-      project_id:
-        type: string
-      role:
-        $ref: '#/definitions/auth.Role'
-      url:
-        type: string
-    type: object
   models.PortalLink:
     properties:
       endpoints:
@@ -1015,7 +960,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get organisations
+      summary: List all organisations
       tags:
       - Organisations
   /api/v1/projects:
@@ -1076,7 +1021,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get projects
+      summary: List all projects
       tags:
       - Projects
     post:
@@ -1245,7 +1190,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get a project
+      summary: Retrieve a project
       tags:
       - Projects
     put:
@@ -1541,7 +1486,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get endpoint
+      summary: Retrieve endpoint
       tags:
       - Endpoints
     put:
@@ -1734,7 +1679,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: This endpoint fetch event deliveries.
+      description: This endpoint retrieves all event deliveries paginated.
       parameters:
       - description: application id
         in: query
@@ -1893,7 +1838,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get event delivery
+      summary: Retrieve an event delivery
       tags:
       - Event Deliveries
   /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
@@ -1955,7 +1900,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get delivery attempts
+      summary: List delivery attempts
       tags:
       - Delivery Attempts
   /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
@@ -2020,14 +1965,14 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get delivery attempt
+      summary: Retrieve a delivery attempt
       tags:
       - Delivery Attempts
   /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend:
     put:
       consumes:
       - application/json
-      description: This endpoint resends an app event
+      description: This endpoint retries an event delivery.
       parameters:
       - description: Project ID
         in: path
@@ -2085,14 +2030,14 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Resend an app event
+      summary: Retry event delivery
       tags:
       - Event Deliveries
   /api/v1/projects/{projectID}/eventdeliveries/batchretry:
     post:
       consumes:
       - application/json
-      description: This endpoint resends multiple app events
+      description: This endpoint batch retries multiple event deliveries at once.
       parameters:
       - description: Project ID
         in: path
@@ -2153,99 +2098,14 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Batch Resend app events
-      tags:
-      - Event Deliveries
-  /api/v1/projects/{projectID}/eventdeliveries/countbatchretryevents:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint counts app events that will be affected by a batch
-        retry operation
-      parameters:
-      - description: application id
-        in: query
-        name: appId
-        type: string
-      - description: Project ID
-        in: path
-        name: projectID
-        required: true
-        type: string
-      - description: start date
-        in: query
-        name: startDate
-        type: string
-      - description: end date
-        in: query
-        name: endDate
-        type: string
-      - description: results per page
-        in: query
-        name: perPage
-        type: string
-      - description: page number
-        in: query
-        name: page
-        type: string
-      - description: sort order
-        in: query
-        name: sort
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  allOf:
-                  - $ref: '#/definitions/api.Stub'
-                  - properties:
-                      num:
-                        type: integer
-                    type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-        "404":
-          description: Not Found
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Count affected eventDeliveries
+      summary: Batch retry event delivery
       tags:
       - Event Deliveries
   /api/v1/projects/{projectID}/eventdeliveries/forceresend:
     post:
       consumes:
       - application/json
-      description: This endpoint force resends multiple app events
+      description: This endpoint enables you retry a previously successful event delivery
       parameters:
       - description: Project ID
         in: path
@@ -2306,7 +2166,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Force Resend app events
+      summary: Force retry event delivery
       tags:
       - Event Deliveries
   /api/v1/projects/{projectID}/events:
@@ -2466,14 +2326,14 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Create endpoint event
+      summary: Create an event
       tags:
       - Events
   /api/v1/projects/{projectID}/events/{eventID}:
     get:
       consumes:
       - application/json
-      description: This endpoint fetches an endpoint event
+      description: This endpoint retrieves an event
       parameters:
       - description: Project ID
         in: path
@@ -2531,14 +2391,14 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get endpoint event
+      summary: Retrieve an event
       tags:
       - Events
   /api/v1/projects/{projectID}/events/{eventID}/replay:
     put:
       consumes:
       - application/json
-      description: This endpoint replays an endpoint event
+      description: This endpoint replays an event afresh assuming it is a new event.
       parameters:
       - description: Project ID
         in: path
@@ -2596,14 +2456,14 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Replay endpoint event
+      summary: Replay event
       tags:
       - Events
   /api/v1/projects/{projectID}/events/batchreplay:
     post:
       consumes:
       - application/json
-      description: This endpoint replays multiple events
+      description: This endpoint replays multiple events at once.
       parameters:
       - description: Project ID
         in: path
@@ -2668,80 +2528,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Replays multiple endpoint events
-      tags:
-      - Events
-  /api/v1/projects/{projectID}/events/countbatchreplayevents:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint counts events that will be affected by a batch replay
-        operation
-      parameters:
-      - description: Project ID
-        in: path
-        name: projectID
-        required: true
-        type: string
-      - description: start date
-        in: query
-        name: startDate
-        type: string
-      - description: end date
-        in: query
-        name: endDate
-        type: string
-      - description: Source id
-        in: query
-        name: source
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  allOf:
-                  - $ref: '#/definitions/api.Stub'
-                  - properties:
-                      num:
-                        type: integer
-                    type: object
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-        "404":
-          description: Not Found
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Counts affected events
+      summary: Batch replay events
       tags:
       - Events
   /api/v1/projects/{projectID}/events/fanout:
@@ -2808,7 +2595,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Fan out an event to multiple endpoints.
+      summary: Fan out an event
       tags:
       - Events
   /api/v1/projects/{projectID}/portal-links:
@@ -2949,7 +2736,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: This endpoint fetches a portal link by its id
+      description: This endpoint retrieves a portal link by its id.
       parameters:
       - description: Project ID
         in: path
@@ -3002,7 +2789,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get a portal link
+      summary: Retrieve a portal link
       tags:
       - Portal Links
     put:
@@ -3127,7 +2914,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Revoke Portal Link
+      summary: Revoke a portal link
       tags:
       - Portal Links
   /api/v1/projects/{projectID}/sources:
@@ -3321,13 +3108,13 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Delete source
+      summary: Delete a source
       tags:
       - Sources
     get:
       consumes:
       - application/json
-      description: This endpoint fetches a source by its id
+      description: This endpoint retrieves a source by its id
       parameters:
       - description: Project ID
         in: path
@@ -3380,7 +3167,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get a source
+      summary: Retrieve a source
       tags:
       - Sources
     put:
@@ -3590,7 +3377,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Creates a subscription
+      summary: Create a subscription
       tags:
       - Subscriptions
   /api/v1/projects/{projectID}/subscriptions/{subscriptionID}:
@@ -3709,7 +3496,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Gets a subscription
+      summary: Retrieve a subscription
       tags:
       - Subscriptions
     put:
@@ -3777,71 +3564,12 @@ paths:
       summary: Update a subscription
       tags:
       - Subscriptions
-  /api/v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status:
-    put:
-      consumes:
-      - application/json
-      description: This endpoint updates a subscription
-      parameters:
-      - description: Project ID
-        in: path
-        name: projectID
-        required: true
-        type: string
-      - description: subscription id
-        in: path
-        name: subscriptionID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.Subscription'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-        "404":
-          description: Not Found
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Toggles a subscription's status from active <-> inactive
-      tags:
-      - Subscriptions
   /api/v1/projects/{projectID}/subscriptions/test_filter:
     post:
       consumes:
       - application/json
-      description: This endpoint tests a subscription's filter
+      description: This endpoint validates that a filter will match a certain payload
+        structure.
       parameters:
       - description: Project ID
         in: path
@@ -3895,207 +3623,9 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Test subscription filter
+      summary: Validate subscription filter
       tags:
       - Subscriptions
-  /portal/devices:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches all portal link devices
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/datastore.Device'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-        "404":
-          description: Not Found
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-      summary: Get portal link devices
-      tags:
-      - Portal Links
-  /portal/endpoints:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches all portal link endpoints
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/datastore.Endpoint'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-        "404":
-          description: Not Found
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-      summary: Get endpoints
-      tags:
-      - Portal Links
-    post:
-      consumes:
-      - application/json
-      description: This endpoint creates an endpoint
-      parameters:
-      - description: Endpoint Details
-        in: body
-        name: endpoint
-        required: true
-        schema:
-          $ref: '#/definitions/models.Endpoint'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/datastore.Endpoint'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-        "404":
-          description: Not Found
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-      summary: Create an endpoint
-      tags:
-      - Portal Links
-  /portal/keys:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches all portal link endpoints keys
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.PortalAPIKeyResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-        "404":
-          description: Not Found
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/api.Stub'
-              type: object
-      summary: Get portal link keys
-      tags:
-      - Portal Links
 schemes:
 - https
 securityDefinitions:

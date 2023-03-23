@@ -65,7 +65,7 @@ func (a *ApplicationHandler) CreateEndpoint(w http.ResponseWriter, r *http.Reque
 }
 
 // GetEndpoint
-// @Summary Get endpoint
+// @Summary Retrieve endpoint
 // @Description This endpoint fetches an endpoint
 // @Tags Endpoints
 // @Accept  json

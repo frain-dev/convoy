@@ -80,7 +80,7 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 }
 
 // GetSubscription
-// @Summary Gets a subscription
+// @Summary Retrieve a subscription
 // @Description This endpoint retrieves a single subscription
 // @Tags Subscriptions
 // @Accept json
@@ -106,7 +106,7 @@ func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 }
 
 // CreateSubscription
-// @Summary Creates a subscription
+// @Summary Create a subscription
 // @Description This endpoint creates a subscriptions
 // @Tags Subscriptions
 // @Accept json
@@ -205,27 +205,14 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 	_ = render.Render(w, r, util.NewServerResponse("Subscription updated successfully", sub, http.StatusAccepted))
 }
 
-// ToggleSubscriptionStatus
-// Deprecated
-// @Summary Toggles a subscription's status from active <-> inactive
-// @Description This endpoint updates a subscription
-// @Tags Subscriptions
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param subscriptionID path string true "subscription id"
-// @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status [put]
 func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
 	// For backward compatibility
 	_ = render.Render(w, r, util.NewServerResponse("Subscription status updated successfully", nil, http.StatusAccepted))
 }
 
 // TestSubscriptionFilter
-// @Summary Test subscription filter
-// @Description This endpoint tests a subscription's filter
+// @Summary Validate subscription filter
+// @Description This endpoint validates that a filter will match a certain payload structure.
 // @Tags Subscriptions
 // @Accept json
 // @Produce json

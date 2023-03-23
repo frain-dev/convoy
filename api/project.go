@@ -26,7 +26,7 @@ func createProjectService(a *ApplicationHandler) *services.ProjectService {
 }
 
 // GetProject - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary Get a project
+// @Summary Retrieve a project
 // @Description This endpoint fetches a project by its id
 // @Tags Projects
 // @Accept  json
@@ -164,7 +164,7 @@ func (a *ApplicationHandler) UpdateProject(w http.ResponseWriter, r *http.Reques
 }
 
 // GetProjects - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary Get projects
+// @Summary List all projects
 // @Description This endpoint fetches projects
 // @Tags Projects
 // @Accept  json

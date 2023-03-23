@@ -38,7 +38,7 @@
                 "tags": [
                     "Organisations"
                 ],
-                "summary": "Get organisations",
+                "summary": "List all organisations",
                 "parameters": [
                     {
                         "type": "string",
@@ -167,7 +167,7 @@
                 "tags": [
                     "Projects"
                 ],
-                "summary": "Get projects",
+                "summary": "List all projects",
                 "parameters": [
                     {
                         "type": "string",
@@ -389,7 +389,7 @@
                 "tags": [
                     "Projects"
                 ],
-                "summary": "Get a project",
+                "summary": "Retrieve a project",
                 "parameters": [
                     {
                         "type": "string",
@@ -919,7 +919,7 @@
                 "tags": [
                     "Endpoints"
                 ],
-                "summary": "Get endpoint",
+                "summary": "Retrieve endpoint",
                 "parameters": [
                     {
                         "type": "string",
@@ -1464,7 +1464,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetch event deliveries.",
+                "description": "This endpoint retrieves all event deliveries paginated.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1645,7 +1645,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint resends multiple app events",
+                "description": "This endpoint batch retries multiple event deliveries at once.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1655,7 +1655,7 @@
                 "tags": [
                     "Event Deliveries"
                 ],
-                "summary": "Batch Resend app events",
+                "summary": "Batch retry event delivery",
                 "parameters": [
                     {
                         "type": "string",
@@ -1765,157 +1765,6 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/eventdeliveries/countbatchretryevents": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint counts app events that will be affected by a batch retry operation",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Event Deliveries"
-                ],
-                "summary": "Count affected eventDeliveries",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "application id",
-                        "name": "appId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Project ID",
-                        "name": "projectID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "start date",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "end date",
-                        "name": "endDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "results per page",
-                        "name": "perPage",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "sort order",
-                        "name": "sort",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "allOf": [
-                                                {
-                                                    "$ref": "#/definitions/api.Stub"
-                                                },
-                                                {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "num": {
-                                                            "type": "integer"
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/projects/{projectID}/eventdeliveries/forceresend": {
             "post": {
                 "security": [
@@ -1923,7 +1772,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint force resends multiple app events",
+                "description": "This endpoint enables you retry a previously successful event delivery",
                 "consumes": [
                     "application/json"
                 ],
@@ -1933,7 +1782,7 @@
                 "tags": [
                     "Event Deliveries"
                 ],
-                "summary": "Force Resend app events",
+                "summary": "Force retry event delivery",
                 "parameters": [
                     {
                         "type": "string",
@@ -2060,7 +1909,7 @@
                 "tags": [
                     "Event Deliveries"
                 ],
-                "summary": "Get event delivery",
+                "summary": "Retrieve an event delivery",
                 "parameters": [
                     {
                         "type": "string",
@@ -2182,7 +2031,7 @@
                 "tags": [
                     "Delivery Attempts"
                 ],
-                "summary": "Get delivery attempts",
+                "summary": "List delivery attempts",
                 "parameters": [
                     {
                         "type": "string",
@@ -2295,7 +2144,7 @@
                 "tags": [
                     "Delivery Attempts"
                 ],
-                "summary": "Get delivery attempt",
+                "summary": "Retrieve a delivery attempt",
                 "parameters": [
                     {
                         "type": "string",
@@ -2402,7 +2251,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint resends an app event",
+                "description": "This endpoint retries an event delivery.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2412,7 +2261,7 @@
                 "tags": [
                     "Event Deliveries"
                 ],
-                "summary": "Resend an app event",
+                "summary": "Retry event delivery",
                 "parameters": [
                     {
                         "type": "string",
@@ -2704,7 +2553,7 @@
                 "tags": [
                     "Events"
                 ],
-                "summary": "Create endpoint event",
+                "summary": "Create an event",
                 "parameters": [
                     {
                         "type": "string",
@@ -2818,7 +2667,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint replays multiple events",
+                "description": "This endpoint replays multiple events at once.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2828,7 +2677,7 @@
                 "tags": [
                     "Events"
                 ],
-                "summary": "Replays multiple endpoint events",
+                "summary": "Batch replay events",
                 "parameters": [
                     {
                         "type": "string",
@@ -2944,139 +2793,6 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/events/countbatchreplayevents": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint counts events that will be affected by a batch replay operation",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Events"
-                ],
-                "summary": "Counts affected events",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project ID",
-                        "name": "projectID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "start date",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "end date",
-                        "name": "endDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Source id",
-                        "name": "source",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "allOf": [
-                                                {
-                                                    "$ref": "#/definitions/api.Stub"
-                                                },
-                                                {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "num": {
-                                                            "type": "integer"
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/projects/{projectID}/events/fanout": {
             "post": {
                 "security": [
@@ -3094,7 +2810,7 @@
                 "tags": [
                     "Events"
                 ],
-                "summary": "Fan out an event to multiple endpoints.",
+                "summary": "Fan out an event",
                 "parameters": [
                     {
                         "type": "string",
@@ -3208,7 +2924,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches an endpoint event",
+                "description": "This endpoint retrieves an event",
                 "consumes": [
                     "application/json"
                 ],
@@ -3218,7 +2934,7 @@
                 "tags": [
                     "Events"
                 ],
-                "summary": "Get endpoint event",
+                "summary": "Retrieve an event",
                 "parameters": [
                     {
                         "type": "string",
@@ -3330,7 +3046,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint replays an endpoint event",
+                "description": "This endpoint replays an event afresh assuming it is a new event.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3340,7 +3056,7 @@
                 "tags": [
                     "Events"
                 ],
-                "summary": "Replay endpoint event",
+                "summary": "Replay event",
                 "parameters": [
                     {
                         "type": "string",
@@ -3698,7 +3414,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches a portal link by its id",
+                "description": "This endpoint retrieves a portal link by its id.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3708,7 +3424,7 @@
                 "tags": [
                     "Portal Links"
                 ],
-                "summary": "Get a portal link",
+                "summary": "Retrieve a portal link",
                 "parameters": [
                     {
                         "type": "string",
@@ -3935,7 +3651,7 @@
                 "tags": [
                     "Portal Links"
                 ],
-                "summary": "Revoke Portal Link",
+                "summary": "Revoke a portal link",
                 "parameters": [
                     {
                         "type": "string",
@@ -4281,7 +3997,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches a source by its id",
+                "description": "This endpoint retrieves a source by its id",
                 "consumes": [
                     "application/json"
                 ],
@@ -4291,7 +4007,7 @@
                 "tags": [
                     "Sources"
                 ],
-                "summary": "Get a source",
+                "summary": "Retrieve a source",
                 "parameters": [
                     {
                         "type": "string",
@@ -4516,7 +4232,7 @@
                 "tags": [
                     "Sources"
                 ],
-                "summary": "Delete source",
+                "summary": "Delete a source",
                 "parameters": [
                     {
                         "type": "string",
@@ -4766,7 +4482,7 @@
                 "tags": [
                     "Subscriptions"
                 ],
-                "summary": "Creates a subscription",
+                "summary": "Create a subscription",
                 "parameters": [
                     {
                         "type": "string",
@@ -4883,7 +4599,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint tests a subscription's filter",
+                "description": "This endpoint validates that a filter will match a certain payload structure.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4893,7 +4609,7 @@
                 "tags": [
                     "Subscriptions"
                 ],
-                "summary": "Test subscription filter",
+                "summary": "Validate subscription filter",
                 "parameters": [
                     {
                         "type": "string",
@@ -5005,7 +4721,7 @@
                 "tags": [
                     "Subscriptions"
                 ],
-                "summary": "Gets a subscription",
+                "summary": "Retrieve a subscription",
                 "parameters": [
                     {
                         "type": "string",
@@ -5322,487 +5038,6 @@
                     }
                 }
             }
-        },
-        "/api/v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status": {
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint updates a subscription",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Subscriptions"
-                ],
-                "summary": "Toggles a subscription's status from active \u003c-\u003e inactive",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project ID",
-                        "name": "projectID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "subscription id",
-                        "name": "subscriptionID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/datastore.Subscription"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/portal/devices": {
-            "get": {
-                "description": "This endpoint fetches all portal link devices",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Portal Links"
-                ],
-                "summary": "Get portal link devices",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/datastore.Device"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/portal/endpoints": {
-            "get": {
-                "description": "This endpoint fetches all portal link endpoints",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Portal Links"
-                ],
-                "summary": "Get endpoints",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/datastore.Endpoint"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "This endpoint creates an endpoint",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Portal Links"
-                ],
-                "summary": "Create an endpoint",
-                "parameters": [
-                    {
-                        "description": "Endpoint Details",
-                        "name": "endpoint",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Endpoint"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/datastore.Endpoint"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/portal/keys": {
-            "get": {
-                "description": "This endpoint fetches all portal link endpoints keys",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Portal Links"
-                ],
-                "summary": "Get portal link keys",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/models.PortalAPIKeyResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
@@ -5815,20 +5050,6 @@
                 "content": {},
                 "pagination": {
                     "$ref": "#/definitions/datastore.PaginationData"
-                }
-            }
-        },
-        "auth.Role": {
-            "type": "object",
-            "properties": {
-                "endpoint": {
-                    "type": "string"
-                },
-                "project": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
                 }
             }
         },
@@ -5940,51 +5161,6 @@
                     "type": "string"
                 }
             }
-        },
-        "datastore.Device": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "endpoint_id": {
-                    "type": "string"
-                },
-                "host_name": {
-                    "type": "string"
-                },
-                "last_seen_at": {
-                    "type": "string"
-                },
-                "project_id": {
-                    "type": "string"
-                },
-                "status": {
-                    "$ref": "#/definitions/datastore.DeviceStatus"
-                },
-                "uid": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "datastore.DeviceStatus": {
-            "type": "string",
-            "enum": [
-                "offline",
-                "online",
-                "disabled"
-            ],
-            "x-enum-varnames": [
-                "DeviceStatusOffline",
-                "DeviceStatusOnline",
-                "DeviceStatusDisabled"
-            ]
         },
         "datastore.EncodingType": {
             "type": "string",
@@ -6933,29 +6109,6 @@
                 "header": {
                     "type": "object",
                     "additionalProperties": true
-                }
-            }
-        },
-        "models.PortalAPIKeyResponse": {
-            "type": "object",
-            "properties": {
-                "endpoint_id": {
-                    "type": "string"
-                },
-                "key": {
-                    "type": "string"
-                },
-                "key_type": {
-                    "type": "string"
-                },
-                "project_id": {
-                    "type": "string"
-                },
-                "role": {
-                    "$ref": "#/definitions/auth.Role"
-                },
-                "url": {
-                    "type": "string"
                 }
             }
         },

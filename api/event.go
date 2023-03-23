@@ -33,7 +33,7 @@ func createEventService(a *ApplicationHandler) *services.EventService {
 }
 
 // CreateEndpointEvent
-// @Summary Create endpoint event
+// @Summary Create an event
 // @Description This endpoint creates an endpoint event
 // @Tags Events
 // @Accept  json
@@ -65,7 +65,7 @@ func (a *ApplicationHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.
 }
 
 // CreateEndpointFanoutEvent
-// @Summary Fan out an event to multiple endpoints.
+// @Summary Fan out an event
 // @Description This endpoint uses the owner_id to fan out an event to multiple endpoints.
 // @Tags Events
 // @Accept json
@@ -97,8 +97,8 @@ func (a *ApplicationHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r 
 }
 
 // ReplayEndpointEvent
-// @Summary Replay endpoint event
-// @Description This endpoint replays an endpoint event
+// @Summary Replay event
+// @Description This endpoint replays an event afresh assuming it is a new event.
 // @Tags Events
 // @Accept  json
 // @Produce  json
@@ -123,8 +123,8 @@ func (a *ApplicationHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.
 }
 
 // BatchReplayEvents
-// @Summary Replays multiple endpoint events
-// @Description This endpoint replays multiple events
+// @Summary Batch replay events
+// @Description This endpoint replays multiple events at once.
 // @Tags Events
 // @Accept  json
 // @Produce  json
@@ -167,20 +167,6 @@ func (a *ApplicationHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Re
 	_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("%d successful, %d failed", successes, failures), nil, http.StatusOK))
 }
 
-// CountAffectedEvents
-// @Summary Counts affected events
-// @Description This endpoint counts events that will be affected by a batch replay operation
-// @Tags Events
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param startDate query string false "start date"
-// @Param endDate query string false "end date"
-// @Param source query string false "Source id"
-// @Success 200 {object} util.ServerResponse{data=Stub{num=integer}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/events/countbatchreplayevents [get]
 func (a *ApplicationHandler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 	p := m.GetProjectFromContext(r.Context())
 	eventService := createEventService(a)
@@ -213,8 +199,8 @@ func (a *ApplicationHandler) CountAffectedEvents(w http.ResponseWriter, r *http.
 }
 
 // GetEndpointEvent
-// @Summary Get endpoint event
-// @Description This endpoint fetches an endpoint event
+// @Summary Retrieve an event
+// @Description This endpoint retrieves an event
 // @Tags Events
 // @Accept  json
 // @Produce  json
@@ -230,7 +216,7 @@ func (a *ApplicationHandler) GetEndpointEvent(w http.ResponseWriter, r *http.Req
 }
 
 // GetEventDelivery
-// @Summary Get event delivery
+// @Summary Retrieve an event delivery
 // @Description This endpoint fetches an event delivery.
 // @Tags Event Deliveries
 // @Accept json
@@ -247,8 +233,8 @@ func (a *ApplicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Req
 }
 
 // ResendEventDelivery
-// @Summary Resend an app event
-// @Description This endpoint resends an app event
+// @Summary Retry event delivery
+// @Description This endpoint retries an event delivery.
 // @Tags Event Deliveries
 // @Accept  json
 // @Produce  json
@@ -273,8 +259,8 @@ func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 }
 
 // BatchRetryEventDelivery
-// @Summary Batch Resend app events
-// @Description This endpoint resends multiple app events
+// @Summary Batch retry event delivery
+// @Description This endpoint batch retries multiple event deliveries at once.
 // @Tags Event Deliveries
 // @Accept json
 // @Produce json
@@ -334,23 +320,6 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 	_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("%d successful, %d failed", successes, failures), nil, http.StatusOK))
 }
 
-// CountAffectedEventDeliveries
-// @Summary Count affected eventDeliveries
-// @Description This endpoint counts app events that will be affected by a batch retry operation
-// @Tags Event Deliveries
-// @Accept  json
-// @Produce  json
-// @Param appId query string false "application id"
-// @Param projectID path string true "Project ID"
-// @Param startDate query string false "start date"
-// @Param endDate query string false "end date"
-// @Param perPage query string false "results per page"
-// @Param page query string false "page number"
-// @Param sort query string false "sort order"
-// @Success 200 {object} util.ServerResponse{data=Stub{num=integer}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/eventdeliveries/countbatchretryevents [get]
 func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	var endpoints []string
 	status := make([]datastore.EventDeliveryStatus, 0)
@@ -396,8 +365,8 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 }
 
 // ForceResendEventDeliveries
-// @Summary Force Resend app events
-// @Description This endpoint force resends multiple app events
+// @Summary Force retry event delivery
+// @Description This endpoint enables you retry a previously successful event delivery
 // @Tags Event Deliveries
 // @Accept json
 // @Produce json
@@ -509,7 +478,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 
 // GetEventDeliveriesPaged
 // @Summary List all event deliveries
-// @Description This endpoint fetch event deliveries.
+// @Description This endpoint retrieves all event deliveries paginated.
 // @Tags Event Deliveries
 // @Accept json
 // @Produce json

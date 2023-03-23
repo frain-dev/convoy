@@ -62,8 +62,8 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 }
 
 // GetSourceByID
-// @Summary Get a source
-// @Description This endpoint fetches a source by its id
+// @Summary Retrieve a source
+// @Description This endpoint retrieves a source by its id
 // @Tags Sources
 // @Accept  json
 // @Produce  json
@@ -146,7 +146,7 @@ func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 }
 
 // DeleteSource
-// @Summary Delete source
+// @Summary Delete a source
 // @Description This endpoint deletes a source
 // @Tags Sources
 // @Accept  json

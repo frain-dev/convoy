@@ -10,7 +10,7 @@ import (
 )
 
 // GetDeliveryAttempt
-// @Summary Get delivery attempt
+// @Summary Retrieve a delivery attempt
 // @Description This endpoint fetches an app event delivery attempt
 // @Tags Delivery Attempts
 // @Accept  json
@@ -28,7 +28,7 @@ func (a *ApplicationHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.R
 }
 
 // GetDeliveryAttempts
-// @Summary Get delivery attempts
+// @Summary List delivery attempts
 // @Description This endpoint fetches an app message's delivery attempts
 // @Tags Delivery Attempts
 // @Accept  json

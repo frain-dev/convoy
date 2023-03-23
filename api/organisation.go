@@ -27,7 +27,7 @@ func (a *ApplicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Requ
 }
 
 // GetOrganisationsPaged - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary Get organisations
+// @Summary List all organisations
 // @Description This endpoint fetches the organisations a user is part of, this route can only be accessed with a personal api key
 // @Tags Organisations
 // @Accept  json
