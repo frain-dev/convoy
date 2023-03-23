@@ -3123,7 +3123,7 @@ paths:
       - ApiKeyAuth: []
       summary: Fetch multiple portal links
       tags:
-      - PortalLinks
+      - Portal Links
     post:
       description: This endpoint creates a portal link
       parameters:
@@ -3190,7 +3190,7 @@ paths:
       - ApiKeyAuth: []
       summary: Create a portal link
       tags:
-      - PortalLinks
+      - Portal Links
   /api/v1/projects/{projectID}/portal-links/{portalLinkID}:
     get:
       description: This endpoint fetches a portal link by its id
@@ -3256,7 +3256,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get a portal link
       tags:
-      - PortalLinks
+      - Portal Links
     put:
       description: This endpoint updates a portal link
       parameters:
@@ -3329,7 +3329,7 @@ paths:
       - ApiKeyAuth: []
       summary: Update a portal link
       tags:
-      - PortalLinks
+      - Portal Links
   /api/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke:
     put:
       description: This endpoint revokes a portal link
@@ -3395,7 +3395,7 @@ paths:
       - ApiKeyAuth: []
       summary: Revoke Portal Link
       tags:
-      - PortalLinks
+      - Portal Links
   /api/v1/projects/{projectID}/sources:
     get:
       description: This endpoint fetches multiple sources
@@ -4300,7 +4300,7 @@ paths:
           description: Internal Server Error
       summary: Get portal link devices
       tags:
-      - PortalLinks
+      - Portal Links
   /portal/endpoints:
     get:
       description: This endpoint fetches all portal link endpoints
@@ -4353,7 +4353,7 @@ paths:
           description: Internal Server Error
       summary: Get endpoints
       tags:
-      - PortalLinks
+      - Portal Links
     post:
       description: This endpoint creates an endpoint
       requestBody:
@@ -4411,7 +4411,7 @@ paths:
           description: Internal Server Error
       summary: Create an endpoint
       tags:
-      - PortalLinks
+      - Portal Links
   /portal/keys:
     get:
       description: This endpoint fetches all portal link endpoints keys
@@ -4462,7 +4462,7 @@ paths:
           description: Internal Server Error
       summary: Get portal link keys
       tags:
-      - PortalLinks
+      - Portal Links
   /ui/users/forgot-password:
     post:
       description: This endpoint verifies a user's email

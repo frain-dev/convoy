@@ -2912,7 +2912,7 @@ paths:
       - ApiKeyAuth: []
       summary: Fetch multiple portal links
       tags:
-      - PortalLinks
+      - Portal Links
     post:
       consumes:
       - application/json
@@ -2972,7 +2972,7 @@ paths:
       - ApiKeyAuth: []
       summary: Create a portal link
       tags:
-      - PortalLinks
+      - Portal Links
   /api/v1/projects/{projectID}/portal-links/{portalLinkID}:
     get:
       consumes:
@@ -3032,7 +3032,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get a portal link
       tags:
-      - PortalLinks
+      - Portal Links
     put:
       consumes:
       - application/json
@@ -3097,7 +3097,7 @@ paths:
       - ApiKeyAuth: []
       summary: Update a portal link
       tags:
-      - PortalLinks
+      - Portal Links
   /api/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke:
     put:
       consumes:
@@ -3157,7 +3157,7 @@ paths:
       - ApiKeyAuth: []
       summary: Revoke Portal Link
       tags:
-      - PortalLinks
+      - Portal Links
   /api/v1/projects/{projectID}/sources:
     get:
       consumes:
@@ -3974,7 +3974,7 @@ paths:
               type: object
       summary: Get portal link devices
       tags:
-      - PortalLinks
+      - Portal Links
   /portal/endpoints:
     get:
       consumes:
@@ -4023,7 +4023,7 @@ paths:
               type: object
       summary: Get endpoints
       tags:
-      - PortalLinks
+      - Portal Links
     post:
       consumes:
       - application/json
@@ -4076,7 +4076,7 @@ paths:
               type: object
       summary: Create an endpoint
       tags:
-      - PortalLinks
+      - Portal Links
   /portal/keys:
     get:
       consumes:
@@ -4123,7 +4123,7 @@ paths:
               type: object
       summary: Get portal link keys
       tags:
-      - PortalLinks
+      - Portal Links
   /ui/users/forgot-password:
     post:
       consumes:

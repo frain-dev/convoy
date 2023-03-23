@@ -25,7 +25,7 @@ func createPortalLinkService(a *ApplicationHandler) *services.PortalLinkService 
 // CreatePortalLink
 // @Summary Create a portal link
 // @Description This endpoint creates a portal link
-// @Tags PortalLinks
+// @Tags Portal Links
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
@@ -58,7 +58,7 @@ func (a *ApplicationHandler) CreatePortalLink(w http.ResponseWriter, r *http.Req
 // GetPortalLinkByID
 // @Summary Get a portal link
 // @Description This endpoint fetches a portal link by its id
-// @Tags PortalLinks
+// @Tags Portal Links
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
@@ -86,7 +86,7 @@ func (a *ApplicationHandler) GetPortalLinkByID(w http.ResponseWriter, r *http.Re
 // UpdatePortalLink
 // @Summary Update a portal link
 // @Description This endpoint updates a portal link
-// @Tags PortalLinks
+// @Tags Portal Links
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
@@ -128,7 +128,7 @@ func (a *ApplicationHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Req
 // RevokePortalLink
 // @Summary Revoke Portal Link
 // @Description This endpoint revokes a portal link
-// @Tags PortalLinks
+// @Tags Portal Links
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
@@ -159,7 +159,7 @@ func (a *ApplicationHandler) RevokePortalLink(w http.ResponseWriter, r *http.Req
 // LoadPortalLinksPaged
 // @Summary Fetch multiple portal links
 // @Description This endpoint fetches multiple portal links
-// @Tags PortalLinks
+// @Tags Portal Links
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project id"
@@ -198,7 +198,7 @@ func (a *ApplicationHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http
 // CreatePortalLinkEndpoint
 // @Summary Create an endpoint
 // @Description This endpoint creates an endpoint
-// @Tags PortalLinks
+// @Tags Portal Links
 // @Accept  json
 // @Produce  json
 // @Param endpoint body models.Endpoint true "Endpoint Details"
@@ -229,7 +229,7 @@ func (a *ApplicationHandler) CreatePortalLinkEndpoint(w http.ResponseWriter, r *
 // GetPortalLinkEndpoints
 // @Summary Get endpoints
 // @Description This endpoint fetches all portal link endpoints
-// @Tags PortalLinks
+// @Tags Portal Links
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} util.ServerResponse{data=[]datastore.Endpoint}
@@ -252,7 +252,7 @@ func (a *ApplicationHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *ht
 // GetPortalLinkDevices
 // @Summary Get portal link devices
 // @Description This endpoint fetches all portal link devices
-// @Tags PortalLinks
+// @Tags Portal Links
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} util.ServerResponse{data=[]datastore.Device}
@@ -280,7 +280,7 @@ func (a *ApplicationHandler) GetPortalLinkDevices(w http.ResponseWriter, r *http
 // GetPortalLinkKeys
 // @Summary Get portal link keys
 // @Description This endpoint fetches all portal link endpoints keys
-// @Tags PortalLinks
+// @Tags Portal Links
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}

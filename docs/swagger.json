@@ -3460,7 +3460,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLinks"
+                    "Portal Links"
                 ],
                 "summary": "Fetch multiple portal links",
                 "parameters": [
@@ -3594,7 +3594,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLinks"
+                    "Portal Links"
                 ],
                 "summary": "Create a portal link",
                 "parameters": [
@@ -3706,7 +3706,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLinks"
+                    "Portal Links"
                 ],
                 "summary": "Get a portal link",
                 "parameters": [
@@ -3814,7 +3814,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLinks"
+                    "Portal Links"
                 ],
                 "summary": "Update a portal link",
                 "parameters": [
@@ -3933,7 +3933,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLinks"
+                    "Portal Links"
                 ],
                 "summary": "Revoke Portal Link",
                 "parameters": [
@@ -5443,7 +5443,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLinks"
+                    "Portal Links"
                 ],
                 "summary": "Get portal link devices",
                 "responses": {
@@ -5535,7 +5535,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLinks"
+                    "Portal Links"
                 ],
                 "summary": "Get endpoints",
                 "responses": {
@@ -5625,7 +5625,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLinks"
+                    "Portal Links"
                 ],
                 "summary": "Create an endpoint",
                 "parameters": [
@@ -5725,7 +5725,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLinks"
+                    "Portal Links"
                 ],
                 "summary": "Get portal link keys",
                 "responses": {

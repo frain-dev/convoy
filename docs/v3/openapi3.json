@@ -5473,7 +5473,7 @@
 				],
 				"summary": "Fetch multiple portal links",
 				"tags": [
-					"PortalLinks"
+					"Portal Links"
 				]
 			},
 			"post": {
@@ -5598,7 +5598,7 @@
 				],
 				"summary": "Create a portal link",
 				"tags": [
-					"PortalLinks"
+					"Portal Links"
 				]
 			}
 		},
@@ -5722,7 +5722,7 @@
 				],
 				"summary": "Get a portal link",
 				"tags": [
-					"PortalLinks"
+					"Portal Links"
 				]
 			},
 			"put": {
@@ -5856,7 +5856,7 @@
 				],
 				"summary": "Update a portal link",
 				"tags": [
-					"PortalLinks"
+					"Portal Links"
 				]
 			}
 		},
@@ -5980,7 +5980,7 @@
 				],
 				"summary": "Revoke Portal Link",
 				"tags": [
-					"PortalLinks"
+					"Portal Links"
 				]
 			}
 		},
@@ -7674,7 +7674,7 @@
 				},
 				"summary": "Get portal link devices",
 				"tags": [
-					"PortalLinks"
+					"Portal Links"
 				]
 			}
 		},
@@ -7776,7 +7776,7 @@
 				},
 				"summary": "Get endpoints",
 				"tags": [
-					"PortalLinks"
+					"Portal Links"
 				]
 			},
 			"post": {
@@ -7885,7 +7885,7 @@
 				},
 				"summary": "Create an endpoint",
 				"tags": [
-					"PortalLinks"
+					"Portal Links"
 				]
 			}
 		},
@@ -7984,7 +7984,7 @@
 				},
 				"summary": "Get portal link keys",
 				"tags": [
-					"PortalLinks"
+					"Portal Links"
 				]
 			}
 		},
