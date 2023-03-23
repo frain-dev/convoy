@@ -122,10 +122,10 @@ export class PortalLinksComponent implements OnInit {
 		this.getPortalLinks();
 	}
 
-	clearEndpointFilter() {
+	clearEndpointFilter(event?: { stopPropagation: () => void }) {
+		event?.stopPropagation();
 		this.linkEndpoint = undefined;
 		this.getPortalLinks();
-		this.router.navigate([], { relativeTo: this.route, queryParams: {} });
 	}
 
 	openCreateLinkModal() {
