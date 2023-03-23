@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/oklog/ulid/v2"

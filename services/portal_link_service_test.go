@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -490,7 +490,7 @@ func TestPortalLinkService_LoadPortalLinksPaged(t *testing.T) {
 					Return(nil, datastore.PaginationData{}, errors.New("failed"))
 			},
 			wantErr:     true,
-			wantErrCode: http.StatusInternalServerError,
+			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "an error occurred while fetching portal links",
 		},
 	}

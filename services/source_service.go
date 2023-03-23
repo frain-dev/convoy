@@ -9,11 +9,11 @@ import (
 
 	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/oklog/ulid/v2"
 )

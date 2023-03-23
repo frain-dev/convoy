@@ -1,5 +1,13 @@
 components:
   schemas:
+    api.Stub:
+      type: object
+    api.pagedResponse:
+      properties:
+        content: {}
+        pagination:
+          $ref: '#/components/schemas/datastore.PaginationData'
+      type: object
     auth.Role:
       properties:
         endpoint:
@@ -956,14 +964,6 @@ components:
           description: Valid is true if String is not NULL
           type: boolean
       type: object
-    server.Stub:
-      type: object
-    server.pagedResponse:
-      properties:
-        content: {}
-        pagination:
-          $ref: '#/components/schemas/datastore.PaginationData'
-      type: object
     util.ServerResponse:
       properties:
         data:
@@ -1025,7 +1025,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - $ref: '#/components/schemas/api.pagedResponse'
                       - properties:
                           content:
                             items:
@@ -1042,7 +1042,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1053,7 +1053,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1064,7 +1064,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1109,7 +1109,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1120,7 +1120,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1131,7 +1131,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1176,7 +1176,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1187,7 +1187,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1198,7 +1198,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1225,7 +1225,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: OK
         "400":
@@ -1236,7 +1236,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1247,7 +1247,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1258,7 +1258,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1295,7 +1295,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1306,7 +1306,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1317,7 +1317,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1362,7 +1362,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1373,7 +1373,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1384,7 +1384,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1424,7 +1424,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1435,7 +1435,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1446,7 +1446,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1491,7 +1491,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1502,7 +1502,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1513,7 +1513,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1546,7 +1546,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: OK
         "400":
@@ -1557,7 +1557,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1568,7 +1568,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1579,7 +1579,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1622,7 +1622,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1633,7 +1633,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1644,7 +1644,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1695,7 +1695,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1706,7 +1706,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1717,7 +1717,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1762,7 +1762,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1773,7 +1773,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1784,7 +1784,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1828,7 +1828,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1839,7 +1839,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1850,7 +1850,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -1920,7 +1920,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - $ref: '#/components/schemas/api.pagedResponse'
                       - properties:
                           content:
                             items:
@@ -1928,7 +1928,7 @@ paths:
                               - $ref: '#/components/schemas/datastore.EventDelivery'
                               - properties:
                                   data:
-                                    $ref: '#/components/schemas/server.Stub'
+                                    $ref: '#/components/schemas/api.Stub'
                                 type: object
                             type: array
                         type: object
@@ -1942,7 +1942,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1953,7 +1953,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -1964,7 +1964,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2001,7 +2001,7 @@ paths:
                       - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
-                            $ref: '#/components/schemas/server.Stub'
+                            $ref: '#/components/schemas/api.Stub'
                         type: object
                   type: object
           description: OK
@@ -2013,7 +2013,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2024,7 +2024,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2035,7 +2035,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2081,7 +2081,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2092,7 +2092,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2103,7 +2103,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2153,7 +2153,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2164,7 +2164,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2175,7 +2175,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2212,7 +2212,7 @@ paths:
                       - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
-                            $ref: '#/components/schemas/server.Stub'
+                            $ref: '#/components/schemas/api.Stub'
                         type: object
                   type: object
           description: OK
@@ -2224,7 +2224,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2235,7 +2235,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2246,7 +2246,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2269,7 +2269,7 @@ paths:
           application/json:
             schema:
               allOf:
-              - $ref: '#/components/schemas/server.Stub'
+              - $ref: '#/components/schemas/api.Stub'
               - properties:
                   ids:
                     items:
@@ -2288,7 +2288,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: OK
         "400":
@@ -2299,7 +2299,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2310,7 +2310,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2321,7 +2321,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2380,7 +2380,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/server.Stub'
+                      - $ref: '#/components/schemas/api.Stub'
                       - properties:
                           num:
                             type: integer
@@ -2395,7 +2395,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2406,7 +2406,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2417,7 +2417,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2440,7 +2440,7 @@ paths:
           application/json:
             schema:
               allOf:
-              - $ref: '#/components/schemas/server.Stub'
+              - $ref: '#/components/schemas/api.Stub'
               - properties:
                   ids:
                     items:
@@ -2459,7 +2459,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: OK
         "400":
@@ -2470,7 +2470,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2481,7 +2481,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2492,7 +2492,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2555,7 +2555,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - $ref: '#/components/schemas/api.pagedResponse'
                       - properties:
                           content:
                             items:
@@ -2563,7 +2563,7 @@ paths:
                               - $ref: '#/components/schemas/datastore.Event'
                               - properties:
                                   data:
-                                    $ref: '#/components/schemas/server.Stub'
+                                    $ref: '#/components/schemas/api.Stub'
                                 type: object
                             type: array
                         type: object
@@ -2577,7 +2577,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2588,7 +2588,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2599,7 +2599,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2637,7 +2637,7 @@ paths:
                       - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
-                            $ref: '#/components/schemas/server.Stub'
+                            $ref: '#/components/schemas/api.Stub'
                         type: object
                   type: object
           description: OK
@@ -2649,7 +2649,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2660,7 +2660,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2671,7 +2671,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2708,7 +2708,7 @@ paths:
                       - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
-                            $ref: '#/components/schemas/server.Stub'
+                            $ref: '#/components/schemas/api.Stub'
                         type: object
                   type: object
           description: OK
@@ -2720,7 +2720,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2731,7 +2731,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2742,7 +2742,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2779,7 +2779,7 @@ paths:
                       - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
-                            $ref: '#/components/schemas/server.Stub'
+                            $ref: '#/components/schemas/api.Stub'
                         type: object
                   type: object
           description: OK
@@ -2791,7 +2791,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2802,7 +2802,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2813,7 +2813,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2859,7 +2859,7 @@ paths:
                       - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
-                            $ref: '#/components/schemas/server.Stub'
+                            $ref: '#/components/schemas/api.Stub'
                         type: object
                   type: object
           description: OK
@@ -2871,7 +2871,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2882,7 +2882,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2893,7 +2893,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -2937,7 +2937,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/server.Stub'
+                      - $ref: '#/components/schemas/api.Stub'
                       - properties:
                           num:
                             type: integer
@@ -2952,7 +2952,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2963,7 +2963,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -2974,7 +2974,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -3014,7 +3014,7 @@ paths:
                       - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
-                            $ref: '#/components/schemas/server.Stub'
+                            $ref: '#/components/schemas/api.Stub'
                         type: object
                   type: object
           description: OK
@@ -3026,7 +3026,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3037,7 +3037,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3048,7 +3048,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -3091,7 +3091,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - $ref: '#/components/schemas/api.pagedResponse'
                       - properties:
                           content:
                             items:
@@ -3108,7 +3108,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3119,7 +3119,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3130,7 +3130,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -3175,7 +3175,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3186,7 +3186,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3197,7 +3197,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -3241,7 +3241,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3252,7 +3252,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3263,7 +3263,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -3314,7 +3314,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3325,7 +3325,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3336,7 +3336,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -3369,7 +3369,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: OK
         "400":
@@ -3380,7 +3380,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3391,7 +3391,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3402,7 +3402,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -3445,7 +3445,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - $ref: '#/components/schemas/api.pagedResponse'
                       - properties:
                           content:
                             items:
@@ -3462,7 +3462,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3473,7 +3473,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3484,7 +3484,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -3529,7 +3529,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3540,7 +3540,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3551,7 +3551,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -3584,7 +3584,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: OK
         "400":
@@ -3595,7 +3595,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3606,7 +3606,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3617,7 +3617,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -3660,7 +3660,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3671,7 +3671,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3682,7 +3682,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -3733,7 +3733,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3744,7 +3744,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3755,7 +3755,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -3803,7 +3803,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - $ref: '#/components/schemas/api.pagedResponse'
                       - properties:
                           content:
                             items:
@@ -3820,7 +3820,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3831,7 +3831,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3842,7 +3842,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -3877,7 +3877,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/server.pagedResponse'
+                      - $ref: '#/components/schemas/api.pagedResponse'
                       - properties:
                           content:
                             items:
@@ -3894,7 +3894,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3905,7 +3905,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3916,7 +3916,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -3949,7 +3949,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: OK
         "400":
@@ -3960,7 +3960,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3971,7 +3971,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -3982,7 +3982,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -4025,7 +4025,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4036,7 +4036,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4047,7 +4047,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -4098,7 +4098,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4109,7 +4109,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4120,7 +4120,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -4164,7 +4164,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4175,7 +4175,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4186,7 +4186,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -4232,7 +4232,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4243,7 +4243,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4254,7 +4254,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       security:
@@ -4287,7 +4287,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4298,7 +4298,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4309,7 +4309,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       summary: Get portal link devices
@@ -4340,7 +4340,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4351,7 +4351,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4362,7 +4362,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       summary: Get endpoints
@@ -4398,7 +4398,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4409,7 +4409,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4420,7 +4420,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       summary: Create an endpoint
@@ -4449,7 +4449,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4460,7 +4460,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4471,7 +4471,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       summary: Get portal link keys
@@ -4496,7 +4496,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: OK
         "400":
@@ -4507,7 +4507,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4518,7 +4518,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4529,7 +4529,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       summary: Verify Email
@@ -4573,7 +4573,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4584,7 +4584,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
         "500":
@@ -4595,7 +4595,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/server.Stub'
+                      $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Internal Server Error
       summary: Reset user password

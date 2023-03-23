@@ -9,8 +9,8 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/oklog/ulid/v2"
 
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 )
 
