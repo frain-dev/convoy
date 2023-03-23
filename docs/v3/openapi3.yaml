@@ -1685,8 +1685,7 @@ paths:
       - Endpoints
   /api/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret:
     put:
-      description: This endpoint expires the current endpoint secret and generates
-        a new one.
+      description: This endpoint expires anc re-generates the endpoint secret.
       parameters:
       - description: Project ID
         in: path
@@ -1747,12 +1746,13 @@ paths:
           description: Not Found
       security:
       - ApiKeyAuth: []
-      summary: Expire and generate new application endpoint secret
+      summary: Roll endpoint secret
       tags:
       - Endpoints
   /api/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status:
     put:
-      description: This endpoint updates a subscription
+      description: This endpoint toggles an endpoint status between the active and
+        inactive statetes
       parameters:
       - description: Project ID
         in: path
@@ -1813,9 +1813,9 @@ paths:
           description: Not Found
       security:
       - ApiKeyAuth: []
-      summary: Toggles an endpoint's status from active <-> inactive
+      summary: Toggle endpoint status
       tags:
-      - Subscriptions
+      - Endpoints
   /api/v1/projects/{projectID}/eventdeliveries:
     get:
       description: This endpoint fetch event deliveries.
@@ -3949,7 +3949,7 @@ paths:
       tags:
       - Subscriptions
     get:
-      description: This endpoint fetches an Subscription by it's id
+      description: This endpoint retrieves a single subscription
       parameters:
       - description: Project ID
         in: path

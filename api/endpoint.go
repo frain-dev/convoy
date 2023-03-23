@@ -172,8 +172,8 @@ func (a *ApplicationHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Reque
 }
 
 // ExpireSecret
-// @Summary Expire and generate new application endpoint secret
-// @Description This endpoint expires the current endpoint secret and generates a new one.
+// @Summary Roll endpoint secret
+// @Description This endpoint expires anc re-generates the endpoint secret.
 // @Tags Endpoints
 // @Accept  json
 // @Produce  json
@@ -206,9 +206,9 @@ func (a *ApplicationHandler) ExpireSecret(w http.ResponseWriter, r *http.Request
 }
 
 // ToggleEndpointStatus
-// @Summary Toggles an endpoint's status from active <-> inactive
-// @Description This endpoint updates a subscription
-// @Tags Subscriptions
+// @Summary Toggle endpoint status
+// @Description This endpoint toggles an endpoint status between the active and inactive statetes
+// @Tags Endpoints
 // @Accept json
 // @Produce json
 // @Param projectID path string true "Project ID"

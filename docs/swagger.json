@@ -1244,7 +1244,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint expires the current endpoint secret and generates a new one.",
+                "description": "This endpoint expires anc re-generates the endpoint secret.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1254,7 +1254,7 @@
                 "tags": [
                     "Endpoints"
                 ],
-                "summary": "Expire and generate new application endpoint secret",
+                "summary": "Roll endpoint secret",
                 "parameters": [
                     {
                         "type": "string",
@@ -1354,7 +1354,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint updates a subscription",
+                "description": "This endpoint toggles an endpoint status between the active and inactive statetes",
                 "consumes": [
                     "application/json"
                 ],
@@ -1362,9 +1362,9 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Subscriptions"
+                    "Endpoints"
                 ],
-                "summary": "Toggles an endpoint's status from active \u003c-\u003e inactive",
+                "summary": "Toggle endpoint status",
                 "parameters": [
                     {
                         "type": "string",
@@ -4995,7 +4995,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches an Subscription by it's id",
+                "description": "This endpoint retrieves a single subscription",
                 "consumes": [
                     "application/json"
                 ],

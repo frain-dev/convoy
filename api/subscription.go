@@ -81,7 +81,7 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 
 // GetSubscription
 // @Summary Gets a subscription
-// @Description This endpoint fetches an Subscription by it's id
+// @Description This endpoint retrieves a single subscription
 // @Tags Subscriptions
 // @Accept json
 // @Produce  json
