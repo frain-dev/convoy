@@ -357,7 +357,6 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 		"provider":   filter.Provider,
 		"project_id": projectID,
 		"limit":      pageable.Limit(),
-		"offset":     pageable.Offset(),
 		"cursor":     pageable.Cursor(),
 	}
 
@@ -381,8 +380,6 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 	}
 
 	query = s.db.Rebind(query)
-
-	// fmt.Printf("%+v\n%+v\n\n", query, args)
 
 	rows, err := s.db.QueryxContext(ctx, query, args...)
 	if err != nil {
