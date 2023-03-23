@@ -27,7 +27,7 @@ func createSourceService(a *ApplicationHandler) *services.SourceService {
 // @Tags Sources
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param source body models.Source true "Source Details"
 // @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -67,7 +67,7 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 // @Tags Sources
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param sourceID path string true "source id"
 // @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -102,7 +102,7 @@ func (a *ApplicationHandler) GetSourceByID(w http.ResponseWriter, r *http.Reques
 // @Tags Sources
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param sourceID path string true "source id"
 // @Param source body models.Source true "Source Details"
 // @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
@@ -151,7 +151,7 @@ func (a *ApplicationHandler) UpdateSource(w http.ResponseWriter, r *http.Request
 // @Tags Sources
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param sourceID path string true "source id"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -182,7 +182,7 @@ func (a *ApplicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request
 // @Tags Sources
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"

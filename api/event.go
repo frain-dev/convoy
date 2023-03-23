@@ -38,7 +38,7 @@ func createEventService(a *ApplicationHandler) *services.EventService {
 // @Tags Events
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param event body models.Event true "Event Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -70,7 +70,7 @@ func (a *ApplicationHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.
 // @Tags Events
 // @Accept json
 // @Produce json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param event body models.FanoutEvent true "Event Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -102,7 +102,7 @@ func (a *ApplicationHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r 
 // @Tags Events
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param eventID path string true "event id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -128,7 +128,7 @@ func (a *ApplicationHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.
 // @Tags Events
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param startDate query string false "start date"
 // @Param endDate query string false "end date"
 // @Param source query string false "Source id"
@@ -173,7 +173,7 @@ func (a *ApplicationHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Re
 // @Tags Events
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param startDate query string false "start date"
 // @Param endDate query string false "end date"
 // @Param source query string false "Source id"
@@ -218,7 +218,7 @@ func (a *ApplicationHandler) CountAffectedEvents(w http.ResponseWriter, r *http.
 // @Tags Events
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param eventID path string true "event id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -235,7 +235,7 @@ func (a *ApplicationHandler) GetEndpointEvent(w http.ResponseWriter, r *http.Req
 // @Tags Event Deliveries
 // @Accept json
 // @Produce json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param eventDeliveryID path string true "event delivery id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -252,7 +252,7 @@ func (a *ApplicationHandler) GetEventDelivery(w http.ResponseWriter, r *http.Req
 // @Tags Event Deliveries
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param eventDeliveryID path string true "event delivery id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -278,7 +278,7 @@ func (a *ApplicationHandler) ResendEventDelivery(w http.ResponseWriter, r *http.
 // @Tags Event Deliveries
 // @Accept json
 // @Produce json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param deliveryIds body Stub{ids=[]string} true "event delivery ids"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -341,7 +341,7 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 // @Accept  json
 // @Produce  json
 // @Param appId query string false "application id"
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param startDate query string false "start date"
 // @Param endDate query string false "end date"
 // @Param perPage query string false "results per page"
@@ -401,7 +401,7 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 // @Tags Event Deliveries
 // @Accept json
 // @Produce json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param deliveryIds body Stub{ids=[]string} true "event delivery ids"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -433,7 +433,7 @@ func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 // @Accept  json
 // @Produce  json
 // @Param appId query string false "application id"
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param sourceId query string false "source id"
 // @Param startDate query string false "start date"
 // @Param endDate query string false "end date"
@@ -514,7 +514,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 // @Accept json
 // @Produce json
 // @Param appId query string false "application id"
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param eventId query string false "event id"
 // @Param startDate query string false "start date"
 // @Param endDate query string false "end date"

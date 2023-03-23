@@ -15,7 +15,7 @@ import (
 // @Tags Delivery Attempts
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param eventDeliveryID path string true "event delivery id"
 // @Param deliveryAttemptID path string true "delivery attempt id"
 // @Success 200 {object} util.ServerResponse{data=datastore.DeliveryAttempt}
@@ -33,7 +33,7 @@ func (a *ApplicationHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.R
 // @Tags Delivery Attempts
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param eventDeliveryID path string true "event delivery id"
 // @Success 200 {object} util.ServerResponse{data=[]datastore.DeliveryAttempt}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}

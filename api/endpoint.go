@@ -38,7 +38,7 @@ type pagedResponse struct {
 // @Tags Endpoints
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -70,7 +70,7 @@ func (a *ApplicationHandler) CreateEndpoint(w http.ResponseWriter, r *http.Reque
 // @Tags Endpoints
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param endpointID path string true "endpoint id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -87,7 +87,7 @@ func (a *ApplicationHandler) GetEndpoint(w http.ResponseWriter, r *http.Request)
 // @Tags Endpoints
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Success 200 {object} util.ServerResponse{data=[]datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -115,7 +115,7 @@ func (a *ApplicationHandler) GetEndpoints(w http.ResponseWriter, r *http.Request
 // @Tags Endpoints
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param endpointID path string true "endpoint id"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
@@ -150,7 +150,7 @@ func (a *ApplicationHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Reque
 // @Tags Endpoints
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param endpointID path string true "endpoint id"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -177,7 +177,7 @@ func (a *ApplicationHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Reque
 // @Tags Endpoints
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param endpointID path string true "endpoint id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -211,7 +211,7 @@ func (a *ApplicationHandler) ExpireSecret(w http.ResponseWriter, r *http.Request
 // @Tags Subscriptions
 // @Accept json
 // @Produce json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param endpointID path string true "endpoint id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}

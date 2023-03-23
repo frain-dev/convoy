@@ -1813,7 +1813,7 @@
 				"description": "This endpoint deletes a project using its id",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -1926,7 +1926,7 @@
 				"description": "This endpoint fetches a project by its id",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -2039,7 +2039,7 @@
 				"description": "This endpoint updates a project",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -2166,7 +2166,7 @@
 				"description": "This endpoint fetches an endpoints",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -2282,7 +2282,7 @@
 				"description": "This endpoint creates an endpoint",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -2409,7 +2409,7 @@
 				"description": "This endpoint deletes an endpoint",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -2531,7 +2531,7 @@
 				"description": "This endpoint fetches an endpoint",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -2653,7 +2653,7 @@
 				"description": "This endpoint updates an endpoint",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -2789,7 +2789,7 @@
 				"description": "This endpoint expires the current endpoint secret and generates a new one.",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -2913,7 +2913,7 @@
 				"description": "This endpoint updates a subscription",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -3045,7 +3045,7 @@
 						}
 					},
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -3246,7 +3246,7 @@
 				"description": "This endpoint resends multiple app events",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -3396,7 +3396,7 @@
 						}
 					},
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -3563,7 +3563,7 @@
 				"description": "This endpoint force resends multiple app events",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -3705,7 +3705,7 @@
 				"description": "This endpoint fetches an event delivery.",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -3841,7 +3841,7 @@
 				"description": "This endpoint fetches an app message's delivery attempts",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -3968,7 +3968,7 @@
 				"description": "This endpoint fetches an app event delivery attempt",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -4101,7 +4101,7 @@
 				"description": "This endpoint resends an app event",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -4245,7 +4245,7 @@
 						}
 					},
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -4433,7 +4433,7 @@
 				"description": "This endpoint creates an endpoint event",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -4572,7 +4572,7 @@
 				"description": "This endpoint replays multiple events",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -4723,7 +4723,7 @@
 				"description": "This endpoint counts events that will be affected by a batch replay operation",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -4874,7 +4874,7 @@
 				"description": "This endpoint uses the owner_id to fan out an event to multiple endpoints.",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -5013,7 +5013,7 @@
 				"description": "This endpoint fetches an endpoint event",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -5149,7 +5149,7 @@
 				"description": "This endpoint replays an endpoint event",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -5285,7 +5285,7 @@
 				"description": "This endpoint fetches multiple portal links",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -5437,7 +5437,7 @@
 				"description": "This endpoint creates a portal link",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -5564,7 +5564,7 @@
 				"description": "This endpoint fetches a portal link by its id",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -5686,7 +5686,7 @@
 				"description": "This endpoint updates a portal link",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -5822,7 +5822,7 @@
 				"description": "This endpoint revokes a portal link",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -5946,7 +5946,7 @@
 				"description": "This endpoint fetches multiple sources",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -6098,7 +6098,7 @@
 				"description": "This endpoint creates a source",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -6225,7 +6225,7 @@
 				"description": "This endpoint deletes a source",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -6347,7 +6347,7 @@
 				"description": "This endpoint fetches a source by its id",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -6469,7 +6469,7 @@
 				"description": "This endpoint updates a source",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -6637,7 +6637,7 @@
 						}
 					},
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -6765,7 +6765,7 @@
 				"description": "This endpoint creates a subscriptions",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -6907,7 +6907,7 @@
 				"description": "This endpoint tests a subscription's filter",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -7034,7 +7034,7 @@
 				"description": "This endpoint deletes a subscription",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -7156,7 +7156,7 @@
 				"description": "This endpoint fetches an Subscription by it's id",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -7278,7 +7278,7 @@
 				"description": "This endpoint updates a subscription",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -7414,7 +7414,7 @@
 				"description": "This endpoint updates a subscription",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,

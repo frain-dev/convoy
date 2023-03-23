@@ -28,7 +28,7 @@ func createPortalLinkService(a *ApplicationHandler) *services.PortalLinkService 
 // @Tags Portal Links
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param portallink body models.PortalLink true "Portal Link Details"
 // @Success 200 {object} util.ServerResponse{data=models.PortalLinkResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -61,7 +61,7 @@ func (a *ApplicationHandler) CreatePortalLink(w http.ResponseWriter, r *http.Req
 // @Tags Portal Links
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param portalLinkID path string true "portal link id"
 // @Success 200 {object} util.ServerResponse{data=models.PortalLinkResponse}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -89,7 +89,7 @@ func (a *ApplicationHandler) GetPortalLinkByID(w http.ResponseWriter, r *http.Re
 // @Tags Portal Links
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param portalLinkID path string true "portal link id"
 // @Param portallink body models.PortalLink true "Portal Link Details"
 // @Success 200 {object} util.ServerResponse{data=models.PortalLinkResponse}
@@ -131,7 +131,7 @@ func (a *ApplicationHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Req
 // @Tags Portal Links
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param portalLinkID path string true "portal link id"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -162,7 +162,7 @@ func (a *ApplicationHandler) RevokePortalLink(w http.ResponseWriter, r *http.Req
 // @Tags Portal Links
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"

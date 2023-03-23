@@ -33,7 +33,7 @@ func createSubscriptionService(a *ApplicationHandler) *services.SubcriptionServi
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
 // @Param q query string false "subscription title"
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Subscription}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -85,7 +85,7 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 // @Tags Subscriptions
 // @Accept json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param subscriptionID path string true "subscription id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -111,7 +111,7 @@ func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 // @Tags Subscriptions
 // @Accept json
 // @Produce json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param subscription body models.Subscription true "Subscription details"
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Subscription}}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -144,7 +144,7 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 // @Tags Subscriptions
 // @Accept json
 // @Produce json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param subscriptionID path string true "subscription id"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -176,7 +176,7 @@ func (a *ApplicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.R
 // @Tags Subscriptions
 // @Accept json
 // @Produce json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param subscriptionID path string true "subscription id"
 // @Param subscription body models.Subscription true "Subscription Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
@@ -212,7 +212,7 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 // @Tags Subscriptions
 // @Accept json
 // @Produce json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param subscriptionID path string true "subscription id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
@@ -229,7 +229,7 @@ func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *
 // @Tags Subscriptions
 // @Accept json
 // @Produce json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param filter body models.TestFilter true "Filter Details"
 // @Success 200 {object} util.ServerResponse{data=boolean}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}

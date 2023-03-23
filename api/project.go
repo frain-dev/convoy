@@ -31,7 +31,7 @@ func createProjectService(a *ApplicationHandler) *services.ProjectService {
 // @Tags Projects
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Success 200 {object} util.ServerResponse{data=datastore.Project}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -58,7 +58,7 @@ func (a *ApplicationHandler) GetProject(w http.ResponseWriter, r *http.Request) 
 // @Tags Projects
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -135,7 +135,7 @@ func (a *ApplicationHandler) CreateProject(w http.ResponseWriter, r *http.Reques
 // @Tags Projects
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param project body models.Project true "Project Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Project}
 // @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
