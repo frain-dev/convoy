@@ -110,7 +110,7 @@ const (
     `
 
 	updateEventDeliveriesStatus = `
-    UPDATE convoy.event_deliveries SET status = ?, updated_at = now() WHERE project_id = ? AND id IN (?) AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET status = ?, updated_at = now() WHERE (project_id = ? OR ? = '')AND id IN (?) AND deleted_at IS NULL;
     `
 
 	updateEventDeliveryAttempts = `
@@ -245,7 +245,7 @@ func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, project
 }
 
 func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, projectID string, delivery datastore.EventDelivery, status datastore.EventDeliveryStatus) error {
-	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, projectID, []string{delivery.UID})
+	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, projectID, projectID, []string{delivery.UID})
 	if err != nil {
 		return err
 	}
@@ -270,7 +270,7 @@ func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, pro
 }
 
 func (e *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, projectID string, ids []string, status datastore.EventDeliveryStatus) error {
-	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, projectID, ids)
+	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, projectID, projectID, ids)
 	if err != nil {
 		return err
 	}
