@@ -34,7 +34,12 @@
 			<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 min-w-[140px] whitespace-nowrap justify-between h-36px" [ngClass]="{ 'text-primary-100 !bg-primary-500': !!linkEndpoint }">
 				<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
 				<span class="text-grey-40 w-full">All Endpoints</span>
-				<img class="ml-10px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+				<img class="ml-10px mr-0px w-14px" *ngIf="!linkEndpoint" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+				<button type="button" *ngIf="linkEndpoint" (click)="clearEndpointFilter($event)">
+					<svg width="10" height="10" class="fill-primary-100">
+						<use xlink:href="#close-icon"></use>
+					</svg>
+				</button>
 			</button>
 
 			<ng-container dropdownOptions>

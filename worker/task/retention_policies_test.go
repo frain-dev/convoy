@@ -21,7 +21,7 @@ import (
 	noopsearcher "github.com/frain-dev/convoy/internal/pkg/searcher/noop"
 	"github.com/hibiken/asynq"
 
-	"github.com/frain-dev/convoy/server/testdb"
+	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/util"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"

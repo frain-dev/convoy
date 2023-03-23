@@ -1,5 +1,13 @@
 basePath: /
 definitions:
+  api.Stub:
+    type: object
+  api.pagedResponse:
+    properties:
+      content: {}
+      pagination:
+        $ref: '#/definitions/datastore.PaginationData'
+    type: object
   auth.Role:
     properties:
       endpoint:
@@ -956,14 +964,6 @@ definitions:
         description: Valid is true if String is not NULL
         type: boolean
     type: object
-  server.Stub:
-    type: object
-  server.pagedResponse:
-    properties:
-      content: {}
-      pagination:
-        $ref: '#/definitions/datastore.PaginationData'
-    type: object
   util.ServerResponse:
     properties:
       data:
@@ -1020,7 +1020,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/server.pagedResponse'
+                  - $ref: '#/definitions/api.pagedResponse'
                   - properties:
                       content:
                         items:
@@ -1035,7 +1035,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1044,7 +1044,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1053,7 +1053,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1096,7 +1096,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1105,7 +1105,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1114,7 +1114,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1156,7 +1156,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1165,7 +1165,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1174,7 +1174,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1202,7 +1202,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "400":
           description: Bad Request
@@ -1211,7 +1211,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1220,7 +1220,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1229,7 +1229,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1265,7 +1265,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1274,7 +1274,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1283,7 +1283,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1325,7 +1325,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1334,7 +1334,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1343,7 +1343,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1382,7 +1382,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1391,7 +1391,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1400,7 +1400,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1442,7 +1442,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1451,7 +1451,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1460,7 +1460,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1493,7 +1493,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "400":
           description: Bad Request
@@ -1502,7 +1502,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1511,7 +1511,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1520,7 +1520,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1561,7 +1561,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1570,7 +1570,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1579,7 +1579,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1626,7 +1626,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1635,7 +1635,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1644,7 +1644,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1687,7 +1687,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1696,7 +1696,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1705,7 +1705,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1747,7 +1747,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1756,7 +1756,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1765,7 +1765,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1828,7 +1828,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/server.pagedResponse'
+                  - $ref: '#/definitions/api.pagedResponse'
                   - properties:
                       content:
                         items:
@@ -1836,7 +1836,7 @@ paths:
                           - $ref: '#/definitions/datastore.EventDelivery'
                           - properties:
                               data:
-                                $ref: '#/definitions/server.Stub'
+                                $ref: '#/definitions/api.Stub'
                             type: object
                         type: array
                     type: object
@@ -1848,7 +1848,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1857,7 +1857,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1866,7 +1866,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1903,7 +1903,7 @@ paths:
                   - $ref: '#/definitions/datastore.Event'
                   - properties:
                       data:
-                        $ref: '#/definitions/server.Stub'
+                        $ref: '#/definitions/api.Stub'
                     type: object
               type: object
         "400":
@@ -1913,7 +1913,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1922,7 +1922,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1931,7 +1931,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -1975,7 +1975,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -1984,7 +1984,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -1993,7 +1993,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2040,7 +2040,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2049,7 +2049,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -2058,7 +2058,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2095,7 +2095,7 @@ paths:
                   - $ref: '#/definitions/datastore.Event'
                   - properties:
                       data:
-                        $ref: '#/definitions/server.Stub'
+                        $ref: '#/definitions/api.Stub'
                     type: object
               type: object
         "400":
@@ -2105,7 +2105,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2114,7 +2114,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -2123,7 +2123,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2147,7 +2147,7 @@ paths:
         required: true
         schema:
           allOf:
-          - $ref: '#/definitions/server.Stub'
+          - $ref: '#/definitions/api.Stub'
           - properties:
               ids:
                 items:
@@ -2164,7 +2164,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "400":
           description: Bad Request
@@ -2173,7 +2173,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2182,7 +2182,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -2191,7 +2191,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2245,7 +2245,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/server.Stub'
+                  - $ref: '#/definitions/api.Stub'
                   - properties:
                       num:
                         type: integer
@@ -2258,7 +2258,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2267,7 +2267,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -2276,7 +2276,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2300,7 +2300,7 @@ paths:
         required: true
         schema:
           allOf:
-          - $ref: '#/definitions/server.Stub'
+          - $ref: '#/definitions/api.Stub'
           - properties:
               ids:
                 items:
@@ -2317,7 +2317,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "400":
           description: Bad Request
@@ -2326,7 +2326,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2335,7 +2335,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -2344,7 +2344,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2401,7 +2401,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/server.pagedResponse'
+                  - $ref: '#/definitions/api.pagedResponse'
                   - properties:
                       content:
                         items:
@@ -2409,7 +2409,7 @@ paths:
                           - $ref: '#/definitions/datastore.Event'
                           - properties:
                               data:
-                                $ref: '#/definitions/server.Stub'
+                                $ref: '#/definitions/api.Stub'
                             type: object
                         type: array
                     type: object
@@ -2421,7 +2421,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2430,7 +2430,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -2439,7 +2439,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2476,7 +2476,7 @@ paths:
                   - $ref: '#/definitions/datastore.Event'
                   - properties:
                       data:
-                        $ref: '#/definitions/server.Stub'
+                        $ref: '#/definitions/api.Stub'
                     type: object
               type: object
         "400":
@@ -2486,7 +2486,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2495,7 +2495,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -2504,7 +2504,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2541,7 +2541,7 @@ paths:
                   - $ref: '#/definitions/datastore.Event'
                   - properties:
                       data:
-                        $ref: '#/definitions/server.Stub'
+                        $ref: '#/definitions/api.Stub'
                     type: object
               type: object
         "400":
@@ -2551,7 +2551,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2560,7 +2560,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -2569,7 +2569,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2606,7 +2606,7 @@ paths:
                   - $ref: '#/definitions/datastore.Event'
                   - properties:
                       data:
-                        $ref: '#/definitions/server.Stub'
+                        $ref: '#/definitions/api.Stub'
                     type: object
               type: object
         "400":
@@ -2616,7 +2616,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2625,7 +2625,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -2634,7 +2634,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2678,7 +2678,7 @@ paths:
                   - $ref: '#/definitions/datastore.Event'
                   - properties:
                       data:
-                        $ref: '#/definitions/server.Stub'
+                        $ref: '#/definitions/api.Stub'
                     type: object
               type: object
         "400":
@@ -2688,7 +2688,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2697,7 +2697,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -2706,7 +2706,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2748,7 +2748,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/server.Stub'
+                  - $ref: '#/definitions/api.Stub'
                   - properties:
                       num:
                         type: integer
@@ -2761,7 +2761,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2770,7 +2770,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -2779,7 +2779,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2818,7 +2818,7 @@ paths:
                   - $ref: '#/definitions/datastore.Event'
                   - properties:
                       data:
-                        $ref: '#/definitions/server.Stub'
+                        $ref: '#/definitions/api.Stub'
                     type: object
               type: object
         "400":
@@ -2828,7 +2828,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2837,7 +2837,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -2846,7 +2846,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2887,7 +2887,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/server.pagedResponse'
+                  - $ref: '#/definitions/api.pagedResponse'
                   - properties:
                       content:
                         items:
@@ -2902,7 +2902,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2911,7 +2911,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -2920,7 +2920,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2962,7 +2962,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2971,7 +2971,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -2980,7 +2980,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3022,7 +3022,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3031,7 +3031,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3040,7 +3040,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3087,7 +3087,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3096,7 +3096,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3105,7 +3105,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3138,7 +3138,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "400":
           description: Bad Request
@@ -3147,7 +3147,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3156,7 +3156,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3165,7 +3165,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3206,7 +3206,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/server.pagedResponse'
+                  - $ref: '#/definitions/api.pagedResponse'
                   - properties:
                       content:
                         items:
@@ -3221,7 +3221,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3230,7 +3230,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3239,7 +3239,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3281,7 +3281,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3290,7 +3290,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3299,7 +3299,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3332,7 +3332,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "400":
           description: Bad Request
@@ -3341,7 +3341,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3350,7 +3350,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3359,7 +3359,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3400,7 +3400,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3409,7 +3409,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3418,7 +3418,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3465,7 +3465,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3474,7 +3474,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3483,7 +3483,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3528,7 +3528,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/server.pagedResponse'
+                  - $ref: '#/definitions/api.pagedResponse'
                   - properties:
                       content:
                         items:
@@ -3543,7 +3543,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3552,7 +3552,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3561,7 +3561,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3595,7 +3595,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/server.pagedResponse'
+                  - $ref: '#/definitions/api.pagedResponse'
                   - properties:
                       content:
                         items:
@@ -3610,7 +3610,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3619,7 +3619,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3628,7 +3628,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3661,7 +3661,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "400":
           description: Bad Request
@@ -3670,7 +3670,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3679,7 +3679,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3688,7 +3688,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3729,7 +3729,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3738,7 +3738,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3747,7 +3747,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3794,7 +3794,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3803,7 +3803,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3812,7 +3812,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3854,7 +3854,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3863,7 +3863,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3872,7 +3872,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3915,7 +3915,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3924,7 +3924,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3933,7 +3933,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3966,7 +3966,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3975,7 +3975,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -3984,7 +3984,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       summary: Get portal link devices
       tags:
@@ -4015,7 +4015,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4024,7 +4024,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -4033,7 +4033,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       summary: Get endpoints
       tags:
@@ -4068,7 +4068,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4077,7 +4077,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -4086,7 +4086,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       summary: Create an endpoint
       tags:
@@ -4115,7 +4115,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4124,7 +4124,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -4133,7 +4133,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       summary: Get portal link keys
       tags:
@@ -4159,7 +4159,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "400":
           description: Bad Request
@@ -4168,7 +4168,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4177,7 +4177,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -4186,7 +4186,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       summary: Verify Email
       tags:
@@ -4227,7 +4227,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4236,7 +4236,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
         "500":
           description: Internal Server Error
@@ -4245,7 +4245,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/server.Stub'
+                  $ref: '#/definitions/api.Stub'
               type: object
       summary: Reset user password
       tags:
