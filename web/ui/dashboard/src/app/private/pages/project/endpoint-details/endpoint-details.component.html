@@ -35,7 +35,7 @@
 						</button>
 
 						<ul dropdownOptions>
-							<li class="border-b border-grey-20">
+							<li class="border-b border-grey-20" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
 								<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start" (click)="viewEndpointPortalLinks(endpointDetails.uid)">
 									<svg width="18" height="18" class="stroke-primary-100 mr-8px">
 										<use xlink:href="#portal-icon"></use>
