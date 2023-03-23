@@ -703,7 +703,7 @@
                 "tags": [
                     "Endpoints"
                 ],
-                "summary": "Get endpoints",
+                "summary": "List all endpoints",
                 "parameters": [
                     {
                         "type": "string",
@@ -1474,7 +1474,7 @@
                 "tags": [
                     "Event Deliveries"
                 ],
-                "summary": "Get event deliveries",
+                "summary": "List all event deliveries",
                 "parameters": [
                     {
                         "type": "string",
@@ -2534,7 +2534,7 @@
                 "tags": [
                     "Events"
                 ],
-                "summary": "Get app events with pagination",
+                "summary": "List all events",
                 "parameters": [
                     {
                         "type": "string",
@@ -3462,7 +3462,7 @@
                 "tags": [
                     "Portal Links"
                 ],
-                "summary": "Fetch multiple portal links",
+                "summary": "List all portal links",
                 "parameters": [
                     {
                         "type": "string",
@@ -4045,7 +4045,7 @@
                 "tags": [
                     "Sources"
                 ],
-                "summary": "Fetch multiple sources",
+                "summary": "List all sources",
                 "parameters": [
                     {
                         "type": "string",
@@ -4626,7 +4626,7 @@
                 "tags": [
                     "Subscriptions"
                 ],
-                "summary": "Get all subscriptions",
+                "summary": "List all subscriptions",
                 "parameters": [
                     {
                         "type": "string",

@@ -177,7 +177,7 @@ func (a *ApplicationHandler) DeleteSource(w http.ResponseWriter, r *http.Request
 }
 
 // LoadSourcesPaged
-// @Summary Fetch multiple sources
+// @Summary List all sources
 // @Description This endpoint fetches multiple sources
 // @Tags Sources
 // @Accept  json

@@ -427,7 +427,7 @@ func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 }
 
 // GetEventsPaged
-// @Summary Get app events with pagination
+// @Summary List all events
 // @Description This endpoint fetches app events with pagination
 // @Tags Events
 // @Accept  json
@@ -508,7 +508,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 }
 
 // GetEventDeliveriesPaged
-// @Summary Get event deliveries
+// @Summary List all event deliveries
 // @Description This endpoint fetch event deliveries.
 // @Tags Event Deliveries
 // @Accept json

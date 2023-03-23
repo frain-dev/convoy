@@ -1362,7 +1362,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get endpoints
+      summary: List all endpoints
       tags:
       - Endpoints
     post:
@@ -1828,7 +1828,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get event deliveries
+      summary: List all event deliveries
       tags:
       - Event Deliveries
   /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}:
@@ -2401,7 +2401,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get app events with pagination
+      summary: List all events
       tags:
       - Events
     post:
@@ -2882,7 +2882,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Fetch multiple portal links
+      summary: List all portal links
       tags:
       - Portal Links
     post:
@@ -3201,7 +3201,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Fetch multiple sources
+      summary: List all sources
       tags:
       - Sources
     post:
@@ -3523,7 +3523,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Get all subscriptions
+      summary: List all subscriptions
       tags:
       - Subscriptions
     post:

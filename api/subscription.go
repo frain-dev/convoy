@@ -24,7 +24,7 @@ func createSubscriptionService(a *ApplicationHandler) *services.SubcriptionServi
 }
 
 // GetSubscriptions
-// @Summary Get all subscriptions
+// @Summary List all subscriptions
 // @Description This endpoint fetches all the subscriptions
 // @Tags Subscriptions
 // @Accept json

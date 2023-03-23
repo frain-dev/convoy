@@ -82,7 +82,7 @@ func (a *ApplicationHandler) GetEndpoint(w http.ResponseWriter, r *http.Request)
 }
 
 // GetEndpoints
-// @Summary Get endpoints
+// @Summary List all endpoints
 // @Description This endpoint fetches an endpoints
 // @Tags Endpoints
 // @Accept  json

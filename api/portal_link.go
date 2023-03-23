@@ -157,7 +157,7 @@ func (a *ApplicationHandler) RevokePortalLink(w http.ResponseWriter, r *http.Req
 }
 
 // LoadPortalLinksPaged
-// @Summary Fetch multiple portal links
+// @Summary List all portal links
 // @Description This endpoint fetches multiple portal links
 // @Tags Portal Links
 // @Accept  json

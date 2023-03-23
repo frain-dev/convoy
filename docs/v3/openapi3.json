@@ -2273,7 +2273,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get endpoints",
+				"summary": "List all endpoints",
 				"tags": [
 					"Endpoints"
 				]
@@ -3235,7 +3235,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get event deliveries",
+				"summary": "List all event deliveries",
 				"tags": [
 					"Event Deliveries"
 				]
@@ -4424,7 +4424,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get app events with pagination",
+				"summary": "List all events",
 				"tags": [
 					"Events"
 				]
@@ -5428,7 +5428,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Fetch multiple portal links",
+				"summary": "List all portal links",
 				"tags": [
 					"Portal Links"
 				]
@@ -6089,7 +6089,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Fetch multiple sources",
+				"summary": "List all sources",
 				"tags": [
 					"Sources"
 				]
@@ -6756,7 +6756,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get all subscriptions",
+				"summary": "List all subscriptions",
 				"tags": [
 					"Subscriptions"
 				]
