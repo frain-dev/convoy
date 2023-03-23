@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"math"
 	"os"
 	"os/signal"
 	"time"
@@ -67,22 +69,23 @@ func (s *SourceLoader) Run(interval int) {
 	}
 }
 
-func (s *SourceLoader) fetchSources(projectID string, page int) error {
+func (s *SourceLoader) fetchSources(projectID string, cursor string) error {
 	filter := &datastore.SourceFilter{
 		Type: string(datastore.PubSubSource),
 	}
 
 	pageable := datastore.Pageable{
-		Page:    page,
-		PerPage: perPage,
+		NextCursor: cursor,
+		Direction:  datastore.Next,
+		PerPage:    perPage,
 	}
 
-	sources, _, err := s.sourceRepo.LoadSourcesPaged(context.Background(), projectID, filter, pageable)
+	sources, pagination, err := s.sourceRepo.LoadSourcesPaged(context.Background(), projectID, filter, pageable)
 	if err != nil {
 		return err
 	}
 
-	if len(sources) == 0 {
+	if len(sources) == 0 && !pagination.HasNextPage {
 		return nil
 	}
 
@@ -95,8 +98,8 @@ func (s *SourceLoader) fetchSources(projectID string, page int) error {
 		s.sourcePool.Insert(ps)
 	}
 
-	page += 1
-	return s.fetchSources(projectID, page)
+	cursor = pagination.NextPageCursor
+	return s.fetchSources(projectID, cursor)
 }
 
 func (s *SourceLoader) fetchProjectSources() error {
@@ -105,9 +108,8 @@ func (s *SourceLoader) fetchProjectSources() error {
 		return err
 	}
 
-	page := 1
 	for _, project := range projects {
-		err := s.fetchSources(project.UID, page)
+		err := s.fetchSources(project.UID, fmt.Sprintf("%d", math.MaxInt))
 		if err != nil {
 			s.log.WithError(err).Error("failed to load sources")
 			continue
