@@ -3280,7 +3280,7 @@
 				],
 				"summary": "Get event deliveries",
 				"tags": [
-					"EventDeliveries"
+					"Event Deliveries"
 				]
 			}
 		},
@@ -3422,7 +3422,7 @@
 				],
 				"summary": "Batch Resend app events",
 				"tags": [
-					"EventDeliveries"
+					"Event Deliveries"
 				]
 			}
 		},
@@ -3597,7 +3597,7 @@
 				],
 				"summary": "Count affected eventDeliveries",
 				"tags": [
-					"EventDeliveries"
+					"Event Deliveries"
 				]
 			}
 		},
@@ -3739,7 +3739,7 @@
 				],
 				"summary": "Force Resend app events",
 				"tags": [
-					"EventDeliveries"
+					"Event Deliveries"
 				]
 			}
 		},
@@ -3875,7 +3875,7 @@
 				],
 				"summary": "Get event delivery",
 				"tags": [
-					"EventDeliveries"
+					"Event Deliveries"
 				]
 			}
 		},
@@ -4002,7 +4002,7 @@
 				],
 				"summary": "Get delivery attempts",
 				"tags": [
-					"DeliveryAttempts"
+					"Delivery Attempts"
 				]
 			}
 		},
@@ -4135,7 +4135,7 @@
 				],
 				"summary": "Get delivery attempt",
 				"tags": [
-					"DeliveryAttempts"
+					"Delivery Attempts"
 				]
 			}
 		},
@@ -4271,7 +4271,7 @@
 				],
 				"summary": "Resend an app event",
 				"tags": [
-					"EventDeliveries"
+					"Event Deliveries"
 				]
 			}
 		},
@@ -8249,11 +8249,11 @@
 		},
 		{
 			"description": "EventDelivery related APIs",
-			"name": "EventDeliveries"
+			"name": "Event Deliveries"
 		},
 		{
 			"description": "Delivery Attempt related APIs",
-			"name": "DeliveryAttempts"
+			"name": "Delivery Attempts"
 		},
 		{
 			"description": "Project related APIs",
@@ -8261,7 +8261,7 @@
 		},
 		{
 			"description": "Portal Links related APIs",
-			"name": "PortalLinks"
+			"name": "Portal Links"
 		}
 	]
 }

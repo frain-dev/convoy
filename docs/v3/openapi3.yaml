@@ -1957,7 +1957,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get event deliveries
       tags:
-      - EventDeliveries
+      - Event Deliveries
   /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}:
     get:
       description: This endpoint fetches an event delivery.
@@ -2028,7 +2028,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get event delivery
       tags:
-      - EventDeliveries
+      - Event Deliveries
   /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
     get:
       description: This endpoint fetches an app message's delivery attempts
@@ -2096,7 +2096,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get delivery attempts
       tags:
-      - DeliveryAttempts
+      - Delivery Attempts
   /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
     get:
       description: This endpoint fetches an app event delivery attempt
@@ -2168,7 +2168,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get delivery attempt
       tags:
-      - DeliveryAttempts
+      - Delivery Attempts
   /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend:
     put:
       description: This endpoint resends an app event
@@ -2239,7 +2239,7 @@ paths:
       - ApiKeyAuth: []
       summary: Resend an app event
       tags:
-      - EventDeliveries
+      - Event Deliveries
   /api/v1/projects/{projectID}/eventdeliveries/batchretry:
     post:
       description: This endpoint resends multiple app events
@@ -2314,7 +2314,7 @@ paths:
       - ApiKeyAuth: []
       summary: Batch Resend app events
       tags:
-      - EventDeliveries
+      - Event Deliveries
   /api/v1/projects/{projectID}/eventdeliveries/countbatchretryevents:
     get:
       description: This endpoint counts app events that will be affected by a batch
@@ -2410,7 +2410,7 @@ paths:
       - ApiKeyAuth: []
       summary: Count affected eventDeliveries
       tags:
-      - EventDeliveries
+      - Event Deliveries
   /api/v1/projects/{projectID}/eventdeliveries/forceresend:
     post:
       description: This endpoint force resends multiple app events
@@ -2485,7 +2485,7 @@ paths:
       - ApiKeyAuth: []
       summary: Force Resend app events
       tags:
-      - EventDeliveries
+      - Event Deliveries
   /api/v1/projects/{projectID}/events:
     get:
       description: This endpoint fetches app events with pagination
@@ -4601,10 +4601,10 @@ tags:
 - description: Source related APIs
   name: Sources
 - description: EventDelivery related APIs
-  name: EventDeliveries
+  name: Event Deliveries
 - description: Delivery Attempt related APIs
-  name: DeliveryAttempts
+  name: Delivery Attempts
 - description: Project related APIs
   name: Projects
 - description: Portal Links related APIs
-  name: PortalLinks
+  name: Portal Links

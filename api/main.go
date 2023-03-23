@@ -37,16 +37,16 @@ package api
 // @tag.name Sources
 // @tag.description Source related APIs
 
-// @tag.name EventDeliveries
+// @tag.name Event Deliveries
 // @tag.description EventDelivery related APIs
 
-// @tag.name DeliveryAttempts
+// @tag.name Delivery Attempts
 // @tag.description Delivery Attempt related APIs
 
 // @tag.name Projects
 // @tag.description Project related APIs
 
-// @tag.name PortalLinks
+// @tag.name Portal Links
 // @tag.description Portal Links related APIs
 
 // Stub represents empty json or arbitrary json bodies for our doc annotations

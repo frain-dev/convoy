@@ -1858,7 +1858,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get event deliveries
       tags:
-      - EventDeliveries
+      - Event Deliveries
   /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}:
     get:
       consumes:
@@ -1923,7 +1923,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get event delivery
       tags:
-      - EventDeliveries
+      - Event Deliveries
   /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
     get:
       consumes:
@@ -1985,7 +1985,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get delivery attempts
       tags:
-      - DeliveryAttempts
+      - Delivery Attempts
   /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
     get:
       consumes:
@@ -2050,7 +2050,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get delivery attempt
       tags:
-      - DeliveryAttempts
+      - Delivery Attempts
   /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend:
     put:
       consumes:
@@ -2115,7 +2115,7 @@ paths:
       - ApiKeyAuth: []
       summary: Resend an app event
       tags:
-      - EventDeliveries
+      - Event Deliveries
   /api/v1/projects/{projectID}/eventdeliveries/batchretry:
     post:
       consumes:
@@ -2183,7 +2183,7 @@ paths:
       - ApiKeyAuth: []
       summary: Batch Resend app events
       tags:
-      - EventDeliveries
+      - Event Deliveries
   /api/v1/projects/{projectID}/eventdeliveries/countbatchretryevents:
     get:
       consumes:
@@ -2268,7 +2268,7 @@ paths:
       - ApiKeyAuth: []
       summary: Count affected eventDeliveries
       tags:
-      - EventDeliveries
+      - Event Deliveries
   /api/v1/projects/{projectID}/eventdeliveries/forceresend:
     post:
       consumes:
@@ -2336,7 +2336,7 @@ paths:
       - ApiKeyAuth: []
       summary: Force Resend app events
       tags:
-      - EventDeliveries
+      - Event Deliveries
   /api/v1/projects/{projectID}/events:
     get:
       consumes:
@@ -4256,10 +4256,10 @@ tags:
 - description: Source related APIs
   name: Sources
 - description: EventDelivery related APIs
-  name: EventDeliveries
+  name: Event Deliveries
 - description: Delivery Attempt related APIs
-  name: DeliveryAttempts
+  name: Delivery Attempts
 - description: Project related APIs
   name: Projects
 - description: Portal Links related APIs
-  name: PortalLinks
+  name: Portal Links
