@@ -319,7 +319,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 		}
 
 		// count the row number before the first row
-		rows, err = e.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err := e.db.QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -329,6 +329,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 				return nil, datastore.PaginationData{}, err
 			}
 		}
+		rows.Close()
 	}
 
 	ids := make([]string, len(events))

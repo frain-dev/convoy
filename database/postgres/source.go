@@ -417,7 +417,7 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 		countQuery = s.db.Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err = s.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err := s.db.QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -427,6 +427,7 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 				return nil, datastore.PaginationData{}, err
 			}
 		}
+		rows.Close()
 	}
 
 	ids := make([]string, len(sources))

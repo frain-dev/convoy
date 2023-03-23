@@ -344,7 +344,7 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 		countQuery = a.db.Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err = a.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err := a.db.QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -354,6 +354,7 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 				return nil, datastore.PaginationData{}, err
 			}
 		}
+		rows.Close()
 	}
 
 	ids := make([]string, len(apiKeys))
