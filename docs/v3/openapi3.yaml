@@ -658,27 +658,6 @@ components:
         crc_verified_at:
           type: string
       type: object
-    datastore.User:
-      properties:
-        created_at:
-          type: string
-        deleted_at:
-          type: string
-        email:
-          type: string
-        email_verified:
-          type: boolean
-        first_name:
-          type: string
-        last_name:
-          type: string
-        reset_password_expires_at:
-          type: string
-        uid:
-          type: string
-        updated_at:
-          type: string
-      type: object
     datastore.VerifierConfig:
       properties:
         api_key:
@@ -851,13 +830,6 @@ components:
         type:
           $ref: '#/components/schemas/datastore.ProjectType'
       type: object
-    models.ResetPassword:
-      properties:
-        password:
-          type: string
-        password_confirmation:
-          type: string
-      type: object
     models.RetryConfiguration:
       properties:
         duration:
@@ -978,7 +950,7 @@ info:
     url: https://www.mozilla.org/en-US/MPL/2.0/
   termsOfService: https://getconvoy.io/terms
   title: Convoy API Reference
-  version: 0.8.0
+  version: 0.9.0
 openapi: 3.0.3
 paths:
   /api/v1/organisations:
@@ -4463,130 +4435,6 @@ paths:
       summary: Get portal link keys
       tags:
       - Portal Links
-  /ui/users/forgot-password:
-    post:
-      description: This endpoint verifies a user's email
-      parameters:
-      - description: Email verification token
-        in: query
-        name: token
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/api.Stub'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/api.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/api.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/api.Stub'
-                  type: object
-          description: Internal Server Error
-      summary: Verify Email
-      tags:
-      - User
-  /ui/users/reset-password:
-    post:
-      description: This endpoint resets a users password
-      parameters:
-      - description: reset token
-        in: query
-        name: token
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/models.ResetPassword'
-        description: Reset Password Details
-        required: true
-        x-originalParamName: password
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/datastore.User'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/api.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/api.Stub'
-                  type: object
-          description: Unauthorized
-        "500":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/api.Stub'
-                  type: object
-          description: Internal Server Error
-      summary: Reset user password
-      tags:
-      - User
 servers:
 - url: https://dashboard.getconvoy.io/
 tags:

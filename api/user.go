@@ -207,16 +207,6 @@ func (a *ApplicationHandler) ForgotPassword(w http.ResponseWriter, r *http.Reque
 	_ = render.Render(w, r, util.NewServerResponse("Password reset token has been sent successfully", nil, http.StatusOK))
 }
 
-// VerifyEmail
-// @Summary Verify Email
-// @Description This endpoint verifies a user's email
-// @Tags User
-// @Accept  json
-// @Produce  json
-// @Param token query string true "Email verification token"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Router /ui/users/forgot-password  [post]
 func (a *ApplicationHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	userService := createUserService(a)
 
@@ -229,17 +219,6 @@ func (a *ApplicationHandler) VerifyEmail(w http.ResponseWriter, r *http.Request)
 	_ = render.Render(w, r, util.NewServerResponse("Email has been verified successfully", nil, http.StatusOK))
 }
 
-// ResetPassword
-// @Summary Reset user password
-// @Description This endpoint resets a users password
-// @Tags User
-// @Accept  json
-// @Produce  json
-// @Param token query string true "reset token"
-// @Param password body models.ResetPassword true "Reset Password Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.User}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Router /ui/users/reset-password [post]
 func (a *ApplicationHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	var resetPassword models.ResetPassword
