@@ -36,7 +36,7 @@ func (a *ApplicationHandler) GetOrganisation(w http.ResponseWriter, r *http.Requ
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Organisation}}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/organisations [get]
 func _() {}

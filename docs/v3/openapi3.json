@@ -1523,7 +1523,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -1543,7 +1543,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -1649,7 +1649,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -1669,7 +1669,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -1774,7 +1774,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -1794,7 +1794,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -1889,7 +1889,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -1909,7 +1909,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -2002,7 +2002,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2022,7 +2022,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -2127,7 +2127,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2147,7 +2147,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -2245,7 +2245,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2265,7 +2265,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -2370,7 +2370,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2390,7 +2390,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -2418,7 +2418,7 @@
 						}
 					},
 					{
-						"description": "endpoint id",
+						"description": "Endpoint ID",
 						"in": "path",
 						"name": "endpointID",
 						"required": true,
@@ -2494,7 +2494,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2514,7 +2514,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -2540,7 +2540,7 @@
 						}
 					},
 					{
-						"description": "endpoint id",
+						"description": "Endpoint ID",
 						"in": "path",
 						"name": "endpointID",
 						"required": true,
@@ -2616,7 +2616,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2636,7 +2636,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -2662,7 +2662,7 @@
 						}
 					},
 					{
-						"description": "endpoint id",
+						"description": "Endpoint ID",
 						"in": "path",
 						"name": "endpointID",
 						"required": true,
@@ -2750,7 +2750,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2770,7 +2770,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -2798,7 +2798,7 @@
 						}
 					},
 					{
-						"description": "endpoint id",
+						"description": "Endpoint ID",
 						"in": "path",
 						"name": "endpointID",
 						"required": true,
@@ -2874,7 +2874,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2894,7 +2894,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -2922,7 +2922,7 @@
 						}
 					},
 					{
-						"description": "endpoint id",
+						"description": "Endpoint ID",
 						"in": "path",
 						"name": "endpointID",
 						"required": true,
@@ -2998,7 +2998,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3018,7 +3018,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -3207,7 +3207,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3227,7 +3227,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -3349,7 +3349,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3369,7 +3369,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -3524,7 +3524,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3544,7 +3544,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -3666,7 +3666,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3686,7 +3686,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -3802,7 +3802,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3822,7 +3822,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -3929,7 +3929,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3949,7 +3949,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -4062,7 +4062,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -4082,7 +4082,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -4198,7 +4198,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -4218,7 +4218,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -4396,7 +4396,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -4416,7 +4416,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -4533,7 +4533,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -4553,7 +4553,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -4684,7 +4684,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -4704,7 +4704,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -4835,7 +4835,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -4855,7 +4855,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -4974,7 +4974,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -4994,7 +4994,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -5110,7 +5110,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5130,7 +5130,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -5246,7 +5246,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5266,7 +5266,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -5400,7 +5400,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5420,7 +5420,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -5525,7 +5525,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5545,7 +5545,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -5649,7 +5649,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5669,7 +5669,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -5783,7 +5783,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5803,7 +5803,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -5907,7 +5907,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5927,7 +5927,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -6061,7 +6061,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6081,7 +6081,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -6186,7 +6186,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6206,7 +6206,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -6310,7 +6310,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6330,7 +6330,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -6432,7 +6432,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6452,7 +6452,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -6566,7 +6566,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6586,7 +6586,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -6728,7 +6728,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6748,7 +6748,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -6868,7 +6868,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6888,7 +6888,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -6995,7 +6995,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7015,7 +7015,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -7119,7 +7119,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7139,7 +7139,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -7241,7 +7241,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7261,7 +7261,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -7375,7 +7375,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7395,7 +7395,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -7499,7 +7499,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7519,7 +7519,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -7606,7 +7606,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7626,7 +7626,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"summary": "Get portal link devices",
@@ -7708,7 +7708,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7728,7 +7728,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"summary": "Get endpoints",
@@ -7817,7 +7817,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7837,7 +7837,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"summary": "Create an endpoint",
@@ -7916,7 +7916,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7936,7 +7936,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"summary": "Get portal link keys",

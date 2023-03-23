@@ -1004,8 +1004,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -1065,8 +1065,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -1125,8 +1125,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -1180,8 +1180,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -1234,8 +1234,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -1294,8 +1294,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -1351,8 +1351,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -1411,8 +1411,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -1436,7 +1436,7 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: endpoint id
+      - description: Endpoint ID
         in: path
         name: endpointID
         required: true
@@ -1471,8 +1471,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -1495,7 +1495,7 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: endpoint id
+      - description: Endpoint ID
         in: path
         name: endpointID
         required: true
@@ -1530,8 +1530,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -1554,7 +1554,7 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: endpoint id
+      - description: Endpoint ID
         in: path
         name: endpointID
         required: true
@@ -1595,8 +1595,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -1621,7 +1621,7 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: endpoint id
+      - description: Endpoint ID
         in: path
         name: endpointID
         required: true
@@ -1656,8 +1656,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -1681,7 +1681,7 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: endpoint id
+      - description: Endpoint ID
         in: path
         name: endpointID
         required: true
@@ -1716,8 +1716,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -1817,8 +1817,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -1882,8 +1882,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -1944,8 +1944,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2009,8 +2009,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2074,8 +2074,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2142,8 +2142,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2227,8 +2227,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2295,8 +2295,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2390,8 +2390,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2455,8 +2455,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2520,8 +2520,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2585,8 +2585,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2657,8 +2657,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2730,8 +2730,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2797,8 +2797,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2871,8 +2871,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2931,8 +2931,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2991,8 +2991,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3056,8 +3056,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3116,8 +3116,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3190,8 +3190,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3250,8 +3250,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3310,8 +3310,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3369,8 +3369,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3434,8 +3434,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3512,8 +3512,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3579,8 +3579,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3639,8 +3639,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3698,8 +3698,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3763,8 +3763,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3823,8 +3823,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3884,8 +3884,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3935,8 +3935,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3984,8 +3984,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -4037,8 +4037,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -4084,8 +4084,8 @@ paths:
                 data:
                   $ref: '#/definitions/api.Stub'
               type: object
-        "500":
-          description: Internal Server Error
+        "404":
+          description: Not Found
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'

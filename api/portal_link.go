@@ -31,7 +31,7 @@ func createPortalLinkService(a *ApplicationHandler) *services.PortalLinkService 
 // @Param projectID path string true "Project ID"
 // @Param portallink body models.PortalLink true "Portal Link Details"
 // @Success 200 {object} util.ServerResponse{data=models.PortalLinkResponse}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/portal-links [post]
 func (a *ApplicationHandler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +64,7 @@ func (a *ApplicationHandler) CreatePortalLink(w http.ResponseWriter, r *http.Req
 // @Param projectID path string true "Project ID"
 // @Param portalLinkID path string true "portal link id"
 // @Success 200 {object} util.ServerResponse{data=models.PortalLinkResponse}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/portal-links/{portalLinkID} [get]
 func (a *ApplicationHandler) GetPortalLinkByID(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +93,7 @@ func (a *ApplicationHandler) GetPortalLinkByID(w http.ResponseWriter, r *http.Re
 // @Param portalLinkID path string true "portal link id"
 // @Param portallink body models.PortalLink true "Portal Link Details"
 // @Success 200 {object} util.ServerResponse{data=models.PortalLinkResponse}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/portal-links/{portalLinkID} [put]
 func (a *ApplicationHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +134,7 @@ func (a *ApplicationHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Req
 // @Param projectID path string true "Project ID"
 // @Param portalLinkID path string true "portal link id"
 // @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke [put]
 func (a *ApplicationHandler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
@@ -167,7 +167,7 @@ func (a *ApplicationHandler) RevokePortalLink(w http.ResponseWriter, r *http.Req
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.PortalLinkResponse}}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/portal-links [get]
 func (a *ApplicationHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
@@ -203,7 +203,7 @@ func (a *ApplicationHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http
 // @Produce  json
 // @Param endpoint body models.Endpoint true "Endpoint Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Router /portal/endpoints [post]
 func (a *ApplicationHandler) CreatePortalLinkEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.Endpoint
@@ -233,7 +233,7 @@ func (a *ApplicationHandler) CreatePortalLinkEndpoint(w http.ResponseWriter, r *
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} util.ServerResponse{data=[]datastore.Endpoint}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Router /portal/endpoints [get]
 func (a *ApplicationHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *http.Request) {
 	portalLink := m.GetPortalLinkFromContext(r.Context())
@@ -256,7 +256,7 @@ func (a *ApplicationHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *ht
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} util.ServerResponse{data=[]datastore.Device}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Router /portal/devices [get]
 func (a *ApplicationHandler) GetPortalLinkDevices(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
@@ -284,7 +284,7 @@ func (a *ApplicationHandler) GetPortalLinkDevices(w http.ResponseWriter, r *http
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} util.ServerResponse{data=models.PortalAPIKeyResponse}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Router /portal/keys [get]
 func (a *ApplicationHandler) GetPortalLinkKeys(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())

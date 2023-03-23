@@ -1014,7 +1014,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -1024,7 +1024,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Get organisations
@@ -1081,7 +1081,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -1091,7 +1091,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Get projects
@@ -1148,7 +1148,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -1158,7 +1158,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Create a project
@@ -1208,7 +1208,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -1218,7 +1218,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Delete a project
@@ -1267,7 +1267,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -1277,7 +1277,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Get a project
@@ -1334,7 +1334,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -1344,7 +1344,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Update a project
@@ -1396,7 +1396,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -1406,7 +1406,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Get endpoints
@@ -1463,7 +1463,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -1473,7 +1473,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Create an endpoint
@@ -1489,7 +1489,7 @@ paths:
         required: true
         schema:
           type: string
-      - description: endpoint id
+      - description: Endpoint ID
         in: path
         name: endpointID
         required: true
@@ -1529,7 +1529,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -1539,7 +1539,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Delete endpoint
@@ -1554,7 +1554,7 @@ paths:
         required: true
         schema:
           type: string
-      - description: endpoint id
+      - description: Endpoint ID
         in: path
         name: endpointID
         required: true
@@ -1594,7 +1594,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -1604,7 +1604,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Get endpoint
@@ -1619,7 +1619,7 @@ paths:
         required: true
         schema:
           type: string
-      - description: endpoint id
+      - description: Endpoint ID
         in: path
         name: endpointID
         required: true
@@ -1667,7 +1667,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -1677,7 +1677,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Update an endpoint
@@ -1694,7 +1694,7 @@ paths:
         required: true
         schema:
           type: string
-      - description: endpoint id
+      - description: Endpoint ID
         in: path
         name: endpointID
         required: true
@@ -1734,7 +1734,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -1744,7 +1744,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Expire and generate new application endpoint secret
@@ -1760,7 +1760,7 @@ paths:
         required: true
         schema:
           type: string
-      - description: endpoint id
+      - description: Endpoint ID
         in: path
         name: endpointID
         required: true
@@ -1800,7 +1800,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -1810,7 +1810,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Toggles an endpoint's status from active <-> inactive
@@ -1914,7 +1914,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -1924,7 +1924,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Get event deliveries
@@ -1985,7 +1985,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -1995,7 +1995,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Get event delivery
@@ -2053,7 +2053,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -2063,7 +2063,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Get delivery attempts
@@ -2125,7 +2125,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -2135,7 +2135,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Get delivery attempt
@@ -2196,7 +2196,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -2206,7 +2206,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Resend an app event
@@ -2271,7 +2271,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -2281,7 +2281,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Batch Resend app events
@@ -2367,7 +2367,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -2377,7 +2377,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Count affected eventDeliveries
@@ -2442,7 +2442,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -2452,7 +2452,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Force Resend app events
@@ -2549,7 +2549,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -2559,7 +2559,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Get app events with pagination
@@ -2621,7 +2621,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -2631,7 +2631,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Create endpoint event
@@ -2692,7 +2692,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -2702,7 +2702,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Get endpoint event
@@ -2763,7 +2763,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -2773,7 +2773,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Replay endpoint event
@@ -2843,7 +2843,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -2853,7 +2853,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Replays multiple endpoint events
@@ -2924,7 +2924,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -2934,7 +2934,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Counts affected events
@@ -2998,7 +2998,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -3008,7 +3008,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Fan out an event to multiple endpoints.
@@ -3080,7 +3080,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -3090,7 +3090,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Fetch multiple portal links
@@ -3147,7 +3147,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -3157,7 +3157,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Create a portal link
@@ -3213,7 +3213,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -3223,7 +3223,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Get a portal link
@@ -3286,7 +3286,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -3296,7 +3296,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Update a portal link
@@ -3352,7 +3352,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -3362,7 +3362,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Revoke Portal Link
@@ -3434,7 +3434,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -3444,7 +3444,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Fetch multiple sources
@@ -3501,7 +3501,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -3511,7 +3511,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Create a source
@@ -3567,7 +3567,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -3577,7 +3577,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Delete source
@@ -3632,7 +3632,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -3642,7 +3642,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Get a source
@@ -3705,7 +3705,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -3715,7 +3715,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Update a source
@@ -3792,7 +3792,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -3802,7 +3802,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Get all subscriptions
@@ -3866,7 +3866,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -3876,7 +3876,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Creates a subscription
@@ -3932,7 +3932,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -3942,7 +3942,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Delete subscription
@@ -3997,7 +3997,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -4007,7 +4007,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Gets a subscription
@@ -4070,7 +4070,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -4080,7 +4080,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Update a subscription
@@ -4136,7 +4136,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -4146,7 +4146,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Toggles a subscription's status from active <-> inactive
@@ -4204,7 +4204,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -4214,7 +4214,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Test subscription filter
@@ -4259,7 +4259,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -4269,7 +4269,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       summary: Get portal link devices
       tags:
       - Portal Links
@@ -4312,7 +4312,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -4322,7 +4322,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       summary: Get endpoints
       tags:
       - Portal Links
@@ -4370,7 +4370,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -4380,7 +4380,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       summary: Create an endpoint
       tags:
       - Portal Links
@@ -4421,7 +4421,7 @@ paths:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
           description: Unauthorized
-        "500":
+        "404":
           content:
             application/json:
               schema:
@@ -4431,7 +4431,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/api.Stub'
                   type: object
-          description: Internal Server Error
+          description: Not Found
       summary: Get portal link keys
       tags:
       - Portal Links

@@ -41,7 +41,7 @@ type pagedResponse struct {
 // @Param projectID path string true "Project ID"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/endpoints [post]
 func (a *ApplicationHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -71,9 +71,9 @@ func (a *ApplicationHandler) CreateEndpoint(w http.ResponseWriter, r *http.Reque
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Param endpointID path string true "endpoint id"
+// @Param endpointID path string true "Endpoint ID"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/endpoints/{endpointID} [get]
 func (a *ApplicationHandler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +89,7 @@ func (a *ApplicationHandler) GetEndpoint(w http.ResponseWriter, r *http.Request)
 // @Produce  json
 // @Param projectID path string true "Project ID"
 // @Success 200 {object} util.ServerResponse{data=[]datastore.Endpoint}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/endpoints [get]
 func (a *ApplicationHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
@@ -116,10 +116,10 @@ func (a *ApplicationHandler) GetEndpoints(w http.ResponseWriter, r *http.Request
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Param endpointID path string true "endpoint id"
+// @Param endpointID path string true "Endpoint ID"
 // @Param endpoint body models.Endpoint true "Endpoint Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/endpoints/{endpointID} [put]
 func (a *ApplicationHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -151,9 +151,9 @@ func (a *ApplicationHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Reque
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Param endpointID path string true "endpoint id"
+// @Param endpointID path string true "Endpoint ID"
 // @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/endpoints/{endpointID} [delete]
 func (a *ApplicationHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -178,9 +178,9 @@ func (a *ApplicationHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Reque
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Param endpointID path string true "endpoint id"
+// @Param endpointID path string true "Endpoint ID"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret [put]
 func (a *ApplicationHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
@@ -212,9 +212,9 @@ func (a *ApplicationHandler) ExpireSecret(w http.ResponseWriter, r *http.Request
 // @Accept json
 // @Produce json
 // @Param projectID path string true "Project ID"
-// @Param endpointID path string true "endpoint id"
+// @Param endpointID path string true "Endpoint ID"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status [put]
 func (a *ApplicationHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.Request) {

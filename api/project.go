@@ -33,7 +33,7 @@ func createProjectService(a *ApplicationHandler) *services.ProjectService {
 // @Produce  json
 // @Param projectID path string true "Project ID"
 // @Success 200 {object} util.ServerResponse{data=datastore.Project}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID} [get]
 func _() {}
@@ -60,7 +60,7 @@ func (a *ApplicationHandler) GetProject(w http.ResponseWriter, r *http.Request) 
 // @Produce  json
 // @Param projectID path string true "Project ID"
 // @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID} [delete]
 func _() {}
@@ -98,7 +98,7 @@ func (a *ApplicationHandler) DeleteProject(w http.ResponseWriter, r *http.Reques
 // @Param orgID query string true "Organisation id"
 // @Param project body models.Project true "Project Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Project}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects [post]
 func _() {}
@@ -138,7 +138,7 @@ func (a *ApplicationHandler) CreateProject(w http.ResponseWriter, r *http.Reques
 // @Param projectID path string true "Project ID"
 // @Param project body models.Project true "Project Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Project}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID} [put]
 func _() {}
@@ -172,7 +172,7 @@ func (a *ApplicationHandler) UpdateProject(w http.ResponseWriter, r *http.Reques
 // @Param name query string false "Project name"
 // @Param orgID query string true "organisation id"
 // @Success 200 {object} util.ServerResponse{data=[]datastore.Project}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects [get]
 func _() {}
