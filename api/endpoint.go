@@ -173,12 +173,13 @@ func (a *ApplicationHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Reque
 
 // ExpireSecret
 // @Summary Roll endpoint secret
-// @Description This endpoint expires anc re-generates the endpoint secret.
+// @Description This endpoint expires and re-generates the endpoint secret.
 // @Tags Endpoints
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
 // @Param endpointID path string true "Endpoint ID"
+// @Param endpoint body models.ExpireSecret true "Expire Secret Body Parameters"
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth

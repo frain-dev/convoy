@@ -682,6 +682,7 @@ components:
     models.Event:
       properties:
         app_id:
+          description: Deprecated but necessary for backward compatibility
           type: string
         custom_headers:
           additionalProperties:
@@ -697,6 +698,13 @@ components:
         endpoint_id:
           type: string
         event_type:
+          type: string
+      type: object
+    models.ExpireSecret:
+      properties:
+        expiration:
+          type: integer
+        secret:
           type: string
       type: object
     models.FanoutEvent:
@@ -1630,7 +1638,7 @@ paths:
       - Endpoints
   /api/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret:
     put:
-      description: This endpoint expires anc re-generates the endpoint secret.
+      description: This endpoint expires and re-generates the endpoint secret.
       parameters:
       - description: Project ID
         in: path
@@ -1644,6 +1652,14 @@ paths:
         required: true
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.ExpireSecret'
+        description: Expire Secret Body Parameters
+        required: true
+        x-originalParamName: endpoint
       responses:
         "200":
           content:
@@ -2648,7 +2664,7 @@ paths:
         name: endDate
         schema:
           type: string
-      - description: Source id
+      - description: Source ID
         in: query
         name: source
         schema:
@@ -3360,7 +3376,7 @@ paths:
         required: true
         schema:
           type: string
-      - description: source id
+      - description: Source ID
         in: path
         name: sourceID
         required: true

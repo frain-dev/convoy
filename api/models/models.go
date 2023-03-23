@@ -221,7 +221,7 @@ type UpdateSource struct {
 
 type Event struct {
 	EndpointID string `json:"endpoint_id"`
-	AppID      string `json:"app_id" bson:"app_id"`
+	AppID      string `json:"app_id" bson:"app_id"` // Deprecated but necessary for backward compatibility
 	EventType  string `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the

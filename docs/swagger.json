@@ -1244,7 +1244,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint expires anc re-generates the endpoint secret.",
+                "description": "This endpoint expires and re-generates the endpoint secret.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1269,6 +1269,15 @@
                         "name": "endpointID",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Expire Secret Body Parameters",
+                        "name": "endpoint",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ExpireSecret"
+                        }
                     }
                 ],
                 "responses": {
@@ -2700,7 +2709,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "Source id",
+                        "description": "Source ID",
                         "name": "source",
                         "in": "query"
                     }
@@ -4018,7 +4027,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "source id",
+                        "description": "Source ID",
                         "name": "sourceID",
                         "in": "path",
                         "required": true
@@ -6052,6 +6061,7 @@
             "type": "object",
             "properties": {
                 "app_id": {
+                    "description": "Deprecated but necessary for backward compatibility",
                     "type": "string"
                 },
                 "custom_headers": {
@@ -6071,6 +6081,17 @@
                     "type": "string"
                 },
                 "event_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ExpireSecret": {
+            "type": "object",
+            "properties": {
+                "expiration": {
+                    "type": "integer"
+                },
+                "secret": {
                     "type": "string"
                 }
             }

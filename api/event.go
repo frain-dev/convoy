@@ -131,7 +131,7 @@ func (a *ApplicationHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.
 // @Param projectID path string true "Project ID"
 // @Param startDate query string false "start date"
 // @Param endDate query string false "end date"
-// @Param source query string false "Source id"
+// @Param source query string false "Source ID"
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth

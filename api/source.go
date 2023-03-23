@@ -68,7 +68,7 @@ func (a *ApplicationHandler) CreateSource(w http.ResponseWriter, r *http.Request
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Param sourceID path string true "source id"
+// @Param sourceID path string true "Source ID"
 // @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
