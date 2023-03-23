@@ -1,6 +1,6 @@
 ## 0.9.0-rc.3
 
--   [Bugfix] Fix search indexer #1448 #1449
+-   [Bugfix] Fix search indexer job #1448 #1449
 -   [Bugfix] Fix refresh token issue #1447
 -   [Bugfix] Fix event graph length #1443
 
@@ -16,6 +16,10 @@
 -   [Enhancement] Switched backing store to PostgreSQL. #1287
 -   [Enhancement] Add modal to confirm before regenerating API Keys. #1378
 -   [Enhancement] Implement new wait screens #1398
+
+## 0.8.3
+
+-   [Bugfix] Fix search indexer job #1448 #1449
 
 ## 0.8.2
 
