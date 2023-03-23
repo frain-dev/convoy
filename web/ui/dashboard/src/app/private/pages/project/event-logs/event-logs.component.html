@@ -47,7 +47,7 @@
 				</div>
 
 				<ul class="min-h-[100px] py-10px">
-					<li class="py-4px px-20px" *ngFor="let endpoint of eventsEndpointFilter$ | async" convoy-list-item convoy-dropdown-option>
+					<li class="py-4px px-20px flex items-center justify-between border-b border-grey-10" *ngFor="let endpoint of eventsEndpointFilter$ | async" convoy-list-item convoy-dropdown-option>
 						<label class="text-12 block w-full" [for]="endpoint.uid">{{ endpoint.title }}</label>
 						<input type="checkbox" name="endpoint" [value]="endpoint.uid" [id]="endpoint.uid" [checked]="endpoint.uid === eventEndpoint" (change)="updateEndpointFilter(endpoint.uid, $event)" />
 					</li>
@@ -68,7 +68,7 @@
 
 			<ng-container dropdownOptions>
 				<ul class="min-h-[100px] py-10px">
-					<li class="py-4px px-20px" *ngFor="let source of filterSources" convoy-list-item convoy-dropdown-option>
+					<li class="py-4px px-20px flex items-center justify-between border-b border-grey-10" *ngFor="let source of filterSources" convoy-list-item convoy-dropdown-option>
 						<label class="text-12 block w-full" [for]="source.uid">{{ source.name }}</label>
 						<input type="checkbox" name="source" [value]="source.uid" [id]="source.uid" [checked]="source.uid === eventSource" (change)="updateSourceFilter(source.uid, $event)" />
 					</li>

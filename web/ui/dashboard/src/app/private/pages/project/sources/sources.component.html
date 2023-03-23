@@ -80,7 +80,7 @@
 
 				<!-- incoming project sources -->
 				<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
-					<div class="px-24px pb-12px border-b border-b-grey-1 cursor-pointer" [routerLink]="['./']" [queryParams]="{ id: source.uid }">
+					<div class="px-24px pb-12px border-b border-b-grey-10 cursor-pointer" [routerLink]="['./']" [queryParams]="{ id: source.uid }">
 						<div class="text-grey-40 text-10 mb-4px">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</div>
 						<div class="flex justify-between items-center">
 							<div class="text-14 font-medium">{{ source.name }}</div>
