@@ -38,10 +38,10 @@ const Prev PageDirection = "prev"
 
 func (p Pageable) Cursor() string {
 	if p.Direction == Next {
-		return p.PrevCursor
+		return p.NextCursor
 	}
 
-	return p.NextCursor
+	return p.PrevCursor
 }
 
 func (p Pageable) Limit() int {
@@ -64,14 +64,19 @@ type PaginationData struct {
 	Next      int64 `json:"next"`
 	TotalPage int64 `json:"totalPage"`
 
-	PerPage         int64  `json:"per_page"`
-	HasNextPage     bool   `json:"has_next_page"`
-	HasPreviousPage bool   `json:"has_previous_page"`
-	PrevPageCursor  string `json:"prev_page_cursor"`
-	NextPageCursor  string `json:"next_page_cursor"`
+	PrevRowCount    PrevRowCount `json:"-"`
+	PerPage         int64        `json:"per_page"`
+	HasNextPage     bool         `json:"has_next_page"`
+	HasPreviousPage bool         `json:"has_prev_page"`
+	PrevPageCursor  string       `json:"prev_page_cursor"`
+	NextPageCursor  string       `json:"next_page_cursor"`
 }
 
-func (p *PaginationData) Build(pageable Pageable, items []string) PaginationData {
+type PrevRowCount struct {
+	Count int
+}
+
+func (p *PaginationData) Build(pageable Pageable, items []string) *PaginationData {
 	p.PerPage = int64(pageable.PerPage)
 
 	var s, e string
@@ -84,19 +89,19 @@ func (p *PaginationData) Build(pageable Pageable, items []string) PaginationData
 		e = items[len(items)-1]
 	}
 
-	// there's an extra item. We use it to find out if there is more data to be loaded
-	if len(items) > pageable.PerPage {
-		if pageable.Direction == Next {
-			p.HasNextPage = true
-		} else if pageable.Direction == Prev {
-			p.HasPreviousPage = true
-		}
-	}
-
 	p.PrevPageCursor = s
 	p.NextPageCursor = e
 
-	return *p
+	// there's an extra item. We use it to find out if there is more data to be loaded
+	if len(items) > pageable.PerPage {
+		p.HasNextPage = true
+	}
+
+	if p.PrevRowCount.Count > 0 {
+		p.HasPreviousPage = true
+	}
+
+	return p
 }
 
 type Period int
@@ -438,7 +443,7 @@ type Project struct {
 	ProjectConfigID string             `json:"-" db:"project_configuration_id"`
 	Type            ProjectType        `json:"type" db:"type"`
 	Config          *ProjectConfig     `json:"config" db:"config"`
-	Statistics      *ProjectStatistics `json:"statistics" db:"-"`
+	Statistics      *ProjectStatistics `json:"statistics" db:"statistics"`
 
 	RetainedEvents int `json:"retained_events" db:"retained_events"`
 
@@ -537,8 +542,10 @@ type RetentionPolicyConfiguration struct {
 }
 
 type ProjectStatistics struct {
-	MessagesSent   int64 `json:"messages_sent" db:"messages_sent"`
-	TotalEndpoints int64 `json:"total_endpoints" db:"total_endpoints"`
+	MessagesSent       int64 `json:"messages_sent" db:"messages_sent"`
+	TotalEndpoints     int64 `json:"total_endpoints" db:"total_endpoints"`
+	TotalSubscriptions int64 `json:"total_subscriptions" db:"total_subscriptions"`
+	TotalSources       int64 `json:"total_sources" db:"total_sources"`
 }
 
 type ProjectFilter struct {
@@ -837,6 +844,7 @@ type EventDelivery struct {
 
 	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`
+	Source   *Source   `json:"source_metadata,omitempty" db:"source_metadata"`
 
 	DeliveryAttempts DeliveryAttempts    `json:"-" db:"attempts"`
 	Status           EventDeliveryStatus `json:"status" db:"status"`
@@ -1239,12 +1247,12 @@ type OrganisationInvite struct {
 }
 
 type PortalLink struct {
-	UID               string         `json:"uid" db:"id"`
-	Name              string         `json:"name" db:"name"`
-	ProjectID         string         `json:"project_id" db:"project_id"`
-	Token             string         `json:"-" db:"token"`
-	Endpoints         pq.StringArray `json:"endpoints" db:"endpoints"`
-	EndpointsMetadata []Endpoint     `json:"endpoints_metadata" db:"endpoints_metadata"`
+	UID               string           `json:"uid" db:"id"`
+	Name              string           `json:"name" db:"name"`
+	ProjectID         string           `json:"project_id" db:"project_id"`
+	Token             string           `json:"-" db:"token"`
+	Endpoints         pq.StringArray   `json:"endpoints" db:"endpoints"`
+	EndpointsMetadata EndpointMetadata `json:"endpoints_metadata" db:"endpoints_metadata"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`

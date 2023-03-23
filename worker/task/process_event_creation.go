@@ -174,9 +174,14 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			}
 		}
 
+		eBytes, err := json.Marshal(event)
+		if err != nil {
+			log.Errorf("[asynq]: an error occurred marshalling event to be indexed %s", err)
+		}
+
 		job := &queue.Job{
 			ID:      event.UID,
-			Payload: t.Payload(), // t.Payload() is the original event bytes
+			Payload: eBytes,
 			Delay:   5 * time.Second,
 		}
 

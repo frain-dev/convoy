@@ -8,7 +8,7 @@ import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponen
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
-import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { RadioComponent } from 'src/app/components/radio/radio.component';
@@ -30,6 +30,7 @@ import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.
 		TooltipComponent,
 		ToggleComponent,
 		ModalComponent,
+        ModalHeaderComponent,
 		CardComponent,
 		RadioComponent,
 		FormatSecondsPipe,

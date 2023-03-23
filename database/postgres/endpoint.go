@@ -44,18 +44,19 @@ const (
 	e.project_id, e.secrets, e.created_at, e.updated_at,
 	e.authentication_type AS "authentication.type",
 	e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
-	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value",
-	COUNT(ee.event_id) AS event_count
-	FROM convoy.endpoints AS e LEFT JOIN convoy.events_endpoints AS ee ON e.id = ee.endpoint_id
+	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value"
+	FROM convoy.endpoints AS e 
+	LEFT JOIN convoy.events_endpoints AS ee ON e.id = ee.endpoint_id
+	WHERE e.deleted_at IS NULL
 	`
 
-	fetchEndpointById = baseEndpointFetch + `WHERE e.id = $1 AND e.project_id = $2 AND e.deleted_at IS NULL GROUP BY e.id ORDER BY e.id;`
+	fetchEndpointById = baseEndpointFetch + ` AND e.id = $1 AND e.project_id = $2 GROUP BY e.id ORDER BY e.id;`
 
-	fetchEndpointsById = baseEndpointFetch + `WHERE e.id IN (?) AND e.project_id = ? AND e.deleted_at IS NULL GROUP BY e.id ORDER BY e.id;`
+	fetchEndpointsById = baseEndpointFetch + ` AND e.id IN (?) AND e.project_id = ? GROUP BY e.id ORDER BY e.id;`
 
-	fetchEndpointsByAppId = baseEndpointFetch + `WHERE e.app_id = $1 AND e.project_id = $2 AND e.deleted_at IS NULL GROUP BY e.id ORDER BY e.id;`
+	fetchEndpointsByAppId = baseEndpointFetch + ` AND e.app_id = $1 AND e.project_id = $2 GROUP BY e.id ORDER BY e.id;`
 
-	fetchEndpointsByOwnerId = baseEndpointFetch + `WHERE e.project_id = $1 AND e.owner_id = $2 AND e.deleted_at IS NULL GROUP BY e.id ORDER BY e.id;`
+	fetchEndpointsByOwnerId = baseEndpointFetch + ` AND e.project_id = $1 AND e.owner_id = $2 GROUP BY e.id ORDER BY e.id;`
 
 	updateEndpoint = `
 	UPDATE convoy.endpoints SET
@@ -95,7 +96,7 @@ const (
 	WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 
-	fetchEndpointsPaginated = `
+	baseFetchEndpointsPaged = `
 	SELECT
 	e.id, e.title, e.status, e.owner_id,
 	e.target_url, e.description, e.http_timeout,
@@ -106,13 +107,41 @@ const (
 	e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
 	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value"
 	FROM convoy.endpoints AS e 
-	WHERE e.deleted_at IS NULL AND e.project_id = $3 AND (e.title ILIKE $4 OR $4 = '')
-	GROUP BY e.id ORDER BY e.id LIMIT $1 OFFSET $2;
+	WHERE e.deleted_at IS NULL 
+	AND e.project_id = :project_id
+	AND (e.title ILIKE :title OR :title = '')
 	`
 
-	countEndpoints = `
-	SELECT count(id) from convoy.endpoints WHERE project_id = $1 AND deleted_at IS NULL;
+	fetchEndpointsPagedForward = `
+	%s 
+	AND e.id <= :cursor 
+	GROUP BY e.id
+	ORDER BY e.id DESC 
+	LIMIT :limit
 	`
+
+	fetchEndpointsPagedBackward = `
+	WITH endpoints AS (  
+		%s 
+		AND e.id >= :cursor 
+		GROUP BY e.id
+		ORDER BY e.id ASC 
+		LIMIT :limit
+	)
+
+	SELECT * FROM endpoints ORDER BY id DESC
+	`
+
+	countPrevEndpoints = `
+	SELECT count(distinct(s.id)) as count
+	FROM convoy.endpoints s
+	WHERE s.deleted_at IS NULL
+	AND s.project_id = :project_id
+	AND (s.title ILIKE :title OR :title = '')
+	AND s.id > :cursor 
+	GROUP BY s.id 
+	ORDER BY s.id DESC 
+	LIMIT 1`
 )
 
 type endpointRepo struct {
@@ -274,12 +303,40 @@ func (e *endpointRepo) CountProjectEndpoints(ctx context.Context, projectID stri
 	return count, nil
 }
 
-func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string, query string, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
-	if !util.IsStringEmpty(query) {
-		query = fmt.Sprintf("%%%s%%", query)
+func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string, q string, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
+	if !util.IsStringEmpty(q) {
+		q = fmt.Sprintf("%%%s%%", q)
 	}
 
-	rows, err := e.db.QueryxContext(ctx, fetchEndpointsPaginated, pageable.Limit(), pageable.Offset(), projectId, query)
+	arg := map[string]interface{}{
+		"project_id": projectId,
+		"limit":      pageable.Limit(),
+		"cursor":     pageable.Cursor(),
+		"title":      q,
+	}
+
+	var query string
+	if pageable.Direction == datastore.Next {
+		query = fetchEndpointsPagedForward
+	} else {
+		query = fetchEndpointsPagedBackward
+	}
+
+	query = fmt.Sprintf(query, baseFetchEndpointsPaged)
+
+	query, args, err := sqlx.Named(query, arg)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query = e.db.Rebind(query)
+
+	rows, err := e.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -289,9 +346,48 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 		return nil, datastore.PaginationData{}, err
 	}
 
-	var count int
-	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
-	return endpoints, pagination, nil
+	ids := make([]string, len(endpoints))
+	for i := range endpoints {
+		ids[i] = endpoints[i].UID
+	}
+
+	if len(endpoints) > pageable.PerPage {
+		endpoints = endpoints[:len(endpoints)-1]
+	}
+
+	var count datastore.PrevRowCount
+	if len(endpoints) > 0 {
+		var countQuery string
+		var qargs []interface{}
+		first := endpoints[0]
+		qarg := arg
+		qarg["cursor"] = first.UID
+
+		countQuery, qargs, err = sqlx.Named(countPrevEndpoints, qarg)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		countQuery = e.db.Rebind(countQuery)
+
+		// count the row number before the first row
+		rows, err := e.db.QueryxContext(ctx, countQuery, qargs...)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		if rows.Next() {
+			err = rows.StructScan(&count)
+			if err != nil {
+				return nil, datastore.PaginationData{}, err
+			}
+		}
+		rows.Close()
+	}
+
+	pagination := &datastore.PaginationData{PrevRowCount: count}
+	pagination = pagination.Build(pageable, ids)
+
+	return endpoints, *pagination, nil
 }
 
 func (e *endpointRepo) UpdateSecrets(ctx context.Context, endpointID string, projectID string, secrets datastore.Secrets) error {

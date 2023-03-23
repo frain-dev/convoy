@@ -28,14 +28,25 @@
 		</form>
 	</div>
 
-	<button *ngIf="!isLoadingEndpoints && displayedEndpoints?.length" convoy-button size="sm" class="h-36px" id="create-endpoint-modal-button" routerLink="./new">Create Endpoint</button>
+	<button *ngIf="displayedEndpoints?.length" convoy-button size="sm" class="h-36px" id="create-endpoint-modal-button" routerLink="./new">Create Endpoint</button>
 </div>
 
-<convoy-card *ngIf="isLoadingEndpoints">
-	<convoy-table-loader id="endpoints_loader_loader" [tableHead]="endpointsTableHead"></convoy-table-loader>
-</convoy-card>
+<!-- empty state  -->
+<div class="py-100px mt-24px" convoy-card *ngIf="!isLoadingEndpoints && displayedEndpoints?.length === 0">
+	<convoy-empty-state
+		imgSrc="/assets/img/events-log-empty-state.png"
+		[buttonText]="!endpointSearchString ? 'Create Endpoint' : ''"
+		[description]="endpointSearchString ? endpointSearchString + ' endpoint does not exist' : 'You currently do not have any endpoints'"
+		id="endpoints-empty-state"
+		(onAction)="router.navigate(['./new'], { relativeTo: this.route })"
+	></convoy-empty-state>
+</div>
 
-<convoy-card *ngIf="!isLoadingEndpoints && displayedEndpoints?.length">
+<div convoy-card *ngIf="isLoadingEndpoints">
+	<convoy-table-loader id="endpoints_loader_loader" [tableHead]="endpointsTableHead"></convoy-table-loader>
+</div>
+
+<div convoy-card *ngIf="!isLoadingEndpoints && displayedEndpoints?.length">
 	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container">
 		<table convoy-table>
 			<thead convoy-table-head>
@@ -76,54 +87,23 @@
 			</tbody>
 		</table>
 	</div>
-</convoy-card>
-
-<convoy-empty-state
-	*ngIf="!isLoadingEndpoints && displayedEndpoints?.length === 0"
-	imgSrc="/assets/img/new-empty-state.png"
-	buttonText="Create Endpoint"
-	description="You have not created an endpoint"
-	className="mt-16px min-h-[65vh]"
-	id="endpoints-empty-state"
-	(onAction)="router.navigate(['./new'], { relativeTo: this.route })"
-></convoy-empty-state>
-
-<div class="flex items-center mt-16px" *ngIf="!isLoadingEndpoints && displayedEndpoints?.length">
-	<button
-		convoy-button
-		fill="outline"
-		size="sm"
-		class="pl-4px pr-16px py-4px border-primary-300"
-		routerLink="./"
-		[queryParams]="{ page: endpoints?.pagination?.prev || 0 }"
-		[disabled]="endpoints?.pagination?.prev === 0"
-		(click)="getEndpoints({ page: endpoints?.pagination?.prev })"
-	>
-		<svg width="24" height="24" class="mr-8px fill-primary-100">
-			<use xlink:href="#arrow-left-icon"></use>
-		</svg>
-		Previous
-	</button>
-
-	<button
-		convoy-button
-		fill="outline"
-		size="sm"
-		class="pr-4px pl-16px py-4px border-primary-300 ml-16px"
-		routerLink="./"
-		[queryParams]="{ page: endpoints?.pagination?.next }"
-		[disabled]="endpoints?.pagination?.next === 0"
-		(click)="getEndpoints({ page: endpoints?.pagination?.next })"
-	>
-		Next
-		<svg width="24" height="24" class="ml-8px fill-primary-100">
-			<use xlink:href="#arrow-right-icon"></use>
-		</svg>
-	</button>
 </div>
 
-<div convoy-modal *ngIf="showCreateEndpointModal || showEditEndpointModal" position="full" [title]="showEditEndpointModal ? 'Edit Endpoint' : 'Create Endpoint'" (closeModal)="cancel()">
-	<ng-container modalBody>
+<!-- Pagination -->
+<convoy-pagination *ngIf="endpoints?.pagination?.has_next_page || endpoints?.pagination?.has_prev_page" [pagination]="endpoints?.pagination" (paginate)="getEndpoints($event)"></convoy-pagination>
+
+<div convoy-modal *ngIf="showCreateEndpointModal || showEditEndpointModal" position="full" (closeModal)="cancel()">
+	<div convoy-modal-header fullscreen="true">
+		<div class="flex items-center">
+			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="cancel()">
+				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
+			</button>
+
+			<h2 class="font-semibold capitalize ml-2">{{ showEditEndpointModal ? 'Edit Endpoint' : 'Create Endpoint' }}</h2>
+		</div>
+	</div>
+
+	<div class="max-w-[834px] m-auto">
 		<convoy-create-endpoint showAction="true" (onAction)="$event.action === 'close' ? cancel() : getEndpoints(); cancel()" [editMode]="showEditEndpointModal"></convoy-create-endpoint>
-	</ng-container>
+	</div>
 </div>

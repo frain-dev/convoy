@@ -8,7 +8,7 @@ import { HttpService } from 'src/app/services/http/http.service';
 export class EventsService {
 	constructor(private http: HttpService) {}
 
-	getEvents(requestDetails: { page: number; startDate: string; endDate: string; query?: string; sourceId?: string; endpointId?: string }): Promise<HTTP_RESPONSE> {
+	getEvents(requestDetails: { page?: number; startDate: string; endDate: string; query?: string; sourceId?: string; endpointId?: string; next_page_cursor?: string; prev_page_cursor?: string; direction?: 'next' | 'prev' }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -25,7 +25,7 @@ export class EventsService {
 		});
 	}
 
-	getEventDeliveries(requestDetails?: { page?: any; startDate?: string; endDate?: string; endpointId?: string; eventId?: string; sourceId?: string; status?: any }): Promise<HTTP_RESPONSE> {
+	getEventDeliveries(requestDetails?: { page?: any; startDate?: string; endDate?: string; endpointId?: string; eventId?: string; sourceId?: string; status?: any; next_page_cursor?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -92,7 +92,7 @@ export class EventsService {
 		});
 	}
 
-	batchRetryEvent(requestDetails: { eventId: string; page: number; startDate: string; endDate: string; endpointId: string; status?: string[] }): Promise<HTTP_RESPONSE> {
+	batchRetryEvent(requestDetails: { eventId?: string; startDate?: string; endDate?: string; endpointId?: string; status?: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -110,7 +110,7 @@ export class EventsService {
 		});
 	}
 
-	getRetryCount(requestDetails: { endpointId: string; eventId: string; page: number; startDate: string; endDate: string; status: string[] }): Promise<HTTP_RESPONSE> {
+	getRetryCount(requestDetails: { endpointId?: string; eventId?: string; startDate?: string; endDate?: string; status?: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({

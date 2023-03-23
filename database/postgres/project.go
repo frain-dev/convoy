@@ -58,7 +58,7 @@ const (
 		updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
-	baseProjectFetch = `
+	fetchProjectById = `
 	SELECT
 		p.id,
 		p.name,
@@ -83,12 +83,40 @@ const (
 		p.deleted_at
 	FROM convoy.projects p
 	LEFT JOIN convoy.project_configurations c
-		ON p.project_configuration_id = c.id
+	ON p.project_configuration_id = c.id
+	WHERE p.id = $1 AND p.deleted_at IS NULL;
 	`
 
-	fetchProjectById = baseProjectFetch + ` WHERE p.id = $1 AND p.deleted_at IS NULL;`
-
-	fetchProjects = baseProjectFetch + ` WHERE (p.organisation_id = $1 OR $1 = '') AND p.deleted_at IS NULL ORDER BY p.id;`
+	fetchProjects = `
+  SELECT
+	p.id,
+	p.name,
+	p.type,
+	p.retained_events,
+	p.logo_url,
+	p.organisation_id,
+	p.project_configuration_id,
+	c.retention_policy_policy as "config.retention_policy.policy",
+	c.max_payload_read_size as "config.max_payload_read_size",
+	c.replay_attacks_prevention_enabled as "config.replay_attacks_prevention_enabled",
+	c.retention_policy_enabled as "config.retention_policy_enabled",
+	c.ratelimit_count as "config.ratelimit.count",
+	c.ratelimit_duration as "config.ratelimit.duration",
+	c.strategy_type as "config.strategy.type",
+	c.strategy_duration as "config.strategy.duration",
+	c.strategy_retry_count as "config.strategy.retry_count",
+	c.signature_header as "config.signature.header",
+	c.signature_versions as "config.signature.versions",
+	p.created_at,
+	p.updated_at,
+	p.deleted_at,
+	(SELECT count(*) from convoy.events where project_id = p.id AND deleted_at IS NULL) AS "statistics.messages_sent",
+	(SELECT count(*) from convoy.endpoints where project_id = p.id AND deleted_at IS NULL) AS "statistics.total_endpoints"
+  FROM convoy.projects p
+  LEFT JOIN convoy.project_configurations c
+  ON p.project_configuration_id = c.id
+  WHERE (p.organisation_id = $1 OR $1 = '') AND p.deleted_at IS NULL ORDER BY p.id;
+ `
 
 	updateProjectById = `
 	UPDATE convoy.projects SET
@@ -123,13 +151,11 @@ const (
 	`
 
 	projectStatistics = `
-	WITH events AS (
-		SELECT count(*) from convoy.events ev WHERE ev.project_id = $1 AND ev.deleted_at IS NULL
-	), endpoints AS (
-		SELECT count(*) from convoy.endpoints e WHERE e.project_id = $1 AND e.deleted_at IS NULL
-	)
-
-	SELECT events.count AS messages_sent, endpoints.count AS total_endpoints from events, endpoints;
+	SELECT 
+	(SELECT count(*) FROM convoy.subscriptions WHERE project_id = $1 AND deleted_at IS NULL) AS total_subscriptions,
+	(SELECT count(*) FROM convoy.endpoints WHERE project_id = $1 AND deleted_at IS NULL) AS total_endpoints,
+	(SELECT count(*) FROM convoy.sources WHERE project_id = $1 AND deleted_at IS NULL) AS total_sources,
+	(SELECT count(*) FROM convoy.events WHERE project_id = $1 AND deleted_at IS NULL) AS messages_sent;
 	`
 )
 

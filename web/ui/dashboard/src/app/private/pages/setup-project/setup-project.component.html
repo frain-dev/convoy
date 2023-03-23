@@ -1,5 +1,15 @@
-<div convoy-modal position="full" [id]="'configureProjectForm'" [title]="projectType === 'outgoing' ? 'Configure Outgoing Project' : 'Configure Incoming Project'" (closeModal)="cancel()">
-	<div modalBody class="pb-60px flex flex-col">
+<div convoy-modal position="full" [id]="'configureProjectForm'" (closeModal)="cancel()">
+	<div convoy-modal-header fullscreen="true">
+		<div class="flex items-center">
+			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="cancel()">
+				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
+			</button>
+
+			<h2 class="font-semibold capitalize ml-2">{{ projectType === 'outgoing' ? 'Configure Outgoing Project' : 'Configure Incoming Project' }}</h2>
+		</div>
+	</div>
+
+    <div  class="max-w-[834px] m-auto pb-60px flex flex-col">
 		<convoy-loader *ngIf="showLoader"></convoy-loader>
 
 		<ng-container *ngIf="projectType === 'incoming'">
@@ -28,7 +38,7 @@
 		</div>
 
 		<ng-container *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
-			<convoy-card class="p-24px mb-40px order-9">
+			<div convoy-card class="p-24px mb-40px order-9">
 				<div class="flex justify-between">
 					<div>
 						<h2 class="font-semibold mb-8px">Connect Pub/sub as event source</h2>
@@ -44,7 +54,7 @@
 					</div>
 					<convoy-toggle name="connectPubSub" (onChange)="connectPubSub = !connectPubSub" [isChecked]="connectPubSub"></convoy-toggle>
 				</div>
-			</convoy-card>
+			</div>
 		</ng-container>
 
 		<div class="flex justify-end order-11 mt-32px">

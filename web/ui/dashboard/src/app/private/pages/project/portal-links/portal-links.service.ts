@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { CURSOR } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { HttpService } from 'src/app/services/http/http.service';
 
@@ -8,9 +9,11 @@ import { HttpService } from 'src/app/services/http/http.service';
 export class PortalLinksService {
 	constructor(private http: HttpService) {}
 
-	getPortalLinks(requestDetails: { page: number; q?: string; endpointId?: string }): Promise<HTTP_RESPONSE> {
+	getPortalLinks(requestDetails: CURSOR & { endpointId?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
+				if (!requestDetails?.next_page_cursor && !requestDetails?.prev_page_cursor) requestDetails = { next_page_cursor: String(Number.MAX_SAFE_INTEGER), direction: 'next', endpointId: requestDetails?.endpointId };
+
 				const response = await this.http.request({
 					url: `/portal-links`,
 					method: 'get',

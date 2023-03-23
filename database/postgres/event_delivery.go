@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
@@ -48,15 +47,53 @@ const (
         ep.target_url as "endpoint_metadata.target_url",
         ev.id as "event_metadata.id",
         ev.event_type as "event_metadata.event_type",
-        COALESCE(d.host_name,'') as "cli_metadata.host_name"
-    FROM convoy.event_deliveries ed LEFT JOIN convoy.endpoints ep
-    ON ed.endpoint_id = ep.id LEFT JOIN convoy.events ev ON ed.event_id = ev.id
+        COALESCE(d.host_name,'') as "cli_metadata.host_name",
+		COALESCE(s.id, '') AS "source_metadata.id",
+		COALESCE(s.name, '') AS "source_metadata.name"
+    FROM convoy.event_deliveries ed 
+	LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id 
+	LEFT JOIN convoy.events ev ON ed.event_id = ev.id
     LEFT JOIN convoy.devices d ON ed.device_id = d.id
+	LEFT JOIN convoy.sources s ON s.id = ev.source_id
+	WHERE ed.deleted_at IS NULL
     `
 
-	fetchEventDeliveryByID = baseFetchEventDelivery + ` WHERE ed.id = $1 AND ed.project_id = $2 AND ed.deleted_at IS NULL`
+	baseEventDeliveryPagedForward = `
+	%s 
+	%s 
+	AND ed.id <= :cursor 
+	GROUP BY ed.id, ep.id, ev.id, d.host_name, s.id
+	ORDER BY ed.id DESC 
+	LIMIT :limit
+	`
 
-	loadEventDeliveriesPaged = baseFetchEventDelivery + ` WHERE (ed.project_id = ? OR ? = '') AND (ed.event_id = ? OR ? = '') AND ed.created_at >= ? AND ed.created_at <= ?  AND ed.deleted_at IS NULL`
+	baseEventDeliveryPagedBackward = `
+	WITH event_deliveries AS (  
+		%s 
+		%s 
+		AND ed.id >= :cursor 
+		GROUP BY ed.id, ep.id, ev.id, d.host_name, s.id
+		ORDER BY ed.id ASC 
+		LIMIT :limit
+	)
+
+	SELECT * FROM event_deliveries ORDER BY id DESC
+	`
+
+	fetchEventDeliveryByID = baseFetchEventDelivery + ` AND ed.id = $1 AND ed.project_id = $2`
+
+	baseEventDeliveryFilter = ` AND ed.project_id = :project_id 
+	AND (ed.event_id = :event_id OR :event_id = '') 
+	AND ed.created_at >= :start_date 
+	AND ed.created_at <= :end_date
+	AND ed.deleted_at IS NULL`
+
+	countPrevEventDeliveries = `
+	SELECT count(distinct(ed.id)) as count
+	FROM convoy.event_deliveries ed
+	WHERE ed.deleted_at IS NULL
+	%s
+	AND ed.id > :cursor GROUP BY ed.id ORDER BY ed.id DESC LIMIT 1`
 
 	loadEventDeliveriesIntervals = `
     SELECT
@@ -415,37 +452,48 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 	start := time.Unix(params.CreatedAtStart, 0)
 	end := time.Unix(params.CreatedAtEnd, 0)
 
-	args := []interface{}{
-		projectID, projectID,
-		eventID, eventID,
-		start, end,
+	arg := map[string]interface{}{
+		"endpoint_ids": endpointIDs,
+		"project_id":   projectID,
+		"limit":        pageable.Limit(),
+		"start_date":   start,
+		"event_id":     eventID,
+		"end_date":     end,
+		"status":       status,
+		"cursor":       pageable.Cursor(),
 	}
 
-	query := loadEventDeliveriesPaged
+	var query, filterQuery string
+	if pageable.Direction == datastore.Next {
+		query = baseEventDeliveryPagedForward
+	} else {
+		query = baseEventDeliveryPagedBackward
+	}
 
+	filterQuery = baseEventDeliveryFilter
 	if len(endpointIDs) > 0 {
-		query += ` AND ed.endpoint_id IN (?)`
-		args = append(args, endpointIDs)
+		filterQuery += ` AND ed.endpoint_id IN (:endpoint_ids)`
 	}
 
 	if len(status) > 0 {
-		query += ` AND ed.status IN (?)`
-		args = append(args, status)
+		filterQuery += ` AND ed.status IN (:status)`
 	}
 
-	query += ` ORDER BY ed.id DESC LIMIT ? OFFSET ?`
-	args = append(args, pageable.Limit(), pageable.Offset())
+	query = fmt.Sprintf(query, baseFetchEventDelivery, filterQuery)
 
-	query, args, err := sqlx.In(query, args...)
+	query, args, err := sqlx.Named(query, arg)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query, args, err = sqlx.In(query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
 
 	query = e.db.Rebind(query)
 
-	rows, err := e.db.QueryxContext(
-		ctx, query, args...,
-	)
+	rows, err := e.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -483,6 +531,10 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 				Title:        ev.Endpoint.Title.ValueOrZero(),
 				SupportEmail: ev.Endpoint.SupportEmail.ValueOrZero(),
 			},
+			Source: &datastore.Source{
+				UID:  ev.Source.UID.ValueOrZero(),
+				Name: ev.Source.Name.ValueOrZero(),
+			},
 			Event:            &datastore.Event{EventType: datastore.EventType(ev.Event.EventType.ValueOrZero())},
 			DeliveryAttempts: ev.DeliveryAttempts,
 			Status:           ev.Status,
@@ -495,23 +547,56 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		})
 	}
 
-	count := 0
-	pagination := datastore.PaginationData{
-		Total:     int64(count),
-		Page:      int64(pageable.Page),
-		PerPage:   int64(pageable.PerPage),
-		Prev:      int64(getPrevPage(pageable.Page)),
-		Next:      int64(pageable.Page + 1),
-		TotalPage: int64(math.Ceil(float64(count) / float64(pageable.PerPage))),
+	var count datastore.PrevRowCount
+	if len(eventDeliveries) > 0 {
+		var countQuery string
+		var qargs []interface{}
+		first := eventDeliveries[0]
+		qarg := arg
+		qarg["cursor"] = first.UID
+
+		cq := fmt.Sprintf(countPrevEventDeliveries, filterQuery)
+		countQuery, qargs, err = sqlx.Named(cq, qarg)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		countQuery = e.db.Rebind(countQuery)
+
+		// count the row number before the first row
+		rows, err := e.db.QueryxContext(ctx, countQuery, qargs...)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		if rows.Next() {
+			err = rows.StructScan(&count)
+			if err != nil {
+				return nil, datastore.PaginationData{}, err
+			}
+		}
+		rows.Close()
 	}
-	return eventDeliveries, pagination, nil
+
+	ids := make([]string, len(eventDeliveries))
+	for i := range eventDeliveries {
+		ids[i] = eventDeliveries[i].UID
+	}
+
+	if len(eventDeliveries) > pageable.PerPage {
+		eventDeliveries = eventDeliveries[:len(eventDeliveries)-1]
+	}
+
+	pagination := &datastore.PaginationData{PrevRowCount: count}
+	pagination = pagination.Build(pageable, ids)
+
+	return eventDeliveries, *pagination, nil
 }
 
 const (
-	dailyIntervalFormat   = "yyyy-mm-dd"          // 1 day
-	weeklyIntervalFormat  = monthlyIntervalFormat // 1 week
-	monthlyIntervalFormat = "yyyy-mm"             // 1 month
-	yearlyIntervalFormat  = "yyyy"                // 1 month
+	dailyIntervalFormat   = "yyyy-mm-dd"        // 1 day
+	weeklyIntervalFormat  = dailyIntervalFormat // 1 week
+	monthlyIntervalFormat = "yyyy-mm"           // 1 month
+	yearlyIntervalFormat  = "yyyy"              // 1 month
 )
 
 func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, t int) ([]datastore.EventInterval, error) {
@@ -560,7 +645,72 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, pr
 		intervals = append(intervals, interval)
 	}
 
+	if len(intervals) < minLen {
+		var d time.Duration
+		switch period {
+		case datastore.Daily:
+			d = time.Hour * 24
+		case datastore.Weekly:
+			d = time.Hour * 24 * 7
+		case datastore.Monthly:
+			d = time.Hour * 24 * 30
+		case datastore.Yearly:
+			d = time.Hour * 24 * 365
+		}
+		intervals, err = padIntervals(intervals, d, period)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return intervals, nil
+}
+
+const minLen = 30
+
+func padIntervals(intervals []datastore.EventInterval, duration time.Duration, period datastore.Period) ([]datastore.EventInterval, error) {
+	var err error
+
+	var format string
+
+	switch period {
+	case datastore.Daily:
+		format = "2006-01-02"
+	case datastore.Weekly:
+		format = "2006-01-02"
+	case datastore.Monthly:
+		format = "2006-01"
+	case datastore.Yearly:
+		format = "2006"
+	default:
+		return nil, errors.New("specified data cannot be generated for period")
+	}
+
+	start := time.Now()
+	if len(intervals) > 0 {
+		start, err = time.Parse(format, intervals[0].Data.Time)
+		if err != nil {
+			return nil, err
+		}
+		start = start.Add(-duration) // take it back once here, since we getting it from the original slice
+	}
+
+	numPadding := minLen - (len(intervals))
+	paddedIntervals := make([]datastore.EventInterval, numPadding, numPadding+len(intervals))
+	for i := numPadding; i > 0; i-- {
+		paddedIntervals[i-1] = datastore.EventInterval{
+			Data: datastore.EventIntervalData{
+				Interval: 0,
+				Time:     start.Format(format),
+			},
+			Count: 0,
+		}
+		start = start.Add(-duration)
+	}
+
+	paddedIntervals = append(paddedIntervals, intervals...)
+
+	return paddedIntervals, nil
 }
 
 type EndpointMetadata struct {
@@ -572,8 +722,13 @@ type EndpointMetadata struct {
 }
 
 type EventMetadata struct {
-	UID       null.String ` db:"id"`
+	UID       null.String `db:"id"`
 	EventType null.String `db:"event_type"`
+}
+
+type SourceMetadata struct {
+	UID  null.String `db:"id"`
+	Name null.String `db:"name"`
 }
 
 type CLIMetadata struct {
@@ -591,6 +746,7 @@ type EventDeliveryPaginated struct {
 
 	Endpoint *EndpointMetadata `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *EventMetadata    `json:"event_metadata,omitempty" db:"event_metadata"`
+	Source   *SourceMetadata   `json:"source_metadata,omitempty" db:"source_metadata"`
 
 	DeliveryAttempts datastore.DeliveryAttempts    `json:"-" db:"attempts"`
 	Status           datastore.EventDeliveryStatus `json:"status" db:"status"`

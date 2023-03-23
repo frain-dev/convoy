@@ -51,16 +51,14 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 	}
 
 	// We're calling project details ahead because every page under project has a guard that requires project details to be present and to also prevent multiple calls
-	async getProjectDetails(projectId: string) {
+	async getProjectCompleteDetails(projectId: string) {
 		this.isLoadingProject = true;
 
 		try {
-			await this.privateService.getProjectDetails({ refresh: true, projectId });
+			await this.privateService.getProjectDetails({ refresh: true, projectId }).then(() => this.privateService.getProjectStat({ refresh: true }));
 			this.router.navigate([`/projects/${projectId}`]);
-			this.isLoadingProject = false;
 		} catch (error) {
 			this.isLoadingProject = false;
-			return error;
 		}
 	}
 }

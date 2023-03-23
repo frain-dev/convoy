@@ -1,7 +1,7 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardComponent } from 'src/app/components/card/card.component';
-import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 import { ActivatedRoute } from '@angular/router';
@@ -27,6 +27,7 @@ import { PrivateService } from 'src/app/private/private.service';
 		ReactiveFormsModule,
 		CardComponent,
 		ModalComponent,
+        ModalHeaderComponent,
 		ButtonComponent,
 		SkeletonLoaderComponent,
 		EmptyStateComponent,

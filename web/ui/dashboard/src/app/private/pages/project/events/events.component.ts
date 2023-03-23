@@ -40,19 +40,30 @@ export class EventsComponent implements OnInit, OnDestroy {
 	eventDelTableHead: string[] = ['Status', 'Event Type', 'Event Time', 'Next Attempt'];
 	eventDelievryIntervalTime: any;
 	labelsDateFormat!: string;
+	isProjectConfigurationComplete = false;
+	isPageLoading = false;
 
 	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, public router: Router) {}
 
 	async ngOnInit() {
 		this.isloadingDashboardData = true;
-		await this.getLatestEvent();
-		await this.checkEventsOnFirstLoad();
-		this.isloadingDashboardData = false;
+		this.isPageLoading = true;
+		await this.getProjectStats();
 
-		if (this.privateService.activeProjectDetails?.type === 'incoming' && !this.lastestEventDeliveries.length) {
-			this.eventDelievryIntervalTime = setInterval(() => {
-				this.getLatestEvent();
-			}, 2000);
+		if (this.isProjectConfigurationComplete) {
+			await this.checkEventsOnFirstLoad();
+
+			if (this.privateService.activeProjectDetails?.type === 'incoming' && !this.hasEvents) {
+				this.eventDelievryIntervalTime = setInterval(() => {
+					this.getLatestEvent();
+				}, 2000);
+			}
+
+			this.isPageLoading = false;
+			this.isloadingDashboardData = false;
+		} else {
+			this.isloadingDashboardData = false;
+			this.isPageLoading = false;
 		}
 	}
 
@@ -76,15 +87,17 @@ export class EventsComponent implements OnInit, OnDestroy {
 			this.lastestEventDeliveries = eventDeliveries.data.content;
 			return;
 		} catch (error) {
+			this.isloadingDashboardData = false;
+			this.isPageLoading = false;
 			return error;
 		}
 	}
 
 	async checkEventsOnFirstLoad() {
-		this.hasEvents = this.lastestEventDeliveries.length === 0 ? false : true;
-
 		if (this.hasEvents) {
 			clearInterval(this.eventDelievryIntervalTime);
+			this.isPageLoading = false;
+
 			await this.fetchDashboardData();
 			return;
 		}
@@ -106,8 +119,11 @@ export class EventsComponent implements OnInit, OnDestroy {
 			this.dashboardData = dashboardResponse.data;
 			this.initConvoyChart(dashboardResponse);
 
+			this.isloadingDashboardData = false;
 			return;
 		} catch (error: any) {
+			this.isloadingDashboardData = false;
+			this.isPageLoading = false;
 			return;
 		}
 	}
@@ -164,8 +180,14 @@ export class EventsComponent implements OnInit, OnDestroy {
 		return labelsDateFormat;
 	}
 
-	get isProjectConfigurationComplete() {
-		const configurationComplete = localStorage.getItem('isActiveProjectConfigurationComplete');
-		return configurationComplete ? JSON.parse(configurationComplete) : false;
+	async getProjectStats() {
+		try {
+			const projectStats = await this.privateService.getProjectStat();
+			this.isProjectConfigurationComplete = projectStats.data?.total_subscriptions > 0;
+			this.hasEvents = projectStats.data?.messages_sent > 0;
+			return;
+		} catch (error) {
+			return error;
+		}
 	}
 }

@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { HttpService } from 'src/app/services/http/http.service';
 import { FLIPT_API_RESPONSE } from '../models/flipt.model';
+import { CURSOR } from '../models/global.model';
 import { GROUP } from '../models/group.model';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
 import { ProjectService } from './pages/project/project.service';
@@ -20,6 +21,7 @@ export class PrivateService {
 	showCreateOrgModal = false;
 	projectDetails!: HTTP_RESPONSE;
 	profileDetails!: HTTP_RESPONSE;
+	projectStats!: HTTP_RESPONSE;
 
 	constructor(private http: HttpService, private router: Router, private projectService: ProjectService) {}
 
@@ -75,9 +77,11 @@ export class PrivateService {
 		});
 	}
 
-	getSubscriptions(requestDetails?: { page?: number }): Promise<HTTP_RESPONSE> {
+	getSubscriptions(requestDetails?: CURSOR): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
+				if (!requestDetails) requestDetails = { next_page_cursor: String(Number.MAX_SAFE_INTEGER), direction: 'next' };
+
 				const subscriptionsResponse = await this.http.request({
 					url: `/subscriptions`,
 					method: 'get',
@@ -258,9 +262,11 @@ export class PrivateService {
 		});
 	}
 
-	getEndpoints(requestDetails?: { page?: number; q?: string }): Promise<HTTP_RESPONSE> {
+	getEndpoints(requestDetails?: CURSOR & { q?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
+				if (!requestDetails?.next_page_cursor && !requestDetails?.prev_page_cursor) requestDetails = { next_page_cursor: String(Number.MAX_SAFE_INTEGER), direction: 'next', q: requestDetails?.q };
+
 				const response = await this.http.request({
 					url: `/endpoints`,
 					method: 'get',
@@ -275,9 +281,11 @@ export class PrivateService {
 		});
 	}
 
-	getSources(requestDetails?: { page?: number }): Promise<HTTP_RESPONSE> {
+	getSources(requestDetails?: CURSOR): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
+				if (!requestDetails) requestDetails = { next_page_cursor: String(Number.MAX_SAFE_INTEGER), direction: 'next' };
+
 				const sourcesResponse = await this.http.request({
 					url: `/sources`,
 					method: 'get',
@@ -286,6 +294,47 @@ export class PrivateService {
 				});
 
 				return resolve(sourcesResponse);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	async getRefreshToken() {
+		let authTokens = localStorage.CONVOY_AUTH_TOKENS;
+		authTokens = authTokens ? JSON.parse(authTokens) : false;
+
+		return new Promise(async (resolve, reject) => {
+			if (!authTokens) return reject();
+
+			try {
+				const refreshedTokens = await this.http.request({
+					url: `/auth/token/refresh`,
+					method: 'post',
+					body: authTokens
+				});
+				localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(refreshedTokens.data));
+
+				return resolve(refreshedTokens);
+			} catch (error) {
+				reject(error);
+			}
+		});
+	}
+
+	getProjectStat(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			if (this.projectStats && !requestDetails?.refresh) return resolve(this.projectStats);
+
+			try {
+				const response = await this.http.request({
+					url: `/stats`,
+					method: 'get',
+					level: 'org_project'
+				});
+
+				this.projectStats = response;
+				return resolve(response);
 			} catch (error) {
 				return reject(error);
 			}

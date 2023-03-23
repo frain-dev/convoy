@@ -1,4 +1,4 @@
-<div class="text-12 font-medium uppercase flex items-center">
+<div class="text-12 font-medium uppercase flex items-center mb-24px">
 	<a routerLink="/projects" class="cursor-pointer">Projects</a>
 	<svg width="16" height="16" class="mx-1">
 		<use xlink:href="#arrow-right-icon"></use>
@@ -10,12 +10,17 @@
 	<span class="text-primary-100">SUBSCRIPTIONS</span>
 </div>
 
-<div class="flex justify-between items-end mt-24px border-b border-b-grey-10 pb-20px mb-24px">
-	<div class="flex items-center">
-		<h1 class="text-24 font-bold text-grey-80 mr-10px">Subscriptions</h1>
-		<convoy-tooltip tooltipContent="On Convoy, endpoints are subscribed to listen to events from a source along with configurations like retries and event filters. This page list all your existing subscritions" position="right"></convoy-tooltip>
+<!-- empty state  -->
+<div class="py-100px mt-24px" convoy-card *ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length === 0">
+	<div
+		convoy-empty-state
+		imgSrc="/assets/img/subscriptions-empty-state.png"
+		heading="You currently do not have any subscriptions"
+		description="Webhook subscriptions lets you define the source of your webhook and the destination where any webhook event should be sent. It is what allows Convoy to identify and proxy your webhooks."
+		id="subscriptions-empty-state"
+	>
+		<button convoy-button emptyStateCTA routerLink="./new" class="mt-36px">Create a subscription</button>
 	</div>
-	<button convoy-button size="sm" routerLink="./new">Create a subscription</button>
 </div>
 
 <!-- subscriptions loader  -->
@@ -38,6 +43,15 @@
 </div>
 
 <div *ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length">
+	<div class="flex justify-between items-end border-b border-b-grey-10 pb-20px mb-24px">
+		<div class="flex items-center">
+			<h1 class="text-24 font-bold text-grey-80 mr-10px">Subscriptions</h1>
+			<convoy-tooltip tooltipContent="On Convoy, endpoints are subscribed to listen to events from a source along with configurations like retries and event filters. This page list all your existing subscriptions" position="right"></convoy-tooltip>
+		</div>
+		<button convoy-button size="sm" routerLink="./new">Create a subscription</button>
+	</div>
+
+	<!-- list of incoming subscriptions  -->
 	<div class="flex flex-wrap gap-24px" *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
 		<div convoy-card class="pt-10px transition-all w-full max-w-[356px] cursor-pointer" hover="true" *ngFor="let subscription of subscriptions?.content; let i = index" [routerLink]="['./']" [queryParams]="{ id: subscription.uid }">
 			<div class="w-full text-12 text-grey-60 font-medium px-24px border-b border-b-grey-10 pb-10px">{{ subscription.name }}</div>
@@ -62,8 +76,9 @@
 		</div>
 	</div>
 
+	<!-- list of outgoing subscriptions  -->
 	<ng-container *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
-		<convoy-card className="pt-16px mb-16px" *ngFor="let subscription of subscriptions?.content">
+		<div convoy-card class="pt-16px mb-16px" *ngFor="let subscription of subscriptions?.content">
 			<div class="flex items-center justify-between pb-16px border-b-4 border-b-grey-10 cursor-pointer" routerLink="./" [queryParams]="{ id: subscription.uid }">
 				<div class="flex items-center">
 					<h4 class="pl-16px font-medium text-14">
@@ -106,32 +121,43 @@
 					</a>
 				</div>
 			</div>
-		</convoy-card>
+		</div>
 	</ng-container>
+
+	<!-- Pagination -->
+	<convoy-pagination *ngIf="subscriptions?.pagination?.has_next_page || subscriptions?.pagination?.has_prev_page" [pagination]="subscriptions?.pagination" (paginate)="getSubscriptions($event)"></convoy-pagination>
 </div>
 
-<convoy-empty-state
-	imgSrc="/assets/img/new-empty-state.png"
-	heading="Create your first webhook subscription"
-	description="Webhook subscriptions lets you define the source of your webhook and the destination where any webhook event should be sent. It is what allows Convoy to identify and proxy your webhooks."
-	className="min-h-[65vh] mt-16px"
-	id="subscriptions-empty-state"
-	*ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length === 0"
-></convoy-empty-state>
+<div convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [id]="'subscriptionForm'" (closeModal)="createSubscription('cancel')">
+	<div convoy-modal-header fullscreen="true">
+		<div class="flex items-center">
+			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="createSubscription('cancel')">
+				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
+			</button>
 
-<div convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [id]="'subscriptionForm'" [title]="showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription'" (closeModal)="createSubscription('cancel')">
-	<ng-container modalBody>
+			<h2 class="font-semibold capitalize ml-2">{{ showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription' }}</h2>
+		</div>
+	</div>
+
+	<div class="max-w-[834px] m-auto">
 		<convoy-create-subscription showAction="true" (onAction)="createSubscription($event.action)" [action]="showUpdateSubscriptionModal ? 'update' : 'create'"></convoy-create-subscription>
-	</ng-container>
+	</div>
 </div>
 
 <app-delete-modal *ngIf="showDeleteSubscriptionModal" [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="showDeleteSubscriptionModal = false" (deleteData)="deleteSubscripton()"></app-delete-modal>
 
-<div convoy-modal *ngIf="!isLoadindingSubscriptions && activeSubscription?.uid" position="right" [id]="'subscription-details'" [title]="activeSubscription?.name || 'Subscription Details'" (closeModal)="closeModal()">
-	<ng-container modalBody>
+<div convoy-modal *ngIf="!isLoadindingSubscriptions && activeSubscription?.uid" position="right" [id]="'subscription-details'" (closeModal)="closeModal()">
+	<div convoy-modal-header>
+		<h2 class="font-semibold capitalize">{{ activeSubscription?.name || 'Subscription Details' }}</h2>
+
+		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="closeModal()">
+			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+		</button>
+	</div>
+	<div class="p-20px">
 		<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
 			<h2 class="font-medium mb-10px">Source</h2>
-			<convoy-card hover="true" class="w-full cursor-pointer py-20px mb-24px">
+			<div convoy-card hover="true" class="w-full cursor-pointer py-20px mb-24px">
 				<div class="px-24px pb-12px border-b border-b-grey-10" [routerLink]="['/projects/' + privateService.activeProjectDetails?.uid + '/sources']" [queryParams]="{ id: activeSubscription?.source_metadata?.uid }">
 					<div class="text-grey-40 text-10 mb-4px">{{ activeSubscription?.source_metadata?.provider || (activeSubscription?.source_metadata?.verifier?.type || '' | sourceValue: 'verifier') }}</div>
 					<div class="flex justify-between items-center">
@@ -146,11 +172,11 @@
 						<span class="text-14 ml-8px font-medium">Copy URL</span>
 					</convoy-copy-button>
 				</div>
-			</convoy-card>
+			</div>
 		</ng-container>
 
 		<h2 class="font-medium mb-10px">Endpoint</h2>
-		<convoy-card hover="true" class="w-full cursor-pointer py-20px">
+		<div convoy-card hover="true" class="w-full cursor-pointer py-20px">
 			<div class="px-24px pb-12px border-b border-b-grey-10" [routerLink]="['/projects/' + privateService.activeProjectDetails?.uid + '/endpoints/' + activeSubscription?.endpoint_metadata?.uid]">
 				<div class="flex justify-between items-center">
 					<div class="text-14 font-medium">{{ activeSubscription?.endpoint_metadata?.title }}</div>
@@ -164,7 +190,7 @@
 					<span class="text-14 ml-8px font-medium">Copy URL</span>
 				</convoy-copy-button>
 			</div>
-		</convoy-card>
+		</div>
 
 		<hr class="border-t border-grey-20 mt-24px mb-4px" />
 
@@ -186,5 +212,5 @@
 				</svg>
 			</button>
 		</div>
-	</ng-container>
+	</div>
 </div>

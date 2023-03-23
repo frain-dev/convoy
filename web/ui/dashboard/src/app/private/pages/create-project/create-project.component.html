@@ -1,5 +1,15 @@
-<div convoy-modal position="full" [id]="'projectForm'" title="Create Project" (closeModal)="cancel()">
-	<div class="pt-40px pb-60px" modalBody>
+<div convoy-modal position="full" [id]="'projectForm'" (closeModal)="cancel()">
+	<div convoy-modal-header fullscreen="true">
+		<div class="flex items-center">
+			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="cancel()">
+				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
+			</button>
+
+			<h2 class="font-semibold capitalize ml-2">Create Project</h2>
+		</div>
+	</div>
+
+	<div class="pt-40px pb-60px max-w-[834px] m-auto">
 		<app-create-project-component (onAction)="$event?.action == 'cancel' ? cancel() : createProject($event)"></app-create-project-component>
 	</div>
 </div>

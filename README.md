@@ -9,7 +9,7 @@
 - Slack: [Join the Community](https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ)
 
 
-[Convoy](https://getconvoy.io) is the Fastest Webhooks Gateway developers use to securely ingest, persist, debug, deliver and manage millions of events reliably with rich features such as retries, rate limiting, static ips, circuit breaking, rolling secrets and more. It was built for Engineers that value efficiency in their workflow, to get started download the [openapi spec](https://github.com/frain-dev/convoy/blob/main/docs/v3/openapi3.yaml) into Postman or Insomnia. Convoy is [FREE for developers](https://getconvoy.io/blog/Convoy-Webhooks-is-free-for-developers) forever.
+[Convoy](https://getconvoy.io) is an open source high-performance webhooks gateway used to securely ingest, persist, debug, deliver and manage millions of events reliably with rich features such as retries, rate limiting, static ips, circuit breaking, rolling secrets and more. To get started import the [openapi spec](https://github.com/frain-dev/convoy/blob/main/docs/v3/openapi3.yaml) into Postman or Insomnia.
 
 Convoy provides several key features:
 
@@ -30,17 +30,6 @@ Convoy provides several key features:
 - **Endpoint Failure Notifications:** When endpoints consecutively fails to process events, convoy disables the endpoint and sends out a notification. Two types of notifications are supported: Email and Slack Notifications.
 
 ## Installation, Getting Started
-There are several ways to get started using Convoy.
-
-### Option 1: Using our Install Script on Linux
-```bash
- /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/frain-dev/convoy/main/deploy/vm-deploy.sh)"
-```
-
-### Option 2: Convoy Cloud
-Get started with our free Cloud version -- Sign up for [Convoy Cloud](https://dashboard.getconvoy.io/signup) account 
-
-### Option 3: Deploy Locally
 To do this make sure you have [Docker 20+](https://docs.docker.com/desktop/) installed.
 
 ```bash
@@ -53,6 +42,8 @@ $ cd convoy
 # Start Services
 docker compose -f configs/local/docker-compose.yml up
 ```
+## Convoy Cloud
+Get started with our free Cloud version -- Sign up for [Convoy Cloud](https://dashboard.getconvoy.io/signup) account 
 
 ## Contributing
 Thank you for your interest in contributing! Please refer to [CONTRIBUTING.md](https://github.com/frain-dev/convoy/blob/main/CONTRIBUTING.md) for guidance. For contributions to the Convoy dashboard, please refer to the [web/ui](https://github.com/frain-dev/convoy/tree/main/web/ui) directory.
