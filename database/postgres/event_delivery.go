@@ -560,7 +560,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		countQuery = e.db.Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err = e.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err := e.db.QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -570,6 +570,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 				return nil, datastore.PaginationData{}, err
 			}
 		}
+		rows.Close()
 	}
 
 	ids := make([]string, len(eventDeliveries))
