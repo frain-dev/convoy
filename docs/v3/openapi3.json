@@ -13,20 +13,6 @@
 				},
 				"type": "object"
 			},
-			"auth.Role": {
-				"properties": {
-					"endpoint": {
-						"type": "string"
-					},
-					"project": {
-						"type": "string"
-					},
-					"type": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"config.SignatureHeaderProvider": {
 				"enum": [
 					"X-Convoy-Signature"
@@ -135,51 +121,6 @@
 					}
 				},
 				"type": "object"
-			},
-			"datastore.Device": {
-				"properties": {
-					"created_at": {
-						"type": "string"
-					},
-					"deleted_at": {
-						"type": "string"
-					},
-					"endpoint_id": {
-						"type": "string"
-					},
-					"host_name": {
-						"type": "string"
-					},
-					"last_seen_at": {
-						"type": "string"
-					},
-					"project_id": {
-						"type": "string"
-					},
-					"status": {
-						"$ref": "#/components/schemas/datastore.DeviceStatus"
-					},
-					"uid": {
-						"type": "string"
-					},
-					"updated_at": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.DeviceStatus": {
-				"enum": [
-					"offline",
-					"online",
-					"disabled"
-				],
-				"type": "string",
-				"x-enum-varnames": [
-					"DeviceStatusOffline",
-					"DeviceStatusOnline",
-					"DeviceStatusDisabled"
-				]
 			},
 			"datastore.EncodingType": {
 				"enum": [
@@ -978,38 +919,6 @@
 				},
 				"type": "object"
 			},
-			"datastore.User": {
-				"properties": {
-					"created_at": {
-						"type": "string"
-					},
-					"deleted_at": {
-						"type": "string"
-					},
-					"email": {
-						"type": "string"
-					},
-					"email_verified": {
-						"type": "boolean"
-					},
-					"first_name": {
-						"type": "string"
-					},
-					"last_name": {
-						"type": "string"
-					},
-					"reset_password_expires_at": {
-						"type": "string"
-					},
-					"uid": {
-						"type": "string"
-					},
-					"updated_at": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"datastore.VerifierConfig": {
 				"properties": {
 					"api_key": {
@@ -1102,6 +1011,7 @@
 			"models.Event": {
 				"properties": {
 					"app_id": {
+						"description": "Deprecated but necessary for backward compatibility",
 						"type": "string"
 					},
 					"custom_headers": {
@@ -1121,6 +1031,17 @@
 						"type": "string"
 					},
 					"event_type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.ExpireSecret": {
+				"properties": {
+					"expiration": {
+						"type": "integer"
+					},
+					"secret": {
 						"type": "string"
 					}
 				},
@@ -1159,29 +1080,6 @@
 					"header": {
 						"additionalProperties": true,
 						"type": "object"
-					}
-				},
-				"type": "object"
-			},
-			"models.PortalAPIKeyResponse": {
-				"properties": {
-					"endpoint_id": {
-						"type": "string"
-					},
-					"key": {
-						"type": "string"
-					},
-					"key_type": {
-						"type": "string"
-					},
-					"project_id": {
-						"type": "string"
-					},
-					"role": {
-						"$ref": "#/components/schemas/auth.Role"
-					},
-					"url": {
-						"type": "string"
 					}
 				},
 				"type": "object"
@@ -1257,17 +1155,6 @@
 					},
 					"type": {
 						"$ref": "#/components/schemas/datastore.ProjectType"
-					}
-				},
-				"type": "object"
-			},
-			"models.ResetPassword": {
-				"properties": {
-					"password": {
-						"type": "string"
-					},
-					"password_confirmation": {
-						"type": "string"
 					}
 				},
 				"type": "object"
@@ -1451,7 +1338,7 @@
 		},
 		"termsOfService": "https://getconvoy.io/terms",
 		"title": "Convoy API Reference",
-		"version": "0.8.0"
+		"version": "0.9.0"
 	},
 	"openapi": "3.0.3",
 	"paths": {
@@ -1566,7 +1453,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -1586,7 +1473,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -1594,7 +1481,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get organisations",
+				"summary": "List all organisations",
 				"tags": [
 					"Organisations"
 				]
@@ -1692,7 +1579,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -1712,7 +1599,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -1720,7 +1607,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get projects",
+				"summary": "List all projects",
 				"tags": [
 					"Projects"
 				]
@@ -1817,7 +1704,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -1837,7 +1724,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -1856,7 +1743,7 @@
 				"description": "This endpoint deletes a project using its id",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -1932,7 +1819,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -1952,7 +1839,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -1969,7 +1856,7 @@
 				"description": "This endpoint fetches a project by its id",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -2045,7 +1932,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2065,7 +1952,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -2073,7 +1960,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get a project",
+				"summary": "Retrieve a project",
 				"tags": [
 					"Projects"
 				]
@@ -2082,7 +1969,7 @@
 				"description": "This endpoint updates a project",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -2170,7 +2057,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2190,7 +2077,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -2209,7 +2096,7 @@
 				"description": "This endpoint fetches an endpoints",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -2288,7 +2175,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2308,7 +2195,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -2316,7 +2203,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get endpoints",
+				"summary": "List all endpoints",
 				"tags": [
 					"Endpoints"
 				]
@@ -2325,7 +2212,7 @@
 				"description": "This endpoint creates an endpoint",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -2413,7 +2300,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2433,7 +2320,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -2452,7 +2339,7 @@
 				"description": "This endpoint deletes an endpoint",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -2461,7 +2348,7 @@
 						}
 					},
 					{
-						"description": "endpoint id",
+						"description": "Endpoint ID",
 						"in": "path",
 						"name": "endpointID",
 						"required": true,
@@ -2537,7 +2424,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2557,7 +2444,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -2574,7 +2461,7 @@
 				"description": "This endpoint fetches an endpoint",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -2583,7 +2470,7 @@
 						}
 					},
 					{
-						"description": "endpoint id",
+						"description": "Endpoint ID",
 						"in": "path",
 						"name": "endpointID",
 						"required": true,
@@ -2659,7 +2546,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2679,7 +2566,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -2687,7 +2574,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get endpoint",
+				"summary": "Retrieve endpoint",
 				"tags": [
 					"Endpoints"
 				]
@@ -2696,7 +2583,7 @@
 				"description": "This endpoint updates an endpoint",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -2705,7 +2592,7 @@
 						}
 					},
 					{
-						"description": "endpoint id",
+						"description": "Endpoint ID",
 						"in": "path",
 						"name": "endpointID",
 						"required": true,
@@ -2793,7 +2680,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2813,7 +2700,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -2829,10 +2716,10 @@
 		},
 		"/api/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret": {
 			"put": {
-				"description": "This endpoint expires the current endpoint secret and generates a new one.",
+				"description": "This endpoint expires and re-generates the endpoint secret.",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -2841,7 +2728,7 @@
 						}
 					},
 					{
-						"description": "endpoint id",
+						"description": "Endpoint ID",
 						"in": "path",
 						"name": "endpointID",
 						"required": true,
@@ -2850,6 +2737,18 @@
 						}
 					}
 				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.ExpireSecret"
+							}
+						}
+					},
+					"description": "Expire Secret Body Parameters",
+					"required": true,
+					"x-originalParamName": "endpoint"
+				},
 				"responses": {
 					"200": {
 						"content": {
@@ -2917,7 +2816,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2937,7 +2836,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -2945,7 +2844,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Expire and generate new application endpoint secret",
+				"summary": "Roll endpoint secret",
 				"tags": [
 					"Endpoints"
 				]
@@ -2953,10 +2852,10 @@
 		},
 		"/api/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status": {
 			"put": {
-				"description": "This endpoint updates a subscription",
+				"description": "This endpoint toggles an endpoint status between the active and inactive statetes",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -2965,7 +2864,7 @@
 						}
 					},
 					{
-						"description": "endpoint id",
+						"description": "Endpoint ID",
 						"in": "path",
 						"name": "endpointID",
 						"required": true,
@@ -3041,7 +2940,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3061,7 +2960,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -3069,15 +2968,15 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Toggles an endpoint's status from active \u003c-\u003e inactive",
+				"summary": "Toggle endpoint status",
 				"tags": [
-					"Subscriptions"
+					"Endpoints"
 				]
 			}
 		},
 		"/api/v1/projects/{projectID}/eventdeliveries": {
 			"get": {
-				"description": "This endpoint fetch event deliveries.",
+				"description": "This endpoint retrieves all event deliveries paginated.",
 				"parameters": [
 					{
 						"description": "application id",
@@ -3088,7 +2987,7 @@
 						}
 					},
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -3250,7 +3149,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3270,7 +3169,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -3278,18 +3177,18 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get event deliveries",
+				"summary": "List all event deliveries",
 				"tags": [
-					"EventDeliveries"
+					"Event Deliveries"
 				]
 			}
 		},
 		"/api/v1/projects/{projectID}/eventdeliveries/batchretry": {
 			"post": {
-				"description": "This endpoint resends multiple app events",
+				"description": "This endpoint batch retries multiple event deliveries at once.",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -3392,7 +3291,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3412,7 +3311,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -3420,193 +3319,18 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Batch Resend app events",
+				"summary": "Batch retry event delivery",
 				"tags": [
-					"EventDeliveries"
-				]
-			}
-		},
-		"/api/v1/projects/{projectID}/eventdeliveries/countbatchretryevents": {
-			"get": {
-				"description": "This endpoint counts app events that will be affected by a batch retry operation",
-				"parameters": [
-					{
-						"description": "application id",
-						"in": "query",
-						"name": "appId",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "Project id",
-						"in": "path",
-						"name": "projectID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "start date",
-						"in": "query",
-						"name": "startDate",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "end date",
-						"in": "query",
-						"name": "endDate",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "results per page",
-						"in": "query",
-						"name": "perPage",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "page number",
-						"in": "query",
-						"name": "page",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "sort order",
-						"in": "query",
-						"name": "sort",
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"allOf": [
-														{
-															"$ref": "#/components/schemas/api.Stub"
-														},
-														{
-															"properties": {
-																"num": {
-																	"type": "integer"
-																}
-															},
-															"type": "object"
-														}
-													]
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Count affected eventDeliveries",
-				"tags": [
-					"EventDeliveries"
+					"Event Deliveries"
 				]
 			}
 		},
 		"/api/v1/projects/{projectID}/eventdeliveries/forceresend": {
 			"post": {
-				"description": "This endpoint force resends multiple app events",
+				"description": "This endpoint enables you retry a previously successful event delivery",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -3709,7 +3433,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3729,7 +3453,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -3737,9 +3461,9 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Force Resend app events",
+				"summary": "Force retry event delivery",
 				"tags": [
-					"EventDeliveries"
+					"Event Deliveries"
 				]
 			}
 		},
@@ -3748,7 +3472,7 @@
 				"description": "This endpoint fetches an event delivery.",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -3845,7 +3569,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3865,7 +3589,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -3873,9 +3597,9 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get event delivery",
+				"summary": "Retrieve an event delivery",
 				"tags": [
-					"EventDeliveries"
+					"Event Deliveries"
 				]
 			}
 		},
@@ -3884,7 +3608,7 @@
 				"description": "This endpoint fetches an app message's delivery attempts",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -3972,7 +3696,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3992,7 +3716,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -4000,9 +3724,9 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get delivery attempts",
+				"summary": "List delivery attempts",
 				"tags": [
-					"DeliveryAttempts"
+					"Delivery Attempts"
 				]
 			}
 		},
@@ -4011,7 +3735,7 @@
 				"description": "This endpoint fetches an app event delivery attempt",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -4105,7 +3829,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -4125,7 +3849,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -4133,18 +3857,18 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get delivery attempt",
+				"summary": "Retrieve a delivery attempt",
 				"tags": [
-					"DeliveryAttempts"
+					"Delivery Attempts"
 				]
 			}
 		},
 		"/api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend": {
 			"put": {
-				"description": "This endpoint resends an app event",
+				"description": "This endpoint retries an event delivery.",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -4241,7 +3965,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -4261,7 +3985,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -4269,9 +3993,9 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Resend an app event",
+				"summary": "Retry event delivery",
 				"tags": [
-					"EventDeliveries"
+					"Event Deliveries"
 				]
 			}
 		},
@@ -4288,7 +4012,7 @@
 						}
 					},
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -4439,7 +4163,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -4459,7 +4183,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -4467,7 +4191,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get app events with pagination",
+				"summary": "List all events",
 				"tags": [
 					"Events"
 				]
@@ -4476,7 +4200,7 @@
 				"description": "This endpoint creates an endpoint event",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -4576,7 +4300,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -4596,7 +4320,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -4604,7 +4328,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Create endpoint event",
+				"summary": "Create an event",
 				"tags": [
 					"Events"
 				]
@@ -4612,10 +4336,10 @@
 		},
 		"/api/v1/projects/{projectID}/events/batchreplay": {
 			"post": {
-				"description": "This endpoint replays multiple events",
+				"description": "This endpoint replays multiple events at once.",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -4640,7 +4364,7 @@
 						}
 					},
 					{
-						"description": "Source id",
+						"description": "Source ID",
 						"in": "query",
 						"name": "source",
 						"schema": {
@@ -4727,7 +4451,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -4747,7 +4471,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -4755,158 +4479,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Replays multiple endpoint events",
-				"tags": [
-					"Events"
-				]
-			}
-		},
-		"/api/v1/projects/{projectID}/events/countbatchreplayevents": {
-			"get": {
-				"description": "This endpoint counts events that will be affected by a batch replay operation",
-				"parameters": [
-					{
-						"description": "Project id",
-						"in": "path",
-						"name": "projectID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "start date",
-						"in": "query",
-						"name": "startDate",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "end date",
-						"in": "query",
-						"name": "endDate",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "Source id",
-						"in": "query",
-						"name": "source",
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"allOf": [
-														{
-															"$ref": "#/components/schemas/api.Stub"
-														},
-														{
-															"properties": {
-																"num": {
-																	"type": "integer"
-																}
-															},
-															"type": "object"
-														}
-													]
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Counts affected events",
+				"summary": "Batch replay events",
 				"tags": [
 					"Events"
 				]
@@ -4917,7 +4490,7 @@
 				"description": "This endpoint uses the owner_id to fan out an event to multiple endpoints.",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -5017,7 +4590,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5037,7 +4610,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -5045,7 +4618,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Fan out an event to multiple endpoints.",
+				"summary": "Fan out an event",
 				"tags": [
 					"Events"
 				]
@@ -5053,10 +4626,10 @@
 		},
 		"/api/v1/projects/{projectID}/events/{eventID}": {
 			"get": {
-				"description": "This endpoint fetches an endpoint event",
+				"description": "This endpoint retrieves an event",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -5153,7 +4726,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5173,7 +4746,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -5181,7 +4754,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get endpoint event",
+				"summary": "Retrieve an event",
 				"tags": [
 					"Events"
 				]
@@ -5189,10 +4762,10 @@
 		},
 		"/api/v1/projects/{projectID}/events/{eventID}/replay": {
 			"put": {
-				"description": "This endpoint replays an endpoint event",
+				"description": "This endpoint replays an event afresh assuming it is a new event.",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -5289,7 +4862,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5309,7 +4882,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -5317,7 +4890,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Replay endpoint event",
+				"summary": "Replay event",
 				"tags": [
 					"Events"
 				]
@@ -5328,7 +4901,7 @@
 				"description": "This endpoint fetches multiple portal links",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -5443,7 +5016,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5463,7 +5036,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -5471,16 +5044,16 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Fetch multiple portal links",
+				"summary": "List all portal links",
 				"tags": [
-					"PortalLinks"
+					"Portal Links"
 				]
 			},
 			"post": {
 				"description": "This endpoint creates a portal link",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -5568,7 +5141,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5588,7 +5161,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -5598,16 +5171,16 @@
 				],
 				"summary": "Create a portal link",
 				"tags": [
-					"PortalLinks"
+					"Portal Links"
 				]
 			}
 		},
 		"/api/v1/projects/{projectID}/portal-links/{portalLinkID}": {
 			"get": {
-				"description": "This endpoint fetches a portal link by its id",
+				"description": "This endpoint retrieves a portal link by its id.",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -5692,7 +5265,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5712,7 +5285,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -5720,16 +5293,16 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get a portal link",
+				"summary": "Retrieve a portal link",
 				"tags": [
-					"PortalLinks"
+					"Portal Links"
 				]
 			},
 			"put": {
 				"description": "This endpoint updates a portal link",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -5826,7 +5399,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5846,7 +5419,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -5856,7 +5429,7 @@
 				],
 				"summary": "Update a portal link",
 				"tags": [
-					"PortalLinks"
+					"Portal Links"
 				]
 			}
 		},
@@ -5865,7 +5438,7 @@
 				"description": "This endpoint revokes a portal link",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -5950,7 +5523,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5970,7 +5543,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -5978,9 +5551,9 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Revoke Portal Link",
+				"summary": "Revoke a portal link",
 				"tags": [
-					"PortalLinks"
+					"Portal Links"
 				]
 			}
 		},
@@ -5989,7 +5562,7 @@
 				"description": "This endpoint fetches multiple sources",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -6104,7 +5677,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6124,7 +5697,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -6132,7 +5705,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Fetch multiple sources",
+				"summary": "List all sources",
 				"tags": [
 					"Sources"
 				]
@@ -6141,7 +5714,7 @@
 				"description": "This endpoint creates a source",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -6229,7 +5802,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6249,7 +5822,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -6268,7 +5841,7 @@
 				"description": "This endpoint deletes a source",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -6353,7 +5926,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6373,7 +5946,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -6381,16 +5954,16 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Delete source",
+				"summary": "Delete a source",
 				"tags": [
 					"Sources"
 				]
 			},
 			"get": {
-				"description": "This endpoint fetches a source by its id",
+				"description": "This endpoint retrieves a source by its id",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -6399,7 +5972,7 @@
 						}
 					},
 					{
-						"description": "source id",
+						"description": "Source ID",
 						"in": "path",
 						"name": "sourceID",
 						"required": true,
@@ -6475,7 +6048,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6495,7 +6068,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -6503,7 +6076,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get a source",
+				"summary": "Retrieve a source",
 				"tags": [
 					"Sources"
 				]
@@ -6512,7 +6085,7 @@
 				"description": "This endpoint updates a source",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -6609,7 +6182,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6629,7 +6202,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -6680,7 +6253,7 @@
 						}
 					},
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -6771,7 +6344,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6791,7 +6364,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -6799,7 +6372,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Get all subscriptions",
+				"summary": "List all subscriptions",
 				"tags": [
 					"Subscriptions"
 				]
@@ -6808,7 +6381,7 @@
 				"description": "This endpoint creates a subscriptions",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -6911,7 +6484,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6931,7 +6504,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -6939,7 +6512,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Creates a subscription",
+				"summary": "Create a subscription",
 				"tags": [
 					"Subscriptions"
 				]
@@ -6947,10 +6520,10 @@
 		},
 		"/api/v1/projects/{projectID}/subscriptions/test_filter": {
 			"post": {
-				"description": "This endpoint tests a subscription's filter",
+				"description": "This endpoint validates that a filter will match a certain payload structure.",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -7038,7 +6611,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7058,7 +6631,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -7066,7 +6639,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Test subscription filter",
+				"summary": "Validate subscription filter",
 				"tags": [
 					"Subscriptions"
 				]
@@ -7077,7 +6650,7 @@
 				"description": "This endpoint deletes a subscription",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -7162,7 +6735,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7182,7 +6755,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -7196,10 +6769,10 @@
 				]
 			},
 			"get": {
-				"description": "This endpoint fetches an Subscription by it's id",
+				"description": "This endpoint retrieves a single subscription",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -7284,7 +6857,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7304,7 +6877,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -7312,7 +6885,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Gets a subscription",
+				"summary": "Retrieve a subscription",
 				"tags": [
 					"Subscriptions"
 				]
@@ -7321,7 +6894,7 @@
 				"description": "This endpoint updates a subscription",
 				"parameters": [
 					{
-						"description": "Project id",
+						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
@@ -7418,7 +6991,7 @@
 						},
 						"description": "Unauthorized"
 					},
-					"500": {
+					"404": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7438,7 +7011,7 @@
 								}
 							}
 						},
-						"description": "Internal Server Error"
+						"description": "Not Found"
 					}
 				},
 				"security": [
@@ -7449,774 +7022,6 @@
 				"summary": "Update a subscription",
 				"tags": [
 					"Subscriptions"
-				]
-			}
-		},
-		"/api/v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status": {
-			"put": {
-				"description": "This endpoint updates a subscription",
-				"parameters": [
-					{
-						"description": "Project id",
-						"in": "path",
-						"name": "projectID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "subscription id",
-						"in": "path",
-						"name": "subscriptionID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.Subscription"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Toggles a subscription's status from active \u003c-\u003e inactive",
-				"tags": [
-					"Subscriptions"
-				]
-			}
-		},
-		"/portal/devices": {
-			"get": {
-				"description": "This endpoint fetches all portal link devices",
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"items": {
-														"$ref": "#/components/schemas/datastore.Device"
-													},
-													"type": "array"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"summary": "Get portal link devices",
-				"tags": [
-					"PortalLinks"
-				]
-			}
-		},
-		"/portal/endpoints": {
-			"get": {
-				"description": "This endpoint fetches all portal link endpoints",
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"items": {
-														"$ref": "#/components/schemas/datastore.Endpoint"
-													},
-													"type": "array"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"summary": "Get endpoints",
-				"tags": [
-					"PortalLinks"
-				]
-			},
-			"post": {
-				"description": "This endpoint creates an endpoint",
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.Endpoint"
-							}
-						}
-					},
-					"description": "Endpoint Details",
-					"required": true,
-					"x-originalParamName": "endpoint"
-				},
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.Endpoint"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"summary": "Create an endpoint",
-				"tags": [
-					"PortalLinks"
-				]
-			}
-		},
-		"/portal/keys": {
-			"get": {
-				"description": "This endpoint fetches all portal link endpoints keys",
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/models.PortalAPIKeyResponse"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"summary": "Get portal link keys",
-				"tags": [
-					"PortalLinks"
-				]
-			}
-		},
-		"/ui/users/forgot-password": {
-			"post": {
-				"description": "This endpoint verifies a user's email",
-				"parameters": [
-					{
-						"description": "Email verification token",
-						"in": "query",
-						"name": "token",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"summary": "Verify Email",
-				"tags": [
-					"User"
-				]
-			}
-		},
-		"/ui/users/reset-password": {
-			"post": {
-				"description": "This endpoint resets a users password",
-				"parameters": [
-					{
-						"description": "reset token",
-						"in": "query",
-						"name": "token",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.ResetPassword"
-							}
-						}
-					},
-					"description": "Reset Password Details",
-					"required": true,
-					"x-originalParamName": "password"
-				},
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/datastore.User"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"500": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Internal Server Error"
-					}
-				},
-				"summary": "Reset user password",
-				"tags": [
-					"User"
 				]
 			}
 		}
@@ -8249,11 +7054,11 @@
 		},
 		{
 			"description": "EventDelivery related APIs",
-			"name": "EventDeliveries"
+			"name": "Event Deliveries"
 		},
 		{
 			"description": "Delivery Attempt related APIs",
-			"name": "DeliveryAttempts"
+			"name": "Delivery Attempts"
 		},
 		{
 			"description": "Project related APIs",
@@ -8261,7 +7066,7 @@
 		},
 		{
 			"description": "Portal Links related APIs",
-			"name": "PortalLinks"
+			"name": "Portal Links"
 		}
 	]
 }

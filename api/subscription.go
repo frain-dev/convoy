@@ -24,7 +24,7 @@ func createSubscriptionService(a *ApplicationHandler) *services.SubcriptionServi
 }
 
 // GetSubscriptions
-// @Summary Get all subscriptions
+// @Summary List all subscriptions
 // @Description This endpoint fetches all the subscriptions
 // @Tags Subscriptions
 // @Accept json
@@ -33,9 +33,9 @@ func createSubscriptionService(a *ApplicationHandler) *services.SubcriptionServi
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
 // @Param q query string false "subscription title"
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Subscription}}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions [get]
 func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
@@ -80,15 +80,15 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 }
 
 // GetSubscription
-// @Summary Gets a subscription
-// @Description This endpoint fetches an Subscription by it's id
+// @Summary Retrieve a subscription
+// @Description This endpoint retrieves a single subscription
 // @Tags Subscriptions
 // @Accept json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param subscriptionID path string true "subscription id"
 // @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [get]
 func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Request) {
@@ -106,15 +106,15 @@ func (a *ApplicationHandler) GetSubscription(w http.ResponseWriter, r *http.Requ
 }
 
 // CreateSubscription
-// @Summary Creates a subscription
+// @Summary Create a subscription
 // @Description This endpoint creates a subscriptions
 // @Tags Subscriptions
 // @Accept json
 // @Produce json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param subscription body models.Subscription true "Subscription details"
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Subscription}}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions [post]
 func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
@@ -144,10 +144,10 @@ func (a *ApplicationHandler) CreateSubscription(w http.ResponseWriter, r *http.R
 // @Tags Subscriptions
 // @Accept json
 // @Produce json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param subscriptionID path string true "subscription id"
 // @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [delete]
 func (a *ApplicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
@@ -176,11 +176,11 @@ func (a *ApplicationHandler) DeleteSubscription(w http.ResponseWriter, r *http.R
 // @Tags Subscriptions
 // @Accept json
 // @Produce json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param subscriptionID path string true "subscription id"
 // @Param subscription body models.Subscription true "Subscription Details"
 // @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [put]
 func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
@@ -205,34 +205,21 @@ func (a *ApplicationHandler) UpdateSubscription(w http.ResponseWriter, r *http.R
 	_ = render.Render(w, r, util.NewServerResponse("Subscription updated successfully", sub, http.StatusAccepted))
 }
 
-// ToggleSubscriptionStatus
-// Deprecated
-// @Summary Toggles a subscription's status from active <-> inactive
-// @Description This endpoint updates a subscription
-// @Tags Subscriptions
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project id"
-// @Param subscriptionID path string true "subscription id"
-// @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status [put]
 func (a *ApplicationHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
 	// For backward compatibility
 	_ = render.Render(w, r, util.NewServerResponse("Subscription status updated successfully", nil, http.StatusAccepted))
 }
 
 // TestSubscriptionFilter
-// @Summary Test subscription filter
-// @Description This endpoint tests a subscription's filter
+// @Summary Validate subscription filter
+// @Description This endpoint validates that a filter will match a certain payload structure.
 // @Tags Subscriptions
 // @Accept json
 // @Produce json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param filter body models.TestFilter true "Filter Details"
 // @Success 200 {object} util.ServerResponse{data=boolean}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions/test_filter [post]
 func (a *ApplicationHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request) {

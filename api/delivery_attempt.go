@@ -10,16 +10,16 @@ import (
 )
 
 // GetDeliveryAttempt
-// @Summary Get delivery attempt
+// @Summary Retrieve a delivery attempt
 // @Description This endpoint fetches an app event delivery attempt
-// @Tags DeliveryAttempts
+// @Tags Delivery Attempts
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param eventDeliveryID path string true "event delivery id"
 // @Param deliveryAttemptID path string true "delivery attempt id"
 // @Success 200 {object} util.ServerResponse{data=datastore.DeliveryAttempt}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID} [get]
 func (a *ApplicationHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
@@ -28,15 +28,15 @@ func (a *ApplicationHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.R
 }
 
 // GetDeliveryAttempts
-// @Summary Get delivery attempts
+// @Summary List delivery attempts
 // @Description This endpoint fetches an app message's delivery attempts
-// @Tags DeliveryAttempts
+// @Tags Delivery Attempts
 // @Accept  json
 // @Produce  json
-// @Param projectID path string true "Project id"
+// @Param projectID path string true "Project ID"
 // @Param eventDeliveryID path string true "event delivery id"
 // @Success 200 {object} util.ServerResponse{data=[]datastore.DeliveryAttempt}
-// @Failure 400,401,500 {object} util.ServerResponse{data=Stub}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts [get]
 func (a *ApplicationHandler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
