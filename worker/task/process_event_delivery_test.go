@@ -45,7 +45,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				o.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Return(&datastore.Project{}, nil)
 
 				m.EXPECT().
-					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
@@ -79,7 +79,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Strategy:  &datastore.DefaultStrategyConfig,
 				}}, nil)
 				m.EXPECT().
-					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
@@ -89,7 +89,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 					}, nil).Times(1)
 
-				m.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), datastore.DiscardedEventStatus).Times(1).Return(nil)
+				m.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), datastore.DiscardedEventStatus).Times(1).Return(nil)
 
 				r.EXPECT().ShouldAllow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&redis_rate.Result{
 					Limit:     redis_rate.PerMinute(10),
@@ -104,7 +104,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 		},
@@ -130,7 +130,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Subscription{}, nil)
 
 				m.EXPECT().
-					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
@@ -179,11 +179,11 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -220,7 +220,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Subscription{}, nil)
 
 				m.EXPECT().
-					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
@@ -245,7 +245,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				o.EXPECT().
@@ -278,7 +278,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -318,7 +318,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
@@ -368,11 +368,11 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -408,7 +408,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Subscription{}, nil)
 
 				m.EXPECT().
-					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
@@ -433,7 +433,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				o.EXPECT().
@@ -466,7 +466,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -502,7 +502,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Subscription{}, nil)
 
 				m.EXPECT().
-					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Status: datastore.ScheduledEventStatus,
 						Metadata: &datastore.Metadata{
@@ -556,11 +556,11 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -596,7 +596,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Subscription{}, nil)
 
 				m.EXPECT().
-					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Status: datastore.ScheduledEventStatus,
 						Metadata: &datastore.Metadata{
@@ -621,7 +621,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				o.EXPECT().
@@ -653,7 +653,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -691,7 +691,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Subscription{}, nil)
 
 				m.EXPECT().
-					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Status: datastore.ScheduledEventStatus,
 						Metadata: &datastore.Metadata{
@@ -716,7 +716,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				o.EXPECT().
@@ -748,7 +748,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				q.EXPECT().
@@ -791,7 +791,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Subscription{}, nil)
 
 				m.EXPECT().
-					FindEventDeliveryByID(gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Status: datastore.ScheduledEventStatus,
 						Metadata: &datastore.Metadata{
@@ -816,7 +816,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				}, nil).Times(1)
 
 				m.EXPECT().
-					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				o.EXPECT().
@@ -848,7 +848,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				q.EXPECT().
@@ -909,10 +909,18 @@ func TestProcessEventDelivery(t *testing.T) {
 
 			processFn := ProcessEventDelivery(endpointRepo, msgRepo, projectRepo, rateLimiter, subRepo, q)
 
-			payload := json.RawMessage(tc.msg.UID)
+			payload := EventDelivery{
+				EventDeliveryID: tc.msg.UID,
+				ProjectID:       tc.msg.ProjectID,
+			}
+
+			data, err := json.Marshal(payload)
+			if err != nil {
+				t.Errorf("failed to marshal payload: %v", err)
+			}
 
 			job := queue.Job{
-				Payload: payload,
+				Payload: data,
 			}
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))

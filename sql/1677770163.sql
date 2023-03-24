@@ -33,6 +33,8 @@ CREATE INDEX IF NOT EXISTS idx_event_deliveries_created_at_key ON convoy.event_d
 CREATE INDEX IF NOT EXISTS idx_event_deliveries_deleted_at_key ON convoy.event_deliveries(deleted_at);
 CREATE INDEX IF NOT EXISTS idx_event_deliveries_endpoint_id_key ON convoy.event_deliveries(endpoint_id);
 CREATE INDEX IF NOT EXISTS idx_event_deliveries_device_id_key ON convoy.event_deliveries(device_id);
+ALTER TABLE convoy.event_deliveries ALTER COLUMN attempts TYPE varchar USING attempts::varchar;
+ALTER TABLE convoy.event_deliveries ALTER COLUMN attempts TYPE bytea USING attempts::bytea;
 
 --+ migrate Up
 -- convoy.organisations
@@ -81,3 +83,5 @@ DROP INDEX IF EXISTS convoy.idx_sources_source_verifier_id, convoy.idx_sources_p
 DROP INDEX IF EXISTS convoy.idx_portal_links_project_id, convoy.idx_portal_links_token;
 DROP INDEX IF EXISTS convoy.idx_portal_links_endpoints_enpdoint_id, convoy.idx_portal_links_endpoints_portal_link_id;
 ALTER TABLE convoy.project_configurations DROP COLUMN disable_endpoint;
+ALTER TABLE convoy.event_deliveries ALTER COLUMN attempts TYPE varchar USING attempts::varchar;
+ALTER TABLE convoy.event_deliveries ALTER COLUMN attempts TYPE jsonb USING attempts::jsonb;
