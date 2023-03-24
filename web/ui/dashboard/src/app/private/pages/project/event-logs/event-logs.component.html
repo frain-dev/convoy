@@ -146,19 +146,19 @@
 									<convoy-tag type="grey" className="max-w-[100px] overflow-hidden overflow-ellipsis mr-8px">{{ event.event_type }}</convoy-tag>
 								</td>
 
-								<td convoy-table-cell [ngClass]="{ 'w-340px': !event.source_metadata.name }" class="w-390px pl-16px">
-									<span
-										(click)="viewSource(event?.source_metadata?.uid || '')"
-										[ngClass]="{ 'underline text-primary-100': !portalToken || !event.source_metadata.name, 'max-w-[146px] min-w-[70px]': !event.source_metadata.name, 'w-146px': event.source_metadata.name }"
-										class="overflow-hidden overflow-ellipsis"
-									>
-										{{ event.source_metadata.name || 'API' }}
+								<td convoy-table-cell class="pl-16px">
+									<span class="max-w-[136px]">
+										<span (click)="viewSource(event?.source_metadata?.uid || '')" [ngClass]="{ 'underline text-primary-100': !portalToken || !event.source_metadata.name }" class="overflow-hidden overflow-ellipsis">
+											{{ event.source_metadata.name || 'API' }}
+										</span>
 									</span>
 
-									<span class="px-10px font-light">→</span>
+									<span class="font-light" [class]="privateService.activeProjectDetails?.type === 'outgoing' ? 'px-16px' : 'px-30px'">→</span>
 
-									<span (click)="viewEndpoint(event.endpoint_metadata[0].uid || '')" [ngClass]="{ underline: !portalToken }" class="w-146px text-right overflow-hidden overflow-ellipsis text-primary-100">
-										{{ event.endpoint_metadata[0].title }}
+									<span class="max-w-[136px] overflow-hidden overflow-ellipsis text-primary-100">
+										<span (click)="viewEndpoint(event.endpoint_metadata[0].uid || '')" [ngClass]="{ underline: !portalToken }" class="overflow-hidden overflow-ellipsis text-primary-100">
+											{{ event.endpoint_metadata[0].title }}
+										</span>
 									</span>
 								</td>
 
