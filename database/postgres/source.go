@@ -357,7 +357,6 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 		"provider":   filter.Provider,
 		"project_id": projectID,
 		"limit":      pageable.Limit(),
-		"offset":     pageable.Offset(),
 		"cursor":     pageable.Cursor(),
 	}
 

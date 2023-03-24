@@ -20,11 +20,6 @@ import (
 )
 
 type Pageable struct {
-	// deprecated
-	Page int `json:"page"`
-	// deprecated
-	Sort int `json:"sort"`
-
 	PerPage    int           `json:"per_page"`
 	Direction  PageDirection `json:"direction"`
 	PrevCursor string        `json:"prev_page_cursor"`
@@ -48,22 +43,7 @@ func (p Pageable) Limit() int {
 	return p.PerPage + 1
 }
 
-// deprecated
-func (p Pageable) Offset() int {
-	v := (p.Page - 1) * p.PerPage
-	if v < 0 {
-		return 0
-	}
-	return v
-}
-
 type PaginationData struct {
-	Total     int64 `json:"total"`
-	Page      int64 `json:"page"`
-	Prev      int64 `json:"prev"`
-	Next      int64 `json:"next"`
-	TotalPage int64 `json:"totalPage"`
-
 	PrevRowCount    PrevRowCount `json:"-"`
 	PerPage         int64        `json:"per_page"`
 	HasNextPage     bool         `json:"has_next_page"`
