@@ -63,7 +63,7 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 
 		go processEventDeliveryBatch(ctx, status, eventDeliveryRepo, projectRepo, deliveryChan, q, &wg)
 
-		counter, err := eventDeliveryRepo.CountDeliveriesByStatus(ctx, status, searchParams)
+		counter, err := eventDeliveryRepo.CountDeliveriesByStatus(ctx, "", status, searchParams)
 		if err != nil {
 			log.Error("Failed to count event deliveries")
 		}
@@ -116,7 +116,7 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 		}
 
 		if status == datastore.ProcessingEventStatus {
-			err := eventDeliveryRepo.UpdateStatusOfEventDeliveries(ctx, batchIDs, datastore.ScheduledEventStatus)
+			err := eventDeliveryRepo.UpdateStatusOfEventDeliveries(ctx, "", batchIDs, datastore.ScheduledEventStatus)
 			if err != nil {
 				log.WithError(err).Errorf("batch %d: failed to update event deliveries status", batchCount)
 			}
