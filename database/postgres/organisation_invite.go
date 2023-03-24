@@ -182,7 +182,7 @@ func (i *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID
 		query = baseFetchInvitesPagedBackward
 	}
 
-	query = fmt.Sprintf(query, baseFetchSubscription)
+	query = fmt.Sprintf(query, fetchOrganisationInvitesPaginated)
 
 	query, args, err := sqlx.Named(query, arg)
 	if err != nil {
@@ -196,7 +196,7 @@ func (i *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID
 
 	query = i.db.Rebind(query)
 
-	rows, err := i.db.QueryxContext(ctx, fetchOrganisationInvitesPaginated, args...)
+	rows, err := i.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}

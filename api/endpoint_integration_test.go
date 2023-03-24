@@ -184,7 +184,8 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints() {
 	// Deep Assert.
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(totalEndpoints), resp.Pagination.Total)
+	require.Equal(s.T(), totalEndpoints, len(resp.Content.([]interface{})))
+
 }
 
 func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints_WithPersonalAPIKey() {
@@ -209,7 +210,7 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints_WithPers
 	// Deep Assert.
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(totalEndpoints), resp.Pagination.Total)
+	require.Equal(s.T(), totalEndpoints, len(resp.Content.([]interface{})))
 }
 
 func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {

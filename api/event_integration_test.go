@@ -533,7 +533,6 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 	var respEvents []datastore.Event
 	resp := pagedResponse{Content: &respEvents}
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(2), resp.Pagination.Total)
 	require.Equal(s.T(), 2, len(respEvents))
 
 	v := []string{e1.UID, e2.UID}
@@ -588,7 +587,6 @@ func (s *EventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	var respEvents []datastore.EventDelivery
 	resp := pagedResponse{Content: &respEvents}
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(2), resp.Pagination.Total)
 	require.Equal(s.T(), 2, len(respEvents))
 
 	v := []*datastore.EventDelivery{d2, d1}

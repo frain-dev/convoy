@@ -197,7 +197,6 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_GetPendingOrganisationInvi
 	parseResponse(s.T(), w.Result(), &pagedResp)
 
 	require.Equal(s.T(), 2, len(invites))
-	require.Equal(s.T(), int64(2), pagedResp.Pagination.Total)
 }
 
 func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberInvite_AcceptForExistingUser() {

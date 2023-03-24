@@ -120,7 +120,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 	s.Router.ServeHTTP(w, req)
 
 	// Assert
-	// require.Equal(s.T(), http.StatusCreated, w.Code)
+	require.Equal(s.T(), http.StatusCreated, w.Code)
 
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
@@ -493,7 +493,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetSubscriptions_ValidSubscripti
 	// Deep Assert
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(totalSubs), resp.Pagination.Total)
+	require.Equal(s.T(), totalSubs, len(resp.Content.([]interface{})))
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_DeleteSubscription() {

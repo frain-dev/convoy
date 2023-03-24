@@ -5,6 +5,8 @@ package postgres
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -77,7 +79,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 	}{
 		{
 			name:     "Load Subscriptions Paged - 10 records",
-			pageData: datastore.Pageable{PerPage: 3, Direction: datastore.Next},
+			pageData: datastore.Pageable{PerPage: 3, Direction: datastore.Next, NextCursor: fmt.Sprintf("%d", math.MaxInt)},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					PerPage: 3,
@@ -87,7 +89,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 
 		{
 			name:     "Load Subscriptions Paged - 12 records",
-			pageData: datastore.Pageable{PerPage: 4},
+			pageData: datastore.Pageable{PerPage: 4, Direction: datastore.Next, NextCursor: fmt.Sprintf("%d", math.MaxInt)},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					PerPage: 4,
@@ -97,10 +99,10 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 
 		{
 			name:     "Load Subscriptions Paged - 0 records",
-			pageData: datastore.Pageable{PerPage: 10},
+			pageData: datastore.Pageable{PerPage: 10, Direction: datastore.Next, NextCursor: fmt.Sprintf("%d", math.MaxInt)},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					PerPage:   10,
+					PerPage: 10,
 				},
 			},
 		},
@@ -108,7 +110,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 		{
 			name:        "Load Subscriptions Paged with Endpoint ID - 1 record",
 			EndpointIDs: []string{endpoint.UID},
-			pageData:    datastore.Pageable{PerPage: 3},
+			pageData:    datastore.Pageable{PerPage: 3, Direction: datastore.Next, NextCursor: fmt.Sprintf("%d", math.MaxInt)},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					PerPage: 3,

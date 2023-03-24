@@ -299,6 +299,11 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 			return nil, datastore.PaginationData{}, err
 		}
 
+		countQuery, qargs, err = sqlx.In(countQuery, qargs...)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
 		countQuery = s.db.Rebind(countQuery)
 
 		// count the row number before the first row

@@ -80,11 +80,13 @@ const (
 	AND (ev.source_id = :source_id OR :source_id = '') 
 	AND ev.created_at >= :start_date 
 	AND ev.created_at <= :end_date`
+
 	endpointFilter = ` AND ee.endpoint_id IN (:endpoint_ids) `
 
 	baseCountPrevEvents = `
 	SELECT count(distinct(ev.id)) as count
 	FROM convoy.events ev
+	LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
 	WHERE ev.deleted_at IS NULL
 	`
 	countPrevEvents = ` AND ev.id > :cursor GROUP BY ev.id ORDER BY ev.id DESC LIMIT 1`
@@ -214,7 +216,7 @@ func (e *eventRepo) CountEvents(ctx context.Context, projectID string, filter *d
 }
 
 func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
-	var query, countQuery string
+	var query, countQuery, filterQuery string
 	var err error
 	var args, qargs []interface{}
 
@@ -240,29 +242,27 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		baseQueryPagination = baseEventsPagedBackward
 	}
 
+	filterQuery = baseEventFilter
 	if len(filter.EndpointIDs) > 0 {
-		filterQuery := endpointFilter + baseEventFilter
-		q := fmt.Sprintf(baseQueryPagination, baseEventsPaged, filterQuery)
-		query, args, err = sqlx.Named(q, arg)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-		query, args, err = sqlx.In(query, args...)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-
-		query = e.db.Rebind(query)
-	} else {
-		q := fmt.Sprintf(baseQueryPagination, baseEventsPaged, baseEventFilter)
-		query, args, err = sqlx.Named(q, arg)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-
-		query = e.db.Rebind(query)
+		filterQuery += endpointFilter
 	}
 
+	query = fmt.Sprintf(baseQueryPagination, baseEventsPaged, filterQuery)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query, args, err = sqlx.Named(query, arg)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query = e.db.Rebind(query)
 	rows, err := e.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
@@ -286,28 +286,20 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		qarg := arg
 		qarg["cursor"] = first.UID
 
-		if len(filter.EndpointIDs) > 0 {
-			filterQuery := endpointFilter + baseEventFilter
-			cq := baseCountPrevEvents + filterQuery + countPrevEvents
-			countQuery, qargs, err = sqlx.Named(cq, qarg)
-			if err != nil {
-				return nil, datastore.PaginationData{}, err
-			}
-			countQuery, qargs, err = sqlx.In(countQuery, qargs...)
-			if err != nil {
-				return nil, datastore.PaginationData{}, err
-			}
-
-			countQuery = e.db.Rebind(countQuery)
-		} else {
-			cq := baseCountPrevEvents + baseEventFilter + countPrevEvents
-			countQuery, qargs, err = sqlx.Named(cq, qarg)
-			if err != nil {
-				return nil, datastore.PaginationData{}, err
-			}
-
-			countQuery = e.db.Rebind(countQuery)
+		cq := baseCountPrevEvents + filterQuery + countPrevEvents
+		countQuery, qargs, err = sqlx.Named(cq, qarg)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
 		}
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		countQuery, qargs, err = sqlx.In(countQuery, qargs...)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		countQuery = e.db.Rebind(countQuery)
 
 		// count the row number before the first row
 		rows, err := e.db.QueryxContext(ctx, countQuery, qargs...)

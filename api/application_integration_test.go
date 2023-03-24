@@ -186,7 +186,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications() {
 	// Deep Assert.
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(totalApps), resp.Pagination.Total)
+	require.Equal(s.T(), totalApps, len(resp.Content.([]interface{})))
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications_WithPersonalAPIKey() {
@@ -195,11 +195,12 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications_WithPer
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.DB, s.DefaultProject, totalApps)
+	err := testdb.SeedMultipleEndpoints(s.ConvoyApp.A.DB, s.DefaultProject, totalApps)
+	require.NoError(s.T(), err)
 
 	// Arrange.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications", s.DefaultProject.UID)
-	req := createRequest(http.MethodGet, url, s.PersonalAPIKey, nil)
+	req := createRequest(http.MethodGet, url, s.PersonalAPIKey, nil) 
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -211,7 +212,8 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications_WithPer
 	// Deep Assert.
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(totalApps), resp.Pagination.Total)
+	require.Equal(s.T(), totalApps, len(resp.Content.([]interface{}))) // ToDo: (The test isn't deterministic. Response can be nil)
+
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetApps_Filters() {
