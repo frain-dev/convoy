@@ -25,8 +25,7 @@ func (o *OrganisationAnalytics) Track() error {
 }
 
 func (o *OrganisationAnalytics) track(perPage, count int, cursor string) error {
-	ctx := context.Background()
-	orgs, pagination, err := o.orgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{
+	orgs, pagination, err := o.orgRepo.LoadOrganisationsPaged(context.Background(), datastore.Pageable{
 		PerPage:    perPage,
 		NextCursor: cursor,
 		Direction:  datastore.Next,

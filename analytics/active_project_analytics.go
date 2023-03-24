@@ -2,8 +2,6 @@ package analytics
 
 import (
 	"context"
-	"fmt"
-	"math"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -29,7 +27,7 @@ func newActiveProjectAnalytics(projectRepo datastore.ProjectRepository, eventRep
 }
 
 func (a *ActiveProjectAnalytics) Track() error {
-	return a.track(PerPage, Page, DefaultCursor)
+	return a.track(PerPage, 0, DefaultCursor)
 }
 
 func (a *ActiveProjectAnalytics) track(perPage, count int, cursor string) error {
@@ -53,7 +51,7 @@ func (a *ActiveProjectAnalytics) track(perPage, count int, cursor string) error 
 
 		for _, project := range projects {
 			filter := &datastore.Filter{
-				Pageable: datastore.Pageable{},
+				Pageable: datastore.Pageable{PerPage: perPage, NextCursor: cursor, Direction: datastore.Next},
 				SearchParams: datastore.SearchParams{
 					CreatedAtStart: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix(),
 					CreatedAtEnd:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC).Unix(),
