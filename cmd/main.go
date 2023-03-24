@@ -51,7 +51,7 @@ func main() {
 }
 
 func ensureDefaultUser(ctx context.Context, a *app) error {
-	pageable := datastore.Pageable{Page: 1, PerPage: 10}
+	pageable := datastore.Pageable{PerPage: 10, Direction: datastore.Next, NextCursor: datastore.DefaultCursor}
 
 	userRepo := postgres.NewUserRepo(a.db)
 	users, _, err := userRepo.LoadUsersPaged(ctx, pageable)

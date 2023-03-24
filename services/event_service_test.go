@@ -711,9 +711,9 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 					EndpointIDs: []string{"abc"},
 					EventID:     "13429",
 					Pageable: datastore.Pageable{
-						Page:    1,
-						PerPage: 1,
-						Sort:    1,
+						PerPage:    10,
+						Direction:  datastore.Next,
+						NextCursor: datastore.DefaultCursor,
 					},
 					Status: []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.RetryEventStatus},
 					SearchParams: datastore.SearchParams{
@@ -744,9 +744,9 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 						CreatedAtEnd:   1332,
 					},
 					datastore.Pageable{
-						Page:    1,
-						PerPage: 1,
-						Sort:    1,
+						PerPage:    10,
+						Direction:  datastore.Next,
+						NextCursor: datastore.DefaultCursor,
 					}).
 					Times(1).
 					Return(
@@ -782,9 +782,9 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 					EndpointIDs: []string{"abc"},
 					EventID:     "13429",
 					Pageable: datastore.Pageable{
-						Page:    1,
-						PerPage: 1,
-						Sort:    1,
+						PerPage:    10,
+						Direction:  datastore.Next,
+						NextCursor: datastore.DefaultCursor,
 					},
 					Status: []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.RetryEventStatus},
 					SearchParams: datastore.SearchParams{
@@ -813,9 +813,9 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 						CreatedAtEnd:   1332,
 					},
 					datastore.Pageable{
-						Page:    1,
-						PerPage: 1,
-						Sort:    1,
+						PerPage:    10,
+						Direction:  datastore.Next,
+						NextCursor: datastore.DefaultCursor,
 					}).
 					Times(1).
 					Return(
@@ -1114,9 +1114,9 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 					SourceID:   "bcv",
 					EndpointID: "abc",
 					Pageable: datastore.Pageable{
-						Page:    1,
-						PerPage: 1,
-						Sort:    1,
+						PerPage:    10,
+						Direction:  datastore.Next,
+						NextCursor: datastore.DefaultCursor,
 					},
 					SearchParams: datastore.SearchParams{
 						CreatedAtStart: 13323,
@@ -1133,9 +1133,9 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 					EventID:    "",
 					SourceID:   "bcv",
 					Pageable: datastore.Pageable{
-						Page:    1,
-						PerPage: 1,
-						Sort:    1,
+						PerPage:    10,
+						Direction:  datastore.Next,
+						NextCursor: datastore.DefaultCursor,
 					},
 					Status: nil,
 					SearchParams: datastore.SearchParams{
@@ -1157,12 +1157,7 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 							}},
 						},
 					}, datastore.PaginationData{
-						Total:     1,
-						Page:      1,
-						PerPage:   2,
-						Prev:      1,
-						Next:      3,
-						TotalPage: 2,
+						PerPage: 2,
 					}, nil)
 			},
 			wantEvents: []datastore.Event{
@@ -1178,12 +1173,7 @@ func TestEventService_GetEventsPaged(t *testing.T) {
 				},
 			},
 			wantPaginationData: datastore.PaginationData{
-				Total:     1,
-				Page:      1,
-				PerPage:   2,
-				Prev:      1,
-				Next:      3,
-				TotalPage: 2,
+				PerPage: 2,
 			},
 		},
 		{
@@ -1261,9 +1251,9 @@ func TestEventService_SearchEvents(t *testing.T) {
 					Project:    &datastore.Project{UID: "123"},
 					EndpointID: "abc",
 					Pageable: datastore.Pageable{
-						Page:    1,
-						PerPage: 1,
-						Sort:    1,
+						PerPage:    10,
+						Direction:  datastore.Next,
+						NextCursor: datastore.DefaultCursor,
 					},
 					SearchParams: datastore.SearchParams{
 						CreatedAtStart: 13323,
@@ -1276,12 +1266,7 @@ func TestEventService_SearchEvents(t *testing.T) {
 				se.EXPECT().Search(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return([]string{"1234"}, datastore.PaginationData{
-						Total:     1,
-						Page:      1,
-						PerPage:   2,
-						Prev:      1,
-						Next:      3,
-						TotalPage: 2,
+						PerPage: 2,
 					}, nil)
 
 				ed, _ := es.eventRepo.(*mocks.MockEventRepository)
@@ -1293,12 +1278,7 @@ func TestEventService_SearchEvents(t *testing.T) {
 				{UID: "1234"},
 			},
 			wantPaginationData: datastore.PaginationData{
-				Total:     1,
-				Page:      1,
-				PerPage:   2,
-				Prev:      1,
-				Next:      3,
-				TotalPage: 2,
+				PerPage: 2,
 			},
 		},
 		{
@@ -1377,9 +1357,9 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 					EndpointIDs: []string{"abc"},
 					EventID:     "123",
 					Pageable: datastore.Pageable{
-						Page:    1,
-						PerPage: 1,
-						Sort:    1,
+						PerPage:    10,
+						Direction:  datastore.Next,
+						NextCursor: datastore.DefaultCursor,
 					},
 					Status: []datastore.EventDeliveryStatus{datastore.SuccessEventStatus},
 					SearchParams: datastore.SearchParams{
@@ -1401,9 +1381,9 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 						CreatedAtEnd:   1213,
 					},
 					datastore.Pageable{
-						Page:    1,
-						PerPage: 1,
-						Sort:    1,
+						PerPage:    10,
+						Direction:  datastore.Next,
+						NextCursor: datastore.DefaultCursor,
 					}).
 					Times(1).
 					Return([]datastore.EventDelivery{{
@@ -1430,12 +1410,7 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 							RateLimitDuration: "1h",
 						},
 					}}, datastore.PaginationData{
-						Total:     1,
-						Page:      1,
-						PerPage:   2,
-						Prev:      1,
-						Next:      3,
-						TotalPage: 2,
+						PerPage: 2,
 					}, nil)
 			},
 			wantEventDeliveries: []datastore.EventDelivery{
@@ -1465,12 +1440,7 @@ func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
 				},
 			},
 			wantPaginationData: datastore.PaginationData{
-				Total:     1,
-				Page:      1,
-				PerPage:   2,
-				Prev:      1,
-				Next:      3,
-				TotalPage: 2,
+				PerPage: 2,
 			},
 		},
 		{

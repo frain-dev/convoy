@@ -149,9 +149,9 @@ func (a *ApplicationHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Re
 	f := &datastore.Filter{
 		Project: p,
 		Pageable: datastore.Pageable{
-			Page:    0,
-			PerPage: 1000000000000, // large number so we get everything in most cases
-			Sort:    -1,
+			Direction:  datastore.Next,
+			PerPage:    1000000000000, // large number so we get everything in most cases
+			NextCursor: datastore.DefaultCursor,
 		},
 		SourceID:     r.URL.Query().Get("sourceId"),
 		EndpointID:   r.URL.Query().Get("endpointId"),
@@ -194,9 +194,9 @@ func (a *ApplicationHandler) CountAffectedEvents(w http.ResponseWriter, r *http.
 	f := &datastore.Filter{
 		Project: p,
 		Pageable: datastore.Pageable{
-			Page:    0,
-			PerPage: 1000000000000, // large number so we get everything in most cases
-			Sort:    -1,
+			Direction:  datastore.Next,
+			PerPage:    1000000000000, // large number so we get everything in most cases
+			NextCursor: datastore.DefaultCursor,
 		},
 		SourceID:     r.URL.Query().Get("sourceId"),
 		EndpointID:   r.URL.Query().Get("endpointId"),
@@ -317,9 +317,9 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 		EventID:     r.URL.Query().Get("eventId"),
 		Status:      status,
 		Pageable: datastore.Pageable{
-			Page:    0,
-			PerPage: 1000000000000, // large number so we get everything in most cases
-			Sort:    -1,
+			Direction:  datastore.Next,
+			PerPage:    1000000000000, // large number so we get everything in most cases
+			NextCursor: datastore.DefaultCursor,
 		},
 		SearchParams: searchParams,
 	}

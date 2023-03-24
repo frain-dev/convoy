@@ -8,6 +8,7 @@ import (
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -101,8 +102,7 @@ const (
 	`
 
 	basePortalLinkFilter = `
-	AND (p.project_id = :project_id OR :project_id = '')
-	AND (pe.endpoint_id = :endpoint_id OR :endpoint_id = '')`
+	AND (p.project_id = :project_id OR :project_id = '')`
 
 	deletePortalLink = `
 	UPDATE convoy.portal_links SET 
@@ -231,9 +231,12 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 	var args []interface{}
 	var query, filterQuery string
 
+	if !util.IsStringEmpty(filter.EndpointID) {
+		filter.EndpointIDs = append(filter.EndpointIDs, filter.EndpointID)
+	}
+
 	arg := map[string]interface{}{
 		"project_id":   projectID,
-		"endpoint_id":  filter.EndpointID,
 		"endpoint_ids": filter.EndpointIDs,
 		"limit":        pageable.Limit(),
 		"cursor":       pageable.Cursor(),
@@ -251,7 +254,6 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 	}
 
 	query = fmt.Sprintf(query, fetchPortalLinksPaginated, filterQuery)
-
 	query, args, err = sqlx.Named(query, arg)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
@@ -293,6 +295,11 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 
 		cq := fmt.Sprintf(countPrevPortalLinks, filterQuery)
 		countQuery, qargs, err = sqlx.Named(cq, qarg)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		countQuery, qargs, err = sqlx.In(countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}

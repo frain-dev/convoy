@@ -223,48 +223,33 @@ func Test_LoadUsersPaged(t *testing.T) {
 	}{
 		{
 			name:     "Load Users Paged - 10 records",
-			pageData: datastore.Pageable{Page: 1, PerPage: 3},
+			pageData: datastore.Pageable{PerPage: 3},
 			count:    10,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					Total:     10,
-					TotalPage: 4,
-					Page:      1,
-					PerPage:   3,
-					Prev:      1,
-					Next:      2,
+					PerPage: 3,
 				},
 			},
 		},
 
 		{
 			name:     "Load Users Paged - 12 records",
-			pageData: datastore.Pageable{Page: 2, PerPage: 4},
+			pageData: datastore.Pageable{PerPage: 4},
 			count:    12,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					Total:     12,
-					TotalPage: 3,
-					Page:      2,
-					PerPage:   4,
-					Prev:      1,
-					Next:      3,
+					PerPage: 4,
 				},
 			},
 		},
 
 		{
 			name:     "Load Users Paged - 5 records",
-			pageData: datastore.Pageable{Page: 1, PerPage: 3},
+			pageData: datastore.Pageable{PerPage: 3},
 			count:    5,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					Total:     5,
-					TotalPage: 2,
-					Page:      1,
-					PerPage:   3,
-					Prev:      1,
-					Next:      2,
+					PerPage: 3,
 				},
 			},
 		},
@@ -290,10 +275,7 @@ func Test_LoadUsersPaged(t *testing.T) {
 			_, pageable, err := userRepo.LoadUsersPaged(context.Background(), tc.pageData)
 
 			require.NoError(t, err)
-			require.Equal(t, tc.expected.paginationData.Page, pageable.Page)
 			require.Equal(t, tc.expected.paginationData.PerPage, pageable.PerPage)
-			require.Equal(t, tc.expected.paginationData.Prev, pageable.Prev)
-			require.Equal(t, tc.expected.paginationData.Next, pageable.Next)
 		})
 	}
 }

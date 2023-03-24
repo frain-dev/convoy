@@ -557,6 +557,11 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 			return nil, datastore.PaginationData{}, err
 		}
 
+		countQuery, qargs, err = sqlx.In(countQuery, qargs...)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
 		countQuery = e.db.Rebind(countQuery)
 
 		// count the row number before the first row

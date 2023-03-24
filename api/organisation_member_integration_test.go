@@ -107,7 +107,6 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 	pagedResp := pagedResponse{Content: &members}
 	parseResponse(s.T(), w.Result(), &pagedResp)
 	require.Equal(s.T(), 2, len(members))
-	require.Equal(s.T(), int64(2), pagedResp.Pagination.Total)
 
 	metadata := []datastore.UserMetadata{
 		{

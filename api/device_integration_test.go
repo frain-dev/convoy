@@ -97,7 +97,7 @@ func (d *DeviceIntegrationTestSuite) Test_FetchDevicesByEndpointID() {
 	// Deep Assert.
 	var resp pagedResponse
 	parseResponse(d.T(), w.Result(), &resp)
-	require.Equal(d.T(), int64(1), resp.Pagination.Total)
+	require.Equal(d.T(), 1, len(resp.Content.([]interface{})))
 }
 
 func TestDeviceIntegrationTestSuite(t *testing.T) {

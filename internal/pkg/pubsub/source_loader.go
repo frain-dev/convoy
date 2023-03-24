@@ -72,7 +72,6 @@ func (s *SourceLoader) fetchSources(page int) error {
 	}
 
 	pageable := datastore.Pageable{
-		Page:    page,
 		PerPage: perPage,
 	}
 

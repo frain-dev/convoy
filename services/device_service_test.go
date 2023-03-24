@@ -45,9 +45,9 @@ func TestDeviceService_LoadDevicesPaged(t *testing.T) {
 				project: &datastore.Project{UID: "12345"},
 				filter:  &datastore.ApiKeyFilter{EndpointID: ""},
 				pageable: datastore.Pageable{
-					Page:    1,
-					PerPage: 10,
-					Sort:    1,
+					Direction:  datastore.Next,
+					PerPage:    10,
+					NextCursor: datastore.DefaultCursor,
 				},
 			},
 			wantDevices: []datastore.Device{
@@ -55,12 +55,8 @@ func TestDeviceService_LoadDevicesPaged(t *testing.T) {
 				{UID: "123456"},
 			},
 			wantPaginationData: datastore.PaginationData{
-				Total:     2,
-				Page:      1,
-				PerPage:   10,
-				Prev:      0,
-				Next:      2,
-				TotalPage: 3,
+
+				PerPage: 10,
 			},
 			dbFn: func(d *DeviceService) {
 				dr, _ := d.deviceRepo.(*mocks.MockDeviceRepository)
@@ -70,12 +66,7 @@ func TestDeviceService_LoadDevicesPaged(t *testing.T) {
 						{UID: "12345"},
 						{UID: "123456"},
 					}, datastore.PaginationData{
-						Total:     2,
-						Page:      1,
-						PerPage:   10,
-						Prev:      0,
-						Next:      2,
-						TotalPage: 3,
+						PerPage: 10,
 					}, nil)
 			},
 		},
@@ -86,9 +77,9 @@ func TestDeviceService_LoadDevicesPaged(t *testing.T) {
 				ctx:     ctx,
 				project: &datastore.Project{UID: "12345"},
 				pageable: datastore.Pageable{
-					Page:    1,
-					PerPage: 10,
-					Sort:    1,
+					Direction:  datastore.Next,
+					PerPage:    10,
+					NextCursor: datastore.DefaultCursor,
 				},
 			},
 			dbFn: func(d *DeviceService) {

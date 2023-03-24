@@ -26,7 +26,7 @@ func (u *UserAnalytics) Track() error {
 		return err
 	}
 
-	return u.client.Export(u.Name(), Event{"Count": pagination.Total, "instanceID": u.instanceID})
+	return u.client.Export(u.Name(), Event{"Count": pagination.NextPageCursor, "instanceID": u.instanceID})
 }
 
 func (u *UserAnalytics) Name() string {

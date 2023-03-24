@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"time"
 
@@ -92,6 +93,8 @@ var PeriodValues = map[string]Period{
 	"monthly": Monthly,
 	"yearly":  Yearly,
 }
+
+var DefaultCursor = fmt.Sprintf("%d", math.MaxInt)
 
 const (
 	Daily Period = iota

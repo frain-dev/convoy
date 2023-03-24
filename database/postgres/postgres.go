@@ -40,22 +40,6 @@ func (p *Postgres) Close() error {
 	return p.dbx.Close()
 }
 
-// getPrevPage returns calculated value for the prev page
-func getPrevPage(page int) int {
-	if page == 0 {
-		return 1
-	}
-
-	prev := 0
-	if page-1 <= 0 {
-		prev = page
-	} else {
-		prev = page - 1
-	}
-
-	return prev
-}
-
 func rollbackTx(tx *sqlx.Tx) {
 	err := tx.Rollback()
 	if err != nil && !errors.Is(err, sql.ErrTxDone) {

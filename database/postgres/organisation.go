@@ -69,7 +69,7 @@ const (
 
 	countPrevOrganizations = `
 	SELECT count(distinct(id)) as count
-	FROM convoy.organizations
+	FROM convoy.organisations
 	WHERE deleted_at IS NULL
 	AND id > :cursor
 	GROUP BY id

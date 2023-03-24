@@ -86,7 +86,7 @@ const (
 	`
 
 	countPrevDevices = `
-	SELECT count(distinct(s.id)) as count
+	SELECT count(distinct(id)) as count
 	FROM convoy.devices 
 	WHERE deleted_at IS NULL
 	%s
@@ -240,10 +240,10 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, projectID string, fil
 
 	filterQuery = baseDevicesFilter
 	if len(filter.EndpointIDs) > 0 {
-		filterQuery += ` AND s.endpoint_id IN (:endpoint_ids)`
+		filterQuery += ` AND endpoint_id IN (:endpoint_ids)`
 	}
 
-	query = fmt.Sprintf(query, baseFetchSubscription, filterQuery)
+	query = fmt.Sprintf(query, fetchDevicesPaginated, filterQuery)
 
 	query, args, err = sqlx.Named(query, arg)
 	if err != nil {
@@ -282,7 +282,7 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, projectID string, fil
 		qarg := arg
 		qarg["cursor"] = first.UID
 
-		cq := fmt.Sprintf(countPrevSubscriptions, filterQuery)
+		cq := fmt.Sprintf(countPrevDevices, filterQuery)
 		countQuery, qargs, err = sqlx.Named(cq, qarg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
