@@ -2,6 +2,8 @@ package analytics
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -27,17 +29,17 @@ func newActiveProjectAnalytics(projectRepo datastore.ProjectRepository, eventRep
 }
 
 func (a *ActiveProjectAnalytics) Track() error {
-	return a.track(PerPage, Page, 0)
+	return a.track(PerPage, Page, DefaultCursor)
 }
 
-func (a *ActiveProjectAnalytics) track(perPage, page, count int) error {
+func (a *ActiveProjectAnalytics) track(perPage, count int, cursor string) error {
 	ctx := context.Background()
-	orgs, _, err := a.orgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{PerPage: perPage, Page: page, Sort: -1})
+	orgs, pagination, err := a.orgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{PerPage: perPage, NextCursor: cursor, Direction: datastore.Next})
 	if err != nil {
 		return err
 	}
 
-	if len(orgs) == 0 {
+	if len(orgs) == 0 && !pagination.HasNextPage {
 		return a.client.Export(a.Name(), Event{"Count": count, "instanceID": a.instanceID})
 	}
 
@@ -51,7 +53,7 @@ func (a *ActiveProjectAnalytics) track(perPage, page, count int) error {
 
 		for _, project := range projects {
 			filter := &datastore.Filter{
-				Pageable: datastore.Pageable{Sort: -1, PerPage: 1, Page: 1},
+				Pageable: datastore.Pageable{},
 				SearchParams: datastore.SearchParams{
 					CreatedAtStart: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix(),
 					CreatedAtEnd:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC).Unix(),
@@ -70,9 +72,8 @@ func (a *ActiveProjectAnalytics) track(perPage, page, count int) error {
 		}
 	}
 
-	page += 1
-
-	return a.track(perPage, page, count)
+	cursor = pagination.NextPageCursor
+	return a.track(perPage, count, cursor)
 }
 
 func (a *ActiveProjectAnalytics) Name() string {

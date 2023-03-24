@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"fmt"
+	"math"
 
 	"github.com/dukex/mixpanel"
 	"github.com/frain-dev/convoy/config"
@@ -25,6 +27,10 @@ const (
 	MixPanelProdToken       string = "YWViNzUwYWRmYjM0YTZmZjJkMzg2YTYyYWVhY2M2NWI="
 	PerPage                 int    = 50
 	Page                    int    = 1
+)
+
+var (
+	DefaultCursor = fmt.Sprintf("%d", math.MaxInt)
 )
 
 type Tracker interface {
