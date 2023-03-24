@@ -76,7 +76,7 @@ func Test_FindEventsByIDs(t *testing.T) {
 	records, err := eventRepo.FindEventsByIDs(ctx, event.ProjectID, []string{event.UID})
 	require.NoError(t, err)
 
-	require.Equal(t, 2, len(records))
+	require.Equal(t, 1, len(records))
 }
 
 func Test_CountProjectMessages(t *testing.T) {
