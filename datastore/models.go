@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"time"
 
@@ -20,11 +21,6 @@ import (
 )
 
 type Pageable struct {
-	// deprecated
-	Page int `json:"page"`
-	// deprecated
-	Sort int `json:"sort"`
-
 	PerPage    int           `json:"per_page"`
 	Direction  PageDirection `json:"direction"`
 	PrevCursor string        `json:"prev_page_cursor"`
@@ -48,22 +44,7 @@ func (p Pageable) Limit() int {
 	return p.PerPage + 1
 }
 
-// deprecated
-func (p Pageable) Offset() int {
-	v := (p.Page - 1) * p.PerPage
-	if v < 0 {
-		return 0
-	}
-	return v
-}
-
 type PaginationData struct {
-	Total     int64 `json:"total"`
-	Page      int64 `json:"page"`
-	Prev      int64 `json:"prev"`
-	Next      int64 `json:"next"`
-	TotalPage int64 `json:"totalPage"`
-
 	PrevRowCount    PrevRowCount `json:"-"`
 	PerPage         int64        `json:"per_page"`
 	HasNextPage     bool         `json:"has_next_page"`
@@ -112,6 +93,8 @@ var PeriodValues = map[string]Period{
 	"monthly": Monthly,
 	"yearly":  Yearly,
 }
+
+var DefaultCursor = fmt.Sprintf("%d", math.MaxInt)
 
 const (
 	Daily Period = iota
@@ -1249,12 +1232,12 @@ type OrganisationInvite struct {
 }
 
 type PortalLink struct {
-	UID               string         `json:"uid" db:"id"`
-	Name              string         `json:"name" db:"name"`
-	ProjectID         string         `json:"project_id" db:"project_id"`
-	Token             string         `json:"-" db:"token"`
-	Endpoints         pq.StringArray `json:"endpoints" db:"endpoints"`
-	EndpointsMetadata []Endpoint     `json:"endpoints_metadata" db:"endpoints_metadata"`
+	UID               string           `json:"uid" db:"id"`
+	Name              string           `json:"name" db:"name"`
+	ProjectID         string           `json:"project_id" db:"project_id"`
+	Token             string           `json:"-" db:"token"`
+	Endpoints         pq.StringArray   `json:"endpoints" db:"endpoints"`
+	EndpointsMetadata EndpointMetadata `json:"endpoints_metadata" db:"endpoints_metadata"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`

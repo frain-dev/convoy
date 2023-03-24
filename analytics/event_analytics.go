@@ -32,7 +32,7 @@ func (ea *EventAnalytics) Track() error {
 
 func (ea *EventAnalytics) track(perPage, page int) error {
 	ctx := context.Background()
-	orgs, _, err := ea.orgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{PerPage: perPage, Page: page, Sort: -1})
+	orgs, _, err := ea.orgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{})
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func (ea *EventAnalytics) track(perPage, page int) error {
 		for _, project := range projects {
 			filter := &datastore.Filter{
 				Project:  project,
-				Pageable: datastore.Pageable{PerPage: 20, Page: 1, Sort: -1},
+				Pageable: datastore.Pageable{},
 				SearchParams: datastore.SearchParams{
 					CreatedAtStart: time.Unix(0, 0).Unix(),
 					CreatedAtEnd:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC).Unix(),
@@ -65,7 +65,7 @@ func (ea *EventAnalytics) track(perPage, page int) error {
 				continue
 			}
 
-			err = ea.client.Export(ea.Name(), Event{"Count": pagination.Total, "Project": project.Name, "Organization": org.Name, "instanceID": ea.instanceID})
+			err = ea.client.Export(ea.Name(), Event{"Count": pagination.NextPageCursor, "Project": project.Name, "Organization": org.Name, "instanceID": ea.instanceID})
 			if err != nil {
 				log.WithError(err).Error("failed to load export metrics")
 				continue

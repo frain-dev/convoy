@@ -457,9 +457,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 			CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
 		},
 		datastore.Pageable{
-			Page:    1,
 			PerPage: 10,
-			Sort:    1,
 		},
 	)
 

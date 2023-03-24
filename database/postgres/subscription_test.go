@@ -5,6 +5,8 @@ package postgres
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -77,45 +79,30 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 	}{
 		{
 			name:     "Load Subscriptions Paged - 10 records",
-			pageData: datastore.Pageable{Page: 1, PerPage: 3},
+			pageData: datastore.Pageable{PerPage: 3, Direction: datastore.Next, NextCursor: fmt.Sprintf("%d", math.MaxInt)},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					Total:     100,
-					TotalPage: 34,
-					Page:      1,
-					PerPage:   3,
-					Prev:      1,
-					Next:      2,
+					PerPage: 3,
 				},
 			},
 		},
 
 		{
 			name:     "Load Subscriptions Paged - 12 records",
-			pageData: datastore.Pageable{Page: 2, PerPage: 4},
+			pageData: datastore.Pageable{PerPage: 4, Direction: datastore.Next, NextCursor: fmt.Sprintf("%d", math.MaxInt)},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					Total:     100,
-					TotalPage: 25,
-					Page:      2,
-					PerPage:   4,
-					Prev:      1,
-					Next:      3,
+					PerPage: 4,
 				},
 			},
 		},
 
 		{
 			name:     "Load Subscriptions Paged - 0 records",
-			pageData: datastore.Pageable{Page: 1, PerPage: 10},
+			pageData: datastore.Pageable{PerPage: 10, Direction: datastore.Next, NextCursor: fmt.Sprintf("%d", math.MaxInt)},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					Total:     100,
-					TotalPage: 10,
-					Page:      1,
-					PerPage:   10,
-					Prev:      1,
-					Next:      2,
+					PerPage: 10,
 				},
 			},
 		},
@@ -123,15 +110,10 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 		{
 			name:        "Load Subscriptions Paged with Endpoint ID - 1 record",
 			EndpointIDs: []string{endpoint.UID},
-			pageData:    datastore.Pageable{Page: 1, PerPage: 3},
+			pageData:    datastore.Pageable{PerPage: 3, Direction: datastore.Next, NextCursor: fmt.Sprintf("%d", math.MaxInt)},
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					Total:     100,
-					TotalPage: 34,
-					Page:      1,
-					PerPage:   3,
-					Prev:      1,
-					Next:      2,
+					PerPage: 3,
 				},
 			},
 		},
@@ -142,12 +124,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 			subs, pageable, err := subRepo.LoadSubscriptionsPaged(context.Background(), project.UID, &datastore.FilterBy{EndpointIDs: tc.EndpointIDs}, tc.pageData)
 			require.NoError(t, err)
 
-			require.Equal(t, tc.expected.paginationData.Total, pageable.Total)
-			require.Equal(t, tc.expected.paginationData.TotalPage, pageable.TotalPage)
-			require.Equal(t, tc.expected.paginationData.Page, pageable.Page)
 			require.Equal(t, tc.expected.paginationData.PerPage, pageable.PerPage)
-			require.Equal(t, tc.expected.paginationData.Prev, pageable.Prev)
-			require.Equal(t, tc.expected.paginationData.Next, pageable.Next)
 
 			require.Equal(t, tc.expected.paginationData.PerPage, int64(len(subs)))
 

@@ -3,7 +3,7 @@ import { Directive, Input, OnInit } from '@angular/core';
 @Directive({
 	selector: '[convoy-dropdown-container]',
 	standalone: true,
-	host: { class: 'absolute top-[110%] w-full bg-white-100 border border-grey-10 rounded-12px shadow-default z-10 transition-all ease-in-out duration-300 h-fit', '[class]': 'classes' }
+	host: { class: 'absolute top-[110%] w-full bg-white-100 border border-grey-10 rounded-12px shadow-default z-10 transition-all ease-in-out duration-300 h-fit max-h-[440px]', '[class]': 'classes' }
 })
 export class DropdownContainerComponent implements OnInit {
 	@Input('position') position: 'right' | 'left' | 'center' = 'right';

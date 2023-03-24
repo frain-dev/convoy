@@ -57,13 +57,40 @@ const (
 	`
 
 	fetchDevicesPaginated = `
-	SELECT count(*) OVER(), * FROM convoy.devices
-	WHERE deleted_at IS NULL
-	%s
-	ORDER BY id LIMIT :limit OFFSET :offset;
+	SELECT * FROM convoy.devices WHERE deleted_at IS NULL`
+
+	baseDevicesFilter = `
+	AND project_id = :project_id 
+	AND (endpoint_id = :endpoint_id OR :endpoint_id = '')`
+
+	baseFetchDevicesPagedForward = `
+	%s 
+	%s 
+	AND id <= :cursor 
+	GROUP BY id
+	ORDER BY id DESC 
+	LIMIT :limit
 	`
 
-	baseDevicesFilter = `AND project_id = :project_id AND (endpoint_id = :endpoint_id OR :endpoint_id = '' )`
+	baseFetchDevicesPagedBackward = `
+	WITH devices AS (  
+		%s 
+		%s 
+		AND id >= :cursor 
+		GROUP BY id
+		ORDER BY id ASC 
+		LIMIT :limit
+	)
+
+	SELECT * FROM devices ORDER BY id DESC
+	`
+
+	countPrevDevices = `
+	SELECT count(distinct(id)) as count
+	FROM convoy.devices 
+	WHERE deleted_at IS NULL
+	%s
+	AND id > :cursor GROUP BY id ORDER BY id DESC LIMIT 1`
 )
 
 type deviceRepo struct {
@@ -193,7 +220,7 @@ func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName string,
 }
 
 func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, projectID string, filter *datastore.ApiKeyFilter, pageable datastore.Pageable) ([]datastore.Device, datastore.PaginationData, error) {
-	var query string
+	var query, filterQuery string
 	var args []interface{}
 	var err error
 
@@ -202,39 +229,39 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, projectID string, fil
 		"endpoint_id":  filter.EndpointID,
 		"endpoint_ids": filter.EndpointIDs,
 		"limit":        pageable.Limit(),
-		"offset":       pageable.Offset(),
+		"cursor":       pageable.Cursor(),
 	}
 
-	if len(filter.EndpointIDs) > 0 {
-		filterQuery := `AND endpoint_id IN (:endpoint_ids) ` + baseDevicesFilter
-		query = fmt.Sprintf(fetchDevicesPaginated, filterQuery)
-		query, args, err = sqlx.Named(query, arg)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-
-		query, args, err = sqlx.In(query, args...)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-
-		query = d.db.Rebind(query)
+	if pageable.Direction == datastore.Next {
+		query = baseFetchDevicesPagedForward
 	} else {
-		query = fmt.Sprintf(fetchDevicesPaginated, baseDevicesFilter)
-		query, args, err = sqlx.Named(query, arg)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-
-		query = d.db.Rebind(query)
+		query = baseFetchDevicesPagedBackward
 	}
+
+	filterQuery = baseDevicesFilter
+	if len(filter.EndpointIDs) > 0 {
+		filterQuery += ` AND endpoint_id IN (:endpoint_ids)`
+	}
+
+	query = fmt.Sprintf(query, fetchDevicesPaginated, filterQuery)
+
+	query, args, err = sqlx.Named(query, arg)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query = d.db.Rebind(query)
 
 	rows, err := d.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
 
-	totalRecords := 0
 	var devices []datastore.Device
 	for rows.Next() {
 		var data DevicePaginated
@@ -245,11 +272,51 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, projectID string, fil
 		}
 
 		devices = append(devices, data.Device)
-		totalRecords = data.Count
 	}
 
-	pagination := calculatePaginationData(totalRecords, pageable.Page, pageable.PerPage)
-	return devices, pagination, nil
+	var count datastore.PrevRowCount
+	if len(devices) > 0 {
+		var countQuery string
+		var qargs []interface{}
+		first := devices[0]
+		qarg := arg
+		qarg["cursor"] = first.UID
+
+		cq := fmt.Sprintf(countPrevDevices, filterQuery)
+		countQuery, qargs, err = sqlx.Named(cq, qarg)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		countQuery = d.db.Rebind(countQuery)
+
+		// count the row number before the first row
+		rows, err := d.db.QueryxContext(ctx, countQuery, qargs...)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		if rows.Next() {
+			err = rows.StructScan(&count)
+			if err != nil {
+				return nil, datastore.PaginationData{}, err
+			}
+		}
+		rows.Close()
+	}
+
+	ids := make([]string, len(devices))
+	for i := range devices {
+		ids[i] = devices[i].UID
+	}
+
+	if len(devices) > pageable.PerPage {
+		devices = devices[:len(devices)-1]
+	}
+
+	pagination := &datastore.PaginationData{PrevRowCount: count}
+	pagination = pagination.Build(pageable, ids)
+
+	return devices, *pagination, nil
 }
 
 type DevicePaginated struct {

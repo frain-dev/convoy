@@ -21,12 +21,12 @@ func newOrganisationAnalytics(orgRepo datastore.OrganisationRepository, client A
 }
 
 func (o *OrganisationAnalytics) Track() error {
-	_, pagination, err := o.orgRepo.LoadOrganisationsPaged(context.Background(), datastore.Pageable{Sort: -1})
+	_, pagination, err := o.orgRepo.LoadOrganisationsPaged(context.Background(), datastore.Pageable{})
 	if err != nil {
 		return err
 	}
 
-	return o.client.Export(o.Name(), Event{"Count": pagination.Total, "instanceID": o.instanceID})
+	return o.client.Export(o.Name(), Event{"Count": pagination.NextPageCursor, "instanceID": o.instanceID})
 }
 
 func (o *OrganisationAnalytics) Name() string {

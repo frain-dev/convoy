@@ -8,10 +8,10 @@ import (
 
 	"gopkg.in/guregu/null.v4"
 
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -373,9 +373,9 @@ func TestOrganisationService_LoadOrganisationsPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				pageable: datastore.Pageable{
-					Page:    1,
-					PerPage: 1,
-					Sort:    1,
+					PerPage:    1,
+					NextCursor: datastore.DefaultCursor,
+					Direction:  datastore.Next,
 				},
 			},
 			wantOrganisations: []datastore.Organisation{
@@ -383,30 +383,20 @@ func TestOrganisationService_LoadOrganisationsPaged(t *testing.T) {
 				{UID: "abc"},
 			},
 			wantPaginationData: datastore.PaginationData{
-				Total:     1,
-				Page:      1,
-				PerPage:   1,
-				Prev:      1,
-				Next:      1,
-				TotalPage: 1,
+				PerPage: 1,
 			},
 			dbFn: func(os *OrganisationService) {
 				o, _ := os.orgRepo.(*mocks.MockOrganisationRepository)
 				o.EXPECT().LoadOrganisationsPaged(gomock.Any(), datastore.Pageable{
-					Page:    1,
-					PerPage: 1,
-					Sort:    1,
+					PerPage:    1,
+					NextCursor: datastore.DefaultCursor,
+					Direction:  datastore.Next,
 				}).Times(1).Return(
 					[]datastore.Organisation{
 						{UID: "123"},
 						{UID: "abc"},
 					}, datastore.PaginationData{
-						Total:     1,
-						Page:      1,
-						PerPage:   1,
-						Prev:      1,
-						Next:      1,
-						TotalPage: 1,
+						PerPage: 1,
 					},
 					nil)
 			},
@@ -417,9 +407,9 @@ func TestOrganisationService_LoadOrganisationsPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				pageable: datastore.Pageable{
-					Page:    1,
-					PerPage: 1,
-					Sort:    1,
+					PerPage:    1,
+					NextCursor: datastore.DefaultCursor,
+					Direction:  datastore.Next,
 				},
 			},
 			wantOrganisations: []datastore.Organisation{
@@ -427,19 +417,14 @@ func TestOrganisationService_LoadOrganisationsPaged(t *testing.T) {
 				{UID: "abc"},
 			},
 			wantPaginationData: datastore.PaginationData{
-				Total:     1,
-				Page:      1,
-				PerPage:   1,
-				Prev:      1,
-				Next:      1,
-				TotalPage: 1,
+				PerPage: 1,
 			},
 			dbFn: func(os *OrganisationService) {
 				o, _ := os.orgRepo.(*mocks.MockOrganisationRepository)
 				o.EXPECT().LoadOrganisationsPaged(gomock.Any(), datastore.Pageable{
-					Page:    1,
-					PerPage: 1,
-					Sort:    1,
+					PerPage:    1,
+					NextCursor: datastore.DefaultCursor,
+					Direction:  datastore.Next,
 				}).Times(1).Return(nil, datastore.PaginationData{}, errors.New("failed"))
 			},
 			wantErr:     true,
@@ -495,9 +480,9 @@ func TestOrganisationService_LoadUserOrganisationsPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				pageable: datastore.Pageable{
-					Page:    1,
-					PerPage: 1,
-					Sort:    1,
+					PerPage:    1,
+					NextCursor: datastore.DefaultCursor,
+					Direction:  datastore.Next,
 				},
 				user: &datastore.User{UID: "123"},
 			},
@@ -506,30 +491,20 @@ func TestOrganisationService_LoadUserOrganisationsPaged(t *testing.T) {
 				{UID: "abc"},
 			},
 			wantPaginationData: datastore.PaginationData{
-				Total:     1,
-				Page:      1,
-				PerPage:   1,
-				Prev:      1,
-				Next:      1,
-				TotalPage: 1,
+				PerPage: 1,
 			},
 			dbFn: func(os *OrganisationService) {
 				o, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				o.EXPECT().LoadUserOrganisationsPaged(gomock.Any(), "123", datastore.Pageable{
-					Page:    1,
-					PerPage: 1,
-					Sort:    1,
+					PerPage:    1,
+					NextCursor: datastore.DefaultCursor,
+					Direction:  datastore.Next,
 				}).Times(1).Return(
 					[]datastore.Organisation{
 						{UID: "123"},
 						{UID: "abc"},
 					}, datastore.PaginationData{
-						Total:     1,
-						Page:      1,
-						PerPage:   1,
-						Prev:      1,
-						Next:      1,
-						TotalPage: 1,
+						PerPage: 1,
 					},
 					nil)
 			},
@@ -540,9 +515,9 @@ func TestOrganisationService_LoadUserOrganisationsPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				pageable: datastore.Pageable{
-					Page:    1,
-					PerPage: 1,
-					Sort:    1,
+					PerPage:    1,
+					NextCursor: datastore.DefaultCursor,
+					Direction:  datastore.Next,
 				},
 				user: &datastore.User{UID: "123"},
 			},
@@ -551,19 +526,14 @@ func TestOrganisationService_LoadUserOrganisationsPaged(t *testing.T) {
 				{UID: "abc"},
 			},
 			wantPaginationData: datastore.PaginationData{
-				Total:     1,
-				Page:      1,
-				PerPage:   1,
-				Prev:      1,
-				Next:      1,
-				TotalPage: 1,
+				PerPage: 1,
 			},
 			dbFn: func(os *OrganisationService) {
 				o, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				o.EXPECT().LoadUserOrganisationsPaged(gomock.Any(), "123", datastore.Pageable{
-					Page:    1,
-					PerPage: 1,
-					Sort:    1,
+					PerPage:    1,
+					NextCursor: datastore.DefaultCursor,
+					Direction:  datastore.Next,
 				}).Times(1).Return(nil, datastore.PaginationData{}, errors.New("failed"))
 			},
 			wantErr:     true,

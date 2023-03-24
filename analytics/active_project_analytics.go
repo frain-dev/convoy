@@ -32,7 +32,7 @@ func (a *ActiveProjectAnalytics) Track() error {
 
 func (a *ActiveProjectAnalytics) track(perPage, page, count int) error {
 	ctx := context.Background()
-	orgs, _, err := a.orgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{PerPage: perPage, Page: page, Sort: -1})
+	orgs, _, err := a.orgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{})
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func (a *ActiveProjectAnalytics) track(perPage, page, count int) error {
 		for _, project := range projects {
 			filter := &datastore.Filter{
 				Project:  project,
-				Pageable: datastore.Pageable{Sort: -1, PerPage: 1, Page: 1},
+				Pageable: datastore.Pageable{},
 				SearchParams: datastore.SearchParams{
 					CreatedAtStart: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix(),
 					CreatedAtEnd:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC).Unix(),

@@ -14,6 +14,7 @@ import { FormatSecondsPipe } from 'src/app/pipes/formatSeconds/format-seconds.pi
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 import { SourceValueModule } from 'src/app/pipes/source-value/source-value.module';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
+import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 
 const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 
@@ -25,7 +26,7 @@ const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 		CreateSubscriptionModule,
 		ButtonComponent,
 		ModalComponent,
-        ModalHeaderComponent,
+		ModalHeaderComponent,
 		CardComponent,
 		ListItemComponent,
 		TagComponent,
@@ -35,7 +36,8 @@ const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 		DeleteModalComponent,
 		SourceValueModule,
 		TooltipComponent,
-        CardComponent
+		CardComponent,
+		PaginationComponent
 	]
 })
 export class SubscriptionsModule {}

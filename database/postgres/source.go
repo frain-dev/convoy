@@ -84,13 +84,13 @@ const (
 		s.created_at,
 		s.updated_at
 	FROM convoy.sources as s
-	LEFT JOIN convoy.source_verifiers sv
-		ON s.source_verifier_id = sv.id
+	LEFT JOIN convoy.source_verifiers sv ON s.source_verifier_id = sv.id
+	WHERE s.deleted_at IS NULL
 	`
 
-	fetchSource = baseFetchSource + ` WHERE %s = $1 AND s.deleted_at IS NULL;`
+	fetchSource = baseFetchSource + ` AND %s = $1;`
 
-	fetchSourceByName = baseFetchSource + ` WHERE %s = $1 AND %s = $2 AND s.deleted_at IS NULL;`
+	fetchSourceByName = baseFetchSource + ` AND %s = $1 AND %s = $2;`
 
 	deleteSource = `
 	UPDATE convoy.sources SET
@@ -110,12 +110,40 @@ const (
 	WHERE source_id = $1 AND deleted_at IS NULL;
 	`
 
-	fetchSourcesPaginated = baseFetchSource + ` WHERE s.deleted_at IS NULL AND (s.type = :type OR :type = '') AND (s.provider = :provider OR :provider = '') AND (s.project_id = :project_id OR :project_id = '') ORDER BY s.id desc LIMIT :limit OFFSET :offset;`
-
-	countSources = `
-	SELECT COUNT(id) FROM convoy.sources WHERE deleted_at IS NULL
-	AND (type = :type OR :type = '') AND (provider = :provider OR :provider = '');
+	fetchSourcesPagedFilter = `
+	AND (s.type = :type OR :type = '') 
+	AND (s.provider = :provider OR :provider = '') 
+	AND (s.project_id = :project_id OR :project_id = '') 
 	`
+
+	fetchSourcesPagedForward = `
+	%s 
+	%s 
+	AND s.id <= :cursor 
+	GROUP BY s.id, sv.id
+	ORDER BY s.id DESC 
+	LIMIT :limit
+	`
+
+	fetchSourcesPagedBackward = `
+	WITH sources AS (  
+		%s 
+		%s 
+		AND s.id >= :cursor 
+		GROUP BY s.id, sv.id
+		ORDER BY s.id ASC 
+		LIMIT :limit
+	)
+
+	SELECT * FROM sources ORDER BY id DESC
+	`
+
+	countPrevSources = `
+	SELECT count(distinct(s.id)) as count
+	FROM convoy.sources s
+	WHERE s.deleted_at IS NULL
+	%s
+	AND s.id > :cursor GROUP BY s.id ORDER BY s.id DESC LIMIT 1`
 )
 
 var (
@@ -329,15 +357,30 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 		"provider":   filter.Provider,
 		"project_id": projectID,
 		"limit":      pageable.Limit(),
-		"offset":     pageable.Offset(),
+		"cursor":     pageable.Cursor(),
 	}
 
-	query, args, err := sqlx.Named(fetchSourcesPaginated, arg)
+	var query string
+	if pageable.Direction == datastore.Next {
+		query = fetchSourcesPagedForward
+	} else {
+		query = fetchSourcesPagedBackward
+	}
+
+	query = fmt.Sprintf(query, baseFetchSource, fetchSourcesPagedFilter)
+
+	query, args, err := sqlx.Named(query, arg)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query, args, err = sqlx.In(query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
 
 	query = s.db.Rebind(query)
+
 	rows, err := s.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
@@ -354,7 +397,47 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 		sources = append(sources, source)
 	}
 
-	var count int
-	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
-	return sources, pagination, nil
+	var count datastore.PrevRowCount
+	if len(sources) > 0 {
+		var countQuery string
+		var qargs []interface{}
+		first := sources[0]
+		qarg := arg
+		qarg["cursor"] = first.UID
+
+		cq := fmt.Sprintf(countPrevSources, fetchSourcesPagedFilter)
+		countQuery, qargs, err = sqlx.Named(cq, qarg)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		countQuery = s.db.Rebind(countQuery)
+
+		// count the row number before the first row
+		rows, err := s.db.QueryxContext(ctx, countQuery, qargs...)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		if rows.Next() {
+			err = rows.StructScan(&count)
+			if err != nil {
+				return nil, datastore.PaginationData{}, err
+			}
+		}
+		rows.Close()
+	}
+
+	ids := make([]string, len(sources))
+	for i := range sources {
+		ids[i] = sources[i].UID
+	}
+
+	if len(sources) > pageable.PerPage {
+		sources = sources[:len(sources)-1]
+	}
+
+	pagination := &datastore.PaginationData{PrevRowCount: count}
+	pagination = pagination.Build(pageable, ids)
+
+	return sources, *pagination, nil
 }

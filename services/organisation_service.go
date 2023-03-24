@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/dchest/uniuri"
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"

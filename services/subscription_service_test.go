@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -464,9 +464,9 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 				ctx:    ctx,
 				filter: &datastore.FilterBy{ProjectID: "12345"},
 				pageable: datastore.Pageable{
-					Page:    1,
-					PerPage: 10,
-					Sort:    1,
+					PerPage:    10,
+					Direction:  datastore.Next,
+					NextCursor: datastore.DefaultCursor,
 				},
 			},
 			wantSubscription: []datastore.Subscription{
@@ -474,12 +474,7 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 				{UID: "123456"},
 			},
 			wantPaginationData: datastore.PaginationData{
-				Total:     2,
-				Page:      1,
-				PerPage:   10,
-				Prev:      0,
-				Next:      2,
-				TotalPage: 3,
+				PerPage: 10,
 			},
 			dbFn: func(ss *SubcriptionService) {
 				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
@@ -489,12 +484,7 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 						{UID: "123"},
 						{UID: "123456"},
 					}, datastore.PaginationData{
-						Total:     2,
-						Page:      1,
-						PerPage:   10,
-						Prev:      0,
-						Next:      2,
-						TotalPage: 3,
+						PerPage: 10,
 					}, nil)
 			},
 		},
@@ -504,9 +494,9 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 				ctx:    ctx,
 				filter: &datastore.FilterBy{ProjectID: "12345"},
 				pageable: datastore.Pageable{
-					Page:    1,
-					PerPage: 10,
-					Sort:    1,
+					PerPage:    10,
+					Direction:  datastore.Next,
+					NextCursor: datastore.DefaultCursor,
 				},
 			},
 			dbFn: func(so *SubcriptionService) {
@@ -525,19 +515,14 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 				ctx:    ctx,
 				filter: &datastore.FilterBy{ProjectID: "12345"},
 				pageable: datastore.Pageable{
-					Page:    1,
-					PerPage: 10,
-					Sort:    1,
+					PerPage:    10,
+					Direction:  datastore.Next,
+					NextCursor: datastore.DefaultCursor,
 				},
 			},
 			wantSubscription: []datastore.Subscription{},
 			wantPaginationData: datastore.PaginationData{
-				Total:     0,
-				Page:      1,
-				PerPage:   10,
-				Prev:      0,
-				Next:      2,
-				TotalPage: 0,
+				PerPage: 10,
 			},
 			dbFn: func(so *SubcriptionService) {
 				s, _ := so.subRepo.(*mocks.MockSubscriptionRepository)
@@ -545,12 +530,7 @@ func TestSubscription_LoadSubscriptionsPaged(t *testing.T) {
 					LoadSubscriptionsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]datastore.Subscription{},
 						datastore.PaginationData{
-							Total:     0,
-							Page:      1,
-							PerPage:   10,
-							Prev:      0,
-							Next:      2,
-							TotalPage: 0,
+							PerPage: 10,
 						}, nil)
 			},
 		},

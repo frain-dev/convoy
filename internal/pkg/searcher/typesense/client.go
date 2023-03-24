@@ -59,6 +59,7 @@ func (t *Typesense) Search(collection string, f *datastore.SearchFilter) ([]stri
 
 	queryBy := queryByBuilder.String()
 	sortBy := "created_at:desc"
+	page := 1
 
 	sp := &api.MultiSearchParams{}
 	msp := api.MultiSearchSearchesParameter{
@@ -70,7 +71,7 @@ func (t *Typesense) Search(collection string, f *datastore.SearchFilter) ([]stri
 					QueryBy:  &queryBy,
 					SortBy:   &sortBy,
 					FilterBy: f.FilterBy.String(),
-					Page:     &f.Pageable.Page,
+					Page:     &page,
 					PerPage:  &f.Pageable.PerPage,
 				},
 			},
@@ -94,17 +95,17 @@ func (t *Typesense) Search(collection string, f *datastore.SearchFilter) ([]stri
 		}
 	}
 
-	data.Next = int64(f.Pageable.Page + 1)
-	data.Prev = int64(f.Pageable.Page - 1)
-	data.Page = int64(f.Pageable.Page)
-	data.Total = int64(*result.OutOf)
+	// data.Next = int64(f.Pageable.Page + 1)
+	// data.Prev = int64(f.Pageable.Page - 1)
+	// data.Page = int64(f.Pageable.Page)
+	// data.Total = int64(*result.OutOf)
 	data.PerPage = int64(f.Pageable.PerPage)
 
-	if *result.Found > 0 {
-		data.TotalPage = int64(*result.Found / f.Pageable.PerPage)
-	} else {
-		data.TotalPage = 0
-	}
+	// if *result.Found > 0 {
+	// 	data.TotalPage = int64(*result.Found / f.Pageable.PerPage)
+	// } else {
+	// 	data.TotalPage = 0
+	// }
 
 	return docs, data, nil
 }

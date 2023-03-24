@@ -73,7 +73,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                    "$ref": "#/definitions/api.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -104,7 +104,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -122,7 +122,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -140,7 +140,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -216,7 +216,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -234,7 +234,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -252,7 +252,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -326,7 +326,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -344,7 +344,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -362,7 +362,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -429,7 +429,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -447,7 +447,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -465,7 +465,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -539,7 +539,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -557,7 +557,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -575,7 +575,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -622,7 +622,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -640,7 +640,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -658,7 +658,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -676,7 +676,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -746,7 +746,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -764,7 +764,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -782,7 +782,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -856,7 +856,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -874,7 +874,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -892,7 +892,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -966,7 +966,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -984,7 +984,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1002,7 +1002,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1083,7 +1083,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1101,7 +1101,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1119,7 +1119,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1173,7 +1173,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1191,7 +1191,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1209,7 +1209,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1227,7 +1227,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1301,7 +1301,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1319,7 +1319,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1337,7 +1337,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1411,7 +1411,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1429,7 +1429,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1447,7 +1447,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1549,7 +1549,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                    "$ref": "#/definitions/api.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -1565,7 +1565,7 @@
                                                                         "type": "object",
                                                                         "properties": {
                                                                             "data": {
-                                                                                "$ref": "#/definitions/server.Stub"
+                                                                                "$ref": "#/definitions/api.Stub"
                                                                             }
                                                                         }
                                                                     }
@@ -1592,7 +1592,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1610,7 +1610,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1628,7 +1628,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1672,7 +1672,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.Stub"
+                                    "$ref": "#/definitions/api.Stub"
                                 },
                                 {
                                     "type": "object",
@@ -1701,7 +1701,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1719,7 +1719,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1737,7 +1737,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1755,7 +1755,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1842,7 +1842,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/server.Stub"
+                                                    "$ref": "#/definitions/api.Stub"
                                                 },
                                                 {
                                                     "type": "object",
@@ -1870,7 +1870,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1888,7 +1888,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1906,7 +1906,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1950,7 +1950,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.Stub"
+                                    "$ref": "#/definitions/api.Stub"
                                 },
                                 {
                                     "type": "object",
@@ -1979,7 +1979,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1997,7 +1997,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2015,7 +2015,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2033,7 +2033,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2097,7 +2097,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/server.Stub"
+                                                            "$ref": "#/definitions/api.Stub"
                                                         }
                                                     }
                                                 }
@@ -2119,7 +2119,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2137,7 +2137,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2155,7 +2155,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2232,7 +2232,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2250,7 +2250,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2268,7 +2268,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2349,7 +2349,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2367,7 +2367,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2385,7 +2385,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2449,7 +2449,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/server.Stub"
+                                                            "$ref": "#/definitions/api.Stub"
                                                         }
                                                     }
                                                 }
@@ -2471,7 +2471,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2489,7 +2489,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2507,7 +2507,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2600,7 +2600,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                    "$ref": "#/definitions/api.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -2616,7 +2616,7 @@
                                                                         "type": "object",
                                                                         "properties": {
                                                                             "data": {
-                                                                                "$ref": "#/definitions/server.Stub"
+                                                                                "$ref": "#/definitions/api.Stub"
                                                                             }
                                                                         }
                                                                     }
@@ -2643,7 +2643,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2661,7 +2661,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2679,7 +2679,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2743,7 +2743,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/server.Stub"
+                                                            "$ref": "#/definitions/api.Stub"
                                                         }
                                                     }
                                                 }
@@ -2765,7 +2765,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2783,7 +2783,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2801,7 +2801,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2876,7 +2876,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/server.Stub"
+                                                            "$ref": "#/definitions/api.Stub"
                                                         }
                                                     }
                                                 }
@@ -2898,7 +2898,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2916,7 +2916,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2934,7 +2934,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3003,7 +3003,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/server.Stub"
+                                                    "$ref": "#/definitions/api.Stub"
                                                 },
                                                 {
                                                     "type": "object",
@@ -3031,7 +3031,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3049,7 +3049,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3067,7 +3067,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3133,7 +3133,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/server.Stub"
+                                                            "$ref": "#/definitions/api.Stub"
                                                         }
                                                     }
                                                 }
@@ -3155,7 +3155,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3173,7 +3173,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3191,7 +3191,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3255,7 +3255,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/server.Stub"
+                                                            "$ref": "#/definitions/api.Stub"
                                                         }
                                                     }
                                                 }
@@ -3277,7 +3277,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3295,7 +3295,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3313,7 +3313,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3377,7 +3377,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/server.Stub"
+                                                            "$ref": "#/definitions/api.Stub"
                                                         }
                                                     }
                                                 }
@@ -3399,7 +3399,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3417,7 +3417,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3435,7 +3435,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3504,7 +3504,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                    "$ref": "#/definitions/api.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -3535,7 +3535,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3553,7 +3553,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3571,7 +3571,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3645,7 +3645,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3663,7 +3663,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3681,7 +3681,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3755,7 +3755,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3773,7 +3773,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3791,7 +3791,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3872,7 +3872,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3890,7 +3890,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3908,7 +3908,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3964,7 +3964,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3982,7 +3982,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4000,7 +4000,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4018,7 +4018,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4087,7 +4087,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                    "$ref": "#/definitions/api.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -4118,7 +4118,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4136,7 +4136,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4154,7 +4154,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4228,7 +4228,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4246,7 +4246,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4264,7 +4264,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4338,7 +4338,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4356,7 +4356,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4374,7 +4374,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4455,7 +4455,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4473,7 +4473,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4491,7 +4491,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4545,7 +4545,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4563,7 +4563,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4581,7 +4581,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4599,7 +4599,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4674,7 +4674,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                    "$ref": "#/definitions/api.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -4705,7 +4705,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4723,7 +4723,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4741,7 +4741,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4799,7 +4799,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                    "$ref": "#/definitions/api.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -4830,7 +4830,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4848,7 +4848,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4866,7 +4866,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4942,7 +4942,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4960,7 +4960,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4978,7 +4978,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5052,7 +5052,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5070,7 +5070,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5088,7 +5088,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5169,7 +5169,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5187,7 +5187,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5205,7 +5205,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5259,7 +5259,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5277,7 +5277,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5295,7 +5295,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5313,7 +5313,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5387,7 +5387,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5405,7 +5405,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5423,7 +5423,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5479,7 +5479,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5497,7 +5497,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5515,7 +5515,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5571,7 +5571,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5589,7 +5589,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5607,7 +5607,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5669,7 +5669,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5687,7 +5687,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5705,7 +5705,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5758,7 +5758,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5776,7 +5776,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5794,7 +5794,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5838,7 +5838,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5856,7 +5856,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5874,7 +5874,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5892,7 +5892,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5963,7 +5963,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5981,7 +5981,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5999,7 +5999,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -6011,6 +6011,18 @@
         }
     },
     "definitions": {
+        "api.Stub": {
+            "type": "object"
+        },
+        "api.pagedResponse": {
+            "type": "object",
+            "properties": {
+                "content": {},
+                "pagination": {
+                    "$ref": "#/definitions/datastore.PaginationData"
+                }
+            }
+        },
         "auth.Role": {
             "type": "object",
             "properties": {
@@ -7428,18 +7440,6 @@
                 "valid": {
                     "description": "Valid is true if String is not NULL",
                     "type": "boolean"
-                }
-            }
-        },
-        "server.Stub": {
-            "type": "object"
-        },
-        "server.pagedResponse": {
-            "type": "object",
-            "properties": {
-                "content": {},
-                "pagination": {
-                    "$ref": "#/definitions/datastore.PaginationData"
                 }
             }
         },

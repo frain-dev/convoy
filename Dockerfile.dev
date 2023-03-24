@@ -12,7 +12,7 @@ WORKDIR /go/src/frain-dev/convoy
 COPY ./go.mod /go/src/frain-dev/convoy
 COPY ./go.sum /go/src/frain-dev/convoy
 
-COPY --from=node-env /app/dist /go/src/frain-dev/convoy/server/ui/build
+COPY --from=node-env /app/dist /go/src/frain-dev/convoy/api/ui/build
 
 # Get dependancies - will also be cached if we don't change mod/sum
 RUN go mod download
@@ -30,6 +30,6 @@ COPY --from=build-env /go/src/frain-dev/convoy/internal/email/templates/* templa
 COPY --from=build-env /go/src/frain-dev/convoy/configs/local/start.sh /
 
 RUN chmod +x /cmd
-RUN apk add --no-cache gcompat 
+RUN apk add --no-cache gcompat
 
 EXPOSE 8080

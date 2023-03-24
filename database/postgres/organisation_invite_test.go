@@ -53,9 +53,7 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 	}
 
 	organisationInvites, _, err := inviteRepo.LoadOrganisationsInvitesPaged(context.Background(), org.UID, datastore.InviteStatusPending, datastore.Pageable{
-		Page:    1,
 		PerPage: 100,
-		Sort:    -1,
 	})
 
 	require.NoError(t, err)

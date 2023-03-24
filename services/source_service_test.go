@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -609,9 +609,9 @@ func TestSourceService_LoadSourcesPaged(t *testing.T) {
 				ctx:     ctx,
 				project: &datastore.Project{UID: "12345"},
 				pageable: datastore.Pageable{
-					Page:    1,
-					PerPage: 10,
-					Sort:    1,
+					PerPage:    10,
+					Direction:  datastore.Next,
+					NextCursor: datastore.DefaultCursor,
 				},
 				filter: nil,
 			},
@@ -620,12 +620,7 @@ func TestSourceService_LoadSourcesPaged(t *testing.T) {
 				{UID: "123456"},
 			},
 			wantPaginationData: datastore.PaginationData{
-				Total:     2,
-				Page:      1,
-				PerPage:   10,
-				Prev:      0,
-				Next:      2,
-				TotalPage: 3,
+				PerPage: 10,
 			},
 			dbFn: func(so *SourceService) {
 				s, _ := so.sourceRepo.(*mocks.MockSourceRepository)
@@ -635,12 +630,7 @@ func TestSourceService_LoadSourcesPaged(t *testing.T) {
 						{UID: "12345"},
 						{UID: "123456"},
 					}, datastore.PaginationData{
-						Total:     2,
-						Page:      1,
-						PerPage:   10,
-						Prev:      0,
-						Next:      2,
-						TotalPage: 3,
+						PerPage: 10,
 					}, nil)
 			},
 		},
@@ -651,9 +641,9 @@ func TestSourceService_LoadSourcesPaged(t *testing.T) {
 				ctx:     ctx,
 				project: &datastore.Project{UID: "12345"},
 				pageable: datastore.Pageable{
-					Page:    1,
-					PerPage: 10,
-					Sort:    1,
+					PerPage:    10,
+					Direction:  datastore.Next,
+					NextCursor: datastore.DefaultCursor,
 				},
 				filter: nil,
 			},
@@ -664,7 +654,7 @@ func TestSourceService_LoadSourcesPaged(t *testing.T) {
 					Return(nil, datastore.PaginationData{}, errors.New("failed"))
 			},
 			wantErr:     true,
-			wantErrCode: http.StatusInternalServerError,
+			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "an error occurred while fetching sources",
 		},
 	}

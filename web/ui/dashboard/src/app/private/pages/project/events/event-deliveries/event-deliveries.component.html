@@ -166,7 +166,7 @@
 								</div>
 							</td>
 							<td convoy-table-cell>{{ event.metadata.num_trials }}</td>
-							<td convoy-table-cell>{{ event.metadata.num_trials >= event.metadata.retry_limit ? '-' : (event.metadata.next_send_time | date: 'mediumTime') }}</td>
+							<td convoy-table-cell>{{ event?.status == 'Success' || event.metadata.num_trials >= event.metadata.retry_limit ? '-' : (event.metadata.next_send_time | date: 'mediumTime') }}</td>
 							<td convoy-table-cell>{{ event.created_at | date: 'mediumTime' }}</td>
 							<td convoy-table-cell>
 								<button

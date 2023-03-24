@@ -40,9 +40,9 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 		}
 
 		pageable := datastore.Pageable{
-			Page:    0,
-			PerPage: 1000,
-			Sort:    -1,
+			Direction:  datastore.Next,
+			PerPage:    1000,
+			NextCursor: datastore.DefaultCursor,
 		}
 
 		deliveryChan := make(chan []datastore.EventDelivery, 4)
@@ -70,9 +70,9 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 		log.Infof("Total number of event deliveries to requeue is %d", counter)
 
 		for {
-			deliveries, _, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", []string{}, "", []datastore.EventDeliveryStatus{status}, searchParams, pageable)
+			deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", []string{}, "", []datastore.EventDeliveryStatus{status}, searchParams, pageable)
 			if err != nil {
-				log.WithError(err).Errorf("successfully fetched %d event deliveries, encountered error fetching page %d", count, pageable.Page)
+				log.WithError(err).Errorf("successfully fetched %d event deliveries", count)
 				close(deliveryChan)
 				log.Info("closed delivery channel")
 				break
@@ -88,7 +88,7 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 
 			count += len(deliveries)
 			deliveryChan <- deliveries
-			pageable.Page++
+			pageable.NextCursor = pagination.NextPageCursor
 		}
 
 		log.Info("waiting for batch processor to finish")
