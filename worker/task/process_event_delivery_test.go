@@ -268,7 +268,8 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit: &datastore.DefaultRateLimitConfig,
+							RateLimit:       &datastore.DefaultRateLimitConfig,
+							DisableEndpoint: true,
 						},
 					}, nil).Times(1)
 
@@ -361,7 +362,8 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit: &datastore.DefaultRateLimitConfig,
+							RateLimit:       &datastore.DefaultRateLimitConfig,
+							DisableEndpoint: true,
 						},
 					}, nil).Times(1)
 
@@ -454,7 +456,8 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit: &datastore.DefaultRateLimitConfig,
+							RateLimit:       &datastore.DefaultRateLimitConfig,
+							DisableEndpoint: true,
 						},
 					}, nil).Times(1)
 
@@ -547,7 +550,8 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit: &datastore.DefaultRateLimitConfig,
+							RateLimit:       &datastore.DefaultRateLimitConfig,
+							DisableEndpoint: true,
 						},
 					}, nil).Times(1)
 
@@ -640,7 +644,8 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit: &datastore.DefaultRateLimitConfig,
+							RateLimit:       &datastore.DefaultRateLimitConfig,
+							DisableEndpoint: true,
 						},
 					}, nil).Times(1)
 
@@ -734,7 +739,8 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit: &datastore.DefaultRateLimitConfig,
+							RateLimit:       &datastore.DefaultRateLimitConfig,
+							DisableEndpoint: true,
 						},
 					}, nil).Times(1)
 
@@ -833,7 +839,8 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit: &datastore.DefaultRateLimitConfig,
+							RateLimit:       &datastore.DefaultRateLimitConfig,
+							DisableEndpoint: true,
 						},
 					}, nil).Times(1)
 
