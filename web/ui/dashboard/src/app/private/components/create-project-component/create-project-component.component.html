@@ -172,7 +172,7 @@
 			</div>
 		</div>
 
-		<div class="border-t border-grey-20 pt-24px mt-24px">
+		<div class="border-t border-grey-20 pt-24px mt-24px" *ngIf="action === 'update'" formGroupName="config">
 			<h3 class="font-semibold mb-24px">Endpoint Configurations</h3>
 
 			<div class="flex justify-between items-start">

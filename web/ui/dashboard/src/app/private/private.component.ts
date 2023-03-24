@@ -64,9 +64,9 @@ export class PrivateComponent implements OnInit {
 		try {
 			const response = await this.privateService.getOrganizations({ refresh });
 			this.organisations = response.data.content;
+			this.isLoadingOrganisations = false;
 			if (this.organisations?.length === 0) return this.router.navigateByUrl('/get-started');
 			this.checkForSelectedOrganisation();
-			this.isLoadingOrganisations = false;
 			return;
 		} catch (error) {
 			this.isLoadingOrganisations = false;

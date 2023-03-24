@@ -59,6 +59,7 @@ export class SetupProjectComponent implements OnInit {
 
 	onProjectOnboardingComplete() {
 		this.generalService.showNotification({ message: `${this.privateService.activeProjectDetails?.type} configuration complete`, style: 'success', type: 'modal' });
+
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid);
 	}
 
@@ -77,5 +78,6 @@ export class SetupProjectComponent implements OnInit {
 
 		if (this.automaticSubscription) this.subscriptionService.subscriptionData = { ...this.subscriptionService.subscriptionData, name: `${this.newEndpoint.title}${this.newSource ? ' - ' + this.newSource.name : ''}'s Subscription` };
 		await this.createSubscriptionForm.saveSubscription();
+		this.privateService.getProjectStat({ refresh: true });
 	}
 }
