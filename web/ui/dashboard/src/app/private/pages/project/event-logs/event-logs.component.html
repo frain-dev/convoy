@@ -117,13 +117,13 @@
 							</tr>
 							<tr convoy-table-row *ngFor="let event of eventGroup.content; let index = index" (click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid)" [active]="event.uid === eventsDetailsItem?.uid">
 								<td convoy-table-cell class="w-130px pl-16px" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
-									<convoy-tag type="grey" className="max-w-[100px] overflow-hidden overflow-ellipsis mr-8px">{{ event.event_type }}</convoy-tag>
+									<convoy-tag type="grey" className="max-w-[120px] overflow-hidden overflow-ellipsis mr-8px">{{ event.event_type }}</convoy-tag>
 								</td>
 
 								<td convoy-table-cell class="pl-16px">
 									<span class="max-w-[200px]">
 										<span (click)="viewSource(event?.source_metadata?.uid || '')" [ngClass]="{ 'underline text-primary-100': !portalToken || !event.source_metadata.name }" class="overflow-hidden overflow-ellipsis">
-											{{ event.source_metadata.name || 'API' }}
+											{{ event.source_metadata.name || 'Rest API' }}
 										</span>
 									</span>
 								</td>

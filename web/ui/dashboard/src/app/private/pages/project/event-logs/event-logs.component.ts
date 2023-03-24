@@ -91,7 +91,7 @@ export class EventLogsComponent implements OnInit {
 	async ngOnInit() {
 		this.getFiltersFromURL();
 		this.getEvents();
-		if (!this.portalToken && this.privateService.activeProjectDetails?.type === 'incoming') this.getSourcesForFilter();
+		if (!this.portalToken) this.getSourcesForFilter();
 	}
 
 	clearEventFilters(filterType?: 'eventsDate' | 'eventsEndpoint' | 'eventsSearch' | 'eventsSource') {
