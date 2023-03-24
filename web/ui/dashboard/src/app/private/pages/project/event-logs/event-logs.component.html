@@ -94,7 +94,7 @@
 			"
 			(click)="fetchRetryCount(); showBatchRetryModal = true"
 		>
-			Batch Retry
+			Batch Replay
 		</button>
 	</div>
 
@@ -191,7 +191,7 @@
 						<h3 class="text-16 font-bold">Details</h3>
 						<button convoy-button size="xs" texture="light" (click)="retryEvent({ eventId: eventsDetailsItem.uid })">
 							<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
-							Retry
+							Replay
 						</button>
 					</div>
 					<prism language="json" [code]="getCodeSnippetString('res_data')" title="Event"></prism>
