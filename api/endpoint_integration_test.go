@@ -163,7 +163,7 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint_WithPerson
 
 func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints() {
 	rand.Seed(time.Now().UnixNano())
-	totalEndpoints := rand.Intn(5)
+	totalEndpoints := rand.Intn(5) + 1
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -190,7 +190,7 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints() {
 
 func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints_WithPersonalAPIKey() {
 	rand.Seed(time.Now().UnixNano())
-	totalEndpoints := rand.Intn(5)
+	totalEndpoints := rand.Intn(5) + 1
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
