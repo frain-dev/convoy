@@ -57,7 +57,7 @@ import { PaginationComponent } from 'src/app/private/components/pagination/pagin
 })
 export class EventLogsComponent implements OnInit {
 	eventsDateFilterFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
-	eventLogsTableHead: string[] = this.privateService.activeProjectDetails?.type === 'incoming' ? ['Source Name', 'Time', ''] : ['Event Type', 'Source Name', 'Time', ''];
+	eventLogsTableHead: string[] = ['Event ID', 'Source Name', 'Time', ''];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventsSearchString?: string;
 	eventEndpoint?: string;
