@@ -347,17 +347,17 @@ type PortalLink struct {
 }
 
 type PortalLinkResponse struct {
-	UID               string               `json:"uid"`
-	Name              string               `json:"name"`
-	ProjectID         string               `json:"project_id"`
-	Endpoints         []string             `json:"endpoints"`
-	EndpointCount     int                  `json:"endpoint_count"`
-	Token             string               `json:"token"`
-	EndpointsMetadata []datastore.Endpoint `json:"endpoints_metadata"`
-	URL               string               `json:"url"`
-	CreatedAt         time.Time            `json:"created_at,omitempty"`
-	UpdatedAt         time.Time            `json:"updated_at,omitempty"`
-	DeletedAt         null.Time            `json:"deleted_at,omitempty"`
+	UID               string                     `json:"uid"`
+	Name              string                     `json:"name"`
+	ProjectID         string                     `json:"project_id"`
+	Endpoints         []string                   `json:"endpoints"`
+	EndpointCount     int                        `json:"endpoint_count"`
+	Token             string                     `json:"token"`
+	EndpointsMetadata datastore.EndpointMetadata `json:"endpoints_metadata"`
+	URL               string                     `json:"url"`
+	CreatedAt         time.Time                  `json:"created_at,omitempty"`
+	UpdatedAt         time.Time                  `json:"updated_at,omitempty"`
+	DeletedAt         null.Time                  `json:"deleted_at,omitempty"`
 }
 
 type TestFilter struct {

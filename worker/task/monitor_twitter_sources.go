@@ -23,7 +23,7 @@ func MonitorTwitterSources(db database.Database, queue queue.Queuer) func(contex
 	endpointRepo := postgres.NewEndpointRepo(db)
 
 	return func(ctx context.Context, t *asynq.Task) error {
-		p := datastore.Pageable{Page: 1, PerPage: 100}
+		p := datastore.Pageable{PerPage: 100, Direction: datastore.Next, NextCursor: datastore.DefaultCursor}
 		f := &datastore.SourceFilter{Provider: string(datastore.TwitterSourceProvider)}
 
 		sources, _, err := sourceRepo.LoadSourcesPaged(context.Background(), "", f, p)

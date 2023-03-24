@@ -612,18 +612,21 @@ func TestProjectService_GetProjects(t *testing.T) {
 				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
 				g.EXPECT().LoadProjects(gomock.Any(), &datastore.ProjectFilter{OrgID: "default_project"}).
 					Times(1).Return([]*datastore.Project{
-					{UID: "123"},
-					{UID: "abc"},
+					{
+						UID: "123",
+						Statistics: &datastore.ProjectStatistics{
+							MessagesSent:   1,
+							TotalEndpoints: 1,
+						},
+					},
+					{
+						UID: "abc",
+						Statistics: &datastore.ProjectStatistics{
+							MessagesSent:   1,
+							TotalEndpoints: 1,
+						},
+					},
 				}, nil)
-
-				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(2).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
-					project.Statistics = &datastore.ProjectStatistics{
-						MessagesSent:   1,
-						TotalEndpoints: 1,
-					}
-
-					return nil
-				})
 			},
 			wantProjects: []*datastore.Project{
 				{
@@ -711,8 +714,10 @@ func TestProjectService_FillProjectStatistics(t *testing.T) {
 				g, _ := gs.projectRepo.(*mocks.MockProjectRepository)
 				g.EXPECT().FillProjectsStatistics(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(func(ctx context.Context, project *datastore.Project) error {
 					project.Statistics = &datastore.ProjectStatistics{
-						MessagesSent:   1,
-						TotalEndpoints: 1,
+						MessagesSent:       1,
+						TotalEndpoints:     1,
+						TotalSubscriptions: 1,
+						TotalSources:       1,
 					}
 					return nil
 				})
@@ -720,8 +725,10 @@ func TestProjectService_FillProjectStatistics(t *testing.T) {
 			wantProject: &datastore.Project{
 				UID: "1234",
 				Statistics: &datastore.ProjectStatistics{
-					MessagesSent:   1,
-					TotalEndpoints: 1,
+					MessagesSent:       1,
+					TotalEndpoints:     1,
+					TotalSubscriptions: 1,
+					TotalSources:       1,
 				},
 			},
 			wantErr: false,
@@ -752,7 +759,7 @@ func TestProjectService_FillProjectStatistics(t *testing.T) {
 				tc.dbFn(gs)
 			}
 
-			err := gs.FillProjectStatistics(tc.args.ctx, []*datastore.Project{tc.args.g})
+			err := gs.FillProjectStatistics(tc.args.ctx, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())

@@ -22,6 +22,7 @@ func addIngestCommand(a *app) *cobra.Command {
 
 			sourceRepo := postgres.NewSourceRepo(a.db)
 			endpointRepo := postgres.NewEndpointRepo(a.db)
+			projectRepo := postgres.NewProjectRepo(a.db)
 
 			lo := a.logger.(*log.Logger)
 			lo.SetPrefix("ingester")
@@ -34,7 +35,7 @@ func addIngestCommand(a *app) *cobra.Command {
 			lo.SetLevel(lvl)
 
 			sourcePool := pubsub.NewSourcePool(lo)
-			sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, a.queue, sourcePool, lo)
+			sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, a.queue, sourcePool, lo)
 
 			sourceLoader.Run(interval)
 

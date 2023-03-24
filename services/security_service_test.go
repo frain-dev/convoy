@@ -798,17 +798,17 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 				ctx:    ctx,
 				filter: &datastore.ApiKeyFilter{},
 				pageable: &datastore.Pageable{
-					Page:    1,
-					PerPage: 1,
-					Sort:    1,
+					PerPage:    1,
+					NextCursor: datastore.DefaultCursor,
+					Direction:  datastore.Next,
 				},
 			},
 			dbFn: func(ss *SecurityService) {
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().LoadAPIKeysPaged(gomock.Any(), gomock.Any(), &datastore.Pageable{
-					Page:    1,
-					PerPage: 1,
-					Sort:    1,
+					PerPage:    1,
+					NextCursor: datastore.DefaultCursor,
+					Direction:  datastore.Next,
 				}).
 					Times(1).Return(
 					[]datastore.APIKey{
@@ -830,12 +830,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 						},
 					},
 					datastore.PaginationData{
-						Total:     1,
-						Page:      1,
-						PerPage:   1,
-						Prev:      1,
-						Next:      1,
-						TotalPage: 1,
+						PerPage: 1,
 					}, nil)
 			},
 			wantAPIKeys: []datastore.APIKey{
@@ -857,12 +852,7 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 				},
 			},
 			wantPaginationData: datastore.PaginationData{
-				Total:     1,
-				Page:      1,
-				PerPage:   1,
-				Prev:      1,
-				Next:      1,
-				TotalPage: 1,
+				PerPage: 1,
 			},
 		},
 		{
@@ -871,17 +861,17 @@ func TestSecurityService_GetAPIKeys(t *testing.T) {
 				ctx:    ctx,
 				filter: &datastore.ApiKeyFilter{},
 				pageable: &datastore.Pageable{
-					Page:    1,
-					PerPage: 1,
-					Sort:    1,
+					PerPage:    1,
+					NextCursor: datastore.DefaultCursor,
+					Direction:  datastore.Next,
 				},
 			},
 			dbFn: func(ss *SecurityService) {
 				a, _ := ss.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().LoadAPIKeysPaged(gomock.Any(), gomock.Any(), &datastore.Pageable{
-					Page:    1,
-					PerPage: 1,
-					Sort:    1,
+					PerPage:    1,
+					NextCursor: datastore.DefaultCursor,
+					Direction:  datastore.Next,
 				}).
 					Times(1).
 					Return(

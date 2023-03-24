@@ -358,7 +358,7 @@ func Test_Search(t *testing.T) {
 						CreatedAtEnd:   10000000000,
 					},
 				},
-				Pageable: datastore.Pageable{Page: 1, PerPage: 10, Sort: 1},
+				Pageable: datastore.Pageable{PerPage: 10},
 			})
 			require.NoError(t, err)
 

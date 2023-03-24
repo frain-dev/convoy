@@ -66,6 +66,7 @@ func SeedMultipleEndpoints(db database.Database, g *datastore.Project, count int
 			Secrets: datastore.Secrets{
 				{UID: ulid.Make().String()},
 			},
+			AppID: ulid.Make().String(),
 		}
 
 		// Seed Data.

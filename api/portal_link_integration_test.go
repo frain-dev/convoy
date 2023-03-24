@@ -193,7 +193,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLinks() 
 	// Deep Assert
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(totalLinks), resp.Pagination.Total)
+	require.Equal(s.T(), totalLinks, len(resp.Content.([]interface{})))
 }
 
 func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLinks_FilterByEndpointID() {
@@ -226,7 +226,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLinks_Fi
 	// Deep Assert
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(1), resp.Pagination.Total)
+	require.Equal(s.T(), 1, len(resp.Content.([]interface{})))
 }
 
 func (s *PortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
@@ -396,7 +396,6 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpointEvents() {
 	resp := &pagedResponse{Content: &respEvents}
 
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(6), resp.Pagination.Total)
 	require.Equal(s.T(), 6, len(respEvents))
 }
 
@@ -447,7 +446,6 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpointSubscriptions
 	resp := &pagedResponse{Content: &respSubs}
 
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(1), resp.Pagination.Total)
 	require.Equal(s.T(), 1, len(respSubs))
 	require.Equal(s.T(), sub.UID, respSubs[0].UID)
 }

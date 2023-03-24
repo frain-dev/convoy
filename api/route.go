@@ -368,6 +368,8 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 						projectSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", a.UpdateProject)
 						projectSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", a.DeleteProject)
 
+						projectSubRouter.Get("/stats", a.GetProjectStatistics)
+
 						projectSubRouter.Route("/security/keys", func(projectKeySubRouter chi.Router) {
 							projectKeySubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/regenerate", a.RegenerateProjectAPIKey)
 						})

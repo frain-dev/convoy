@@ -2,7 +2,6 @@ package api
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -87,7 +86,6 @@ func (a *ApplicationHandler) ProcessOrganisationMemberInvite(w http.ResponseWrit
 	organisationInviteService := CreateOrganisationInviteService(a)
 
 	err = organisationInviteService.ProcessOrganisationMemberInvite(r.Context(), token, accepted, newUser)
-	fmt.Println("ff", err)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to process organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

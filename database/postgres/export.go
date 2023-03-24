@@ -24,7 +24,7 @@ const (
 	exportRepoQ = `
 		SELECT to_jsonb(ed) - 'id' || jsonb_build_object('uid', ed.id) AS json_output
 		FROM %s AS ed %s
-		ORDER BY created_at ASC
+		ORDER BY id ASC
 		LIMIT $3
 		OFFSET $4;
 	`

@@ -790,28 +790,23 @@ func TestOrganisationInviteService_LoadOrganisationInvitesPaged(t *testing.T) {
 				org:          &datastore.Organisation{UID: "123"},
 				inviteStatus: datastore.InviteStatusAccepted,
 				pageable: datastore.Pageable{
-					Page:    1,
-					PerPage: 1,
-					Sort:    1,
+					PerPage:    1,
+					NextCursor: datastore.DefaultCursor,
+					Direction:  datastore.Next,
 				},
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				o, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
 				o.EXPECT().LoadOrganisationsInvitesPaged(gomock.Any(), "123", datastore.InviteStatusAccepted, datastore.Pageable{
-					Page:    1,
-					PerPage: 1,
-					Sort:    1,
+					PerPage:    1,
+					NextCursor: datastore.DefaultCursor,
+					Direction:  datastore.Next,
 				}).Times(1).Return(
 					[]datastore.OrganisationInvite{
 						{UID: "abc"},
 					},
 					datastore.PaginationData{
-						Total:     1,
-						Page:      1,
-						PerPage:   1,
-						Prev:      1,
-						Next:      1,
-						TotalPage: 1,
+						PerPage: 1,
 					},
 					nil,
 				)
@@ -820,12 +815,7 @@ func TestOrganisationInviteService_LoadOrganisationInvitesPaged(t *testing.T) {
 				{UID: "abc"},
 			},
 			wantPaginationData: datastore.PaginationData{
-				Total:     1,
-				Page:      1,
-				PerPage:   1,
-				Prev:      1,
-				Next:      1,
-				TotalPage: 1,
+				PerPage: 1,
 			},
 			wantErr: false,
 		},
@@ -836,17 +826,17 @@ func TestOrganisationInviteService_LoadOrganisationInvitesPaged(t *testing.T) {
 				org:          &datastore.Organisation{UID: "123"},
 				inviteStatus: datastore.InviteStatusAccepted,
 				pageable: datastore.Pageable{
-					Page:    1,
-					PerPage: 1,
-					Sort:    1,
+					PerPage:    1,
+					NextCursor: datastore.DefaultCursor,
+					Direction:  datastore.Next,
 				},
 			},
 			dbFn: func(ois *OrganisationInviteService) {
 				o, _ := ois.orgInviteRepo.(*mocks.MockOrganisationInviteRepository)
 				o.EXPECT().LoadOrganisationsInvitesPaged(gomock.Any(), "123", datastore.InviteStatusAccepted, datastore.Pageable{
-					Page:    1,
-					PerPage: 1,
-					Sort:    1,
+					PerPage:    1,
+					NextCursor: datastore.DefaultCursor,
+					Direction:  datastore.Next,
 				}).Times(1).Return(nil, datastore.PaginationData{}, errors.New("failed"))
 			},
 			wantErr:     true,

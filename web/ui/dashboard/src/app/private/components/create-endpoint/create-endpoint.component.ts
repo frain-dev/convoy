@@ -12,6 +12,7 @@ import { CreateEndpointService } from './create-endpoint.service';
 import { PrivateService } from '../../private.service';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.component';
+import { EndpointDetailsService } from '../../pages/project/endpoint-details/endpoint-details.service';
 
 @Component({
 	selector: 'convoy-create-endpoint',
@@ -54,7 +55,15 @@ export class CreateEndpointComponent implements OnInit {
 	];
 	endpointCreated: boolean = false;
 
-	constructor(private formBuilder: FormBuilder, private generalService: GeneralService, private createEndpointService: CreateEndpointService, private route: ActivatedRoute, public privateService: PrivateService, private router: Router) {}
+	constructor(
+		private formBuilder: FormBuilder,
+		private generalService: GeneralService,
+		private createEndpointService: CreateEndpointService,
+		private route: ActivatedRoute,
+		public privateService: PrivateService,
+		private router: Router,
+		private endpointService: EndpointDetailsService
+	) {}
 
 	ngOnInit() {
 		if (this.endpointUid && this.editMode) this.getEndpointDetails();
@@ -68,10 +77,7 @@ export class CreateEndpointComponent implements OnInit {
 		if (!this.addNewEndpointForm.value.authentication.api_key.header_name && !this.addNewEndpointForm.value.authentication.api_key.header_value) delete this.addNewEndpointForm.value.authentication;
 
 		try {
-			const response =
-				this.endpointUid && this.editMode
-					? await this.createEndpointService.editEndpoint({ endpointId: this.endpointUid || '', body: this.addNewEndpointForm.value, token: this.token })
-					: await this.createEndpointService.addNewEndpoint({ body: this.addNewEndpointForm.value, token: this.token });
+			const response = this.endpointUid && this.editMode ? await this.createEndpointService.editEndpoint({ endpointId: this.endpointUid || '', body: this.addNewEndpointForm.value }) : await this.createEndpointService.addNewEndpoint({ body: this.addNewEndpointForm.value });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.onAction.emit({ action: this.endpointUid && this.editMode ? 'update' : 'save', data: response.data });
 			this.addNewEndpointForm.reset();
@@ -88,7 +94,7 @@ export class CreateEndpointComponent implements OnInit {
 		this.isLoadingEndpointDetails = true;
 
 		try {
-			const response = await this.createEndpointService.getEndpoint(this.endpointUid);
+			const response = await this.endpointService.getEndpoint(this.endpointUid);
 			const endpointDetails = response.data;
 			this.addNewEndpointForm.patchValue(endpointDetails);
 			this.addNewEndpointForm.patchValue({

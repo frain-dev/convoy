@@ -3,19 +3,27 @@ import { Router } from '@angular/router';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { HttpService } from 'src/app/services/http/http.service';
 import { FLIPT_API_RESPONSE } from '../models/flipt.model';
+import { CURSOR } from '../models/global.model';
 import { GROUP } from '../models/group.model';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
+import { ProjectService } from './pages/project/project.service';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class PrivateService {
-	activeProjectDetails?: GROUP;
+	activeProjectDetails?: GROUP; // we should depricate this
 	organisationDetails!: ORGANIZATION_DATA;
 	apiFlagResponse!: FLIPT_API_RESPONSE;
 	projects: GROUP[] = [];
+	organisations!: HTTP_RESPONSE;
+	configutation!: HTTP_RESPONSE;
+	showCreateOrgModal = false;
+	projectDetails!: HTTP_RESPONSE;
+	profileDetails!: HTTP_RESPONSE;
+	projectStats!: HTTP_RESPONSE;
 
-	constructor(private http: HttpService, private router: Router) {}
+	constructor(private http: HttpService, private router: Router, private projectService: ProjectService) {}
 
 	getOrganisation(): ORGANIZATION_DATA {
 		let org = localStorage.getItem('CONVOY_ORG');
@@ -37,42 +45,15 @@ export class PrivateService {
 
 	getConfiguration(): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
+			if (this.configutation) return resolve(this.configutation);
+
 			try {
 				const response = await this.http.request({
 					url: `/configuration`,
 					method: 'get'
 				});
 
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
-
-	getApps(requestDetails?: { pageNo?: number; searchString?: string }): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: `${this.urlFactory('org_project')}/apps?sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
-					method: 'get'
-				});
-
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
-
-	deleteApp(appID: string): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: `${this.urlFactory('org_project')}/apps/${appID}`,
-					method: 'delete'
-				});
-
+				this.configutation = response;
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
@@ -84,8 +65,9 @@ export class PrivateService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const sourceResponse = await this.http.request({
-					url: `${this.urlFactory('org_project')}/subscriptions/${subscriptionId}`,
-					method: 'delete'
+					url: `/subscriptions/${subscriptionId}`,
+					method: 'delete',
+					level: 'org_project'
 				});
 
 				return resolve(sourceResponse);
@@ -95,12 +77,16 @@ export class PrivateService {
 		});
 	}
 
-	getSubscriptions(requestDetails?: { page?: number }): Promise<HTTP_RESPONSE> {
+	getSubscriptions(requestDetails?: CURSOR): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
+				if (!requestDetails) requestDetails = { next_page_cursor: String(Number.MAX_SAFE_INTEGER), direction: 'next' };
+
 				const subscriptionsResponse = await this.http.request({
-					url: `${this.urlFactory('org_project')}/subscriptions?page=${requestDetails?.page || 1}&perPage=20`,
-					method: 'get'
+					url: `/subscriptions`,
+					method: 'get',
+					level: 'org_project',
+					query: requestDetails
 				});
 
 				return resolve(subscriptionsResponse);
@@ -110,32 +96,23 @@ export class PrivateService {
 		});
 	}
 
-	getSources(requestDetails?: { page?: number }): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const sourcesResponse = await this.http.request({
-					url: `${this.urlFactory('org_project')}/sources?groupId=${this.activeProjectDetails?.uid}&page=${requestDetails?.page || 1}&perPage=20`,
-					method: 'get'
-				});
-
-				return resolve(sourcesResponse);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
-
-	getProjectDetails(): Promise<HTTP_RESPONSE> {
+	getProjectDetails(requestDetails?: { refresh?: boolean; projectId?: string }): Promise<HTTP_RESPONSE> {
 		const projectId = this.router.url.split('/')[2];
 
 		return new Promise(async (resolve, reject) => {
+			if (this.projectDetails && !requestDetails?.refresh) return resolve(this.projectDetails);
+
 			try {
 				const projectResponse = await this.http.request({
-					url: `${this.urlFactory('org')}/projects/${this.activeProjectDetails?.uid || projectId}`,
-					method: 'get'
+					url: `/projects/${requestDetails?.projectId || this.activeProjectDetails?.uid || projectId}`,
+					method: 'get',
+					level: 'org'
 				});
 
-				this.activeProjectDetails = projectResponse.data;
+				this.activeProjectDetails = projectResponse.data; // we should depricate this
+				this.projectService.activeProjectDetails = projectResponse.data;
+
+				this.projectDetails = projectResponse;
 				return resolve(projectResponse);
 			} catch (error) {
 				return reject(error);
@@ -143,13 +120,33 @@ export class PrivateService {
 		});
 	}
 
-	getOrganizations(): Promise<HTTP_RESPONSE> {
+	async organisationConfig(organisations: ORGANIZATION_DATA[]) {
+		if (!organisations || (organisations && organisations?.length == 0)) return;
+
+		const selectedOrganisation = localStorage.getItem('CONVOY_ORG');
+		if (!selectedOrganisation || selectedOrganisation === 'undefined') return;
+
+		const organisationDetails = JSON.parse(selectedOrganisation);
+		const existingOrg = organisations.find((org: { uid: string }) => org.uid === organisationDetails?.uid);
+		if (existingOrg) return localStorage.setItem('CONVOY_ORG', JSON.stringify(existingOrg));
+
+		this.organisationDetails = organisations[0];
+		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisations[0]));
+		return;
+	}
+
+	getOrganizations(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
+			if (this.organisations && !requestDetails?.refresh) return resolve(this.organisations);
+
 			try {
 				const response = await this.http.request({
 					url: `/organisations`,
 					method: 'get'
 				});
+
+				await this.organisationConfig(response.data?.content);
+				this.organisations = response;
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
@@ -191,8 +188,9 @@ export class PrivateService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const projectsResponse = await this.http.request({
-					url: `${this.urlFactory('org')}/projects`,
-					method: 'get'
+					url: `/projects`,
+					method: 'get',
+					level: 'org'
 				});
 
 				this.projects = projectsResponse.data;
@@ -227,7 +225,7 @@ export class PrivateService {
 			);
 
 			try {
-				const response: any = await this.http.request({ url: `/flags`, method: 'post', body: { requests }, hideNotification: true });
+				const response: any = await this.http.request({ url: `/flags`, method: 'post', body: { requests }, hideNotification: true, isOut: true });
 				this.apiFlagResponse = response;
 				return resolve(response);
 			} catch (error) {
@@ -246,13 +244,34 @@ export class PrivateService {
 		}
 	}
 
-	getEndpoints(requestDetails?: { pageNo?: number; searchString?: string; token?: string }): Promise<HTTP_RESPONSE> {
+	getUserDetails(requestDetails: { userId: string; refresh?: boolean }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
+			if (this.profileDetails && !requestDetails.refresh) return resolve(this.profileDetails);
+
 			try {
 				const response = await this.http.request({
-					url: requestDetails?.token ? '/endpoints' : this.urlFactory('org_project') + `/endpoints?sort=AESC&page=${requestDetails?.pageNo || 1}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}`,
+					url: `/users/${requestDetails.userId}/profile`,
+					method: 'get'
+				});
+
+				this.profileDetails = response;
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getEndpoints(requestDetails?: CURSOR & { q?: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				if (!requestDetails?.next_page_cursor && !requestDetails?.prev_page_cursor) requestDetails = { next_page_cursor: String(Number.MAX_SAFE_INTEGER), direction: 'next', q: requestDetails?.q };
+
+				const response = await this.http.request({
+					url: `/endpoints`,
 					method: 'get',
-					token: requestDetails?.token
+					query: requestDetails,
+					level: 'org_project'
 				});
 
 				return resolve(response);
@@ -262,14 +281,19 @@ export class PrivateService {
 		});
 	}
 
-	getUserDetails(requestDetails: { userId: string }): Promise<HTTP_RESPONSE> {
+	getSources(requestDetails?: CURSOR): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				const response = await this.http.request({
-					url: `/users/${requestDetails.userId}/profile`,
-					method: 'get'
+				if (!requestDetails) requestDetails = { next_page_cursor: String(Number.MAX_SAFE_INTEGER), direction: 'next' };
+
+				const sourcesResponse = await this.http.request({
+					url: `/sources`,
+					method: 'get',
+					level: 'org_project',
+					query: requestDetails
 				});
-				return resolve(response);
+
+				return resolve(sourcesResponse);
 			} catch (error) {
 				return reject(error);
 			}
@@ -294,6 +318,25 @@ export class PrivateService {
 				return resolve(refreshedTokens);
 			} catch (error) {
 				reject(error);
+			}
+		});
+	}
+
+	getProjectStat(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			if (this.projectStats && !requestDetails?.refresh) return resolve(this.projectStats);
+
+			try {
+				const response = await this.http.request({
+					url: `/stats`,
+					method: 'get',
+					level: 'org_project'
+				});
+
+				this.projectStats = response;
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
 			}
 		});
 	}

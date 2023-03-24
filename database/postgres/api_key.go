@@ -54,17 +54,9 @@ const (
 	deleted_at = now()
 	WHERE id IN (?);
 	`
-	baseAPIKeysCount = `
-	WITH table_count AS (
-		SELECT count(distinct(id)) as count
-		FROM convoy.api_keys WHERE deleted_at IS NULL
-		%s
-	)
-	`
 
-	fetchAPIKeysPaginated = `
+	fetchAPIKeysPaged = `
 	SELECT
-	   table_count.count,
 	    id,
 		name,
 	    key_type,
@@ -78,13 +70,46 @@ const (
 	    created_at,
 	    updated_at,
 	    expires_at
-	FROM table_count, convoy.api_keys
-	WHERE deleted_at IS NULL
-	%s
-	ORDER BY id LIMIT :limit OFFSET :offset;
+	FROM convoy.api_keys
+	WHERE deleted_at IS NULL`
+
+	baseApiKeysFilter = `
+	AND (role_project = :project_id OR :project_id = '')
+	AND (role_endpoint = :endpoint_id OR :endpoint_id = '')
+	AND (user_id = :user_id OR :user_id = '') 
+	AND (key_type = :key_type OR :key_type = '')`
+
+	baseFetchAPIKeysPagedForward = `
+	%s 
+	%s 
+	AND id <= :cursor 
+	GROUP BY id
+	ORDER BY id DESC 
+	LIMIT :limit
 	`
 
-	baseFilter = `AND (role_project = :project_id OR :project_id = '') AND (role_endpoint = :endpoint_id OR :endpoint_id = '') AND (user_id = :user_id OR :user_id = '') AND (key_type = :key_type OR :key_type = '')`
+	baseFetchAPIKeysPagedBackward = `
+	WITH api_keys AS (  
+		%s 
+		%s 
+		AND id >= :cursor 
+		GROUP BY id
+		ORDER BY id ASC 
+		LIMIT :limit
+	)
+
+	SELECT * FROM api_keys ORDER BY id DESC
+	`
+
+	countPrevAPIKeys = `
+	SELECT count(distinct(id)) as count
+	FROM convoy.api_keys s
+	WHERE s.deleted_at IS NULL
+	%s
+	AND id > :cursor 
+	GROUP BY id 
+	ORDER BY id 
+	DESC LIMIT 1`
 )
 
 var (
@@ -245,7 +270,7 @@ func (a *apiKeyRepo) RevokeAPIKeys(ctx context.Context, ids []string) error {
 }
 
 func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
-	var query string
+	var query, filterQuery string
 	var err error
 	var args []interface{}
 
@@ -256,30 +281,33 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 		"user_id":      filter.UserID,
 		"key_type":     filter.KeyType,
 		"limit":        pageable.Limit(),
-		"offset":       pageable.Offset(),
+		"cursor":       pageable.Cursor(),
 	}
 
-	if len(filter.EndpointIDs) > 0 {
-		filterQuery := `AND role_endpoint IN (:endpoint_ids) ` + baseFilter
-		q := fmt.Sprintf(baseAPIKeysCount, filterQuery) + fmt.Sprintf(fetchAPIKeysPaginated, filterQuery)
-		query, args, err = sqlx.Named(q, arg)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-		query, args, err = sqlx.In(query, args...)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-
-		query = a.db.Rebind(query)
+	if pageable.Direction == datastore.Next {
+		query = baseFetchAPIKeysPagedForward
 	} else {
-		q := fmt.Sprintf(baseAPIKeysCount, baseFilter) + fmt.Sprintf(fetchAPIKeysPaginated, baseFilter)
-		query, args, err = sqlx.Named(q, arg)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-		query = a.db.Rebind(query)
+		query = baseFetchAPIKeysPagedBackward
 	}
+
+	filterQuery = baseApiKeysFilter
+	if len(filter.EndpointIDs) > 0 {
+		filterQuery += ` AND role_endpoint IN (:endpoint_ids)`
+	}
+
+	query = fmt.Sprintf(query, fetchAPIKeysPaged, filterQuery)
+
+	query, args, err = sqlx.Named(query, arg)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query = a.db.Rebind(query)
 
 	rows, err := a.db.QueryxContext(ctx, query, args...)
 	if err != nil {
@@ -289,7 +317,6 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 
 	var apiKeys []datastore.APIKey
 
-	var count int
 	for rows.Next() {
 		ak := ApiKeyPaginated{}
 		err = rows.StructScan(&ak)
@@ -298,11 +325,51 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 		}
 
 		apiKeys = append(apiKeys, ak.APIKey)
-		count = ak.Count
 	}
 
-	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
-	return apiKeys, pagination, nil
+	var count datastore.PrevRowCount
+	if len(apiKeys) > 0 {
+		var countQuery string
+		var qargs []interface{}
+		first := apiKeys[0]
+		qarg := arg
+		qarg["cursor"] = first.UID
+
+		cq := fmt.Sprintf(countPrevAPIKeys, filterQuery)
+		countQuery, qargs, err = sqlx.Named(cq, qarg)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		countQuery = a.db.Rebind(countQuery)
+
+		// count the row number before the first row
+		rows, err := a.db.QueryxContext(ctx, countQuery, qargs...)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		if rows.Next() {
+			err = rows.StructScan(&count)
+			if err != nil {
+				return nil, datastore.PaginationData{}, err
+			}
+		}
+		rows.Close()
+	}
+
+	ids := make([]string, len(apiKeys))
+	for i := range apiKeys {
+		ids[i] = apiKeys[i].UID
+	}
+
+	if len(apiKeys) > pageable.PerPage {
+		apiKeys = apiKeys[:len(apiKeys)-1]
+	}
+
+	pagination := &datastore.PaginationData{PrevRowCount: count}
+	pagination = pagination.Build(*pageable, ids)
+
+	return apiKeys, *pagination, nil
 }
 
 func (a *apiKeyRepo) FindAPIKeyByProjectID(ctx context.Context, projectID string) (*datastore.APIKey, error) {

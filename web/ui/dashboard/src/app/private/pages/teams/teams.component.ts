@@ -53,7 +53,7 @@ export class TeamsComponent implements OnInit {
 		this.isFetchingTeamMembers = true;
 		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
 		try {
-			const response = await this.teamService.getTeamMembers({ pageNo: page, searchString: requestDetails?.searchString });
+			const response = await this.teamService.getTeamMembers({ page: page, q: requestDetails?.searchString });
 			this.teams = response.data;
 			response.data.content.length === 0 ? (this.noData = true) : (this.noData = false);
 
@@ -73,7 +73,7 @@ export class TeamsComponent implements OnInit {
 		this.isFetchingPendingInvites = true;
 		const page = requestDetails?.page || this.route.snapshot.queryParams.pendingInvites || 1;
 		try {
-			const response = await this.teamService.getPendingTeamMembers({ pageNo: page });
+			const response = await this.teamService.getPendingTeamMembers({ page: page });
 			this.pendingInvites = response.data;
 			response.data.content ? (this.noInvitesData = false) : (this.noInvitesData = true);
 			this.isFetchingPendingInvites = false;

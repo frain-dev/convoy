@@ -21,12 +21,26 @@ func newOrganisationAnalytics(orgRepo datastore.OrganisationRepository, client A
 }
 
 func (o *OrganisationAnalytics) Track() error {
-	_, pagination, err := o.orgRepo.LoadOrganisationsPaged(context.Background(), datastore.Pageable{Sort: -1})
+	return o.track(PerPage, 0, DefaultCursor)
+}
+
+func (o *OrganisationAnalytics) track(perPage, count int, cursor string) error {
+	orgs, pagination, err := o.orgRepo.LoadOrganisationsPaged(context.Background(), datastore.Pageable{
+		PerPage:    perPage,
+		NextCursor: cursor,
+		Direction:  datastore.Next,
+	})
 	if err != nil {
 		return err
 	}
 
-	return o.client.Export(o.Name(), Event{"Count": pagination.Total, "instanceID": o.instanceID})
+	if len(orgs) == 0 && !pagination.HasNextPage {
+		return o.client.Export(o.Name(), Event{"Count": count, "instanceID": o.instanceID})
+	}
+
+	count += len(orgs)
+	cursor = pagination.NextPageCursor
+	return o.track(perPage, count, cursor)
 }
 
 func (o *OrganisationAnalytics) Name() string {

@@ -5,6 +5,27 @@
 @import '~prismjs/plugins/toolbar/prism-toolbar.css';
 
 @tailwind base;
+
+/* Firefox */
+* {
+	scrollbar-width: 5px;
+}
+
+/* Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+	width: 5px;
+	height: 5px;
+}
+
+*::-webkit-scrollbar-track {
+	border-radius: 5px;
+}
+
+*::-webkit-scrollbar-thumb {
+	border-radius: 14px;
+	@apply bg-grey-20;
+}
+
 @tailwind components;
 @tailwind utilities;
 

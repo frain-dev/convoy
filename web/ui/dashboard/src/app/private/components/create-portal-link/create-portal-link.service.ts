@@ -1,22 +1,21 @@
 import { Injectable } from '@angular/core';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { HttpService } from 'src/app/services/http/http.service';
-import { PrivateService } from '../../private.service';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class CreatePortalLinkService {
-	constructor(private privateService: PrivateService, private http: HttpService) {}
+	constructor(private http: HttpService) {}
 
-	createPortalLink(requestDetails: { data: any; token?: string }): Promise<HTTP_RESPONSE> {
+	createPortalLink(requestDetails: { data: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const projectResponse = await this.http.request({
-					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/portal-links`,
+					url: `/portal-links`,
 					method: 'post',
 					body: requestDetails.data,
-					token: requestDetails.token
+					level: 'org_project'
 				});
 
 				return resolve(projectResponse);
@@ -26,14 +25,14 @@ export class CreatePortalLinkService {
 		});
 	}
 
-	updatePortalLink(requestDetails: { data: any; linkId: string; token?: string }): Promise<HTTP_RESPONSE> {
+	updatePortalLink(requestDetails: { data: any; linkId: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const projectResponse = await this.http.request({
-					url: `${requestDetails.token ? '' : this.privateService.urlFactory('org_project')}/portal-links/${requestDetails.linkId}`,
+					url: `/portal-links/${requestDetails.linkId}`,
 					method: 'put',
 					body: requestDetails.data,
-					token: requestDetails.token
+					level: 'org_project'
 				});
 
 				return resolve(projectResponse);
@@ -47,8 +46,9 @@ export class CreatePortalLinkService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/portal-links/${linkUid}`,
-					method: 'get'
+					url: `/portal-links/${linkUid}`,
+					method: 'get',
+					level: 'org_project'
 				});
 
 				return resolve(response);

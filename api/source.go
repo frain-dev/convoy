@@ -201,21 +201,22 @@ func (a *ApplicationHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Req
 	sourceService := createSourceService(a)
 	sources, paginationData, err := sourceService.LoadSourcesPaged(r.Context(), project, f, pageable)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching sources", http.StatusInternalServerError))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	baseUrl := m.GetHostFromContext(r.Context())
 
-	orgService := createOrganisationService(a)
-	org, err := orgService.FindOrganisationByID(r.Context(), project.OrganisationID)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
+	org := m.GetOrganisationFromContext(r.Context())
+	var customDomain string
+	if org == nil {
+		customDomain = ""
+	} else {
+		customDomain = org.CustomDomain.ValueOrZero()
 	}
 
 	for i := range sources {
-		fillSourceURL(&sources[i], baseUrl, org.CustomDomain.ValueOrZero())
+		fillSourceURL(&sources[i], baseUrl, customDomain)
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Sources fetched successfully", pagedResponse{Content: sources, Pagination: &paginationData}, http.StatusOK))

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { PAGINATION } from 'src/app/models/global.model';
+import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
@@ -34,11 +34,11 @@ export class SubscriptionsComponent implements OnInit {
 		this.route.queryParams.subscribe(params => (this.activeSubscription = this.subscriptions?.content.find(subscription => subscription.uid === params?.id)));
 	}
 
-	async getSubscriptions(requestDetails?: { page?: number }) {
+	async getSubscriptions(requestDetails?: CURSOR) {
 		this.isLoadindingSubscriptions = true;
 
 		try {
-			const subscriptionsResponse = await this.privateService.getSubscriptions({ page: requestDetails?.page });
+			const subscriptionsResponse = await this.privateService.getSubscriptions(requestDetails);
 			this.subscriptions = subscriptionsResponse.data;
 			this.subscriptions?.content?.length === 0 ? localStorage.setItem('isActiveProjectConfigurationComplete', 'false') : localStorage.setItem('isActiveProjectConfigurationComplete', 'true');
 			this.isLoadindingSubscriptions = false;
@@ -69,15 +69,6 @@ export class SubscriptionsComponent implements OnInit {
 		} catch (error) {
 			this.isDeletingSubscription = false;
 		}
-	}
-
-	activeProjectConfig() {
-		const projectDetails = localStorage.getItem('PROJECT_CONFIG');
-		if (projectDetails && projectDetails !== 'undefined') {
-			const config = JSON.parse(projectDetails);
-			return config;
-		}
-		return null;
 	}
 
 	getEndpointSecret(endpointSecrets: any) {

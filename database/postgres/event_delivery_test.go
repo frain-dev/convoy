@@ -34,14 +34,14 @@ func Test_eventDeliveryRepo_CreateEventDelivery(t *testing.T) {
 	err := edRepo.CreateEventDelivery(context.Background(), ed)
 	require.NoError(t, err)
 
-	dbEventDelivery, err := edRepo.FindEventDeliveryByID(context.Background(), ed.UID)
+	dbEventDelivery, err := edRepo.FindEventDeliveryByID(context.Background(), project.UID, ed.UID)
 	require.NoError(t, err)
 
 	require.NotEmpty(t, dbEventDelivery.CreatedAt)
 	require.NotEmpty(t, dbEventDelivery.UpdatedAt)
 
 	dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt = time.Time{}, time.Time{}
-	dbEventDelivery.Event, dbEventDelivery.Endpoint = nil, nil
+	dbEventDelivery.Event, dbEventDelivery.Endpoint, dbEventDelivery.Source = nil, nil, nil
 
 	require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
 	ed.Metadata.NextSendTime = time.Time{}
@@ -110,7 +110,7 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	dbEventDeliveries, err := edRepo.FindEventDeliveriesByIDs(context.Background(), ids)
+	dbEventDeliveries, err := edRepo.FindEventDeliveriesByIDs(context.Background(), project.UID, ids)
 	require.NoError(t, err)
 	require.Equal(t, 3, len(dbEventDeliveries))
 
@@ -123,7 +123,7 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
 		require.NotEmpty(t, dbEventDelivery.UpdatedAt)
 
 		dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt = time.Time{}, time.Time{}
-		dbEventDelivery.Event, dbEventDelivery.Endpoint = nil, nil
+		dbEventDelivery.Event, dbEventDelivery.Endpoint, dbEventDelivery.Source = nil, nil, nil
 
 		require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
 		ed.Metadata.NextSendTime = time.Time{}
@@ -162,7 +162,7 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByEventID(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	dbEventDeliveries, err := edRepo.FindEventDeliveriesByEventID(context.Background(), mainEvent.UID)
+	dbEventDeliveries, err := edRepo.FindEventDeliveriesByEventID(context.Background(), project.UID, mainEvent.UID)
 	require.NoError(t, err)
 	require.Equal(t, 3, len(dbEventDeliveries))
 
@@ -178,7 +178,7 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByEventID(t *testing.T) {
 		require.NotEmpty(t, dbEventDelivery.UpdatedAt)
 
 		dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt = time.Time{}, time.Time{}
-		dbEventDelivery.Event, dbEventDelivery.Endpoint = nil, nil
+		dbEventDelivery.Event, dbEventDelivery.Endpoint, dbEventDelivery.Source = nil, nil, nil
 
 		require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
 		ed.Metadata.NextSendTime = time.Time{}
@@ -214,7 +214,7 @@ func Test_eventDeliveryRepo_CountDeliveriesByStatus(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	count, err := edRepo.CountDeliveriesByStatus(context.Background(), status, datastore.SearchParams{
+	count, err := edRepo.CountDeliveriesByStatus(context.Background(), project.UID, status, datastore.SearchParams{
 		CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
 		CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
 	})
@@ -240,10 +240,10 @@ func Test_eventDeliveryRepo_UpdateStatusOfEventDelivery(t *testing.T) {
 	err := edRepo.CreateEventDelivery(context.Background(), ed)
 	require.NoError(t, err)
 
-	err = edRepo.UpdateStatusOfEventDelivery(context.Background(), *ed, datastore.RetryEventStatus)
+	err = edRepo.UpdateStatusOfEventDelivery(context.Background(), project.UID, *ed, datastore.RetryEventStatus)
 	require.NoError(t, err)
 
-	dbEventDelivery, err := edRepo.FindEventDeliveryByID(context.Background(), ed.UID)
+	dbEventDelivery, err := edRepo.FindEventDeliveryByID(context.Background(), project.UID, ed.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, datastore.RetryEventStatus, dbEventDelivery.Status)
@@ -270,10 +270,10 @@ func Test_eventDeliveryRepo_UpdateStatusOfEventDeliveries(t *testing.T) {
 	err = edRepo.CreateEventDelivery(context.Background(), ed2)
 	require.NoError(t, err)
 
-	err = edRepo.UpdateStatusOfEventDeliveries(context.Background(), []string{ed1.UID, ed2.UID}, datastore.RetryEventStatus)
+	err = edRepo.UpdateStatusOfEventDeliveries(context.Background(), project.UID, []string{ed1.UID, ed2.UID}, datastore.RetryEventStatus)
 	require.NoError(t, err)
 
-	dbEventDeliveries, err := edRepo.FindEventDeliveriesByIDs(context.Background(), []string{ed1.UID, ed2.UID})
+	dbEventDeliveries, err := edRepo.FindEventDeliveriesByIDs(context.Background(), project.UID, []string{ed1.UID, ed2.UID})
 	require.NoError(t, err)
 
 	for _, d := range dbEventDeliveries {
@@ -306,7 +306,7 @@ func Test_eventDeliveryRepo_FindDiscardedEventDeliveries(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	dbEventDeliveries, err := edRepo.FindDiscardedEventDeliveries(context.Background(), "", device.UID, datastore.SearchParams{
+	dbEventDeliveries, err := edRepo.FindDiscardedEventDeliveries(context.Background(), project.UID, "", device.UID, datastore.SearchParams{
 		CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
 		CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
 	})
@@ -338,10 +338,10 @@ func Test_eventDeliveryRepo_UpdateEventDeliveryWithAttempt(t *testing.T) {
 		UID: ulid.Make().String(),
 	}
 
-	err = edRepo.UpdateEventDeliveryWithAttempt(context.Background(), *ed, newAttempt)
+	err = edRepo.UpdateEventDeliveryWithAttempt(context.Background(), project.UID, *ed, newAttempt)
 	require.NoError(t, err)
 
-	dbEventDelivery, err := edRepo.FindEventDeliveryByID(context.Background(), ed.UID)
+	dbEventDelivery, err := edRepo.FindEventDeliveryByID(context.Background(), project.UID, ed.UID)
 	require.NoError(t, err)
 
 	require.Equal(t, ed.DeliveryAttempts[0], dbEventDelivery.DeliveryAttempts[0])
@@ -400,8 +400,7 @@ func Test_eventDeliveryRepo_DeleteProjectEventDeliveries(t *testing.T) {
 	err = edRepo.CreateEventDelivery(context.Background(), ed2)
 	require.NoError(t, err)
 
-	err = edRepo.DeleteProjectEventDeliveries(context.Background(), &datastore.EventDeliveryFilter{
-		ProjectID:      project.UID,
+	err = edRepo.DeleteProjectEventDeliveries(context.Background(), project.UID, &datastore.EventDeliveryFilter{
 		CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
 		CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
 	}, false)
@@ -419,8 +418,7 @@ func Test_eventDeliveryRepo_DeleteProjectEventDeliveries(t *testing.T) {
 	err = edRepo.CreateEventDelivery(context.Background(), ed2)
 	require.NoError(t, err)
 
-	err = edRepo.DeleteProjectEventDeliveries(context.Background(), &datastore.EventDeliveryFilter{
-		ProjectID:      project.UID,
+	err = edRepo.DeleteProjectEventDeliveries(context.Background(), project.UID, &datastore.EventDeliveryFilter{
 		CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
 		CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
 	}, true)
@@ -457,9 +455,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 			CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
 		},
 		datastore.Pageable{
-			Page:    1,
 			PerPage: 10,
-			Sort:    1,
 		},
 	)
 
@@ -478,7 +474,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 
 		require.Equal(t, event.EventType, dbEventDelivery.Event.EventType)
 		require.Equal(t, endpoint.UID, dbEventDelivery.Endpoint.UID)
-		dbEventDelivery.Event, dbEventDelivery.Endpoint = nil, nil
+		dbEventDelivery.Event, dbEventDelivery.Endpoint, dbEventDelivery.Source = nil, nil, nil
 
 		require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
 		ed.Metadata.NextSendTime = time.Time{}

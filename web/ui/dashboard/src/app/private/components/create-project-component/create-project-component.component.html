@@ -1,4 +1,4 @@
-<p class="text-14 text-grey-60 mb-24px">A project represents the top level namespace for grouping event sources, applications, endpoints and events.</p>
+<p class="text-14 text-grey-60 mb-24px max-w-[500px]">A project represents the top level namespace for grouping event sources, applications, endpoints and events.</p>
 
 <form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()">
 	<div convoy-card class="p-24px mt-24px">
@@ -169,6 +169,18 @@
 						</button>
 					</ng-container>
 				</ng-container>
+			</div>
+		</div>
+
+		<div class="border-t border-grey-20 pt-24px mt-24px">
+			<h3 class="font-semibold mb-24px">Endpoint Configurations</h3>
+
+			<div class="flex justify-between items-start">
+				<div class="max-w-[500px]">
+					<h4 class="font-medium text-grey-60">Disable Failing</h4>
+					<p class="text-12 text-grey-40 mt-10px">Toggling this configuration on will automatically disable all endpoints in this project with failure response untill request to them are manually retired</p>
+				</div>
+				<convoy-toggle formControlName="disable_endpoint"></convoy-toggle>
 			</div>
 		</div>
 	</div>

@@ -163,7 +163,7 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint_WithPerson
 
 func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints() {
 	rand.Seed(time.Now().UnixNano())
-	totalEndpoints := rand.Intn(5)
+	totalEndpoints := rand.Intn(5) + 1
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -184,12 +184,13 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints() {
 	// Deep Assert.
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(totalEndpoints), resp.Pagination.Total)
+	require.Equal(s.T(), totalEndpoints, len(resp.Content.([]interface{})))
+
 }
 
 func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints_WithPersonalAPIKey() {
 	rand.Seed(time.Now().UnixNano())
-	totalEndpoints := rand.Intn(5)
+	totalEndpoints := rand.Intn(5) + 1
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -209,7 +210,7 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints_WithPers
 	// Deep Assert.
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(totalEndpoints), resp.Pagination.Total)
+	require.Equal(s.T(), totalEndpoints, len(resp.Content.([]interface{})))
 }
 
 func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {

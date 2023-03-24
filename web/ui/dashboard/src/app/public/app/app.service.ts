@@ -9,10 +9,10 @@ import { HttpService } from 'src/app/services/http/http.service';
 export class AppService {
 	constructor(private http: HttpService) {}
 
-	getSubscriptions(token: string): Promise<HTTP_RESPONSE> {
+	getSubscriptions(): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				const response = await this.http.request({ url: `/subscriptions?token=${token}`, method: 'get', token });
+				const response = await this.http.request({ url: `/subscriptions`, method: 'get' });
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
@@ -20,10 +20,10 @@ export class AppService {
 		});
 	}
 
-	deleteSubscription(token: string, subscriptionId: string): Promise<HTTP_RESPONSE> {
+	deleteSubscription(subscriptionId: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				const response = await this.http.request({ url: `/subscriptions/${subscriptionId}?token=${token}`, method: 'delete', token });
+				const response = await this.http.request({ url: `/subscriptions/${subscriptionId}`, method: 'delete' });
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
@@ -31,8 +31,8 @@ export class AppService {
 		});
 	}
 
-	async flipt(token: string): Promise<FLIPT_API_RESPONSE> {
-		const projectDetails = await this.getProjectDetails(token);
+	async flipt(): Promise<FLIPT_API_RESPONSE> {
+		const projectDetails = await this.getProjectDetails();
 
 		return new Promise(async (resolve, reject) => {
 			const flagKeys = ['can_create_cli_api_key'];
@@ -49,7 +49,7 @@ export class AppService {
 			);
 
 			try {
-				const response: any = await this.http.request({ url: `/flags?token=${token}`, method: 'post', body: { requests }, token: token, hideNotification: true });
+				const response: any = await this.http.request({ url: `/flags`, method: 'post', body: { requests }, isOut: true, hideNotification: true });
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
@@ -57,9 +57,9 @@ export class AppService {
 		});
 	}
 
-	async getFlag(flagKey: string, token: string): Promise<boolean> {
+	async getFlag(flagKey: string): Promise<boolean> {
 		try {
-			const apiFlagResponse = await this.flipt(token);
+			const apiFlagResponse = await this.flipt();
 
 			const flags = apiFlagResponse.responses;
 			return !!flags.find(flag => flag.flagKey === flagKey)?.match;
@@ -68,10 +68,10 @@ export class AppService {
 		}
 	}
 
-	getProjectDetails(token: string): Promise<HTTP_RESPONSE> {
+	getProjectDetails(): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				const response = await this.http.request({ url: `/project?token=${token}`, method: 'get', token });
+				const response = await this.http.request({ url: `/project`, method: 'get' });
 				return resolve(response);
 			} catch (error) {
 				return reject(error);

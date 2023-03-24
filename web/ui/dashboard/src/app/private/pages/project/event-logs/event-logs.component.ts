@@ -1,32 +1,30 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { PAGINATION } from 'src/app/models/global.model';
+import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
 import { EventLogsService } from './event-logs.service';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { format } from 'date-fns';
 import { SOURCE } from 'src/app/models/group.model';
 import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.component';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
-import { fromEvent, Observable } from 'rxjs';
-import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { PrismModule } from 'src/app/private/components/prism/prism.module';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { FormsModule } from '@angular/forms';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
-import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
+import { EventsService } from '../events/events.service';
+import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 
 @Component({
 	selector: 'convoy-event-logs',
@@ -52,14 +50,14 @@ import { ListItemComponent } from 'src/app/components/list-item/list-item.compon
 		DatePickerComponent,
 		DropdownComponent,
 		ModalComponent,
-        ListItemComponent
+		PaginationComponent
 	],
 	templateUrl: './event-logs.component.html',
 	styleUrls: ['./event-logs.component.scss']
 })
 export class EventLogsComponent implements OnInit {
 	eventsDateFilterFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
-	eventLogsTableHead: string[] = ['Event Type', 'Endpoint Name', 'Source Name', 'Time Created', ''];
+	eventLogsTableHead: string[] = ['Event ID', 'Source Name', 'Time', ''];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventsSearchString?: string;
 	eventEndpoint?: string;
@@ -72,45 +70,28 @@ export class EventLogsComponent implements OnInit {
 		{ id: 'response', label: 'Response' },
 		{ id: 'request', label: 'Request' }
 	];
-	displayedEvents?: {
-		date: string;
-		content: EVENT[];
-	}[];
+	displayedEvents: { date: string; content: EVENT[] }[] = [];
 	events?: { pagination: PAGINATION; content: EVENT[] };
 	eventDetailsActiveTab = 'data';
 	eventsDetailsItem: any;
-	sidebarEventDeliveries!: EVENT_DELIVERY[];
+	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
 	eventsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 	@ViewChild('timeFilter', { static: true }) timeFilter!: TimePickerComponent;
 	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
-	@ViewChild('eventsEndpointFilter', { static: true }) eventsEndpointFilter!: ElementRef;
-	eventsEndpointFilter$!: Observable<ENDPOINT[]>;
 	portalToken = this.route.snapshot.params?.token;
 	filterSources: SOURCE[] = [];
-	isLoadingSidebarDeliveries = false;
+	isLoadingSidebarDeliveries = true;
 	showBatchRetryModal = false;
 	fetchingCount = false;
 	isRetrying = false;
 	batchRetryCount: any;
 
-	constructor(private eventsLogService: EventLogsService, private generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService) {}
+	constructor(private eventsLogService: EventLogsService, private generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService, private _location: Location) {}
 
 	async ngOnInit() {
 		this.getFiltersFromURL();
 		this.getEvents();
 		if (!this.portalToken) this.getSourcesForFilter();
-	}
-
-	ngAfterViewInit() {
-		if (!this.portalToken) {
-			this.eventsEndpointFilter$ = fromEvent<any>(this.eventsEndpointFilter?.nativeElement, 'keyup').pipe(
-				map(event => event.target.value),
-				startWith(''),
-				debounceTime(500),
-				distinctUntilChanged(),
-				switchMap(search => this.getEndpointsForFilter(search))
-			);
-		}
 	}
 
 	clearEventFilters(filterType?: 'eventsDate' | 'eventsEndpoint' | 'eventsSearch' | 'eventsSource') {
@@ -149,12 +130,6 @@ export class EventLogsComponent implements OnInit {
 
 		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
 		this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
-	}
-
-	async getEndpointsForFilter(search: string): Promise<ENDPOINT[]> {
-		return await (
-			await this.privateService.getEndpoints({ pageNo: 1, searchString: search })
-		).data.content;
 	}
 
 	async getSourcesForFilter() {
@@ -235,51 +210,55 @@ export class EventLogsComponent implements OnInit {
 		this.eventsTimeFilterData = { ...eventsTimeFilter };
 	}
 
-	addFilterToURL() {
+	addFilterToURL(params?: any) {
 		const currentURLfilters = this.route.snapshot.queryParams;
 		const queryParams: any = {};
 
 		const { startDate, endDate } = this.setDateForFilter({ ...this.eventsDateFilterFromURL, ...this.eventsTimeFilterData });
+
 		if (startDate) queryParams.eventsStartDate = startDate;
 		if (endDate) queryParams.eventsEndDate = endDate;
 		if (this.eventEndpoint) queryParams.eventsEndpoint = this.eventEndpoint;
+
 		queryParams.eventsSource = this.eventSource;
 		queryParams.eventsSearch = this.eventsSearchString;
 
-		this.router.navigate([], { queryParams: Object.assign({}, currentURLfilters, queryParams) });
+		const paramsObject = Object.assign({}, currentURLfilters, queryParams, params);
+		const cleanedQuery: any = Object.fromEntries(Object.entries(paramsObject).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
+		const queryParamss = new URLSearchParams(cleanedQuery).toString();
+		this._location.go(`${location.pathname}?${queryParamss}`);
 	}
 
-	async getEvents(requestDetails?: { endpointId?: string; addToURL?: boolean; page?: number }): Promise<HTTP_RESPONSE> {
+	async getEvents(requestDetails?: { endpointId?: string; addToURL?: boolean }, pagination?: { next_page_cursor?: string; prev_page_cursor?: string; direction?: 'next' | 'prev' }): Promise<HTTP_RESPONSE> {
 		this.isloadingEvents = true;
-
-		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
-		if (page <= 1) {
-			delete this.eventsDetailsItem;
-			this.sidebarEventDeliveries = [];
-		}
 
 		if (requestDetails?.endpointId) this.eventEndpoint = requestDetails.endpointId;
 		if (requestDetails?.addToURL) this.addFilterToURL();
+
+		if (!pagination) {
+			pagination = { next_page_cursor: String(Number.MAX_SAFE_INTEGER) };
+			delete this.eventsDetailsItem;
+			this.sidebarEventDeliveries = [];
+		}
 
 		if (this.eventsSearchString) this.displayedEvents = [];
 		const { startDate, endDate } = this.setDateForFilter({ ...this.eventsDateFilterFromURL, ...this.eventsTimeFilterData });
 
 		try {
-			const eventsResponse = await this.eventsLogService.getEvents({
-				pageNo: page,
+			const eventsResponse = await this.eventsService.getEvents({
 				startDate,
 				endDate,
 				endpointId: this.eventEndpoint || '',
 				sourceId: this.eventSource || '',
 				query: this.eventsSearchString || '',
-				token: this.portalToken
+				...pagination
 			});
 			this.events = eventsResponse.data;
 
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
 
 			this.eventsDetailsItem = this.events?.content[0];
-			this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
+			this.eventsDetailsItem?.uid ? this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid) : (this.isLoadingSidebarDeliveries = false);
 
 			this.isloadingEvents = false;
 			return eventsResponse;
@@ -294,15 +273,7 @@ export class EventLogsComponent implements OnInit {
 		this.sidebarEventDeliveries = [];
 
 		try {
-			const response = await this.eventsLogService.getEventDeliveries({
-				eventId,
-				startDate: '',
-				endDate: '',
-				pageNo: 1,
-				endpointId: '',
-				statusQuery: '',
-				token: this.portalToken
-			});
+			const response = await this.eventsService.getEventDeliveries({ eventId });
 			this.sidebarEventDeliveries = response.data.content;
 			this.isLoadingSidebarDeliveries = false;
 
@@ -319,12 +290,11 @@ export class EventLogsComponent implements OnInit {
 		this.fetchingCount = true;
 		try {
 			const response = await this.eventsLogService.getRetryCount({
-				pageNo: page,
+				page: page,
 				startDate: startDate,
 				endDate: endDate,
 				endpointId: this.eventEndpoint || '',
-				sourceId: this.eventSource || '',
-				token: this.portalToken
+				sourceId: this.eventSource || ''
 			});
 
 			this.batchRetryCount = response.data.num;
@@ -337,7 +307,7 @@ export class EventLogsComponent implements OnInit {
 
 	async retryEvent(requestDetails: { eventId: string }) {
 		try {
-			const response = await this.eventsLogService.retryEvent({ eventId: requestDetails.eventId, token: this.portalToken });
+			const response = await this.eventsLogService.retryEvent({ eventId: requestDetails.eventId });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.getEvents();
 		} catch (error) {
@@ -352,12 +322,11 @@ export class EventLogsComponent implements OnInit {
 
 		try {
 			const response = await this.eventsLogService.batchRetryEvent({
-				pageNo: page || 1,
+				page: page || 1,
 				startDate: startDate,
 				endDate: endDate,
 				endpointId: this.eventEndpoint || '',
-				sourceId: this.eventSource || '',
-				token: this.portalToken
+				sourceId: this.eventSource || ''
 			});
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });
@@ -382,5 +351,10 @@ export class EventLogsComponent implements OnInit {
 
 	viewEventDeliveries(eventId: string) {
 		this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/events'], { queryParams: { eventId: eventId } });
+	}
+
+	paginateEvents(event: CURSOR) {
+		this.addFilterToURL(event);
+		this.getEvents({}, event);
 	}
 }

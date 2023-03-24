@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { CardComponent } from 'src/app/components/card/card.component';
-import { PAGINATION } from 'src/app/models/global.model';
+import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CreatePortalLinkComponent } from 'src/app/private/components/create-portal-link/create-portal-link.component';
@@ -19,11 +19,29 @@ import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
 import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
+import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 
 @Component({
 	selector: 'convoy-portal-links',
 	standalone: true,
-	imports: [CommonModule, RouterModule, FormsModule, ButtonComponent, DropdownComponent, DropdownOptionDirective, CardComponent, EmptyStateComponent, CreatePortalLinkComponent, ListItemComponent, CopyButtonComponent, DeleteModalComponent, ModalComponent, ModalHeaderComponent, TooltipComponent],
+	imports: [
+		CommonModule,
+		RouterModule,
+		FormsModule,
+		ButtonComponent,
+		DropdownComponent,
+		DropdownOptionDirective,
+		CardComponent,
+		EmptyStateComponent,
+		CreatePortalLinkComponent,
+		ListItemComponent,
+		CopyButtonComponent,
+		DeleteModalComponent,
+		ModalComponent,
+		ModalHeaderComponent,
+		TooltipComponent,
+		PaginationComponent
+	],
 	templateUrl: './portal-links.component.html',
 	styleUrls: ['./portal-links.component.scss']
 })
@@ -59,11 +77,11 @@ export class PortalLinksComponent implements OnInit {
 		);
 	}
 
-	async getPortalLinks(requestDetails?: { search?: string; page?: number }) {
+	async getPortalLinks(requestDetails?: CURSOR) {
 		this.isLoadingPortalLinks = true;
-		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
+
 		try {
-			const response = await this.portalLinksService.getPortalLinks({ pageNo: page, searchString: requestDetails?.search, endpointId: this.linkEndpoint });
+			const response = await this.portalLinksService.getPortalLinks({ ...requestDetails, endpointId: this.linkEndpoint });
 			this.portalLinks = response.data;
 			if ((this.portalLinks?.pagination?.total || 0) > 0) this.activeLink = this.portalLinks?.content.find(link => link.uid === this.route.snapshot.queryParams?.id);
 			this.isLoadingPortalLinks = false;
@@ -89,12 +107,13 @@ export class PortalLinksComponent implements OnInit {
 
 	searchLinks(searchDetails: { searchInput?: any }) {
 		const searchString: string = searchDetails?.searchInput?.target?.value || this.linkSearchString;
-		this.getPortalLinks({ search: searchString });
+		// not in use yet
+		// this.getPortalLinks({ search: searchString });
 	}
 
 	async getEndpointsForFilter(search: string): Promise<ENDPOINT[]> {
 		return await (
-			await this.privateService.getEndpoints({ pageNo: 1, searchString: search })
+			await this.privateService.getEndpoints({ q: search })
 		).data.content;
 	}
 
@@ -103,10 +122,10 @@ export class PortalLinksComponent implements OnInit {
 		this.getPortalLinks();
 	}
 
-	clearEndpointFilter() {
+	clearEndpointFilter(event?: { stopPropagation: () => void }) {
+		event?.stopPropagation();
 		this.linkEndpoint = undefined;
 		this.getPortalLinks();
-		this.router.navigate([], { relativeTo: this.route, queryParams: {} });
 	}
 
 	openCreateLinkModal() {

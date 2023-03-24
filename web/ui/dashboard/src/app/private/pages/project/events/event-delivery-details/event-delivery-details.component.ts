@@ -35,7 +35,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		this.isLoadingDeliveryDetails = true;
 
 		try {
-			const response = await this.eventDeliveryDetailsService.getEventDeliveryDetails(id, this.portalToken);
+			const response = await this.eventDeliveryDetailsService.getEventDeliveryDetails(id);
 			this.eventDelsDetails = response.data;
 			this.isLoadingDeliveryDetails = false;
 		} catch (error) {
@@ -49,7 +49,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		};
 
 		try {
-			await this.eventsService.forceRetryEvent({ body: payload, token: this.portalToken });
+			await this.eventsService.forceRetryEvent({ body: payload });
 			this.getEventDeliveryDetails(requestDetails.eventDeliveryId);
 			this.generalService.showNotification({ message: 'Force Retry Request Sent', style: 'success' });
 		} catch (error: any) {
@@ -60,7 +60,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 
 	async retryEvent(requestDetails: { e: any; eventDeliveryId: string }) {
 		try {
-			await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId, token: this.portalToken });
+			await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId });
 			this.getEventDeliveryDetails(requestDetails.eventDeliveryId);
 			this.generalService.showNotification({ message: 'Retry Request Sent', style: 'success' });
 		} catch (error: any) {
@@ -73,7 +73,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		this.isloadingDeliveryAttempts = true;
 
 		try {
-			const response = await this.eventDeliveryDetailsService.getEventDeliveryAttempts(eventId, this.portalToken);
+			const response = await this.eventDeliveryDetailsService.getEventDeliveryAttempts({ eventId });
 			const deliveries = response.data;
 			this.eventDeliveryAtempts = deliveries.reverse();
 			this.selectedDeliveryAttempt = this.eventDeliveryAtempts[0];

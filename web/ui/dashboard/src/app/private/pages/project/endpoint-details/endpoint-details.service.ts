@@ -1,20 +1,20 @@
 import { Injectable } from '@angular/core';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
-import { PrivateService } from 'src/app/private/private.service';
 import { HttpService } from 'src/app/services/http/http.service';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class EndpointDetailsService {
-	constructor(private http: HttpService, private privateService: PrivateService) {}
+	constructor(private http: HttpService) {}
 
 	getEndpoint(endpointId: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/endpoints/${endpointId}`,
-					method: 'get'
+					url: `/endpoints/${endpointId}`,
+					method: 'get',
+					level: 'org_project'
 				});
 
 				return resolve(response);
@@ -28,8 +28,9 @@ export class EndpointDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/endpoints/${endpointId}`,
-					method: 'delete'
+					url: `/endpoints/${endpointId}`,
+					method: 'delete',
+					level: 'org_project'
 				});
 
 				return resolve(response);
@@ -43,9 +44,10 @@ export class EndpointDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/endpoints/${requestDetails.endpointId}/expire_secret`,
+					url: `/endpoints/${requestDetails.endpointId}/expire_secret`,
 					method: 'put',
-					body: requestDetails.body
+					body: requestDetails.body,
+					level: 'org_project'
 				});
 				return resolve(response);
 			} catch (error) {
@@ -58,9 +60,10 @@ export class EndpointDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/events`,
+					url: `/events`,
 					body: requestDetails.body,
-					method: 'post'
+					method: 'post',
+					level: 'org_project'
 				});
 
 				return resolve(response);

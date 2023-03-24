@@ -161,21 +161,14 @@ func (ps *ProjectService) GetProjects(ctx context.Context, filter *datastore.Pro
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching projects"))
 	}
 
-	err = ps.FillProjectStatistics(ctx, projects)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to fill statistics of project")
-	}
-
 	return projects, nil
 }
 
-func (ps *ProjectService) FillProjectStatistics(ctx context.Context, projects []*datastore.Project) error {
-	for _, project := range projects {
-		err := ps.projectRepo.FillProjectsStatistics(ctx, project)
-		if err != nil {
-			log.FromContext(ctx).WithError(err).Error("failed to count project applications")
-			return util.NewServiceError(http.StatusBadRequest, errors.New("failed to count project statistics"))
-		}
+func (ps *ProjectService) FillProjectStatistics(ctx context.Context, project *datastore.Project) error {
+	err := ps.projectRepo.FillProjectsStatistics(ctx, project)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to count project statistics")
+		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to count project statistics"))
 	}
 
 	return nil

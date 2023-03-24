@@ -1,4 +1,4 @@
-<div class="text-12 font-medium uppercase flex items-center">
+<div class="text-12 font-medium uppercase flex items-center mb-24px">
 	<a routerLink="/projects" class="cursor-pointer">Projects</a>
 	<svg width="16" height="16" class="mx-1">
 		<use xlink:href="#arrow-right-icon"></use>
@@ -43,7 +43,7 @@
 </div>
 
 <div *ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length">
-	<div class="flex justify-between items-end mt-24px border-b border-b-grey-10 pb-20px mb-24px">
+	<div class="flex justify-between items-end border-b border-b-grey-10 pb-20px mb-24px">
 		<div class="flex items-center">
 			<h1 class="text-24 font-bold text-grey-80 mr-10px">Subscriptions</h1>
 			<convoy-tooltip tooltipContent="On Convoy, endpoints are subscribed to listen to events from a source along with configurations like retries and event filters. This page list all your existing subscriptions" position="right"></convoy-tooltip>
@@ -123,6 +123,9 @@
 			</div>
 		</div>
 	</ng-container>
+
+	<!-- Pagination -->
+	<convoy-pagination *ngIf="subscriptions?.pagination?.has_next_page || subscriptions?.pagination?.has_prev_page" [pagination]="subscriptions?.pagination" (paginate)="getSubscriptions($event)"></convoy-pagination>
 </div>
 
 <div convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [id]="'subscriptionForm'" (closeModal)="createSubscription('cancel')">

@@ -64,15 +64,17 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	org, err := createOrganisationService(a).FindOrganisationByID(r.Context(), project.OrganisationID)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
+	org := m.GetOrganisationFromContext(r.Context())
+	var customDomain string
+	if org == nil {
+		customDomain = ""
+	} else {
+		customDomain = org.CustomDomain.ValueOrZero()
 	}
 
 	baseUrl := m.GetHostFromContext(r.Context())
 	for i := range subscriptions {
-		fillSourceURL(subscriptions[i].Source, baseUrl, org.CustomDomain.ValueOrZero())
+		fillSourceURL(subscriptions[i].Source, baseUrl, customDomain)
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Subscriptions fetched successfully",

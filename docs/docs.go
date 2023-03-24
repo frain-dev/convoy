@@ -5384,6 +5384,9 @@ const docTemplate = `{
                 "project_id": {
                     "type": "string"
                 },
+                "source_metadata": {
+                    "$ref": "#/definitions/datastore.Source"
+                },
                 "status": {
                     "$ref": "#/definitions/datastore.EventDeliveryStatus"
                 },
@@ -5549,17 +5552,29 @@ const docTemplate = `{
         "datastore.PaginationData": {
             "type": "object",
             "properties": {
+                "has_next_page": {
+                    "type": "boolean"
+                },
+                "has_prev_page": {
+                    "type": "boolean"
+                },
                 "next": {
                     "type": "integer"
+                },
+                "next_page_cursor": {
+                    "type": "string"
                 },
                 "page": {
                     "type": "integer"
                 },
-                "perPage": {
+                "per_page": {
                     "type": "integer"
                 },
                 "prev": {
                     "type": "integer"
+                },
+                "prev_page_cursor": {
+                    "type": "string"
                 },
                 "total": {
                     "type": "integer"
@@ -5640,6 +5655,12 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "total_endpoints": {
+                    "type": "integer"
+                },
+                "total_sources": {
+                    "type": "integer"
+                },
+                "total_subscriptions": {
                     "type": "integer"
                 }
             }

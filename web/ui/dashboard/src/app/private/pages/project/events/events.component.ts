@@ -35,24 +35,35 @@ export class EventsComponent implements OnInit, OnDestroy {
 	hasEvents: boolean = false;
 	chartData!: CHARTDATA[];
 	showAddEventModal = false;
-	lastestSource!: SOURCE;
+	lastestSource?: SOURCE;
 	lastestEventDeliveries: EVENT_DELIVERY[] = [];
 	eventDelTableHead: string[] = ['Status', 'Event Type', 'Event Time', 'Next Attempt'];
 	eventDelievryIntervalTime: any;
 	labelsDateFormat!: string;
+	isProjectConfigurationComplete = false;
+	isPageLoading = false;
 
 	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, public router: Router) {}
 
 	async ngOnInit() {
 		this.isloadingDashboardData = true;
-		await Promise.all([this.fetchDashboardData(), this.getLatestSource(), this.getLatestEvent()]);
-		this.checkEventsOnFirstLoad();
-		this.isloadingDashboardData = false;
+		this.isPageLoading = true;
+		await this.getProjectStats();
 
-		if (this.privateService.activeProjectDetails?.type === 'incoming') {
-			this.eventDelievryIntervalTime = setInterval(() => {
-				this.getLatestEvent();
-			}, 2000);
+		if (this.isProjectConfigurationComplete) {
+			await this.checkEventsOnFirstLoad();
+
+			if (this.privateService.activeProjectDetails?.type === 'incoming' && !this.hasEvents) {
+				this.eventDelievryIntervalTime = setInterval(() => {
+					this.getLatestEvent();
+				}, 2000);
+			}
+
+			this.isPageLoading = false;
+			this.isloadingDashboardData = false;
+		} else {
+			this.isloadingDashboardData = false;
+			this.isPageLoading = false;
 		}
 	}
 
@@ -72,17 +83,31 @@ export class EventsComponent implements OnInit, OnDestroy {
 
 	async getLatestEvent() {
 		try {
-			const eventDeliveries = await this.eventsService.getEventDeliveries({ pageNo: 1 });
+			const eventDeliveries = await this.eventsService.getEventDeliveries();
 			this.lastestEventDeliveries = eventDeliveries.data.content;
-			this.privateService.activeProjectDetails?.type === 'outgoing' && this.lastestEventDeliveries.length > 0;
 			return;
 		} catch (error) {
+			this.isloadingDashboardData = false;
+			this.isPageLoading = false;
 			return error;
 		}
 	}
 
 	async checkEventsOnFirstLoad() {
-		this.hasEvents = this.lastestEventDeliveries.length === 0 ? false : true;
+		if (this.hasEvents) {
+			clearInterval(this.eventDelievryIntervalTime);
+			this.isPageLoading = false;
+
+			await this.fetchDashboardData();
+			return;
+		}
+
+		if (this.privateService.activeProjectDetails?.type === 'incoming' && this.isProjectConfigurationComplete) await this.getLatestSource();
+	}
+
+	continueToDashboard() {
+		this.fetchDashboardData();
+		this.hasEvents = true;
 		clearInterval(this.eventDelievryIntervalTime);
 	}
 
@@ -90,12 +115,15 @@ export class EventsComponent implements OnInit, OnDestroy {
 		try {
 			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 
-			const dashboardResponse = await this.eventsService.dashboardSummary({ startDate: startDate || '', endDate: endDate || '', frequency: this.dashboardFrequency });
+			const dashboardResponse = await this.eventsService.dashboardSummary({ startDate: startDate || '', endDate: endDate || '', type: this.dashboardFrequency });
 			this.dashboardData = dashboardResponse.data;
 			this.initConvoyChart(dashboardResponse);
 
+			this.isloadingDashboardData = false;
 			return;
 		} catch (error: any) {
+			this.isloadingDashboardData = false;
+			this.isPageLoading = false;
 			return;
 		}
 	}
@@ -152,8 +180,14 @@ export class EventsComponent implements OnInit, OnDestroy {
 		return labelsDateFormat;
 	}
 
-	get isProjectConfigurationComplete() {
-		const configurationComplete = localStorage.getItem('isActiveProjectConfigurationComplete');
-		return configurationComplete ? JSON.parse(configurationComplete) : false;
+	async getProjectStats() {
+		try {
+			const projectStats = await this.privateService.getProjectStat();
+			this.isProjectConfigurationComplete = projectStats.data?.total_subscriptions > 0;
+			this.hasEvents = projectStats.data?.messages_sent > 0;
+			return;
+		} catch (error) {
+			return error;
+		}
 	}
 }

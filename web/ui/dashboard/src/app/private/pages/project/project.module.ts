@@ -1,18 +1,31 @@
-import { NgModule } from '@angular/core';
+import { inject, NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ProjectComponent } from './project.component';
-import { Routes, RouterModule } from '@angular/router';
+import { Routes, RouterModule, Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { GithubStarComponent } from 'src/app/components/github-star/github-star.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
+import { PrivateService } from '../../private.service';
+import { ProjectService } from './project.service';
+
+export const projectResolver = async (route: ActivatedRouteSnapshot, _state: RouterStateSnapshot, privateService = inject(PrivateService), projectService = inject(ProjectService), router = inject(Router)) => {
+	try {
+		const projectDetails = await privateService.getProjectDetails({ projectId: route.params.id });
+		projectService.activeProjectDetails = projectDetails.data;
+		return projectDetails;
+	} catch (error) {
+		return router.navigateByUrl('/projects');
+	}
+};
 
 const routes: Routes = [
 	{
 		path: '',
 		component: ProjectComponent,
+		resolve: { projectDetails: projectResolver },
 		children: [
 			{
 				path: '',

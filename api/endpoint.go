@@ -94,11 +94,12 @@ func (a *ApplicationHandler) GetEndpoint(w http.ResponseWriter, r *http.Request)
 // @Router /api/v1/projects/{projectID}/endpoints [get]
 func (a *ApplicationHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+	endpointService := createEndpointService(a)
+
 	q := r.URL.Query().Get("q")
 	pageable := m.GetPageableFromContext(r.Context())
 
-	endpoints, paginationData, err := endpointRepo.LoadEndpointsPaged(r.Context(), project.UID, q, pageable)
+	endpoints, paginationData, err := endpointService.LoadEndpointsPaged(r.Context(), project.UID, q, pageable)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to load endpoints")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -141,7 +142,7 @@ func (a *ApplicationHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Endpoints endpoint updated successfully", endpoint, http.StatusAccepted))
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint updated successfully", endpoint, http.StatusAccepted))
 }
 
 // DeleteEndpoint

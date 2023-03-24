@@ -147,7 +147,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSource_ValidSources() {
 	// Deep Assert
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(totalSources), resp.Pagination.Total)
+	require.Equal(s.T(), totalSources, len(resp.Content.([]interface{})))
 }
 
 func (s *SourceIntegrationTestSuite) Test_CreateSource() {

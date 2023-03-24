@@ -166,7 +166,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication_WithPerso
 
 func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications() {
 	rand.Seed(time.Now().UnixNano())
-	totalApps := rand.Intn(5)
+	totalApps := rand.Intn(5) + 1
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -186,16 +186,17 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications() {
 	// Deep Assert.
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(totalApps), resp.Pagination.Total)
+	require.Equal(s.T(), totalApps, len(resp.Content.([]interface{})))
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications_WithPersonalAPIKey() {
 	rand.Seed(time.Now().UnixNano())
-	totalApps := rand.Intn(5)
+	totalApps := rand.Intn(5) + 1
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.DB, s.DefaultProject, totalApps)
+	err := testdb.SeedMultipleEndpoints(s.ConvoyApp.A.DB, s.DefaultProject, totalApps)
+	require.NoError(s.T(), err)
 
 	// Arrange.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications", s.DefaultProject.UID)
@@ -211,7 +212,8 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications_WithPer
 	// Deep Assert.
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), int64(totalApps), resp.Pagination.Total)
+	require.Equal(s.T(), totalApps, len(resp.Content.([]interface{}))) // ToDo: (The test isn't deterministic. Response can be nil)
+
 }
 
 func (s *ApplicationIntegrationTestSuite) Test_GetApps_Filters() {

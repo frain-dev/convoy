@@ -14,11 +14,12 @@ import (
 func provideSourceLoader(ctrl *gomock.Controller) *SourceLoader {
 	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
+	projectRepo := mocks.NewMockProjectRepository(ctrl)
 	queue := mocks.NewMockQueuer(ctrl)
 	sourcePool := provideSourcePool()
 	log := log.NewLogger(io.Discard)
 
-	sourceLoader := NewSourceLoader(endpointRepo, sourceRepo, queue, sourcePool, log)
+	sourceLoader := NewSourceLoader(endpointRepo, sourceRepo, projectRepo, queue, sourcePool, log)
 	return sourceLoader
 }
 
@@ -32,8 +33,15 @@ func TestSourceLoader_FetchSources(t *testing.T) {
 		{
 			name: "should_fetch_two_pub_sub_sources",
 			dbFn: func(sourceLoader *SourceLoader) {
+				pr, _ := sourceLoader.projectRepo.(*mocks.MockProjectRepository)
 				so, _ := sourceLoader.sourceRepo.(*mocks.MockSourceRepository)
 				gomock.InOrder(
+					pr.EXPECT().LoadProjects(gomock.Any(), gomock.Any()).
+						Return([]*datastore.Project{
+							{
+								UID: "12345",
+							},
+						}, nil),
 					so.EXPECT().LoadSourcesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 						Return([]datastore.Source{
 							{
@@ -64,8 +72,15 @@ func TestSourceLoader_FetchSources(t *testing.T) {
 		{
 			name: "should_fetch_one_pub_sub_source",
 			dbFn: func(sourceLoader *SourceLoader) {
+				pr, _ := sourceLoader.projectRepo.(*mocks.MockProjectRepository)
 				so, _ := sourceLoader.sourceRepo.(*mocks.MockSourceRepository)
 				gomock.InOrder(
+					pr.EXPECT().LoadProjects(gomock.Any(), gomock.Any()).
+						Return([]*datastore.Project{
+							{
+								UID: "12345",
+							},
+						}, nil),
 					so.EXPECT().LoadSourcesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 						Return([]datastore.Source{
 							{
@@ -88,9 +103,19 @@ func TestSourceLoader_FetchSources(t *testing.T) {
 		{
 			name: "should_not_fetch_pub_sub_source",
 			dbFn: func(sourceLoader *SourceLoader) {
+				pr, _ := sourceLoader.projectRepo.(*mocks.MockProjectRepository)
 				so, _ := sourceLoader.sourceRepo.(*mocks.MockSourceRepository)
-				so.EXPECT().LoadSourcesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return([]datastore.Source{}, datastore.PaginationData{}, nil)
+				gomock.InOrder(
+					pr.EXPECT().LoadProjects(gomock.Any(), gomock.Any()).
+						Return([]*datastore.Project{
+							{
+								UID: "12345",
+							},
+						}, nil),
+
+					so.EXPECT().LoadSourcesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+						Return([]datastore.Source{}, datastore.PaginationData{}, nil),
+				)
 			},
 			page: 1,
 		},
@@ -107,7 +132,7 @@ func TestSourceLoader_FetchSources(t *testing.T) {
 				tc.dbFn(sourceLoader)
 			}
 
-			err := sourceLoader.fetchSources(tc.page)
+			err := sourceLoader.fetchProjectSources()
 
 			require.Nil(t, err)
 			require.Equal(t, tc.expectedPubSource, len(sourceLoader.sourcePool.sources))

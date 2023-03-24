@@ -78,10 +78,13 @@ const (
 	RetentionPolicies      TaskName = "retention_policies"
 	EmailProcessor         TaskName = "EmailProcessor"
 	ExpireSecretsProcessor TaskName = "ExpireSecretsProcessor"
-	EndpointsCacheKey      CacheKey = "endpoints"
-	ProjectsCacheKey       CacheKey = "projects"
-	TokenCacheKey          CacheKey = "tokens"
-	SourceCacheKey         CacheKey = "sources"
+
+	EndpointsCacheKey          CacheKey = "endpoints"
+	OrganisationsCacheKey      CacheKey = "organisations"
+	OrganisationMemberCacheKey CacheKey = "organisation_members"
+	ProjectsCacheKey           CacheKey = "projects"
+	TokenCacheKey              CacheKey = "tokens"
+	SourceCacheKey             CacheKey = "sources"
 )
 
 // queues

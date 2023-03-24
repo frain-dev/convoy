@@ -6,6 +6,8 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -107,7 +109,8 @@ func Test_UpdatePortalLink(t *testing.T) {
 	newPortalLink, err := portalLinkRepo.FindPortalLinkByID(ctx, portalLink.ProjectID, portalLink.UID)
 	require.NoError(t, err)
 
-	total, _, err := portalLinkRepo.LoadPortalLinksPaged(ctx, project.UID, &datastore.FilterBy{EndpointIDs: []string{endpoint.UID}}, datastore.Pageable{Page: 1, PerPage: 10})
+	total, _, err := portalLinkRepo.LoadPortalLinksPaged(ctx, project.UID, &datastore.FilterBy{EndpointIDs: []string{endpoint.UID}}, datastore.Pageable{PerPage: 10, Direction: datastore.Next, NextCursor: fmt.Sprintf("%d", math.MaxInt)})
+	require.NoError(t, err)
 
 	require.Equal(t, 1, len(total))
 	require.Equal(t, endpoint.UID, total[0].EndpointsMetadata[0].UID)
@@ -151,48 +154,33 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 	}{
 		{
 			name:     "Load Portal Links Paged - 10 records",
-			pageData: datastore.Pageable{Page: 1, PerPage: 3},
+			pageData: datastore.Pageable{PerPage: 3},
 			count:    10,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					Total:     10,
-					TotalPage: 4,
-					Page:      1,
-					PerPage:   3,
-					Prev:      1,
-					Next:      2,
+					PerPage: 3,
 				},
 			},
 		},
 
 		{
 			name:     "Load Portal Links Paged - 12 records",
-			pageData: datastore.Pageable{Page: 2, PerPage: 4},
+			pageData: datastore.Pageable{PerPage: 4},
 			count:    12,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					Total:     12,
-					TotalPage: 3,
-					Page:      2,
-					PerPage:   4,
-					Prev:      1,
-					Next:      3,
+					PerPage: 4,
 				},
 			},
 		},
 
 		{
 			name:     "Load Portal Links Paged - 5 records",
-			pageData: datastore.Pageable{Page: 1, PerPage: 3},
+			pageData: datastore.Pageable{PerPage: 3},
 			count:    5,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					Total:     5,
-					TotalPage: 2,
-					Page:      1,
-					PerPage:   3,
-					Prev:      1,
-					Next:      2,
+					PerPage: 3,
 				},
 			},
 		},
@@ -222,13 +210,7 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 			_, pageable, err := portalLinkRepo.LoadPortalLinksPaged(context.Background(), project.UID, &datastore.FilterBy{EndpointID: endpoint.UID}, tc.pageData)
 
 			require.NoError(t, err)
-
-			require.Equal(t, tc.expected.paginationData.Total, pageable.Total)
-			require.Equal(t, tc.expected.paginationData.TotalPage, pageable.TotalPage)
-			require.Equal(t, tc.expected.paginationData.Page, pageable.Page)
 			require.Equal(t, tc.expected.paginationData.PerPage, pageable.PerPage)
-			require.Equal(t, tc.expected.paginationData.Prev, pageable.Prev)
-			require.Equal(t, tc.expected.paginationData.Next, pageable.Next)
 		})
 	}
 }

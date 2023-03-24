@@ -220,7 +220,6 @@ func Test_LoadEndpointsPaged(t *testing.T) {
 	}
 
 	endpoints, _, err := endpointRepo.LoadEndpointsPaged(context.Background(), project.UID, "daniel", datastore.Pageable{
-		Page:    1,
 		PerPage: 10,
 	})
 
@@ -228,16 +227,12 @@ func Test_LoadEndpointsPaged(t *testing.T) {
 	require.Equal(t, 3, len(endpoints))
 
 	endpoints, _, err = endpointRepo.LoadEndpointsPaged(context.Background(), project.UID, "", datastore.Pageable{
-		Page:    1,
 		PerPage: 10,
 	})
 
 	require.NoError(t, err)
 
 	require.True(t, len(endpoints) == 7)
-	for _, endpoint := range endpoints {
-		require.Equal(t, int64(1), endpoint.Events)
-	}
 }
 
 func Test_FindEndpointsByID(t *testing.T) {
@@ -293,7 +288,6 @@ func Test_FindEndpointsByID(t *testing.T) {
 			endpoint.Secrets[i].CreatedAt, endpoint.Secrets[i].UpdatedAt = time.Time{}, time.Time{}
 		}
 
-		require.Equal(t, int64(1), dbEndpoint.Events)
 		dbEndpoint.Events = 0
 		require.Equal(t, *endpoint, dbEndpoint)
 	}
@@ -351,8 +345,6 @@ func Test_FindEndpointsByAppID(t *testing.T) {
 			endpoint.Secrets[i].CreatedAt, endpoint.Secrets[i].UpdatedAt = time.Time{}, time.Time{}
 		}
 
-		require.Equal(t, int64(1), dbEndpoint.Events)
-		dbEndpoint.Events = 0
 		require.Equal(t, *endpoint, dbEndpoint)
 	}
 }
@@ -409,8 +401,6 @@ func Test_FindEndpointsByOwnerID(t *testing.T) {
 			endpoint.Secrets[i].CreatedAt, endpoint.Secrets[i].UpdatedAt = time.Time{}, time.Time{}
 		}
 
-		require.Equal(t, int64(1), dbEndpoint.Events)
-		dbEndpoint.Events = 0
 		require.Equal(t, *endpoint, dbEndpoint)
 	}
 }
@@ -483,8 +473,6 @@ func Test_FindEndpointByID(t *testing.T) {
 		endpoint.Secrets[i].CreatedAt, endpoint.Secrets[i].UpdatedAt = time.Time{}, time.Time{}
 	}
 
-	require.Equal(t, int64(1), dbEndpoint.Events)
-	dbEndpoint.Events = 0
 	require.Equal(t, endpoint, dbEndpoint)
 }
 
