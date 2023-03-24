@@ -166,7 +166,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApp_ValidApplication_WithPerso
 
 func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications() {
 	rand.Seed(time.Now().UnixNano())
-	totalApps := rand.Intn(5)
+	totalApps := rand.Intn(5) + 1
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -191,7 +191,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications() {
 
 func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications_WithPersonalAPIKey() {
 	rand.Seed(time.Now().UnixNano())
-	totalApps := rand.Intn(5)
+	totalApps := rand.Intn(5) + 1
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -200,7 +200,7 @@ func (s *ApplicationIntegrationTestSuite) Test_GetApps_ValidApplications_WithPer
 
 	// Arrange.
 	url := fmt.Sprintf("/api/v1/projects/%s/applications", s.DefaultProject.UID)
-	req := createRequest(http.MethodGet, url, s.PersonalAPIKey, nil) 
+	req := createRequest(http.MethodGet, url, s.PersonalAPIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.

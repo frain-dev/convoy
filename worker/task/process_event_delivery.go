@@ -33,15 +33,25 @@ type SignatureValues struct {
 	HMAC      string
 	Timestamp string
 }
+type EventDelivery struct {
+	EventDeliveryID string
+	ProjectID       string
+}
 
 func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, projectRepo datastore.ProjectRepository, rateLimiter limiter.RateLimiter, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
-		Id := string(t.Payload())
+		var data EventDelivery
+
+		err := json.Unmarshal(t.Payload(), &data)
+		if err != nil {
+			log.WithError(err).Error("failed to unmarshal process event delivery payload")
+			return &EndpointError{Err: err, delay: defaultDelay}
+		}
 
 		// Load message from DB and switch state to prevent concurrent processing.
-		ed, err := eventDeliveryRepo.FindEventDeliveryByID(context.Background(), Id)
+		ed, err := eventDeliveryRepo.FindEventDeliveryByID(context.Background(), data.ProjectID, data.EventDeliveryID)
 		if err != nil {
-			log.WithError(err).Errorf("Failed to load event - %s", Id)
+			log.WithError(err).Errorf("Failed to load event - %s", data.EventDeliveryID)
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
@@ -90,7 +100,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return nil
 		}
 
-		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), *ed, datastore.ProcessingEventStatus)
+		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), p.UID, *ed, datastore.ProcessingEventStatus)
 		if err != nil {
 			log.WithError(err).Error("failed to update status of messages - ")
 			return &EndpointError{Err: err, delay: delayDuration}
@@ -132,7 +142,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		}
 
 		if e.Status == datastore.InactiveEndpointStatus {
-			err = eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), *ed, datastore.DiscardedEventStatus)
+			err = eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), p.UID, *ed, datastore.DiscardedEventStatus)
 			if err != nil {
 				log.WithError(err).Error("failed to update event delivery status")
 				return &EndpointError{Err: err, delay: delayDuration}
@@ -196,7 +206,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			log.Errorf("%s failed. Reason: %s", ed.UID, err)
 		}
 
-		if done && e.Status == datastore.PendingEndpointStatus {
+		if done && e.Status == datastore.PendingEndpointStatus && p.Config.DisableEndpoint {
 			endpointStatus := datastore.ActiveEndpointStatus
 			err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
 			if err != nil {
@@ -210,7 +220,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			}
 		}
 
-		if !done && e.Status == datastore.PendingEndpointStatus {
+		if !done && e.Status == datastore.PendingEndpointStatus && p.Config.DisableEndpoint {
 			endpointStatus := datastore.InactiveEndpointStatus
 			err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
 			if err != nil {
@@ -235,7 +245,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			}
 
 			// TODO(all): this block of code is unnecessary L215 - L 221 already caters for this case
-			if e.Status != datastore.PendingEndpointStatus {
+			if e.Status != datastore.PendingEndpointStatus && p.Config.DisableEndpoint {
 				endpointStatus := datastore.InactiveEndpointStatus
 
 				err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
@@ -251,7 +261,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			}
 		}
 
-		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(context.Background(), *ed, attempt)
+		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(context.Background(), p.UID, *ed, attempt)
 		if err != nil {
 			log.WithError(err).Error("failed to update message ", ed.UID)
 		}

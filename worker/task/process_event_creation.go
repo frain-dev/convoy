@@ -61,7 +61,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			return err
 		}
 
-		_, err = eventRepo.FindEventByID(ctx, event.UID)
+		_, err = eventRepo.FindEventByID(ctx, project.UID, event.UID)
 		if err != nil {
 			if len(event.Endpoints) < 1 {
 				var endpointIDs []string
@@ -151,11 +151,20 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			// while the command was running, however in that scenario the event deliveries will still be created,
 			// but will be in the datastore.DiscardedEventStatus status, we can also delete the subscription, that is a firmer solution
 			if eventDelivery.Status != datastore.DiscardedEventStatus && s.Type != datastore.SubscriptionTypeCLI {
-				payload := json.RawMessage(eventDelivery.UID)
+				payload := EventDelivery{
+					EventDeliveryID: eventDelivery.UID,
+					ProjectID:       project.UID,
+				}
+
+				data, err := json.Marshal(payload)
+				if err != nil {
+					log.WithError(err).Error("failed to marshal process event delivery payload")
+					return &EndpointError{Err: err, delay: 10 * time.Second}
+				}
 
 				job := &queue.Job{
 					ID:      eventDelivery.UID,
-					Payload: payload,
+					Payload: data,
 					Delay:   1 * time.Second,
 				}
 				err = eventQueue.Write(taskName, convoy.EventQueue, job)

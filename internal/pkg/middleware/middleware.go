@@ -326,8 +326,9 @@ func (m *Middleware) RequireEvent() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			eventId := chi.URLParam(r, "eventID")
+			project := GetProjectFromContext(r.Context())
 
-			event, err := m.eventRepo.FindEventByID(r.Context(), eventId)
+			event, err := m.eventRepo.FindEventByID(r.Context(), project.UID, eventId)
 			if err != nil {
 
 				event := "an error occurred while retrieving event details"
@@ -554,8 +555,9 @@ func (m *Middleware) RequireEventDelivery() func(next http.Handler) http.Handler
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
+			project := GetProjectFromContext(r.Context())
 
-			eventDelivery, err := m.eventDeliveryRepo.FindEventDeliveryByID(r.Context(), eventDeliveryID)
+			eventDelivery, err := m.eventDeliveryRepo.FindEventDeliveryByID(r.Context(), project.UID, eventDeliveryID)
 			if err != nil {
 
 				eventDelivery := "an error occurred while retrieving event delivery details"

@@ -27,17 +27,17 @@ func newActiveProjectAnalytics(projectRepo datastore.ProjectRepository, eventRep
 }
 
 func (a *ActiveProjectAnalytics) Track() error {
-	return a.track(PerPage, Page, 0)
+	return a.track(PerPage, 0, DefaultCursor)
 }
 
-func (a *ActiveProjectAnalytics) track(perPage, page, count int) error {
+func (a *ActiveProjectAnalytics) track(perPage, count int, cursor string) error {
 	ctx := context.Background()
-	orgs, _, err := a.orgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{})
+	orgs, pagination, err := a.orgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{PerPage: perPage, NextCursor: cursor, Direction: datastore.Next})
 	if err != nil {
 		return err
 	}
 
-	if len(orgs) == 0 {
+	if len(orgs) == 0 && !pagination.HasNextPage {
 		return a.client.Export(a.Name(), Event{"Count": count, "instanceID": a.instanceID})
 	}
 
@@ -51,15 +51,14 @@ func (a *ActiveProjectAnalytics) track(perPage, page, count int) error {
 
 		for _, project := range projects {
 			filter := &datastore.Filter{
-				Project:  project,
-				Pageable: datastore.Pageable{},
+				Pageable: datastore.Pageable{PerPage: perPage, NextCursor: cursor, Direction: datastore.Next},
 				SearchParams: datastore.SearchParams{
 					CreatedAtStart: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix(),
 					CreatedAtEnd:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC).Unix(),
 				},
 			}
 
-			events, _, err := a.eventRepo.LoadEventsPaged(ctx, filter)
+			events, _, err := a.eventRepo.LoadEventsPaged(ctx, project.UID, filter)
 			if err != nil {
 				log.WithError(err).Error("failed to load events paged")
 				continue
@@ -71,9 +70,8 @@ func (a *ActiveProjectAnalytics) track(perPage, page, count int) error {
 		}
 	}
 
-	page += 1
-
-	return a.track(perPage, page, count)
+	cursor = pagination.NextPageCursor
+	return a.track(perPage, count, cursor)
 }
 
 func (a *ActiveProjectAnalytics) Name() string {

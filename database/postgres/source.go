@@ -113,7 +113,7 @@ const (
 	fetchSourcesPagedFilter = `
 	AND (s.type = :type OR :type = '') 
 	AND (s.provider = :provider OR :provider = '') 
-	AND (s.project_id = :project_id OR :project_id = '') 
+	AND s.project_id = :project_id 
 	`
 
 	fetchSourcesPagedForward = `
