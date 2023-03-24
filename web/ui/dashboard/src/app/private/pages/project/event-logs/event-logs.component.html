@@ -33,33 +33,7 @@
 
 		<convoy-time-picker class="ml-14px" (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #timeFilter></convoy-time-picker>
 
-		<div convoy-dropdown size="lg" position="left" [hidden]="portalToken || this.privateService.activeProjectDetails?.type === 'incoming'">
-			<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 ml-16px min-w-[140px] whitespace-nowrap justify-between h-36px" [ngClass]="{ 'text-primary-100 !bg-primary-500': !!eventEndpoint }">
-				<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
-				<span class="text-grey-40 w-full">All Endpoints</span>
-				<img class="ml-10px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
-			</button>
-
-			<ng-container dropdownOptions>
-				<div class="m-10px border border-primary-400 h-36px px-14px rounded-[10px] flex items-center bg-white-100">
-					<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px w-14px" />
-					<input type="search" placeholder="Search endpoints here" #eventsEndpointFilter class="w-full outline-none text-12" />
-				</div>
-
-				<ul class="min-h-[100px] py-10px">
-					<li class="py-4px px-20px flex items-center justify-between border-b border-grey-10" *ngFor="let endpoint of eventsEndpointFilter$ | async" convoy-list-item convoy-dropdown-option>
-						<label class="text-12 block w-full" [for]="endpoint.uid">{{ endpoint.title }}</label>
-						<input type="checkbox" name="endpoint" [value]="endpoint.uid" [id]="endpoint.uid" [checked]="endpoint.uid === eventEndpoint" (change)="updateEndpointFilter(endpoint.uid, $event)" />
-					</li>
-				</ul>
-
-				<div *ngIf="!!eventEndpoint" class="p-10px pb-20px flex justify-end">
-					<button convoy-dropdown-option convoy-button size="sm" fill="outline" color="danger" (click)="clearEventFilters('eventsEndpoint')">Clear</button>
-				</div>
-			</ng-container>
-		</div>
-
-		<div convoy-dropdown size="lg" position="left" #sourcesDropdown [hidden]="portalToken || this.privateService.activeProjectDetails?.type === 'outgoing'">
+		<div convoy-dropdown size="lg" position="left" #sourcesDropdown [hidden]="portalToken">
 			<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 ml-16px min-w-[130px] whitespace-nowrap justify-between h-36px" [ngClass]="{ 'text-primary-100 !bg-primary-500': !!eventSource }">
 				<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
 				<span class="text-grey-40 w-full">All Sources</span>
@@ -147,17 +121,9 @@
 								</td>
 
 								<td convoy-table-cell class="pl-16px">
-									<span class="max-w-[136px]">
+									<span class="max-w-[200px]">
 										<span (click)="viewSource(event?.source_metadata?.uid || '')" [ngClass]="{ 'underline text-primary-100': !portalToken || !event.source_metadata.name }" class="overflow-hidden overflow-ellipsis">
 											{{ event.source_metadata.name || 'API' }}
-										</span>
-									</span>
-
-									<span class="font-light" [class]="privateService.activeProjectDetails?.type === 'outgoing' ? 'px-16px' : 'px-30px'">→</span>
-
-									<span class="max-w-[136px] overflow-hidden overflow-ellipsis text-primary-100">
-										<span (click)="viewEndpoint(event.endpoint_metadata[0].uid || '')" [ngClass]="{ underline: !portalToken }" class="overflow-hidden overflow-ellipsis text-primary-100">
-											{{ event.endpoint_metadata[0].title }}
 										</span>
 									</span>
 								</td>

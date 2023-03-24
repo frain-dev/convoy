@@ -34,7 +34,8 @@ export class CreateProjectComponent implements OnInit {
 			}),
 			is_retention_policy_enabled: [true]
 		}),
-		type: [null, Validators.required]
+		type: [null, Validators.required],
+		disable_endpoint: [false, Validators.required]
 	});
 	newSignatureForm: FormGroup = this.formBuilder.group({
 		encoding: [null],

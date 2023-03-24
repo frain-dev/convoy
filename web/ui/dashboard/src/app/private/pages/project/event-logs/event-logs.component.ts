@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -11,15 +11,12 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
 import { EventLogsService } from './event-logs.service';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { format } from 'date-fns';
 import { SOURCE } from 'src/app/models/group.model';
 import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.component';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
-import { fromEvent, Observable } from 'rxjs';
-import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { PrismModule } from 'src/app/private/components/prism/prism.module';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
@@ -60,7 +57,7 @@ import { PaginationComponent } from 'src/app/private/components/pagination/pagin
 })
 export class EventLogsComponent implements OnInit {
 	eventsDateFilterFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
-	eventLogsTableHead: string[] = this.privateService.activeProjectDetails?.type === 'incoming' ? ['Subscription', 'Time', ''] : ['Event Type', 'Subscription', 'Time', ''];
+	eventLogsTableHead: string[] = this.privateService.activeProjectDetails?.type === 'incoming' ? ['Source Name', 'Time', ''] : ['Event Type', 'Source Name', 'Time', ''];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventsSearchString?: string;
 	eventEndpoint?: string;
@@ -81,8 +78,6 @@ export class EventLogsComponent implements OnInit {
 	eventsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 	@ViewChild('timeFilter', { static: true }) timeFilter!: TimePickerComponent;
 	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
-	@ViewChild('eventsEndpointFilter', { static: true }) eventsEndpointFilter!: ElementRef;
-	eventsEndpointFilter$!: Observable<ENDPOINT[]>;
 	portalToken = this.route.snapshot.params?.token;
 	filterSources: SOURCE[] = [];
 	isLoadingSidebarDeliveries = true;
@@ -97,18 +92,6 @@ export class EventLogsComponent implements OnInit {
 		this.getFiltersFromURL();
 		this.getEvents();
 		if (!this.portalToken && this.privateService.activeProjectDetails?.type === 'incoming') this.getSourcesForFilter();
-	}
-
-	ngAfterViewInit() {
-		if (!this.portalToken && this.privateService.activeProjectDetails?.type !== 'incoming') {
-			this.eventsEndpointFilter$ = fromEvent<any>(this.eventsEndpointFilter?.nativeElement, 'keyup').pipe(
-				map(event => event.target.value),
-				startWith(''),
-				debounceTime(500),
-				distinctUntilChanged(),
-				switchMap(search => this.getEndpointsForFilter(search))
-			);
-		}
 	}
 
 	clearEventFilters(filterType?: 'eventsDate' | 'eventsEndpoint' | 'eventsSearch' | 'eventsSource') {
@@ -147,12 +130,6 @@ export class EventLogsComponent implements OnInit {
 
 		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
 		this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
-	}
-
-	async getEndpointsForFilter(search: string): Promise<ENDPOINT[]> {
-		return await (
-			await this.privateService.getEndpoints({ q: search })
-		).data.content;
 	}
 
 	async getSourcesForFilter() {
