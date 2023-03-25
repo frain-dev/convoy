@@ -53,7 +53,6 @@ const (
 	COALESCE(ev.source_id, '') AS source_id,
 	ev.headers, ev.raw, ev.data, ev.created_at, 
 	ev.updated_at, ev.deleted_at,
-	array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url))) AS endpoint_metadata,
 	COALESCE(s.id, '') AS "source_metadata.id",
 	COALESCE(s.name, '') AS "source_metadata.name"
     FROM convoy.events ev
@@ -70,7 +69,10 @@ const (
 
 	baseEventsPagedBackward = `
 	WITH events AS (  
-		%s %s AND ev.id >= :cursor GROUP BY ev.id, s.id ORDER BY ev.id ASC LIMIT :limit
+		%s %s AND ev.id >= :cursor 
+		GROUP BY ev.id, s.id 
+		ORDER BY ev.id ASC 
+		LIMIT :limit
 	)
 
 	SELECT * FROM events ORDER BY id DESC

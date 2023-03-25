@@ -237,9 +237,13 @@ func Test_LoadEventsPaged(t *testing.T) {
 		expected   Expected
 	}{
 		{
-			name:     "Load Events Paged - 10 records",
-			pageData: datastore.Pageable{PerPage: 3},
-			count:    10,
+			name: "Load Events Paged - 10 records",
+			pageData: datastore.Pageable{
+				PerPage:    3,
+				Direction:  datastore.Next,
+				NextCursor: datastore.DefaultCursor,
+			},
+			count: 10,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					PerPage: 3,
@@ -248,9 +252,13 @@ func Test_LoadEventsPaged(t *testing.T) {
 		},
 
 		{
-			name:     "Load Events Paged - 12 records",
-			pageData: datastore.Pageable{PerPage: 4},
-			count:    12,
+			name: "Load Events Paged - 12 records",
+			pageData: datastore.Pageable{
+				PerPage:    4,
+				Direction:  datastore.Next,
+				NextCursor: datastore.DefaultCursor,
+			},
+			count: 12,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					PerPage: 4,
@@ -259,9 +267,13 @@ func Test_LoadEventsPaged(t *testing.T) {
 		},
 
 		{
-			name:     "Load Events Paged - 5 records",
-			pageData: datastore.Pageable{PerPage: 3},
-			count:    5,
+			name: "Load Events Paged - 5 records",
+			pageData: datastore.Pageable{
+				PerPage:    3,
+				Direction:  datastore.Next,
+				NextCursor: datastore.DefaultCursor,
+			},
+			count: 5,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					PerPage: 3,
@@ -270,8 +282,12 @@ func Test_LoadEventsPaged(t *testing.T) {
 		},
 
 		{
-			name:       "Filter Events Paged By Endpoint ID - 1 record",
-			pageData:   datastore.Pageable{PerPage: 3},
+			name: "Filter Events Paged By Endpoint ID - 1 record",
+			pageData: datastore.Pageable{
+				PerPage:    3,
+				Direction:  datastore.Next,
+				NextCursor: datastore.DefaultCursor,
+			},
 			count:      1,
 			endpointID: ulid.Make().String(),
 			expected: Expected{
