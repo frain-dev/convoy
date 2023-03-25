@@ -56,6 +56,8 @@ const (
 	COALESCE(s.id, '') AS "source_metadata.id",
 	COALESCE(s.name, '') AS "source_metadata.name"
     FROM convoy.events ev
+	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
+	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
     WHERE ev.deleted_at IS NULL`
 
@@ -67,10 +69,9 @@ const (
 
 	baseEventsPagedBackward = `
 	WITH events AS (  
-		%s %s 
-		AND ev.id >= :cursor 
-		GROUP BY ev.id, s.id
-		ORDER BY ev.id ASC
+		%s %s AND ev.id >= :cursor 
+		GROUP BY ev.id, s.id 
+		ORDER BY ev.id ASC 
 		LIMIT :limit
 	)
 
