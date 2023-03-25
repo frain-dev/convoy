@@ -93,7 +93,7 @@ func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *d
 		Subject:      "Convoy Organization Invite",
 		TemplateName: email.TemplateOrganisationInvite,
 		Params: map[string]string{
-			"invite_url":        fmt.Sprintf("%s/accept-invite?token=%s", baseURL, iv.Token),
+			"invite_url":        fmt.Sprintf("%s/accept-invite?invite-token=%s", baseURL, iv.Token),
 			"organisation_name": org.Name,
 			"inviter_name":      fmt.Sprintf("%s %s", user.FirstName, user.LastName),
 			"expires_at":        iv.ExpiresAt.String(),
