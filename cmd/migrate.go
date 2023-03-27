@@ -73,7 +73,7 @@ func addUpCommand() *cobra.Command {
 				log.Fatal(err)
 			}
 
-			defer db.GetDB().Close()
+			defer db.Close()
 
 			m := migrator.New(db)
 			err = m.Up()
@@ -104,7 +104,7 @@ func addDownCommand() *cobra.Command {
 				log.Fatal(err)
 			}
 
-			defer db.GetDB().Close()
+			defer db.Close()
 
 			m := migrator.New(db)
 			err = m.Down(max)

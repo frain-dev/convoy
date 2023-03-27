@@ -40,11 +40,11 @@ const (
         ed.description,ed.created_at,ed.updated_at,
         COALESCE(ed.device_id,'') as "device_id",
         COALESCE(ed.endpoint_id,'') as "endpoint_id",
-        ep.id as "endpoint_metadata.id",
-        ep.title as "endpoint_metadata.title",
-        ep.project_id as "endpoint_metadata.project_id",
-        ep.support_email as "endpoint_metadata.support_email",
-        ep.target_url as "endpoint_metadata.target_url",
+        COALESCE(ep.id, '') as "endpoint_metadata.id",
+        COALESCE(ep.title, '') as "endpoint_metadata.title",
+        COALESCE(ep.project_id, '') as "endpoint_metadata.project_id",
+        COALESCE(ep.support_email, '') as "endpoint_metadata.support_email",
+        COALESCE(ep.target_url, '') as "endpoint_metadata.target_url",
         ev.id as "event_metadata.id",
         ev.event_type as "event_metadata.event_type",
         COALESCE(d.host_name,'') as "cli_metadata.host_name",
@@ -129,12 +129,10 @@ const (
         id,project_id,event_id,subscription_id,
         headers,attempts,status,metadata,cli_metadata,
         description,created_at,updated_at,
-        COALESCE(device_id,'') as "device_id",
-        COALESCE(endpoint_id,'') as "endpoint_id"
+        COALESCE(device_id,'') as "device_id"
     FROM convoy.event_deliveries 
 	WHERE status=$1 AND project_id = $2 AND device_id = $3 
-	AND (endpoint_id = $4 or $4 = '') 
-	AND created_at >= $5 AND created_at <= $6
+	AND created_at >= $4 AND created_at <= $5
 	AND deleted_at IS NULL;
     `
 
@@ -331,13 +329,13 @@ func (e *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, p
 	return nil
 }
 
-func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, projectID, endpointID, deviceId string, searchParams datastore.SearchParams) ([]datastore.EventDelivery, error) {
+func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, projectID, deviceId string, searchParams datastore.SearchParams) ([]datastore.EventDelivery, error) {
 	eventDeliveries := make([]datastore.EventDelivery, 0)
 
 	start := time.Unix(searchParams.CreatedAtStart, 0)
 	end := time.Unix(searchParams.CreatedAtEnd, 0)
 
-	rows, err := e.db.QueryxContext(ctx, fetchDiscardedEventDeliveries, datastore.DiscardedEventStatus, projectID, deviceId, endpointID, start, end)
+	rows, err := e.db.QueryxContext(ctx, fetchDiscardedEventDeliveries, datastore.DiscardedEventStatus, projectID, deviceId, start, end)
 	if err != nil {
 		return nil, err
 	}

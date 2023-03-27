@@ -170,7 +170,7 @@ const (
 	SELECT p.id, p.name, p.type, p.retained_events, p.logo_url,
 	p.organisation_id, p.project_configuration_id, p.created_at,
 	p.updated_at FROM convoy.organisation_members m
-	LEFT JOIN convoy.projects p ON p.organisation_id = m.organisation_id
+	RIGHT JOIN convoy.projects p ON p.organisation_id = m.organisation_id
 	WHERE m.user_id = $1 AND m.deleted_at IS NULL AND p.deleted_at IS NULL
 	`
 )

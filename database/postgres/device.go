@@ -20,48 +20,46 @@ var (
 
 const (
 	createDevice = `
-	INSERT INTO convoy.devices (id, project_id, endpoint_id, host_name, status, last_seen_at)
-	VALUES ($1, $2, $3, $4, $5, $6)
+	INSERT INTO convoy.devices (id, project_id, host_name, status, last_seen_at)
+	VALUES ($1, $2, $3, $4, $5)
 	`
 
 	updateDevice = `
 	UPDATE convoy.devices SET
-	host_name = $4,
-	status = $5,
-	last_seen_at = $6,
+	host_name = $3,
+	status = $4,
 	updated_at = now()
-	WHERE id = $1 AND project_id = $2 AND (endpoint_id = $3 OR $3 = '') AND deleted_at IS NULL;
+	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 	updateDeviceLastSeen = `
 	UPDATE convoy.devices SET
-	status = $4,
-	last_seen_at = $5,
+	status = $3,
+	last_seen_at = now(),
 	updated_at = now()
-	WHERE id = $1 AND project_id = $2 AND (endpoint_id = $3 OR $3 = '') AND deleted_at IS NULL;
+	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	deleteDevice = `
 	UPDATE convoy.devices SET
 	deleted_at = now()
-	WHERE id = $1 AND project_id = $2 AND (endpoint_id = $3 OR $3 = '') AND deleted_at IS NULL;
+	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	fetchDeviceById = `
 	SELECT * FROM convoy.devices
-	WHERE id = $1 AND project_id = $2 AND (endpoint_id = $3 OR $3 = '') AND deleted_at IS NULL;
+	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	fetchDeviceByHostName = `
 	SELECT * FROM convoy.devices
-	WHERE host_name = $1 AND project_id = $2 AND (endpoint_id = $3 OR $3 = '') AND deleted_at IS NULL;
+	WHERE host_name = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	fetchDevicesPaginated = `
 	SELECT * FROM convoy.devices WHERE deleted_at IS NULL`
 
 	baseDevicesFilter = `
-	AND project_id = :project_id 
-	AND (endpoint_id = :endpoint_id OR :endpoint_id = '')`
+	AND project_id = :project_id`
 
 	baseFetchDevicesPagedForward = `
 	%s 
@@ -105,7 +103,6 @@ func (d *deviceRepo) CreateDevice(ctx context.Context, device *datastore.Device)
 	r, err := d.db.ExecContext(ctx, createDevice,
 		device.UID,
 		device.ProjectID,
-		device.EndpointID,
 		device.HostName,
 		device.Status,
 		device.LastSeenAt,
@@ -130,10 +127,8 @@ func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device,
 	r, err := d.db.ExecContext(ctx, updateDevice,
 		device.UID,
 		projectID,
-		endpointID,
 		device.HostName,
 		device.Status,
-		device.LastSeenAt,
 	)
 	if err != nil {
 		return err
@@ -155,9 +150,7 @@ func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore
 	r, err := d.db.ExecContext(ctx, updateDeviceLastSeen,
 		device.UID,
 		projectID,
-		endpointID,
 		status,
-		device.LastSeenAt,
 	)
 	if err != nil {
 		return err
@@ -176,7 +169,7 @@ func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore
 }
 
 func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, endpointID, projectID string) error {
-	r, err := d.db.ExecContext(ctx, deleteDevice, uid, projectID, endpointID)
+	r, err := d.db.ExecContext(ctx, deleteDevice, uid, projectID)
 	if err != nil {
 		return err
 	}
@@ -195,7 +188,7 @@ func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, endpointID, p
 
 func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, endpointID, projectID string) (*datastore.Device, error) {
 	device := &datastore.Device{}
-	err := d.db.QueryRowxContext(ctx, fetchDeviceById, uid, projectID, endpointID).StructScan(device)
+	err := d.db.QueryRowxContext(ctx, fetchDeviceById, uid, projectID).StructScan(device)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrDeviceNotFound
@@ -208,7 +201,7 @@ func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, endpointID
 
 func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName string, endpointID, projectID string) (*datastore.Device, error) {
 	device := &datastore.Device{}
-	err := d.db.QueryRowxContext(ctx, fetchDeviceByHostName, hostName, projectID, endpointID).StructScan(device)
+	err := d.db.QueryRowxContext(ctx, fetchDeviceByHostName, hostName, projectID).StructScan(device)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrDeviceNotFound
@@ -225,11 +218,9 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, projectID string, fil
 	var err error
 
 	arg := map[string]interface{}{
-		"project_id":   projectID,
-		"endpoint_id":  filter.EndpointID,
-		"endpoint_ids": filter.EndpointIDs,
-		"limit":        pageable.Limit(),
-		"cursor":       pageable.Cursor(),
+		"project_id": projectID,
+		"limit":      pageable.Limit(),
+		"cursor":     pageable.Cursor(),
 	}
 
 	if pageable.Direction == datastore.Next {
@@ -239,9 +230,6 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, projectID string, fil
 	}
 
 	filterQuery = baseDevicesFilter
-	if len(filter.EndpointIDs) > 0 {
-		filterQuery += ` AND endpoint_id IN (:endpoint_ids)`
-	}
 
 	query = fmt.Sprintf(query, fetchDevicesPaginated, filterQuery)
 

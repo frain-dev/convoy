@@ -108,7 +108,7 @@ func TestIndexDocument(t *testing.T) {
 				Payload: payload,
 			}
 
-			task := asynq.NewTask(string(convoy.IndexDocument), job.Payload, asynq.Queue(string(convoy.PriorityQueue)), asynq.ProcessIn(job.Delay))
+			task := asynq.NewTask(string(convoy.IndexDocument), job.Payload, asynq.Queue(string(convoy.SearchIndexQueue)), asynq.ProcessIn(job.Delay))
 
 			fn := SearchIndex(args.search)
 			err = fn(context.Background(), task)
