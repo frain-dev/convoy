@@ -82,7 +82,7 @@ const (
 
 	fetchEventDeliveryByID = baseFetchEventDelivery + ` AND ed.id = $1 AND ed.project_id = $2`
 
-	baseEventDeliveryFilter = ` AND ed.project_id = :project_id 
+	baseEventDeliveryFilter = ` AND (ed.project_id = :project_id OR :project_id = '') 
 	AND (ed.event_id = :event_id OR :event_id = '') 
 	AND ed.created_at >= :start_date 
 	AND ed.created_at <= :end_date

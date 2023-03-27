@@ -131,13 +131,22 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 		for i := range batch {
 			delivery := &batch[i]
 
+			payload := EventDelivery{
+				EventDeliveryID: delivery.UID,
+				ProjectID:       delivery.ProjectID,
+			}
+			data, err := json.Marshal(payload)
+			if err != nil {
+				log.WithError(err).Error("failed to marshal process event delivery payload")
+			}
+
 			taskName := convoy.EventProcessor
 			job := &queue.Job{
 				ID:      delivery.UID,
-				Payload: json.RawMessage(delivery.UID),
+				Payload: data,
 				Delay:   1 * time.Second,
 			}
-			err := q.Write(taskName, convoy.EventQueue, job)
+			err = q.Write(taskName, convoy.EventQueue, job)
 			if err != nil {
 				log.WithError(err).Errorf("batch %d: failed to send event delivery %s to the queue", batchCount, delivery.UID)
 			}
