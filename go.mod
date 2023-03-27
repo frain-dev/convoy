@@ -20,6 +20,7 @@ require (
 	github.com/go-redis/redis_rate/v9 v9.1.2
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/mock v1.6.0
+	github.com/gorilla/websocket v1.5.0
 	github.com/hibiken/asynq v0.23.0
 	github.com/hibiken/asynq/x v0.0.0-20221219051101-0b8cfad70341
 	github.com/hibiken/asynqmon v0.7.1
@@ -44,7 +45,6 @@ require (
 	github.com/swaggo/swag v1.8.2
 	github.com/typesense/typesense-go v0.4.0
 	github.com/xdg-go/pbkdf2 v1.0.0
-	go.mongodb.org/mongo-driver v1.9.1
 	golang.org/x/crypto v0.5.0
 	google.golang.org/api v0.102.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
@@ -77,7 +77,6 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
-	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
