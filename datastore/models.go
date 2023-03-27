@@ -15,7 +15,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/lib/pq"
 	"github.com/oklog/ulid/v2"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/guregu/null.v4"
 )
@@ -938,6 +937,7 @@ func (s *Subscription) GetFilterConfig() FilterConfiguration {
 	if s.FilterConfig != nil {
 		return *s.FilterConfig
 	}
+
 	return FilterConfiguration{
 		EventTypes: []string{},
 		Filter: FilterSchema{
@@ -1077,7 +1077,7 @@ func (h *M) Scan(value interface{}) error {
 
 func (h M) Value() (driver.Value, error) {
 	if h == nil {
-		return nil, nil
+		return []byte("{}"), nil
 	}
 
 	b, err := json.Marshal(h)
@@ -1246,13 +1246,12 @@ type PortalLink struct {
 
 // Deprecated
 type Application struct {
-	ID              primitive.ObjectID `json:"-" db:"_id"`
-	UID             string             `json:"uid" db:"uid"`
-	ProjectID       string             `json:"project_id" db:"project_id"`
-	Title           string             `json:"name" db:"title"`
-	SupportEmail    string             `json:"support_email,omitempty" db:"support_email"`
-	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" db:"slack_webhook_url"`
-	IsDisabled      bool               `json:"is_disabled,omitempty" db:"is_disabled"`
+	UID             string `json:"uid" db:"id"`
+	ProjectID       string `json:"project_id" db:"project_id"`
+	Title           string `json:"name" db:"title"`
+	SupportEmail    string `json:"support_email,omitempty" db:"support_email"`
+	SlackWebhookURL string `json:"slack_webhook_url,omitempty" db:"slack_webhook_url"`
+	IsDisabled      bool   `json:"is_disabled,omitempty" db:"is_disabled"`
 
 	Endpoints []DeprecatedEndpoint `json:"endpoints,omitempty" db:"endpoints"`
 	CreatedAt time.Time            `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
@@ -1308,11 +1307,4 @@ func (p *Password) Matches() (bool, error) {
 	}
 
 	return true, err
-}
-
-type SubscriptionFilter struct {
-	ID        primitive.ObjectID     `json:"-" bson:"_id"`
-	UID       string                 `json:"uid" bson:"uid"`
-	Filter    map[string]interface{} `json:"filter" bson:"filter"`
-	DeletedAt *primitive.DateTime    `json:"deleted_at,omitempty" bson:"deleted_at"`
 }
