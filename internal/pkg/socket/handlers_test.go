@@ -1,6 +1,5 @@
 package socket
 
-
 import (
 	"context"
 	"errors"
@@ -97,7 +96,6 @@ func TestHub_listen(t *testing.T) {
 				)
 
 				sub, _ := h.SubscriptionRepo.(*mocks.MockSubscriptionRepository)
-				sub.EXPECT().UpdateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				sub.EXPECT().FindSubscriptionByDeviceID(gomock.Any(), "1234", "device-id", datastore.SubscriptionTypeCLI).
 					Times(1).Return(&datastore.Subscription{}, nil)
@@ -566,7 +564,7 @@ func stripVariableFields(t *testing.T, obj string, v interface{}) {
 	case "device":
 		d := v.(*datastore.Device)
 		d.UID = ""
-		d.CreatedAt, d.UpdatedAt, d.DeletedAt = time.Time{}, time.Time{}, null.Time{}
+		d.CreatedAt, d.LastSeenAt, d.UpdatedAt, d.DeletedAt = time.Time{}, time.Time{}, time.Time{}, null.Time{}
 	default:
 		t.Errorf("invalid data body - %v of type %T", obj, obj)
 		t.FailNow()

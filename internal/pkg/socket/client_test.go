@@ -110,7 +110,7 @@ func TestResendEventDeliveries(t *testing.T) {
 	}
 
 	evd := r.EventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-	evd.EXPECT().FindDiscardedEventDeliveries(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+	evd.EXPECT().FindDiscardedEventDeliveries(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return([]datastore.EventDelivery{wantEd}, nil)
 
 	c.ResendEventDeliveries(time.Now(), evts)

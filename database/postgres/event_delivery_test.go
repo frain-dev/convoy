@@ -306,7 +306,7 @@ func Test_eventDeliveryRepo_FindDiscardedEventDeliveries(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	dbEventDeliveries, err := edRepo.FindDiscardedEventDeliveries(context.Background(), project.UID, "", device.UID, datastore.SearchParams{
+	dbEventDeliveries, err := edRepo.FindDiscardedEventDeliveries(context.Background(), project.UID, device.UID, datastore.SearchParams{
 		CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
 		CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
 	})

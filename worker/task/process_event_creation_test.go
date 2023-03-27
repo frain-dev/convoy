@@ -216,7 +216,7 @@ func TestProcessEventCreated(t *testing.T) {
 		},
 
 		{
-			name: "should_process_event_for_incoming_project",
+			name: "should_process_event_for_incoming_project_api_event",
 			event: &CreateEvent{
 				Event: datastore.Event{
 					UID:       ulid.Make().String(),
@@ -260,15 +260,97 @@ func TestProcessEventCreated(t *testing.T) {
 					{
 						UID:        "456",
 						EndpointID: "endpoint-id-1",
+						ProjectID:  "project-id-1",
 						Type:       datastore.SubscriptionTypeAPI,
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
 						},
 					},
 					{
-						UID:       "33232",
-						DeviceID:  "334",
+						UID:        "33232",
+						ProjectID:  "project-id-1",
+						EndpointID: "endpoint-id-1",
+						FilterConfig: &datastore.FilterConfiguration{
+							Filter: datastore.FilterSchema{},
+						},
+						Type: datastore.SubscriptionTypeAPI,
+					},
+				}
+				s.EXPECT().FindSubscriptionsBySourceID(gomock.Any(), "project-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(4).Return(true, nil)
+
+				e, _ := args.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
+				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				endpoint := &datastore.Endpoint{UID: "endpoint-id-1", TargetURL: "https://google.com", Status: datastore.ActiveEndpointStatus}
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
+					Times(2).Return(endpoint, nil)
+
+				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(2).Return(nil)
+
+				q, _ := args.eventQueue.(*mocks.MockQueuer)
+				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(2).Return(nil)
+
+				q.EXPECT().Write(convoy.IndexDocument, convoy.SearchIndexQueue, gomock.Any()).Times(1).Return(nil)
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "should_process_event_for_incoming_project_cli_event",
+			event: &CreateEvent{
+				Event: datastore.Event{
+					UID:       ulid.Make().String(),
+					EventType: "*",
+					SourceID:  "source-id-1",
+					ProjectID: "project-id-1",
+					Endpoints: []string{"endpoint-id-1"},
+					Data:      []byte(`{}`),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+			},
+			dbFn: func(args *args) {
+				mockCache, _ := args.cache.(*mocks.MockCache)
+				var gr *datastore.Project
+				mockCache.EXPECT().Get(gomock.Any(), "projects:project-id-1", &gr).Times(1).Return(nil)
+
+				project := &datastore.Project{
+					UID:  "project-id-1",
+					Type: datastore.IncomingProject,
+					Config: &datastore.ProjectConfig{
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       datastore.LinearStrategyProvider,
+							Duration:   10,
+							RetryCount: 3,
+						},
+					},
+				}
+
+				g, _ := args.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().FetchProjectByID(gomock.Any(), "project-id-1").Times(1).Return(
+					project,
+					nil,
+				)
+				mockCache.EXPECT().Set(gomock.Any(), "projects:project-id-1", project, 10*time.Minute).Times(1).Return(nil)
+
+				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
+				subscriptions := []datastore.Subscription{
+					{
+						UID:       "456",
+						DeviceID:  "device-3",
 						ProjectID: "project-id-1",
+						Type:      datastore.SubscriptionTypeCLI,
+						FilterConfig: &datastore.FilterConfiguration{
+							EventTypes: []string{"*"},
+						},
+					},
+					{
+						UID:       "33232",
+						ProjectID: "project-id-1",
+						DeviceID:  "device-3",
 						FilterConfig: &datastore.FilterConfiguration{
 							Filter: datastore.FilterSchema{},
 						},
@@ -279,7 +361,7 @@ func TestProcessEventCreated(t *testing.T) {
 				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(4).Return(true, nil)
 
 				d, _ := args.deviceRepo.(*mocks.MockDeviceRepository)
-				d.EXPECT().FetchDeviceByID(gomock.Any(), "334", "", "project-id-1").Times(1).Return(
+				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-3", "", "project-id-1").Times(2).Return(
 					&datastore.Device{
 						UID:       "334",
 						ProjectID: "project-id-1",
@@ -292,15 +374,12 @@ func TestProcessEventCreated(t *testing.T) {
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-				endpoint := &datastore.Endpoint{UID: "endpoint-id-1", TargetURL: "https://google.com", Status: datastore.ActiveEndpointStatus}
-				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
-					Times(1).Return(endpoint, nil)
-
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
 				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(2).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
-				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
+
+				q.EXPECT().Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, gomock.Any()).Times(2).Return(nil)
 
 				q.EXPECT().Write(convoy.IndexDocument, convoy.SearchIndexQueue, gomock.Any()).Times(1).Return(nil)
 			},
