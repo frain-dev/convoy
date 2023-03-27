@@ -375,10 +375,20 @@ func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *
 	}
 
 	taskName := convoy.EventProcessor
+	payload := task.EventDelivery{
+		EventDeliveryID: eventDelivery.UID,
+		ProjectID:       g.UID,
+	}
+
+	data, err := json.Marshal(payload)
+	if err != nil {
+		log.WithError(err).Error("failed to marshal process event delivery payload")
+		return errors.New("error occurred marshaling event delivery payload")
+	}
 
 	job := &queue.Job{
 		ID:      eventDelivery.UID,
-		Payload: json.RawMessage(eventDelivery.UID),
+		Payload: data,
 		Delay:   1 * time.Second,
 	}
 	err = e.queue.Write(taskName, convoy.EventQueue, job)
