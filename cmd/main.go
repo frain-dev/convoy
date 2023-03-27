@@ -199,11 +199,12 @@ func preRun(app *app, db *postgres.Postgres) func(cmd *cobra.Command, args []str
 				return err
 			}
 			queueNames := map[string]int{
-				string(convoy.PriorityQueue):    5,
-				string(convoy.EventQueue):       2,
-				string(convoy.CreateEventQueue): 2,
+				string(convoy.EventQueue):       3,
+				string(convoy.CreateEventQueue): 3,
+				string(convoy.SearchIndexQueue): 1,
 				string(convoy.ScheduleQueue):    1,
 				string(convoy.DefaultQueue):     1,
+				string(convoy.StreamQueue):      1,
 			}
 			opts := queue.QueueOptions{
 				Names:             queueNames,
@@ -296,7 +297,7 @@ func parsePersistentArgs(app *app, cmd *cobra.Command) {
 	cmd.AddCommand(addSchedulerCommand(app))
 	cmd.AddCommand(addMigrateCommand(app))
 	cmd.AddCommand(addConfigCommand(app))
-	// cmd.AddCommand(addStreamCommand(app))
+	cmd.AddCommand(addStreamCommand(app))
 	cmd.AddCommand(addDomainCommand(app))
 	cmd.AddCommand(addIngestCommand(app))
 }

@@ -343,22 +343,12 @@ definitions:
         type: boolean
       has_prev_page:
         type: boolean
-      next:
-        type: integer
       next_page_cursor:
         type: string
-      page:
-        type: integer
       per_page:
-        type: integer
-      prev:
         type: integer
       prev_page_cursor:
         type: string
-      total:
-        type: integer
-      totalPage:
-        type: integer
     type: object
   datastore.Project:
     properties:
@@ -387,6 +377,8 @@ definitions:
     type: object
   datastore.ProjectConfig:
     properties:
+      disable_endpoint:
+        type: boolean
       max_payload_read_size:
         type: integer
       ratelimit:

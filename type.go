@@ -68,16 +68,17 @@ func GetVersion() string {
 }
 
 const (
-	EventProcessor         TaskName = "EventProcessor"
-	DeadLetterProcessor    TaskName = "DeadLetterProcessor"
-	CreateEventProcessor   TaskName = "CreateEventProcessor"
-	NotificationProcessor  TaskName = "NotificationProcessor"
-	IndexDocument          TaskName = "index document"
-	DailyAnalytics         TaskName = "daily analytics"
-	MonitorTwitterSources  TaskName = "monitor twitter sources"
-	RetentionPolicies      TaskName = "retention_policies"
-	EmailProcessor         TaskName = "EmailProcessor"
-	ExpireSecretsProcessor TaskName = "ExpireSecretsProcessor"
+	EventProcessor           TaskName = "EventProcessor"
+	DeadLetterProcessor      TaskName = "DeadLetterProcessor"
+	CreateEventProcessor     TaskName = "CreateEventProcessor"
+	NotificationProcessor    TaskName = "NotificationProcessor"
+	IndexDocument            TaskName = "index document"
+	DailyAnalytics           TaskName = "daily analytics"
+	StreamCliEventsProcessor TaskName = "StreamCliEventsProcessor"
+	MonitorTwitterSources    TaskName = "monitor twitter sources"
+	RetentionPolicies        TaskName = "retention_policies"
+	EmailProcessor           TaskName = "EmailProcessor"
+	ExpireSecretsProcessor   TaskName = "ExpireSecretsProcessor"
 
 	EndpointsCacheKey          CacheKey = "endpoints"
 	OrganisationsCacheKey      CacheKey = "organisations"
@@ -91,7 +92,8 @@ const (
 const (
 	EventQueue       QueueName = "EventQueue"
 	CreateEventQueue QueueName = "CreateEventQueue"
-	PriorityQueue    QueueName = "PriorityQueue"
+	SearchIndexQueue QueueName = "SearchIndexQueue"
+	StreamQueue      QueueName = "StreamQueue"
 	ScheduleQueue    QueueName = "ScheduleQueue"
 	DefaultQueue     QueueName = "DefaultQueue"
 )
