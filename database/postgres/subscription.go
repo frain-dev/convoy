@@ -371,6 +371,10 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, projectID s
 func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, projectID string, sourceID string) ([]datastore.Subscription, error) {
 	rows, err := s.db.QueryxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.project_id", "s.source_id"), projectID, sourceID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrSubscriptionNotFound
+		}
+
 		return nil, err
 	}
 
@@ -380,6 +384,10 @@ func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, proj
 func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]datastore.Subscription, error) {
 	rows, err := s.db.QueryxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.project_id", "s.endpoint_id"), projectId, endpointID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrSubscriptionNotFound
+		}
+
 		return nil, err
 	}
 
@@ -390,6 +398,10 @@ func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, proje
 	subscription := &datastore.Subscription{}
 	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSubscriptionByDeviceID, "s.device_id", "s.project_id", "s.type"), deviceID, projectId, subscriptionType).StructScan(subscription)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrSubscriptionNotFound
+		}
+
 		return nil, err
 	}
 
