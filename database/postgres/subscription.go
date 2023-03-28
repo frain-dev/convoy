@@ -75,6 +75,10 @@ const (
 	COALESCE(em.support_email,'') as "endpoint_metadata.support_email",
 	COALESCE(em.target_url,'') as "endpoint_metadata.target_url",
 
+	COALESCE(d.id,'') as "device_metadata.id",
+	COALESCE(d.status,'') as "device_metadata.status",
+	COALESCE(d.host_name,'') as "device_metadata.host_name",
+
 	COALESCE(sm.id,'') as "source_metadata.id",
 	COALESCE(sm.name,'') as "source_metadata.name",
 	COALESCE(sm.type,'') as "source_metadata.type",
@@ -96,13 +100,14 @@ const (
 	LEFT JOIN convoy.endpoints em ON s.endpoint_id = em.id 
 	LEFT JOIN convoy.sources sm ON s.source_id = sm.id 
 	LEFT JOIN convoy.source_verifiers sv ON sv.id = sm.source_verifier_id 
+	LEFT JOIN convoy.devices d ON s.device_id = d.id
 	WHERE s.deleted_at IS NULL `
 
 	baseFetchSubscriptionsPagedForward = `
 	%s 
 	%s 
 	AND s.id <= :cursor 
-	GROUP BY s.id, em.id, sm.id, sv.id
+	GROUP BY s.id, em.id, sm.id, sv.id, d.id
 	ORDER BY s.id DESC 
 	LIMIT :limit
 	`
@@ -112,7 +117,7 @@ const (
 		%s 
 		%s 
 		AND s.id >= :cursor 
-		GROUP BY s.id, em.id, sm.id, sv.id
+		GROUP BY s.id, em.id, sm.id, sv.id, d.id
 		ORDER BY s.id ASC 
 		LIMIT :limit
 	)

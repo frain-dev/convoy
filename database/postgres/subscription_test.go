@@ -147,7 +147,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 				require.Equal(t, dbSub.Source.ProjectID, source.ProjectID)
 				require.Equal(t, dbSub.Source.IsDisabled, source.IsDisabled)
 
-				dbSub.Source, dbSub.Endpoint = nil, nil
+				dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
 				require.Equal(t, dbSub, *subMap[dbSub.UID])
 			}
@@ -199,7 +199,7 @@ func Test_CreateSubscription(t *testing.T) {
 	require.NotEmpty(t, dbSub.UpdatedAt)
 
 	dbSub.CreatedAt, dbSub.UpdatedAt = time.Time{}, time.Time{}
-	dbSub.Source, dbSub.Endpoint = nil, nil
+	dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
 	require.Equal(t, dbSub, newSub)
 }
@@ -240,7 +240,7 @@ func Test_UpdateSubscription(t *testing.T) {
 	require.NotEmpty(t, dbSub.UpdatedAt)
 
 	dbSub.CreatedAt, dbSub.UpdatedAt = time.Time{}, time.Time{}
-	dbSub.Source, dbSub.Endpoint = nil, nil
+	dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
 	require.Equal(t, dbSub, update)
 }
@@ -284,7 +284,7 @@ func Test_FindSubscriptionByID(t *testing.T) {
 	require.Equal(t, dbSub.Source.ProjectID, source.ProjectID)
 	require.Equal(t, dbSub.Source.IsDisabled, source.IsDisabled)
 
-	dbSub.Source, dbSub.Endpoint = nil, nil
+	dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
 	require.Equal(t, dbSub, newSub)
 }
@@ -335,7 +335,7 @@ func Test_FindSubscriptionsBySourceID(t *testing.T) {
 		require.Equal(t, dbSub.Source.ProjectID, source.ProjectID)
 		require.Equal(t, dbSub.Source.IsDisabled, source.IsDisabled)
 
-		dbSub.Source, dbSub.Endpoint = nil, nil
+		dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
 		require.Equal(t, dbSub, *subMap[dbSub.UID])
 	}
@@ -387,7 +387,7 @@ func Test_FindSubscriptionByEndpointID(t *testing.T) {
 		require.Equal(t, dbSub.Source.ProjectID, source.ProjectID)
 		require.Equal(t, dbSub.Source.IsDisabled, source.IsDisabled)
 
-		dbSub.Source, dbSub.Endpoint = nil, nil
+		dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
 		require.Equal(t, dbSub, *subMap[dbSub.UID])
 	}
@@ -427,7 +427,7 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 	require.Equal(t, dbSub.Source.ProjectID, source.ProjectID)
 	require.Equal(t, dbSub.Source.IsDisabled, source.IsDisabled)
 
-	dbSub.Source, dbSub.Endpoint = nil, nil
+	dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
 	require.Equal(t, dbSub, newSub)
 }
@@ -475,10 +475,6 @@ func Test_FindCLISubscriptions(t *testing.T) {
 	dbSubs, err := subRepo.FindCLISubscriptions(context.Background(), project.UID)
 	require.NoError(t, err)
 	require.Equal(t, 8, len(dbSubs))
-}
-
-func TestTestSubscriptionFilter(t *testing.T) {
-	t.Skip()
 }
 
 func seedDevice(t *testing.T, db database.Database) *datastore.Device {
