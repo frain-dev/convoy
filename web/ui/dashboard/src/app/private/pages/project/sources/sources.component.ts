@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { SOURCE } from 'src/app/models/group.model';
 import { PrivateService } from 'src/app/private/private.service';
@@ -12,6 +13,7 @@ import { SourcesService } from './sources.service';
 	styleUrls: ['./sources.component.scss']
 })
 export class SourcesComponent implements OnInit {
+	@ViewChild('incomingSourceDropdown') incomingSourceDropdown!: DropdownComponent;
 	sourcesTableHead: string[] = ['Name', 'Type', 'Verifier', 'URL', 'Date created', ''];
 	shouldShowCreateSourceModal = false;
 	shouldShowUpdateSourceModal = false;
@@ -24,13 +26,8 @@ export class SourcesComponent implements OnInit {
 
 	constructor(private route: ActivatedRoute, public router: Router, private sourcesService: SourcesService, public privateService: PrivateService, private generalService: GeneralService) {}
 
-	async ngOnInit() {
-		await this.getSources();
-
-		this.route.queryParams.subscribe(params => {
-			this.activeSource = this.sources?.content.find(source => source.uid === params?.id);
-			params?.id && this.activeSource ? (this.showSourceDetails = true) : (this.showSourceDetails = false);
-		});
+	ngOnInit() {
+		this.getSources();
 
 		const urlParam = this.route.snapshot.params.id;
 		if (urlParam && urlParam === 'new') this.shouldShowCreateSourceModal = true;
@@ -43,10 +40,6 @@ export class SourcesComponent implements OnInit {
 		try {
 			const sourcesResponse = await this.privateService.getSources(requestDetails);
 			this.sources = sourcesResponse.data;
-			if ((this.sources?.pagination?.total || 0) > 0) {
-				this.activeSource = this.sources?.content.find(source => source.uid === this.route.snapshot.queryParams?.id);
-				if (this.route.snapshot.queryParams?.id && this.activeSource) this.showSourceDetails = true;
-			}
 			this.isLoadingSources = false;
 		} catch (error) {
 			this.isLoadingSources = false;
@@ -84,5 +77,9 @@ export class SourcesComponent implements OnInit {
 
 	paginate(event: PAGINATION) {
 		this.getSources();
+	}
+
+	hideIncomingSourceDropdown() {
+		this.incomingSourceDropdown.show = false;
 	}
 }

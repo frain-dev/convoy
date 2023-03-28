@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 @Directive({
 	selector: 'convoy-table, [convoy-table]',
 	standalone: true,
-	host: { class: 'w-full h-fit', id: 'table' }
+	host: { class: 'w-full h-fit text-grey-80', id: 'table' }
 })
 export class TableComponent implements OnInit {
 	constructor() {}

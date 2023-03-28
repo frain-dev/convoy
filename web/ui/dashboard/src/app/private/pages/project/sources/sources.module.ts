@@ -35,7 +35,6 @@ const routes: Routes = [{ path: '', component: SourcesComponent }];
 		ModalHeaderComponent,
 		CopyButtonComponent,
 		SourceValueModule,
-		CopyButtonComponent,
 		DropdownComponent,
 		DropdownOptionDirective,
 		SkeletonLoaderComponent,

@@ -62,8 +62,12 @@
 						<td convoy-table-cell [forDate]="true"></td>
 						<td convoy-table-cell [forDate]="true"></td>
 					</tr>
-					<tr convoy-table-row *ngFor="let endpoint of endpointGroup.content; let index = index" [id]="'endpoint' + i">
-						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]" class="pl-16px">
+					<tr convoy-table-row class="group" *ngFor="let endpoint of endpointGroup.content; let index = index" [id]="'endpoint' + i">
+						<td convoy-table-cell class="relative pl-16px w-176px">
+							<convoy-tag type="grey" className="w-130px overflow-hidden overflow-ellipsis mr-8px">{{ endpoint.uid }}</convoy-tag>
+							<convoy-copy-button [notificationText]="endpoint.title + ' ID has been copied to clipboard'" className="absolute translate-x-0 translate-y-[-50%] top-[50] hidden group-hover:block" [text]="endpoint.uid"></convoy-copy-button>
+						</td>
+						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]">
 							<convoy-tag *ngIf="endpoint.status" [type]="endpoint.status | statuscolor" className="ml-4px">{{ endpoint.status }}</convoy-tag>
 						</td>
 						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]">
@@ -75,7 +79,6 @@
 						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]">
 							{{ endpoint.updated_at | date: 'mediumTime' }}
 						</td>
-						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]">{{ endpoint.events || 0 }}</td>
 						<td convoy-table-cell>
 							<button convoy-button size="sm" [routerLink]="['../events']" [relativeTo]="route" [queryParams]="{ linksEndpoint: endpoint.uid }" texture="light">
 								<img src="/assets/img/view-events-icon.svg" class="w-14px mr-10px" alt="view events icon" />
