@@ -13,7 +13,7 @@
 						type="button"
 						class="w-60px h-60px"
 						[ngClass]="{ '!border-solid !border !border-primary-100': sourceForm.value.verifier.type === source }"
-						(click)="sourceForm.get('verifier.type')?.patchValue(source)"
+						(click)="sourceForm.get('verifier.type')?.patchValue(source); sourceForm.value.name ? false : sourceForm.get('name')?.patchValue(source + ' Source')"
 					>
 						<img [src]="'/assets/img/' + source + '.png'" [alt]="source + '-icon'" />
 					</button>
