@@ -1,3 +1,4 @@
+import { DEVICE } from './device.model';
 import { APP, ENDPOINT } from './endpoint.model';
 import { SOURCE } from './group.model';
 
@@ -44,6 +45,7 @@ export interface EVENT_DELIVERY {
 	endpoint_metadata: ENDPOINT;
 	app_metadata: APP;
 	event_metadata: EVENT;
+	device_metadata: DEVICE;
 }
 
 export interface EVENT_DELIVERY_ATTEMPT {

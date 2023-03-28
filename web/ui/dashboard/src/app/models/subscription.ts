@@ -1,3 +1,4 @@
+import { DEVICE } from './device.model';
 import { ENDPOINT } from './endpoint.model';
 import { SOURCE } from './group.model';
 
@@ -16,5 +17,5 @@ export interface SUBSCRIPTION {
 	source_metadata: SOURCE;
 	filter_config: { event_types: string[]; filter: { headers: string; body: string } };
 	active_menu?: boolean;
-	device_metadata: { created_at: string; deleted_at: string; host_name: string; last_seen_at: string; status: 'offline' | 'online'; uid: string; updated_at: string };
+	device_metadata: DEVICE;
 }
