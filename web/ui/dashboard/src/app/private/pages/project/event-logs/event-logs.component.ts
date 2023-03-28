@@ -25,6 +25,7 @@ import { DropdownComponent } from 'src/app/components/dropdown/dropdown.componen
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { EventsService } from '../events/events.service';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
+import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 
 @Component({
 	selector: 'convoy-event-logs',
@@ -50,7 +51,8 @@ import { PaginationComponent } from 'src/app/private/components/pagination/pagin
 		DatePickerComponent,
 		DropdownComponent,
 		ModalComponent,
-		PaginationComponent
+		PaginationComponent,
+		CopyButtonComponent
 	],
 	templateUrl: './event-logs.component.html',
 	styleUrls: ['./event-logs.component.scss']

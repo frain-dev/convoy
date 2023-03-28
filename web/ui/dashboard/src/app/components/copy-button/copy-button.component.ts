@@ -4,7 +4,7 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { ButtonComponent } from '../button/button.component';
 
 @Component({
-	selector: 'convoy-copy-button',
+	selector: '[convoy-copy-button] ,convoy-copy-button',
 	standalone: true,
 	imports: [CommonModule, ButtonComponent],
 	templateUrl: './copy-button.component.html',

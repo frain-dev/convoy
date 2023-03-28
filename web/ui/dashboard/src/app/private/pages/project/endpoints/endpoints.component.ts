@@ -20,6 +20,7 @@ import { StatusColorModule } from 'src/app/pipes/status-color/status-color.modul
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { ProjectService } from '../project.service';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
+import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 
 @Component({
 	selector: 'convoy-endpoints',
@@ -46,7 +47,8 @@ import { PaginationComponent } from 'src/app/private/components/pagination/pagin
 		RouterModule,
 		StatusColorModule,
 		TooltipComponent,
-		PaginationComponent
+		PaginationComponent,
+		CopyButtonComponent
 	],
 	templateUrl: './endpoints.component.html',
 	styleUrls: ['./endpoints.component.scss']
@@ -54,7 +56,7 @@ import { PaginationComponent } from 'src/app/private/components/pagination/pagin
 export class EndpointsComponent implements OnInit {
 	showCreateEndpointModal = this.router.url.split('/')[4] === 'new';
 	showEditEndpointModal = this.router.url.split('/')[5] === 'edit';
-	endpointsTableHead = ['Status', 'Name', 'Time Created', 'Updated', 'Events', ''];
+	endpointsTableHead = ['ID', 'Status', 'Name', 'Time Created', 'Updated', ''];
 	displayedEndpoints?: { date: string; content: ENDPOINT[] }[];
 	endpoints?: { pagination?: PAGINATION; content?: ENDPOINT[] };
 	isLoadingEndpoints = false;
