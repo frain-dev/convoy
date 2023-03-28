@@ -1,11 +1,11 @@
 ## 0.9.0
 
--   [Enhancement] Change font to inter #1470
 -   [Documentation] Update API Annotations #1478
+-   [Enhancement] Change font to inter #1470
 -   [Enhancement] QoL Postgres Updates #1419
 -   [Enhancement] Port Stream Server #1482
--   [Bugfix] Check pending migrations #1487
 -   [Enhancement] UI updates #1491 #1490 #1486 #1474 #1480
+-   [Bugfix] Check pending migrations #1487
 -   [Bugfix] fix message payload for process event delivery #1483
 
 ## 0.9.0-rc.3
