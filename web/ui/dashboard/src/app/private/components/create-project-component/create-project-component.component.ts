@@ -197,6 +197,7 @@ export class CreateProjectComponent implements OnInit {
 		try {
 			const response = await this.createProjectService.createProject(this.enableMoreConfig ? this.projectForm.value : dataForNoConfig);
 			await this.privateService.getProjectDetails({ refresh: true, projectId: response.data.project.uid });
+			await this.privateService.getProjectStat({ refresh: true });
 
 			projectFormModal?.scroll({ top: 0, behavior: 'smooth' });
 			this.isCreatingProject = false;
