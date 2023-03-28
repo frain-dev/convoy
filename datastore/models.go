@@ -902,10 +902,11 @@ type Subscription struct {
 	ProjectID  string           `json:"-" db:"project_id"`
 	SourceID   string           `json:"-" db:"source_id"`
 	EndpointID string           `json:"-" db:"endpoint_id"`
-	DeviceID   string           `json:"device_id" db:"device_id"`
+	DeviceID   string           `json:"-" db:"device_id"`
 
 	Source   *Source   `json:"source_metadata" db:"source_metadata"`
 	Endpoint *Endpoint `json:"endpoint_metadata" db:"endpoint_metadata"`
+	Device   *Device   `json:"device_metadata" db:"device_metadata"`
 
 	// subscription config
 	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" db:"alert_config"`
