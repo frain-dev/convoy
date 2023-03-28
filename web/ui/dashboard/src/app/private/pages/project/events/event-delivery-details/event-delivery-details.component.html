@@ -1,6 +1,11 @@
 <div convoy-card class="py-26px px-32px mb-20px mt-16px">
 	<div class="flex justify-between items-center pb-18px border-b border-grey-10">
-		<h3 class="font-medium">{{ eventDelsDetails?.endpoint_metadata?.title }}</h3>
+		<h3 class="font-medium flex items-center">
+			<svg width="16" height="14" class="mr-10px" *ngIf="eventDelsDetails?.cli_metadata">
+				<use xlink:href="#cli-icon"></use>
+			</svg>
+			{{ eventDelsDetails?.endpoint_metadata?.title || 'CLI Device' }}
+		</h3>
 
 		<button
 			convoy-button
@@ -59,6 +64,18 @@
 			<p class="text-grey-40 text-12 font-light">IP ADDRESS</p>
 			<p class="text-14 font-medium">{{ eventDeliveryAtempt?.ip_address || '-' }}</p>
 		</div>
+		<div *ngIf="eventDelsDetails?.device_id">
+			<p class="text-grey-40 text-12 font-light">DEVICE</p>
+
+			<div class="flex items-center text-14 font-medium">
+				<div>
+					<svg width="16" height="14" class="mr-8px">
+						<use xlink:href="#cli-icon"></use>
+					</svg>
+				</div>
+				<span class="whitespace-nowrap">{{ eventDelsDetails?.cli_metadata?.host_name || '-' }}</span>
+			</div>
+		</div>
 	</div>
 
 	<div class="grid grid-cols-5 mb-32px" *ngIf="isLoadingDeliveryDetails">
@@ -78,7 +95,7 @@
 		<div></div>
 	</div>
 
-	<div class="grid grid-cols-5 mb-40px border-b border-grey-10 pb-24px" *ngIf="!isLoadingDeliveryDetails">
+	<div class="grid grid-cols-5 mb-40px pb-24px" [ngClass]="{ 'border-b border-grey-10 ': eventDeliveryAtempts.length }" *ngIf="!isLoadingDeliveryDetails">
 		<div *ngIf="!eventDelsDetails?.device_id">
 			<p class="text-grey-40 text-12 font-light">HTTP STATUS</p>
 			<p class="text-14 font-medium">{{ eventDeliveryAtempt?.http_status || '-' }}</p>
@@ -91,23 +108,12 @@
 			<p class="text-grey-40 text-12 font-light">ENDPOINT</p>
 			<button convoy-button size="sm" fill="text" class="!text-14 font-medium" (click)="viewEndpoint(eventDelsDetails?.endpoint_metadata?.uid || '')">View Endpoint</button>
 		</div>
-		<div *ngIf="eventDelsDetails?.device_id">
-			<p class="text-grey-40 text-12 font-light">DEVICE</p>
 
-			<div class="flex items-center text-14 font-medium">
-				<div>
-					<svg width="16" height="14" class="mr-8px">
-						<use xlink:href="#cli-icon"></use>
-					</svg>
-				</div>
-				<span class="whitespace-nowrap">{{ eventDelsDetails?.cli_metadata?.host_name || '-' }}</span>
-			</div>
-		</div>
 		<div></div>
 		<div *ngIf="eventDelsDetails?.status === 'Success'"></div>
 	</div>
 
-	<h3 class="font-semibold text-18 mb-24px">Delivery Attempts</h3>
+	<h3 class="font-semibold text-18 mb-24px" *ngIf="eventDeliveryAtempts.length">Delivery Attempts</h3>
 	<div *ngFor="let deliveryAttempt of eventDeliveryAtempts; let i = index" class="border-b border-grey-20">
 		<div class="flex justify-between items-center py-12px" (click)="selectedDeliveryAttempt = deliveryAttempt">
 			<div>
