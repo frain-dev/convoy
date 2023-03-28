@@ -247,6 +247,11 @@ func preRun(app *app, db *postgres.Postgres) func(cmd *cobra.Command, args []str
 
 		*db = *postgresDB
 
+		err = checkPendingMigrations(db)
+		if err != nil {
+			return err
+		}
+
 		app.db = postgresDB
 		app.queue = q
 		app.logger = lo
@@ -366,29 +371,52 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	return c, nil
 }
 
-//
-//func checkPendingMigrations(dbDsn string, db *cm.Client) error {
-//	c := db.Client().(*mongo.Database).Client()
-//	u, err := url.Parse(dbDsn)
-//	if err != nil {
-//		return err
-//	}
-//
-//	dbName := strings.TrimPrefix(u.Path, "/")
-//	opts := &migrate.Options{
-//		DatabaseName: dbName,
-//	}
-//
-//	m := migrate.NewMigrator(c, opts, migrate.Migrations, nil)
-//
-//	pm, err := m.CheckPendingMigrations(context.Background())
-//	if err != nil {
-//		return err
-//	}
-//
-//	if pm {
-//		return migrate.ErrPendingMigrationsFound
-//	}
-//
-//	return nil
-//}
+func checkPendingMigrations(db database.Database) error {
+	p, ok := db.(*postgres.Postgres)
+	if !ok {
+		return errors.New("failed to open database")
+	}
+
+	type ID struct {
+		Id string
+	}
+	counter := map[string]ID{}
+
+	files, err := convoy.MigrationFiles.ReadDir("sql")
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		if !file.IsDir() {
+			id := ID{Id: file.Name()}
+			counter[id.Id] = id
+		}
+	}
+
+	rows, err := p.GetDB().Queryx("SELECT id FROM convoy.gorp_migrations")
+	if err != nil {
+		return err
+	}
+
+	for rows.Next() {
+		var id ID
+
+		err = rows.StructScan(&id)
+		if err != nil {
+			return err
+		}
+
+		_, ok := counter[id.Id]
+		if ok {
+			delete(counter, id.Id)
+		}
+	}
+	rows.Close()
+
+	if len(counter) > 0 {
+		return postgres.ErrPendingMigrationsFound
+	}
+
+	return nil
+}
