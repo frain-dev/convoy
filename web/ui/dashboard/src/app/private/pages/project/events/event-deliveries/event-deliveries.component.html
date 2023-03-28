@@ -150,10 +150,6 @@
 
 							<td convoy-table-cell>
 								<div class="flex items-center">
-									<svg width="16" height="14" class="mr-10px" *ngIf="event.device_id">
-										<use xlink:href="#cli-icon"></use>
-									</svg>
-
 									<span class="max-w-[146px] overflow-hidden overflow-ellipsis">
 										{{ event?.source_metadata?.name || 'Rest API' }}
 									</span>
@@ -163,10 +159,17 @@
 									<span class="max-w-[146px] overflow-hidden overflow-ellipsis">
 										{{ event.endpoint_metadata.title }}
 									</span>
+									<!-- show this if CLI is the receiver -->
+									<convoy-tag *ngIf="event.device_id" className="flex items-center">
+										<svg width="16" height="14" class="mr-10px">
+											<use xlink:href="#cli-icon"></use>
+										</svg>
+										CLI Device
+									</convoy-tag>
 								</div>
 							</td>
-							<td convoy-table-cell>{{ event.metadata.num_trials }}</td>
-							<td convoy-table-cell>{{ event?.status == 'Success' || event.metadata.num_trials >= event.metadata.retry_limit ? '-' : (event.metadata.next_send_time | date: 'mediumTime') }}</td>
+							<td convoy-table-cell>{{ event.device_id ? '-' : event.metadata.num_trials }}</td>
+							<td convoy-table-cell>{{ event?.status == 'Success' || event.metadata.num_trials >= event.metadata.retry_limit || event?.status == 'Discarded' ? '-' : (event.metadata.next_send_time | date: 'mediumTime') }}</td>
 							<td convoy-table-cell>{{ event.created_at | date: 'mediumTime' }}</td>
 							<td convoy-table-cell>
 								<button

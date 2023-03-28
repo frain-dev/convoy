@@ -76,7 +76,7 @@ export class SetupProjectComponent implements OnInit {
 			this.subscriptionService.subscriptionData = { ...this.subscriptionService.subscriptionData, endpoint_id: endpointDetails.value?.data.uid };
 		}
 
-		if (this.automaticSubscription) this.subscriptionService.subscriptionData = { ...this.subscriptionService.subscriptionData, name: `${this.newEndpoint.title}${this.newSource ? ' - ' + this.newSource.name : ''}'s Subscription` };
+		if (this.automaticSubscription) this.subscriptionService.subscriptionData = { ...this.subscriptionService.subscriptionData, name: `${this.newEndpoint.title}${this.newSource ? ' → ' + this.newSource.name : ''}'s Subscription` };
 		await this.createSubscriptionForm.saveSubscription();
 		this.privateService.getProjectStat({ refresh: true });
 	}

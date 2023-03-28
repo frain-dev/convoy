@@ -194,13 +194,13 @@
 						class="cursor-pointer flex !justify-start mb-10px hover:bg-primary-500 p-10px rounded-4px transition-colors"
 					>
 						<div class="flex items-center">
-							<svg width="16" height="14" class="mr-6px" *ngIf="delivery.device_id">
+							<div convoy-tag [type]="delivery.status | statuscolor" className="mr-20px">{{ delivery.status }}</div>
+							<svg width="16" height="14" class="mr-4px" *ngIf="delivery.device_id">
 								<use xlink:href="#cli-icon"></use>
 							</svg>
-							<convoy-tag [type]="delivery.status | statuscolor" className="mr-8px">{{ delivery.status }}</convoy-tag>
 						</div>
-						<div class="text-14 ml-16px whitespace-nowrap overflow-ellipsis max-w-[300px] overflow-hidden text-grey-40">
-							{{ delivery?.device_id ? delivery?.cli_metadata?.host_name : delivery?.endpoint_metadata?.target_url }}
+						<div class="text-14 whitespace-nowrap overflow-ellipsis max-w-[300px] overflow-hidden text-grey-40">
+							{{ delivery?.device_id ? delivery?.device_metadata?.host_name : delivery?.endpoint_metadata?.target_url }}
 						</div>
 					</li>
 				</ul>
