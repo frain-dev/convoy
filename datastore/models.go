@@ -829,6 +829,7 @@ type EventDelivery struct {
 	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`
 	Source   *Source   `json:"source_metadata,omitempty" db:"source_metadata"`
+	Device   *Device   `json:"device_metadata,omitempty" db:"device_metadata"`
 
 	DeliveryAttempts DeliveryAttempts    `json:"-" db:"attempts"`
 	Status           EventDeliveryStatus `json:"status" db:"status"`
@@ -843,7 +844,6 @@ type EventDelivery struct {
 type CLIMetadata struct {
 	EventType string `json:"event_type" db:"event_type"`
 	SourceID  string `json:"source_id" db:"source_id"`
-	HostName  string `json:"host_name,omitempty" db:"host_name"`
 }
 
 func (m *CLIMetadata) Scan(value interface{}) error {

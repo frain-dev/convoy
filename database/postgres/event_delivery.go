@@ -47,7 +47,11 @@ const (
         COALESCE(ep.target_url, '') as "endpoint_metadata.target_url",
         ev.id as "event_metadata.id",
         ev.event_type as "event_metadata.event_type",
-        COALESCE(d.host_name,'') as "cli_metadata.host_name",
+		
+		COALESCE(d.id,'') as "device_metadata.id",
+		COALESCE(d.status,'') as "device_metadata.status",
+		COALESCE(d.host_name,'') as "device_metadata.host_name",
+		
 		COALESCE(s.id, '') AS "source_metadata.id",
 		COALESCE(s.name, '') AS "source_metadata.name"
     FROM convoy.event_deliveries ed 
@@ -62,7 +66,7 @@ const (
 	%s 
 	%s 
 	AND ed.id <= :cursor 
-	GROUP BY ed.id, ep.id, ev.id, d.host_name, s.id
+	GROUP BY ed.id, ep.id, ev.id, d.id, s.id
 	ORDER BY ed.id DESC 
 	LIMIT :limit
 	`
@@ -72,7 +76,7 @@ const (
 		%s 
 		%s 
 		AND ed.id >= :cursor 
-		GROUP BY ed.id, ep.id, ev.id, d.host_name, s.id
+		GROUP BY ed.id, ep.id, ev.id, d.id, s.id
 		ORDER BY ed.id ASC 
 		LIMIT :limit
 	)
@@ -512,8 +516,12 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		ev := &eventDeliveriesP[i]
 		var cli *datastore.CLIMetadata
 		if ev.CLIMetadata != nil {
-			cli = &datastore.CLIMetadata{HostName: ev.CLIMetadata.HostName.ValueOrZero()}
+			cli = &datastore.CLIMetadata{
+				EventType: ev.CLIMetadata.EventType.ValueOrZero(),
+				SourceID:  ev.CLIMetadata.SourceID.ValueOrZero(),
+			}
 		}
+
 		eventDeliveries = append(eventDeliveries, datastore.EventDelivery{
 			UID:            ev.UID,
 			ProjectID:      ev.ProjectID,
@@ -532,6 +540,11 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 			Source: &datastore.Source{
 				UID:  ev.Source.UID.ValueOrZero(),
 				Name: ev.Source.Name.ValueOrZero(),
+			},
+			Device: &datastore.Device{
+				UID:      ev.Device.UID.ValueOrZero(),
+				HostName: ev.Device.HostName.ValueOrZero(),
+				Status:   datastore.DeviceStatus(ev.Device.Status.ValueOrZero()),
 			},
 			Event:            &datastore.Event{EventType: datastore.EventType(ev.Event.EventType.ValueOrZero())},
 			DeliveryAttempts: ev.DeliveryAttempts,
@@ -734,8 +747,15 @@ type SourceMetadata struct {
 	Name null.String `db:"name"`
 }
 
-type CLIMetadata struct {
+type DeviceMetadata struct {
+	UID      null.String `db:"id"`
+	Status   null.String `json:"status" db:"status"`
 	HostName null.String `json:"host_name" db:"host_name"`
+}
+
+type CLIMetadata struct {
+	EventType null.String `json:"event_type" db:"event_type"`
+	SourceID  null.String `json:"source_id" db:"source_id"`
 }
 
 type EventDeliveryPaginated struct {
@@ -750,6 +770,7 @@ type EventDeliveryPaginated struct {
 	Endpoint *EndpointMetadata `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *EventMetadata    `json:"event_metadata,omitempty" db:"event_metadata"`
 	Source   *SourceMetadata   `json:"source_metadata,omitempty" db:"source_metadata"`
+	Device   *DeviceMetadata   `json:"device_metadata,omitempty" db:"device_metadata"`
 
 	DeliveryAttempts datastore.DeliveryAttempts    `json:"-" db:"attempts"`
 	Status           datastore.EventDeliveryStatus `json:"status" db:"status"`
