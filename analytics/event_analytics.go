@@ -56,7 +56,7 @@ func (ea *EventAnalytics) track(perPage int, cursor string) error {
 				continue
 			}
 
-			err = ea.client.Export(ea.Name(), Event{"Count": count, "Project": project.Name, "Organization": org.Name, "instanceID": ea.instanceID})
+			err = ea.client.Export(ea.Name(), Event{"Count": count, "instanceID": ea.instanceID})
 			if err != nil {
 				log.WithError(err).Error("failed to load export metrics")
 				continue
