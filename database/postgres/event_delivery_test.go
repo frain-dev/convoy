@@ -41,7 +41,7 @@ func Test_eventDeliveryRepo_CreateEventDelivery(t *testing.T) {
 	require.NotEmpty(t, dbEventDelivery.UpdatedAt)
 
 	dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt = time.Time{}, time.Time{}
-	dbEventDelivery.Event, dbEventDelivery.Endpoint, dbEventDelivery.Source = nil, nil, nil
+	dbEventDelivery.Event, dbEventDelivery.Endpoint, dbEventDelivery.Source, dbEventDelivery.Device = nil, nil, nil, nil
 
 	require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
 	ed.Metadata.NextSendTime = time.Time{}
@@ -73,9 +73,7 @@ func generateEventDelivery(project *datastore.Project, endpoint *datastore.Endpo
 			IntervalSeconds: 10,
 			RetryLimit:      20,
 		},
-		CLIMetadata: &datastore.CLIMetadata{
-			HostName: device.HostName,
-		},
+		CLIMetadata: &datastore.CLIMetadata{},
 		Description: "test",
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
@@ -474,7 +472,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 
 		require.Equal(t, event.EventType, dbEventDelivery.Event.EventType)
 		require.Equal(t, endpoint.UID, dbEventDelivery.Endpoint.UID)
-		dbEventDelivery.Event, dbEventDelivery.Endpoint, dbEventDelivery.Source = nil, nil, nil
+		dbEventDelivery.Event, dbEventDelivery.Endpoint, dbEventDelivery.Source, dbEventDelivery.Device = nil, nil, nil, nil
 
 		require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
 		ed.Metadata.NextSendTime = time.Time{}
