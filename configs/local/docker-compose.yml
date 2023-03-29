@@ -2,7 +2,7 @@ version: "3"
 
 services:
     web:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.3
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0
         command: ["/start.sh"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -15,7 +15,7 @@ services:
             - typesense
 
     scheduler:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.3
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0
         command: ["./cmd", "scheduler", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -26,7 +26,7 @@ services:
             - typesense
 
     worker:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.3
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0
         command: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -37,7 +37,7 @@ services:
             - typesense
 
     ingest:
-      image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0-rc.3
+      image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0
       command: ["./cmd", "ingest", "--config", "convoy.json"]
       volumes:
         - ./convoy.json:/convoy.json

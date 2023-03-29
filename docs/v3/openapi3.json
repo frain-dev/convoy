@@ -60,9 +60,6 @@
 					"event_type": {
 						"type": "string"
 					},
-					"host_name": {
-						"type": "string"
-					},
 					"source_id": {
 						"type": "string"
 					}
@@ -121,6 +118,51 @@
 					}
 				},
 				"type": "object"
+			},
+			"datastore.Device": {
+				"properties": {
+					"created_at": {
+						"type": "string"
+					},
+					"deleted_at": {
+						"type": "string"
+					},
+					"endpoint_id": {
+						"type": "string"
+					},
+					"host_name": {
+						"type": "string"
+					},
+					"last_seen_at": {
+						"type": "string"
+					},
+					"project_id": {
+						"type": "string"
+					},
+					"status": {
+						"$ref": "#/components/schemas/datastore.DeviceStatus"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.DeviceStatus": {
+				"enum": [
+					"offline",
+					"online",
+					"disabled"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"DeviceStatusOffline",
+					"DeviceStatusOnline",
+					"DeviceStatusDisabled"
+				]
 			},
 			"datastore.EncodingType": {
 				"enum": [
@@ -309,6 +351,9 @@
 					},
 					"device_id": {
 						"type": "string"
+					},
+					"device_metadata": {
+						"$ref": "#/components/schemas/datastore.Device"
 					},
 					"endpoint_id": {
 						"type": "string"
@@ -876,8 +921,8 @@
 					"deleted_at": {
 						"type": "string"
 					},
-					"device_id": {
-						"type": "string"
+					"device_metadata": {
+						"$ref": "#/components/schemas/datastore.Device"
 					},
 					"endpoint_metadata": {
 						"$ref": "#/components/schemas/datastore.Endpoint"
