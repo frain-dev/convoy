@@ -1,3 +1,12 @@
+## 0.9.1
+
+-   [Enhancement] Add default db connection options #1496
+-   [Enhancement] Move check for hiding pagination to entire container #1497
+-   [Enhancement] Add support for filtering by "owner_id" when fetching endpoints and by an array of endpoints when fetching subscriptions #1498
+-   [Enhancement] Add signup enabled environment variable #1495
+-   [Bugfix] Change TrimSuffix to TrimSpace when fetching convoy version #1501
+-   [Bugfix] Redirect to the "get started" page when there's no orgnaization for that user #1500
+
 ## 0.9.0
 
 -   [Documentation] Update API Annotations #1478

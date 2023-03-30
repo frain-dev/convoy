@@ -2,7 +2,7 @@ version: "3"
 
 services:
     web:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.1
         command: ["/start.sh"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -15,7 +15,7 @@ services:
             - typesense
 
     scheduler:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.1
         command: ["./cmd", "scheduler", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -26,7 +26,7 @@ services:
             - typesense
 
     worker:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.1
         command: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -36,8 +36,18 @@ services:
             - redis_server
             - typesense
 
+    stream:
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.1
+        command: ["./cmd", "stream", "--config", "convoy.json"]
+        volumes:
+            - ./convoy.json:/convoy.json
+        restart: on-failure
+        depends_on:
+            - postgres
+            - redis_server
+
     ingest:
-      image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.0
+      image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v0.9.1
       command: ["./cmd", "ingest", "--config", "convoy.json"]
       volumes:
         - ./convoy.json:/convoy.json
