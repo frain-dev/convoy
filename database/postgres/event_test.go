@@ -208,7 +208,7 @@ func Test_CountEvents(t *testing.T) {
 			count, err := eventRepo.CountEvents(context.Background(), project.UID, &datastore.Filter{
 				EndpointID: endpoint.UID,
 				SearchParams: datastore.SearchParams{
-					CreatedAtStart: time.Now().Unix(),
+					CreatedAtStart: time.Now().Add(-5 * time.Minute).Unix(),
 					CreatedAtEnd:   time.Now().Add(5 * time.Minute).Unix(),
 				},
 			})
