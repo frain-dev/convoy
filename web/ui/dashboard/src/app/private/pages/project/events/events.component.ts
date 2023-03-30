@@ -107,6 +107,7 @@ export class EventsComponent implements OnInit, OnDestroy {
 
 	continueToDashboard() {
 		this.fetchDashboardData();
+		this.privateService.getProjectStat({ refresh: true });
 		this.hasEvents = true;
 		clearInterval(this.eventDelievryIntervalTime);
 	}
