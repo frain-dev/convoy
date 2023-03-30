@@ -44,7 +44,7 @@ func (a *ApplicationHandler) GetSubscriptions(w http.ResponseWriter, r *http.Req
 	pageable := m.GetPageableFromContext(r.Context())
 	project := m.GetProjectFromContext(r.Context())
 	endpointID := m.GetEndpointIDFromContext(r)
-	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
+	endpointIDs := m.GetEndpointIDsFromContext(r)
 
 	if !util.IsStringEmpty(endpointID) {
 		endpoints = []string{endpointID}

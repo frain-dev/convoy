@@ -1125,9 +1125,9 @@ func (mr *MockEndpointRepositoryMockRecorder) FindEndpointsByOwnerID(ctx, projec
 }
 
 // LoadEndpointsPaged mocks base method.
-func (m *MockEndpointRepository) LoadEndpointsPaged(ctx context.Context, projectID, query string, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
+func (m *MockEndpointRepository) LoadEndpointsPaged(ctx context.Context, projectID string, filter *datastore.Filter, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadEndpointsPaged", ctx, projectID, query, pageable)
+	ret := m.ctrl.Call(m, "LoadEndpointsPaged", ctx, projectID, filter, pageable)
 	ret0, _ := ret[0].([]datastore.Endpoint)
 	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
@@ -1135,9 +1135,9 @@ func (m *MockEndpointRepository) LoadEndpointsPaged(ctx context.Context, project
 }
 
 // LoadEndpointsPaged indicates an expected call of LoadEndpointsPaged.
-func (mr *MockEndpointRepositoryMockRecorder) LoadEndpointsPaged(ctx, projectID, query, pageable interface{}) *gomock.Call {
+func (mr *MockEndpointRepositoryMockRecorder) LoadEndpointsPaged(ctx, projectID, filter, pageable interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEndpointsPaged", reflect.TypeOf((*MockEndpointRepository)(nil).LoadEndpointsPaged), ctx, projectID, query, pageable)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEndpointsPaged", reflect.TypeOf((*MockEndpointRepository)(nil).LoadEndpointsPaged), ctx, projectID, filter, pageable)
 }
 
 // UpdateEndpoint mocks base method.

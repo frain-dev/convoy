@@ -7,6 +7,7 @@ import (
 
 type Filter struct {
 	Query        string
+	OwnerID      string
 	Project      *Project
 	EndpointID   string
 	EndpointIDs  []string

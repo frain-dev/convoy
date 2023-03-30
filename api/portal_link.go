@@ -233,7 +233,7 @@ func (a *ApplicationHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *ht
 func (a *ApplicationHandler) GetPortalLinkDevices(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	project := m.GetProjectFromContext(r.Context())
-	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
+	endpointIDs := m.GetEndpointIDsFromContext(r)
 
 	f := &datastore.ApiKeyFilter{
 		EndpointIDs: endpointIDs,
@@ -252,7 +252,7 @@ func (a *ApplicationHandler) GetPortalLinkDevices(w http.ResponseWriter, r *http
 func (a *ApplicationHandler) GetPortalLinkKeys(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())
 	pageable := m.GetPageableFromContext(r.Context())
-	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
+	endpointIDs := m.GetEndpointIDsFromContext(r)
 
 	f := &datastore.ApiKeyFilter{
 		ProjectID:   project.UID,

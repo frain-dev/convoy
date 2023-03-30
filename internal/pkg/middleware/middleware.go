@@ -1318,11 +1318,17 @@ func setEndpointIDsInContext(ctx context.Context, endpointIDs []string) context.
 	return context.WithValue(ctx, endpointIdsCtx, endpointIDs)
 }
 
-func GetEndpointIDsFromContext(ctx context.Context) []string {
+func GetEndpointIDsFromContext(r *http.Request) []string {
 	var endpoints []string
 
-	if endpointIDs, ok := ctx.Value(endpointIdsCtx).([]string); ok {
+	if endpointIDs, ok := r.Context().Value(endpointIdsCtx).([]string); ok {
 		return endpointIDs
+	}
+
+	for _, id := range r.URL.Query()["endpointId"] {
+		if !util.IsStringEmpty(id) {
+			endpoints = append(endpoints, id)
+		}
 	}
 
 	return endpoints
