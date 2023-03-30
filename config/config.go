@@ -104,7 +104,7 @@ type AuthConfiguration struct {
 	File            FileRealmOption    `json:"file"`
 	Native          NativeRealmOptions `json:"native"`
 	Jwt             JwtRealmOptions    `json:"jwt"`
-	IsSignupEnabled bool               `json:"is_signup_enabled"`
+	IsSignupEnabled bool               `json:"is_signup_enabled" envconfig:"CONVOY_SIGNUP_ENABLED"`
 }
 
 type NativeRealmOptions struct {
