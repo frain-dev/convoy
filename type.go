@@ -63,7 +63,7 @@ func GetVersion() string {
 		return v
 	}
 
-	v = strings.TrimSuffix(string(f), "\n")
+	v = strings.TrimSpace(string(f))
 	return v
 }
 

@@ -144,7 +144,7 @@ func defaultUserAgent() string {
 	if err != nil {
 		return "Convoy/v0.1.0"
 	}
-	return "Convoy/" + strings.TrimSuffix(string(f), "\n")
+	return "Convoy/" + strings.TrimSpace(string(f))
 }
 
 func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64) error {
