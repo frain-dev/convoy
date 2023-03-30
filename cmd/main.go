@@ -135,7 +135,7 @@ func ensureInstanceConfig(ctx context.Context, a *app, cfg config.Configuration)
 	config.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
 	config.UpdatedAt = time.Now()
 
-	return nil
+	return configRepo.UpdateConfiguration(ctx, config)
 }
 
 type app struct {
