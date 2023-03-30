@@ -103,7 +103,10 @@ func TestLoadConfig(t *testing.T) {
 				Host: "localhost:5005",
 				Database: DatabaseConfiguration{
 					Type: PostgresDatabaseProvider,
-					Dsn:  "postgres://inside-config-file",
+					Dsn:  "postgres://inside-config-file", 
+					SetMaxOpenConns: 10,
+					SetMaxIdleConns:    10,
+					SetConnMaxLifetime: 3600,
 				},
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
@@ -147,8 +150,11 @@ func TestLoadConfig(t *testing.T) {
 			wantCfg: Configuration{
 				Host: "localhost:5005",
 				Database: DatabaseConfiguration{
-					Type: PostgresDatabaseProvider,
-					Dsn:  "postgres://inside-config-file",
+					Type:               PostgresDatabaseProvider,
+					Dsn:                "postgres://inside-config-file",
+					SetMaxOpenConns:    10,
+					SetMaxIdleConns:    10,
+					SetConnMaxLifetime: 3600,
 				},
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
@@ -193,7 +199,10 @@ func TestLoadConfig(t *testing.T) {
 				Host: "localhost:5005",
 				Database: DatabaseConfiguration{
 					Type: PostgresDatabaseProvider,
-					Dsn:  "postgres://inside-config-file",
+					Dsn:  "postgres://inside-config-file", 
+					SetMaxOpenConns: 10,
+					SetMaxIdleConns:    10,
+					SetConnMaxLifetime: 3600,
 				},
 				Queue: QueueConfiguration{
 					Type: RedisQueueProvider,
@@ -310,7 +319,10 @@ func TestOverride(t *testing.T) {
 			},
 			config: &Configuration{
 				Database: DatabaseConfiguration{
-					Type: PostgresDatabaseProvider,
+					Type: PostgresDatabaseProvider, 
+					SetMaxOpenConns: 10,
+					SetMaxIdleConns:    10,
+					SetConnMaxLifetime: 3600,
 					Dsn:  "localhost",
 				},
 			},
@@ -323,7 +335,10 @@ func TestOverride(t *testing.T) {
 			},
 			config: &Configuration{
 				Database: DatabaseConfiguration{
-					Type: PostgresDatabaseProvider,
+					Type: PostgresDatabaseProvider, 
+					SetMaxOpenConns: 10,
+					SetMaxIdleConns:    10,
+					SetConnMaxLifetime: 3600,
 					Dsn:  "localhost",
 				},
 				Queue: QueueConfiguration{
