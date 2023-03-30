@@ -43,7 +43,7 @@ $ cd convoy
 docker compose -f configs/local/docker-compose.yml up
 ```
 ## Convoy Cloud
-Get started with our free Cloud version -- Sign up for [Convoy Cloud](https://dashboard.getconvoy.io/signup) account 
+Get started with our free Convoy Cloud version, request access: sales@getconvoy.io
 
 ## Contributing
 Thank you for your interest in contributing! Please refer to [CONTRIBUTING.md](https://github.com/frain-dev/convoy/blob/main/CONTRIBUTING.md) for guidance. For contributions to the Convoy dashboard, please refer to the [web/ui](https://github.com/frain-dev/convoy/tree/main/web/ui) directory.
