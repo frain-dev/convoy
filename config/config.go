@@ -36,8 +36,11 @@ var DefaultConfiguration = Configuration{
 		},
 	},
 	Database: DatabaseConfiguration{
-		Type: PostgresDatabaseProvider,
-		Dsn:  "postgres://postgres:postgres@localhost/convoy",
+		Type:               PostgresDatabaseProvider,
+		Dsn:                "postgres://postgres:postgres@localhost/convoy",
+		SetMaxOpenConns:    10,
+		SetMaxIdleConns:    10,
+		SetConnMaxLifetime: 3600,
 	},
 	Queue: QueueConfiguration{
 		Type: RedisQueueProvider,
@@ -63,8 +66,11 @@ var DefaultConfiguration = Configuration{
 }
 
 type DatabaseConfiguration struct {
-	Type DatabaseProvider `json:"type" envconfig:"CONVOY_DB_TYPE"`
-	Dsn  string           `json:"dsn" envconfig:"CONVOY_DB_DSN"`
+	Type               DatabaseProvider `json:"type" envconfig:"CONVOY_DB_TYPE"`
+	Dsn                string           `json:"dsn" envconfig:"CONVOY_DB_DSN"`
+	SetMaxOpenConns    int              `json:"max_open_conn" envconfig:"CONVOY_DB_MAX_OPEN_CONN"`
+	SetMaxIdleConns    int              `json:"max_idle_conn" envconfig:"CONVOY_DB_MAX_IDLE_CONN"`
+	SetConnMaxLifetime int              `json:"conn_max_lifetime" envconfig:"CONVOY_DB_CONN_MAX_LIFETIME"`
 }
 
 type ServerConfiguration struct {

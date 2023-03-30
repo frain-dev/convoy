@@ -24,14 +24,15 @@ type Postgres struct {
 }
 
 func NewDB(cfg config.Configuration) (*Postgres, error) {
-	db, err := sqlx.Connect("postgres", cfg.Database.Dsn)
+	dbConfig := cfg.Database
+	db, err := sqlx.Connect("postgres", dbConfig.Dsn)
 	if err != nil {
 		return nil, fmt.Errorf("[%s]: failed to open database - %v", pkgName, err)
 	}
 
-	db.SetMaxIdleConns(10)                    // The default is defaultMaxIdleConns (= 2)
-	db.SetMaxOpenConns(1000)                  // The default is 0 (unlimited)
-	db.SetConnMaxLifetime(3600 * time.Second) // The default is 0 (connections reused forever)
+	db.SetMaxIdleConns(dbConfig.SetMaxIdleConns)                                    // The default is defaultMaxIdleConns (= 2)
+	db.SetMaxOpenConns(dbConfig.SetMaxOpenConns)                                    // The default is 0 (unlimited)
+	db.SetConnMaxLifetime(time.Second * time.Duration(dbConfig.SetConnMaxLifetime)) // The default is 0 (connections reused forever)
 
 	return &Postgres{dbx: db}, nil
 }
