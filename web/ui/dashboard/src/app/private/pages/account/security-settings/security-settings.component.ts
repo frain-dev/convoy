@@ -10,7 +10,6 @@ import { AccountService } from '../account.service';
 })
 export class SecuritySettingsComponent implements OnInit {
 	isUpdatingPassword = false;
-	userId!: string;
 	passwordToggle = { oldPassword: false, newPassword: false, confirmPassword: false };
 	changePasswordForm: FormGroup = this.formBuilder.group({
 		current_password: ['', Validators.required],
@@ -25,8 +24,11 @@ export class SecuritySettingsComponent implements OnInit {
 	async changePassword() {
 		if (this.changePasswordForm.invalid) return this.changePasswordForm.markAllAsTouched();
 		this.isUpdatingPassword = true;
+
 		try {
-			const response = await this.accountService.changePassword({ userId: this.userId, body: this.changePasswordForm.value });
+			let userData = localStorage.getItem('CONVOY_AUTH');
+			if (userData) userData = JSON.parse(userData)?.uid;
+			const response = await this.accountService.changePassword({ userId: userData || '', body: this.changePasswordForm.value });
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.changePasswordForm.reset();
 			this.isUpdatingPassword = false;
