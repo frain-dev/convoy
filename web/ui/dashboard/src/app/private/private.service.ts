@@ -147,6 +147,7 @@ export class PrivateService {
 
 				await this.organisationConfig(response.data?.content);
 				this.organisations = response;
+				if (!response.data.content.length) return this.router.navigateByUrl('/get-started');
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
