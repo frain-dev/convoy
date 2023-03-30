@@ -96,10 +96,14 @@ func (a *ApplicationHandler) GetEndpoints(w http.ResponseWriter, r *http.Request
 	project := m.GetProjectFromContext(r.Context())
 	endpointService := createEndpointService(a)
 
-	q := r.URL.Query().Get("q")
+	filter := &datastore.Filter{
+		Query:   r.URL.Query().Get("q"),
+		OwnerID: r.URL.Query().Get("ownerId"),
+	}
+
 	pageable := m.GetPageableFromContext(r.Context())
 
-	endpoints, paginationData, err := endpointService.LoadEndpointsPaged(r.Context(), project.UID, q, pageable)
+	endpoints, paginationData, err := endpointService.LoadEndpointsPaged(r.Context(), project.UID, filter, pageable)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to load endpoints")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))

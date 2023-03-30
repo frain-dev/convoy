@@ -76,10 +76,13 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())
 	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
-	q := r.URL.Query().Get("q")
+	filter := &datastore.Filter{
+		Query:   r.URL.Query().Get("q"),
+		OwnerID: r.URL.Query().Get("ownerId"),
+	}
 	pageable := m.GetPageableFromContext(r.Context())
 
-	endpoints, paginationData, err := endpointRepo.LoadEndpointsPaged(r.Context(), project.UID, q, pageable)
+	endpoints, paginationData, err := endpointRepo.LoadEndpointsPaged(r.Context(), project.UID, filter, pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to load apps")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching apps. Error: "+err.Error(), http.StatusBadRequest))

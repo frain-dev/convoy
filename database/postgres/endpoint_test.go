@@ -219,14 +219,14 @@ func Test_LoadEndpointsPaged(t *testing.T) {
 		require.NoError(t, eventRepo.CreateEvent(context.Background(), event))
 	}
 
-	endpoints, _, err := endpointRepo.LoadEndpointsPaged(context.Background(), project.UID, "daniel", datastore.Pageable{
+	endpoints, _, err := endpointRepo.LoadEndpointsPaged(context.Background(), project.UID, &datastore.Filter{Query: "daniel"}, datastore.Pageable{
 		PerPage: 10,
 	})
 
 	require.NoError(t, err)
 	require.Equal(t, 3, len(endpoints))
 
-	endpoints, _, err = endpointRepo.LoadEndpointsPaged(context.Background(), project.UID, "", datastore.Pageable{
+	endpoints, _, err = endpointRepo.LoadEndpointsPaged(context.Background(), project.UID, &datastore.Filter{}, datastore.Pageable{
 		PerPage: 10,
 	})
 

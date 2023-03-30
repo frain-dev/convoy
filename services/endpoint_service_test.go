@@ -94,7 +94,7 @@ func TestEndpointService_LoadEndpointsPaged(t *testing.T) {
 	type args struct {
 		ctx      context.Context
 		uid      string
-		q        string
+		filter   *datastore.Filter
 		pageable datastore.Pageable
 	}
 	tests := []struct {
@@ -111,7 +111,9 @@ func TestEndpointService_LoadEndpointsPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				uid: "1234",
-				q:   "test_app",
+				filter: &datastore.Filter{
+					Query: "test_app",
+				},
 				pageable: datastore.Pageable{
 					Direction:  datastore.Next,
 					PerPage:    10,
@@ -143,7 +145,9 @@ func TestEndpointService_LoadEndpointsPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				uid: "1234",
-				q:   "test_app",
+				filter: &datastore.Filter{
+					Query: "test_app",
+				},
 				pageable: datastore.Pageable{
 					Direction:  datastore.Next,
 					PerPage:    10,
@@ -164,7 +168,9 @@ func TestEndpointService_LoadEndpointsPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				uid: "uid",
-				q:   " falsetto ",
+				filter: &datastore.Filter{
+					Query: "falsetto",
+				},
 				pageable: datastore.Pageable{
 					Direction:  datastore.Next,
 					PerPage:    10,
@@ -181,7 +187,7 @@ func TestEndpointService_LoadEndpointsPaged(t *testing.T) {
 			dbFn: func(app *EndpointService) {
 				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().
-					LoadEndpointsPaged(gomock.Any(), gomock.Any(), "falsetto", gomock.Any()).Times(1).
+					LoadEndpointsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]datastore.Endpoint{
 						{UID: "123"},
 						{UID: "abc"},
@@ -196,7 +202,9 @@ func TestEndpointService_LoadEndpointsPaged(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				uid: "uid",
-				q:   "   FalSetto  ",
+				filter: &datastore.Filter{
+					Query: "   FalSetto  ",
+				},
 				pageable: datastore.Pageable{
 					Direction:  datastore.Next,
 					PerPage:    10,
@@ -213,7 +221,7 @@ func TestEndpointService_LoadEndpointsPaged(t *testing.T) {
 			dbFn: func(app *EndpointService) {
 				a, _ := app.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().
-					LoadEndpointsPaged(gomock.Any(), gomock.Any(), "FalSetto", gomock.Any()).Times(1).
+					LoadEndpointsPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).
 					Return([]datastore.Endpoint{
 						{UID: "123"},
 						{UID: "abc"},
@@ -236,7 +244,7 @@ func TestEndpointService_LoadEndpointsPaged(t *testing.T) {
 				tt.dbFn(as)
 			}
 
-			apps, paginationData, err := as.LoadEndpointsPaged(tt.args.ctx, tt.args.uid, tt.args.q, tt.args.pageable)
+			apps, paginationData, err := as.LoadEndpointsPaged(tt.args.ctx, tt.args.uid, tt.args.filter, tt.args.pageable)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrObj, err)

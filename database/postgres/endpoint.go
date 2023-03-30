@@ -109,6 +109,7 @@ const (
 	FROM convoy.endpoints AS e 
 	WHERE e.deleted_at IS NULL 
 	AND e.project_id = :project_id
+	AND (e.owner_id = :owner_id OR :owner_id = '')
 	AND (e.title ILIKE :title OR :title = '')
 	`
 
@@ -303,13 +304,15 @@ func (e *endpointRepo) CountProjectEndpoints(ctx context.Context, projectID stri
 	return count, nil
 }
 
-func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string, q string, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
+func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string, filter *datastore.Filter, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
+	q := filter.Query
 	if !util.IsStringEmpty(q) {
 		q = fmt.Sprintf("%%%s%%", q)
 	}
 
 	arg := map[string]interface{}{
 		"project_id": projectId,
+		"owner_id":   filter.OwnerID,
 		"limit":      pageable.Limit(),
 		"cursor":     pageable.Cursor(),
 		"title":      q,

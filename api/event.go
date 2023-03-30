@@ -287,7 +287,7 @@ func (a *ApplicationHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *h
 	}
 
 	endpointID := m.GetEndpointIDFromContext(r)
-	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
+	endpointIDs := m.GetEndpointIDsFromContext(r)
 
 	if !util.IsStringEmpty(endpointID) {
 		endpoints = []string{endpointID}
@@ -336,7 +336,7 @@ func (a *ApplicationHandler) CountAffectedEventDeliveries(w http.ResponseWriter,
 	}
 
 	endpointID := m.GetEndpointIDFromContext(r)
-	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
+	endpointIDs := m.GetEndpointIDsFromContext(r)
 
 	if !util.IsStringEmpty(endpointID) {
 		endpoints = []string{endpointID}
@@ -432,7 +432,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 	project := m.GetProjectFromContext(r.Context())
 	query := r.URL.Query().Get("query")
 	endpointID := m.GetEndpointIDFromContext(r)
-	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
+	endpointIDs := m.GetEndpointIDsFromContext(r)
 
 	if !util.IsStringEmpty(endpointID) {
 		endpoints = []string{endpointID}
@@ -511,7 +511,7 @@ func (a *ApplicationHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *h
 	}
 
 	endpointID := m.GetEndpointIDFromContext(r)
-	endpointIDs := m.GetEndpointIDsFromContext(r.Context())
+	endpointIDs := m.GetEndpointIDsFromContext(r)
 
 	if !util.IsStringEmpty(endpointID) {
 		endpoints = []string{endpointID}

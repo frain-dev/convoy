@@ -40,8 +40,9 @@ func NewEndpointService(projectRepo datastore.ProjectRepository, endpointRepo da
 	}
 }
 
-func (a *EndpointService) LoadEndpointsPaged(ctx context.Context, uid string, q string, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
-	endpoints, paginationData, err := a.endpointRepo.LoadEndpointsPaged(ctx, uid, strings.TrimSpace(q), pageable)
+func (a *EndpointService) LoadEndpointsPaged(ctx context.Context, uid string, filter *datastore.Filter, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
+	filter.Query = strings.TrimSpace(filter.Query)
+	endpoints, paginationData, err := a.endpointRepo.LoadEndpointsPaged(ctx, uid, filter, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch endpoints")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching endpoints"))
