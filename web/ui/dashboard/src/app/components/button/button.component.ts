@@ -30,7 +30,7 @@ export class ButtonComponent implements OnInit {
 			outline: `border rounded-[10px] border-${this.color}-${colorLevel} text-${this.color}-100`,
 			clear: `border-none text-${this.color}-100`,
 			text: `border-0 text-${this.color}-${colorLevel} ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
-			link: `border-none text-${this.color}-${colorLevel} ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''} underline decoration-${this.color}-${colorLevel}`
+			link: `border-none text-${this.color}-${colorLevel} ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''} underline decoration-${this.color}-${colorLevel} !p-0`
 		};
 		return `${this.fill !== 'text' ? this.buttonSizes[this.size] : ''} ${buttonTypes[this.fill]} flex items-center justify-center disabled:opacity-50`;
 	}

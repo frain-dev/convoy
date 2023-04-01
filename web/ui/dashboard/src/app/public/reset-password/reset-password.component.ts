@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
+import { CardComponent } from 'src/app/components/card/card.component';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ResetPasswordService } from './reset-password.service';
@@ -10,7 +11,7 @@ import { ResetPasswordService } from './reset-password.service';
 @Component({
 	selector: 'app-reset-password',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, InputFieldDirective],
+	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, CardComponent, InputFieldDirective],
 	templateUrl: './reset-password.component.html',
 	styleUrls: ['./reset-password.component.scss']
 })
