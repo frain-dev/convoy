@@ -406,7 +406,7 @@ func (u *UserService) sendPasswordResetEmail(ctx context.Context, baseURL string
 		Subject:      "Convoy Password Reset",
 		TemplateName: email.TemplateResetPassword,
 		Params: map[string]string{
-			"password_reset_url": fmt.Sprintf("%s/reset-password?token=%s", baseURL, token),
+			"password_reset_url": fmt.Sprintf("%s/reset-password?auth-token=%s", baseURL, token),
 			"recipient_name":     user.FirstName,
 			"expires_at":         user.ResetPasswordExpiresAt.String(),
 		},
