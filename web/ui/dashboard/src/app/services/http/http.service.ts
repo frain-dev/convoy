@@ -69,14 +69,14 @@ export class HttpService {
 	buildURL(requestDetails: any): string {
 		if (requestDetails.isOut) return requestDetails.url;
 
-		if (this.token) return `${this.token ? this.APP_PORTAL_APIURL : this.APIURL}${requestDetails.url}?${this.buildRequestQuery(requestDetails.query)}`;
+		if (this.token) return `${this.token ? this.APP_PORTAL_APIURL : this.APIURL}${requestDetails.url}${requestDetails.query ? '?' + this.buildRequestQuery(requestDetails.query) : ''}`;
 
-		if (!requestDetails.level) return `${this.APIURL}${requestDetails.url}?${this.buildRequestQuery(requestDetails.query)}`;
+		if (!requestDetails.level) return `${this.APIURL}${requestDetails.url}${requestDetails.query ? '?' + this.buildRequestQuery(requestDetails.query) : ''}`;
 
 		const requestPath = this.buildRequestPath(requestDetails.level);
 		if (requestPath === 'error') return 'error';
 
-		return `${this.APIURL}${requestPath}${requestDetails.url}?${this.buildRequestQuery(requestDetails.query)}`;
+		return `${this.APIURL}${requestPath}${requestDetails.url}${requestDetails.query ? '?' + this.buildRequestQuery(requestDetails.query) : ''}`;
 	}
 
 	async request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; hideNotification?: boolean; query?: { [param: string]: any }; level?: 'org' | 'org_project'; isOut?: boolean }): Promise<HTTP_RESPONSE> {
