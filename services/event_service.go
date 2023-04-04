@@ -200,6 +200,10 @@ func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
+	if len(ids) == 0 {
+		return events, paginationData, nil
+	}
+
 	events, err = e.eventRepo.FindEventsByIDs(ctx, filter.Project.UID, ids)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch events from event ids")

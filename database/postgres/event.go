@@ -32,9 +32,19 @@ const (
 	`
 
 	fetchEventsByIds = `
-	SELECT id, event_type, endpoints, project_id,
-	COALESCE(source_id, '') AS source_id, headers, raw, data
-	FROM convoy.events WHERE id IN (?) AND project_id = ? AND deleted_at IS NULL;
+	SELECT ev.id, ev.project_id, ev.id as event_type,
+	COALESCE(ev.source_id, '') AS source_id,
+	ev.headers, ev.raw, ev.data, ev.created_at, 
+	ev.updated_at, ev.deleted_at,
+	COALESCE(s.id, '') AS "source_metadata.id",
+	COALESCE(s.name, '') AS "source_metadata.name"
+    FROM convoy.events ev
+	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
+	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+	LEFT JOIN convoy.sources s ON s.id = ev.source_id
+	WHERE ev.deleted_at IS NULL
+	AND ev.id IN (?) 
+	AND ev.project_id = ?
 	`
 
 	countProjectMessages = `

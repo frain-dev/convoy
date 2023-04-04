@@ -416,7 +416,7 @@ func (a *ApplicationHandler) ForceResendEventDeliveries(w http.ResponseWriter, r
 func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 	var endpoints []string
 
-	config, err := config.Get()
+	cfg, err := config.Get()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -452,7 +452,7 @@ func (a *ApplicationHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reque
 		SearchParams: searchParams,
 	}
 
-	if config.Search.Type == "typesense" && !util.IsStringEmpty(query) {
+	if cfg.Search.Type == config.TypesenseSearchProvider && !util.IsStringEmpty(query) {
 		eventService := createEventService(a)
 		m, paginationData, err := eventService.Search(r.Context(), f)
 		if err != nil {

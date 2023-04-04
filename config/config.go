@@ -228,6 +228,7 @@ const (
 	RedisLimiterProvider               LimiterProvider         = "redis"
 	PostgresDatabaseProvider           DatabaseProvider        = "postgres"
 	InMemoryDatabaseProvider           DatabaseProvider        = "in-memory"
+	TypesenseSearchProvider            SearchProvider          = "typesense"
 )
 
 type (

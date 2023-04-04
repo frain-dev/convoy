@@ -20,7 +20,7 @@ type Searcher interface {
 }
 
 func NewSearchClient(c config.Configuration) (Searcher, error) {
-	if c.Search.Type == config.SearchProvider("typesense") {
+	if c.Search.Type == config.TypesenseSearchProvider {
 		client, err := typesense.NewTypesenseClient(c.Search.Typesense.Host, c.Search.Typesense.ApiKey)
 		return client, err
 	}
