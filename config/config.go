@@ -27,7 +27,7 @@ var cfgSingleton atomic.Value
 var DefaultConfiguration = Configuration{
 	Host:            DefaultHost,
 	Environment:     OSSEnvironment,
-	MaxResponseSize: MaxResponseSize,
+	MaxResponseSize: MaxResponseSizeKb,
 	Server: ServerConfiguration{
 		HTTP: HTTPServerConfiguration{
 			SSL:        false,
@@ -376,7 +376,7 @@ func ensureMaxResponseSize(c *Configuration) {
 	if bytes == 0 {
 		c.MaxResponseSize = MaxResponseSize
 	} else if bytes > MaxResponseSize {
-		log.Warnf("maximum response size of %dkb too large, using default value of %dkb", c.MaxResponseSize, c.MaxResponseSize/1024)
+		log.Warnf("maximum response size of %dkb too large, using default value of %dkb", c.MaxResponseSize, MaxResponseSizeKb)
 		c.MaxResponseSize = MaxResponseSize
 	} else {
 		c.MaxResponseSize = bytes
