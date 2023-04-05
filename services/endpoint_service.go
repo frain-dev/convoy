@@ -362,6 +362,31 @@ func (s *EndpointService) ToggleEndpointStatus(ctx context.Context, projectID st
 	return endpoint, nil
 }
 
+func (s *EndpointService) PauseEndpointStatus(ctx context.Context, projectID string, endpointId string) (*datastore.Endpoint, error) {
+	endpoint, err := s.endpointRepo.FindEndpointByID(ctx, endpointId, projectID)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error(ErrSubscriptionNotFound.Error())
+		return nil, util.NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)
+	}
+
+	switch endpoint.Status {
+	case datastore.ActiveEndpointStatus:
+		endpoint.Status = datastore.PausedEndpointStatus
+	case datastore.PausedEndpointStatus:
+		endpoint.Status = datastore.ActiveEndpointStatus
+	default:
+		return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("current endpoint status - %s, does not support pausing or unpausing", endpoint.Status))
+	}
+	
+	err = s.endpointRepo.UpdateEndpointStatus(ctx, projectID, endpoint.UID, endpoint.Status)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to update endpoint status")
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update endpoint status"))
+	}
+
+	return endpoint, nil
+}
+
 func ValidateEndpointAuthentication(auth *datastore.EndpointAuthentication) (*datastore.EndpointAuthentication, error) {
 	if auth != nil && !util.IsStringEmpty(string(auth.Type)) {
 		if err := util.Validate(auth); err != nil {
