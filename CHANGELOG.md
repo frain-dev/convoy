@@ -1,9 +1,10 @@
-## 0.9.1
+## 0.9.2
 
 -   [Feature] Add Toggle for pausing an endpoint #1527 #1529
 -   [Bugfix] Fix Password reset bug #1506
 -   [Bugfix] Fix Max response size log #1507
 -   [Bugfix] Add Metadata to event search results #1508
+
 ## 0.9.1
 
 -   [Enhancement] Add default db connection options #1496
