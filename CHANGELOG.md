@@ -1,5 +1,11 @@
 ## 0.9.1
 
+-   [Feature] Add Toggle for pausing an endpoint #1527 #1529
+-   [Bugfix] Fix Password reset bug #1506
+-   [Bugfix] Fix Max response size log #1507
+-   [Bugfix] Add Metadata to event search results #1508
+## 0.9.1
+
 -   [Enhancement] Add default db connection options #1496
 -   [Enhancement] Move check for hiding pagination to entire container #1497
 -   [Enhancement] Add support for filtering by "owner_id" when fetching endpoints and by an array of endpoints when fetching subscriptions #1498
