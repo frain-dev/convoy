@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { CardComponent } from 'src/app/components/card/card.component';
@@ -16,6 +16,7 @@ import { DeleteModalComponent } from 'src/app/private/components/delete-modal/de
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { EndpointSecretComponent } from './endpoint-secret/endpoint-secret.component';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
+import { TagComponent } from 'src/app/components/tag/tag.component';
 
 @Component({
 	selector: 'convoy-endpoint-details',
@@ -34,7 +35,8 @@ import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/d
 		CopyButtonComponent,
 		EndpointSecretComponent,
 		DropdownComponent,
-		DropdownOptionDirective
+		DropdownOptionDirective,
+		TagComponent
 	],
 	templateUrl: './endpoint-details.component.html',
 	styleUrls: ['./endpoint-details.component.scss']
@@ -49,11 +51,12 @@ export class EndpointDetailsComponent implements OnInit {
 	showEndpointSecret = false;
 	endpointDetails?: ENDPOINT;
 	secretKey: any;
-    endpointId = this.route.snapshot.params.id;
+	endpointId = this.route.snapshot.params.id;
 	screenWidth = window.innerWidth;
 	tabs: ['Keys', 'devices'] = ['Keys', 'devices'];
 	activeTab: 'Keys' | 'devices' = 'Keys';
 	isSendingTestEvent = false;
+	isTogglingEndpoint = false;
 
 	constructor(public privateService: PrivateService, private endpointDetailsService: EndpointDetailsService, public route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
 
@@ -121,6 +124,20 @@ export class EndpointDetailsComponent implements OnInit {
 			this.isSendingTestEvent = false;
 		} catch {
 			this.isSendingTestEvent = false;
+		}
+	}
+
+	async toggleEndpoint() {
+		this.isTogglingEndpoint = true;
+		if (!this.endpointDetails?.uid) return;
+
+		try {
+			const response = await this.endpointDetailsService.toggleEndpoint(this.endpointDetails?.uid);
+			this.endpointDetails = response.data;
+			this.generalService.showNotification({ message: `${this.endpointDetails?.name} puased successfully`, style: 'success' });
+			this.isTogglingEndpoint = false;
+		} catch {
+			this.isTogglingEndpoint = false;
 		}
 	}
 }

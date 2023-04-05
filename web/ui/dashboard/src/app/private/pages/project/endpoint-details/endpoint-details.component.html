@@ -18,16 +18,42 @@
 	<div class="flex justify-between items-center mb-24px border-b border-b-grey-20 pb-12px">
 		<ng-container *ngIf="!isLoadingEndpointDetails && endpointDetails">
 			<div>
-				<h3 class="font-semibold capitalize">{{ endpointDetails.title }}</h3>
+				<h3 class="font-semibold capitalize flex items-center">
+					{{ endpointDetails.title }}
+					<span convoy-tag [type]="endpointDetails.status === 'active' ? 'success' : 'grey'" class="ml-8px text-10">{{ endpointDetails.status }}</span>
+				</h3>
 				<p class="text-12 text-grey-60 mt-6px">{{ endpointDetails.target_url }}</p>
 			</div>
 
 			<div class="flex justify-end items-center">
 				<div class="flex items-center border border-primary-100 rounded-[10px] h-34px">
-					<button convoy-button fill="clear" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" [disabled]="isSendingTestEvent" [ngClass]="{ 'cursor-wait': isSendingTestEvent }" size="sm" class="!px-8px !py-0 my-8px" (click)="sendTestEvent()">
+					<button
+						convoy-button
+						fill="clear"
+						*ngIf="privateService.activeProjectDetails?.type === 'outgoing'; else pause_endpoint"
+						[disabled]="isSendingTestEvent"
+						[ngClass]="{ 'cursor-wait': isSendingTestEvent }"
+						size="sm"
+						class="!px-8px !py-0 my-8px"
+						(click)="sendTestEvent()"
+					>
 						{{ isSendingTestEvent ? 'Sending Event' : 'Send Test Event' }}
 					</button>
-					<div convoy-dropdown position="right" size="md" [ngClass]="{ 'border-l border-primary-100': privateService.activeProjectDetails?.type === 'outgoing' }">
+					<ng-template #pause_endpoint>
+						<button convoy-button size="sm" fill="clear" class="w-full !justify-start" *ngIf="endpointDetails.status === 'active'" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
+							<svg width="16" height="16" class="mr-8px fill-primary-100">
+								<use xlink:href="#pause-icon"></use>
+							</svg>
+							{{ isTogglingEndpoint ? 'Pausing endpoint...' : 'Pause Endpoint' }}
+						</button>
+						<button convoy-button size="sm" fill="clear" class="w-full !justify-start" *ngIf="endpointDetails.status === 'inactive'" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
+							<svg width="16" height="16" class="mr-8px fill-primary-100">
+								<use xlink:href="#play-icon"></use>
+							</svg>
+							{{ isTogglingEndpoint ? 'Unpausing endpoint...' : 'Unpause Endpoint' }}
+						</button>
+					</ng-template>
+					<div convoy-dropdown position="right" size="md" class="border-l border-primary-100">
 						<button dropdownTrigger convoy-button size="sm" fill="clear" class="!px-6px !py-0">
 							<svg width="16" height="16" class="fill-primary-100">
 								<use xlink:href="#angle-arrow-down-icon"></use>
@@ -44,6 +70,24 @@
 									<img src="/assets/img/arrow-up-right.svg" class="w-12px ml-8px" alt="link out" />
 								</button>
 							</li>
+							<ng-container *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
+								<li class="border-b border-grey-20" *ngIf="endpointDetails.status === 'active'">
+									<button convoy-button size="sm" fill="clear" class="w-full !justify-start" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
+										<svg width="16" height="16" class="mr-8px fill-primary-100">
+											<use xlink:href="#pause-icon"></use>
+										</svg>
+										{{ isTogglingEndpoint ? 'Pausing endpoint...' : 'Pause Endpoint' }}
+									</button>
+								</li>
+								<li class="border-b border-grey-20" *ngIf="endpointDetails.status === 'inactive'">
+									<button convoy-button size="sm" fill="clear" class="w-full !justify-start" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
+										<svg width="16" height="16" class="mr-8px fill-primary-100">
+											<use xlink:href="#play-icon"></use>
+										</svg>
+										{{ isTogglingEndpoint ? 'Unpausing endpoint...' : 'Unpause Endpoint' }}
+									</button>
+								</li>
+							</ng-container>
 							<li class="border-b border-grey-20">
 								<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start" [routerLink]="'./edit'" [relativeTo]="route">
 									<svg width="16" height="16" class="mr-8px fill-primary-100">
