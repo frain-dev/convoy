@@ -39,6 +39,7 @@
 					>
 						{{ isSendingTestEvent ? 'Sending Event' : 'Send Test Event' }}
 					</button>
+
 					<ng-template #pause_endpoint>
 						<button convoy-button size="sm" fill="clear" class="w-full !justify-start" *ngIf="endpointDetails.status === 'active'" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
 							<svg width="16" height="16" class="mr-8px fill-primary-100">
@@ -46,13 +47,14 @@
 							</svg>
 							{{ isTogglingEndpoint ? 'Pausing endpoint...' : 'Pause Endpoint' }}
 						</button>
-						<button convoy-button size="sm" fill="clear" class="w-full !justify-start" *ngIf="endpointDetails.status === 'inactive'" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
+						<button convoy-button size="sm" fill="clear" class="w-full !justify-start" *ngIf="endpointDetails.status === 'paused'" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
 							<svg width="16" height="16" class="mr-8px fill-primary-100">
 								<use xlink:href="#play-icon"></use>
 							</svg>
 							{{ isTogglingEndpoint ? 'Unpausing endpoint...' : 'Unpause Endpoint' }}
 						</button>
 					</ng-template>
+
 					<div convoy-dropdown position="right" size="md" class="border-l border-primary-100">
 						<button dropdownTrigger convoy-button size="sm" fill="clear" class="!px-6px !py-0">
 							<svg width="16" height="16" class="fill-primary-100">
@@ -79,7 +81,7 @@
 										{{ isTogglingEndpoint ? 'Pausing endpoint...' : 'Pause Endpoint' }}
 									</button>
 								</li>
-								<li class="border-b border-grey-20" *ngIf="endpointDetails.status === 'inactive'">
+								<li class="border-b border-grey-20" *ngIf="endpointDetails.status === 'paused'">
 									<button convoy-button size="sm" fill="clear" class="w-full !justify-start" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
 										<svg width="16" height="16" class="mr-8px fill-primary-100">
 											<use xlink:href="#play-icon"></use>
