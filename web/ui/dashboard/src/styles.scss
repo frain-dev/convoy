@@ -5,6 +5,27 @@
 @import '~prismjs/plugins/toolbar/prism-toolbar.css';
 
 @tailwind base;
+
+/* Firefox */
+* {
+	scrollbar-width: 5px;
+}
+
+/* Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+	width: 5px;
+	height: 5px;
+}
+
+*::-webkit-scrollbar-track {
+	border-radius: 5px;
+}
+
+*::-webkit-scrollbar-thumb {
+	border-radius: 14px;
+	@apply bg-grey-20;
+}
+
 @tailwind components;
 @tailwind utilities;
 
@@ -43,5 +64,9 @@
 				@apply rounded-8px font-normal px-16px py-20px bg-[#F3F3F8] mb-22px font-menlo text-14 whitespace-pre overflow-auto text-grey-40;
 			}
 		}
+	}
+
+	* {
+		@apply font-normal;
 	}
 }

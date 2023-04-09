@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonComponent } from '../button/button.component';
 import { FormsModule } from '@angular/forms';
@@ -13,6 +13,11 @@ import { OverlayDirective } from '../overlay/overlay.directive';
 	styleUrls: ['./time-picker.component.scss']
 })
 export class TimePickerComponent implements OnInit {
+	@Output('applyFilter') applyFilter: EventEmitter<any> = new EventEmitter();
+	@Input('dateRangeValue') dateRangeValue?: {
+		startDate: string;
+		endDate: string;
+	};
 	filterStartHour: number = 0;
 	filterEndHour: number = 23;
 	filterStartMinute: number = 0;
@@ -21,11 +26,15 @@ export class TimePickerComponent implements OnInit {
 	timeFilterMinutes: number[] = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 59];
 	isFilterUpdated = false;
 	showPicker = false;
-	@Output('applyFilter') applyFilter: EventEmitter<any> = new EventEmitter();
 
 	constructor() {}
 
-	async ngOnInit() {}
+	async ngOnInit() {
+		if (this.dateRangeValue?.startDate) this.filterStartHour = new Date(this.dateRangeValue?.startDate).getHours();
+		if (this.dateRangeValue?.endDate) this.filterEndHour = new Date(this.dateRangeValue?.endDate).getHours();
+		if (this.dateRangeValue?.startDate) this.filterStartMinute = new Date(this.dateRangeValue?.startDate).getMinutes();
+		if (this.dateRangeValue?.endDate) this.filterEndMinute = new Date(this.dateRangeValue?.endDate).getMinutes();
+	}
 
 	onApplyFilter() {
 		this.isFilterUpdated = true;

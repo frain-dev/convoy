@@ -22,3 +22,6 @@ integration_tests:
 
 generate_migration_time:
 	@date +"%Y%m%d%H%M%S"
+
+generate_docs:
+	swag init --generatedTime --parseDependency --parseInternal -d api/ api/*

@@ -66,7 +66,7 @@ func TestFeatureFlags_CLI(t *testing.T) {
 				}
 			},
 			IsEnabled: Features[CanCreateCLIAPIKey],
-			cfgPath:   "../../../server/testdata/Auth_Config/none-convoy.json",
+			cfgPath:   "../../../api/testdata/Auth_Config/none-convoy.json",
 		},
 
 		{
@@ -98,7 +98,7 @@ func TestFeatureFlags_CLI(t *testing.T) {
 				}
 			},
 			IsEnabled: Features[CanCreateCLIAPIKey],
-			cfgPath:   "../../../server/testdata/Auth_Config/none-convoy.json",
+			cfgPath:   "../../../api/testdata/Auth_Config/none-convoy.json",
 		},
 	}
 

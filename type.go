@@ -14,8 +14,6 @@ type QueueName string
 
 type CacheKey string
 
-type GenericMap map[string]interface{}
-
 //go:embed VERSION
 var F embed.FS
 
@@ -67,7 +65,7 @@ func GetVersion() string {
 		return v
 	}
 
-	v = strings.TrimSuffix(string(f), "\n")
+	v = strings.TrimSpace(string(f))
 	return v
 }
 
@@ -79,32 +77,37 @@ func GetVersionFromFS(fs embed.FS) string {
 		return v
 	}
 
-	v = strings.TrimSuffix(string(f), "\n")
+	v = strings.TrimSpace(string(f))
 	return v
 }
 
 const (
-	EventProcessor         TaskName = "EventProcessor"
-	DeadLetterProcessor    TaskName = "DeadLetterProcessor"
-	CreateEventProcessor   TaskName = "CreateEventProcessor"
-	NotificationProcessor  TaskName = "NotificationProcessor"
-	IndexDocument          TaskName = "index document"
-	DailyAnalytics         TaskName = "daily analytics"
-	MonitorTwitterSources  TaskName = "monitor twitter sources"
-	RetentionPolicies      TaskName = "retention_policies"
-	EmailProcessor         TaskName = "EmailProcessor"
-	ExpireSecretsProcessor TaskName = "ExpireSecretsProcessor"
-	EndpointsCacheKey      CacheKey = "endpoints"
-	ProjectsCacheKey       CacheKey = "projects"
-	TokenCacheKey          CacheKey = "tokens"
-	SourceCacheKey         CacheKey = "sources"
+	EventProcessor           TaskName = "EventProcessor"
+	DeadLetterProcessor      TaskName = "DeadLetterProcessor"
+	CreateEventProcessor     TaskName = "CreateEventProcessor"
+	NotificationProcessor    TaskName = "NotificationProcessor"
+	IndexDocument            TaskName = "index document"
+	DailyAnalytics           TaskName = "daily analytics"
+	StreamCliEventsProcessor TaskName = "StreamCliEventsProcessor"
+	MonitorTwitterSources    TaskName = "monitor twitter sources"
+	RetentionPolicies        TaskName = "retention_policies"
+	EmailProcessor           TaskName = "EmailProcessor"
+	ExpireSecretsProcessor   TaskName = "ExpireSecretsProcessor"
+
+	EndpointsCacheKey          CacheKey = "endpoints"
+	OrganisationsCacheKey      CacheKey = "organisations"
+	OrganisationMemberCacheKey CacheKey = "organisation_members"
+	ProjectsCacheKey           CacheKey = "projects"
+	TokenCacheKey              CacheKey = "tokens"
+	SourceCacheKey             CacheKey = "sources"
 )
 
 // queues
 const (
 	EventQueue       QueueName = "EventQueue"
 	CreateEventQueue QueueName = "CreateEventQueue"
-	PriorityQueue    QueueName = "PriorityQueue"
+	SearchIndexQueue QueueName = "SearchIndexQueue"
+	StreamQueue      QueueName = "StreamQueue"
 	ScheduleQueue    QueueName = "ScheduleQueue"
 	DefaultQueue     QueueName = "DefaultQueue"
 )

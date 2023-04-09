@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/oklog/ulid/v2"
@@ -154,7 +154,7 @@ func (e *EventService) ReplayEvent(ctx context.Context, event *datastore.Event, 
 }
 
 func (e *EventService) BatchReplayEvents(ctx context.Context, filter *datastore.Filter) (int, int, error) {
-	events, _, err := e.eventRepo.LoadEventsPaged(ctx, filter)
+	events, _, err := e.eventRepo.LoadEventsPaged(ctx, filter.Project.UID, filter)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch events")
 		return 0, 0, util.NewServiceError(http.StatusInternalServerError, errors.New("failed to fetch event deliveries"))
@@ -173,8 +173,8 @@ func (e *EventService) BatchReplayEvents(ctx context.Context, filter *datastore.
 	return successes, failures, nil
 }
 
-func (e *EventService) GetEvent(ctx context.Context, id string) (*datastore.Event, error) {
-	event, err := e.eventRepo.FindEventByID(ctx, id)
+func (e *EventService) GetEvent(ctx context.Context, projectID string, id string) (*datastore.Event, error) {
+	event, err := e.eventRepo.FindEventByID(ctx, projectID, id)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to find event by id")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find event by id"))
@@ -200,7 +200,11 @@ func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	events, err = e.eventRepo.FindEventsByIDs(ctx, ids)
+	if len(ids) == 0 {
+		return events, paginationData, nil
+	}
+
+	events, err = e.eventRepo.FindEventsByIDs(ctx, filter.Project.UID, ids)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch events from event ids")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, err)
@@ -209,8 +213,8 @@ func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]
 	return events, paginationData, err
 }
 
-func (e *EventService) GetEventDelivery(ctx context.Context, id string) (*datastore.EventDelivery, error) {
-	eventDelivery, err := e.eventDeliveryRepo.FindEventDeliveryByID(ctx, id)
+func (e *EventService) GetEventDelivery(ctx context.Context, projectID, id string) (*datastore.EventDelivery, error) {
+	eventDelivery, err := e.eventDeliveryRepo.FindEventDeliveryByID(ctx, projectID, id)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to find event delivery by id")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to find event delivery by id"))
@@ -240,7 +244,7 @@ func (e *EventService) BatchRetryEventDelivery(ctx context.Context, filter *data
 }
 
 func (e *EventService) CountAffectedEvents(ctx context.Context, filter *datastore.Filter) (int64, error) {
-	count, err := e.eventRepo.CountEvents(ctx, filter)
+	count, err := e.eventRepo.CountEvents(ctx, filter.Project.UID, filter)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("an error occurred while fetching event")
 		return 0, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching event deliveries"))
@@ -260,7 +264,7 @@ func (e *EventService) CountAffectedEventDeliveries(ctx context.Context, filter 
 }
 
 func (e *EventService) ForceResendEventDeliveries(ctx context.Context, ids []string, g *datastore.Project) (int, int, error) {
-	deliveries, err := e.eventDeliveryRepo.FindEventDeliveriesByIDs(ctx, ids)
+	deliveries, err := e.eventDeliveryRepo.FindEventDeliveriesByIDs(ctx, g.UID, ids)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch event deliveries by ids")
 		return 0, 0, util.NewServiceError(http.StatusInternalServerError, errors.New("failed to fetch event deliveries"))
@@ -286,7 +290,7 @@ func (e *EventService) ForceResendEventDeliveries(ctx context.Context, ids []str
 }
 
 func (e *EventService) GetEventsPaged(ctx context.Context, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
-	events, paginationData, err := e.eventRepo.LoadEventsPaged(ctx, filter)
+	events, paginationData, err := e.eventRepo.LoadEventsPaged(ctx, filter.Project.UID, filter)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch events")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching events"))
@@ -369,16 +373,26 @@ func (e *EventService) validateEventDeliveryStatus(deliveries []datastore.EventD
 
 func (e *EventService) requeueEventDelivery(ctx context.Context, eventDelivery *datastore.EventDelivery, g *datastore.Project) error {
 	eventDelivery.Status = datastore.ScheduledEventStatus
-	err := e.eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, *eventDelivery, datastore.ScheduledEventStatus)
+	err := e.eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, g.UID, *eventDelivery, datastore.ScheduledEventStatus)
 	if err != nil {
 		return errors.New("an error occurred while trying to resend event")
 	}
 
 	taskName := convoy.EventProcessor
+	payload := task.EventDelivery{
+		EventDeliveryID: eventDelivery.UID,
+		ProjectID:       g.UID,
+	}
+
+	data, err := json.Marshal(payload)
+	if err != nil {
+		log.WithError(err).Error("failed to marshal process event delivery payload")
+		return errors.New("error occurred marshaling event delivery payload")
+	}
 
 	job := &queue.Job{
 		ID:      eventDelivery.UID,
-		Payload: json.RawMessage(eventDelivery.UID),
+		Payload: data,
 		Delay:   1 * time.Second,
 	}
 	err = e.queue.Write(taskName, convoy.EventQueue, job)

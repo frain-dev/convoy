@@ -61,12 +61,14 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			return err
 		}
 
-		_, err = eventRepo.FindEventByID(ctx, event.UID)
+		_, err = eventRepo.FindEventByID(ctx, project.UID, event.UID)
 		if err != nil {
 			if len(event.Endpoints) < 1 {
 				var endpointIDs []string
 				for _, s := range subscriptions {
-					endpointIDs = append(endpointIDs, s.EndpointID)
+					if s.Type != datastore.SubscriptionTypeCLI {
+						endpointIDs = append(endpointIDs, s.EndpointID)
+					}
 				}
 				event.Endpoints = endpointIDs
 			}
@@ -132,6 +134,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			}
 
 			if s.Type == datastore.SubscriptionTypeCLI {
+				event.Endpoints = []string{}
 				eventDelivery.CLIMetadata = &datastore.CLIMetadata{
 					EventType: string(event.EventType),
 					SourceID:  event.SourceID,
@@ -144,34 +147,50 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
-			taskName := convoy.EventProcessor
+			if eventDelivery.Status != datastore.DiscardedEventStatus {
+				payload := EventDelivery{
+					EventDeliveryID: eventDelivery.UID,
+					ProjectID:       project.UID,
+				}
 
-			// This event delivery will be picked up by the convoy stream command(if it is currently running).
-			// Otherwise, it will be lost to the wind? workaround for this is to disable the subscriptions created
-			// while the command was running, however in that scenario the event deliveries will still be created,
-			// but will be in the datastore.DiscardedEventStatus status, we can also delete the subscription, that is a firmer solution
-			if eventDelivery.Status != datastore.DiscardedEventStatus && s.Type != datastore.SubscriptionTypeCLI {
-				payload := json.RawMessage(eventDelivery.UID)
+				data, err := json.Marshal(payload)
+				if err != nil {
+					log.WithError(err).Error("failed to marshal process event delivery payload")
+					return &EndpointError{Err: err, delay: 10 * time.Second}
+				}
 
 				job := &queue.Job{
 					ID:      eventDelivery.UID,
-					Payload: payload,
+					Payload: data,
 					Delay:   1 * time.Second,
 				}
-				err = eventQueue.Write(taskName, convoy.EventQueue, job)
-				if err != nil {
-					log.Errorf("[asynq]: an error occurred sending event delivery to be dispatched %s", err)
+
+				if s.Type == datastore.SubscriptionTypeAPI {
+					err = eventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
+					if err != nil {
+						log.WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
+					}
+				} else if s.Type == datastore.SubscriptionTypeCLI {
+					err = eventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
+					if err != nil {
+						log.WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
+					}
 				}
 			}
 		}
 
+		eBytes, err := json.Marshal(event)
+		if err != nil {
+			log.Errorf("[asynq]: an error occurred marshalling event to be indexed %s", err)
+		}
+
 		job := &queue.Job{
 			ID:      event.UID,
-			Payload: t.Payload(), // t.Payload() is the original event bytes
+			Payload: eBytes,
 			Delay:   5 * time.Second,
 		}
 
-		err = eventQueue.Write(convoy.IndexDocument, convoy.PriorityQueue, job)
+		err = eventQueue.Write(convoy.IndexDocument, convoy.SearchIndexQueue, job)
 		if err != nil {
 			log.Errorf("[asynq]: an error occurred sending event to be indexed %s", err)
 		}

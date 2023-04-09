@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/frain-dev/convoy/util"
 
@@ -77,13 +78,40 @@ const (
 	    COALESCE(role_endpoint,'') as "role.endpoint",
 	    created_at, updated_at, expires_at
 	FROM convoy.organisation_invites
-	WHERE organisation_id = $3 AND status = $4 AND deleted_at IS NULL
-	ORDER BY id LIMIT $1 OFFSET $2
+	WHERE organisation_id = :org_id
+	AND status = :status
+	AND deleted_at IS NULL
 	`
 
-	countOrganisationInvites = `
-	SELECT COUNT(id) FROM convoy.organisation_invites
-	WHERE organisation_id = $1 AND deleted_at IS NULL;
+	baseFetchInvitesPagedForward = `
+	%s
+	AND id <= :cursor 
+	GROUP BY id
+	ORDER BY id DESC 
+	LIMIT :limit
+	`
+
+	baseFetchInvitesPagedBackward = `
+	WITH organisation_invites AS (
+		%s
+		AND id >= :cursor 
+		GROUP BY id
+		ORDER BY id ASC 
+		LIMIT :limit
+	)
+
+	SELECT * FROM organisation_invites ORDER BY id DESC
+	`
+
+	countPrevOrganisationInvites = `
+	SELECT count(distinct(id)) as count
+	FROM convoy.organisation_invites
+	WHERE organisation_id = :org_id
+	AND deleted_at IS NULL
+	AND id > :cursor 
+	GROUP BY id
+	ORDER BY id DESC
+	LIMIT 1
 	`
 
 	deleteOrganisationInvite = `
@@ -140,7 +168,35 @@ func (i *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datast
 }
 
 func (i *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID string, inviteStatus datastore.InviteStatus, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
-	rows, err := i.db.QueryxContext(ctx, fetchOrganisationInvitesPaginated, pageable.Limit(), pageable.Offset(), orgID, inviteStatus)
+	arg := map[string]interface{}{
+		"org_id": orgID,
+		"status": inviteStatus,
+		"limit":  pageable.Limit(),
+		"cursor": pageable.Cursor(),
+	}
+
+	var query string
+	if pageable.Direction == datastore.Next {
+		query = baseFetchInvitesPagedForward
+	} else {
+		query = baseFetchInvitesPagedBackward
+	}
+
+	query = fmt.Sprintf(query, fetchOrganisationInvitesPaginated)
+
+	query, args, err := sqlx.Named(query, arg)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query = i.db.Rebind(query)
+
+	rows, err := i.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -157,14 +213,48 @@ func (i *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID
 		invites = append(invites, iv)
 	}
 
-	var count int
-	err = i.db.GetContext(ctx, &count, countOrganisationInvites, orgID)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
+	var count datastore.PrevRowCount
+	if len(invites) > 0 {
+		var countQuery string
+		var qargs []interface{}
+		first := invites[0]
+		qarg := arg
+		qarg["cursor"] = first.UID
+
+		countQuery, qargs, err = sqlx.Named(countPrevOrganisationInvites, qarg)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		countQuery = i.db.Rebind(countQuery)
+
+		// count the row number before the first row
+		rows, err := i.db.QueryxContext(ctx, countQuery, qargs...)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		if rows.Next() {
+			err = rows.StructScan(&count)
+			if err != nil {
+				return nil, datastore.PaginationData{}, err
+			}
+		}
+		rows.Close()
 	}
 
-	pagination := calculatePaginationData(count, pageable.Page, pageable.PerPage)
-	return invites, pagination, rows.Close()
+	ids := make([]string, len(invites))
+	for i := range invites {
+		ids[i] = invites[i].UID
+	}
+
+	if len(invites) > pageable.PerPage {
+		invites = invites[:len(invites)-1]
+	}
+
+	pagination := &datastore.PaginationData{PrevRowCount: count}
+	pagination = pagination.Build(pageable, ids)
+
+	return invites, *pagination, nil
 }
 
 func (i *orgInviteRepo) UpdateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {

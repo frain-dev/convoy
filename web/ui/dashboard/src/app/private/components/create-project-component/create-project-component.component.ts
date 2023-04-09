@@ -32,9 +32,11 @@ export class CreateProjectComponent implements OnInit {
 			retention_policy: this.formBuilder.group({
 				policy: ['30d']
 			}),
-			is_retention_policy_enabled: [true]
+			is_retention_policy_enabled: [true],
+			disable_endpoint: [false, Validators.required]
 		}),
-		type: [null, Validators.required]
+		type: [null, Validators.required],
+		disable_endpoint: [false, Validators.required]
 	});
 	newSignatureForm: FormGroup = this.formBuilder.group({
 		encoding: [null],
@@ -139,10 +141,10 @@ export class CreateProjectComponent implements OnInit {
 		return this.configurations.find(config => config.uid === configValue)?.show || false;
 	}
 
-	async getProjectDetails() {
+	async getProjectDetails(requestDetails?: { refresh: boolean }) {
 		this.enableMoreConfig = true;
 		try {
-			const response = await this.privateService.getProjectDetails();
+			const response = await this.privateService.getProjectDetails({ ...requestDetails });
 			this.projectDetails = response.data;
 
 			this.projectForm.patchValue(response.data);
@@ -194,11 +196,12 @@ export class CreateProjectComponent implements OnInit {
 
 		try {
 			const response = await this.createProjectService.createProject(this.enableMoreConfig ? this.projectForm.value : dataForNoConfig);
+			await this.privateService.getProjectDetails({ refresh: true, projectId: response.data.project.uid });
+			await this.privateService.getProjectStat({ refresh: true });
+
 			projectFormModal?.scroll({ top: 0, behavior: 'smooth' });
 			this.isCreatingProject = false;
 			this.projectForm.reset();
-			this.privateService.activeProjectDetails = response.data.project;
-			this.privateService.getProjects();
 			this.apiKey = response.data.api_key.key;
 			this.projectDetails = response.data.project;
 			if (projectFormModal) projectFormModal.style.overflowY = 'hidden';
@@ -218,6 +221,7 @@ export class CreateProjectComponent implements OnInit {
 
 		try {
 			const response = await this.createProjectService.updateProject(this.projectForm.value);
+			this.getProjectDetails({ refresh: true });
 			this.generalService.showNotification({ message: 'Project updated successfully!', style: 'success' });
 			this.onAction.emit(response.data);
 			this.isCreatingProject = false;
@@ -246,7 +250,6 @@ export class CreateProjectComponent implements OnInit {
 
 		this.versions.at(i).patchValue(this.newSignatureForm.value);
 		await this.updateProject();
-		this.getProjectDetails();
 		this.newSignatureForm.reset();
 		this.showNewSignatureModal = false;
 	}

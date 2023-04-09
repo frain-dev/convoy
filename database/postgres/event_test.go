@@ -28,7 +28,7 @@ func Test_CreateEvent(t *testing.T) {
 
 	require.NoError(t, eventRepo.CreateEvent(ctx, event))
 
-	newEvent, err := eventRepo.FindEventByID(ctx, event.UID)
+	newEvent, err := eventRepo.FindEventByID(ctx, event.ProjectID, event.UID)
 	require.NoError(t, err)
 
 	newEvent.CreatedAt = time.Time{}
@@ -46,13 +46,13 @@ func Test_FindEventByID(t *testing.T) {
 	event := generateEvent(t, db)
 	ctx := context.Background()
 
-	_, err := eventRepo.FindEventByID(ctx, event.UID)
+	_, err := eventRepo.FindEventByID(ctx, event.ProjectID, event.UID)
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrEventNotFound))
 
 	require.NoError(t, eventRepo.CreateEvent(ctx, event))
 
-	newEvent, err := eventRepo.FindEventByID(ctx, event.UID)
+	newEvent, err := eventRepo.FindEventByID(ctx, event.ProjectID, event.UID)
 	require.NoError(t, err)
 
 	newEvent.CreatedAt = time.Time{}
@@ -68,23 +68,15 @@ func Test_FindEventsByIDs(t *testing.T) {
 
 	eventRepo := NewEventRepo(db)
 	ctx := context.Background()
-	var events []*datastore.Event
-	var ids []string
+	event := generateEvent(t, db)
 
-	events = append(events, generateEvent(t, db), generateEvent(t, db))
-
-	for _, event := range events {
-		err := eventRepo.CreateEvent(ctx, event)
-		require.NoError(t, err)
-
-		ids = append(ids, event.UID)
-
-	}
-
-	records, err := eventRepo.FindEventsByIDs(ctx, ids)
+	err := eventRepo.CreateEvent(ctx, event)
 	require.NoError(t, err)
 
-	require.Equal(t, 2, len(records))
+	records, err := eventRepo.FindEventsByIDs(ctx, event.ProjectID, []string{event.UID})
+	require.NoError(t, err)
+
+	require.Equal(t, 1, len(records))
 }
 
 func Test_CountProjectMessages(t *testing.T) {
@@ -213,11 +205,10 @@ func Test_CountEvents(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			count, err := eventRepo.CountEvents(context.Background(), &datastore.Filter{
-				Project:    project,
+			count, err := eventRepo.CountEvents(context.Background(), project.UID, &datastore.Filter{
 				EndpointID: endpoint.UID,
 				SearchParams: datastore.SearchParams{
-					CreatedAtStart: time.Now().Unix(),
+					CreatedAtStart: time.Now().Add(-5 * time.Minute).Unix(),
 					CreatedAtEnd:   time.Now().Add(5 * time.Minute).Unix(),
 				},
 			})
@@ -246,66 +237,62 @@ func Test_LoadEventsPaged(t *testing.T) {
 		expected   Expected
 	}{
 		{
-			name:     "Load Events Paged - 10 records",
-			pageData: datastore.Pageable{Page: 1, PerPage: 3},
-			count:    10,
+			name: "Load Events Paged - 10 records",
+			pageData: datastore.Pageable{
+				PerPage:    3,
+				Direction:  datastore.Next,
+				NextCursor: datastore.DefaultCursor,
+			},
+			count: 10,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					Total:     10,
-					TotalPage: 4,
-					Page:      1,
-					PerPage:   3,
-					Prev:      1,
-					Next:      2,
+					PerPage: 3,
 				},
 			},
 		},
 
 		{
-			name:     "Load Events Paged - 12 records",
-			pageData: datastore.Pageable{Page: 2, PerPage: 4},
-			count:    12,
+			name: "Load Events Paged - 12 records",
+			pageData: datastore.Pageable{
+				PerPage:    4,
+				Direction:  datastore.Next,
+				NextCursor: datastore.DefaultCursor,
+			},
+			count: 12,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					Total:     12,
-					TotalPage: 3,
-					Page:      2,
-					PerPage:   4,
-					Prev:      1,
-					Next:      3,
+					PerPage: 4,
 				},
 			},
 		},
 
 		{
-			name:     "Load Events Paged - 5 records",
-			pageData: datastore.Pageable{Page: 1, PerPage: 3},
-			count:    5,
+			name: "Load Events Paged - 5 records",
+			pageData: datastore.Pageable{
+				PerPage:    3,
+				Direction:  datastore.Next,
+				NextCursor: datastore.DefaultCursor,
+			},
+			count: 5,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					Total:     5,
-					TotalPage: 2,
-					Page:      1,
-					PerPage:   3,
-					Prev:      1,
-					Next:      2,
+					PerPage: 3,
 				},
 			},
 		},
 
 		{
-			name:       "Filter Events Paged By Endpoint ID - 1 record",
-			pageData:   datastore.Pageable{Page: 1, PerPage: 3},
+			name: "Filter Events Paged By Endpoint ID - 1 record",
+			pageData: datastore.Pageable{
+				PerPage:    3,
+				Direction:  datastore.Next,
+				NextCursor: datastore.DefaultCursor,
+			},
 			count:      1,
 			endpointID: ulid.Make().String(),
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					Total:     1,
-					TotalPage: 1,
-					Page:      1,
-					PerPage:   3,
-					Prev:      1,
-					Next:      2,
+					PerPage: 3,
 				},
 			},
 		},
@@ -344,8 +331,7 @@ func Test_LoadEventsPaged(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			_, pageable, err := eventRepo.LoadEventsPaged(context.Background(), &datastore.Filter{
-				Project:    project,
+			_, pageable, err := eventRepo.LoadEventsPaged(context.Background(), project.UID, &datastore.Filter{
 				EndpointID: endpoint.UID,
 				SearchParams: datastore.SearchParams{
 					CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
@@ -356,12 +342,7 @@ func Test_LoadEventsPaged(t *testing.T) {
 
 			require.NoError(t, err)
 
-			require.Equal(t, tc.expected.paginationData.Total, pageable.Total)
-			require.Equal(t, tc.expected.paginationData.TotalPage, pageable.TotalPage)
-			require.Equal(t, tc.expected.paginationData.Page, pageable.Page)
 			require.Equal(t, tc.expected.paginationData.PerPage, pageable.PerPage)
-			require.Equal(t, tc.expected.paginationData.Prev, pageable.Prev)
-			require.Equal(t, tc.expected.paginationData.Next, pageable.Next)
 		})
 	}
 }
@@ -376,16 +357,15 @@ func Test_SoftDeleteProjectEvents(t *testing.T) {
 
 	require.NoError(t, eventRepo.CreateEvent(ctx, event))
 
-	_, err := eventRepo.FindEventByID(ctx, event.UID)
+	_, err := eventRepo.FindEventByID(ctx, event.ProjectID, event.UID)
 	require.NoError(t, err)
 
-	require.NoError(t, eventRepo.DeleteProjectEvents(ctx, &datastore.EventFilter{
-		ProjectID:      event.ProjectID,
+	require.NoError(t, eventRepo.DeleteProjectEvents(ctx, event.ProjectID, &datastore.EventFilter{
 		CreatedAtStart: time.Now().Unix(),
 		CreatedAtEnd:   time.Now().Add(5 * time.Minute).Unix(),
 	}, false))
 
-	_, err = eventRepo.FindEventByID(ctx, event.UID)
+	_, err = eventRepo.FindEventByID(ctx, event.ProjectID, event.UID)
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrEventNotFound))
 }
@@ -400,16 +380,15 @@ func Test_HardDeleteProjectEvents(t *testing.T) {
 
 	require.NoError(t, eventRepo.CreateEvent(ctx, event))
 
-	_, err := eventRepo.FindEventByID(ctx, event.UID)
+	_, err := eventRepo.FindEventByID(ctx, event.ProjectID, event.UID)
 	require.NoError(t, err)
 
-	require.NoError(t, eventRepo.DeleteProjectEvents(ctx, &datastore.EventFilter{
-		ProjectID:      event.ProjectID,
+	require.NoError(t, eventRepo.DeleteProjectEvents(ctx, event.ProjectID, &datastore.EventFilter{
 		CreatedAtStart: time.Now().Unix(),
 		CreatedAtEnd:   time.Now().Add(5 * time.Minute).Unix(),
 	}, true))
 
-	_, err = eventRepo.FindEventByID(ctx, event.UID)
+	_, err = eventRepo.FindEventByID(ctx, event.ProjectID, event.UID)
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrEventNotFound))
 }

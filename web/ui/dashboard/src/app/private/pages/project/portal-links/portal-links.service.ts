@@ -1,22 +1,24 @@
 import { Injectable } from '@angular/core';
+import { CURSOR } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/http.model';
-import { PrivateService } from 'src/app/private/private.service';
 import { HttpService } from 'src/app/services/http/http.service';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class PortalLinksService {
-	constructor(private privateService: PrivateService, private http: HttpService) {}
+	constructor(private http: HttpService) {}
 
-	getPortalLinks(requestDetails: { pageNo: number; searchString?: string; endpointId?: string }): Promise<HTTP_RESPONSE> {
+	getPortalLinks(requestDetails: CURSOR & { endpointId?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
+				if (!requestDetails?.next_page_cursor && !requestDetails?.prev_page_cursor) requestDetails = { next_page_cursor: String(Number.MAX_SAFE_INTEGER), direction: 'next', endpointId: requestDetails?.endpointId };
+
 				const response = await this.http.request({
-					url: `${this.privateService.urlFactory('org_project')}/portal-links?sort=AESC&page=${requestDetails.pageNo}&perPage=20${requestDetails?.searchString ? `&q=${requestDetails?.searchString}` : ''}${
-						requestDetails?.endpointId ? `&endpointId=${requestDetails?.endpointId}` : ''
-					}`,
-					method: 'get'
+					url: `/portal-links`,
+					method: 'get',
+					level: 'org_project',
+					query: requestDetails
 				});
 
 				return resolve(response);
@@ -26,14 +28,14 @@ export class PortalLinksService {
 		});
 	}
 
-	revokePortalLink(requestDetails: { linkId: string; token?: string }): Promise<HTTP_RESPONSE> {
+	revokePortalLink(requestDetails: { linkId: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: requestDetails.token ? `/portal-links/${requestDetails.linkId}/revoke` : `${this.privateService.urlFactory('org_project')}/portal-links/${requestDetails.linkId}/revoke`,
+					url: `/portal-links/${requestDetails.linkId}/revoke`,
 					method: 'put',
 					body: null,
-					token: requestDetails.token
+					level: 'org_project'
 				});
 
 				return resolve(response);

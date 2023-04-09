@@ -31,12 +31,22 @@ module.exports = {
 				'2xl': '0px 16px 16px rgba(12, 26, 75, 0.05), 0px 30px 40px rgba(20, 37, 63, 0.08)'
 			},
 			fontFamily: {
-				sans: ['Quicksand', ...defaultTheme.fontFamily.sans],
+				sans: ['Inter', ...defaultTheme.fontFamily.sans],
 				menlo: ['Menlo Regular', ...defaultTheme.fontFamily.sans]
 			},
 			backgroundImage: {
 				'gradient-radial': 'radial-gradient(white 10%, #fafafe78)'
 			}
+		},
+		fontWeight: {
+			thin: '100',
+			extralight: '100',
+			light: '200',
+			normal: '300',
+			medium: '400',
+			semibold: '500',
+			bold: '600',
+			extrabold: '700'
 		},
 		screens: {
 			desktop: { max: '1050px' }

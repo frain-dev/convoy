@@ -16,7 +16,7 @@
             "name": "Mozilla Public License 2.0",
             "url": "https://www.mozilla.org/en-US/MPL/2.0/"
         },
-        "version": "0.8.0"
+        "version": "0.9.0"
     },
     "host": "dashboard.getconvoy.io",
     "basePath": "/",
@@ -38,7 +38,7 @@
                 "tags": [
                     "Organisations"
                 ],
-                "summary": "Get organisations",
+                "summary": "List all organisations",
                 "parameters": [
                     {
                         "type": "string",
@@ -73,7 +73,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                    "$ref": "#/definitions/api.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -104,7 +104,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -122,15 +122,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -140,7 +140,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -167,7 +167,7 @@
                 "tags": [
                     "Projects"
                 ],
-                "summary": "Get projects",
+                "summary": "List all projects",
                 "parameters": [
                     {
                         "type": "string",
@@ -216,7 +216,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -234,15 +234,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -252,7 +252,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -326,7 +326,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -344,15 +344,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -362,7 +362,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -389,11 +389,11 @@
                 "tags": [
                     "Projects"
                 ],
-                "summary": "Get a project",
+                "summary": "Retrieve a project",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -429,7 +429,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -447,15 +447,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -465,7 +465,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -494,7 +494,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -539,7 +539,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -557,15 +557,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -575,7 +575,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -604,7 +604,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -622,7 +622,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -640,7 +640,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -658,15 +658,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -676,7 +676,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -703,11 +703,11 @@
                 "tags": [
                     "Endpoints"
                 ],
-                "summary": "Get endpoints",
+                "summary": "List all endpoints",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -746,7 +746,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -764,15 +764,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -782,7 +782,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -811,7 +811,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -856,7 +856,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -874,15 +874,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -892,7 +892,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -919,18 +919,18 @@
                 "tags": [
                     "Endpoints"
                 ],
-                "summary": "Get endpoint",
+                "summary": "Retrieve endpoint",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "endpoint id",
+                        "description": "Endpoint ID",
                         "name": "endpointID",
                         "in": "path",
                         "required": true
@@ -966,7 +966,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -984,15 +984,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -1002,7 +1002,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1031,14 +1031,14 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "endpoint id",
+                        "description": "Endpoint ID",
                         "name": "endpointID",
                         "in": "path",
                         "required": true
@@ -1083,7 +1083,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1101,15 +1101,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -1119,7 +1119,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1148,14 +1148,14 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "endpoint id",
+                        "description": "Endpoint ID",
                         "name": "endpointID",
                         "in": "path",
                         "required": true
@@ -1173,7 +1173,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1191,7 +1191,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1209,15 +1209,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -1227,7 +1227,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1244,7 +1244,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint expires the current endpoint secret and generates a new one.",
+                "description": "This endpoint expires and re-generates the endpoint secret.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1254,21 +1254,30 @@
                 "tags": [
                     "Endpoints"
                 ],
-                "summary": "Expire and generate new application endpoint secret",
+                "summary": "Roll endpoint secret",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "endpoint id",
+                        "description": "Endpoint ID",
                         "name": "endpointID",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Expire Secret Body Parameters",
+                        "name": "endpoint",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ExpireSecret"
+                        }
                     }
                 ],
                 "responses": {
@@ -1301,7 +1310,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1319,15 +1328,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -1337,7 +1346,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1354,7 +1363,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint updates a subscription",
+                "description": "This endpoint toggles an endpoint status between the active and inactive statetes",
                 "consumes": [
                     "application/json"
                 ],
@@ -1362,20 +1371,20 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Subscriptions"
+                    "Endpoints"
                 ],
-                "summary": "Toggles an endpoint's status from active \u003c-\u003e inactive",
+                "summary": "Toggle endpoint status",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "endpoint id",
+                        "description": "Endpoint ID",
                         "name": "endpointID",
                         "in": "path",
                         "required": true
@@ -1411,7 +1420,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1429,15 +1438,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -1447,7 +1456,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1464,7 +1473,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetch event deliveries.",
+                "description": "This endpoint retrieves all event deliveries paginated.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1472,9 +1481,9 @@
                     "application/json"
                 ],
                 "tags": [
-                    "EventDeliveries"
+                    "Event Deliveries"
                 ],
-                "summary": "Get event deliveries",
+                "summary": "List all event deliveries",
                 "parameters": [
                     {
                         "type": "string",
@@ -1484,7 +1493,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -1549,7 +1558,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                    "$ref": "#/definitions/api.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -1565,7 +1574,7 @@
                                                                         "type": "object",
                                                                         "properties": {
                                                                             "data": {
-                                                                                "$ref": "#/definitions/server.Stub"
+                                                                                "$ref": "#/definitions/api.Stub"
                                                                             }
                                                                         }
                                                                     }
@@ -1592,7 +1601,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1610,15 +1619,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -1628,7 +1637,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1645,7 +1654,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint resends multiple app events",
+                "description": "This endpoint batch retries multiple event deliveries at once.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1653,13 +1662,13 @@
                     "application/json"
                 ],
                 "tags": [
-                    "EventDeliveries"
+                    "Event Deliveries"
                 ],
-                "summary": "Batch Resend app events",
+                "summary": "Batch retry event delivery",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -1672,7 +1681,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.Stub"
+                                    "$ref": "#/definitions/api.Stub"
                                 },
                                 {
                                     "type": "object",
@@ -1701,7 +1710,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1719,7 +1728,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1737,15 +1746,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -1755,158 +1764,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/projects/{projectID}/eventdeliveries/countbatchretryevents": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint counts app events that will be affected by a batch retry operation",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "EventDeliveries"
-                ],
-                "summary": "Count affected eventDeliveries",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "application id",
-                        "name": "appId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Project id",
-                        "name": "projectID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "start date",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "end date",
-                        "name": "endDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "results per page",
-                        "name": "perPage",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "sort order",
-                        "name": "sort",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "allOf": [
-                                                {
-                                                    "$ref": "#/definitions/server.Stub"
-                                                },
-                                                {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "num": {
-                                                            "type": "integer"
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1923,7 +1781,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint force resends multiple app events",
+                "description": "This endpoint enables you retry a previously successful event delivery",
                 "consumes": [
                     "application/json"
                 ],
@@ -1931,13 +1789,13 @@
                     "application/json"
                 ],
                 "tags": [
-                    "EventDeliveries"
+                    "Event Deliveries"
                 ],
-                "summary": "Force Resend app events",
+                "summary": "Force retry event delivery",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -1950,7 +1808,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/server.Stub"
+                                    "$ref": "#/definitions/api.Stub"
                                 },
                                 {
                                     "type": "object",
@@ -1979,7 +1837,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -1997,7 +1855,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2015,15 +1873,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -2033,7 +1891,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2058,13 +1916,13 @@
                     "application/json"
                 ],
                 "tags": [
-                    "EventDeliveries"
+                    "Event Deliveries"
                 ],
-                "summary": "Get event delivery",
+                "summary": "Retrieve an event delivery",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -2097,7 +1955,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/server.Stub"
+                                                            "$ref": "#/definitions/api.Stub"
                                                         }
                                                     }
                                                 }
@@ -2119,7 +1977,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2137,15 +1995,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -2155,7 +2013,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2180,13 +2038,13 @@
                     "application/json"
                 ],
                 "tags": [
-                    "DeliveryAttempts"
+                    "Delivery Attempts"
                 ],
-                "summary": "Get delivery attempts",
+                "summary": "List delivery attempts",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -2232,7 +2090,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2250,15 +2108,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -2268,7 +2126,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2293,13 +2151,13 @@
                     "application/json"
                 ],
                 "tags": [
-                    "DeliveryAttempts"
+                    "Delivery Attempts"
                 ],
-                "summary": "Get delivery attempt",
+                "summary": "Retrieve a delivery attempt",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -2349,7 +2207,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2367,15 +2225,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -2385,7 +2243,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2402,7 +2260,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint resends an app event",
+                "description": "This endpoint retries an event delivery.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2410,13 +2268,13 @@
                     "application/json"
                 ],
                 "tags": [
-                    "EventDeliveries"
+                    "Event Deliveries"
                 ],
-                "summary": "Resend an app event",
+                "summary": "Retry event delivery",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -2449,7 +2307,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/server.Stub"
+                                                            "$ref": "#/definitions/api.Stub"
                                                         }
                                                     }
                                                 }
@@ -2471,7 +2329,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2489,15 +2347,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -2507,7 +2365,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2534,7 +2392,7 @@
                 "tags": [
                     "Events"
                 ],
-                "summary": "Get app events with pagination",
+                "summary": "List all events",
                 "parameters": [
                     {
                         "type": "string",
@@ -2544,7 +2402,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -2600,7 +2458,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                    "$ref": "#/definitions/api.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -2616,7 +2474,7 @@
                                                                         "type": "object",
                                                                         "properties": {
                                                                             "data": {
-                                                                                "$ref": "#/definitions/server.Stub"
+                                                                                "$ref": "#/definitions/api.Stub"
                                                                             }
                                                                         }
                                                                     }
@@ -2643,7 +2501,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2661,15 +2519,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -2679,7 +2537,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2704,11 +2562,11 @@
                 "tags": [
                     "Events"
                 ],
-                "summary": "Create endpoint event",
+                "summary": "Create an event",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -2743,7 +2601,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/server.Stub"
+                                                            "$ref": "#/definitions/api.Stub"
                                                         }
                                                     }
                                                 }
@@ -2765,7 +2623,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2783,15 +2641,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -2801,7 +2659,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2818,7 +2676,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint replays multiple events",
+                "description": "This endpoint replays multiple events at once.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2828,11 +2686,11 @@
                 "tags": [
                     "Events"
                 ],
-                "summary": "Replays multiple endpoint events",
+                "summary": "Batch replay events",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -2851,7 +2709,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "Source id",
+                        "description": "Source ID",
                         "name": "source",
                         "in": "query"
                     }
@@ -2876,7 +2734,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/server.Stub"
+                                                            "$ref": "#/definitions/api.Stub"
                                                         }
                                                     }
                                                 }
@@ -2898,7 +2756,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -2916,15 +2774,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -2934,140 +2792,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/projects/{projectID}/events/countbatchreplayevents": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint counts events that will be affected by a batch replay operation",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Events"
-                ],
-                "summary": "Counts affected events",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project id",
-                        "name": "projectID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "start date",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "end date",
-                        "name": "endDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Source id",
-                        "name": "source",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "allOf": [
-                                                {
-                                                    "$ref": "#/definitions/server.Stub"
-                                                },
-                                                {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "num": {
-                                                            "type": "integer"
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3094,11 +2819,11 @@
                 "tags": [
                     "Events"
                 ],
-                "summary": "Fan out an event to multiple endpoints.",
+                "summary": "Fan out an event",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -3133,7 +2858,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/server.Stub"
+                                                            "$ref": "#/definitions/api.Stub"
                                                         }
                                                     }
                                                 }
@@ -3155,7 +2880,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3173,15 +2898,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -3191,7 +2916,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3208,7 +2933,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches an endpoint event",
+                "description": "This endpoint retrieves an event",
                 "consumes": [
                     "application/json"
                 ],
@@ -3218,11 +2943,11 @@
                 "tags": [
                     "Events"
                 ],
-                "summary": "Get endpoint event",
+                "summary": "Retrieve an event",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -3255,7 +2980,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/server.Stub"
+                                                            "$ref": "#/definitions/api.Stub"
                                                         }
                                                     }
                                                 }
@@ -3277,7 +3002,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3295,15 +3020,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -3313,7 +3038,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3330,7 +3055,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint replays an endpoint event",
+                "description": "This endpoint replays an event afresh assuming it is a new event.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3340,11 +3065,11 @@
                 "tags": [
                     "Events"
                 ],
-                "summary": "Replay endpoint event",
+                "summary": "Replay event",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -3377,7 +3102,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/server.Stub"
+                                                            "$ref": "#/definitions/api.Stub"
                                                         }
                                                     }
                                                 }
@@ -3399,7 +3124,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3417,15 +3142,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -3435,7 +3160,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3460,13 +3185,13 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLinks"
+                    "Portal Links"
                 ],
-                "summary": "Fetch multiple portal links",
+                "summary": "List all portal links",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -3504,7 +3229,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                    "$ref": "#/definitions/api.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -3535,7 +3260,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3553,15 +3278,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -3571,7 +3296,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3594,13 +3319,13 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLinks"
+                    "Portal Links"
                 ],
                 "summary": "Create a portal link",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -3645,7 +3370,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3663,15 +3388,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -3681,7 +3406,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3698,7 +3423,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches a portal link by its id",
+                "description": "This endpoint retrieves a portal link by its id.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3706,13 +3431,13 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLinks"
+                    "Portal Links"
                 ],
-                "summary": "Get a portal link",
+                "summary": "Retrieve a portal link",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -3755,7 +3480,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3773,15 +3498,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -3791,7 +3516,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3814,13 +3539,13 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLinks"
+                    "Portal Links"
                 ],
                 "summary": "Update a portal link",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -3872,7 +3597,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3890,15 +3615,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -3908,7 +3633,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3933,13 +3658,13 @@
                     "application/json"
                 ],
                 "tags": [
-                    "PortalLinks"
+                    "Portal Links"
                 ],
-                "summary": "Revoke Portal Link",
+                "summary": "Revoke a portal link",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -3964,7 +3689,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -3982,7 +3707,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4000,15 +3725,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -4018,7 +3743,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4045,11 +3770,11 @@
                 "tags": [
                     "Sources"
                 ],
-                "summary": "Fetch multiple sources",
+                "summary": "List all sources",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -4087,7 +3812,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                    "$ref": "#/definitions/api.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -4118,7 +3843,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4136,15 +3861,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -4154,7 +3879,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4183,7 +3908,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -4228,7 +3953,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4246,15 +3971,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -4264,7 +3989,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4281,7 +4006,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches a source by its id",
+                "description": "This endpoint retrieves a source by its id",
                 "consumes": [
                     "application/json"
                 ],
@@ -4291,18 +4016,18 @@
                 "tags": [
                     "Sources"
                 ],
-                "summary": "Get a source",
+                "summary": "Retrieve a source",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "source id",
+                        "description": "Source ID",
                         "name": "sourceID",
                         "in": "path",
                         "required": true
@@ -4338,7 +4063,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4356,15 +4081,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -4374,7 +4099,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4403,7 +4128,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -4455,7 +4180,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4473,15 +4198,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -4491,7 +4216,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4516,11 +4241,11 @@
                 "tags": [
                     "Sources"
                 ],
-                "summary": "Delete source",
+                "summary": "Delete a source",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -4545,7 +4270,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4563,7 +4288,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4581,15 +4306,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -4599,7 +4324,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4626,7 +4351,7 @@
                 "tags": [
                     "Subscriptions"
                 ],
-                "summary": "Get all subscriptions",
+                "summary": "List all subscriptions",
                 "parameters": [
                     {
                         "type": "string",
@@ -4654,7 +4379,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -4674,7 +4399,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                    "$ref": "#/definitions/api.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -4705,7 +4430,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4723,15 +4448,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -4741,7 +4466,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4766,11 +4491,11 @@
                 "tags": [
                     "Subscriptions"
                 ],
-                "summary": "Creates a subscription",
+                "summary": "Create a subscription",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -4799,7 +4524,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/server.pagedResponse"
+                                                    "$ref": "#/definitions/api.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -4830,7 +4555,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4848,15 +4573,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -4866,7 +4591,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4883,7 +4608,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint tests a subscription's filter",
+                "description": "This endpoint validates that a filter will match a certain payload structure.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4893,11 +4618,11 @@
                 "tags": [
                     "Subscriptions"
                 ],
-                "summary": "Test subscription filter",
+                "summary": "Validate subscription filter",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -4942,7 +4667,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4960,15 +4685,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -4978,7 +4703,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -4995,7 +4720,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint fetches an Subscription by it's id",
+                "description": "This endpoint retrieves a single subscription",
                 "consumes": [
                     "application/json"
                 ],
@@ -5005,11 +4730,11 @@
                 "tags": [
                     "Subscriptions"
                 ],
-                "summary": "Gets a subscription",
+                "summary": "Retrieve a subscription",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -5052,7 +4777,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5070,15 +4795,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -5088,7 +4813,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5117,7 +4842,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -5169,7 +4894,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5187,15 +4912,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -5205,7 +4930,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5234,7 +4959,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Project id",
+                        "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
@@ -5259,7 +4984,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5277,7 +5002,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -5295,15 +5020,15 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
                             ]
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "allOf": [
                                 {
@@ -5313,693 +5038,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/projects/{projectID}/subscriptions/{subscriptionID}/toggle_status": {
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint updates a subscription",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Subscriptions"
-                ],
-                "summary": "Toggles a subscription's status from active \u003c-\u003e inactive",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project id",
-                        "name": "projectID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "subscription id",
-                        "name": "subscriptionID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/datastore.Subscription"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/portal/devices": {
-            "get": {
-                "description": "This endpoint fetches all portal link devices",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PortalLinks"
-                ],
-                "summary": "Get portal link devices",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/datastore.Device"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/portal/endpoints": {
-            "get": {
-                "description": "This endpoint fetches all portal link endpoints",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PortalLinks"
-                ],
-                "summary": "Get endpoints",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/datastore.Endpoint"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "This endpoint creates an endpoint",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PortalLinks"
-                ],
-                "summary": "Create an endpoint",
-                "parameters": [
-                    {
-                        "description": "Endpoint Details",
-                        "name": "endpoint",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Endpoint"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/datastore.Endpoint"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/portal/keys": {
-            "get": {
-                "description": "This endpoint fetches all portal link endpoints keys",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PortalLinks"
-                ],
-                "summary": "Get portal link keys",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/models.PortalAPIKeyResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/ui/users/forgot-password": {
-            "post": {
-                "description": "This endpoint verifies a user's email",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User"
-                ],
-                "summary": "Verify Email",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Email verification token",
-                        "name": "token",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/ui/users/reset-password": {
-            "post": {
-                "description": "This endpoint resets a users password",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User"
-                ],
-                "summary": "Reset user password",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "reset token",
-                        "name": "token",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "description": "Reset Password Details",
-                        "name": "password",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.ResetPassword"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/datastore.User"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/server.Stub"
+                                            "$ref": "#/definitions/api.Stub"
                                         }
                                     }
                                 }
@@ -6011,17 +5050,15 @@
         }
     },
     "definitions": {
-        "auth.Role": {
+        "api.Stub": {
+            "type": "object"
+        },
+        "api.pagedResponse": {
             "type": "object",
             "properties": {
-                "endpoint": {
-                    "type": "string"
-                },
-                "project": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
+                "content": {},
+                "pagination": {
+                    "$ref": "#/definitions/datastore.PaginationData"
                 }
             }
         },
@@ -6071,9 +5108,6 @@
             "type": "object",
             "properties": {
                 "event_type": {
-                    "type": "string"
-                },
-                "host_name": {
                     "type": "string"
                 },
                 "source_id": {
@@ -6368,6 +5402,9 @@
                 "device_id": {
                     "type": "string"
                 },
+                "device_metadata": {
+                    "$ref": "#/definitions/datastore.Device"
+                },
                 "endpoint_id": {
                     "type": "string"
                 },
@@ -6388,6 +5425,9 @@
                 },
                 "project_id": {
                     "type": "string"
+                },
+                "source_metadata": {
+                    "$ref": "#/definitions/datastore.Source"
                 },
                 "status": {
                     "$ref": "#/definitions/datastore.EventDeliveryStatus"
@@ -6554,23 +5594,20 @@
         "datastore.PaginationData": {
             "type": "object",
             "properties": {
-                "next": {
+                "has_next_page": {
+                    "type": "boolean"
+                },
+                "has_prev_page": {
+                    "type": "boolean"
+                },
+                "next_page_cursor": {
+                    "type": "string"
+                },
+                "per_page": {
                     "type": "integer"
                 },
-                "page": {
-                    "type": "integer"
-                },
-                "perPage": {
-                    "type": "integer"
-                },
-                "prev": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
-                },
-                "totalPage": {
-                    "type": "integer"
+                "prev_page_cursor": {
+                    "type": "string"
                 }
             }
         },
@@ -6615,6 +5652,9 @@
         "datastore.ProjectConfig": {
             "type": "object",
             "properties": {
+                "disable_endpoint": {
+                    "type": "boolean"
+                },
                 "max_payload_read_size": {
                     "type": "integer"
                 },
@@ -6645,6 +5685,12 @@
                     "type": "integer"
                 },
                 "total_endpoints": {
+                    "type": "integer"
+                },
+                "total_sources": {
+                    "type": "integer"
+                },
+                "total_subscriptions": {
                     "type": "integer"
                 }
             }
@@ -6925,8 +5971,8 @@
                 "deleted_at": {
                     "type": "string"
                 },
-                "device_id": {
-                    "type": "string"
+                "device_metadata": {
+                    "$ref": "#/definitions/datastore.Device"
                 },
                 "endpoint_metadata": {
                     "$ref": "#/definitions/datastore.Endpoint"
@@ -6972,38 +6018,6 @@
             "type": "object",
             "properties": {
                 "crc_verified_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "datastore.User": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "email_verified": {
-                    "type": "boolean"
-                },
-                "first_name": {
-                    "type": "string"
-                },
-                "last_name": {
-                    "type": "string"
-                },
-                "reset_password_expires_at": {
-                    "type": "string"
-                },
-                "uid": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }
@@ -7101,6 +6115,7 @@
             "type": "object",
             "properties": {
                 "app_id": {
+                    "description": "Deprecated but necessary for backward compatibility",
                     "type": "string"
                 },
                 "custom_headers": {
@@ -7120,6 +6135,17 @@
                     "type": "string"
                 },
                 "event_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ExpireSecret": {
+            "type": "object",
+            "properties": {
+                "expiration": {
+                    "type": "integer"
+                },
+                "secret": {
                     "type": "string"
                 }
             }
@@ -7158,29 +6184,6 @@
                 "header": {
                     "type": "object",
                     "additionalProperties": true
-                }
-            }
-        },
-        "models.PortalAPIKeyResponse": {
-            "type": "object",
-            "properties": {
-                "endpoint_id": {
-                    "type": "string"
-                },
-                "key": {
-                    "type": "string"
-                },
-                "key_type": {
-                    "type": "string"
-                },
-                "project_id": {
-                    "type": "string"
-                },
-                "role": {
-                    "$ref": "#/definitions/auth.Role"
-                },
-                "url": {
-                    "type": "string"
                 }
             }
         },
@@ -7256,17 +6259,6 @@
                 },
                 "type": {
                     "$ref": "#/definitions/datastore.ProjectType"
-                }
-            }
-        },
-        "models.ResetPassword": {
-            "type": "object",
-            "properties": {
-                "password": {
-                    "type": "string"
-                },
-                "password_confirmation": {
-                    "type": "string"
                 }
             }
         },
@@ -7410,18 +6402,6 @@
                 }
             }
         },
-        "server.Stub": {
-            "type": "object"
-        },
-        "server.pagedResponse": {
-            "type": "object",
-            "properties": {
-                "content": {},
-                "pagination": {
-                    "$ref": "#/definitions/datastore.PaginationData"
-                }
-            }
-        },
         "util.ServerResponse": {
             "type": "object",
             "properties": {
@@ -7470,11 +6450,11 @@
         },
         {
             "description": "EventDelivery related APIs",
-            "name": "EventDeliveries"
+            "name": "Event Deliveries"
         },
         {
             "description": "Delivery Attempt related APIs",
-            "name": "DeliveryAttempts"
+            "name": "Delivery Attempts"
         },
         {
             "description": "Project related APIs",
@@ -7482,7 +6462,7 @@
         },
         {
             "description": "Portal Links related APIs",
-            "name": "PortalLinks"
+            "name": "Portal Links"
         }
     ]
 }

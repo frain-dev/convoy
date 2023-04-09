@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"time"
 
@@ -14,36 +15,73 @@ import (
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/lib/pq"
 	"github.com/oklog/ulid/v2"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/guregu/null.v4"
 )
 
 type Pageable struct {
-	Page    int `json:"page" bson:"page"`
-	PerPage int `json:"per_page" bson:"per_page"`
-	Sort    int `json:"sort" bson:"sort"`
+	PerPage    int           `json:"per_page"`
+	Direction  PageDirection `json:"direction"`
+	PrevCursor string        `json:"prev_page_cursor"`
+	NextCursor string        `json:"next_page_cursor"`
+}
+
+type PageDirection string
+
+const Next PageDirection = "next"
+const Prev PageDirection = "prev"
+
+func (p Pageable) Cursor() string {
+	if p.Direction == Next {
+		return p.NextCursor
+	}
+
+	return p.PrevCursor
 }
 
 func (p Pageable) Limit() int {
-	return p.PerPage
-}
-
-func (p Pageable) Offset() int {
-	v := (p.Page - 1) * p.PerPage
-	if v < 0 {
-		return 0
-	}
-	return v
+	return p.PerPage + 1
 }
 
 type PaginationData struct {
-	Total     int64 `json:"total"`
-	Page      int64 `json:"page"`
-	PerPage   int64 `json:"perPage"`
-	Prev      int64 `json:"prev"`
-	Next      int64 `json:"next"`
-	TotalPage int64 `json:"totalPage"`
+	PrevRowCount    PrevRowCount `json:"-"`
+	PerPage         int64        `json:"per_page"`
+	HasNextPage     bool         `json:"has_next_page"`
+	HasPreviousPage bool         `json:"has_prev_page"`
+	PrevPageCursor  string       `json:"prev_page_cursor"`
+	NextPageCursor  string       `json:"next_page_cursor"`
+}
+
+type PrevRowCount struct {
+	Count int
+}
+
+func (p *PaginationData) Build(pageable Pageable, items []string) *PaginationData {
+	p.PerPage = int64(pageable.PerPage)
+
+	var s, e string
+
+	if len(items) > 0 {
+		s = items[0]
+	}
+
+	if len(items) > 1 {
+		e = items[len(items)-1]
+	}
+
+	p.PrevPageCursor = s
+	p.NextPageCursor = e
+
+	// there's an extra item. We use it to find out if there is more data to be loaded
+	if len(items) > pageable.PerPage {
+		p.HasNextPage = true
+	}
+
+	if p.PrevRowCount.Count > 0 {
+		p.HasPreviousPage = true
+	}
+
+	return p
 }
 
 type Period int
@@ -54,6 +92,8 @@ var PeriodValues = map[string]Period{
 	"monthly": Monthly,
 	"yearly":  Yearly,
 }
+
+var DefaultCursor = fmt.Sprintf("%d", math.MaxInt)
 
 const (
 	Daily Period = iota
@@ -187,6 +227,7 @@ var (
 		MaxIngestSize:            config.MaxResponseSize,
 		ReplayAttacks:            false,
 		IsRetentionPolicyEnabled: false,
+		DisableEndpoint:          false,
 		RateLimit:                &DefaultRateLimitConfig,
 		Strategy:                 &DefaultStrategyConfig,
 		Signature:                GetDefaultSignatureConfig(),
@@ -385,7 +426,7 @@ type Project struct {
 	ProjectConfigID string             `json:"-" db:"project_configuration_id"`
 	Type            ProjectType        `json:"type" db:"type"`
 	Config          *ProjectConfig     `json:"config" db:"config"`
-	Statistics      *ProjectStatistics `json:"statistics" db:"-"`
+	Statistics      *ProjectStatistics `json:"statistics" db:"statistics"`
 
 	RetainedEvents int `json:"retained_events" db:"retained_events"`
 
@@ -421,6 +462,7 @@ type ProjectConfig struct {
 	MaxIngestSize            uint64                        `json:"max_payload_read_size" db:"max_payload_read_size"`
 	ReplayAttacks            bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
 	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
+	DisableEndpoint          bool                          `json:"disable_endpoint" db:"disable_endpoint"`
 	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
 	Strategy                 *StrategyConfiguration        `json:"strategy" db:"strategy"`
@@ -484,8 +526,10 @@ type RetentionPolicyConfiguration struct {
 }
 
 type ProjectStatistics struct {
-	MessagesSent   int64 `json:"messages_sent" db:"messages_sent"`
-	TotalEndpoints int64 `json:"total_endpoints" db:"total_endpoints"`
+	MessagesSent       int64 `json:"messages_sent" db:"messages_sent"`
+	TotalEndpoints     int64 `json:"total_endpoints" db:"total_endpoints"`
+	TotalSubscriptions int64 `json:"total_subscriptions" db:"total_subscriptions"`
+	TotalSources       int64 `json:"total_sources" db:"total_sources"`
 }
 
 type ProjectFilter struct {
@@ -560,6 +604,21 @@ type AppMetadata struct {
 // Makes it easy to filter by a list of events
 type EventType string
 
+type EndpointMetadata []*Endpoint
+
+func (s *EndpointMetadata) Scan(v interface{}) error {
+	b, ok := v.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", v)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	return json.Unmarshal(b, s)
+}
+
 // Event defines a payload to be sent to an application
 type Event struct {
 	UID              string    `json:"uid" db:"id"`
@@ -571,7 +630,7 @@ type Event struct {
 	ProjectID        string                `json:"project_id,omitempty" db:"project_id"`
 	Endpoints        pq.StringArray        `json:"endpoints" db:"endpoints"`
 	Headers          httpheader.HTTPHeader `json:"headers" db:"headers"`
-	EndpointMetadata []*Endpoint           `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
+	EndpointMetadata EndpointMetadata      `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Source           *Source               `json:"source_metadata,omitempty" db:"source_metadata"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
@@ -769,6 +828,8 @@ type EventDelivery struct {
 
 	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`
+	Source   *Source   `json:"source_metadata,omitempty" db:"source_metadata"`
+	Device   *Device   `json:"device_metadata,omitempty" db:"device_metadata"`
 
 	DeliveryAttempts DeliveryAttempts    `json:"-" db:"attempts"`
 	Status           EventDeliveryStatus `json:"status" db:"status"`
@@ -783,7 +844,6 @@ type EventDelivery struct {
 type CLIMetadata struct {
 	EventType string `json:"event_type" db:"event_type"`
 	SourceID  string `json:"source_id" db:"source_id"`
-	HostName  string `json:"host_name,omitempty" db:"host_name"`
 }
 
 func (m *CLIMetadata) Scan(value interface{}) error {
@@ -842,10 +902,11 @@ type Subscription struct {
 	ProjectID  string           `json:"-" db:"project_id"`
 	SourceID   string           `json:"-" db:"source_id"`
 	EndpointID string           `json:"-" db:"endpoint_id"`
-	DeviceID   string           `json:"device_id" db:"device_id"`
+	DeviceID   string           `json:"-" db:"device_id"`
 
 	Source   *Source   `json:"source_metadata" db:"source_metadata"`
 	Endpoint *Endpoint `json:"endpoint_metadata" db:"endpoint_metadata"`
+	Device   *Device   `json:"device_metadata" db:"device_metadata"`
 
 	// subscription config
 	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty" db:"alert_config"`
@@ -877,6 +938,7 @@ func (s *Subscription) GetFilterConfig() FilterConfiguration {
 	if s.FilterConfig != nil {
 		return *s.FilterConfig
 	}
+
 	return FilterConfiguration{
 		EventTypes: []string{},
 		Filter: FilterSchema{
@@ -1016,7 +1078,7 @@ func (h *M) Scan(value interface{}) error {
 
 func (h M) Value() (driver.Value, error) {
 	if h == nil {
-		return nil, nil
+		return []byte("{}"), nil
 	}
 
 	b, err := json.Marshal(h)
@@ -1171,12 +1233,12 @@ type OrganisationInvite struct {
 }
 
 type PortalLink struct {
-	UID               string         `json:"uid" db:"id"`
-	Name              string         `json:"name" db:"name"`
-	ProjectID         string         `json:"project_id" db:"project_id"`
-	Token             string         `json:"-" db:"token"`
-	Endpoints         pq.StringArray `json:"endpoints" db:"endpoints"`
-	EndpointsMetadata []Endpoint     `json:"endpoints_metadata" db:"endpoints_metadata"`
+	UID               string           `json:"uid" db:"id"`
+	Name              string           `json:"name" db:"name"`
+	ProjectID         string           `json:"project_id" db:"project_id"`
+	Token             string           `json:"-" db:"token"`
+	Endpoints         pq.StringArray   `json:"endpoints" db:"endpoints"`
+	EndpointsMetadata EndpointMetadata `json:"endpoints_metadata" db:"endpoints_metadata"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
@@ -1185,13 +1247,12 @@ type PortalLink struct {
 
 // Deprecated
 type Application struct {
-	ID              primitive.ObjectID `json:"-" db:"_id"`
-	UID             string             `json:"uid" db:"uid"`
-	ProjectID       string             `json:"project_id" db:"project_id"`
-	Title           string             `json:"name" db:"title"`
-	SupportEmail    string             `json:"support_email,omitempty" db:"support_email"`
-	SlackWebhookURL string             `json:"slack_webhook_url,omitempty" db:"slack_webhook_url"`
-	IsDisabled      bool               `json:"is_disabled,omitempty" db:"is_disabled"`
+	UID             string `json:"uid" db:"id"`
+	ProjectID       string `json:"project_id" db:"project_id"`
+	Title           string `json:"name" db:"title"`
+	SupportEmail    string `json:"support_email,omitempty" db:"support_email"`
+	SlackWebhookURL string `json:"slack_webhook_url,omitempty" db:"slack_webhook_url"`
+	IsDisabled      bool   `json:"is_disabled,omitempty" db:"is_disabled"`
 
 	Endpoints []DeprecatedEndpoint `json:"endpoints,omitempty" db:"endpoints"`
 	CreatedAt time.Time            `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
@@ -1247,11 +1308,4 @@ func (p *Password) Matches() (bool, error) {
 	}
 
 	return true, err
-}
-
-type SubscriptionFilter struct {
-	ID        primitive.ObjectID     `json:"-" bson:"_id"`
-	UID       string                 `json:"uid" bson:"uid"`
-	Filter    map[string]interface{} `json:"filter" bson:"filter"`
-	DeletedAt *primitive.DateTime    `json:"deleted_at,omitempty" bson:"deleted_at"`
 }

@@ -31,21 +31,6 @@ export class DevicesComponent implements OnInit {
 		this.getDevices();
 	}
 
-	async getAppPortalApp() {
-		this.showError = false;
-		this.isloadingAppPortalAppDetails = true;
-
-		try {
-			const app = await this.deviceService.getAppPortalApp(this.token);
-			this.endpointId = app.data.uid;
-			this.getDevices();
-			return;
-		} catch (error) {
-			this.showError = true;
-			this.isloadingAppPortalAppDetails = false;
-			return error;
-		}
-	}
 	async getDevices() {
 		this.showError = false;
 		this.isFetchingDevices = true;

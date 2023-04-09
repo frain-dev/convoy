@@ -1,1 +1,0 @@
-{"status":true,"message":"Dashboard summary fetched successfully","data":{"events_sent":6,"apps":1,"period":"daily","event_data":[{"data":{"index":1,"date":"2021-01-01"},"count":1},{"data":{"index":10,"date":"2021-01-10"},"count":1},{"data":{"index":79,"date":"2022-03-20"},"count":4}]}}

@@ -1,8 +1,8 @@
-<convoy-page>
+<div convoy-page>
 	<h2 class="font-semibold mb-20px" *ngIf="isCliAvailable">Portal</h2>
 
-	<convoy-card className="mt-24px rounded-bl-[0] rounded-br-[0]">
-        <div class="flex items-center justify-center">
+	<div convoy-card class="mt-24px rounded-bl-[0] rounded-br-[0]">
+		<div class="flex items-center justify-center">
 			<ul class="flex flex-row m-auto w-full mt-12px">
 				<li *ngFor="let tab of tabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
 					<button class="pb-16px pt-10px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="toggleActiveTab(tab)">
@@ -16,10 +16,10 @@
 				</div>
 			</ul>
 		</div>
-	</convoy-card>
+	</div>
 
 	<ng-container *ngIf="activeTab === 'subscriptions'">
-		<convoy-card className="rounded-tl-[0] rounded-tr-[0]">
+		<div convoy-card class="rounded-tl-[0] rounded-tr-[0]">
 			<convoy-table-loader id="endpoints_loader" class="block h-300px" [withDate]="false" [tableHead]="tableHead" *ngIf="isloadingSubscriptions"></convoy-table-loader>
 
 			<table convoy-table class="subscriptions-table" *ngIf="!isloadingSubscriptions && subscriptions?.content?.length">
@@ -73,8 +73,8 @@
 				</tbody>
 			</table>
 
-			<convoy-empty-state className="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" description="No subscription to show here" *ngIf="showSubscriptionError || (!isloadingSubscriptions && subscriptions?.content?.length === 0)"></convoy-empty-state>
-		</convoy-card>
+			<convoy-empty-state class="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" description="No subscription to show here" *ngIf="showSubscriptionError || (!isloadingSubscriptions && subscriptions?.content?.length === 0)"></convoy-empty-state>
+		</div>
 	</ng-container>
 
 	<ng-container *ngIf="activeTab === 'cli keys'">
@@ -88,12 +88,22 @@
 	<div class="mb-24px"></div>
 
 	<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event"></app-event-deliveries>
-</convoy-page>
+</div>
 
-<div convoy-modal position="full" *ngIf="showCreateSubscriptionModal || subscriptionId" [title]="subscriptionId ? 'Update Subscription' : 'Create New Subscription'" (closeModal)="closeCreateSubscriptionModal()">
-	<ng-container modalBody>
+<div convoy-modal position="full" *ngIf="showCreateSubscriptionModal || subscriptionId" (closeModal)="closeCreateSubscriptionModal()">
+	<div convoy-modal-header fullscreen="true">
+		<div class="flex items-center">
+			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="closeCreateSubscriptionModal()">
+				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
+			</button>
+
+			<h2 class="font-semibold capitalize ml-2">{{ subscriptionId ? 'Update Subscription' : 'Create New Subscription' }}</h2>
+		</div>
+	</div>
+
+	<div class="max-w-[834px] m-auto">
 		<convoy-create-subscription [action]="subscriptionId ? 'update' : 'create'" (onAction)="$event?.action === 'cancel' ? closeCreateSubscriptionModal() : getSubscripions()"></convoy-create-subscription>
-	</ng-container>
+	</div>
 </div>
 
 <app-delete-modal *ngIf="showDeleteSubscriptionModal" [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="showDeleteSubscriptionModal = false" (deleteData)="deleteSubscription()"></app-delete-modal>

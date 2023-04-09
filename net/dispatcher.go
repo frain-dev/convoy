@@ -138,6 +138,7 @@ func updateDispatchHeaders(r *Response, res *http.Response) {
 	r.ResponseHeader = res.Header
 }
 
+// TODO(subomi): Refactor this to support Enterprise Editions
 func defaultUserAgent() string {
 	return "Convoy/" + convoy.GetVersion()
 }

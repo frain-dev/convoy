@@ -1,27 +1,64 @@
+## 0.9.1
+
+-   [Enhancement] Add default db connection options #1496
+-   [Enhancement] Move check for hiding pagination to entire container #1497
+-   [Enhancement] Add support for filtering by "owner_id" when fetching endpoints and by an array of endpoints when fetching subscriptions #1498
+-   [Enhancement] Add signup enabled environment variable #1495
+-   [Bugfix] Change TrimSuffix to TrimSpace when fetching convoy version #1501
+-   [Bugfix] Redirect to the "get started" page when there's no orgnaization for that user #1500
+
+## 0.9.0
+
+-   [Documentation] Update API Annotations #1478
+-   [Enhancement] Change font to inter #1470
+-   [Enhancement] QoL Postgres Updates #1419
+-   [Enhancement] Port Stream Server #1482
+-   [Enhancement] UI updates #1491 #1490 #1486 #1474 #1480
+-   [Bugfix] Check pending migrations #1487
+-   [Bugfix] fix message payload for process event delivery #1483
+
+## 0.9.0-rc.3
+
+-   [Bugfix] Fix search indexer job #1448 #1449
+-   [Bugfix] Fix refresh token issue #1447
+-   [Bugfix] Fix event graph length #1443
+
+## 0.9.0-rc.2
+
+-   [Bugfix] Fix issue with updating PubSub Sources #1440
+-   [Enhancement] Fix toggle and view subscription. #1424
+-   [Enhancement] Create room for empty data on chart. #1422 #1425
+
 ## 0.9.0-rc.1
-- [Feature] Add new message broker source. #1285
-- [Enhancement] Switched backing store to PostgreSQL. #1287
-- [Enhancement] Add modal to confirm before regenerating API Keys. #1378
-- [Enhancement] Implement new wait screens #1398
+
+-   [Feature] Add new message broker source. #1285
+-   [Enhancement] Switched backing store to PostgreSQL. #1287
+-   [Enhancement] Add modal to confirm before regenerating API Keys. #1378
+-   [Enhancement] Implement new wait screens #1398
+
+## 0.8.3
+
+-   [Bugfix] Fix search indexer job #1448 #1449
 
 ## 0.8.2
-- [Feature] Set Advanced Signatures by default for Incoming projects. 
-- [Enhancement] Refactored Convoy CLI Implementation. #1290
-- [Enhancement] Improved Project Onboarding #1335
-- [Enhancement] Improved Delivery Attempt Details page #1341
-- [Enhancement] Update Subscriptions Card for Incoming Projects. #1349
-- [Enhancement] Update portal links design #1348
-- [Enhancement] Improve source, subscription and endpoint forms #1335
-- [Bugfix] Event Log pagination bug #1346
-- [Bugfix] Date picker bug fix #1355
+
+-   [Feature] Set Advanced Signatures by default for Incoming projects.
+-   [Enhancement] Refactored Convoy CLI Implementation. #1290
+-   [Enhancement] Improved Project Onboarding #1335
+-   [Enhancement] Improved Delivery Attempt Details page #1341
+-   [Enhancement] Update Subscriptions Card for Incoming Projects. #1349
+-   [Enhancement] Update portal links design #1348
+-   [Enhancement] Improve source, subscription and endpoint forms #1335
+-   [Bugfix] Event Log pagination bug #1346
+-   [Bugfix] Date picker bug fix #1355
 
 ## 0.8.1
 
-- [Enhancement] Improved stats query #1256
-- [Enhancement] Add analytics and storage policy settings in convoy.josn #1284 #1324
-- [Feature] Set notifications by default #1251
-- [Feature] Add raw invite link in invite email #1279
-- [Feature] Allow user re-generate api key for projects #1277
+-   [Enhancement] Improved stats query #1256
+-   [Enhancement] Add analytics and storage policy settings in convoy.josn #1284 #1324
+-   [Feature] Set notifications by default #1251
+-   [Feature] Add raw invite link in invite email #1279
+-   [Feature] Allow user re-generate api key for projects #1277
 
 ## 0.8.0
 

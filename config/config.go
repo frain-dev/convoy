@@ -27,7 +27,7 @@ var cfgSingleton atomic.Value
 var DefaultConfiguration = Configuration{
 	Host:            DefaultHost,
 	Environment:     OSSEnvironment,
-	MaxResponseSize: MaxResponseSize,
+	MaxResponseSize: MaxResponseSizeKb,
 	Server: ServerConfiguration{
 		HTTP: HTTPServerConfiguration{
 			SSL:        false,
@@ -36,8 +36,11 @@ var DefaultConfiguration = Configuration{
 		},
 	},
 	Database: DatabaseConfiguration{
-		Type: PostgresDatabaseProvider,
-		Dsn:  "postgres://postgres:postgres@localhost/convoy",
+		Type:               PostgresDatabaseProvider,
+		Dsn:                "postgres://postgres:postgres@localhost/convoy",
+		SetMaxOpenConns:    10,
+		SetMaxIdleConns:    10,
+		SetConnMaxLifetime: 3600,
 	},
 	Queue: QueueConfiguration{
 		Type: RedisQueueProvider,
@@ -63,8 +66,11 @@ var DefaultConfiguration = Configuration{
 }
 
 type DatabaseConfiguration struct {
-	Type DatabaseProvider `json:"type" envconfig:"CONVOY_DB_TYPE"`
-	Dsn  string           `json:"dsn" envconfig:"CONVOY_DB_DSN"`
+	Type               DatabaseProvider `json:"type" envconfig:"CONVOY_DB_TYPE"`
+	Dsn                string           `json:"dsn" envconfig:"CONVOY_DB_DSN"`
+	SetMaxOpenConns    int              `json:"max_open_conn" envconfig:"CONVOY_DB_MAX_OPEN_CONN"`
+	SetMaxIdleConns    int              `json:"max_idle_conn" envconfig:"CONVOY_DB_MAX_IDLE_CONN"`
+	SetConnMaxLifetime int              `json:"conn_max_lifetime" envconfig:"CONVOY_DB_CONN_MAX_LIFETIME"`
 }
 
 type ServerConfiguration struct {
@@ -104,7 +110,7 @@ type AuthConfiguration struct {
 	File            FileRealmOption    `json:"file"`
 	Native          NativeRealmOptions `json:"native"`
 	Jwt             JwtRealmOptions    `json:"jwt"`
-	IsSignupEnabled bool               `json:"is_signup_enabled"`
+	IsSignupEnabled bool               `json:"is_signup_enabled" envconfig:"CONVOY_SIGNUP_ENABLED"`
 }
 
 type NativeRealmOptions struct {
@@ -222,6 +228,7 @@ const (
 	RedisLimiterProvider               LimiterProvider         = "redis"
 	PostgresDatabaseProvider           DatabaseProvider        = "postgres"
 	InMemoryDatabaseProvider           DatabaseProvider        = "in-memory"
+	TypesenseSearchProvider            SearchProvider          = "typesense"
 )
 
 type (
@@ -369,7 +376,7 @@ func ensureMaxResponseSize(c *Configuration) {
 	if bytes == 0 {
 		c.MaxResponseSize = MaxResponseSize
 	} else if bytes > MaxResponseSize {
-		log.Warnf("maximum response size of %dkb too large, using default value of %dkb", c.MaxResponseSize, c.MaxResponseSize/1024)
+		log.Warnf("maximum response size of %dkb too large, using default value of %dkb", c.MaxResponseSize, MaxResponseSizeKb)
 		c.MaxResponseSize = MaxResponseSize
 	} else {
 		c.MaxResponseSize = bytes

@@ -13,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type chainMap map[string]auth.Realm
@@ -80,13 +79,11 @@ func (rc *RealmChain) Authenticate(ctx context.Context, cred *auth.Credential) (
 	var err error
 	var authUser *auth.AuthenticatedUser
 
-	for name, realm := range rc.chain {
+	for _, realm := range rc.chain {
 		authUser, err = realm.Authenticate(ctx, cred)
 		if err == nil {
 			return authUser, nil
 		}
-		// TODO(daniel): starting to think logging cred itself doesn't add any value
-		log.WithError(err).Errorf("realm %s failed to authenticate cred: %s", name, cred)
 	}
 	return nil, ErrAuthFailed
 }

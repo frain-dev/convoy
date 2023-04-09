@@ -4,15 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/oklog/ulid/v2"
 
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -121,7 +120,6 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, projectId s
 	}
 
 	subscription, err := s.subRepo.FindSubscriptionByID(ctx, projectId, subscriptionId)
-	fmt.Println("ff", err)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrSubscriptionNotFound.Error())
 		return nil, util.NewServiceError(http.StatusBadRequest, ErrSubscriptionNotFound)

@@ -8,8 +8,9 @@ import (
 	"time"
 
 	"github.com/dchest/uniuri"
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/server/models"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/oklog/ulid/v2"
 )
@@ -100,7 +101,8 @@ func (p *PortalLinkService) FindPortalLinkByID(ctx context.Context, project *dat
 func (p *PortalLinkService) LoadPortalLinksPaged(ctx context.Context, project *datastore.Project, f *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
 	portalLinks, paginationData, err := p.portalLinkRepo.LoadPortalLinksPaged(ctx, project.UID, f, pageable)
 	if err != nil {
-		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching portal links"))
+		log.WithError(err).Println("an error occurred while fetching portal links")
+		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching portal links"))
 	}
 
 	return portalLinks, paginationData, nil

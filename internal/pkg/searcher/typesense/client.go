@@ -1,20 +1,16 @@
 package typesense
 
 import (
-	"encoding/json"
 	"errors"
 	"log"
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/jeremywohl/flatten"
+	"github.com/frain-dev/convoy/pkg/flatten"
 	"github.com/typesense/typesense-go/typesense"
 	"github.com/typesense/typesense-go/typesense/api"
 )
-
-const DateFormat = "2006-01-02T15:04:05Z07:00"
 
 var ErrIDFieldIsRequired = errors.New("id field does not exist on the document")
 
@@ -63,9 +59,9 @@ func (t *Typesense) Search(collection string, f *datastore.SearchFilter) ([]stri
 
 	queryBy := queryByBuilder.String()
 	sortBy := "created_at:desc"
+	page := 1
 
 	sp := &api.MultiSearchParams{}
-
 	msp := api.MultiSearchSearchesParameter{
 		Searches: []api.MultiSearchCollectionParameters{
 			{
@@ -75,7 +71,7 @@ func (t *Typesense) Search(collection string, f *datastore.SearchFilter) ([]stri
 					QueryBy:  &queryBy,
 					SortBy:   &sortBy,
 					FilterBy: f.FilterBy.String(),
-					Page:     &f.Pageable.Page,
+					Page:     &page,
 					PerPage:  &f.Pageable.PerPage,
 				},
 			},
@@ -87,6 +83,10 @@ func (t *Typesense) Search(collection string, f *datastore.SearchFilter) ([]stri
 		return docs, data, err
 	}
 
+	if len(results.Results) == 0 {
+		return docs, data, nil
+	}
+
 	result := results.Results[0]
 
 	for _, hit := range *result.Hits {
@@ -95,22 +95,22 @@ func (t *Typesense) Search(collection string, f *datastore.SearchFilter) ([]stri
 		}
 	}
 
-	data.Next = int64(f.Pageable.Page + 1)
-	data.Prev = int64(f.Pageable.Page - 1)
-	data.Page = int64(f.Pageable.Page)
-	data.Total = int64(*result.OutOf)
+	// data.Next = int64(f.Pageable.Page + 1)
+	// data.Prev = int64(f.Pageable.Page - 1)
+	// data.Page = int64(f.Pageable.Page)
+	// data.Total = int64(*result.OutOf)
 	data.PerPage = int64(f.Pageable.PerPage)
 
-	if *result.Found > 0 {
-		data.TotalPage = int64(*result.Found / f.Pageable.PerPage)
-	} else {
-		data.TotalPage = 0
-	}
+	// if *result.Found > 0 {
+	// 	data.TotalPage = int64(*result.Found / f.Pageable.PerPage)
+	// } else {
+	// 	data.TotalPage = 0
+	// }
 
 	return docs, data, nil
 }
 
-func (t *Typesense) Index(collection string, document convoy.GenericMap) error {
+func (t *Typesense) Index(collection string, document map[string]interface{}) error {
 	// perform schema validation
 	if _, found := document["id"]; !found {
 		return ErrIDFieldIsRequired
@@ -126,7 +126,7 @@ func (t *Typesense) Index(collection string, document convoy.GenericMap) error {
 
 	if c, found := document["created_at"]; found {
 		if created_at, ok := c.(string); ok {
-			createdAt, err := time.Parse(DateFormat, created_at)
+			createdAt, err := time.Parse(time.RFC3339, created_at)
 			if err != nil {
 				return err
 			}
@@ -140,7 +140,7 @@ func (t *Typesense) Index(collection string, document convoy.GenericMap) error {
 
 	if u, found := document["updated_at"]; found {
 		if updated_at, ok := u.(string); ok {
-			updatedAt, err := time.Parse(DateFormat, updated_at)
+			updatedAt, err := time.Parse(time.RFC3339, updated_at)
 			if err != nil {
 				return err
 			}
@@ -152,18 +152,7 @@ func (t *Typesense) Index(collection string, document convoy.GenericMap) error {
 		return ErrUpdatedAtFieldIsRequired
 	}
 
-	jsonDoc, err := json.Marshal(document)
-	if err != nil {
-		return err
-	}
-
-	flattened, err := flatten.FlattenString(string(jsonDoc), "", flatten.DotStyle)
-	if err != nil {
-		return err
-	}
-
-	var indexedDoc *convoy.GenericMap
-	err = json.Unmarshal([]byte(flattened), &indexedDoc)
+	indexedDoc, err := flatten.Flatten(document)
 	if err != nil {
 		return err
 	}

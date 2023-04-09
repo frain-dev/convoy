@@ -8,10 +8,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/oklog/ulid/v2"
-
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,12 +20,12 @@ type Person struct {
 	UID       string `json:"uid,omitempty"`
 	Name      string `json:"name,omitempty"`
 	Age       int    `json:"age,omitempty"`
-	GroupID   string `json:"group_id,omitempty"`
+	ProjectID string `json:"project_id,omitempty"`
 	CreatedAt string `json:"created_at,omitempty"`
 	UpdatedAt string `json:"updated_at,omitempty"`
 }
 
-func (p *Person) toGenericMap(document *convoy.GenericMap) error {
+func toGenericMap(p Person, document *map[string]interface{}) error {
 	// convert event to map
 	eBytes, err := json.Marshal(p)
 	if err != nil {
@@ -77,8 +75,8 @@ func Test_IndexOne(t *testing.T) {
 		UpdatedAt: "2022-09-02T15:04:05+01:00",
 	}
 
-	var doc convoy.GenericMap
-	err = p.toGenericMap(&doc)
+	var doc map[string]interface{}
+	err = toGenericMap(p, &doc)
 	require.NoError(t, err)
 
 	err = ts.Index(testCollection, doc)
@@ -100,14 +98,14 @@ func Test_IndexMutiple(t *testing.T) {
 			Age:       1,
 			Name:      "subomi",
 			UID:       "uid-1",
-			GroupID:   "group-1",
+			ProjectID: "project-1",
 			ID:        ulid.Make().String(),
 			CreatedAt: "2022-09-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
 		},
 		{
 			Age:       2,
-			GroupID:   "group-1",
+			ProjectID: "project-1",
 			Name:      "raymond",
 			ID:        ulid.Make().String(),
 			UID:       "uid-2",
@@ -118,7 +116,7 @@ func Test_IndexMutiple(t *testing.T) {
 			Age:       2,
 			ID:        ulid.Make().String(),
 			Name:      "emmanuel",
-			GroupID:   "group-1",
+			ProjectID: "project-1",
 			UID:       "uid-3",
 			CreatedAt: "2022-08-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
@@ -126,8 +124,8 @@ func Test_IndexMutiple(t *testing.T) {
 	}
 
 	for _, p := range people {
-		var doc convoy.GenericMap
-		err = p.toGenericMap(&doc)
+		var doc map[string]interface{}
+		err = toGenericMap(p, &doc)
 		require.NoError(t, err)
 
 		err = ts.Index(testCollection, doc)
@@ -160,7 +158,7 @@ func Test_Index(t *testing.T) {
 				ID:        ulid.Make().String(),
 				UID:       "uid-5",
 				Age:       5,
-				GroupID:   "group-1",
+				ProjectID: "project-1",
 				Name:      "emmanuella",
 				CreatedAt: "2022-09-02T15:04:05+01:00",
 				UpdatedAt: "2022-09-02T15:04:05+01:00",
@@ -174,7 +172,7 @@ func Test_Index(t *testing.T) {
 			name: "Should fail to index the document - missing id field",
 			person: Person{
 				Age:       5,
-				GroupID:   "group-1",
+				ProjectID: "project-1",
 				Name:      "emmanuella",
 				CreatedAt: "2022-09-02T15:04:05+01:00",
 				UpdatedAt: "2022-09-02T15:04:05+01:00",
@@ -190,7 +188,7 @@ func Test_Index(t *testing.T) {
 			person: Person{
 				ID:        ulid.Make().String(),
 				Age:       5,
-				GroupID:   "group-1",
+				ProjectID: "project-1",
 				UID:       "uid-2",
 				Name:      "emmanuella",
 				UpdatedAt: "2022-09-02T15:04:05+01:00",
@@ -206,7 +204,7 @@ func Test_Index(t *testing.T) {
 			person: Person{
 				Age:       5,
 				ID:        ulid.Make().String(),
-				GroupID:   "group-1",
+				ProjectID: "project-1",
 				UID:       "uid-2",
 				Name:      "emmanuella",
 				CreatedAt: "2022-09-02T15:04:05+01:00",
@@ -222,7 +220,7 @@ func Test_Index(t *testing.T) {
 			person: Person{
 				Age:       5,
 				ID:        ulid.Make().String(),
-				GroupID:   "group-1",
+				ProjectID: "project-1",
 				Name:      "emmanuella",
 				CreatedAt: "2022-09-02T15:04:05+01:00",
 			},
@@ -240,8 +238,8 @@ func Test_Index(t *testing.T) {
 			require.NoError(t, err)
 			defer deleteCollection(t, ts, testCollection)
 
-			var doc convoy.GenericMap
-			err = tt.person.toGenericMap(&doc)
+			var doc map[string]interface{}
+			err = toGenericMap(tt.person, &doc)
 			require.NoError(t, err)
 
 			err = ts.Index(testCollection, doc)
@@ -266,7 +264,7 @@ func Test_Search(t *testing.T) {
 			UID:       "uid-1",
 			ID:        ulid.Make().String(),
 			Age:       1,
-			GroupID:   "group-1",
+			ProjectID: "project-1",
 			Name:      "subomi",
 			CreatedAt: "2022-09-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
@@ -275,7 +273,7 @@ func Test_Search(t *testing.T) {
 			ID:        ulid.Make().String(),
 			UID:       "uid-2",
 			Age:       2,
-			GroupID:   "group-1",
+			ProjectID: "project-1",
 			Name:      "raymond",
 			CreatedAt: "2022-08-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
@@ -284,7 +282,7 @@ func Test_Search(t *testing.T) {
 			ID:        ulid.Make().String(),
 			UID:       "uid-3",
 			Age:       2,
-			GroupID:   "group-1",
+			ProjectID: "project-1",
 			Name:      "emmanuel",
 			CreatedAt: "2022-08-02T15:04:05+01:00",
 			UpdatedAt: "2022-09-02T15:04:05+01:00",
@@ -292,7 +290,7 @@ func Test_Search(t *testing.T) {
 		{
 			ID:        ulid.Make().String(),
 			UID:       "uid-4",
-			GroupID:   "group-1",
+			ProjectID: "project-1",
 			Age:       3,
 			Name:      "pelumi",
 			CreatedAt: "2022-09-02T15:04:05+01:00",
@@ -301,7 +299,7 @@ func Test_Search(t *testing.T) {
 		{
 			ID:        ulid.Make().String(),
 			UID:       "uid-5",
-			GroupID:   "group-1",
+			ProjectID: "project-1",
 			Age:       5,
 			Name:      "emmanuella",
 			CreatedAt: "2022-09-02T15:04:05+01:00",
@@ -311,8 +309,8 @@ func Test_Search(t *testing.T) {
 
 	// seed the search db
 	for _, e := range people {
-		var doc convoy.GenericMap
-		err = e.toGenericMap(&doc)
+		var doc map[string]interface{}
+		err = toGenericMap(e, &doc)
 		require.NoError(t, err)
 
 		err = ts.Index(testCollection, doc)
@@ -354,13 +352,13 @@ func Test_Search(t *testing.T) {
 			pp, _, err := ts.Search(testCollection, &datastore.SearchFilter{
 				Query: tt.query,
 				FilterBy: datastore.FilterBy{
-					ProjectID: "group-1",
+					ProjectID: "project-1",
 					SearchParams: datastore.SearchParams{
 						CreatedAtStart: 0,
 						CreatedAtEnd:   10000000000,
 					},
 				},
-				Pageable: datastore.Pageable{Page: 1, PerPage: 10, Sort: 1},
+				Pageable: datastore.Pageable{PerPage: 10},
 			})
 			require.NoError(t, err)
 

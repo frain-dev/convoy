@@ -3,18 +3,14 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
-	"gopkg.in/guregu/null.v4"
 )
 
 var ErrEventNotCreated = errors.New("event could not be created")
@@ -32,13 +28,23 @@ const (
 	fetchEventById = `
 	SELECT id, event_type, endpoints, project_id,
 	COALESCE(source_id, '') AS source_id, headers, raw, data
-	FROM convoy.events WHERE id = $1 AND deleted_at is NULL;
+	FROM convoy.events WHERE id = $1 AND project_id = $2 AND deleted_at is NULL;
 	`
 
 	fetchEventsByIds = `
-	SELECT id, event_type, endpoints, project_id,
-	COALESCE(source_id, '') AS source_id, headers, raw, data
-	FROM convoy.events WHERE id IN (?) AND deleted_at IS NULL;
+	SELECT ev.id, ev.project_id, ev.id as event_type,
+	COALESCE(ev.source_id, '') AS source_id,
+	ev.headers, ev.raw, ev.data, ev.created_at, 
+	ev.updated_at, ev.deleted_at,
+	COALESCE(s.id, '') AS "source_metadata.id",
+	COALESCE(s.name, '') AS "source_metadata.name"
+    FROM convoy.events ev
+	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
+	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+	LEFT JOIN convoy.sources s ON s.id = ev.source_id
+	WHERE ev.deleted_at IS NULL
+	AND ev.id IN (?) 
+	AND ev.project_id = ?
 	`
 
 	countProjectMessages = `
@@ -48,37 +54,54 @@ const (
 	SELECT count(distinct(ev.id)) from convoy.events ev
 	LEFT JOIN convoy.events_endpoints ee on ee.event_id = ev.id
 	LEFT JOIN convoy.endpoints e on ee.endpoint_id = e.id
-	WHERE (ev.project_id = $1 OR $1 = '') AND (e.id = $2 OR $2 = '' )
+	WHERE ev.project_id = $1 AND (e.id = $2 OR $2 = '' )
 	AND (ev.source_id = $3 OR $3 = '') AND ev.created_at >= $4 AND ev.created_at <= $5 AND ev.deleted_at IS NULL;
 	`
 
-	baseEventsCount = `
-	WITH table_count AS (
-		SELECT count(distinct(ev.id)) as count
-		FROM convoy.events ev LEFT JOIN convoy.events_endpoints
-		ee ON ee.event_id = ev.id
-		WHERE ev.deleted_at IS NULL
-		%s
-	)
-	`
-
 	baseEventsPaged = `
-	SELECT table_count.count, ev.id,
-	ev.project_id, ev.event_type, ev.source_id, ev.headers, ev.raw,
-	ev.data, ev.created_at, ev.updated_at, ev.deleted_at,
-	e.id AS "endpoint.id", e.title AS "endpoint.title",
-	e.project_id AS "endpoint.project_id", e.support_email AS "endpoint.support_email",
-	e.target_url AS "endpoint.target_url", s.id AS "source.id",
-	s.name AS "source.name" FROM table_count, convoy.events AS ev
+	SELECT ev.id, ev.project_id, ev.id as event_type,
+	COALESCE(ev.source_id, '') AS source_id,
+	ev.headers, ev.raw, ev.data, ev.created_at, 
+	ev.updated_at, ev.deleted_at,
+	COALESCE(s.id, '') AS "source_metadata.id",
+	COALESCE(s.name, '') AS "source_metadata.name"
+    FROM convoy.events ev
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
 	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
-	WHERE ev.deleted_at IS NULL
-	%s
-	ORDER BY ev.created_at DESC LIMIT :limit OFFSET :offset
+    WHERE ev.deleted_at IS NULL`
+
+	baseEventsPagedForward = `%s %s AND ev.id <= :cursor
+	GROUP BY ev.id, s.id 
+	ORDER BY ev.id DESC 
+	LIMIT :limit
 	`
 
-	baseEventFilter = `AND (ev.project_id = :project_id OR :project_id = '') AND (ev.source_id = :source_id OR :source_id = '') AND ev.created_at >= :start_date AND ev.created_at <= :end_date`
+	baseEventsPagedBackward = `
+	WITH events AS (  
+		%s %s AND ev.id >= :cursor 
+		GROUP BY ev.id, s.id 
+		ORDER BY ev.id ASC 
+		LIMIT :limit
+	)
+
+	SELECT * FROM events ORDER BY id DESC
+	`
+
+	baseEventFilter = ` AND ev.project_id = :project_id 
+	AND (ev.source_id = :source_id OR :source_id = '') 
+	AND ev.created_at >= :start_date 
+	AND ev.created_at <= :end_date`
+
+	endpointFilter = ` AND ee.endpoint_id IN (:endpoint_ids) `
+
+	baseCountPrevEvents = `
+	SELECT count(distinct(ev.id)) as count
+	FROM convoy.events ev
+	LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
+	WHERE ev.deleted_at IS NULL
+	`
+	countPrevEvents = ` AND ev.id > :cursor GROUP BY ev.id ORDER BY ev.id DESC LIMIT 1`
 
 	softDeleteProjectEvents = `
 	UPDATE convoy.events SET deleted_at = now()
@@ -136,15 +159,14 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		if err != nil {
 			return err
 		}
-
 	}
 
 	return tx.Commit()
 }
 
-func (e *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.Event, error) {
+func (e *eventRepo) FindEventByID(ctx context.Context, projectID string, id string) (*datastore.Event, error) {
 	event := &datastore.Event{}
-	err := e.db.QueryRowxContext(ctx, fetchEventById, id).StructScan(event)
+	err := e.db.QueryRowxContext(ctx, fetchEventById, id, projectID).StructScan(event)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrEventNotFound
@@ -155,8 +177,8 @@ func (e *eventRepo) FindEventByID(ctx context.Context, id string) (*datastore.Ev
 	return event, nil
 }
 
-func (e *eventRepo) FindEventsByIDs(ctx context.Context, ids []string) ([]datastore.Event, error) {
-	query, args, err := sqlx.In(fetchEventsByIds, ids)
+func (e *eventRepo) FindEventsByIDs(ctx context.Context, projectID string, ids []string) ([]datastore.Event, error) {
+	query, args, err := sqlx.In(fetchEventsByIds, ids, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -193,14 +215,9 @@ func (e *eventRepo) CountProjectMessages(ctx context.Context, projectID string) 
 	return count, nil
 }
 
-func (e *eventRepo) CountEvents(ctx context.Context, filter *datastore.Filter) (int64, error) {
+func (e *eventRepo) CountEvents(ctx context.Context, projectID string, filter *datastore.Filter) (int64, error) {
 	var count int64
-	var projectID string
 	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
-
-	if filter.Project != nil {
-		projectID = filter.Project.UID
-	}
 
 	err := e.db.QueryRowxContext(ctx, countEvents, projectID, filter.EndpointID, filter.SourceID, startDate, endDate).Scan(&count)
 	if err != nil {
@@ -210,16 +227,12 @@ func (e *eventRepo) CountEvents(ctx context.Context, filter *datastore.Filter) (
 	return count, nil
 }
 
-func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
-	var query, projectID string
+func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
+	var query, countQuery, filterQuery string
 	var err error
-	var args []interface{}
+	var args, qargs []interface{}
 
 	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
-	if filter.Project != nil {
-		projectID = filter.Project.UID
-	}
-
 	if !util.IsStringEmpty(filter.EndpointID) {
 		filter.EndpointIDs = append(filter.EndpointIDs, filter.EndpointID)
 	}
@@ -228,93 +241,108 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, filter *datastore.Filte
 		"endpoint_ids": filter.EndpointIDs,
 		"project_id":   projectID,
 		"source_id":    filter.SourceID,
+		"limit":        filter.Pageable.Limit(),
 		"start_date":   startDate,
 		"end_date":     endDate,
-		"limit":        filter.Pageable.Limit(),
-		"offset":       filter.Pageable.Offset(),
+		"cursor":       filter.Pageable.Cursor(),
 	}
 
-	if len(filter.EndpointIDs) > 0 {
-		filterQuery := `AND ee.endpoint_id IN (:endpoint_ids) ` + baseEventFilter
-		q := fmt.Sprintf(baseEventsCount, filterQuery) + fmt.Sprintf(baseEventsPaged, filterQuery)
-		query, args, err = sqlx.Named(q, arg)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-		query, args, err = sqlx.In(query, args...)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-
-		query = e.db.Rebind(query)
-
+	var baseQueryPagination string
+	if filter.Pageable.Direction == datastore.Next {
+		baseQueryPagination = baseEventsPagedForward
 	} else {
-		q := fmt.Sprintf(baseEventsCount, baseEventFilter) + fmt.Sprintf(baseEventsPaged, baseEventFilter)
-		query, args, err = sqlx.Named(q, arg)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-
-		query = e.db.Rebind(query)
+		baseQueryPagination = baseEventsPagedBackward
 	}
 
+	filterQuery = baseEventFilter
+	if len(filter.EndpointIDs) > 0 {
+		filterQuery += endpointFilter
+	}
+
+	query = fmt.Sprintf(baseQueryPagination, baseEventsPaged, filterQuery)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query, args, err = sqlx.Named(query, arg)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query = e.db.Rebind(query)
 	rows, err := e.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
 
-	count := 0
-	eventMap := make(map[string]*datastore.Event)
 	events := make([]datastore.Event, 0)
 	for rows.Next() {
-		var data EventPaginated
+		var data datastore.Event
 
 		err = rows.StructScan(&data)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 
-		record, exists := eventMap[data.UID]
-		if exists {
-			endpoint := data.Endpoint
-			if !util.IsStringEmpty(endpoint.UID.String) {
-				record.EndpointMetadata = append(record.EndpointMetadata, getEventEndpoint(endpoint))
-			}
+		events = append(events, data)
+	}
 
-		} else {
-			event := getEvent(data)
-			endpoint := data.Endpoint
-			if !util.IsStringEmpty(endpoint.UID.String) {
-				event.EndpointMetadata = append(event.EndpointMetadata, getEventEndpoint(endpoint))
-			}
+	var count datastore.PrevRowCount
+	if len(events) > 0 {
+		first := events[0]
+		qarg := arg
+		qarg["cursor"] = first.UID
 
-			source := data.Source
-			if !util.IsStringEmpty(source.UID.String) {
-				event.Source = &datastore.Source{
-					UID:  source.UID.String,
-					Name: source.Name.String,
-				}
-			}
-
-			eventMap[event.UID] = event
+		cq := baseCountPrevEvents + filterQuery + countPrevEvents
+		countQuery, qargs, err = sqlx.Named(cq, qarg)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		countQuery, qargs, err = sqlx.In(countQuery, qargs...)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
 		}
 
-		count = data.Count
+		countQuery = e.db.Rebind(countQuery)
+
+		// count the row number before the first row
+		rows, err := e.db.QueryxContext(ctx, countQuery, qargs...)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+		if rows.Next() {
+			err = rows.StructScan(&count)
+			if err != nil {
+				return nil, datastore.PaginationData{}, err
+			}
+		}
+		rows.Close()
 	}
 
-	for _, event := range eventMap {
-		events = append(events, *event)
+	ids := make([]string, len(events))
+	for i := range events {
+		ids[i] = events[i].UID
 	}
 
-	sort.SliceStable(events, func(i, j int) bool {
-		return events[i].CreatedAt.After(events[j].CreatedAt)
-	})
+	if len(events) > filter.Pageable.PerPage {
+		events = events[:len(events)-1]
+	}
 
-	pagination := calculatePaginationData(count, filter.Pageable.Page, filter.Pageable.PerPage)
-	return events, pagination, nil
+	pagination := &datastore.PaginationData{PrevRowCount: count}
+	pagination = pagination.Build(filter.Pageable, ids)
+
+	return events, *pagination, rows.Close()
 }
 
-func (e *eventRepo) DeleteProjectEvents(ctx context.Context, filter *datastore.EventFilter, hardDelete bool) error {
+func (e *eventRepo) DeleteProjectEvents(ctx context.Context, projectID string, filter *datastore.EventFilter, hardDelete bool) error {
 	query := softDeleteProjectEvents
 	startDate, endDate := getCreatedDateFilter(filter.CreatedAtStart, filter.CreatedAtEnd)
 
@@ -322,7 +350,7 @@ func (e *eventRepo) DeleteProjectEvents(ctx context.Context, filter *datastore.E
 		query = hardDeleteProjectEvents
 	}
 
-	_, err := e.db.ExecContext(ctx, query, filter.ProjectID, startDate, endDate)
+	_, err := e.db.ExecContext(ctx, query, projectID, startDate, endDate)
 	if err != nil {
 		return err
 	}
@@ -334,63 +362,7 @@ func getCreatedDateFilter(startDate, endDate int64) (time.Time, time.Time) {
 	return time.Unix(startDate, 0), time.Unix(endDate, 0)
 }
 
-func getEvent(data EventPaginated) *datastore.Event {
-	return &datastore.Event{
-		UID:              data.UID,
-		EventType:        datastore.EventType(data.EventType),
-		SourceID:         data.SourceID.String,
-		AppID:            data.AppID,
-		ProjectID:        data.ProjectID,
-		Headers:          data.Headers,
-		Data:             data.Data,
-		Raw:              data.Raw,
-		EndpointMetadata: []*datastore.Endpoint{},
-		CreatedAt:        data.CreatedAt,
-		UpdatedAt:        data.UpdatedAt,
-	}
-}
-
-func getEventEndpoint(endpoint *Endpoint) *datastore.Endpoint {
-	return &datastore.Endpoint{
-		UID:          endpoint.UID.String,
-		Title:        endpoint.Title.String,
-		ProjectID:    endpoint.ProjectID.String,
-		SupportEmail: endpoint.SupportEmail.String,
-		TargetURL:    endpoint.TargetUrl.String,
-	}
-}
-
 type EventEndpoint struct {
 	EventID    string `db:"event_id"`
 	EndpointID string `db:"endpoint_id"`
-}
-
-type EventPaginated struct {
-	Count     int                   `db:"count"`
-	UID       string                `db:"id"`
-	EventType string                `db:"event_type"`
-	SourceID  null.String           `db:"source_id"`
-	AppID     string                `db:"app_id"`
-	ProjectID string                `db:"project_id"`
-	Headers   httpheader.HTTPHeader `db:"headers"`
-	Data      json.RawMessage       `db:"data"`
-	Raw       string                `db:"raw"`
-	CreatedAt time.Time             `db:"created_at"`
-	UpdatedAt time.Time             `db:"updated_at"`
-	DeletedAt null.Time             `db:"deleted_at"`
-	Endpoint  *Endpoint             `db:"endpoint"`
-	Source    *Source               `db:"source"`
-}
-
-type Endpoint struct {
-	UID          null.String `db:"id"`
-	Title        null.String `db:"title"`
-	ProjectID    null.String `db:"project_id"`
-	SupportEmail null.String `db:"support_email"`
-	TargetUrl    null.String `db:"target_url"`
-}
-
-type Source struct {
-	UID  null.String `db:"id"`
-	Name null.String `db:"name"`
 }

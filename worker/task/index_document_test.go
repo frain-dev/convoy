@@ -35,6 +35,7 @@ func TestIndexDocument(t *testing.T) {
 				ProjectID: "project-id-1",
 				Endpoints: []string{"endpoint-id-1"},
 				Data:      []byte(`{}`),
+				Raw:       "",
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
@@ -53,6 +54,7 @@ func TestIndexDocument(t *testing.T) {
 				ProjectID: "project-id-1",
 				Endpoints: []string{"endpoint-id-1"},
 				Data:      []byte(`{}`),
+				Raw:       "",
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
@@ -102,10 +104,11 @@ func TestIndexDocument(t *testing.T) {
 			require.NoError(t, err)
 
 			job := queue.Job{
+				ID:      tt.event.UID,
 				Payload: payload,
 			}
 
-			task := asynq.NewTask(string(convoy.IndexDocument), job.Payload, asynq.Queue(string(convoy.PriorityQueue)), asynq.ProcessIn(job.Delay))
+			task := asynq.NewTask(string(convoy.IndexDocument), job.Payload, asynq.Queue(string(convoy.SearchIndexQueue)), asynq.ProcessIn(job.Delay))
 
 			fn := SearchIndex(args.search)
 			err = fn(context.Background(), task)

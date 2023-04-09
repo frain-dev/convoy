@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { PAGINATION } from 'src/app/models/global.model';
+import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
+import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { SOURCE } from 'src/app/models/group.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
@@ -12,6 +13,7 @@ import { SourcesService } from './sources.service';
 	styleUrls: ['./sources.component.scss']
 })
 export class SourcesComponent implements OnInit {
+	@ViewChild('incomingSourceDropdown') incomingSourceDropdown!: DropdownComponent;
 	sourcesTableHead: string[] = ['Name', 'Type', 'Verifier', 'URL', 'Date created', ''];
 	shouldShowCreateSourceModal = false;
 	shouldShowUpdateSourceModal = false;
@@ -22,32 +24,22 @@ export class SourcesComponent implements OnInit {
 	showDeleteSourceModal = false;
 	showSourceDetails = false;
 
-	constructor(private route: ActivatedRoute, public router: Router, private sourcesService: SourcesService, public privateService: PrivateService, private generalService: GeneralService) {
-		this.route.queryParams.subscribe(params => {
-			this.activeSource = this.sources?.content.find(source => source.uid === params?.id);
-			params?.id && this.activeSource ? (this.showSourceDetails = true) : (this.showSourceDetails = false);
-		});
+	constructor(private route: ActivatedRoute, public router: Router, private sourcesService: SourcesService, public privateService: PrivateService, private generalService: GeneralService) {}
 
-		const urlParam = route.snapshot.params.id;
+	ngOnInit() {
+		this.getSources();
+
+		const urlParam = this.route.snapshot.params.id;
 		if (urlParam && urlParam === 'new') this.shouldShowCreateSourceModal = true;
 		if (urlParam && urlParam !== 'new') this.shouldShowUpdateSourceModal = true;
-
-		this.getSources();
 	}
 
-	ngOnInit() {}
-
-	async getSources(requestDetails?: { page?: number }) {
-		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
+	async getSources(requestDetails?: CURSOR) {
 		this.isLoadingSources = true;
 
 		try {
-			const sourcesResponse = await this.privateService.getSources({ page });
+			const sourcesResponse = await this.privateService.getSources(requestDetails);
 			this.sources = sourcesResponse.data;
-			if ((this.sources?.pagination?.total || 0) > 0) {
-				this.activeSource = this.sources?.content.find(source => source.uid === this.route.snapshot.queryParams?.id);
-				if (this.route.snapshot.queryParams?.id && this.activeSource) this.showSourceDetails = true;
-			}
 			this.isLoadingSources = false;
 		} catch (error) {
 			this.isLoadingSources = false;
@@ -81,5 +73,13 @@ export class SourcesComponent implements OnInit {
 
 	closeModal() {
 		this.router.navigate([], { queryParams: {} });
+	}
+
+	paginate(event: PAGINATION) {
+		this.getSources();
+	}
+
+	hideIncomingSourceDropdown() {
+		this.incomingSourceDropdown.show = false;
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
@@ -16,7 +17,6 @@ import (
 	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/oklog/ulid/v2"
 )
@@ -406,7 +406,7 @@ func (u *UserService) sendPasswordResetEmail(ctx context.Context, baseURL string
 		Subject:      "Convoy Password Reset",
 		TemplateName: email.TemplateResetPassword,
 		Params: map[string]string{
-			"password_reset_url": fmt.Sprintf("%s/reset-password?token=%s", baseURL, token),
+			"password_reset_url": fmt.Sprintf("%s/reset-password?auth-token=%s", baseURL, token),
 			"recipient_name":     user.FirstName,
 			"expires_at":         user.ResetPasswordExpiresAt.String(),
 		},

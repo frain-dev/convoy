@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	log "github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/server/models"
 	"github.com/frain-dev/convoy/util"
 	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
@@ -40,8 +40,9 @@ func NewEndpointService(projectRepo datastore.ProjectRepository, endpointRepo da
 	}
 }
 
-func (a *EndpointService) LoadEndpointsPaged(ctx context.Context, uid string, q string, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
-	endpoints, paginationData, err := a.endpointRepo.LoadEndpointsPaged(ctx, uid, strings.TrimSpace(q), pageable)
+func (a *EndpointService) LoadEndpointsPaged(ctx context.Context, uid string, filter *datastore.Filter, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {
+	filter.Query = strings.TrimSpace(filter.Query)
+	endpoints, paginationData, err := a.endpointRepo.LoadEndpointsPaged(ctx, uid, filter, pageable)
 	if err != nil {
 		log.WithError(err).Error("failed to fetch endpoints")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching endpoints"))

@@ -1,1 +1,0 @@
-{"status":true,"message":"Dashboard summary fetched successfully","data":{"events_sent":2,"apps":1,"period":"yearly","event_data":[{"data":{"index":2021,"date":"2021"},"count":2}]}}

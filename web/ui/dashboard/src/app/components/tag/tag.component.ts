@@ -6,8 +6,11 @@ import { STATUS_COLOR } from 'src/app/models/global.model';
 	selector: 'convoy-tag, [convoy-tag]',
 	standalone: true,
 	imports: [CommonModule],
-	templateUrl: './tag.component.html',
-	styleUrls: ['./tag.component.scss']
+	template: `
+		<ng-content></ng-content>
+	`,
+	styleUrls: ['./tag.component.scss'],
+	host: { class: 'py-[1px] px-8px rounded-8px w-fit text-center text-12 font-medium', '[class]': 'classes' }
 })
 export class TagComponent implements OnInit {
 	@Input('type') type: STATUS_COLOR = 'grey';

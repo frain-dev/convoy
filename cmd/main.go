@@ -72,7 +72,7 @@ func main() {
 	cli.AddCommand(scheduler.AddSchedulerCommand(app))
 	cli.AddCommand(migrate.AddMigrateCommand(app))
 	cli.AddCommand(configCmd.AddConfigCommand(app))
-	// cli.AddCommand(addStreamCommand(app))
+	cli.AddCommand(addStreamCommand(app))
 	cli.AddCommand(ingest.AddIngestCommand(app))
 
 	cli.PersistentPreRunE(preRun(app, db))
@@ -84,8 +84,7 @@ func main() {
 }
 
 func ensureDefaultUser(ctx context.Context, a *cli.App) error {
-	pageable := datastore.Pageable{Page: 1, PerPage: 10}
-
+	pageable := datastore.Pageable{PerPage: 10, Direction: datastore.Next, NextCursor: datastore.DefaultCursor}
 	userRepo := postgres.NewUserRepo(a.DB)
 	users, _, err := userRepo.LoadUsersPaged(ctx, pageable)
 	if err != nil {
@@ -168,7 +167,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	config.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
 	config.UpdatedAt = time.Now()
 
-	return nil
+	return configRepo.UpdateConfiguration(ctx, config)
 }
 
 func preRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
@@ -222,11 +221,12 @@ func preRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 				return err
 			}
 			queueNames := map[string]int{
-				string(convoy.PriorityQueue):    5,
-				string(convoy.EventQueue):       2,
-				string(convoy.CreateEventQueue): 2,
+				string(convoy.EventQueue):       3,
+				string(convoy.CreateEventQueue): 3,
+				string(convoy.SearchIndexQueue): 1,
 				string(convoy.ScheduleQueue):    1,
 				string(convoy.DefaultQueue):     1,
+				string(convoy.StreamQueue):      1,
 			}
 			opts := queue.QueueOptions{
 				Names:             queueNames,
@@ -269,6 +269,11 @@ func preRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		*db = *postgresDB
 
+		err = checkPendingMigrations(db)
+		if err != nil {
+			return err
+		}
+
 		app.DB = postgresDB
 		app.Queue = q
 		app.Logger = lo
@@ -293,7 +298,7 @@ func preRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 func postRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		err := db.GetDB().Close()
+		err := db.Close()
 		if err == nil {
 			os.Exit(0)
 		}
@@ -337,4 +342,54 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	}
 
 	return c, nil
+}
+
+func checkPendingMigrations(db database.Database) error {
+	p, ok := db.(*postgres.Postgres)
+	if !ok {
+		return errors.New("failed to open database")
+	}
+
+	type ID struct {
+		Id string
+	}
+	counter := map[string]ID{}
+
+	files, err := convoy.MigrationFiles.ReadDir("sql")
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		if !file.IsDir() {
+			id := ID{Id: file.Name()}
+			counter[id.Id] = id
+		}
+	}
+
+	rows, err := p.GetDB().Queryx("SELECT id FROM convoy.gorp_migrations")
+	if err != nil {
+		return err
+	}
+
+	for rows.Next() {
+		var id ID
+
+		err = rows.StructScan(&id)
+		if err != nil {
+			return err
+		}
+
+		_, ok := counter[id.Id]
+		if ok {
+			delete(counter, id.Id)
+		}
+	}
+	rows.Close()
+
+	if len(counter) > 0 {
+		return postgres.ErrPendingMigrationsFound
+	}
+
+	return nil
 }
