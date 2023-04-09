@@ -14,8 +14,10 @@ import (
 	"github.com/frain-dev/convoy/cmd/retry"
 	"github.com/frain-dev/convoy/cmd/scheduler"
 	"github.com/frain-dev/convoy/cmd/server"
+	"github.com/frain-dev/convoy/cmd/stream"
 	"github.com/frain-dev/convoy/cmd/version"
 	"github.com/frain-dev/convoy/cmd/worker"
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -72,7 +74,7 @@ func main() {
 	cli.AddCommand(scheduler.AddSchedulerCommand(app))
 	cli.AddCommand(migrate.AddMigrateCommand(app))
 	cli.AddCommand(configCmd.AddConfigCommand(app))
-	cli.AddCommand(addStreamCommand(app))
+	cli.AddCommand(stream.AddStreamCommand(app))
 	cli.AddCommand(ingest.AddIngestCommand(app))
 
 	cli.PersistentPreRunE(preRun(app, db))

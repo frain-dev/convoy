@@ -7,6 +7,7 @@ import (
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/socket"
@@ -15,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func addStreamCommand(a *app) *cobra.Command {
+func AddStreamCommand(a *cli.App) *cobra.Command {
 	var socketPort uint32
 	var logLevel string
 
@@ -25,19 +26,19 @@ func addStreamCommand(a *app) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := config.Get()
 			if err != nil {
-				a.logger.WithError(err).Fatal("failed to initialize realm chain")
+				a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 				return err
 			}
 
-			endpointRepo := postgres.NewEndpointRepo(a.db)
-			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.db)
-			sourceRepo := postgres.NewSourceRepo(a.db)
-			subRepo := postgres.NewSubscriptionRepo(a.db)
-			deviceRepo := postgres.NewDeviceRepo(a.db)
-			projectRepo := postgres.NewProjectRepo(a.db)
-			apiKeyRepo := postgres.NewAPIKeyRepo(a.db)
-			userRepo := postgres.NewUserRepo(a.db)
-			orgMemberRepo := postgres.NewOrgMemberRepo(a.db)
+			endpointRepo := postgres.NewEndpointRepo(a.DB)
+			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
+			sourceRepo := postgres.NewSourceRepo(a.DB)
+			subRepo := postgres.NewSubscriptionRepo(a.DB)
+			deviceRepo := postgres.NewDeviceRepo(a.DB)
+			projectRepo := postgres.NewProjectRepo(a.DB)
+			apiKeyRepo := postgres.NewAPIKeyRepo(a.DB)
+			userRepo := postgres.NewUserRepo(a.DB)
+			orgMemberRepo := postgres.NewOrgMemberRepo(a.DB)
 
 			// enable only the native auth realm
 			authCfg := &config.AuthConfiguration{
@@ -46,7 +47,7 @@ func addStreamCommand(a *app) *cobra.Command {
 
 			err = realm_chain.Init(authCfg, apiKeyRepo, userRepo, nil)
 			if err != nil {
-				a.logger.WithError(err).Fatal("failed to initialize realm chain")
+				a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 				return err
 			}
 
@@ -63,7 +64,7 @@ func addStreamCommand(a *app) *cobra.Command {
 			h := socket.NewHub()
 			h.Start()
 
-			lo := a.logger.(*log.Logger)
+			lo := a.Logger.(*log.Logger)
 			lo.SetPrefix("stream server")
 
 			lvl, err := log.ParseLevel(c.Logger.Level)
@@ -76,13 +77,13 @@ func addStreamCommand(a *app) *cobra.Command {
 				UserRepo:     userRepo,
 				EndpointRepo: endpointRepo,
 				ProjectRepo:  projectRepo,
-				Cache:        a.cache,
+				Cache:        a.Cache,
 				Logger:       lo,
 			})
 
 			handler := socket.BuildRoutes(h, r, m)
 
-			consumer := worker.NewConsumer(a.queue, lo)
+			consumer := worker.NewConsumer(a.Queue, lo)
 			consumer.RegisterHandlers(convoy.StreamCliEventsProcessor, h.EventDeliveryCLiHandler(r))
 
 			// start worker
