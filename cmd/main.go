@@ -67,6 +67,9 @@ func main() {
 	cli.Flags().StringVar(&dbDsn, "db", "", "Postgres database dsn")
 	cli.Flags().StringVar(&redisDsn, "redis", "", "Redis dsn")
 
+	cli.PersistentPreRunE(preRun(app, db))
+	cli.PersistentPostRunE(postRun(app, db))
+
 	cli.AddCommand(version.AddVersionCommand())
 	cli.AddCommand(server.AddServerCommand(app))
 	cli.AddCommand(worker.AddWorkerCommand(app))
@@ -76,9 +79,6 @@ func main() {
 	cli.AddCommand(configCmd.AddConfigCommand(app))
 	cli.AddCommand(stream.AddStreamCommand(app))
 	cli.AddCommand(ingest.AddIngestCommand(app))
-
-	cli.PersistentPreRunE(preRun(app, db))
-	cli.PersistentPostRunE(postRun(app, db))
 
 	if err := cli.Execute(); err != nil {
 		slog.Fatal(err)
@@ -271,9 +271,11 @@ func preRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		*db = *postgresDB
 
-		err = checkPendingMigrations(db)
-		if err != nil {
-			return err
+		if ok := shouldCheckMigration(cmd); ok {
+			err = checkPendingMigrations(db)
+			if err != nil {
+				return err
+			}
 		}
 
 		app.DB = postgresDB
@@ -284,14 +286,16 @@ func preRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		app.Limiter = li
 		app.Searcher = se
 
-		err = ensureDefaultUser(context.Background(), app)
-		if err != nil {
-			return err
-		}
+		if ok := shouldBootstrap(cmd); ok {
+			err = ensureDefaultUser(context.Background(), app)
+			if err != nil {
+				return err
+			}
 
-		err = ensureInstanceConfig(context.Background(), app, cfg)
-		if err != nil {
-			return err
+			err = ensureInstanceConfig(context.Background(), app, cfg)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -394,4 +398,38 @@ func checkPendingMigrations(db database.Database) error {
 	}
 
 	return nil
+}
+
+func shouldCheckMigration(cmd *cobra.Command) bool {
+	if cmd.Annotations == nil {
+		return true
+	}
+
+	val, ok := cmd.Annotations["CheckMigration"]
+	if !ok {
+		return true
+	}
+
+	if val != "false" {
+		return true
+	}
+
+	return false
+}
+
+func shouldBootstrap(cmd *cobra.Command) bool {
+	if cmd.Annotations == nil {
+		return true
+	}
+
+	val, ok := cmd.Annotations["ShouldBootstrap"]
+	if !ok {
+		return true
+	}
+
+	if val != "false" {
+		return true
+	}
+
+	return false
 }

@@ -17,13 +17,6 @@ func AddMigrateCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "migrate",
 		Short: "Convoy migrations",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return nil
-
-		},
-		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
-			return nil
-		},
 	}
 
 	cmd.AddCommand(addUpCommand())
@@ -38,6 +31,10 @@ func addUpCommand() *cobra.Command {
 		Use:     "up",
 		Aliases: []string{"migrate-up"},
 		Short:   "Run all pending migrations",
+		Annotations: map[string]string{
+			"CheckMigration":  "false",
+			"ShouldBootstrap": "false",
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, err := config.Get()
 			if err != nil {
@@ -69,6 +66,10 @@ func addDownCommand() *cobra.Command {
 		Use:     "down",
 		Aliases: []string{"migrate-down"},
 		Short:   "Rollback migrations",
+		Annotations: map[string]string{
+			"CheckMigration":  "false",
+			"ShouldBootstrap": "false",
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, err := config.Get()
 			if err != nil {
@@ -99,8 +100,9 @@ func addCreateCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "creates a new migration file",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return nil
+		Annotations: map[string]string{
+			"CheckMigration":  "false",
+			"ShouldBootstrap": "false",
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			fileName := fmt.Sprintf("sql/%v.sql", time.Now().Unix())
