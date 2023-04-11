@@ -1,15 +1,16 @@
-package main
+package retry
 
 import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/worker/task"
 
 	"github.com/spf13/cobra"
 )
 
-func addRetryCommand(a *app) *cobra.Command {
+func AddRetryCommand(a *cli.App) *cobra.Command {
 	var status string
 	var timeInterval string
 
@@ -26,7 +27,7 @@ func addRetryCommand(a *app) *cobra.Command {
 			}
 
 			statuses := []datastore.EventDeliveryStatus{datastore.EventDeliveryStatus(status)}
-			task.RetryEventDeliveries(statuses, timeInterval, a.db, a.queue)
+			task.RetryEventDeliveries(statuses, timeInterval, a.DB, a.Queue)
 		},
 	}
 

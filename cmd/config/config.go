@@ -1,16 +1,17 @@
-package main
+package config
 
 import (
 	"encoding/json"
 	"fmt"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/spf13/cobra"
 )
 
-func addConfigCommand(a *app) *cobra.Command {
+func AddConfigCommand(a *cli.App) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "config",
