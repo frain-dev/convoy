@@ -189,36 +189,18 @@ func (m *Middleware) RequireEndpoint() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			endpointID := chi.URLParam(r, "endpointID")
-
-			var endpoint *datastore.Endpoint
-			endpointCacheKey := convoy.EndpointsCacheKey.Get(endpointID).String()
-
 			event := "an error occurred while retrieving endpoint details"
 			statusCode := http.StatusBadRequest
 
-			err := m.cache.Get(r.Context(), endpointCacheKey, &endpoint)
+			project := GetProjectFromContext(r.Context())
+			endpoint, err := m.endpointRepo.FindEndpointByID(r.Context(), endpointID, project.UID)
 			if err != nil {
-				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), statusCode))
+				if errors.Is(err, datastore.ErrEndpointNotFound) {
+					event = err.Error()
+					statusCode = http.StatusNotFound
+				}
+				_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
 				return
-			}
-
-			if endpoint == nil {
-				project := GetProjectFromContext(r.Context())
-				endpoint, err = m.endpointRepo.FindEndpointByID(r.Context(), endpointID, project.UID)
-				if err != nil {
-					if errors.Is(err, datastore.ErrEndpointNotFound) {
-						event = err.Error()
-						statusCode = http.StatusNotFound
-					}
-					_ = render.Render(w, r, util.NewErrorResponse(event, statusCode))
-					return
-				}
-
-				err = m.cache.Set(r.Context(), endpointCacheKey, &endpoint, time.Second*1)
-				if err != nil {
-					_ = render.Render(w, r, util.NewErrorResponse(err.Error(), statusCode))
-					return
-				}
 			}
 
 			r = r.WithContext(setEndpointInContext(r.Context(), endpoint))
