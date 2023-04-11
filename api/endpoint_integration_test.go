@@ -628,7 +628,7 @@ func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_UnknownStatus()
 	require.Equal(s.T(), http.StatusBadRequest, w.Code)
 }
 
-func (s *EndpointIntegrationTestSuite) Test_PauseEndpointStatus_PausedStatus() {
+func (s *EndpointIntegrationTestSuite) Test_PauseEndpoint_PausedStatus() {
 	endpointId := ulid.Make().String()
 
 	// Just Before
@@ -657,7 +657,7 @@ func (s *EndpointIntegrationTestSuite) Test_PauseEndpointStatus_PausedStatus() {
 	require.Equal(s.T(), datastore.PausedEndpointStatus, dbEndpoint.Status)
 }
 
-func (s *EndpointIntegrationTestSuite) Test_PauseEndpointStatus_ActiveStatus() {
+func (s *EndpointIntegrationTestSuite) Test_PauseEndpoint_ActiveStatus() {
 	endpointId := ulid.Make().String()
 
 	// Just Before

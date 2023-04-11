@@ -237,7 +237,7 @@ func (a *ApplicationHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http
 	_ = render.Render(w, r, util.NewServerResponse("endpoint status updated successfully", endpoint, http.StatusAccepted))
 }
 
-// PauseEndpointStatus
+// PauseEndpoint
 // @Summary Pause endpoint status
 // @Description This endpoint toggles an endpoint status between the active and paused states
 // @Tags Endpoints
@@ -249,12 +249,12 @@ func (a *ApplicationHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/endpoints/{endpointID}/pause [put]
-func (a *ApplicationHandler) PauseEndpointStatus(w http.ResponseWriter, r *http.Request) {
+func (a *ApplicationHandler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 	p := m.GetProjectFromContext(r.Context())
 	endpointID := chi.URLParam(r, "endpointID")
 
 	endpointService := createEndpointService(a)
-	endpoint, err := endpointService.PauseEndpointStatus(r.Context(), p.UID, endpointID)
+	endpoint, err := endpointService.PauseEndpoint(r.Context(), p.UID, endpointID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
