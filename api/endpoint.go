@@ -238,7 +238,7 @@ func (a *ApplicationHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http
 }
 
 // PauseEndpoint
-// @Summary Pause endpoint status
+// @Summary Pause endpoint
 // @Description This endpoint toggles an endpoint status between the active and paused states
 // @Tags Endpoints
 // @Accept json
