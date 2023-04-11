@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"errors"
@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -20,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func addServerCommand(a *app) *cobra.Command {
+func AddServerCommand(a *cli.App) *cobra.Command {
 	var env string
 	var host string
 	var proxy string
@@ -89,7 +90,7 @@ func addServerCommand(a *app) *cobra.Command {
 			err = StartConvoyServer(a, c, withWorkers)
 
 			if err != nil {
-				a.logger.Errorf("Error starting convoy server: %v", err)
+				a.Logger.Errorf("Error starting convoy server: %v", err)
 				return err
 			}
 			return nil
@@ -143,22 +144,22 @@ func addServerCommand(a *app) *cobra.Command {
 	return cmd
 }
 
-func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error {
+func StartConvoyServer(a *cli.App, cfg config.Configuration, withWorkers bool) error {
 	start := time.Now()
-	a.logger.Info("Starting Convoy server...")
+	a.Logger.Info("Starting Convoy server...")
 
-	apiKeyRepo := postgres.NewAPIKeyRepo(a.db)
-	userRepo := postgres.NewUserRepo(a.db)
-	err := realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, a.cache)
+	apiKeyRepo := postgres.NewAPIKeyRepo(a.DB)
+	userRepo := postgres.NewUserRepo(a.DB)
+	err := realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, a.Cache)
 	if err != nil {
-		a.logger.WithError(err).Fatal("failed to initialize realm chain")
+		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
 	if cfg.Server.HTTP.Port <= 0 {
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
 
-	lo := a.logger.(*log.Logger)
+	lo := a.Logger.(*log.Logger)
 	lo.SetPrefix("api server")
 
 	lvl, err := log.ParseLevel(cfg.Logger.Level)
@@ -171,19 +172,19 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 
 	handler := route.NewApplicationHandler(
 		route.App{
-			DB:       a.db,
-			Queue:    a.queue,
+			DB:       a.DB,
+			Queue:    a.Queue,
 			Logger:   lo,
-			Tracer:   a.tracer,
-			Cache:    a.cache,
-			Limiter:  a.limiter,
-			Searcher: a.searcher,
+			Tracer:   a.Tracer,
+			Cache:    a.Cache,
+			Limiter:  a.Limiter,
+			Searcher: a.Searcher,
 		})
 
 	if withWorkers {
 		sc, err := smtp.NewClient(&cfg.SMTP)
 		if err != nil {
-			a.logger.WithError(err).Error("Failed to create smtp client")
+			a.Logger.WithError(err).Error("Failed to create smtp client")
 			return err
 		}
 
@@ -197,33 +198,33 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 		lo.SetLevel(lvl)
 
 		// register worker.
-		consumer := worker.NewConsumer(a.queue, lo)
+		consumer := worker.NewConsumer(a.Queue, lo)
 
-		endpointRepo := postgres.NewEndpointRepo(a.db)
-		eventRepo := postgres.NewEventRepo(a.db)
-		eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.db)
-		projectRepo := postgres.NewProjectRepo(a.db)
-		subRepo := postgres.NewSubscriptionRepo(a.db)
-		deviceRepo := postgres.NewDeviceRepo(a.db)
-		configRepo := postgres.NewConfigRepo(a.db)
+		endpointRepo := postgres.NewEndpointRepo(a.DB)
+		eventRepo := postgres.NewEventRepo(a.DB)
+		eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
+		projectRepo := postgres.NewProjectRepo(a.DB)
+		subRepo := postgres.NewSubscriptionRepo(a.DB)
+		deviceRepo := postgres.NewDeviceRepo(a.DB)
+		configRepo := postgres.NewConfigRepo(a.DB)
 
 		consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 			endpointRepo,
 			eventDeliveryRepo,
 			projectRepo,
-			a.limiter,
+			a.Limiter,
 			subRepo,
-			a.queue))
+			a.Queue))
 
 		consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
 			endpointRepo,
 			eventRepo,
 			projectRepo,
 			eventDeliveryRepo,
-			a.cache,
-			a.queue,
+			a.Cache,
+			a.Queue,
 			subRepo,
-			a.searcher,
+			a.Searcher,
 			deviceRepo))
 
 		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
@@ -231,39 +232,39 @@ func StartConvoyServer(a *app, cfg config.Configuration, withWorkers bool) error
 			projectRepo,
 			eventRepo,
 			eventDeliveryRepo,
-			postgres.NewExportRepo(a.db),
-			a.searcher,
+			postgres.NewExportRepo(a.DB),
+			a.Searcher,
 		))
 
 		consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(
-			a.db,
-			a.queue))
+			a.DB,
+			a.Queue))
 
 		consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(
 			endpointRepo))
 
-		consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.db, cfg))
+		consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, cfg))
 		consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
-		consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.searcher))
+		consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.Searcher))
 		consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 
 		// start worker
-		a.logger.Infof("Starting Convoy workers...")
+		a.Logger.Infof("Starting Convoy workers...")
 		consumer.Start()
 	}
 
 	srv.SetHandler(handler.BuildRoutes())
 
-	a.logger.Infof("Started convoy server in %s", time.Since(start))
+	a.Logger.Infof("Started convoy server in %s", time.Since(start))
 
 	httpConfig := cfg.Server.HTTP
 	if httpConfig.SSL {
-		a.logger.Infof("Started server with SSL: cert_file: %s, key_file: %s", httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
+		a.Logger.Infof("Started server with SSL: cert_file: %s, key_file: %s", httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
 		srv.ListenAndServeTLS(httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
 		return nil
 	}
 
-	a.logger.Infof("Server running on port %v", cfg.Server.HTTP.Port)
+	a.Logger.Infof("Server running on port %v", cfg.Server.HTTP.Port)
 	srv.Listen()
 	return nil
 }
