@@ -31,7 +31,6 @@ module.exports = {
 				xl: '0px 8px 16px rgba(12, 26, 75, 0.1), 0px 20px 24px rgba(20, 37, 63, 0.06)',
 				'2xl': '0px 16px 16px rgba(12, 26, 75, 0.05), 0px 30px 40px rgba(20, 37, 63, 0.08)',
 				'3xl': '0px 16px 16px rgba(12, 26, 75, 0.06), 0px 16px 16px rgba(12, 26, 75, 0.05), 0px 30px 40px rgba(20, 37, 63, 0.08)',
-				default: '0px 2px 4px rgba(12, 26, 75, 0.04), 0px 4px 20px -2px rgba(50, 50, 71, 0.08)'
 			},
 			fontFamily: {
 				sans: ['Inter', ...defaultTheme.fontFamily.sans],
@@ -54,6 +53,13 @@ module.exports = {
 		screens: {
 			desktop: { max: '1050px' }
 		},
+        blur: {
+            xs: '4px',
+            sm: '8px',
+            md: '12px',
+            lg: '16px',
+            xl: '20px',
+        },
 		borderRadius: {
 			'4px': '4px',
 			'8px': '8px',
@@ -111,17 +117,17 @@ module.exports = {
 				4: 'rgba(var(--color-white), 0.04)'
 			},
 			primary: {
-				25: '#EDF2F7',
-				50: '#F9F5FF',
+				25:'#EDF2F7',
+				50:'#F9F5FF',
 				100: '#B5CBE1',
 				200: '#91B1D1',
 				300: '#6699CC',
 				400: '#477DB3',
 				500: '#2E6399',
-				600: '#194D80',
-				700: '#0A3866',
-				800: '#00264D',
-				900: '#001A33'
+				600:'#194D80',
+				700:'#0A3866',
+				800:'#00264D',
+				900:'#001A33',
 			},
 			success: {
 				25: '#F6FEF9',
@@ -199,7 +205,7 @@ module.exports = {
 				600: '#1570EF',
 				700: '#175CD3',
 				800: '#1849A9',
-				900: '#194185'
+				900: ''
 			},
 			indigo: {
 				25: '#F5F8FF',
@@ -214,6 +220,7 @@ module.exports = {
 				800: '#2D31A6',
 				900: '#2D3282'
 			},
+
 			purple: {
 				25: '#FAFAFF',
 				50: '#F4F3FF',
