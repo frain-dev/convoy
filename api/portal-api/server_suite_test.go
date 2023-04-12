@@ -1,7 +1,7 @@
 //go:build integration
 // +build integration
 
-package api
+package portalapi
 
 import (
 	"bytes"
@@ -93,7 +93,7 @@ func getQueueOptions(name string) (queue.QueueOptions, error) {
 	return opts, nil
 }
 
-func buildServer() *ApplicationHandler {
+func buildServer() *PortalLinkHandler {
 	var tracer tracer.Tracer
 	var logger *log.Logger
 	var qOpts queue.QueueOptions
@@ -110,7 +110,7 @@ func buildServer() *ApplicationHandler {
 	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
 
-	return NewApplicationHandler(
+	return NewPortalLinkHandler(
 		types.App{
 			DB:       db,
 			Queue:    queue,
