@@ -1,3 +1,12 @@
+## 0.9.2
+
+-   [Documentation] Fix noun/verb agreement #1504
+-   [Enhancement] Add support for pausing an endpoint #1529 #1527
+-   [Bugfix] Fixed a bug where an endpoint would be stuck in pending #1529
+-   [Bugfix] Fixed max response size log on server startup #1507
+-   [Bugfix] Add endpoint metadata to event search results #1508
+-   [Bugfix] Fixed an issue where the reset password flow could not be completed #1506 #1503
+
 ## 0.9.1
 
 -   [Enhancement] Add default db connection options #1496
