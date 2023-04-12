@@ -67,214 +67,212 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 	router := chi.NewRouter()
 
 	// UI API.
-	router.Route("/ui", func(uiRouter chi.Router) {
-		uiRouter.Use(a.M.JsonResponse)
-		uiRouter.Use(a.M.SetupCORS)
-		uiRouter.Use(chiMiddleware.Maybe(a.M.RequireAuth(), middleware.ShouldAuthRoute))
-		uiRouter.Use(a.M.RequireBaseUrl())
+	router.Use(a.M.JsonResponse)
+	router.Use(a.M.SetupCORS)
+	router.Use(chiMiddleware.Maybe(a.M.RequireAuth(), middleware.ShouldAuthRoute))
+	router.Use(a.M.RequireBaseUrl())
 
-		uiRouter.Post("/organisations/process_invite", a.ProcessOrganisationMemberInvite)
-		uiRouter.Get("/users/token", a.FindUserByInviteToken)
+	router.Post("/organisations/process_invite", a.ProcessOrganisationMemberInvite)
+	router.Get("/users/token", a.FindUserByInviteToken)
 
-		uiRouter.Route("/users", func(userRouter chi.Router) {
-			userRouter.Use(a.M.RequireAuthUserMetadata())
-			userRouter.Route("/{userID}", func(userSubRouter chi.Router) {
-				userSubRouter.Use(a.M.RequireAuthorizedUser())
-				userSubRouter.Get("/profile", a.GetUser)
-				userSubRouter.Put("/profile", a.UpdateUser)
-				userSubRouter.Put("/password", a.UpdatePassword)
+	router.Route("/users", func(userRouter chi.Router) {
+		userRouter.Use(a.M.RequireAuthUserMetadata())
+		userRouter.Route("/{userID}", func(userSubRouter chi.Router) {
+			userSubRouter.Use(a.M.RequireAuthorizedUser())
+			userSubRouter.Get("/profile", a.GetUser)
+			userSubRouter.Put("/profile", a.UpdateUser)
+			userSubRouter.Put("/password", a.UpdatePassword)
 
-				userSubRouter.Route("/security/personal_api_keys", func(securityRouter chi.Router) {
-					securityRouter.Post("/", a.CreatePersonalAPIKey)
-					securityRouter.Put("/{keyID}/revoke", a.RevokePersonalAPIKey)
-					securityRouter.With(a.M.Pagination).Get("/", a.GetAPIKeys)
-				})
+			userSubRouter.Route("/security/personal_api_keys", func(securityRouter chi.Router) {
+				securityRouter.Post("/", a.CreatePersonalAPIKey)
+				securityRouter.Put("/{keyID}/revoke", a.RevokePersonalAPIKey)
+				securityRouter.With(a.M.Pagination).Get("/", a.GetAPIKeys)
 			})
 		})
-
-		uiRouter.Post("/users/forgot-password", a.ForgotPassword)
-		uiRouter.Post("/users/reset-password", a.ResetPassword)
-		uiRouter.Post("/users/verify_email", a.VerifyEmail)
-		uiRouter.Post("/users/resend_verification_email", a.ResendVerificationEmail)
-
-		uiRouter.Route("/auth", func(authRouter chi.Router) {
-			authRouter.Post("/login", a.LoginUser)
-			authRouter.Post("/register", a.RegisterUser)
-			authRouter.Post("/token/refresh", a.RefreshToken)
-			authRouter.Post("/logout", a.LogoutUser)
-		})
-
-		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
-			orgRouter.Use(a.M.RequireAuthUserMetadata())
-			orgRouter.Use(a.M.RequireBaseUrl())
-
-			orgRouter.Post("/", a.CreateOrganisation)
-			orgRouter.With(a.M.Pagination).Get("/", a.GetOrganisationsPaged)
-
-			orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
-				orgSubRouter.Use(a.M.RequireOrganisation())
-				orgSubRouter.Use(a.M.RequireOrganisationMembership())
-
-				orgSubRouter.Get("/", a.GetOrganisation)
-				orgSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", a.UpdateOrganisation)
-				orgSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", a.DeleteOrganisation)
-
-				orgSubRouter.Route("/invites", func(orgInvitesRouter chi.Router) {
-					orgInvitesRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/", a.InviteUserToOrganisation)
-					orgInvitesRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/{inviteID}/resend", a.ResendOrganizationInvite)
-					orgInvitesRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/{inviteID}/cancel", a.CancelOrganizationInvite)
-					orgInvitesRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).With(a.M.Pagination).Get("/pending", a.GetPendingOrganisationInvites)
-				})
-
-				orgSubRouter.Route("/members", func(orgMemberRouter chi.Router) {
-					orgMemberRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser))
-
-					orgMemberRouter.With(a.M.Pagination).Get("/", a.GetOrganisationMembers)
-
-					orgMemberRouter.Route("/{memberID}", func(orgMemberSubRouter chi.Router) {
-						orgMemberSubRouter.Get("/", a.GetOrganisationMember)
-						orgMemberSubRouter.Put("/", a.UpdateOrganisationMember)
-						orgMemberSubRouter.Delete("/", a.DeleteOrganisationMember)
-					})
-				})
-
-				orgSubRouter.Route("/projects", func(projectRouter chi.Router) {
-					projectRouter.Route("/", func(orgSubRouter chi.Router) {
-						projectRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/", a.CreateProject)
-						projectRouter.Get("/", a.GetProjects)
-					})
-
-					projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
-						projectSubRouter.Use(a.M.RequireProject())
-						projectSubRouter.Use(a.M.RateLimitByProjectID())
-						projectSubRouter.Use(a.M.RequireOrganisationProjectMember())
-
-						projectSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Get("/", a.GetProject)
-						projectSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", a.UpdateProject)
-						projectSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", a.DeleteProject)
-
-						projectSubRouter.Get("/stats", a.GetProjectStatistics)
-
-						projectSubRouter.Route("/security/keys", func(projectKeySubRouter chi.Router) {
-							projectKeySubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/regenerate", a.RegenerateProjectAPIKey)
-						})
-
-						projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
-							endpointSubRouter.Post("/", a.CreateEndpoint)
-							endpointSubRouter.With(a.M.Pagination).Get("/", a.GetEndpoints)
-
-							endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
-								e.Use(a.M.RequireEndpoint())
-
-								e.Get("/", a.GetEndpoint)
-								e.Put("/", a.UpdateEndpoint)
-								e.Delete("/", a.DeleteEndpoint)
-								e.Put("/toggle_status", a.ToggleEndpointStatus)
-								e.Put("/expire_secret", a.ExpireSecret)
-
-								e.Route("/keys", func(keySubRouter chi.Router) {
-									keySubRouter.Use(a.M.RequireBaseUrl())
-									keySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateEndpointAPIKey)
-									keySubRouter.With(a.M.Pagination).Get("/", a.LoadEndpointAPIKeysPaged)
-									keySubRouter.Put("/{keyID}/revoke", a.RevokeEndpointAPIKey)
-								})
-
-								e.Route("/devices", func(deviceRouter chi.Router) {
-									deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
-								})
-							})
-						})
-
-						projectSubRouter.Route("/events", func(eventRouter chi.Router) {
-							eventRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleAdmin))
-
-							eventRouter.Post("/", a.CreateEndpointEvent)
-							eventRouter.Post("/fanout", a.CreateEndpointFanoutEvent)
-							eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
-							eventRouter.Post("/batchreplay", a.BatchReplayEvents)
-							eventRouter.Get("/countbatchreplayevents", a.CountAffectedEvents)
-
-							eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
-								eventSubRouter.Use(a.M.RequireEvent())
-								eventSubRouter.Get("/", a.GetEndpointEvent)
-								eventSubRouter.Put("/replay", a.ReplayEndpointEvent)
-							})
-						})
-
-						projectSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-							eventDeliveryRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser))
-
-							eventDeliveryRouter.With(a.M.Pagination).Get("/", a.GetEventDeliveriesPaged)
-							eventDeliveryRouter.Post("/forceresend", a.ForceResendEventDeliveries)
-							eventDeliveryRouter.Post("/batchretry", a.BatchRetryEventDelivery)
-							eventDeliveryRouter.Get("/countbatchretryevents", a.CountAffectedEventDeliveries)
-
-							eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-								eventDeliverySubRouter.Use(a.M.RequireEventDelivery())
-
-								eventDeliverySubRouter.Get("/", a.GetEventDelivery)
-								eventDeliverySubRouter.Put("/resend", a.ResendEventDelivery)
-
-								eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
-									deliveryRouter.Use(fetchDeliveryAttempts())
-
-									deliveryRouter.Get("/", a.GetDeliveryAttempts)
-									deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
-								})
-							})
-						})
-
-						projectSubRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
-							subscriptionRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleAdmin))
-
-							subscriptionRouter.Post("/", a.CreateSubscription)
-							subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
-							subscriptionRouter.With(a.M.Pagination, a.M.RequireBaseUrl()).Get("/", a.GetSubscriptions)
-							subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
-							subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
-							subscriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
-						})
-
-						projectSubRouter.Route("/sources", func(sourceRouter chi.Router) {
-							sourceRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleAdmin))
-							sourceRouter.Use(a.M.RequireBaseUrl())
-
-							sourceRouter.Post("/", a.CreateSource)
-							sourceRouter.Get("/{sourceID}", a.GetSourceByID)
-							sourceRouter.With(a.M.Pagination).Get("/", a.LoadSourcesPaged)
-							sourceRouter.Put("/{sourceID}", a.UpdateSource)
-							sourceRouter.Delete("/{sourceID}", a.DeleteSource)
-						})
-
-						projectSubRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
-							dashboardRouter.Get("/summary", a.GetDashboardSummary)
-							dashboardRouter.Get("/config", a.GetAllConfigDetails)
-						})
-
-						projectSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
-							portalLinkRouter.Use(a.M.RequireBaseUrl())
-
-							portalLinkRouter.Post("/", a.CreatePortalLink)
-							portalLinkRouter.Get("/{portalLinkID}", a.GetPortalLinkByID)
-							portalLinkRouter.With(a.M.Pagination).Get("/", a.LoadPortalLinksPaged)
-							portalLinkRouter.Put("/{portalLinkID}", a.UpdatePortalLink)
-							portalLinkRouter.Put("/{portalLinkID}/revoke", a.RevokePortalLink)
-						})
-					})
-				})
-			})
-		})
-
-		uiRouter.Route("/configuration", func(configRouter chi.Router) {
-			configRouter.Use(a.M.RequireAuthUserMetadata())
-
-			configRouter.Get("/", a.LoadConfiguration)
-			configRouter.Post("/", a.CreateConfiguration)
-			configRouter.Put("/", a.UpdateConfiguration)
-		})
-
-		uiRouter.Post("/flags", flipt.BatchEvaluate)
 	})
+
+	router.Post("/users/forgot-password", a.ForgotPassword)
+	router.Post("/users/reset-password", a.ResetPassword)
+	router.Post("/users/verify_email", a.VerifyEmail)
+	router.Post("/users/resend_verification_email", a.ResendVerificationEmail)
+
+	router.Route("/auth", func(authRouter chi.Router) {
+		authRouter.Post("/login", a.LoginUser)
+		authRouter.Post("/register", a.RegisterUser)
+		authRouter.Post("/token/refresh", a.RefreshToken)
+		authRouter.Post("/logout", a.LogoutUser)
+	})
+
+	router.Route("/organisations", func(orgRouter chi.Router) {
+		orgRouter.Use(a.M.RequireAuthUserMetadata())
+		orgRouter.Use(a.M.RequireBaseUrl())
+
+		orgRouter.Post("/", a.CreateOrganisation)
+		orgRouter.With(a.M.Pagination).Get("/", a.GetOrganisationsPaged)
+
+		orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
+			orgSubRouter.Use(a.M.RequireOrganisation())
+			orgSubRouter.Use(a.M.RequireOrganisationMembership())
+
+			orgSubRouter.Get("/", a.GetOrganisation)
+			orgSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", a.UpdateOrganisation)
+			orgSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", a.DeleteOrganisation)
+
+			orgSubRouter.Route("/invites", func(orgInvitesRouter chi.Router) {
+				orgInvitesRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/", a.InviteUserToOrganisation)
+				orgInvitesRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/{inviteID}/resend", a.ResendOrganizationInvite)
+				orgInvitesRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/{inviteID}/cancel", a.CancelOrganizationInvite)
+				orgInvitesRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).With(a.M.Pagination).Get("/pending", a.GetPendingOrganisationInvites)
+			})
+
+			orgSubRouter.Route("/members", func(orgMemberRouter chi.Router) {
+				orgMemberRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser))
+
+				orgMemberRouter.With(a.M.Pagination).Get("/", a.GetOrganisationMembers)
+
+				orgMemberRouter.Route("/{memberID}", func(orgMemberSubRouter chi.Router) {
+					orgMemberSubRouter.Get("/", a.GetOrganisationMember)
+					orgMemberSubRouter.Put("/", a.UpdateOrganisationMember)
+					orgMemberSubRouter.Delete("/", a.DeleteOrganisationMember)
+				})
+			})
+
+			orgSubRouter.Route("/projects", func(projectRouter chi.Router) {
+				projectRouter.Route("/", func(orgSubRouter chi.Router) {
+					projectRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/", a.CreateProject)
+					projectRouter.Get("/", a.GetProjects)
+				})
+
+				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
+					projectSubRouter.Use(a.M.RequireProject())
+					projectSubRouter.Use(a.M.RateLimitByProjectID())
+					projectSubRouter.Use(a.M.RequireOrganisationProjectMember())
+
+					projectSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Get("/", a.GetProject)
+					projectSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", a.UpdateProject)
+					projectSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", a.DeleteProject)
+
+					projectSubRouter.Get("/stats", a.GetProjectStatistics)
+
+					projectSubRouter.Route("/security/keys", func(projectKeySubRouter chi.Router) {
+						projectKeySubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/regenerate", a.RegenerateProjectAPIKey)
+					})
+
+					projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
+						endpointSubRouter.Post("/", a.CreateEndpoint)
+						endpointSubRouter.With(a.M.Pagination).Get("/", a.GetEndpoints)
+
+						endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
+							e.Use(a.M.RequireEndpoint())
+
+							e.Get("/", a.GetEndpoint)
+							e.Put("/", a.UpdateEndpoint)
+							e.Delete("/", a.DeleteEndpoint)
+							e.Put("/toggle_status", a.ToggleEndpointStatus)
+							e.Put("/expire_secret", a.ExpireSecret)
+
+							e.Route("/keys", func(keySubRouter chi.Router) {
+								keySubRouter.Use(a.M.RequireBaseUrl())
+								keySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateEndpointAPIKey)
+								keySubRouter.With(a.M.Pagination).Get("/", a.LoadEndpointAPIKeysPaged)
+								keySubRouter.Put("/{keyID}/revoke", a.RevokeEndpointAPIKey)
+							})
+
+							e.Route("/devices", func(deviceRouter chi.Router) {
+								deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
+							})
+						})
+					})
+
+					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
+						eventRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleAdmin))
+
+						eventRouter.Post("/", a.CreateEndpointEvent)
+						eventRouter.Post("/fanout", a.CreateEndpointFanoutEvent)
+						eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
+						eventRouter.Post("/batchreplay", a.BatchReplayEvents)
+						eventRouter.Get("/countbatchreplayevents", a.CountAffectedEvents)
+
+						eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
+							eventSubRouter.Use(a.M.RequireEvent())
+							eventSubRouter.Get("/", a.GetEndpointEvent)
+							eventSubRouter.Put("/replay", a.ReplayEndpointEvent)
+						})
+					})
+
+					projectSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
+						eventDeliveryRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser))
+
+						eventDeliveryRouter.With(a.M.Pagination).Get("/", a.GetEventDeliveriesPaged)
+						eventDeliveryRouter.Post("/forceresend", a.ForceResendEventDeliveries)
+						eventDeliveryRouter.Post("/batchretry", a.BatchRetryEventDelivery)
+						eventDeliveryRouter.Get("/countbatchretryevents", a.CountAffectedEventDeliveries)
+
+						eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
+							eventDeliverySubRouter.Use(a.M.RequireEventDelivery())
+
+							eventDeliverySubRouter.Get("/", a.GetEventDelivery)
+							eventDeliverySubRouter.Put("/resend", a.ResendEventDelivery)
+
+							eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
+								deliveryRouter.Use(fetchDeliveryAttempts())
+
+								deliveryRouter.Get("/", a.GetDeliveryAttempts)
+								deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
+							})
+						})
+					})
+
+					projectSubRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
+						subscriptionRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleAdmin))
+
+						subscriptionRouter.Post("/", a.CreateSubscription)
+						subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
+						subscriptionRouter.With(a.M.Pagination, a.M.RequireBaseUrl()).Get("/", a.GetSubscriptions)
+						subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
+						subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
+						subscriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
+					})
+
+					projectSubRouter.Route("/sources", func(sourceRouter chi.Router) {
+						sourceRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleAdmin))
+						sourceRouter.Use(a.M.RequireBaseUrl())
+
+						sourceRouter.Post("/", a.CreateSource)
+						sourceRouter.Get("/{sourceID}", a.GetSourceByID)
+						sourceRouter.With(a.M.Pagination).Get("/", a.LoadSourcesPaged)
+						sourceRouter.Put("/{sourceID}", a.UpdateSource)
+						sourceRouter.Delete("/{sourceID}", a.DeleteSource)
+					})
+
+					projectSubRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
+						dashboardRouter.Get("/summary", a.GetDashboardSummary)
+						dashboardRouter.Get("/config", a.GetAllConfigDetails)
+					})
+
+					projectSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
+						portalLinkRouter.Use(a.M.RequireBaseUrl())
+
+						portalLinkRouter.Post("/", a.CreatePortalLink)
+						portalLinkRouter.Get("/{portalLinkID}", a.GetPortalLinkByID)
+						portalLinkRouter.With(a.M.Pagination).Get("/", a.LoadPortalLinksPaged)
+						portalLinkRouter.Put("/{portalLinkID}", a.UpdatePortalLink)
+						portalLinkRouter.Put("/{portalLinkID}/revoke", a.RevokePortalLink)
+					})
+				})
+			})
+		})
+	})
+
+	router.Route("/configuration", func(configRouter chi.Router) {
+		configRouter.Use(a.M.RequireAuthUserMetadata())
+
+		configRouter.Get("/", a.LoadConfiguration)
+		configRouter.Post("/", a.CreateConfiguration)
+		configRouter.Put("/", a.UpdateConfiguration)
+	})
+
+	router.Post("/flags", flipt.BatchEvaluate)
 
 	return router
 
