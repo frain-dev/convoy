@@ -177,11 +177,13 @@ components:
       - active
       - inactive
       - pending
+      - paused
       type: string
       x-enum-varnames:
       - ActiveEndpointStatus
       - InactiveEndpointStatus
       - PendingEndpointStatus
+      - PausedEndpointStatus
     datastore.Event:
       properties:
         app_id:
@@ -1745,6 +1747,73 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Roll endpoint secret
+      tags:
+      - Endpoints
+  /api/v1/projects/{projectID}/endpoints/{endpointID}/pause:
+    put:
+      description: This endpoint toggles an endpoint status between the active and
+        paused states
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      - description: Endpoint ID
+        in: path
+        name: endpointID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/datastore.Endpoint'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/api.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/api.Stub'
+                  type: object
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/api.Stub'
+                  type: object
+          description: Not Found
+      security:
+      - ApiKeyAuth: []
+      summary: Pause endpoint
       tags:
       - Endpoints
   /api/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status:

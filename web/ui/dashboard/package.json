@@ -26,7 +26,6 @@
 		"@types/markdown-it": "^12.2.3",
 		"@types/react": "^18.0.21",
 		"axios": "^0.27.2",
-		"chart.js": "^3.6.0",
 		"date-fns": "^2.27.0",
 		"monaco-editor": "^0.34.1",
 		"posthog-js": "^1.36.0",

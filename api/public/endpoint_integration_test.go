@@ -628,6 +628,64 @@ func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_UnknownStatus()
 	require.Equal(s.T(), http.StatusBadRequest, w.Code)
 }
 
+func (s *EndpointIntegrationTestSuite) Test_PauseEndpoint_PausedStatus() {
+	endpointId := ulid.Make().String()
+
+	// Just Before
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	// Arrange Request
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/pause", s.DefaultProject.UID, endpointId)
+	req := createRequest(http.MethodPut, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), http.StatusAccepted, w.Code)
+
+	// Deep Asset
+	var endpoint *datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &endpoint)
+
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointId, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), endpointId, dbEndpoint.UID)
+	require.Equal(s.T(), datastore.PausedEndpointStatus, dbEndpoint.Status)
+}
+
+func (s *EndpointIntegrationTestSuite) Test_PauseEndpoint_ActiveStatus() {
+	endpointId := ulid.Make().String()
+
+	// Just Before
+	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.PausedEndpointStatus)
+	require.NoError(s.T(), err)
+
+	// Arrange Request
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/pause", s.DefaultProject.UID, endpointId)
+	req := createRequest(http.MethodPut, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), http.StatusAccepted, w.Code)
+
+	// Deep Asset
+	var endpoint *datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &endpoint)
+
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointId, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), endpointId, dbEndpoint.UID)
+	require.Equal(s.T(), datastore.ActiveEndpointStatus, dbEndpoint.Status)
+}
+
 func TestEndpointIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(EndpointIntegrationTestSuite))
 }

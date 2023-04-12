@@ -284,6 +284,7 @@ const (
 	ActiveEndpointStatus   EndpointStatus = "active"
 	InactiveEndpointStatus EndpointStatus = "inactive"
 	PendingEndpointStatus  EndpointStatus = "pending"
+	PausedEndpointStatus   EndpointStatus = "paused"
 )
 
 type (
