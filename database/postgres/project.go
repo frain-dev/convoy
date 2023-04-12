@@ -159,6 +159,11 @@ const (
 	(SELECT count(*) FROM convoy.sources WHERE project_id = $1 AND deleted_at IS NULL) AS total_sources,
 	(SELECT count(*) FROM convoy.events WHERE project_id = $1 AND deleted_at IS NULL) AS messages_sent;
 	`
+
+	updateProjectEndpointStatus = `
+	UPDATE convoy.endpoints SET status = ?, updated_at = now()
+	WHERE project_id = ? AND status IN (?) AND deleted_at IS NULL;
+	`
 )
 
 type projectRepo struct {
@@ -299,7 +304,21 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 	}
 
 	if rowsAffected < 1 {
-		return nil
+		return ErrProjectConfigNotUpdated
+	}
+
+	if !project.Config.DisableEndpoint {
+		status := []datastore.EndpointStatus{datastore.InactiveEndpointStatus, datastore.PendingEndpointStatus}
+		query, args, err := sqlx.In(updateProjectEndpointStatus, datastore.ActiveEndpointStatus, project.UID, status)
+		if err != nil {
+			return err
+		}
+
+		query = p.db.Rebind(query)
+		_, err = tx.ExecContext(ctx, query, args...)
+		if err != nil {
+			return err
+		}
 	}
 
 	return tx.Commit()

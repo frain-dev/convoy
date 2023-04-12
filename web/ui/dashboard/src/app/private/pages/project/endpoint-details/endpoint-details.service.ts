@@ -77,7 +77,7 @@ export class EndpointDetailsService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/endpoints/${endpointId}/toggle_status`,
+					url: `/endpoints/${endpointId}/pause`,
 					method: 'put',
 					level: 'org_project'
 				});

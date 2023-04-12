@@ -338,6 +338,10 @@ func (e *EventService) RetryEventDelivery(ctx context.Context, eventDelivery *da
 		return errors.New("endpoint is being re-activated")
 	}
 
+	if endpoint.Status == datastore.PausedEndpointStatus {
+		return errors.New("endpoint is currently paused")
+	}
+
 	if endpoint.Status == datastore.InactiveEndpointStatus {
 		err = e.endpointRepo.UpdateEndpointStatus(context.Background(), eventDelivery.ProjectID, eventDelivery.EndpointID, datastore.PendingEndpointStatus)
 		if err != nil {

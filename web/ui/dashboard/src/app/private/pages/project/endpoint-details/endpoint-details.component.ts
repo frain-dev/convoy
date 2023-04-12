@@ -134,7 +134,7 @@ export class EndpointDetailsComponent implements OnInit {
 		try {
 			const response = await this.endpointDetailsService.toggleEndpoint(this.endpointDetails?.uid);
 			this.endpointDetails = response.data;
-			this.generalService.showNotification({ message: `${this.endpointDetails?.title} puased successfully`, style: 'success' });
+			this.generalService.showNotification({ message: `${this.endpointDetails?.title} status updated successfully`, style: 'success' });
 			this.isTogglingEndpoint = false;
 		} catch {
 			this.isTogglingEndpoint = false;
