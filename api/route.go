@@ -99,14 +99,14 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
 
-	publicAPI := &public.PublicHandler{M: a.M}
-	router.Handle("/api", publicAPI.BuildRoutes())
+	publicAPI := &public.PublicHandler{M: a.M, A: a.A}
+	router.Mount("/api", publicAPI.BuildRoutes())
 
-	dashboardAPI := &dashboard.DashboardHandler{M: a.M}
-	router.Handle("/ui", dashboardAPI.BuildRoutes())
+	dashboardAPI := &dashboard.DashboardHandler{M: a.M, A: a.A}
+	router.Mount("/ui", dashboardAPI.BuildRoutes())
 
-	portalAPI := &portalapi.PortalLinkHandler{M: a.M}
-	router.Handle("/portal-api", portalAPI.BuildRoutes())
+	portalAPI := &portalapi.PortalLinkHandler{M: a.M, A: a.A}
+	router.Mount("/portal-api", portalAPI.BuildRoutes())
 
 	router.Handle("/queue/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
 	router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
