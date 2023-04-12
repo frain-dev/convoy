@@ -24,21 +24,6 @@ func createSubscriptionService(a *PortalLinkHandler) *services.SubcriptionServic
 	return services.NewSubscriptionService(subRepo, endpointRepo, sourceRepo)
 }
 
-// GetSubscriptions
-// @Summary List all subscriptions
-// @Description This endpoint fetches all the subscriptions
-// @Tags Subscriptions
-// @Accept json
-// @Produce json
-// @Param perPage query string false "results per page"
-// @Param page query string false "page number"
-// @Param sort query string false "sort order"
-// @Param q query string false "subscription title"
-// @Param projectID path string true "Project ID"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Subscription}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/subscriptions [get]
 func (a *PortalLinkHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 	var endpoints []string
 
@@ -82,18 +67,6 @@ func (a *PortalLinkHandler) GetSubscriptions(w http.ResponseWriter, r *http.Requ
 		pagedResponse{Content: &subscriptions, Pagination: &paginationData}, http.StatusOK))
 }
 
-// GetSubscription
-// @Summary Retrieve a subscription
-// @Description This endpoint retrieves a single subscription
-// @Tags Subscriptions
-// @Accept json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param subscriptionID path string true "subscription id"
-// @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [get]
 func (a *PortalLinkHandler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 	subId := chi.URLParam(r, "subscriptionID")
 	project := m.GetProjectFromContext(r.Context())
@@ -108,18 +81,6 @@ func (a *PortalLinkHandler) GetSubscription(w http.ResponseWriter, r *http.Reque
 	_ = render.Render(w, r, util.NewServerResponse("Subscription fetched successfully", subscription, http.StatusOK))
 }
 
-// CreateSubscription
-// @Summary Create a subscription
-// @Description This endpoint creates a subscriptions
-// @Tags Subscriptions
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param subscription body models.Subscription true "Subscription details"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Subscription}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/subscriptions [post]
 func (a *PortalLinkHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())
 
@@ -141,18 +102,6 @@ func (a *PortalLinkHandler) CreateSubscription(w http.ResponseWriter, r *http.Re
 	_ = render.Render(w, r, util.NewServerResponse("Subscription created successfully", subscription, http.StatusCreated))
 }
 
-// DeleteSubscription
-// @Summary Delete subscription
-// @Description This endpoint deletes a subscription
-// @Tags Subscriptions
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param subscriptionID path string true "subscription id"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [delete]
 func (a *PortalLinkHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())
 	subService := createSubscriptionService(a)
@@ -173,19 +122,6 @@ func (a *PortalLinkHandler) DeleteSubscription(w http.ResponseWriter, r *http.Re
 	_ = render.Render(w, r, util.NewServerResponse("Subscription deleted successfully", nil, http.StatusOK))
 }
 
-// UpdateSubscription
-// @Summary Update a subscription
-// @Description This endpoint updates a subscription
-// @Tags Subscriptions
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param subscriptionID path string true "subscription id"
-// @Param subscription body models.Subscription true "Subscription Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [put]
 func (a *PortalLinkHandler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 	var update models.UpdateSubscription
 	err := util.ReadJSON(r, &update)
@@ -213,18 +149,6 @@ func (a *PortalLinkHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *h
 	_ = render.Render(w, r, util.NewServerResponse("Subscription status updated successfully", nil, http.StatusAccepted))
 }
 
-// TestSubscriptionFilter
-// @Summary Validate subscription filter
-// @Description This endpoint validates that a filter will match a certain payload structure.
-// @Tags Subscriptions
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param filter body models.TestFilter true "Filter Details"
-// @Success 200 {object} util.ServerResponse{data=boolean}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/subscriptions/test_filter [post]
 func (a *PortalLinkHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request) {
 	var test models.TestFilter
 	err := util.ReadJSON(r, &test)

@@ -32,18 +32,6 @@ type pagedResponse struct {
 	Pagination *datastore.PaginationData `json:"pagination,omitempty"`
 }
 
-// CreateEndpoint
-// @Summary Create an endpoint
-// @Description This endpoint creates an endpoint
-// @Tags Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param endpoint body models.Endpoint true "Endpoint Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints [post]
 func (a *DashboardHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.Endpoint
 	err := util.ReadJSON(r, &e)
@@ -64,34 +52,11 @@ func (a *DashboardHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint created successfully", endpoint, http.StatusCreated))
 }
 
-// GetEndpoint
-// @Summary Retrieve endpoint
-// @Description This endpoint fetches an endpoint
-// @Tags Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param endpointID path string true "Endpoint ID"
-// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints/{endpointID} [get]
 func (a *DashboardHandler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint fetched successfully",
 		*m.GetEndpointFromContext(r.Context()), http.StatusOK))
 }
 
-// GetEndpoints
-// @Summary List all endpoints
-// @Description This endpoint fetches an endpoints
-// @Tags Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Success 200 {object} util.ServerResponse{data=[]datastore.Endpoint}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints [get]
 func (a *DashboardHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())
 	endpointService := createEndpointService(a)
@@ -114,19 +79,6 @@ func (a *DashboardHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) 
 		pagedResponse{Content: &endpoints, Pagination: &paginationData}, http.StatusOK))
 }
 
-// UpdateEndpoint
-// @Summary Update an endpoint
-// @Description This endpoint updates an endpoint
-// @Tags Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param endpointID path string true "Endpoint ID"
-// @Param endpoint body models.Endpoint true "Endpoint Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints/{endpointID} [put]
 func (a *DashboardHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.UpdateEndpoint
 
@@ -149,18 +101,6 @@ func (a *DashboardHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint updated successfully", endpoint, http.StatusAccepted))
 }
 
-// DeleteEndpoint
-// @Summary Delete endpoint
-// @Description This endpoint deletes an endpoint
-// @Tags Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param endpointID path string true "Endpoint ID"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints/{endpointID} [delete]
 func (a *DashboardHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint := m.GetEndpointFromContext(r.Context())
 	endpointService := createEndpointService(a)
@@ -176,19 +116,6 @@ func (a *DashboardHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint deleted successfully", nil, http.StatusOK))
 }
 
-// ExpireSecret
-// @Summary Roll endpoint secret
-// @Description This endpoint expires and re-generates the endpoint secret.
-// @Tags Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param endpointID path string true "Endpoint ID"
-// @Param endpoint body models.ExpireSecret true "Expire Secret Body Parameters"
-// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret [put]
 func (a *DashboardHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 	var e *models.ExpireSecret
 	err := util.ReadJSON(r, &e)
@@ -211,18 +138,6 @@ func (a *DashboardHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) 
 		endpoint, http.StatusOK))
 }
 
-// ToggleEndpointStatus
-// @Summary Toggle endpoint status
-// @Description This endpoint toggles an endpoint status between the active and inactive statetes
-// @Tags Endpoints
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param endpointID path string true "Endpoint ID"
-// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status [put]
 func (a *DashboardHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.Request) {
 	p := m.GetProjectFromContext(r.Context())
 	endpointID := chi.URLParam(r, "endpointID")
@@ -237,18 +152,6 @@ func (a *DashboardHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.R
 	_ = render.Render(w, r, util.NewServerResponse("endpoint status updated successfully", endpoint, http.StatusAccepted))
 }
 
-// PauseEndpoint
-// @Summary Pause endpoint
-// @Description This endpoint toggles an endpoint status between the active and paused states
-// @Tags Endpoints
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param endpointID path string true "Endpoint ID"
-// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints/{endpointID}/pause [put]
 func (a *DashboardHandler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 	p := m.GetProjectFromContext(r.Context())
 	endpointID := chi.URLParam(r, "endpointID")

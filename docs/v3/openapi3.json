@@ -1,18 +1,6 @@
 {
 	"components": {
 		"schemas": {
-			"api.Stub": {
-				"type": "object"
-			},
-			"api.pagedResponse": {
-				"properties": {
-					"content": {},
-					"pagination": {
-						"$ref": "#/components/schemas/datastore.PaginationData"
-					}
-				},
-				"type": "object"
-			},
 			"config.SignatureHeaderProvider": {
 				"enum": [
 					"X-Convoy-Signature"
@@ -511,35 +499,6 @@
 					},
 					"strategy": {
 						"$ref": "#/components/schemas/datastore.StrategyProvider"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.Organisation": {
-				"properties": {
-					"assigned_domain": {
-						"$ref": "#/components/schemas/null.String"
-					},
-					"created_at": {
-						"type": "string"
-					},
-					"custom_domain": {
-						"$ref": "#/components/schemas/null.String"
-					},
-					"deleted_at": {
-						"type": "string"
-					},
-					"name": {
-						"type": "string"
-					},
-					"ownerID": {
-						"type": "string"
-					},
-					"uid": {
-						"type": "string"
-					},
-					"updated_at": {
-						"type": "string"
 					}
 				},
 				"type": "object"
@@ -1343,14 +1302,14 @@
 				},
 				"type": "object"
 			},
-			"null.String": {
+			"public.Stub": {
+				"type": "object"
+			},
+			"public.pagedResponse": {
 				"properties": {
-					"string": {
-						"type": "string"
-					},
-					"valid": {
-						"description": "Valid is true if String is not NULL",
-						"type": "boolean"
+					"content": {},
+					"pagination": {
+						"$ref": "#/components/schemas/datastore.PaginationData"
 					}
 				},
 				"type": "object"
@@ -1398,151 +1357,6 @@
 	},
 	"openapi": "3.0.3",
 	"paths": {
-		"/api/v1/organisations": {
-			"get": {
-				"description": "This endpoint fetches the organisations a user is part of, this route can only be accessed with a personal api key",
-				"parameters": [
-					{
-						"description": "results per page",
-						"in": "query",
-						"name": "perPage",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "page number",
-						"in": "query",
-						"name": "page",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "sort order",
-						"in": "query",
-						"name": "sort",
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"allOf": [
-														{
-															"$ref": "#/components/schemas/api.pagedResponse"
-														},
-														{
-															"properties": {
-																"content": {
-																	"items": {
-																		"$ref": "#/components/schemas/datastore.Organisation"
-																	},
-																	"type": "array"
-																}
-															},
-															"type": "object"
-														}
-													]
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"404": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/api.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Not Found"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "List all organisations",
-				"tags": [
-					"Organisations"
-				]
-			}
-		},
 		"/api/v1/projects": {
 			"get": {
 				"description": "This endpoint fetches projects",
@@ -1602,7 +1416,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -1624,7 +1438,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -1646,7 +1460,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -1727,7 +1541,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -1749,7 +1563,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -1771,7 +1585,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -1820,7 +1634,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -1842,7 +1656,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -1864,7 +1678,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -1886,7 +1700,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -1955,7 +1769,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -1977,7 +1791,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -1999,7 +1813,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2080,7 +1894,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2102,7 +1916,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2124,7 +1938,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2198,7 +2012,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2220,7 +2034,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2242,7 +2056,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2323,7 +2137,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2345,7 +2159,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2367,7 +2181,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2425,7 +2239,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2447,7 +2261,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2469,7 +2283,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2491,7 +2305,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2569,7 +2383,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2591,7 +2405,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2613,7 +2427,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2703,7 +2517,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2725,7 +2539,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2747,7 +2561,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2839,7 +2653,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2861,7 +2675,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2883,7 +2697,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2963,7 +2777,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -2985,7 +2799,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3007,7 +2821,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3087,7 +2901,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3109,7 +2923,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3131,7 +2945,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3249,7 +3063,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/api.pagedResponse"
+															"$ref": "#/components/schemas/public.pagedResponse"
 														},
 														{
 															"properties": {
@@ -3262,7 +3076,7 @@
 																			{
 																				"properties": {
 																					"data": {
-																						"$ref": "#/components/schemas/api.Stub"
+																						"$ref": "#/components/schemas/public.Stub"
 																					}
 																				},
 																				"type": "object"
@@ -3296,7 +3110,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3318,7 +3132,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3340,7 +3154,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3383,7 +3197,7 @@
 							"schema": {
 								"allOf": [
 									{
-										"$ref": "#/components/schemas/api.Stub"
+										"$ref": "#/components/schemas/public.Stub"
 									},
 									{
 										"properties": {
@@ -3416,7 +3230,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3438,7 +3252,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3460,7 +3274,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3482,7 +3296,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3525,7 +3339,7 @@
 							"schema": {
 								"allOf": [
 									{
-										"$ref": "#/components/schemas/api.Stub"
+										"$ref": "#/components/schemas/public.Stub"
 									},
 									{
 										"properties": {
@@ -3558,7 +3372,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3580,7 +3394,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3602,7 +3416,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3624,7 +3438,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3689,7 +3503,7 @@
 														{
 															"properties": {
 																"data": {
-																	"$ref": "#/components/schemas/api.Stub"
+																	"$ref": "#/components/schemas/public.Stub"
 																}
 															},
 															"type": "object"
@@ -3716,7 +3530,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3738,7 +3552,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3760,7 +3574,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3843,7 +3657,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3865,7 +3679,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3887,7 +3701,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3976,7 +3790,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -3998,7 +3812,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4020,7 +3834,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4085,7 +3899,7 @@
 														{
 															"properties": {
 																"data": {
-																	"$ref": "#/components/schemas/api.Stub"
+																	"$ref": "#/components/schemas/public.Stub"
 																}
 															},
 															"type": "object"
@@ -4112,7 +3926,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4134,7 +3948,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4156,7 +3970,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4263,7 +4077,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/api.pagedResponse"
+															"$ref": "#/components/schemas/public.pagedResponse"
 														},
 														{
 															"properties": {
@@ -4276,7 +4090,7 @@
 																			{
 																				"properties": {
 																					"data": {
-																						"$ref": "#/components/schemas/api.Stub"
+																						"$ref": "#/components/schemas/public.Stub"
 																					}
 																				},
 																				"type": "object"
@@ -4310,7 +4124,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4332,7 +4146,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4354,7 +4168,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4420,7 +4234,7 @@
 														{
 															"properties": {
 																"data": {
-																	"$ref": "#/components/schemas/api.Stub"
+																	"$ref": "#/components/schemas/public.Stub"
 																}
 															},
 															"type": "object"
@@ -4447,7 +4261,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4469,7 +4283,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4491,7 +4305,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4571,7 +4385,7 @@
 														{
 															"properties": {
 																"data": {
-																	"$ref": "#/components/schemas/api.Stub"
+																	"$ref": "#/components/schemas/public.Stub"
 																}
 															},
 															"type": "object"
@@ -4598,7 +4412,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4620,7 +4434,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4642,7 +4456,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4710,7 +4524,7 @@
 														{
 															"properties": {
 																"data": {
-																	"$ref": "#/components/schemas/api.Stub"
+																	"$ref": "#/components/schemas/public.Stub"
 																}
 															},
 															"type": "object"
@@ -4737,7 +4551,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4759,7 +4573,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4781,7 +4595,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4846,7 +4660,7 @@
 														{
 															"properties": {
 																"data": {
-																	"$ref": "#/components/schemas/api.Stub"
+																	"$ref": "#/components/schemas/public.Stub"
 																}
 															},
 															"type": "object"
@@ -4873,7 +4687,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4895,7 +4709,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4917,7 +4731,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -4982,7 +4796,7 @@
 														{
 															"properties": {
 																"data": {
-																	"$ref": "#/components/schemas/api.Stub"
+																	"$ref": "#/components/schemas/public.Stub"
 																}
 															},
 															"type": "object"
@@ -5009,7 +4823,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5031,7 +4845,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5053,7 +4867,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5128,7 +4942,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/api.pagedResponse"
+															"$ref": "#/components/schemas/public.pagedResponse"
 														},
 														{
 															"properties": {
@@ -5163,7 +4977,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5185,7 +4999,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5207,7 +5021,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5288,7 +5102,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5310,7 +5124,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5332,7 +5146,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5412,7 +5226,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5434,7 +5248,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5456,7 +5270,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5546,7 +5360,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5568,7 +5382,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5590,7 +5404,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5648,7 +5462,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5670,7 +5484,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5692,7 +5506,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5714,7 +5528,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5789,7 +5603,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/api.pagedResponse"
+															"$ref": "#/components/schemas/public.pagedResponse"
 														},
 														{
 															"properties": {
@@ -5824,7 +5638,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5846,7 +5660,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5868,7 +5682,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5949,7 +5763,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5971,7 +5785,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -5993,7 +5807,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6051,7 +5865,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6073,7 +5887,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6095,7 +5909,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6117,7 +5931,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6195,7 +6009,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6217,7 +6031,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6239,7 +6053,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6329,7 +6143,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6351,7 +6165,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6373,7 +6187,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6456,7 +6270,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/api.pagedResponse"
+															"$ref": "#/components/schemas/public.pagedResponse"
 														},
 														{
 															"properties": {
@@ -6491,7 +6305,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6513,7 +6327,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6535,7 +6349,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6596,7 +6410,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/api.pagedResponse"
+															"$ref": "#/components/schemas/public.pagedResponse"
 														},
 														{
 															"properties": {
@@ -6631,7 +6445,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6653,7 +6467,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6675,7 +6489,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6758,7 +6572,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6780,7 +6594,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6802,7 +6616,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6860,7 +6674,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6882,7 +6696,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6904,7 +6718,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -6926,7 +6740,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -7004,7 +6818,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -7026,7 +6840,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -7048,7 +6862,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -7138,7 +6952,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -7160,7 +6974,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"
@@ -7182,7 +6996,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/api.Stub"
+													"$ref": "#/components/schemas/public.Stub"
 												}
 											},
 											"type": "object"

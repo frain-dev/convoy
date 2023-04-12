@@ -21,18 +21,6 @@ func createSourceService(a *DashboardHandler) *services.SourceService {
 	return services.NewSourceService(sourceRepo, a.A.Cache)
 }
 
-// CreateSource
-// @Summary Create a source
-// @Description This endpoint creates a source
-// @Tags Sources
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param source body models.Source true "Source Details"
-// @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/sources [post]
 func (a *DashboardHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 	var newSource models.Source
 	if err := util.ReadJSON(r, &newSource); err != nil {
@@ -61,18 +49,6 @@ func (a *DashboardHandler) CreateSource(w http.ResponseWriter, r *http.Request) 
 	_ = render.Render(w, r, util.NewServerResponse("Source created successfully", source, http.StatusCreated))
 }
 
-// GetSourceByID
-// @Summary Retrieve a source
-// @Description This endpoint retrieves a source by its id
-// @Tags Sources
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param sourceID path string true "Source ID"
-// @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/sources/{sourceID} [get]
 func (a *DashboardHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())
 
@@ -96,19 +72,6 @@ func (a *DashboardHandler) GetSourceByID(w http.ResponseWriter, r *http.Request)
 	_ = render.Render(w, r, util.NewServerResponse("Source fetched successfully", source, http.StatusOK))
 }
 
-// UpdateSource
-// @Summary Update a source
-// @Description This endpoint updates a source
-// @Tags Sources
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param sourceID path string true "source id"
-// @Param source body models.Source true "Source Details"
-// @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/sources/{sourceID} [put]
 func (a *DashboardHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 	var sourceUpdate models.UpdateSource
 	err := util.ReadJSON(r, &sourceUpdate)
@@ -145,18 +108,6 @@ func (a *DashboardHandler) UpdateSource(w http.ResponseWriter, r *http.Request) 
 	_ = render.Render(w, r, util.NewServerResponse("Source updated successfully", source, http.StatusAccepted))
 }
 
-// DeleteSource
-// @Summary Delete a source
-// @Description This endpoint deletes a source
-// @Tags Sources
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param sourceID path string true "source id"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/sources/{sourceID} [delete]
 func (a *DashboardHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())
 	sourceService := createSourceService(a)
@@ -176,20 +127,6 @@ func (a *DashboardHandler) DeleteSource(w http.ResponseWriter, r *http.Request) 
 	_ = render.Render(w, r, util.NewServerResponse("Source deleted successfully", nil, http.StatusOK))
 }
 
-// LoadSourcesPaged
-// @Summary List all sources
-// @Description This endpoint fetches multiple sources
-// @Tags Sources
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param perPage query string false "results per page"
-// @Param page query string false "page number"
-// @Param sort query string false "sort order"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.SourceResponse}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/sources [get]
 func (a *DashboardHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	project := m.GetProjectFromContext(r.Context())

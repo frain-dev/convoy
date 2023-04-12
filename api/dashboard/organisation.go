@@ -26,21 +26,6 @@ func (a *DashboardHandler) GetOrganisation(w http.ResponseWriter, r *http.Reques
 		m.GetOrganisationFromContext(r.Context()), http.StatusOK))
 }
 
-// GetOrganisationsPaged - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary List all organisations
-// @Description This endpoint fetches the organisations a user is part of, this route can only be accessed with a personal api key
-// @Tags Organisations
-// @Accept  json
-// @Produce  json
-// @Param perPage query string false "results per page"
-// @Param page query string false "page number"
-// @Param sort query string false "sort order"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Organisation}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/organisations [get]
-func _() {}
-
 func (a *DashboardHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) { // TODO: change to GetUserOrganisationsPaged
 	pageable := m.GetPageableFromContext(r.Context())
 	user := m.GetUserFromContext(r.Context())

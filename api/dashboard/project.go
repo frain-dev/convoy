@@ -25,19 +25,6 @@ func createProjectService(a *DashboardHandler) *services.ProjectService {
 	)
 }
 
-// GetProject - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary Retrieve a project
-// @Description This endpoint fetches a project by its id
-// @Tags Projects
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Success 200 {object} util.ServerResponse{data=datastore.Project}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID} [get]
-func _() {}
-
 func (a *DashboardHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())
 	_ = render.Render(w, r, util.NewServerResponse("Project fetched successfully", project, http.StatusOK))
@@ -55,19 +42,6 @@ func (a *DashboardHandler) GetProjectStatistics(w http.ResponseWriter, r *http.R
 
 	_ = render.Render(w, r, util.NewServerResponse("Project Stats fetched successfully", project.Statistics, http.StatusOK))
 }
-
-// DeleteProject - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary Delete a project
-// @Description This endpoint deletes a project using its id
-// @Tags Projects
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID} [delete]
-func _() {}
 
 func (a *DashboardHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())
@@ -92,20 +66,6 @@ func (a *DashboardHandler) DeleteProject(w http.ResponseWriter, r *http.Request)
 	_ = render.Render(w, r, util.NewServerResponse("Project deleted successfully",
 		nil, http.StatusOK))
 }
-
-// CreateProject - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary Create a project
-// @Description This endpoint creates a project
-// @Tags Projects
-// @Accept  json
-// @Produce  json
-// @Param orgID query string true "Organisation id"
-// @Param project body models.Project true "Project Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Project}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects [post]
-func _() {}
 
 func (a *DashboardHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var newProject models.Project
@@ -133,20 +93,6 @@ func (a *DashboardHandler) CreateProject(w http.ResponseWriter, r *http.Request)
 	_ = render.Render(w, r, util.NewServerResponse("Project created successfully", resp, http.StatusCreated))
 }
 
-// UpdateProject - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary Update a project
-// @Description This endpoint updates a project
-// @Tags Projects
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param project body models.Project true "Project Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Project}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID} [put]
-func _() {}
-
 func (a *DashboardHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	var update models.UpdateProject
 	err := util.ReadJSON(r, &update)
@@ -166,20 +112,6 @@ func (a *DashboardHandler) UpdateProject(w http.ResponseWriter, r *http.Request)
 
 	_ = render.Render(w, r, util.NewServerResponse("Project updated successfully", project, http.StatusAccepted))
 }
-
-// GetProjects - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary List all projects
-// @Description This endpoint fetches projects
-// @Tags Projects
-// @Accept  json
-// @Produce  json
-// @Param name query string false "Project name"
-// @Param orgID query string true "organisation id"
-// @Success 200 {object} util.ServerResponse{data=[]datastore.Project}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects [get]
-func _() {}
 
 func (a *DashboardHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	org := m.GetOrganisationFromContext(r.Context())

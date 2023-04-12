@@ -32,18 +32,6 @@ func createEventService(a *PortalLinkHandler) *services.EventService {
 	)
 }
 
-// CreateEndpointEvent
-// @Summary Create an event
-// @Description This endpoint creates an endpoint event
-// @Tags Events
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param event body models.Event true "Event Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/events [post]
 func (a *PortalLinkHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	var newMessage models.Event
 	err := util.ReadJSON(r, &newMessage)
@@ -64,18 +52,6 @@ func (a *PortalLinkHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.R
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", event, http.StatusCreated))
 }
 
-// CreateEndpointFanoutEvent
-// @Summary Fan out an event
-// @Description This endpoint uses the owner_id to fan out an event to multiple endpoints.
-// @Tags Events
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param event body models.FanoutEvent true "Event Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/events/fanout [post]
 func (a *PortalLinkHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Request) {
 	var newMessage models.FanoutEvent
 	err := util.ReadJSON(r, &newMessage)
@@ -96,18 +72,6 @@ func (a *PortalLinkHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", event, http.StatusCreated))
 }
 
-// ReplayEndpointEvent
-// @Summary Replay event
-// @Description This endpoint replays an event afresh assuming it is a new event.
-// @Tags Events
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param eventID path string true "event id"
-// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/events/{eventID}/replay [put]
 func (a *PortalLinkHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	g := m.GetProjectFromContext(r.Context())
 	event := m.GetEventFromContext(r.Context())
@@ -122,20 +86,6 @@ func (a *PortalLinkHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.R
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint event replayed successfully", event, http.StatusOK))
 }
 
-// BatchReplayEvents
-// @Summary Batch replay events
-// @Description This endpoint replays multiple events at once.
-// @Tags Events
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param startDate query string false "start date"
-// @Param endDate query string false "end date"
-// @Param source query string false "Source ID"
-// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/events/batchreplay [post]
 func (a *PortalLinkHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 	p := m.GetProjectFromContext(r.Context())
 	eventService := createEventService(a)
@@ -198,52 +148,16 @@ func (a *PortalLinkHandler) CountAffectedEvents(w http.ResponseWriter, r *http.R
 	_ = render.Render(w, r, util.NewServerResponse("events count successful", map[string]interface{}{"num": count}, http.StatusOK))
 }
 
-// GetEndpointEvent
-// @Summary Retrieve an event
-// @Description This endpoint retrieves an event
-// @Tags Events
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param eventID path string true "event id"
-// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/events/{eventID} [get]
 func (a *PortalLinkHandler) GetEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint event fetched successfully",
 		*m.GetEventFromContext(r.Context()), http.StatusOK))
 }
 
-// GetEventDelivery
-// @Summary Retrieve an event delivery
-// @Description This endpoint fetches an event delivery.
-// @Tags Event Deliveries
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param eventDeliveryID path string true "event delivery id"
-// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID} [get]
 func (a *PortalLinkHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Event Delivery fetched successfully",
 		*m.GetEventDeliveryFromContext(r.Context()), http.StatusOK))
 }
 
-// ResendEventDelivery
-// @Summary Retry event delivery
-// @Description This endpoint retries an event delivery.
-// @Tags Event Deliveries
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param eventDeliveryID path string true "event delivery id"
-// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend [put]
 func (a *PortalLinkHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 	eventDelivery := m.GetEventDeliveryFromContext(r.Context())
 	eventService := createEventService(a)
@@ -258,18 +172,6 @@ func (a *PortalLinkHandler) ResendEventDelivery(w http.ResponseWriter, r *http.R
 		eventDelivery, http.StatusOK))
 }
 
-// BatchRetryEventDelivery
-// @Summary Batch retry event delivery
-// @Description This endpoint batch retries multiple event deliveries at once.
-// @Tags Event Deliveries
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param deliveryIds body Stub{ids=[]string} true "event delivery ids"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/eventdeliveries/batchretry [post]
 func (a *PortalLinkHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
 	var endpoints []string
 	status := make([]datastore.EventDeliveryStatus, 0)
@@ -364,18 +266,6 @@ func (a *PortalLinkHandler) CountAffectedEventDeliveries(w http.ResponseWriter, 
 	_ = render.Render(w, r, util.NewServerResponse("event deliveries count successful", map[string]interface{}{"num": count}, http.StatusOK))
 }
 
-// ForceResendEventDeliveries
-// @Summary Force retry event delivery
-// @Description This endpoint enables you retry a previously successful event delivery
-// @Tags Event Deliveries
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param deliveryIds body Stub{ids=[]string} true "event delivery ids"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/eventdeliveries/forceresend [post]
 func (a *PortalLinkHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	eventDeliveryIDs := models.IDs{}
 
@@ -395,24 +285,6 @@ func (a *PortalLinkHandler) ForceResendEventDeliveries(w http.ResponseWriter, r 
 	_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("%d successful, %d failed", successes, failures), nil, http.StatusOK))
 }
 
-// GetEventsPaged
-// @Summary List all events
-// @Description This endpoint fetches app events with pagination
-// @Tags Events
-// @Accept  json
-// @Produce  json
-// @Param appId query string false "application id"
-// @Param projectID path string true "Project ID"
-// @Param sourceId query string false "source id"
-// @Param startDate query string false "start date"
-// @Param endDate query string false "end date"
-// @Param perPage query string false "results per page"
-// @Param page query string false "page number"
-// @Param sort query string false "sort order"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Event{data=Stub}}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/events [get]
 func (a *PortalLinkHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 	var endpoints []string
 
@@ -476,25 +348,6 @@ func (a *PortalLinkHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reques
 		pagedResponse{Content: &m, Pagination: &paginationData}, http.StatusOK))
 }
 
-// GetEventDeliveriesPaged
-// @Summary List all event deliveries
-// @Description This endpoint retrieves all event deliveries paginated.
-// @Tags Event Deliveries
-// @Accept json
-// @Produce json
-// @Param appId query string false "application id"
-// @Param projectID path string true "Project ID"
-// @Param eventId query string false "event id"
-// @Param startDate query string false "start date"
-// @Param endDate query string false "end date"
-// @Param perPage query string false "results per page"
-// @Param page query string false "page number"
-// @Param sort query string false "sort order"
-// @Param status query []string false "status"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.EventDelivery{data=Stub}}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/eventdeliveries [get]
 func (a *PortalLinkHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
 	status := make([]datastore.EventDeliveryStatus, 0)
 	var endpoints []string
