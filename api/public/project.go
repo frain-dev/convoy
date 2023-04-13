@@ -36,10 +36,13 @@ func createProjectService(a *PublicHandler) *services.ProjectService {
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID} [get]
-func _() {}
-
 func (a *PublicHandler) GetProject(w http.ResponseWriter, r *http.Request) {
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	_ = render.Render(w, r, util.NewServerResponse("Project fetched successfully", project, http.StatusOK))
 }
 
@@ -67,8 +70,6 @@ func (a *PublicHandler) GetProjectStatistics(w http.ResponseWriter, r *http.Requ
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID} [delete]
-func _() {}
-
 func (a *PublicHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())
 	projectService := createProjectService(a)
@@ -105,8 +106,6 @@ func (a *PublicHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects [post]
-func _() {}
-
 func (a *PublicHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var newProject models.Project
 	err := util.ReadJSON(r, &newProject)
@@ -145,8 +144,6 @@ func (a *PublicHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID} [put]
-func _() {}
-
 func (a *PublicHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	var update models.UpdateProject
 	err := util.ReadJSON(r, &update)
@@ -179,8 +176,6 @@ func (a *PublicHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /api/v1/projects [get]
-func _() {}
-
 func (a *PublicHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	org := m.GetOrganisationFromContext(r.Context())
 

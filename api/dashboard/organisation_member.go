@@ -21,7 +21,11 @@ func createOrganisationMemberService(a *DashboardHandler) *services.Organisation
 
 func (a *DashboardHandler) GetOrganisationMembers(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	orgMemberService := createOrganisationMemberService(a)
 
 	members, paginationData, err := orgMemberService.LoadOrganisationMembersPaged(r.Context(), org, pageable)
@@ -37,7 +41,11 @@ func (a *DashboardHandler) GetOrganisationMembers(w http.ResponseWriter, r *http
 
 func (a *DashboardHandler) GetOrganisationMember(w http.ResponseWriter, r *http.Request) {
 	memberID := chi.URLParam(r, "memberID")
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	orgMemberService := createOrganisationMemberService(a)
 
 	member, err := orgMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
@@ -58,7 +66,11 @@ func (a *DashboardHandler) UpdateOrganisationMember(w http.ResponseWriter, r *ht
 	}
 
 	memberID := chi.URLParam(r, "memberID")
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	orgMemberService := createOrganisationMemberService(a)
 
 	member, err := orgMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
@@ -78,10 +90,14 @@ func (a *DashboardHandler) UpdateOrganisationMember(w http.ResponseWriter, r *ht
 
 func (a *DashboardHandler) DeleteOrganisationMember(w http.ResponseWriter, r *http.Request) {
 	memberID := chi.URLParam(r, "memberID")
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	orgMemberService := createOrganisationMemberService(a)
 
-	err := orgMemberService.DeleteOrganisationMember(r.Context(), memberID, org)
+	err = orgMemberService.DeleteOrganisationMember(r.Context(), memberID, org)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

@@ -190,7 +190,11 @@ func (a *DashboardHandler) UpdatePassword(w http.ResponseWriter, r *http.Request
 
 func (a *DashboardHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var forgotPassword models.ForgotPassword
-	baseUrl := m.GetHostFromContext(r.Context())
+	baseUrl, err := a.retrieveHost()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServerResponse("Server Error: Could not retrieve config"))
+		return
+	}
 
 	err := util.ReadJSON(r, &forgotPassword)
 	if err != nil {

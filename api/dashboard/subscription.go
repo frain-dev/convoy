@@ -27,7 +27,12 @@ func (a *DashboardHandler) GetSubscriptions(w http.ResponseWriter, r *http.Reque
 	var endpoints []string
 
 	pageable := m.GetPageableFromContext(r.Context())
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	endpointID := m.GetEndpointIDFromContext(r)
 	endpointIDs := m.GetEndpointIDsFromContext(r)
 
@@ -49,7 +54,12 @@ func (a *DashboardHandler) GetSubscriptions(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	var customDomain string
 	if org == nil {
 		customDomain = ""
@@ -57,7 +67,12 @@ func (a *DashboardHandler) GetSubscriptions(w http.ResponseWriter, r *http.Reque
 		customDomain = org.CustomDomain.ValueOrZero()
 	}
 
-	baseUrl := m.GetHostFromContext(r.Context())
+	baseUrl, err := a.retrieveHost()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	for i := range subscriptions {
 		fillSourceURL(subscriptions[i].Source, baseUrl, customDomain)
 	}
@@ -68,7 +83,11 @@ func (a *DashboardHandler) GetSubscriptions(w http.ResponseWriter, r *http.Reque
 
 func (a *DashboardHandler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 	subId := chi.URLParam(r, "subscriptionID")
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	subService := createSubscriptionService(a)
 	subscription, err := subService.FindSubscriptionByID(r.Context(), project, subId, false)
@@ -81,7 +100,11 @@ func (a *DashboardHandler) GetSubscription(w http.ResponseWriter, r *http.Reques
 }
 
 func (a *DashboardHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	var sub models.Subscription
 	err := util.ReadJSON(r, &sub)
@@ -102,9 +125,13 @@ func (a *DashboardHandler) CreateSubscription(w http.ResponseWriter, r *http.Req
 }
 
 func (a *DashboardHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
-	project := m.GetProjectFromContext(r.Context())
-	subService := createSubscriptionService(a)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	subService := createSubscriptionService(a)
 	sub, err := subService.FindSubscriptionByID(r.Context(), project, chi.URLParam(r, "subscriptionID"), true)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -130,11 +157,15 @@ func (a *DashboardHandler) UpdateSubscription(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	g := m.GetProjectFromContext(r.Context())
-	subscription := chi.URLParam(r, "subscriptionID")
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	subscription := chi.URLParam(r, "subscriptionID")
 	subService := createSubscriptionService(a)
-	sub, err := subService.UpdateSubscription(r.Context(), g.UID, subscription, &update)
+	sub, err := subService.UpdateSubscription(r.Context(), project.UID, subscription, &update)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

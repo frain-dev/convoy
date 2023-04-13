@@ -222,3 +222,7 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 
 	return router
 }
+
+func (a *PublicHandler) retrieveProject(r *http.Request) (*datastore.Project, error) {
+	return &datastore.Project{}, nil
+}

@@ -1,13 +1,14 @@
 package dashboard
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/types"
-	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
@@ -17,7 +18,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/fflag/flipt"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
@@ -76,7 +76,6 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 	router.Get("/users/token", a.FindUserByInviteToken)
 
 	router.Route("/users", func(userRouter chi.Router) {
-		userRouter.Use(a.M.RequireAuthUserMetadata())
 		userRouter.Route("/{userID}", func(userSubRouter chi.Router) {
 			userSubRouter.Use(a.M.RequireAuthorizedUser())
 			userSubRouter.Get("/profile", a.GetUser)
@@ -104,30 +103,23 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 	})
 
 	router.Route("/organisations", func(orgRouter chi.Router) {
-		orgRouter.Use(a.M.RequireAuthUserMetadata())
-		orgRouter.Use(a.M.RequireBaseUrl())
-
 		orgRouter.Post("/", a.CreateOrganisation)
 		orgRouter.With(a.M.Pagination).Get("/", a.GetOrganisationsPaged)
 
 		orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
-			orgSubRouter.Use(a.M.RequireOrganisation())
-			orgSubRouter.Use(a.M.RequireOrganisationMembership())
 
 			orgSubRouter.Get("/", a.GetOrganisation)
-			orgSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", a.UpdateOrganisation)
-			orgSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", a.DeleteOrganisation)
+			orgSubRouter.Put("/", a.UpdateOrganisation)
+			orgSubRouter.Delete("/", a.DeleteOrganisation)
 
 			orgSubRouter.Route("/invites", func(orgInvitesRouter chi.Router) {
-				orgInvitesRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/", a.InviteUserToOrganisation)
-				orgInvitesRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/{inviteID}/resend", a.ResendOrganizationInvite)
-				orgInvitesRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/{inviteID}/cancel", a.CancelOrganizationInvite)
-				orgInvitesRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).With(a.M.Pagination).Get("/pending", a.GetPendingOrganisationInvites)
+				orgInvitesRouter.Post("/", a.InviteUserToOrganisation)
+				orgInvitesRouter.Post("/{inviteID}/resend", a.ResendOrganizationInvite)
+				orgInvitesRouter.Post("/{inviteID}/cancel", a.CancelOrganizationInvite)
+				orgInvitesRouter.With(a.M.Pagination).Get("/pending", a.GetPendingOrganisationInvites)
 			})
 
 			orgSubRouter.Route("/members", func(orgMemberRouter chi.Router) {
-				orgMemberRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser))
-
 				orgMemberRouter.With(a.M.Pagination).Get("/", a.GetOrganisationMembers)
 
 				orgMemberRouter.Route("/{memberID}", func(orgMemberSubRouter chi.Router) {
@@ -139,23 +131,18 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 
 			orgSubRouter.Route("/projects", func(projectRouter chi.Router) {
 				projectRouter.Route("/", func(orgSubRouter chi.Router) {
-					projectRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Post("/", a.CreateProject)
+					projectRouter.Post("/", a.CreateProject)
 					projectRouter.Get("/", a.GetProjects)
 				})
 
 				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
-					projectSubRouter.Use(a.M.RequireProject())
-					projectSubRouter.Use(a.M.RateLimitByProjectID())
-					projectSubRouter.Use(a.M.RequireOrganisationProjectMember())
-
-					projectSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Get("/", a.GetProject)
-					projectSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/", a.UpdateProject)
-					projectSubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Delete("/", a.DeleteProject)
-
+					projectSubRouter.Get("/", a.GetProject)
 					projectSubRouter.Get("/stats", a.GetProjectStatistics)
+					projectSubRouter.Put("/", a.UpdateProject)
+					projectSubRouter.Delete("/", a.DeleteProject)
 
 					projectSubRouter.Route("/security/keys", func(projectKeySubRouter chi.Router) {
-						projectKeySubRouter.With(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser)).Put("/regenerate", a.RegenerateProjectAPIKey)
+						projectKeySubRouter.Put("/regenerate", a.RegenerateProjectAPIKey)
 					})
 
 					projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
@@ -163,8 +150,6 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 						endpointSubRouter.With(a.M.Pagination).Get("/", a.GetEndpoints)
 
 						endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
-							e.Use(a.M.RequireEndpoint())
-
 							e.Get("/", a.GetEndpoint)
 							e.Put("/", a.UpdateEndpoint)
 							e.Delete("/", a.DeleteEndpoint)
@@ -172,7 +157,6 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 							e.Put("/expire_secret", a.ExpireSecret)
 
 							e.Route("/keys", func(keySubRouter chi.Router) {
-								keySubRouter.Use(a.M.RequireBaseUrl())
 								keySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateEndpointAPIKey)
 								keySubRouter.With(a.M.Pagination).Get("/", a.LoadEndpointAPIKeysPaged)
 								keySubRouter.Put("/{keyID}/revoke", a.RevokeEndpointAPIKey)
@@ -185,7 +169,6 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 					})
 
 					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
-						eventRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleAdmin))
 
 						eventRouter.Post("/", a.CreateEndpointEvent)
 						eventRouter.Post("/fanout", a.CreateEndpointFanoutEvent)
@@ -194,50 +177,39 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 						eventRouter.Get("/countbatchreplayevents", a.CountAffectedEvents)
 
 						eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
-							eventSubRouter.Use(a.M.RequireEvent())
 							eventSubRouter.Get("/", a.GetEndpointEvent)
 							eventSubRouter.Put("/replay", a.ReplayEndpointEvent)
 						})
 					})
 
 					projectSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-						eventDeliveryRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleSuperUser))
-
 						eventDeliveryRouter.With(a.M.Pagination).Get("/", a.GetEventDeliveriesPaged)
 						eventDeliveryRouter.Post("/forceresend", a.ForceResendEventDeliveries)
 						eventDeliveryRouter.Post("/batchretry", a.BatchRetryEventDelivery)
 						eventDeliveryRouter.Get("/countbatchretryevents", a.CountAffectedEventDeliveries)
 
 						eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-							eventDeliverySubRouter.Use(a.M.RequireEventDelivery())
-
 							eventDeliverySubRouter.Get("/", a.GetEventDelivery)
 							eventDeliverySubRouter.Put("/resend", a.ResendEventDelivery)
 
 							eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
-								deliveryRouter.Use(fetchDeliveryAttempts())
-
 								deliveryRouter.Get("/", a.GetDeliveryAttempts)
-								deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
+								deliveryRouter.Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
 							})
 						})
 					})
 
 					projectSubRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
-						subscriptionRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleAdmin))
 
 						subscriptionRouter.Post("/", a.CreateSubscription)
 						subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
-						subscriptionRouter.With(a.M.Pagination, a.M.RequireBaseUrl()).Get("/", a.GetSubscriptions)
+						subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
 						subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
 						subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
 						subscriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
 					})
 
 					projectSubRouter.Route("/sources", func(sourceRouter chi.Router) {
-						sourceRouter.Use(a.M.RequireOrganisationMemberRole(auth.RoleAdmin))
-						sourceRouter.Use(a.M.RequireBaseUrl())
-
 						sourceRouter.Post("/", a.CreateSource)
 						sourceRouter.Get("/{sourceID}", a.GetSourceByID)
 						sourceRouter.With(a.M.Pagination).Get("/", a.LoadSourcesPaged)
@@ -251,8 +223,6 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 					})
 
 					projectSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
-						portalLinkRouter.Use(a.M.RequireBaseUrl())
-
 						portalLinkRouter.Post("/", a.CreatePortalLink)
 						portalLinkRouter.Get("/{portalLinkID}", a.GetPortalLinkByID)
 						portalLinkRouter.With(a.M.Pagination).Get("/", a.LoadPortalLinksPaged)
@@ -265,8 +235,6 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 	})
 
 	router.Route("/configuration", func(configRouter chi.Router) {
-		configRouter.Use(a.M.RequireAuthUserMetadata())
-
 		configRouter.Get("/", a.LoadConfiguration)
 		configRouter.Post("/", a.CreateConfiguration)
 		configRouter.Put("/", a.UpdateConfiguration)
@@ -276,12 +244,6 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 
 	return router
 
-}
-
-type AuthorizedLogin struct {
-	Username   string    `json:"username,omitempty"`
-	Token      string    `json:"token"`
-	ExpiryTime time.Time `json:"expiry_time"`
 }
 
 type ViewableConfiguration struct {
@@ -328,7 +290,7 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 	}
 
 	p := datastore.PeriodValues[period]
-	if err := m.EnsurePeriod(startT, endT); err != nil {
+	if err := middleware.EnsurePeriod(startT, endT); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(fmt.Sprintf("invalid period '%s': %s", period, err.Error()), http.StatusBadRequest))
 		return
 	}
@@ -338,7 +300,7 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 		CreatedAtEnd:   endT.Unix(),
 	}
 
-	project := m.GetProjectFromContext(r.Context())
+	project := middleware.GetProjectFromContext(r.Context())
 
 	qs := fmt.Sprintf("%v:%v:%v:%v", project.UID, searchParams.CreatedAtStart, searchParams.CreatedAtEnd, period)
 
@@ -386,13 +348,8 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 		dashboard, http.StatusOK))
 }
 
-func (a *DashboardHandler) GetAuthLogin(w http.ResponseWriter, r *http.Request) {
-	_ = render.Render(w, r, util.NewServerResponse("Logged in successfully",
-		m.GetAuthLoginFromContext(r.Context()), http.StatusOK))
-}
-
 func (a *DashboardHandler) GetAllConfigDetails(w http.ResponseWriter, r *http.Request) {
-	g := m.GetProjectFromContext(r.Context())
+	g := middleware.GetProjectFromContext(r.Context())
 
 	viewableConfig := ViewableConfiguration{
 		Strategy:  *g.Config.Strategy,
@@ -401,4 +358,60 @@ func (a *DashboardHandler) GetAllConfigDetails(w http.ResponseWriter, r *http.Re
 
 	_ = render.Render(w, r, util.NewServerResponse("Config details fetched successfully",
 		viewableConfig, http.StatusOK))
+}
+
+func (a *DashboardHandler) retrieveOrganisation(r *http.Request) (*datastore.Organisation, error) {
+	orgID := chi.URLParam(r, "orgID")
+
+	if util.IsStringEmpty(orgID) {
+		orgID = r.URL.Query().Get("orgID")
+	}
+
+	orgRepo := postgres.NewOrgRepo(a.A.DB)
+	return orgRepo.FetchOrganisationByID(r.Context(), orgID)
+}
+
+func (a *DashboardHandler) retrieveUser(r *http.Request) (*datastore.User, error) {
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	user, ok := authUser.Metadata.(*datastore.User)
+	if !ok {
+		return &datastore.User{}, errors.New("User not found")
+	}
+
+	return user, nil
+}
+
+func (a *DashboardHandler) retrieveMembership(r *http.Request) (*datastore.OrganisationMember, error) {
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		return &datastore.OrganisationMember{}, err
+	}
+
+	user, err := a.retrieveUser(r)
+	if err != nil {
+		return &datastore.OrganisationMember{}, err
+	}
+
+	orgMemberRepo := postgres.NewOrgMemberRepo(a.A.DB)
+	return orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
+}
+
+func (a *DashboardHandler) retrieveProject(r *http.Request) (*datastore.Project, error) {
+	projectID := chi.URLParam(r, "projectID")
+
+	if util.IsStringEmpty(projectID) {
+		return &datastore.Project{}, errors.New("Project ID not present in request")
+	}
+
+	projectRepo := postgres.NewProjectRepo(a.A.DB)
+	return projectRepo.FetchProjectByID(r.Context(), projectID)
+}
+
+func (a *DashboardHandler) retrieveHost() (string, error) {
+	cfg, err := config.Get()
+	if err != nil {
+		return "", err
+	}
+
+	return cfg.Host, nil
 }

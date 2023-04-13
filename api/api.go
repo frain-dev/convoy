@@ -27,7 +27,7 @@ type ApplicationHandler struct {
 	A      types.App
 }
 
-//go:embed ui/build
+//go:embed dashboard/ui/build
 var reactFS embed.FS
 
 func reactRootHandler(rw http.ResponseWriter, req *http.Request) {

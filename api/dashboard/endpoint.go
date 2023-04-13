@@ -40,9 +40,13 @@ func (a *DashboardHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	project := m.GetProjectFromContext(r.Context())
-	endpointService := createEndpointService(a)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	endpointService := createEndpointService(a)
 	endpoint, err := endpointService.CreateEndpoint(r.Context(), e, project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -53,21 +57,29 @@ func (a *DashboardHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request
 }
 
 func (a *DashboardHandler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint fetched successfully",
-		*m.GetEndpointFromContext(r.Context()), http.StatusOK))
+	endpoint, err := a.retrieveEndpoint(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint fetched successfully", endpoint, http.StatusOK))
 }
 
 func (a *DashboardHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
-	project := m.GetProjectFromContext(r.Context())
-	endpointService := createEndpointService(a)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	endpointService := createEndpointService(a)
 	filter := &datastore.Filter{
 		Query:   r.URL.Query().Get("q"),
 		OwnerID: r.URL.Query().Get("ownerId"),
 	}
 
 	pageable := m.GetPageableFromContext(r.Context())
-
 	endpoints, paginationData, err := endpointService.LoadEndpointsPaged(r.Context(), project.UID, filter, pageable)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to load endpoints")
@@ -88,10 +100,19 @@ func (a *DashboardHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	endpoint := m.GetEndpointFromContext(r.Context())
-	project := m.GetProjectFromContext(r.Context())
-	endpointService := createEndpointService(a)
+	endpoint, err := a.retrieveEndpoint(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	endpointService := createEndpointService(a)
 	endpoint, err = endpointService.UpdateEndpoint(r.Context(), e, endpoint, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -102,11 +123,20 @@ func (a *DashboardHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request
 }
 
 func (a *DashboardHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
-	endpoint := m.GetEndpointFromContext(r.Context())
-	endpointService := createEndpointService(a)
-	project := m.GetProjectFromContext(r.Context())
+	endpoint, err := a.retrieveEndpoint(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-	err := endpointService.DeleteEndpoint(r.Context(), endpoint, project)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	endpointService := createEndpointService(a)
+	err = endpointService.DeleteEndpoint(r.Context(), endpoint, project)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to delete endpoint")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -124,10 +154,19 @@ func (a *DashboardHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	endpoint := m.GetEndpointFromContext(r.Context())
-	project := m.GetProjectFromContext(r.Context())
-	endpointService := createEndpointService(a)
+	endpoint, err := a.retrieveEndpoint(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	endpointService := createEndpointService(a)
 	endpoint, err = endpointService.ExpireSecret(r.Context(), e, endpoint, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -139,11 +178,15 @@ func (a *DashboardHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) 
 }
 
 func (a *DashboardHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.Request) {
-	p := m.GetProjectFromContext(r.Context())
-	endpointID := chi.URLParam(r, "endpointID")
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	endpointID := chi.URLParam(r, "endpointID")
 	endpointService := createEndpointService(a)
-	endpoint, err := endpointService.ToggleEndpointStatus(r.Context(), p.UID, endpointID)
+	endpoint, err := endpointService.ToggleEndpointStatus(r.Context(), project.UID, endpointID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -153,15 +196,30 @@ func (a *DashboardHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.R
 }
 
 func (a *DashboardHandler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
-	p := m.GetProjectFromContext(r.Context())
-	endpointID := chi.URLParam(r, "endpointID")
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	endpointID := chi.URLParam(r, "endpointID")
 	endpointService := createEndpointService(a)
-	endpoint, err := endpointService.PauseEndpoint(r.Context(), p.UID, endpointID)
+	endpoint, err := endpointService.PauseEndpoint(r.Context(), project.UID, endpointID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("endpoint status updated successfully", endpoint, http.StatusAccepted))
+}
+
+func (a *DashboardHandler) retrieveEndpoint(r *http.Request) (*datastore.Endpoint, error) {
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		return &datastore.Endpoint{}, err
+	}
+
+	endpointID := chi.URLParam(r, "endpointID")
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+	return endpointRepo.FindEndpointByID(r.Context(), endpointID, project.UID)
 }

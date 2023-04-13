@@ -19,9 +19,13 @@ func createDeviceService(a *DashboardHandler) *services.DeviceService {
 
 func (a *DashboardHandler) FindDevicesByAppID(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-	project := m.GetProjectFromContext(r.Context())
-	endpoint := m.GetEndpointFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	endpoint := m.GetEndpointFromContext(r.Context())
 	f := &datastore.ApiKeyFilter{
 		EndpointID: endpoint.UID,
 	}

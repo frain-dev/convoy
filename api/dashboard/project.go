@@ -26,15 +26,24 @@ func createProjectService(a *DashboardHandler) *services.ProjectService {
 }
 
 func (a *DashboardHandler) GetProject(w http.ResponseWriter, r *http.Request) {
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	_ = render.Render(w, r, util.NewServerResponse("Project fetched successfully", project, http.StatusOK))
 }
 
 func (a *DashboardHandler) GetProjectStatistics(w http.ResponseWriter, r *http.Request) {
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	projectService := createProjectService(a)
 
-	err := projectService.FillProjectStatistics(r.Context(), project)
+	err = projectService.FillProjectStatistics(r.Context(), project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -44,7 +53,11 @@ func (a *DashboardHandler) GetProjectStatistics(w http.ResponseWriter, r *http.R
 }
 
 func (a *DashboardHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	projectService := createProjectService(a)
 
 	//opts := &policies.ProjectPolicyOpts{
@@ -57,7 +70,7 @@ func (a *DashboardHandler) DeleteProject(w http.ResponseWriter, r *http.Request)
 	//	return
 	//}
 
-	err := projectService.DeleteProject(r.Context(), project.UID)
+	err = projectService.DeleteProject(r.Context(), project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -75,10 +88,19 @@ func (a *DashboardHandler) CreateProject(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	org := m.GetOrganisationFromContext(r.Context())
-	member := m.GetOrganisationMemberFromContext(r.Context())
-	projectService := createProjectService(a)
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	member, err := a.retrieveMembership(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	projectService := createProjectService(a)
 	project, apiKey, err := projectService.CreateProject(r.Context(), &newProject, org, member)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -101,7 +123,11 @@ func (a *DashboardHandler) UpdateProject(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	p := m.GetProjectFromContext(r.Context())
+	p, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	projectService := createProjectService(a)
 
 	project, err := projectService.UpdateProject(r.Context(), p, &update)
@@ -114,7 +140,11 @@ func (a *DashboardHandler) UpdateProject(w http.ResponseWriter, r *http.Request)
 }
 
 func (a *DashboardHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	filter := &datastore.ProjectFilter{OrgID: org.UID}
 	projectService := createProjectService(a)

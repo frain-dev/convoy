@@ -28,7 +28,12 @@ func (a *DashboardHandler) GetOrganisation(w http.ResponseWriter, r *http.Reques
 
 func (a *DashboardHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) { // TODO: change to GetUserOrganisationsPaged
 	pageable := m.GetPageableFromContext(r.Context())
-	user := m.GetUserFromContext(r.Context())
+	user, err := a.retrieveUser(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	orgService := createOrganisationService(a)
 
 	organisations, paginationData, err := orgService.LoadUserOrganisationsPaged(r.Context(), user, pageable)
@@ -43,7 +48,11 @@ func (a *DashboardHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.
 }
 
 func (a *DashboardHandler) GetUserOrganisations(w http.ResponseWriter, r *http.Request) { // TODO: change to GetUserOrganisationsPaged
-	user := m.GetUserFromContext(r.Context())
+	user, err := a.retrieveUser(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	orgService := createOrganisationService(a)
 	organisations, _, err := orgService.LoadUserOrganisationsPaged(r.Context(), user, datastore.Pageable{NextCursor: datastore.DefaultCursor, PerPage: 100, Direction: datastore.Next})
@@ -65,9 +74,13 @@ func (a *DashboardHandler) CreateOrganisation(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	user := m.GetUserFromContext(r.Context())
-	orgService := createOrganisationService(a)
+	user, err := a.retrieveUser(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	orgService := createOrganisationService(a)
 	organisation, err := orgService.CreateOrganisation(r.Context(), &newOrg, user)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -96,9 +109,14 @@ func (a *DashboardHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Req
 }
 
 func (a *DashboardHandler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	orgService := createOrganisationService(a)
-	err := orgService.DeleteOrganisation(r.Context(), org.UID)
+	err = orgService.DeleteOrganisation(r.Context(), org.UID)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to delete organisation")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

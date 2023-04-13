@@ -103,8 +103,6 @@ func (a *DashboardHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.R
 	_ = render.Render(w, r, util.NewServerResponse("Personal API Key created successfully", resp, http.StatusCreated))
 }
 
-func _() {}
-
 func (a *DashboardHandler) CreateEndpointAPIKey(w http.ResponseWriter, r *http.Request) {
 	var keyType datastore.KeyType
 	var newApiKey models.CreateEndpointApiKey
@@ -117,9 +115,23 @@ func (a *DashboardHandler) CreateEndpointAPIKey(w http.ResponseWriter, r *http.R
 		}
 	}
 
-	project := m.GetProjectFromContext(r.Context())
-	endpoint := m.GetEndpointFromContext(r.Context())
-	baseUrl := m.GetHostFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	endpoint, err := a.retrieveEndpoint(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	baseUrl, err := a.retrieveHost()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	k := string(newApiKey.KeyType)
 
@@ -172,8 +184,17 @@ func (a *DashboardHandler) CreateEndpointAPIKey(w http.ResponseWriter, r *http.R
 }
 
 func (a *DashboardHandler) LoadEndpointAPIKeysPaged(w http.ResponseWriter, r *http.Request) {
-	project := m.GetProjectFromContext(r.Context())
-	endpoint := m.GetEndpointFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	endpoint, err := a.retrieveEndpoint(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	pageable := m.GetPageableFromContext(r.Context())
 
 	f := &datastore.ApiKeyFilter{
@@ -253,8 +274,17 @@ func (a *DashboardHandler) RegenerateProjectAPIKey(w http.ResponseWriter, r *htt
 }
 
 func (a *DashboardHandler) RevokeEndpointAPIKey(w http.ResponseWriter, r *http.Request) {
-	endpoint := m.GetEndpointFromContext(r.Context())
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	endpoint, err := a.retrieveEndpoint(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	securityService := createSecurityService(a)
 	key, err := securityService.GetAPIKeyByID(r.Context(), chi.URLParam(r, "keyID"))

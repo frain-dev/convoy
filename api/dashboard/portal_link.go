@@ -29,7 +29,11 @@ func (a *DashboardHandler) CreatePortalLink(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	portalLinkService := createPortalLinkService(a)
 	portalLink, err := portalLinkService.CreatePortalLink(r.Context(), &newPortalLink, project)
@@ -38,13 +42,22 @@ func (a *DashboardHandler) CreatePortalLink(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	baseUrl := m.GetHostFromContext(r.Context())
+	baseUrl, err := a.retrieveHost(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	pl := portalLinkResponse(portalLink, baseUrl)
 	_ = render.Render(w, r, util.NewServerResponse("Portal link created successfully", pl, http.StatusCreated))
 }
 
 func (a *DashboardHandler) GetPortalLinkByID(w http.ResponseWriter, r *http.Request) {
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	portalLinkService := createPortalLinkService(a)
 	portalLink, err := portalLinkService.FindPortalLinkByID(r.Context(), project, chi.URLParam(r, "portalLinkID"))
@@ -53,7 +66,11 @@ func (a *DashboardHandler) GetPortalLinkByID(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	baseUrl := m.GetHostFromContext(r.Context())
+	baseUrl, err := a.retrieveHost(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	pl := portalLinkResponse(portalLink, baseUrl)
 
 	_ = render.Render(w, r, util.NewServerResponse("Portal link fetched successfully", pl, http.StatusOK))
@@ -67,9 +84,13 @@ func (a *DashboardHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	project := m.GetProjectFromContext(r.Context())
-	portalLinkService := createPortalLinkService(a)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	portalLinkService := createPortalLinkService(a)
 	portalLink, err := portalLinkService.FindPortalLinkByID(r.Context(), project, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -82,14 +103,22 @@ func (a *DashboardHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	baseUrl := m.GetHostFromContext(r.Context())
+	baseUrl, err := a.retrieveHost(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	pl := portalLinkResponse(portalLink, baseUrl)
 
 	_ = render.Render(w, r, util.NewServerResponse("Portal link updated successfully", pl, http.StatusAccepted))
 }
 
 func (a *DashboardHandler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	portalLinkService := createPortalLinkService(a)
 
 	portalLink, err := portalLinkService.FindPortalLinkByID(r.Context(), project, chi.URLParam(r, "portalLinkID"))
@@ -109,9 +138,13 @@ func (a *DashboardHandler) RevokePortalLink(w http.ResponseWriter, r *http.Reque
 
 func (a *DashboardHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-	project := m.GetProjectFromContext(r.Context())
-	endpointID := m.GetEndpointIDFromContext(r)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	endpointID := m.GetEndpointIDFromContext(r)
 	filter := &datastore.FilterBy{EndpointID: endpointID}
 
 	portalLinkService := createPortalLinkService(a)
@@ -122,7 +155,11 @@ func (a *DashboardHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.R
 	}
 
 	plResponse := []*models.PortalLinkResponse{}
-	baseUrl := m.GetHostFromContext(r.Context())
+	baseUrl, err := a.retrieveHost(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	for _, portalLink := range portalLinks {
 		pl := portalLinkResponse(&portalLink, baseUrl)
@@ -140,7 +177,11 @@ func (a *DashboardHandler) CreatePortalLinkEndpoint(w http.ResponseWriter, r *ht
 		return
 	}
 
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	portalLink := m.GetPortalLinkFromContext(r.Context())
 	portalLinkService := createPortalLinkService(a)
 
@@ -155,7 +196,11 @@ func (a *DashboardHandler) CreatePortalLinkEndpoint(w http.ResponseWriter, r *ht
 
 func (a *DashboardHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *http.Request) {
 	portalLink := m.GetPortalLinkFromContext(r.Context())
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	portalLinkService := createPortalLinkService(a)
 	endpoints, err := portalLinkService.GetPortalLinkEndpoints(r.Context(), portalLink, project)
@@ -169,7 +214,11 @@ func (a *DashboardHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *http
 
 func (a *DashboardHandler) GetPortalLinkDevices(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	endpointIDs := m.GetEndpointIDsFromContext(r)
 
 	f := &datastore.ApiKeyFilter{
@@ -187,7 +236,11 @@ func (a *DashboardHandler) GetPortalLinkDevices(w http.ResponseWriter, r *http.R
 }
 
 func (a *DashboardHandler) GetPortalLinkKeys(w http.ResponseWriter, r *http.Request) {
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	pageable := m.GetPageableFromContext(r.Context())
 	endpointIDs := m.GetEndpointIDsFromContext(r)
 

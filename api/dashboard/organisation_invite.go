@@ -37,9 +37,23 @@ func (a *DashboardHandler) InviteUserToOrganisation(w http.ResponseWriter, r *ht
 		return
 	}
 
-	baseUrl := m.GetHostFromContext(r.Context())
-	user := m.GetUserFromContext(r.Context())
-	org := m.GetOrganisationFromContext(r.Context())
+	baseUrl, err := a.retrieveHost()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	user, err := a.retrieveUser(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	organisationInviteService := CreateOrganisationInviteService(a)
 	_, err = organisationInviteService.CreateOrganisationMemberInvite(r.Context(), &newIV, org, user, baseUrl)
@@ -53,7 +67,12 @@ func (a *DashboardHandler) InviteUserToOrganisation(w http.ResponseWriter, r *ht
 }
 
 func (a *DashboardHandler) GetPendingOrganisationInvites(w http.ResponseWriter, r *http.Request) {
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	pageable := m.GetPageableFromContext(r.Context())
 	organisationInviteService := CreateOrganisationInviteService(a)
 
@@ -112,12 +131,26 @@ func (a *DashboardHandler) FindUserByInviteToken(w http.ResponseWriter, r *http.
 }
 
 func (a *DashboardHandler) ResendOrganizationInvite(w http.ResponseWriter, r *http.Request) {
-	baseUrl := m.GetHostFromContext(r.Context())
-	user := m.GetUserFromContext(r.Context())
-	org := m.GetOrganisationFromContext(r.Context())
-	organisationInviteService := CreateOrganisationInviteService(a)
+	baseUrl, err := a.retrieveHost()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-	_, err := organisationInviteService.ResendOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"), org, user, baseUrl)
+	user, err := a.retrieveUser(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	organisationInviteService := CreateOrganisationInviteService(a)
+	_, err = organisationInviteService.ResendOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"), org, user, baseUrl)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to resend organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

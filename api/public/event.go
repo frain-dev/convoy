@@ -52,10 +52,14 @@ func (a *PublicHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	g := m.GetProjectFromContext(r.Context())
-	eventService := createEventService(a)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-	event, err := eventService.CreateEvent(r.Context(), &newMessage, g)
+	eventService := createEventService(a)
+	event, err := eventService.CreateEvent(r.Context(), &newMessage, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -84,10 +88,14 @@ func (a *PublicHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http
 		return
 	}
 
-	g := m.GetProjectFromContext(r.Context())
-	eventService := createEventService(a)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-	event, err := eventService.CreateFanoutEvent(r.Context(), &newMessage, g)
+	eventService := createEventService(a)
+	event, err := eventService.CreateFanoutEvent(r.Context(), &newMessage, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -109,11 +117,20 @@ func (a *PublicHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/events/{eventID}/replay [put]
 func (a *PublicHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
-	g := m.GetProjectFromContext(r.Context())
-	event := m.GetEventFromContext(r.Context())
-	eventService := createEventService(a)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-	err := eventService.ReplayEvent(r.Context(), event, g)
+	event, err := a.retrieveEvent(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	eventService := createEventService(a)
+	err := eventService.ReplayEvent(r.Context(), event, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -137,9 +154,13 @@ func (a *PublicHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Reque
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/events/batchreplay [post]
 func (a *PublicHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
-	p := m.GetProjectFromContext(r.Context())
-	eventService := createEventService(a)
+	p, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	eventService := createEventService(a)
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -168,9 +189,13 @@ func (a *PublicHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Request
 }
 
 func (a *PublicHandler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
-	p := m.GetProjectFromContext(r.Context())
-	eventService := createEventService(a)
+	p, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	eventService := createEventService(a)
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -245,10 +270,20 @@ func (a *PublicHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request)
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend [put]
 func (a *PublicHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
-	eventDelivery := m.GetEventDeliveryFromContext(r.Context())
-	eventService := createEventService(a)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-	err := eventService.ResendEventDelivery(r.Context(), eventDelivery, m.GetProjectFromContext(r.Context()))
+	eventDelivery, err := a.retrieveEventDelivery(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	eventService := createEventService(a)
+	err := eventService.ResendEventDelivery(r.Context(), eventDelivery, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -297,8 +332,14 @@ func (a *PublicHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.R
 		endpoints = endpointIDs
 	}
 
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	f := &datastore.Filter{
-		Project:     m.GetProjectFromContext(r.Context()),
+		Project:     project,
 		EndpointIDs: endpoints,
 		EventID:     r.URL.Query().Get("eventId"),
 		Status:      status,
@@ -346,8 +387,14 @@ func (a *PublicHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *h
 		endpoints = endpointIDs
 	}
 
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	f := &datastore.Filter{
-		Project:      m.GetProjectFromContext(r.Context()),
+		Project:      project,
 		EndpointIDs:  endpoints,
 		EventID:      r.URL.Query().Get("eventId"),
 		Status:       status,
@@ -385,8 +432,14 @@ func (a *PublicHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *htt
 		return
 	}
 
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	eventService := createEventService(a)
-	successes, failures, err := eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, m.GetProjectFromContext(r.Context()))
+	successes, failures, err := eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -429,7 +482,12 @@ func (a *PublicHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pageable := m.GetPageableFromContext(r.Context())
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	query := r.URL.Query().Get("query")
 	endpointID := m.GetEndpointIDFromContext(r)
 	endpointIDs := m.GetEndpointIDsFromContext(r)
@@ -521,8 +579,14 @@ func (a *PublicHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.R
 		endpoints = endpointIDs
 	}
 
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	f := &datastore.Filter{
-		Project:      m.GetProjectFromContext(r.Context()),
+		Project:      project,
 		EventID:      r.URL.Query().Get("eventId"),
 		EndpointIDs:  endpoints,
 		Status:       status,
@@ -539,6 +603,28 @@ func (a *PublicHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.R
 
 	_ = render.Render(w, r, util.NewServerResponse("Event deliveries fetched successfully",
 		pagedResponse{Content: &ed, Pagination: &paginationData}, http.StatusOK))
+}
+
+func (a *DashboardHandler) retrieveEvent(r *http.Request) (*datastore.Event, error) {
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		return &datastore.Event{}, err
+	}
+
+	eventID := chi.URLParam(r, "eventID")
+	eventRepo := postgres.NewEventRepo(a.A.DB)
+	return eventRepo.FindEventByID(r.Context(), project.UID, eventID)
+}
+
+func (a *DashboardHandler) retrieveEventDelivery(r *http.Request) (*datastore.EventDelivery, error) {
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		return &datastore.EventDelivery{}, err
+	}
+
+	eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
+	return eventDeliveryRepo.FindEventDeliveryByID(r.Context(), project.UID, eventDeliveryID)
 }
 
 func getSearchParams(r *http.Request) (datastore.SearchParams, error) {

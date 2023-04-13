@@ -40,7 +40,11 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	sourceService := createSourceService(a)
 	source, err := sourceService.CreateSource(r.Context(), &newSource, project)
@@ -56,7 +60,12 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	baseUrl := m.GetHostFromContext(r.Context())
+	baseUrl, err := a.retrieveHost()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
 	_ = render.Render(w, r, util.NewServerResponse("Source created successfully", source, http.StatusCreated))
 }
@@ -74,8 +83,11 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/sources/{sourceID} [get]
 func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
-	project := m.GetProjectFromContext(r.Context())
-
+	project, err := a.retrieveProject(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	sourceService := createSourceService(a)
 	source, err := sourceService.FindSourceByID(r.Context(), project, chi.URLParam(r, "sourceID"))
 	if err != nil {
@@ -90,9 +102,13 @@ func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	baseUrl := m.GetHostFromContext(r.Context())
-	fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
+	baseUrl, err := a.retrieveHost()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
 	_ = render.Render(w, r, util.NewServerResponse("Source fetched successfully", source, http.StatusOK))
 }
 
@@ -117,9 +133,13 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project := m.GetProjectFromContext(r.Context())
-	sourceService := createSourceService(a)
+	project, err := a.retrieveProject(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	sourceService := createSourceService(a)
 	source, err := sourceService.FindSourceByID(r.Context(), project, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -139,9 +159,13 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	baseUrl := m.GetHostFromContext(r.Context())
-	fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
+	baseUrl, err := a.retrieveHost()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
 	_ = render.Render(w, r, util.NewServerResponse("Source updated successfully", source, http.StatusAccepted))
 }
 
@@ -158,9 +182,13 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/sources/{sourceID} [delete]
 func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
-	project := m.GetProjectFromContext(r.Context())
-	sourceService := createSourceService(a)
+	project, err := a.retrieveProject(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	sourceService := createSourceService(a)
 	source, err := sourceService.FindSourceByID(r.Context(), project, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -192,7 +220,11 @@ func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 // @Router /api/v1/projects/{projectID}/sources [get]
 func (a *PublicHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	f := &datastore.SourceFilter{
 		Type: r.URL.Query().Get("type"),
@@ -205,9 +237,18 @@ func (a *PublicHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	baseUrl := m.GetHostFromContext(r.Context())
+	baseUrl, err := a.retrieveHost()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	var customDomain string
 	if org == nil {
 		customDomain = ""
