@@ -34,9 +34,13 @@ func (a *DashboardHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	member := m.GetOrganisationMemberFromContext(r.Context())
-	securityService := createSecurityService(a)
+	member, err := a.retrieveMembership(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	securityService := createSecurityService(a)
 	apiKey, keyString, err := securityService.CreateAPIKey(r.Context(), member, &newApiKey)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to create api key")
@@ -246,8 +250,17 @@ func (a *DashboardHandler) RevokePersonalAPIKey(w http.ResponseWriter, r *http.R
 }
 
 func (a *DashboardHandler) RegenerateProjectAPIKey(w http.ResponseWriter, r *http.Request) {
-	member := m.GetOrganisationMemberFromContext(r.Context())
-	project := m.GetProjectFromContext(r.Context())
+	member, err := a.retrieveMembership(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	apiKey, keyString, err := createSecurityService(a).RegenerateProjectAPIKey(r.Context(), project, member)
 	if err != nil {

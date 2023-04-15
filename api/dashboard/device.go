@@ -25,7 +25,12 @@ func (a *DashboardHandler) FindDevicesByAppID(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	endpoint := m.GetEndpointFromContext(r.Context())
+	endpoint, err := a.retrieveEndpoint(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	f := &datastore.ApiKeyFilter{
 		EndpointID: endpoint.UID,
 	}

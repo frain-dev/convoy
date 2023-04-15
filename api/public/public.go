@@ -1,13 +1,15 @@
 package public
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/frain-dev/convoy/api/types"
-	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 )
@@ -62,43 +64,24 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 		r.Use(a.M.JsonResponse)
 		r.Use(a.M.RequireAuth())
 
-		r.With(a.M.Pagination, a.M.RequireAuthUserMetadata()).Get("/organisations", a.GetOrganisationsPaged)
+		r.With(a.M.Pagination).Get("/organisations", a.GetOrganisationsPaged)
 
 		r.Route("/projects", func(projectRouter chi.Router) {
-			projectRouter.Use(a.M.RejectAppPortalKey())
 
 			// These routes require a Personal API Key or JWT Token to work
-			projectRouter.With(
-				a.M.RequireAuthUserMetadata(),
-				a.M.RequireOrganisation(),
-				a.M.RequireOrganisationMembership(),
-				a.M.RequireOrganisationMemberRole(auth.RoleSuperUser),
-			).Post("/", a.CreateProject)
-
-			projectRouter.With(
-				a.M.RequireAuthUserMetadata(),
-				a.M.RequireOrganisation(),
-				a.M.RequireOrganisationMembership(),
-			).Get("/", a.GetProjects)
+			projectRouter.Get("/", a.GetProjects)
+			projectRouter.Post("/", a.CreateProject)
 
 			projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
-				projectSubRouter.Use(a.M.RequireProject())
-				projectSubRouter.Use(a.M.RequireProjectAccess())
-
 				projectSubRouter.With().Get("/", a.GetProject)
 				projectSubRouter.Put("/", a.UpdateProject)
 				projectSubRouter.Delete("/", a.DeleteProject)
 
 				projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
-					endpointSubRouter.Use(a.M.RateLimitByProjectID())
-
 					endpointSubRouter.Post("/", a.CreateEndpoint)
 					endpointSubRouter.With(a.M.Pagination).Get("/", a.GetEndpoints)
 
 					endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
-						e.Use(a.M.RequireEndpoint())
-						e.Use(a.M.RequireEndpointBelongsToProject())
-
 						e.Get("/", a.GetEndpoint)
 						e.Put("/", a.UpdateEndpoint)
 						e.Delete("/", a.DeleteEndpoint)
@@ -107,48 +90,15 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 					})
 				})
 
-				projectSubRouter.Route("/applications", func(appRouter chi.Router) {
-					appRouter.Use(a.M.RateLimitByProjectID())
-
-					appRouter.Post("/", a.CreateApp)
-					appRouter.With(a.M.Pagination).Get("/", a.GetApps)
-
-					appRouter.Route("/{appID}", func(appSubRouter chi.Router) {
-						appSubRouter.Use(a.M.RequireApp())
-						appSubRouter.Use(a.M.RequireAppBelongsToProject())
-
-						appSubRouter.Get("/", a.GetApp)
-						appSubRouter.Put("/", a.UpdateApp)
-						appSubRouter.Delete("/", a.DeleteApp)
-
-						appSubRouter.Route("/endpoints", func(endpointAppSubRouter chi.Router) {
-							endpointAppSubRouter.Post("/", a.CreateAppEndpoint)
-							endpointAppSubRouter.Get("/", a.GetAppEndpoints)
-
-							endpointAppSubRouter.Route("/{endpointID}", func(e chi.Router) {
-								e.Use(a.M.RequireAppEndpoint())
-
-								e.Get("/", a.GetAppEndpoint)
-								e.Put("/", a.UpdateAppEndpoint)
-								e.Delete("/", a.DeleteAppEndpoint)
-								e.Put("/expire_secret", a.ExpireSecret)
-							})
-						})
-					})
-				})
-
 				projectSubRouter.Route("/events", func(eventRouter chi.Router) {
-					eventRouter.Use(a.M.RateLimitByProjectID())
 
 					// TODO(all): should the InstrumentPath change?
 					eventRouter.With(a.M.InstrumentPath("/events")).Post("/", a.CreateEndpointEvent)
 					eventRouter.Post("/fanout", a.CreateEndpointFanoutEvent)
 					eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
 					eventRouter.Post("/batchreplay", a.BatchReplayEvents)
-					eventRouter.Get("/countbatchreplayevents", a.CountAffectedEvents)
 
 					eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
-						eventSubRouter.Use(a.M.RequireEvent())
 						eventSubRouter.Get("/", a.GetEndpointEvent)
 						eventSubRouter.Put("/replay", a.ReplayEndpointEvent)
 					})
@@ -158,37 +108,22 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 					eventDeliveryRouter.With(a.M.Pagination).Get("/", a.GetEventDeliveriesPaged)
 					eventDeliveryRouter.Post("/forceresend", a.ForceResendEventDeliveries)
 					eventDeliveryRouter.Post("/batchretry", a.BatchRetryEventDelivery)
-					eventDeliveryRouter.Get("/countbatchretryevents", a.CountAffectedEventDeliveries)
 
 					eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-						eventDeliverySubRouter.Use(a.M.RequireEventDelivery())
-
 						eventDeliverySubRouter.Get("/", a.GetEventDelivery)
 						eventDeliverySubRouter.Put("/resend", a.ResendEventDelivery)
 
 						eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
-							deliveryRouter.Use(fetchDeliveryAttempts())
-
 							deliveryRouter.Get("/", a.GetDeliveryAttempts)
-							deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
+							deliveryRouter.Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
 						})
 					})
 				})
 
-				projectSubRouter.Route("/security", func(securityRouter chi.Router) {
-					securityRouter.Route("/endpoints/{endpointID}/keys", func(securitySubRouter chi.Router) {
-						securitySubRouter.Use(a.M.RequireEndpoint())
-						securitySubRouter.Use(a.M.RequireBaseUrl())
-						securitySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateEndpointAPIKey)
-					})
-				})
-
 				projectSubRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
-					subscriptionRouter.Use(a.M.RateLimitByProjectID())
-
 					subscriptionRouter.Post("/", a.CreateSubscription)
 					subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
-					subscriptionRouter.With(a.M.Pagination, a.M.RequireBaseUrl()).Get("/", a.GetSubscriptions)
+					subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
 					subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
 					subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
 					subscriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
@@ -196,7 +131,6 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 				})
 
 				projectSubRouter.Route("/sources", func(sourceRouter chi.Router) {
-					sourceRouter.Use(a.M.RequireBaseUrl())
 
 					sourceRouter.Post("/", a.CreateSource)
 					sourceRouter.Get("/{sourceID}", a.GetSourceByID)
@@ -206,7 +140,6 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 				})
 
 				projectSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
-					portalLinkRouter.Use(a.M.RequireBaseUrl())
 
 					portalLinkRouter.Post("/", a.CreatePortalLink)
 					portalLinkRouter.Get("/{portalLinkID}", a.GetPortalLinkByID)
@@ -223,6 +156,52 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 	return router
 }
 
+func (a *PublicHandler) retrieveOrganisation(r *http.Request) (*datastore.Organisation, error) {
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		return &datastore.Organisation{}, err
+	}
+
+	orgRepo := postgres.NewOrgRepo(a.A.DB)
+	return orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
+}
+
+func (a *PublicHandler) retrieveMembership(r *http.Request) (*datastore.OrganisationMember, error) {
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		return &datastore.OrganisationMember{}, err
+	}
+
+	user, err := a.retrieveUser(r)
+	if err != nil {
+		return &datastore.OrganisationMember{}, err
+	}
+
+	orgMemberRepo := postgres.NewOrgMemberRepo(a.A.DB)
+	return orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
+}
+
 func (a *PublicHandler) retrieveProject(r *http.Request) (*datastore.Project, error) {
-	return &datastore.Project{}, nil
+	projectID := chi.URLParam(r, "projectID")
+
+	if util.IsStringEmpty(projectID) {
+		return &datastore.Project{}, errors.New("Project ID not present in request")
+	}
+
+	projectRepo := postgres.NewProjectRepo(a.A.DB)
+	return projectRepo.FetchProjectByID(r.Context(), projectID)
+}
+
+// TODO(subomi): Fix this.
+func (a *PublicHandler) retrieveUser(r *http.Request) (*datastore.User, error) {
+	return &datastore.User{}, nil
+}
+
+func (a *PublicHandler) retrieveHost() (string, error) {
+	cfg, err := config.Get()
+	if err != nil {
+		return "", err
+	}
+
+	return cfg.Host, nil
 }

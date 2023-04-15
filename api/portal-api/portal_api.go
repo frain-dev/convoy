@@ -4,8 +4,9 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag/flipt"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/go-chi/chi/v5"
@@ -59,21 +60,13 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 	// App Portal API.
 	router.Use(a.M.JsonResponse)
 	router.Use(a.M.SetupCORS)
-	router.Use(a.M.RequirePortalLink())
 
 	router.Route("/endpoints", func(endpointRouter chi.Router) {
 		endpointRouter.Get("/", a.GetPortalLinkEndpoints)
-		endpointRouter.Post("/", a.CreatePortalLinkEndpoint)
 
 		endpointRouter.Route("/{endpointID}", func(endpointSubRouter chi.Router) {
-			endpointSubRouter.Use(a.M.RequireEndpoint())
-			endpointSubRouter.Use(a.M.RequirePortalLinkEndpoint())
-			endpointSubRouter.Use(a.M.RequireBaseUrl())
-
 			endpointSubRouter.Get("/", a.GetEndpoint)
 			endpointSubRouter.Put("/", a.UpdateEndpoint)
-			endpointSubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/keys", a.CreateEndpointAPIKey)
-			endpointSubRouter.Put("/keys/{keyID}/revoke", a.RevokeEndpointAPIKey)
 		})
 	})
 
@@ -82,7 +75,6 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 	})
 
 	router.Route("/keys", func(keySubRouter chi.Router) {
-		keySubRouter.Use(a.M.RequireBaseUrl())
 		keySubRouter.With(a.M.Pagination).Get("/", a.GetPortalLinkKeys)
 	})
 
@@ -92,7 +84,6 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 		eventRouter.Get("/countbatchreplayevents", a.CountAffectedEvents)
 
 		eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
-			eventSubRouter.Use(a.M.RequireEvent())
 			eventSubRouter.Get("/", a.GetEndpointEvent)
 			eventSubRouter.Put("/replay", a.ReplayEndpointEvent)
 		})
@@ -101,7 +92,7 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 	router.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 		subscriptionRouter.Post("/", a.CreateSubscription)
 		subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
-		subscriptionRouter.With(a.M.Pagination, a.M.RequireBaseUrl()).Get("/", a.GetSubscriptions)
+		subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
 		subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
 		subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
 		subscriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
@@ -114,16 +105,12 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 		eventDeliveryRouter.Get("/countbatchretryevents", a.CountAffectedEventDeliveries)
 
 		eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-			eventDeliverySubRouter.Use(a.M.RequireEventDelivery())
-
 			eventDeliverySubRouter.Get("/", a.GetEventDelivery)
 			eventDeliverySubRouter.Put("/resend", a.ResendEventDelivery)
 
 			eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
-				deliveryRouter.Use(fetchDeliveryAttempts())
-
 				deliveryRouter.Get("/", a.GetDeliveryAttempts)
-				deliveryRouter.With(a.M.RequireDeliveryAttempt()).Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
+				deliveryRouter.Get("/{deliveryAttemptID}", a.GetDeliveryAttempt)
 			})
 		})
 	})
@@ -132,4 +119,29 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 	router.Post("/flags", flipt.BatchEvaluate)
 
 	return router
+}
+
+func (a *PortalLinkHandler) retrieveOrganisation(r *http.Request) (*datastore.Organisation, error) {
+	return &datastore.Organisation{}, nil
+}
+
+func (a *PortalLinkHandler) retrieveProject(r *http.Request) (*datastore.Project, error) {
+	return &datastore.Project{}, nil
+}
+
+func (a *PortalLinkHandler) retrieveHost() (string, error) {
+	cfg, err := config.Get()
+	if err != nil {
+		return "", err
+	}
+
+	return cfg.Host, nil
+}
+
+func (a *PortalLinkHandler) retrievePortalLink(r *http.Request) (*datastore.PortalLink, error) {
+	return &datastore.PortalLink{}, nil
+}
+
+func (a *PortalLinkHandler) retrieveEndpointIDs(r *http.Request) []string {
+	return []string{""}
 }

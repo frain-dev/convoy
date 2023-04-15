@@ -7,12 +7,11 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 func createSourceService(a *PublicHandler) *services.SourceService {
@@ -40,7 +39,7 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, err := a.retrieveProject(r.Context())
+	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -83,7 +82,7 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/sources/{sourceID} [get]
 func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r.Context())
+	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -133,7 +132,7 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, err := a.retrieveProject(r.Context())
+	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -182,7 +181,7 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/sources/{sourceID} [delete]
 func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r.Context())
+	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -220,7 +219,7 @@ func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 // @Router /api/v1/projects/{projectID}/sources [get]
 func (a *PublicHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-	project, err := a.retrieveProject(r.Context())
+	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

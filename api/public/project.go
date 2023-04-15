@@ -9,8 +9,6 @@ import (
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
-
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 func createProjectService(a *PublicHandler) *services.ProjectService {
@@ -47,10 +45,14 @@ func (a *PublicHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *PublicHandler) GetProjectStatistics(w http.ResponseWriter, r *http.Request) {
-	project := m.GetProjectFromContext(r.Context())
-	projectService := createProjectService(a)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-	err := projectService.FillProjectStatistics(r.Context(), project)
+	projectService := createProjectService(a)
+	err = projectService.FillProjectStatistics(r.Context(), project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -71,8 +73,11 @@ func (a *PublicHandler) GetProjectStatistics(w http.ResponseWriter, r *http.Requ
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID} [delete]
 func (a *PublicHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
-	project := m.GetProjectFromContext(r.Context())
-	projectService := createProjectService(a)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	//opts := &policies.ProjectPolicyOpts{
 	//	OrganisationRepo:       mongo.NewOrgRepo(a.A.DB),
@@ -84,7 +89,8 @@ func (a *PublicHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 	//	return
 	//}
 
-	err := projectService.DeleteProject(r.Context(), project.UID)
+	projectService := createProjectService(a)
+	err = projectService.DeleteProject(r.Context(), project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -114,8 +120,17 @@ func (a *PublicHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org := m.GetOrganisationFromContext(r.Context())
-	member := m.GetOrganisationMemberFromContext(r.Context())
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	member, err := a.retrieveMembership(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	projectService := createProjectService(a)
 
 	project, apiKey, err := projectService.CreateProject(r.Context(), &newProject, org, member)
@@ -152,10 +167,14 @@ func (a *PublicHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p := m.GetProjectFromContext(r.Context())
-	projectService := createProjectService(a)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-	project, err := projectService.UpdateProject(r.Context(), p, &update)
+	projectService := createProjectService(a)
+	project, err = projectService.UpdateProject(r.Context(), project, &update)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -177,7 +196,11 @@ func (a *PublicHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /api/v1/projects [get]
 func (a *PublicHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	filter := &datastore.ProjectFilter{OrgID: org.UID}
 	projectService := createProjectService(a)

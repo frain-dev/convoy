@@ -22,8 +22,13 @@ func createOrganisationService(a *DashboardHandler) *services.OrganisationServic
 }
 
 func (a *DashboardHandler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
-	_ = render.Render(w, r, util.NewServerResponse("Organisation fetched successfully",
-		m.GetOrganisationFromContext(r.Context()), http.StatusOK))
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Organisation fetched successfully", org, http.StatusOK))
 }
 
 func (a *DashboardHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) { // TODO: change to GetUserOrganisationsPaged
@@ -99,7 +104,13 @@ func (a *DashboardHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Req
 	}
 	orgService := createOrganisationService(a)
 
-	org, err := orgService.UpdateOrganisation(r.Context(), m.GetOrganisationFromContext(r.Context()), &orgUpdate)
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	org, err = orgService.UpdateOrganisation(r.Context(), org, &orgUpdate)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

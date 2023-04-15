@@ -25,22 +25,15 @@ func createSubscriptionService(a *PortalLinkHandler) *services.SubcriptionServic
 }
 
 func (a *PortalLinkHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
-	var endpoints []string
-
 	pageable := m.GetPageableFromContext(r.Context())
-	project := m.GetProjectFromContext(r.Context())
-	endpointID := m.GetEndpointIDFromContext(r)
-	endpointIDs := m.GetEndpointIDsFromContext(r)
-
-	if !util.IsStringEmpty(endpointID) {
-		endpoints = []string{endpointID}
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
 	}
 
-	if len(endpointIDs) > 0 {
-		endpoints = endpointIDs
-	}
-
-	filter := &datastore.FilterBy{ProjectID: project.UID, EndpointIDs: endpoints}
+	endpointIDs := getEndpointIDs(r)
+	filter := &datastore.FilterBy{ProjectID: project.UID, EndpointIDs: endpointIDs}
 
 	subService := createSubscriptionService(a)
 	subscriptions, paginationData, err := subService.LoadSubscriptionsPaged(r.Context(), filter, pageable)
@@ -50,7 +43,12 @@ func (a *PortalLinkHandler) GetSubscriptions(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	org := m.GetOrganisationFromContext(r.Context())
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	var customDomain string
 	if org == nil {
 		customDomain = ""
@@ -58,7 +56,12 @@ func (a *PortalLinkHandler) GetSubscriptions(w http.ResponseWriter, r *http.Requ
 		customDomain = org.CustomDomain.ValueOrZero()
 	}
 
-	baseUrl := m.GetHostFromContext(r.Context())
+	baseUrl, err := a.retrieveHost()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	for i := range subscriptions {
 		fillSourceURL(subscriptions[i].Source, baseUrl, customDomain)
 	}
@@ -69,7 +72,11 @@ func (a *PortalLinkHandler) GetSubscriptions(w http.ResponseWriter, r *http.Requ
 
 func (a *PortalLinkHandler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 	subId := chi.URLParam(r, "subscriptionID")
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	subService := createSubscriptionService(a)
 	subscription, err := subService.FindSubscriptionByID(r.Context(), project, subId, false)
@@ -82,10 +89,14 @@ func (a *PortalLinkHandler) GetSubscription(w http.ResponseWriter, r *http.Reque
 }
 
 func (a *PortalLinkHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	var sub models.Subscription
-	err := util.ReadJSON(r, &sub)
+	err = util.ReadJSON(r, &sub)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -103,7 +114,11 @@ func (a *PortalLinkHandler) CreateSubscription(w http.ResponseWriter, r *http.Re
 }
 
 func (a *PortalLinkHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 	subService := createSubscriptionService(a)
 
 	sub, err := subService.FindSubscriptionByID(r.Context(), project, chi.URLParam(r, "subscriptionID"), true)
@@ -131,11 +146,16 @@ func (a *PortalLinkHandler) UpdateSubscription(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	g := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	subscription := chi.URLParam(r, "subscriptionID")
 
 	subService := createSubscriptionService(a)
-	sub, err := subService.UpdateSubscription(r.Context(), g.UID, subscription, &update)
+	sub, err := subService.UpdateSubscription(r.Context(), project.UID, subscription, &update)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

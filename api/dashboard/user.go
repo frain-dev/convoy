@@ -24,34 +24,6 @@ func createUserService(a *DashboardHandler) *services.UserService {
 	)
 }
 
-func (a *DashboardHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
-	var newUser models.LoginUser
-	if err := util.ReadJSON(r, &newUser); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	userService := createUserService(a)
-	user, token, err := userService.LoginUser(r.Context(), &newUser)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	u := &models.LoginUserResponse{
-		UID:           user.UID,
-		FirstName:     user.FirstName,
-		LastName:      user.LastName,
-		Email:         user.Email,
-		EmailVerified: user.EmailVerified,
-		Token:         models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
-		CreatedAt:     user.CreatedAt,
-		UpdatedAt:     user.UpdatedAt,
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Login successful", u, http.StatusOK))
-}
-
 func (a *DashboardHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var newUser models.RegisterUser
 	if err := util.ReadJSON(r, &newUser); err != nil {
@@ -59,8 +31,14 @@ func (a *DashboardHandler) RegisterUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	baseUrl, err := a.retrieveHost()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	userService := createUserService(a)
-	user, token, err := userService.RegisterUser(r.Context(), m.GetHostFromContext(r.Context()), &newUser)
+	user, token, err := userService.RegisterUser(r.Context(), baseUrl, &newUser)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -79,23 +57,6 @@ func (a *DashboardHandler) RegisterUser(w http.ResponseWriter, r *http.Request) 
 	_ = render.Render(w, r, util.NewServerResponse("Registration successful", u, http.StatusCreated))
 }
 
-func (a *DashboardHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
-	var refreshToken models.Token
-	if err := util.ReadJSON(r, &refreshToken); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	userService := createUserService(a)
-	token, err := userService.RefreshToken(r.Context(), &refreshToken)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Token refresh successful", token, http.StatusOK))
-}
-
 func (a *DashboardHandler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 	user, ok := getUser(r)
 	if !ok {
@@ -104,30 +65,19 @@ func (a *DashboardHandler) ResendVerificationEmail(w http.ResponseWriter, r *htt
 	}
 
 	userService := createUserService(a)
-	err := userService.ResendEmailVerificationToken(r.Context(), m.GetHostFromContext(r.Context()), user)
+	baseUrl, err := a.retrieveHost()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	err = userService.ResendEmailVerificationToken(r.Context(), baseUrl, user)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Verification email resent successfully", nil, http.StatusOK))
-}
-
-func (a *DashboardHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
-	auth, err := m.GetAuthFromRequest(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
-		return
-	}
-
-	userService := createUserService(a)
-	err = userService.LogoutUser(auth.Token)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Logout successful", nil, http.StatusOK))
 }
 
 func (a *DashboardHandler) GetUser(w http.ResponseWriter, r *http.Request) {
@@ -192,11 +142,11 @@ func (a *DashboardHandler) ForgotPassword(w http.ResponseWriter, r *http.Request
 	var forgotPassword models.ForgotPassword
 	baseUrl, err := a.retrieveHost()
 	if err != nil {
-		_ = render.Render(w, r, util.NewServerResponse("Server Error: Could not retrieve config"))
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	err := util.ReadJSON(r, &forgotPassword)
+	err = util.ReadJSON(r, &forgotPassword)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return

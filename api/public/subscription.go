@@ -39,27 +39,15 @@ func createSubscriptionService(a *PublicHandler) *services.SubcriptionService {
 // @Security ApiKeyAuth
 // @Router /api/v1/projects/{projectID}/subscriptions [get]
 func (a *PublicHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
-	var endpoints []string
-
 	pageable := m.GetPageableFromContext(r.Context())
-	project, err := a.retrieveProject(r.Context())
+	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	endpointID := m.GetEndpointIDFromContext(r)
-	endpointIDs := m.GetEndpointIDsFromContext(r)
-
-	if !util.IsStringEmpty(endpointID) {
-		endpoints = []string{endpointID}
-	}
-
-	if len(endpointIDs) > 0 {
-		endpoints = endpointIDs
-	}
-
-	filter := &datastore.FilterBy{ProjectID: project.UID, EndpointIDs: endpoints}
+	endpointIDs := getEndpointIDs(r)
+	filter := &datastore.FilterBy{ProjectID: project.UID, EndpointIDs: endpointIDs}
 
 	subService := createSubscriptionService(a)
 	subscriptions, paginationData, err := subService.LoadSubscriptionsPaged(r.Context(), filter, pageable)
@@ -146,7 +134,7 @@ func (a *PublicHandler) CreateSubscription(w http.ResponseWriter, r *http.Reques
 	}
 
 	var sub models.Subscription
-	err := util.ReadJSON(r, &sub)
+	err = util.ReadJSON(r, &sub)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return

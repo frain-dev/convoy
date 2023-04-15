@@ -9,8 +9,6 @@ import (
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
-
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 func createProjectService(a *DashboardHandler) *services.ProjectService {

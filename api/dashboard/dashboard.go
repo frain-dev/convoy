@@ -70,14 +70,12 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 	router.Use(a.M.JsonResponse)
 	router.Use(a.M.SetupCORS)
 	router.Use(chiMiddleware.Maybe(a.M.RequireAuth(), middleware.ShouldAuthRoute))
-	router.Use(a.M.RequireBaseUrl())
 
 	router.Post("/organisations/process_invite", a.ProcessOrganisationMemberInvite)
 	router.Get("/users/token", a.FindUserByInviteToken)
 
 	router.Route("/users", func(userRouter chi.Router) {
 		userRouter.Route("/{userID}", func(userSubRouter chi.Router) {
-			userSubRouter.Use(a.M.RequireAuthorizedUser())
 			userSubRouter.Get("/profile", a.GetUser)
 			userSubRouter.Put("/profile", a.UpdateUser)
 			userSubRouter.Put("/password", a.UpdatePassword)
@@ -219,7 +217,6 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 
 					projectSubRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
 						dashboardRouter.Get("/summary", a.GetDashboardSummary)
-						dashboardRouter.Get("/config", a.GetAllConfigDetails)
 					})
 
 					projectSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
@@ -244,11 +241,6 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 
 	return router
 
-}
-
-type ViewableConfiguration struct {
-	Strategy  datastore.StrategyConfiguration  `json:"strategy"`
-	Signature datastore.SignatureConfiguration `json:"signature"`
 }
 
 func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
@@ -300,14 +292,16 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 		CreatedAtEnd:   endT.Unix(),
 	}
 
-	project := middleware.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	qs := fmt.Sprintf("%v:%v:%v:%v", project.UID, searchParams.CreatedAtStart, searchParams.CreatedAtEnd, period)
 
 	var data *models.DashboardSummary
-
 	err = a.A.Cache.Get(r.Context(), qs, &data)
-
 	if err != nil {
 		a.A.Logger.WithError(err)
 	}
@@ -346,18 +340,6 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 
 	_ = render.Render(w, r, util.NewServerResponse("Dashboard summary fetched successfully",
 		dashboard, http.StatusOK))
-}
-
-func (a *DashboardHandler) GetAllConfigDetails(w http.ResponseWriter, r *http.Request) {
-	g := middleware.GetProjectFromContext(r.Context())
-
-	viewableConfig := ViewableConfiguration{
-		Strategy:  *g.Config.Strategy,
-		Signature: *g.Config.Signature,
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Config details fetched successfully",
-		viewableConfig, http.StatusOK))
 }
 
 func (a *DashboardHandler) retrieveOrganisation(r *http.Request) (*datastore.Organisation, error) {

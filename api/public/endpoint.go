@@ -196,7 +196,7 @@ func (a *PublicHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	endpointService := createEndpointService(a)
-	err := endpointService.DeleteEndpoint(r.Context(), endpoint, project)
+	err = endpointService.DeleteEndpoint(r.Context(), endpoint, project)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to delete endpoint")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -301,7 +301,7 @@ func (a *PublicHandler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	endpointID := chi.URLParam(r, "endpointID")
 	endpointService := createEndpointService(a)
-	endpoint, err := endpointService.PauseEndpoint(r.Context(), p.UID, endpointID)
+	endpoint, err := endpointService.PauseEndpoint(r.Context(), project.UID, endpointID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -310,7 +310,7 @@ func (a *PublicHandler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("endpoint status updated successfully", endpoint, http.StatusAccepted))
 }
 
-func (a *DashboardHandler) retrieveEndpoint(r *http.Request) (*datastore.Endpoint, error) {
+func (a *PublicHandler) retrieveEndpoint(r *http.Request) (*datastore.Endpoint, error) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		return &datastore.Endpoint{}, err

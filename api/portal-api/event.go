@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -40,10 +41,14 @@ func (a *PortalLinkHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	g := m.GetProjectFromContext(r.Context())
-	eventService := createEventService(a)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-	event, err := eventService.CreateEvent(r.Context(), &newMessage, g)
+	eventService := createEventService(a)
+	event, err := eventService.CreateEvent(r.Context(), &newMessage, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -60,10 +65,14 @@ func (a *PortalLinkHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *
 		return
 	}
 
-	g := m.GetProjectFromContext(r.Context())
-	eventService := createEventService(a)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-	event, err := eventService.CreateFanoutEvent(r.Context(), &newMessage, g)
+	eventService := createEventService(a)
+	event, err := eventService.CreateFanoutEvent(r.Context(), &newMessage, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -73,11 +82,20 @@ func (a *PortalLinkHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *
 }
 
 func (a *PortalLinkHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
-	g := m.GetProjectFromContext(r.Context())
-	event := m.GetEventFromContext(r.Context())
-	eventService := createEventService(a)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-	err := eventService.ReplayEvent(r.Context(), event, g)
+	event, err := a.retrieveEvent(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	eventService := createEventService(a)
+	err = eventService.ReplayEvent(r.Context(), event, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -87,9 +105,13 @@ func (a *PortalLinkHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.R
 }
 
 func (a *PortalLinkHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
-	p := m.GetProjectFromContext(r.Context())
-	eventService := createEventService(a)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	eventService := createEventService(a)
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -97,7 +119,7 @@ func (a *PortalLinkHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Req
 	}
 
 	f := &datastore.Filter{
-		Project: p,
+		Project: project,
 		Pageable: datastore.Pageable{
 			Direction:  datastore.Next,
 			PerPage:    1000000000000, // large number so we get everything in most cases
@@ -118,9 +140,13 @@ func (a *PortalLinkHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Req
 }
 
 func (a *PortalLinkHandler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
-	p := m.GetProjectFromContext(r.Context())
-	eventService := createEventService(a)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	eventService := createEventService(a)
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -128,7 +154,7 @@ func (a *PortalLinkHandler) CountAffectedEvents(w http.ResponseWriter, r *http.R
 	}
 
 	f := &datastore.Filter{
-		Project: p,
+		Project: project,
 		Pageable: datastore.Pageable{
 			Direction:  datastore.Next,
 			PerPage:    1000000000000, // large number so we get everything in most cases
@@ -149,20 +175,40 @@ func (a *PortalLinkHandler) CountAffectedEvents(w http.ResponseWriter, r *http.R
 }
 
 func (a *PortalLinkHandler) GetEndpointEvent(w http.ResponseWriter, r *http.Request) {
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint event fetched successfully",
-		*m.GetEventFromContext(r.Context()), http.StatusOK))
+	event, err := a.retrieveEvent(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint event fetched successfully", event, http.StatusOK))
 }
 
 func (a *PortalLinkHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
-	_ = render.Render(w, r, util.NewServerResponse("Event Delivery fetched successfully",
-		*m.GetEventDeliveryFromContext(r.Context()), http.StatusOK))
+	eventDelivery, err := a.retrieveEventDelivery(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Event Delivery fetched successfully", eventDelivery, http.StatusOK))
 }
 
 func (a *PortalLinkHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
-	eventDelivery := m.GetEventDeliveryFromContext(r.Context())
-	eventService := createEventService(a)
+	eventDelivery, err := a.retrieveEventDelivery(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-	err := eventService.ResendEventDelivery(r.Context(), eventDelivery, m.GetProjectFromContext(r.Context()))
+	eventService := createEventService(a)
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	err = eventService.ResendEventDelivery(r.Context(), eventDelivery, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -173,7 +219,6 @@ func (a *PortalLinkHandler) ResendEventDelivery(w http.ResponseWriter, r *http.R
 }
 
 func (a *PortalLinkHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
-	var endpoints []string
 	status := make([]datastore.EventDeliveryStatus, 0)
 
 	for _, s := range r.URL.Query()["status"] {
@@ -188,20 +233,17 @@ func (a *PortalLinkHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *ht
 		return
 	}
 
-	endpointID := m.GetEndpointIDFromContext(r)
-	endpointIDs := m.GetEndpointIDsFromContext(r)
-
-	if !util.IsStringEmpty(endpointID) {
-		endpoints = []string{endpointID}
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
 	}
 
-	if len(endpointIDs) > 0 {
-		endpoints = endpointIDs
-	}
+	endpointIDs := getEndpointIDs(r)
 
 	f := &datastore.Filter{
-		Project:     m.GetProjectFromContext(r.Context()),
-		EndpointIDs: endpoints,
+		Project:     project,
+		EndpointIDs: endpointIDs,
 		EventID:     r.URL.Query().Get("eventId"),
 		Status:      status,
 		Pageable: datastore.Pageable{
@@ -223,7 +265,6 @@ func (a *PortalLinkHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *ht
 }
 
 func (a *PortalLinkHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
-	var endpoints []string
 	status := make([]datastore.EventDeliveryStatus, 0)
 	for _, s := range r.URL.Query()["status"] {
 		if !util.IsStringEmpty(s) {
@@ -237,20 +278,17 @@ func (a *PortalLinkHandler) CountAffectedEventDeliveries(w http.ResponseWriter, 
 		return
 	}
 
-	endpointID := m.GetEndpointIDFromContext(r)
-	endpointIDs := m.GetEndpointIDsFromContext(r)
-
-	if !util.IsStringEmpty(endpointID) {
-		endpoints = []string{endpointID}
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
 	}
 
-	if len(endpointIDs) > 0 {
-		endpoints = endpointIDs
-	}
+	endpointIDs := getEndpointIDs(r)
 
 	f := &datastore.Filter{
-		Project:      m.GetProjectFromContext(r.Context()),
-		EndpointIDs:  endpoints,
+		Project:      project,
+		EndpointIDs:  endpointIDs,
 		EventID:      r.URL.Query().Get("eventId"),
 		Status:       status,
 		SearchParams: searchParams,
@@ -275,8 +313,14 @@ func (a *PortalLinkHandler) ForceResendEventDeliveries(w http.ResponseWriter, r 
 		return
 	}
 
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	eventService := createEventService(a)
-	successes, failures, err := eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, m.GetProjectFromContext(r.Context()))
+	successes, failures, err := eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -286,8 +330,6 @@ func (a *PortalLinkHandler) ForceResendEventDeliveries(w http.ResponseWriter, r 
 }
 
 func (a *PortalLinkHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
-	var endpoints []string
-
 	cfg, err := config.Get()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -301,25 +343,21 @@ func (a *PortalLinkHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reques
 	}
 
 	pageable := m.GetPageableFromContext(r.Context())
-	project := m.GetProjectFromContext(r.Context())
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	query := r.URL.Query().Get("query")
-	endpointID := m.GetEndpointIDFromContext(r)
-	endpointIDs := m.GetEndpointIDsFromContext(r)
-
-	if !util.IsStringEmpty(endpointID) {
-		endpoints = []string{endpointID}
-	}
-
-	if len(endpointIDs) > 0 {
-		endpoints = endpointIDs
-	}
+	endpointIDs := getEndpointIDs(r)
+	sourceID := getSourceIDs(r)[0]
 
 	f := &datastore.Filter{
 		Query:        query,
 		Project:      project,
-		EndpointID:   endpointID,
-		EndpointIDs:  endpoints,
-		SourceID:     m.GetSourceIDFromContext(r),
+		EndpointIDs:  endpointIDs,
+		SourceID:     sourceID,
 		Pageable:     pageable,
 		SearchParams: searchParams,
 	}
@@ -350,7 +388,6 @@ func (a *PortalLinkHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reques
 
 func (a *PortalLinkHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
 	status := make([]datastore.EventDeliveryStatus, 0)
-	var endpoints []string
 	for _, s := range r.URL.Query()["status"] {
 		if !util.IsStringEmpty(s) {
 			status = append(status, datastore.EventDeliveryStatus(s))
@@ -363,21 +400,18 @@ func (a *PortalLinkHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *ht
 		return
 	}
 
-	endpointID := m.GetEndpointIDFromContext(r)
-	endpointIDs := m.GetEndpointIDsFromContext(r)
-
-	if !util.IsStringEmpty(endpointID) {
-		endpoints = []string{endpointID}
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
 	}
 
-	if len(endpointIDs) > 0 {
-		endpoints = endpointIDs
-	}
+	endpointIDs := getEndpointIDs(r)
 
 	f := &datastore.Filter{
-		Project:      m.GetProjectFromContext(r.Context()),
+		Project:      project,
 		EventID:      r.URL.Query().Get("eventId"),
-		EndpointIDs:  endpoints,
+		EndpointIDs:  endpointIDs,
 		Status:       status,
 		Pageable:     m.GetPageableFromContext(r.Context()),
 		SearchParams: searchParams,
@@ -434,22 +468,48 @@ func getSearchParams(r *http.Request) (datastore.SearchParams, error) {
 	return searchParams, nil
 }
 
-func fetchDeliveryAttempts() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			e := m.GetEventDeliveryFromContext(r.Context())
-
-			r = r.WithContext(m.SetDeliveryAttemptsInContext(r.Context(), (*[]datastore.DeliveryAttempt)(&e.DeliveryAttempts)))
-			next.ServeHTTP(w, r)
-		})
+func (a *PortalLinkHandler) retrieveEvent(r *http.Request) (*datastore.Event, error) {
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		return &datastore.Event{}, err
 	}
+
+	eventID := chi.URLParam(r, "eventID")
+	eventRepo := postgres.NewEventRepo(a.A.DB)
+	return eventRepo.FindEventByID(r.Context(), project.UID, eventID)
 }
 
-func FindMessageDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {
-	for _, a := range *attempts {
-		if a.UID == id {
-			return &a, nil
+func (a *PortalLinkHandler) retrieveEventDelivery(r *http.Request) (*datastore.EventDelivery, error) {
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		return &datastore.EventDelivery{}, err
+	}
+
+	eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
+	return eventDeliveryRepo.FindEventDeliveryByID(r.Context(), project.UID, eventDeliveryID)
+}
+
+func getEndpointIDs(r *http.Request) []string {
+	var endpoints []string
+
+	for _, id := range r.URL.Query()["endpointId"] {
+		if !util.IsStringEmpty(id) {
+			endpoints = append(endpoints, id)
 		}
 	}
-	return nil, datastore.ErrEventDeliveryAttemptNotFound
+
+	return endpoints
+}
+
+func getSourceIDs(r *http.Request) []string {
+	var sourceIDs []string
+
+	for _, id := range r.URL.Query()["sourceId"] {
+		if !util.IsStringEmpty(id) {
+			sourceIDs = append(sourceIDs, id)
+		}
+	}
+
+	return sourceIDs
 }

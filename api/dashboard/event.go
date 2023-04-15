@@ -175,13 +175,23 @@ func (a *DashboardHandler) CountAffectedEvents(w http.ResponseWriter, r *http.Re
 }
 
 func (a *DashboardHandler) GetEndpointEvent(w http.ResponseWriter, r *http.Request) {
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint event fetched successfully",
-		*m.GetEventFromContext(r.Context()), http.StatusOK))
+	event, err := a.retrieveEvent(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint event fetched successfully", event, http.StatusOK))
 }
 
 func (a *DashboardHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
-	_ = render.Render(w, r, util.NewServerResponse("Event Delivery fetched successfully",
-		*m.GetEventDeliveryFromContext(r.Context()), http.StatusOK))
+	eventDelivery, err := a.retrieveEventDelivery(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Event Delivery fetched successfully", eventDelivery, http.StatusOK))
 }
 
 func (a *DashboardHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
@@ -209,7 +219,6 @@ func (a *DashboardHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Re
 }
 
 func (a *DashboardHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
-	var endpoints []string
 	status := make([]datastore.EventDeliveryStatus, 0)
 
 	for _, s := range r.URL.Query()["status"] {
@@ -224,17 +233,7 @@ func (a *DashboardHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *htt
 		return
 	}
 
-	endpointID := m.GetEndpointIDFromContext(r)
-	endpointIDs := m.GetEndpointIDsFromContext(r)
-
-	if !util.IsStringEmpty(endpointID) {
-		endpoints = []string{endpointID}
-	}
-
-	if len(endpointIDs) > 0 {
-		endpoints = endpointIDs
-	}
-
+	endpointIDs := getEndpointIDs(r)
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -243,7 +242,7 @@ func (a *DashboardHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *htt
 
 	f := &datastore.Filter{
 		Project:     project,
-		EndpointIDs: endpoints,
+		EndpointIDs: endpointIDs,
 		EventID:     r.URL.Query().Get("eventId"),
 		Status:      status,
 		Pageable: datastore.Pageable{
@@ -265,7 +264,6 @@ func (a *DashboardHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *htt
 }
 
 func (a *DashboardHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
-	var endpoints []string
 	status := make([]datastore.EventDeliveryStatus, 0)
 	for _, s := range r.URL.Query()["status"] {
 		if !util.IsStringEmpty(s) {
@@ -279,17 +277,7 @@ func (a *DashboardHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r
 		return
 	}
 
-	endpointID := m.GetEndpointIDFromContext(r)
-	endpointIDs := m.GetEndpointIDsFromContext(r)
-
-	if !util.IsStringEmpty(endpointID) {
-		endpoints = []string{endpointID}
-	}
-
-	if len(endpointIDs) > 0 {
-		endpoints = endpointIDs
-	}
-
+	endpointIDs := getEndpointIDs(r)
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -298,7 +286,7 @@ func (a *DashboardHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r
 
 	f := &datastore.Filter{
 		Project:      project,
-		EndpointIDs:  endpoints,
+		EndpointIDs:  endpointIDs,
 		EventID:      r.URL.Query().Get("eventId"),
 		Status:       status,
 		SearchParams: searchParams,
@@ -340,8 +328,6 @@ func (a *DashboardHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *
 }
 
 func (a *DashboardHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
-	var endpoints []string
-
 	cfg, err := config.Get()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -362,23 +348,16 @@ func (a *DashboardHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request
 	}
 
 	query := r.URL.Query().Get("query")
-	endpointID := m.GetEndpointIDFromContext(r)
-	endpointIDs := m.GetEndpointIDsFromContext(r)
+	endpointIDs := getEndpointIDs(r)
 
-	if !util.IsStringEmpty(endpointID) {
-		endpoints = []string{endpointID}
-	}
-
-	if len(endpointIDs) > 0 {
-		endpoints = endpointIDs
-	}
+	// TODO(subomi): Support multiple
+	sourceID := getSourceIDs(r)[0]
 
 	f := &datastore.Filter{
 		Query:        query,
 		Project:      project,
-		EndpointID:   endpointID,
-		EndpointIDs:  endpoints,
-		SourceID:     m.GetSourceIDFromContext(r),
+		EndpointIDs:  endpointIDs,
+		SourceID:     sourceID,
 		Pageable:     pageable,
 		SearchParams: searchParams,
 	}
@@ -409,7 +388,6 @@ func (a *DashboardHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request
 
 func (a *DashboardHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
 	status := make([]datastore.EventDeliveryStatus, 0)
-	var endpoints []string
 	for _, s := range r.URL.Query()["status"] {
 		if !util.IsStringEmpty(s) {
 			status = append(status, datastore.EventDeliveryStatus(s))
@@ -422,17 +400,7 @@ func (a *DashboardHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *htt
 		return
 	}
 
-	endpointID := m.GetEndpointIDFromContext(r)
-	endpointIDs := m.GetEndpointIDsFromContext(r)
-
-	if !util.IsStringEmpty(endpointID) {
-		endpoints = []string{endpointID}
-	}
-
-	if len(endpointIDs) > 0 {
-		endpoints = endpointIDs
-	}
-
+	endpointIDs := getEndpointIDs(r)
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -442,7 +410,7 @@ func (a *DashboardHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *htt
 	f := &datastore.Filter{
 		Project:      project,
 		EventID:      r.URL.Query().Get("eventId"),
-		EndpointIDs:  endpoints,
+		EndpointIDs:  endpointIDs,
 		Status:       status,
 		Pageable:     m.GetPageableFromContext(r.Context()),
 		SearchParams: searchParams,
@@ -521,22 +489,26 @@ func getSearchParams(r *http.Request) (datastore.SearchParams, error) {
 	return searchParams, nil
 }
 
-func fetchDeliveryAttempts() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			e := m.GetEventDeliveryFromContext(r.Context())
+func getEndpointIDs(r *http.Request) []string {
+	var endpoints []string
 
-			r = r.WithContext(m.SetDeliveryAttemptsInContext(r.Context(), (*[]datastore.DeliveryAttempt)(&e.DeliveryAttempts)))
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func FindMessageDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {
-	for _, a := range *attempts {
-		if a.UID == id {
-			return &a, nil
+	for _, id := range r.URL.Query()["endpointId"] {
+		if !util.IsStringEmpty(id) {
+			endpoints = append(endpoints, id)
 		}
 	}
-	return nil, datastore.ErrEventDeliveryAttemptNotFound
+
+	return endpoints
+}
+
+func getSourceIDs(r *http.Request) []string {
+	var sourceIDs []string
+
+	for _, id := range r.URL.Query()["sourceId"] {
+		if !util.IsStringEmpty(id) {
+			sourceIDs = append(sourceIDs, id)
+		}
+	}
+
+	return sourceIDs
 }

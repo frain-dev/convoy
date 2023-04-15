@@ -42,7 +42,7 @@ func (a *DashboardHandler) CreatePortalLink(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	baseUrl, err := a.retrieveHost(r)
+	baseUrl, err := a.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -66,7 +66,7 @@ func (a *DashboardHandler) GetPortalLinkByID(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	baseUrl, err := a.retrieveHost(r)
+	baseUrl, err := a.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -103,7 +103,7 @@ func (a *DashboardHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	baseUrl, err := a.retrieveHost(r)
+	baseUrl, err := a.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -144,9 +144,9 @@ func (a *DashboardHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	endpointID := m.GetEndpointIDFromContext(r)
-	filter := &datastore.FilterBy{EndpointID: endpointID}
+	endpointID := getEndpointIDs(r)[0]
 
+	filter := &datastore.FilterBy{EndpointID: endpointID}
 	portalLinkService := createPortalLinkService(a)
 	portalLinks, paginationData, err := portalLinkService.LoadPortalLinksPaged(r.Context(), project, filter, pageable)
 	if err != nil {
@@ -155,7 +155,7 @@ func (a *DashboardHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.R
 	}
 
 	plResponse := []*models.PortalLinkResponse{}
-	baseUrl, err := a.retrieveHost(r)
+	baseUrl, err := a.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -182,9 +182,14 @@ func (a *DashboardHandler) CreatePortalLinkEndpoint(w http.ResponseWriter, r *ht
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	portalLink := m.GetPortalLinkFromContext(r.Context())
-	portalLinkService := createPortalLinkService(a)
 
+	portalLink, err := a.retrievePortalLink(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	portalLinkService := createPortalLinkService(a)
 	endpoint, err := portalLinkService.CreateEndpoint(r.Context(), project, e, portalLink)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -195,8 +200,13 @@ func (a *DashboardHandler) CreatePortalLinkEndpoint(w http.ResponseWriter, r *ht
 }
 
 func (a *DashboardHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *http.Request) {
-	portalLink := m.GetPortalLinkFromContext(r.Context())
 	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	portalLink, err := a.retrievePortalLink(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -219,7 +229,7 @@ func (a *DashboardHandler) GetPortalLinkDevices(w http.ResponseWriter, r *http.R
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	endpointIDs := m.GetEndpointIDsFromContext(r)
+	endpointIDs := getEndpointIDs(r)
 
 	f := &datastore.ApiKeyFilter{
 		EndpointIDs: endpointIDs,
@@ -242,7 +252,7 @@ func (a *DashboardHandler) GetPortalLinkKeys(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	pageable := m.GetPageableFromContext(r.Context())
-	endpointIDs := m.GetEndpointIDsFromContext(r)
+	endpointIDs := getEndpointIDs(r)
 
 	f := &datastore.ApiKeyFilter{
 		ProjectID:   project.UID,
@@ -260,6 +270,18 @@ func (a *DashboardHandler) GetPortalLinkKeys(w http.ResponseWriter, r *http.Requ
 	apiKeyByIDResponse := apiKeyByIDResponse(apiKeys)
 	_ = render.Render(w, r, util.NewServerResponse("api keys fetched successfully",
 		pagedResponse{Content: &apiKeyByIDResponse, Pagination: &paginationData}, http.StatusOK))
+}
+
+func (a *DashboardHandler) retrievePortalLink(r *http.Request) (*datastore.PortalLink, error) {
+	portalLinkID := chi.URLParam(r, "portalLinkID")
+	portalLinkRepo := postgres.NewPortalLinkRepo(a.A.DB)
+
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		return &datastore.PortalLink{}, err
+	}
+
+	return portalLinkRepo.FindPortalLinkByID(r.Context(), project.UID, portalLinkID)
 }
 
 func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.PortalLinkResponse {

@@ -28,7 +28,7 @@ func (a *DashboardHandler) CreateSource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	project, err := a.retrieveProject(r.Context())
+	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -59,7 +59,7 @@ func (a *DashboardHandler) CreateSource(w http.ResponseWriter, r *http.Request) 
 }
 
 func (a *DashboardHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r.Context())
+	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -97,7 +97,7 @@ func (a *DashboardHandler) UpdateSource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	project, err := a.retrieveProject(r.Context())
+	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -135,7 +135,7 @@ func (a *DashboardHandler) UpdateSource(w http.ResponseWriter, r *http.Request) 
 }
 
 func (a *DashboardHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r.Context())
+	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -159,7 +159,7 @@ func (a *DashboardHandler) DeleteSource(w http.ResponseWriter, r *http.Request) 
 
 func (a *DashboardHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-	project, err := a.retrieveProject(r.Context())
+	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
