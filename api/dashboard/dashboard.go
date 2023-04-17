@@ -101,10 +101,11 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 	})
 
 	router.Route("/organisations", func(orgRouter chi.Router) {
-		orgRouter.Post("/", a.CreateOrganisation)
 		orgRouter.With(a.M.Pagination).Get("/", a.GetOrganisationsPaged)
+		orgRouter.Post("/", a.CreateOrganisation)
 
 		orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
+			orgSubRouter.Use(RequireDashboardAccess(a))
 
 			orgSubRouter.Get("/", a.GetOrganisation)
 			orgSubRouter.Put("/", a.UpdateOrganisation)
@@ -134,6 +135,7 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 				})
 
 				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
+					projectSubRouter.Use(RequireProjectAccess(a))
 					projectSubRouter.Get("/", a.GetProject)
 					projectSubRouter.Get("/stats", a.GetProjectStatistics)
 					projectSubRouter.Put("/", a.UpdateProject)
@@ -396,4 +398,44 @@ func (a *DashboardHandler) retrieveHost() (string, error) {
 	}
 
 	return cfg.Host, nil
+}
+
+func RequireDashboardAccess(a *DashboardHandler) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			organisation, err := a.retrieveOrganisation(r)
+			if err != nil {
+				_ = render.Render(w, r, util.NewServiceErrResponse(err))
+				return
+			}
+
+			err = a.A.Authz.Authorize(r.Context(), "organisation.get", organisation)
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func RequireProjectAccess(a *DashboardHandler) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			project, err := a.retrieveProject(r)
+			if err != nil {
+				_ = render.Render(w, r, util.NewServiceErrResponse(err))
+				return
+			}
+
+			err = a.A.Authz.Authorize(r.Context(), "project.get", project)
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }

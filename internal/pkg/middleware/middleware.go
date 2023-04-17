@@ -35,6 +35,7 @@ import (
 type contextKey string
 
 const (
+	AuthUserCtx         contextKey = "authUser"
 	projectCtx          contextKey = "project"
 	orgCtx              contextKey = "organisation"
 	orgMemberCtx        contextKey = "organisation_member"
@@ -43,7 +44,6 @@ const (
 	eventCtx            contextKey = "event"
 	eventDeliveryCtx    contextKey = "eventDelivery"
 	authLoginCtx        contextKey = "authLogin"
-	authUserCtx         contextKey = "authUser"
 	userCtx             contextKey = "user"
 	pageableCtx         contextKey = "pageable"
 	pageDataCtx         contextKey = "pageData"
@@ -507,11 +507,11 @@ func GetPaginationDataFromContext(ctx context.Context) *datastore.PaginationData
 }
 
 func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) context.Context {
-	return context.WithValue(ctx, authUserCtx, a)
+	return context.WithValue(ctx, AuthUserCtx, a)
 }
 
 func GetAuthUserFromContext(ctx context.Context) *auth.AuthenticatedUser {
-	return ctx.Value(authUserCtx).(*auth.AuthenticatedUser)
+	return ctx.Value(AuthUserCtx).(*auth.AuthenticatedUser)
 }
 
 func GetAuthLoginFromContext(ctx context.Context) *AuthorizedLogin {

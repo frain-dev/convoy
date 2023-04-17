@@ -1,6 +1,7 @@
 package types
 
 import (
+	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
@@ -18,4 +19,5 @@ type App struct {
 	Cache    cache.Cache
 	Limiter  limiter.RateLimiter
 	Searcher searcher.Searcher
+	Authz    *authz.Authz
 }

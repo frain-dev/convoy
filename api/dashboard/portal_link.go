@@ -144,7 +144,12 @@ func (a *DashboardHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	endpointID := getEndpointIDs(r)[0]
+	var endpointID string
+	endpointIDs := getEndpointIDs(r)
+
+	if len(endpointIDs) > 0 {
+		endpointID = endpointIDs[0]
+	}
 
 	filter := &datastore.FilterBy{EndpointID: endpointID}
 	portalLinkService := createPortalLinkService(a)

@@ -351,7 +351,12 @@ func (a *DashboardHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request
 	endpointIDs := getEndpointIDs(r)
 
 	// TODO(subomi): Support multiple
-	sourceID := getSourceIDs(r)[0]
+	var sourceID string
+	sourceIDs := getSourceIDs(r)
+
+	if len(sourceIDs) > 0 {
+		sourceID = sourceIDs[0]
+	}
 
 	f := &datastore.Filter{
 		Query:        query,

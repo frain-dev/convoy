@@ -7,7 +7,9 @@ import (
 	"path"
 	"strings"
 
+	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/api/dashboard"
+	"github.com/frain-dev/convoy/api/policies"
 	portalapi "github.com/frain-dev/convoy/api/portal-api"
 	"github.com/frain-dev/convoy/api/public"
 	"github.com/frain-dev/convoy/api/types"
@@ -38,7 +40,7 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 	}
 	p = path.Clean(p)
 	f := fs.FS(reactFS)
-	static, err := fs.Sub(f, "ui/build")
+	static, err := fs.Sub(f, "dashboard/ui/build")
 	if err != nil {
 		return
 	}
@@ -70,7 +72,11 @@ func NewApplicationHandler(a types.App) *ApplicationHandler {
 		PortalLinkRepo:    postgres.NewPortalLinkRepo(a.DB),
 	})
 
-	return &ApplicationHandler{
+	az, _ := authz.NewAuthz(&authz.AuthzOpts{
+		AuthCtxKey: string(middleware.AuthUserCtx),
+	})
+
+	ah := &ApplicationHandler{
 		M: m,
 		A: types.App{
 			DB:       a.DB,
@@ -80,8 +86,13 @@ func NewApplicationHandler(a types.App) *ApplicationHandler {
 			Logger:   a.Logger,
 			Tracer:   a.Tracer,
 			Limiter:  a.Limiter,
+			Authz:    az,
 		},
 	}
+
+	ah.RegisterPolicy()
+
+	return ah
 }
 
 func (a *ApplicationHandler) BuildRoutes() http.Handler {
@@ -117,4 +128,38 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 	a.Router = router
 
 	return router
+}
+
+func (a *ApplicationHandler) RegisterPolicy() error {
+	var err error
+
+	// Register Organisation Policy.
+	err = a.A.Authz.RegisterPolicy(func() authz.Policy {
+		po := &policies.OrganisationPolicy{
+			BasePolicy:             authz.NewBasePolicy(),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+		}
+
+		po.SetRule("get", authz.RuleFunc(po.Get))
+		po.SetRule("update", authz.RuleFunc(po.Update))
+		po.SetRule("delete", authz.RuleFunc(po.Delete))
+
+		return po
+	}())
+
+	err = a.A.Authz.RegisterPolicy(func() authz.Policy {
+		po := &policies.ProjectPolicy{
+			BasePolicy:             authz.NewBasePolicy(),
+			OrganisationRepo:       postgres.NewOrgRepo(a.A.DB),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+		}
+
+		po.SetRule("get", authz.RuleFunc(po.Get))
+		po.SetRule("update", authz.RuleFunc(po.Update))
+		po.SetRule("delete", authz.RuleFunc(po.Delete))
+
+		return po
+	}())
+
+	return err
 }

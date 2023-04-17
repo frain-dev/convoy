@@ -31,6 +31,12 @@ func (a *DashboardHandler) GetSubscriptions(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	err = a.A.Authz.Authorize(r.Context(), "project.get", project)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	endpointIDs := getEndpointIDs(r)
 	filter := &datastore.FilterBy{ProjectID: project.UID, EndpointIDs: endpointIDs}
 
