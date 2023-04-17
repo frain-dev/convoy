@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
@@ -29,14 +30,14 @@ func Test_OrganisationPolicy_Get(t *testing.T) {
 							UID: "randomstring",
 						},
 					},
-					wantErr:       true,
+					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
 				organisation: &datastore.Organisation{
 					UID: "randomstring",
 				},
 				storeFn: func(orgP *OrganisationPolicy) {
-					orgMem := orgP.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMem := orgP.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMem.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -51,14 +52,14 @@ func Test_OrganisationPolicy_Get(t *testing.T) {
 							UID: "randomstring",
 						},
 					},
-					wantErr:       true,
+					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
 				organisation: &datastore.Organisation{
 					UID: "randomstring",
 				},
 				storeFn: func(orgP *OrganisationPolicy) {
-					orgMem := orgP.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMem := orgP.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMem.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -78,26 +79,27 @@ func Test_OrganisationPolicy_Get(t *testing.T) {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
 
-					opts := &OrganisationPolicyOpts{
+					policy := &OrganisationPolicy{
+						BasePolicy:             authz.NewBasePolicy(),
 						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 					}
-					policy := &OrganisationPolicy{opts}
-					authCtx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
+
+					policy.SetRule("get", authz.RuleFunc(policy.Get))
 
 					if tc.storeFn != nil {
 						tc.storeFn(policy)
 					}
 
+					ctx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
+
+					az, _ := authz.NewAuthz(&authz.AuthzOpts{})
+					_ = az.RegisterPolicy(policy)
+
 					// Act.
-					err := policy.Get(authCtx, tc.organisation)
+					err := az.Authorize(ctx, "organisation.get", tc.organisation)
 
 					// Assert.
-					if tc.wantErr {
-						require.ErrorIs(t, err, tc.expectedError)
-						return
-					}
-
-					require.NoError(t, err)
+					tc.assertion(t, err)
 				})
 			}
 		})
@@ -121,14 +123,14 @@ func Test_OrganisationPolicy_Update(t *testing.T) {
 							UID: "randomstring",
 						},
 					},
-					wantErr:       true,
+					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
 				organisation: &datastore.Organisation{
 					UID: "randomstring",
 				},
 				storeFn: func(orgP *OrganisationPolicy) {
-					orgMem := orgP.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMem := orgP.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMem.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -143,14 +145,14 @@ func Test_OrganisationPolicy_Update(t *testing.T) {
 							UID: "randomstring",
 						},
 					},
-					wantErr:       true,
+					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
 				organisation: &datastore.Organisation{
 					UID: "randomstring",
 				},
 				storeFn: func(orgP *OrganisationPolicy) {
-					orgMem := orgP.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMem := orgP.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMem.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -170,26 +172,27 @@ func Test_OrganisationPolicy_Update(t *testing.T) {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
 
-					opts := &OrganisationPolicyOpts{
+					policy := &OrganisationPolicy{
+						BasePolicy:             authz.NewBasePolicy(),
 						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 					}
-					policy := &OrganisationPolicy{opts}
-					authCtx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
+
+					policy.SetRule("update", authz.RuleFunc(policy.Update))
 
 					if tc.storeFn != nil {
 						tc.storeFn(policy)
 					}
 
+					ctx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
+
+					az, _ := authz.NewAuthz(&authz.AuthzOpts{})
+					_ = az.RegisterPolicy(policy)
+
 					// Act.
-					err := policy.Update(authCtx, tc.organisation)
+					err := az.Authorize(ctx, "organisation.update", tc.organisation)
 
 					// Assert.
-					if tc.wantErr {
-						require.ErrorIs(t, err, tc.expectedError)
-						return
-					}
-
-					require.NoError(t, err)
+					tc.assertion(t, err)
 				})
 			}
 		})
@@ -213,14 +216,14 @@ func Test_OrganisationPolicy_Delete(t *testing.T) {
 							UID: "randomstring",
 						},
 					},
-					wantErr:       true,
+					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
 				organisation: &datastore.Organisation{
 					UID: "randomstring",
 				},
 				storeFn: func(orgP *OrganisationPolicy) {
-					orgMem := orgP.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMem := orgP.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMem.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -235,7 +238,7 @@ func Test_OrganisationPolicy_Delete(t *testing.T) {
 							UID: "randomstring",
 						},
 					},
-					wantErr:       true,
+					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
 
@@ -243,7 +246,7 @@ func Test_OrganisationPolicy_Delete(t *testing.T) {
 					UID: "randomstring",
 				},
 				storeFn: func(orgP *OrganisationPolicy) {
-					orgMem := orgP.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMem := orgP.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMem.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -263,26 +266,27 @@ func Test_OrganisationPolicy_Delete(t *testing.T) {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
 
-					opts := &OrganisationPolicyOpts{
+					policy := &OrganisationPolicy{
+						BasePolicy:             authz.NewBasePolicy(),
 						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 					}
-					policy := &OrganisationPolicy{opts}
-					authCtx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
+
+					policy.SetRule("delete", authz.RuleFunc(policy.Delete))
 
 					if tc.storeFn != nil {
 						tc.storeFn(policy)
 					}
 
+					az, _ := authz.NewAuthz(&authz.AuthzOpts{})
+					_ = az.RegisterPolicy(policy)
+
+					ctx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
+
 					// Act.
-					err := policy.Delete(authCtx, tc.organisation)
+					err := az.Authorize(ctx, "organisation.delete", tc.organisation)
 
 					// Assert.
-					if tc.wantErr {
-						require.ErrorIs(t, err, tc.expectedError)
-						return
-					}
-
-					require.NoError(t, err)
+					tc.assertion(t, err)
 				})
 			}
 		})

@@ -90,7 +90,8 @@ func NewApplicationHandler(a types.App) *ApplicationHandler {
 		},
 	}
 
-	ah.RegisterPolicy()
+	// TODO(subomi): Fix this.
+	_ = ah.RegisterPolicy()
 
 	return ah
 }
@@ -146,6 +147,10 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 
 		return po
 	}())
+
+	if err != nil {
+		return err
+	}
 
 	err = a.A.Authz.RegisterPolicy(func() authz.Policy {
 		po := &policies.ProjectPolicy{

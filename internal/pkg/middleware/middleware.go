@@ -517,12 +517,3 @@ func GetAuthUserFromContext(ctx context.Context) *auth.AuthenticatedUser {
 func GetAuthLoginFromContext(ctx context.Context) *AuthorizedLogin {
 	return ctx.Value(authLoginCtx).(*AuthorizedLogin)
 }
-
-func findMessageDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {
-	for _, a := range *attempts {
-		if a.UID == id {
-			return &a, nil
-		}
-	}
-	return nil, datastore.ErrEventDeliveryAttemptNotFound
-}

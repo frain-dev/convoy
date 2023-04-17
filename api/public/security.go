@@ -2,17 +2,8 @@ package public
 
 import (
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/services"
 )
-
-func createSecurityService(a *PublicHandler) *services.SecurityService {
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
-	apiKeyRepo := postgres.NewAPIKeyRepo(a.A.DB)
-
-	return services.NewSecurityService(projectRepo, apiKeyRepo)
-}
 
 func apiKeyByIDResponse(apiKeys []datastore.APIKey) []models.APIKeyByIDResponse {
 	apiKeyByIDResponse := []models.APIKeyByIDResponse{}
