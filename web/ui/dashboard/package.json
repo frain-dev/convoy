@@ -8,9 +8,7 @@
 		"postbuild": "mkdir -p ./source-maps && mv `pwd`/dist/*.map ./source-maps",
 		"watch": "ng build --watch --configuration development",
 		"test": "ng test",
-		"docs:json": "compodoc -p ./tsconfig.app.json -e json -d .",
-		"storybook": "npm run docs:json && start-storybook -p 6006",
-		"build-storybook": "npm run docs:json && build-storybook"
+		"build:ee": "ng build --configuration ee"
 	},
 	"private": true,
 	"dependencies": {
