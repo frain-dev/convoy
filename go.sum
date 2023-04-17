@@ -66,8 +66,8 @@ github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 h1:d+Bc7a5rLufV
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
-github.com/Subomi/go-authz v0.1.0 h1:kZqBDzDbylRqQvGbrHsHlF1yEglVXYUpl5aXTqhvbg8=
-github.com/Subomi/go-authz v0.1.0/go.mod h1:X8xxZGMgjtZfldsr+xT4p7QBhivHAJmHqJN5vVed2DM=
+github.com/Subomi/go-authz v0.2.0 h1:SpP676dwDjXwJm9UUFw92tVLZx7csYpDj116/u2Jh+o=
+github.com/Subomi/go-authz v0.2.0/go.mod h1:X8xxZGMgjtZfldsr+xT4p7QBhivHAJmHqJN5vVed2DM=
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
 github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5/go.mod h1:SkGFH1ia65gfNATL8TAiHDNxPzPdmEL5uirI2Uyuz6c=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=

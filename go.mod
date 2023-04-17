@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	cloud.google.com/go/pubsub v1.26.0
-	github.com/Subomi/go-authz v0.1.0
+	github.com/Subomi/go-authz v0.2.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go v1.34.28
 	github.com/cip8/autoname v1.0.1
