@@ -73,7 +73,7 @@ func NewApplicationHandler(a types.App) *ApplicationHandler {
 	})
 
 	az, _ := authz.NewAuthz(&authz.AuthzOpts{
-		AuthCtxKey: string(middleware.AuthUserCtx),
+		AuthCtxKey: authz.AuthCtxType(middleware.AuthUserCtx),
 	})
 
 	ah := &ApplicationHandler{
