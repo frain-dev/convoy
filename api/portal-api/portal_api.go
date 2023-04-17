@@ -1,6 +1,7 @@
 package portalapi
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/frain-dev/convoy/api/types"
@@ -9,7 +10,9 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag/flipt"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
 )
 
 type PortalLinkHandler struct {
@@ -70,14 +73,6 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 		})
 	})
 
-	router.Route("/devices", func(deviceRouter chi.Router) {
-		deviceRouter.With(a.M.Pagination).Get("/", a.GetPortalLinkDevices)
-	})
-
-	router.Route("/keys", func(keySubRouter chi.Router) {
-		keySubRouter.With(a.M.Pagination).Get("/", a.GetPortalLinkKeys)
-	})
-
 	router.Route("/events", func(eventRouter chi.Router) {
 		eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
 		eventRouter.Post("/batchreplay", a.BatchReplayEvents)
@@ -122,11 +117,36 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 }
 
 func (a *PortalLinkHandler) retrieveOrganisation(r *http.Request) (*datastore.Organisation, error) {
-	return &datastore.Organisation{}, nil
+	var org *datastore.Organisation
+
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		return org, err
+	}
+
+	orgRepo := postgres.NewOrgRepo(a.A.DB)
+	org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
+	if err != nil {
+		return org, err
+	}
+
+	return org, nil
 }
 
 func (a *PortalLinkHandler) retrieveProject(r *http.Request) (*datastore.Project, error) {
-	return &datastore.Project{}, nil
+	var project *datastore.Project
+	pLink, err := a.retrievePortalLink(r)
+	if err != nil {
+		return project, err
+	}
+
+	projectRepo := postgres.NewProjectRepo(a.A.DB)
+	project, err = projectRepo.FetchProjectByID(r.Context(), pLink.ProjectID)
+	if err != nil {
+		return project, err
+	}
+
+	return project, nil
 }
 
 func (a *PortalLinkHandler) retrieveHost() (string, error) {
@@ -139,9 +159,39 @@ func (a *PortalLinkHandler) retrieveHost() (string, error) {
 }
 
 func (a *PortalLinkHandler) retrievePortalLink(r *http.Request) (*datastore.PortalLink, error) {
-	return &datastore.PortalLink{}, nil
+	token := r.URL.Query().Get("token")
+
+	portalLinkRepo := postgres.NewPortalLinkRepo(a.A.DB)
+	pLink, err := portalLinkRepo.FindPortalLinkByToken(r.Context(), token)
+	if err != nil {
+		message := "an error occurred while retrieving portal link"
+
+		if errors.Is(err, datastore.ErrPortalLinkNotFound) {
+			message = "invalid token"
+		}
+
+		return &datastore.PortalLink{}, errors.New(message)
+	}
+
+	return pLink, nil
 }
 
-func (a *PortalLinkHandler) retrieveEndpointIDs(r *http.Request) []string {
-	return []string{""}
+func RequirePortalAccess(a *PortalLinkHandler) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			project, err := a.retrieveProject(r)
+			if err != nil {
+				_ = render.Render(w, r, util.NewServiceErrResponse(err))
+				return
+			}
+
+			err = a.A.Authz.Authorize(r.Context(), "project.get", project)
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }
