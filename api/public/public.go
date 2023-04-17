@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
@@ -12,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/render"
 )
 
 type PublicHandler struct {
@@ -73,6 +75,7 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 			projectRouter.Post("/", a.CreateProject)
 
 			projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
+				projectSubRouter.Use(RequireProjectAccess(a))
 				projectSubRouter.With().Get("/", a.GetProject)
 				projectSubRouter.Put("/", a.UpdateProject)
 				projectSubRouter.Delete("/", a.DeleteProject)
@@ -192,9 +195,15 @@ func (a *PublicHandler) retrieveProject(r *http.Request) (*datastore.Project, er
 	return projectRepo.FetchProjectByID(r.Context(), projectID)
 }
 
-// TODO(subomi): Fix this.
 func (a *PublicHandler) retrieveUser(r *http.Request) (*datastore.User, error) {
-	return &datastore.User{}, nil
+	authCtx := r.Context().Value(middleware.AuthUserCtx).(*auth.AuthenticatedUser)
+
+	user, ok := authCtx.User.(*datastore.User)
+	if !ok {
+		return &datastore.User{}, errors.New("User not found")
+	}
+
+	return user, nil
 }
 
 func (a *PublicHandler) retrieveHost() (string, error) {
@@ -204,4 +213,24 @@ func (a *PublicHandler) retrieveHost() (string, error) {
 	}
 
 	return cfg.Host, nil
+}
+
+func RequireProjectAccess(a *PublicHandler) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			project, err := a.retrieveProject(r)
+			if err != nil {
+				_ = render.Render(w, r, util.NewServiceErrResponse(err))
+				return
+			}
+
+			err = a.A.Authz.Authorize(r.Context(), "project.get", project)
+			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }
