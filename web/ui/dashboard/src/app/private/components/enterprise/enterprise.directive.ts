@@ -1,4 +1,4 @@
-import { Directive, Input, OnInit, TemplateRef, ViewContainerRef } from '@angular/core';
+import { Directive, OnInit, TemplateRef, ViewContainerRef } from '@angular/core';
 import { environment } from 'src/environments/environment';
 
 @Directive({
@@ -6,8 +6,6 @@ import { environment } from 'src/environments/environment';
 	standalone: true
 })
 export class EnterpriseDirective implements OnInit {
-	@Input('convoy-enterprise') isEnterprise!: 'true' | 'false';
-
 	constructor(private templateReference: TemplateRef<any>, private viewContainerReference: ViewContainerRef) {}
 
 	ngOnInit(): void {
