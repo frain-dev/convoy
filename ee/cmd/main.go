@@ -5,6 +5,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	configCmd "github.com/frain-dev/convoy/cmd/config"
+	"github.com/frain-dev/convoy/cmd/hooks"
 	"github.com/frain-dev/convoy/cmd/ingest"
 	"github.com/frain-dev/convoy/cmd/migrate"
 	"github.com/frain-dev/convoy/cmd/retry"
@@ -33,6 +34,19 @@ func main() {
 	db := &postgres.Postgres{}
 
 	cli := cli.NewCli(app, db)
+
+	var redisDsn string
+	var dbDsn string
+	var queue string
+	var configFile string
+
+	cli.Flags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
+	cli.Flags().StringVar(&queue, "queue", "", "Queue provider (\"redis\")")
+	cli.Flags().StringVar(&dbDsn, "db", "", "Postgres database dsn")
+	cli.Flags().StringVar(&redisDsn, "redis", "", "Redis dsn")
+
+	cli.PersistentPreRunE(hooks.PreRun(app, db))
+	cli.PersistentPostRunE(hooks.PostRun(app, db))
 
 	// Add Sub Commands
 	cli.AddCommand(version.AddVersionCommand())
