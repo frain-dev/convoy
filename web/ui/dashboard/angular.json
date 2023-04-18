@@ -67,6 +67,32 @@
 							"outputHashing": "all",
 							"sourceMap": true
 						},
+						"ee": {
+							"budgets": [
+								{
+									"type": "initial",
+									"maximumWarning": "500kb",
+									"maximumError": "1mb"
+								},
+								{
+									"type": "anyComponentStyle",
+									"maximumWarning": "5kb",
+									"maximumError": "8kb"
+								}
+							],
+							"fileReplacements": [
+								{
+									"replace": "src/environments/environment.ts",
+									"with": "src/environments/environment.ee.ts"
+								},
+								{
+									"replace": "src/app/private/private-routing.module.ts",
+									"with": "src/app/private/private-routing.ee.module.ts"
+								}
+							],
+							"outputHashing": "all",
+							"sourceMap": true
+						},
 						"development": {
 							"buildOptimizer": false,
 							"optimization": false,
@@ -107,19 +133,6 @@
 						"assets": ["src/favicon.ico", "src/assets"],
 						"styles": ["src/styles.scss"],
 						"scripts": []
-					}
-				},
-				"storybook": {
-					"builder": "@storybook/angular:start-storybook",
-					"options": {
-						"browserTarget": "angular-cli:build",
-						"port": 6006
-					}
-				},
-				"build-storybook": {
-					"builder": "@storybook/angular:build-storybook",
-					"options": {
-						"browserTarget": "angular-cli:build"
 					}
 				}
 			}
