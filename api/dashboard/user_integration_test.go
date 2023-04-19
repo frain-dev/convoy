@@ -82,7 +82,7 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser() {
 	}`, r.FirstName, r.LastName, r.Email, r.Password, r.OrganisationName)
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/ui/auth/register", "", body)
+	req := createRequest(http.MethodPost, "/auth/register", "", body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -135,7 +135,7 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_RegistrationNotAllowed() {
 	}`, r.FirstName, r.LastName, r.Email, r.Password, r.OrganisationName)
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/ui/auth/register", "", body)
+	req := createRequest(http.MethodPost, "/auth/register", "", body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -165,7 +165,7 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_NoFirstName() {
 	}`, r.LastName, r.Email, r.Password, r.OrganisationName)
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/ui/auth/register", "", body)
+	req := createRequest(http.MethodPost, "/auth/register", "", body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -195,7 +195,7 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_NoEmail() {
 	}`, r.FirstName, r.LastName, r.Password, r.OrganisationName)
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/ui/auth/register", "", body)
+	req := createRequest(http.MethodPost, "/auth/register", "", body)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -213,7 +213,7 @@ func (u *UserIntegrationTestSuite) Test_GetUser() {
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := fmt.Sprintf("/ui/users/%s/profile", user.UID)
+	url := fmt.Sprintf("/users/%s/profile", user.UID)
 	req := httptest.NewRequest(http.MethodGet, url, nil)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
@@ -252,7 +252,7 @@ func (u *UserIntegrationTestSuite) Test_UpdateUser() {
 	email := fmt.Sprintf("%s@test.com", ulid.Make().String())
 
 	// Arrange Request
-	url := fmt.Sprintf("/ui/users/%s/profile", user.UID)
+	url := fmt.Sprintf("/users/%s/profile", user.UID)
 	bodyStr := fmt.Sprintf(`{
 		"first_name": "%s",
 		"last_name": "%s",
@@ -297,7 +297,7 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword() {
 	newPassword := "123456789"
 
 	// Arrange Request
-	url := fmt.Sprintf("/ui/users/%s/password", user.UID)
+	url := fmt.Sprintf("/users/%s/password", user.UID)
 	bodyStr := fmt.Sprintf(`{
 		"current_password": "%s",
 		"password": "%s",
@@ -343,7 +343,7 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Current_Password(
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := fmt.Sprintf("/ui/users/%s/password", user.UID)
+	url := fmt.Sprintf("/users/%s/password", user.UID)
 	bodyStr := fmt.Sprintf(`{
 		"current_password": "new-password",
 		"password": "%s",
@@ -376,7 +376,7 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Password_Confirma
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := fmt.Sprintf("/ui/users/%s/password", user.UID)
+	url := fmt.Sprintf("/users/%s/password", user.UID)
 	bodyStr := fmt.Sprintf(`{
 		"current_password": %s,
 		"password": "%s",
@@ -402,7 +402,7 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Valid_Token() {
 	newPassword := "123456789"
 
 	// Arrange Request
-	url := "/ui/users/forgot-password"
+	url := "/users/forgot-password"
 	bodyStr := fmt.Sprintf(`{"email":"%s"}`, user.Email)
 
 	req := httptest.NewRequest(http.MethodPost, url, serialize(bodyStr))
@@ -422,7 +422,7 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Valid_Token() {
 	var response datastore.User
 	parseResponse(u.T(), w.Result(), &response)
 	// Reset password
-	url = fmt.Sprintf("/ui/users/reset-password?token=%s", dbUser.ResetPasswordToken)
+	url = fmt.Sprintf("/users/reset-password?token=%s", dbUser.ResetPasswordToken)
 	bodyStr = fmt.Sprintf(`{
 		"password": "%s",
 		"password_confirmation": "%s"
@@ -453,7 +453,7 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Invalid_Token() {
 	newPassword := "123456789"
 
 	// Arrange Request
-	url := "/ui/users/forgot-password"
+	url := "/users/forgot-password"
 	bodyStr := fmt.Sprintf(`{"email":"%s"}`, user.Email)
 
 	req := httptest.NewRequest(http.MethodPost, url, serialize(bodyStr))
@@ -467,7 +467,7 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Invalid_Token() {
 	require.Equal(u.T(), http.StatusOK, w.Code)
 
 	// Reset password
-	url = fmt.Sprintf("/ui/users/reset-password?token=%s", "fake-token")
+	url = fmt.Sprintf("/users/reset-password?token=%s", "fake-token")
 	bodyStr = fmt.Sprintf(`{
 		"password": "%s",
 		"password_confirmation": "%s"
@@ -491,7 +491,7 @@ func (u *UserIntegrationTestSuite) Test_VerifyEmail() {
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := fmt.Sprintf("/ui/users/verify_email?token=%s", user.EmailVerificationToken)
+	url := fmt.Sprintf("/users/verify_email?token=%s", user.EmailVerificationToken)
 
 	req := createRequest(http.MethodPost, url, "", nil)
 	w := httptest.NewRecorder()

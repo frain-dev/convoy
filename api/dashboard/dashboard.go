@@ -27,7 +27,7 @@ type DashboardHandler struct {
 	Router http.Handler
 }
 
-func NewDashboardHandler(a types.App) *DashboardHandler {
+func NewDashboardHandler(a *types.App) *DashboardHandler {
 	m := middleware.NewMiddleware(&middleware.CreateMiddleware{
 		Cache:             a.Cache,
 		Logger:            a.Logger,
@@ -59,6 +59,7 @@ func NewDashboardHandler(a types.App) *DashboardHandler {
 			Logger:   a.Logger,
 			Tracer:   a.Tracer,
 			Limiter:  a.Limiter,
+			Authz:    a.Authz,
 		},
 	}
 }
@@ -69,7 +70,7 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 	// UI API.
 	router.Use(a.M.JsonResponse)
 	router.Use(a.M.SetupCORS)
-	router.Use(chiMiddleware.Maybe(a.M.RequireAuth(), middleware.ShouldAuthRoute))
+	router.Use(chiMiddleware.Maybe(a.M.RequireAuth(), shouldAuthRoute))
 
 	router.Post("/organisations/process_invite", a.ProcessOrganisationMemberInvite)
 	router.Get("/users/token", a.FindUserByInviteToken)
@@ -155,6 +156,7 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 							e.Delete("/", a.DeleteEndpoint)
 							e.Put("/toggle_status", a.ToggleEndpointStatus)
 							e.Put("/expire_secret", a.ExpireSecret)
+							e.Put("/pause", a.PauseEndpoint)
 
 							e.Route("/keys", func(keySubRouter chi.Router) {
 								keySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateEndpointAPIKey)
@@ -438,4 +440,25 @@ func RequireProjectAccess(a *DashboardHandler) func(next http.Handler) http.Hand
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+var guestRoutes = []string{
+	"/auth/login",
+	"/auth/register",
+	"/auth/token/refresh",
+	"/users/token",
+	"/users/forgot-password",
+	"/users/reset-password",
+	"/users/verify_email",
+	"/organisations/process_invite",
+}
+
+func shouldAuthRoute(r *http.Request) bool {
+	for _, route := range guestRoutes {
+		if r.URL.Path == route {
+			return false
+		}
+	}
+
+	return true
 }

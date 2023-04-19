@@ -61,7 +61,7 @@ func (u *AuthIntegrationTestSuite) Test_LoginUser() {
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.DB, "", password)
 
 	// Arrange Request
-	url := "/ui/auth/login"
+	url := "/auth/login"
 	bodyStr := fmt.Sprintf(`{
 		"username": "%s",
 		"password": "%s"
@@ -92,7 +92,7 @@ func (u *AuthIntegrationTestSuite) Test_LoginUser() {
 
 func (u *AuthIntegrationTestSuite) Test_LoginUser_Invalid_Username() {
 	// Arrange Request
-	url := "/ui/auth/login"
+	url := "/auth/login"
 	bodyStr := fmt.Sprintf(`{
 			"username": "%s",
 			"password": "%s"
@@ -114,7 +114,7 @@ func (u *AuthIntegrationTestSuite) Test_LoginUser_Invalid_Password() {
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.DB, "", password)
 
 	// Arrange Request
-	url := "/ui/auth/login"
+	url := "/auth/login"
 	bodyStr := fmt.Sprintf(`{
 			"username": "%s",
 			"password": "%s"
@@ -131,7 +131,7 @@ func (u *AuthIntegrationTestSuite) Test_LoginUser_Invalid_Password() {
 	require.Equal(u.T(), http.StatusUnauthorized, w.Code)
 }
 
-func (u *UserIntegrationTestSuite) Test_RefreshToken() {
+func (u *AuthIntegrationTestSuite) Test_RefreshToken() {
 	password := "123456"
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.DB, "", password)
 
@@ -139,7 +139,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken() {
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := "/ui/auth/token/refresh"
+	url := "/auth/token/refresh"
 	bodyStr := fmt.Sprintf(`{
 		"access_token": "%s",
 		"refresh_token": "%s"
@@ -162,7 +162,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken() {
 	require.NotEmpty(u.T(), response.RefreshToken)
 }
 
-func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Access_Token() {
+func (u *AuthIntegrationTestSuite) Test_RefreshToken_Invalid_Access_Token() {
 	password := "123456"
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.DB, "", password)
 
@@ -170,7 +170,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Access_Token() {
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := "/ui/auth/token/refresh"
+	url := "/auth/token/refresh"
 	bodyStr := fmt.Sprintf(`{
 		"access_token": "%s",
 		"refresh_token": "%s"
@@ -187,7 +187,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Access_Token() {
 	require.Equal(u.T(), http.StatusUnauthorized, w.Code)
 }
 
-func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Refresh_Token() {
+func (u *AuthIntegrationTestSuite) Test_RefreshToken_Invalid_Refresh_Token() {
 	password := "123456"
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.DB, "", password)
 
@@ -195,7 +195,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Refresh_Token() {
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := "/ui/auth/token/refresh"
+	url := "/auth/token/refresh"
 	bodyStr := fmt.Sprintf(`{
 		"access_token": "%s",
 		"refresh_token": "%s"
@@ -212,7 +212,7 @@ func (u *UserIntegrationTestSuite) Test_RefreshToken_Invalid_Refresh_Token() {
 	require.Equal(u.T(), http.StatusUnauthorized, w.Code)
 }
 
-func (u *UserIntegrationTestSuite) Test_LogoutUser() {
+func (u *AuthIntegrationTestSuite) Test_LogoutUser() {
 	password := "123456"
 	user, _ := testdb.SeedUser(u.ConvoyApp.A.DB, "", password)
 
@@ -220,7 +220,7 @@ func (u *UserIntegrationTestSuite) Test_LogoutUser() {
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := "/ui/auth/logout"
+	url := "/auth/logout"
 	req := httptest.NewRequest(http.MethodPost, url, nil)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
@@ -233,9 +233,9 @@ func (u *UserIntegrationTestSuite) Test_LogoutUser() {
 	require.Equal(u.T(), http.StatusOK, w.Code)
 }
 
-func (u *UserIntegrationTestSuite) Test_LogoutUser_Invalid_Access_Token() {
+func (u *AuthIntegrationTestSuite) Test_LogoutUser_Invalid_Access_Token() {
 	// Arrange Request
-	url := "/ui/auth/logout"
+	url := "/auth/logout"
 	req := httptest.NewRequest(http.MethodPost, url, nil)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", ulid.Make().String()))
 	req.Header.Add("Content-Type", "application/json")
@@ -249,5 +249,5 @@ func (u *UserIntegrationTestSuite) Test_LogoutUser_Invalid_Access_Token() {
 }
 
 func TestAuthIntegrationTestSuite(t *testing.T) {
-	suite.Run(t, new(UserIntegrationTestSuite))
+	suite.Run(t, new(AuthIntegrationTestSuite))
 }

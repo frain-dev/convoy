@@ -18,6 +18,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
@@ -28,12 +29,13 @@ import (
 
 type SubscriptionIntegrationTestSuite struct {
 	suite.Suite
-	DB             database.Database
-	Router         http.Handler
-	ConvoyApp      *DashboardHandler
-	DefaultOrg     *datastore.Organisation
-	DefaultProject *datastore.Project
-	APIKey         string
+	DB              database.Database
+	Router          http.Handler
+	ConvoyApp       *DashboardHandler
+	AuthenticatorFn AuthenticatorFn
+	DefaultOrg      *datastore.Organisation
+	DefaultProject  *datastore.Project
+	DefaultUser     *datastore.User
 }
 
 func (s *SubscriptionIntegrationTestSuite) SetupSuite() {
@@ -44,35 +46,30 @@ func (s *SubscriptionIntegrationTestSuite) SetupSuite() {
 
 func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
+	s.DB = getDB()
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
+	s.DefaultUser = user
 
 	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, user)
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
 
 	// Setup Default Project.
-	s.DefaultProject, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, org.UID)
-	require.NoError(s.T(), err)
-	fmt.Printf("%+v\n", s.DefaultProject)
+	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, org.UID)
 
-	// Seed Auth
-	role := auth.Role{
-		Type:    auth.RoleAdmin,
-		Project: s.DefaultProject.UID,
-	}
-
-	_, s.APIKey, err = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
-	require.NoError(s.T(), err)
+	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
+		Username: user.Email,
+		Password: testdb.DefaultUserPassword,
+	})
 
 	// Setup Config.
-	err = config.LoadConfig("../testdata/Auth_Config/full-convoy.json")
+	err = config.LoadConfig("../testdata/Auth_Config/full-convoy-with-all-realms.json")
 	require.NoError(s.T(), err)
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -112,8 +109,13 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 		"disable_endpoint": true
 	}`, endpoint.UID, s.DefaultProject.UID, endpoint.UID)
 
-	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultProject.UID)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/subscriptions",
+		s.DefaultProject.OrganisationID,
+		s.DefaultProject.UID)
+	req := createRequest(http.MethodPost, url, "", body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -136,20 +138,9 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProject() {
-	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "test_project", s.DefaultOrg.UID, datastore.IncomingProject, &datastore.DefaultProjectConfig)
-	require.NoError(s.T(), err)
-
-	// Seed Auth
-	role := auth.Role{
-		Type:    auth.RoleAdmin,
-		Project: project.UID,
-	}
-
-	_, apiKey, _ := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
-
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, project, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
-	source, _ := testdb.SeedSource(s.ConvoyApp.A.DB, project, ulid.Make().String(), "", "", nil)
-	bodyStr := fmt.Sprintf(`{
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+	source, _ := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", nil)
+	body := serialize(`{
 		"name": "sub-1",
 		"type": "incoming",
 		"app_id": "%s",
@@ -175,11 +166,15 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProje
 			"count": 100,
 			"duration": 5
 		}
-	}`, endpoint.UID, source.UID, project.UID, endpoint.UID)
+	}`, endpoint.UID, source.UID, s.DefaultProject.UID, endpoint.UID)
 
-	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", project.UID)
-	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, url, apiKey, body)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/subscriptions",
+		s.DefaultProject.OrganisationID,
+		s.DefaultProject.UID)
+	req := createRequest(http.MethodPost, url, "", body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -192,7 +187,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProje
 	parseResponse(s.T(), w.Result(), &subscription)
 
 	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
-	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), project.UID, subscription.UID)
+	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscription.UID)
 	require.NoError(s.T(), err)
 
 	require.NotEmpty(s.T(), subscription.UID)
@@ -201,103 +196,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProje
 	require.Equal(s.T(), dbSub.RateLimitConfig.Count, subscription.RateLimitConfig.Count)
 }
 
-func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProject_RedirectToProjects() {
-	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "test_project", s.DefaultOrg.UID, datastore.IncomingProject, &datastore.DefaultProjectConfig)
-	require.NoError(s.T(), err)
-
-	// Seed Auth
-	role := auth.Role{
-		Type:    auth.RoleAdmin,
-		Project: project.UID,
-	}
-
-	_, apiKey, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
-	require.NoError(s.T(), err)
-
-	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, project, ulid.Make().String(), "", "", nil)
-	require.NoError(s.T(), err)
-
-	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, project, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
-	require.NoError(s.T(), err)
-
-	bodyStr := fmt.Sprintf(`{
-		"name": "sub-1",
-		"type": "incoming",
-		"app_id": "%s",
-        "source_id":"%s",
-		"project_id": "%s",
-		"endpoint_id": "%s",
-		"alert_config": {
-			"threshold": "1h",
-			"count": 10
-		},
-		"retry_config": {
-			"type": "linear",
-			"retry_count": 2,
-			"duration": "10s"
-		},
-		"filter_config": {
-			"event_types": [
-				"user.created",
-				"user.updated"
-			]
-		},
-		"rate_limit_config": {
-			"count": 100,
-			"duration": 5
-		}
-	}`, endpoint.UID, source.UID, project.UID, endpoint.UID)
-
-	url := fmt.Sprintf("/api/v1/subscriptions?projectID=%s", project.UID)
-	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, url, apiKey, body)
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusTemporaryRedirect, w.Code)
-}
-
-func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_AppNotFound() {
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, &datastore.Project{UID: ulid.Make().String()}, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
-	bodyStr := fmt.Sprintf(`{
-		"name": "sub-1",
-		"type": "incoming",
-		"app_id": "%s",
-		"endpoint_id": "%s",
-		"alert_config": {
-			"threshold": "1h",
-			"count": 10
-		},
-		"retry_config": {
-			"type": "linear",
-			"retry_count": 2,
-			"interval_seconds": 10
-		},
-		"filter_config": {
-			"event_types": [
-				"user.created",
-				"user.updated"
-			]
-		}
-	}`, ulid.Make().String(), endpoint.UID)
-
-	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultProject.UID)
-	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusBadRequest, w.Code)
-}
-
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_EndpointNotFound() {
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		"name": "sub-1",
 		"type": "incoming",
 		"app_id": "%s",
@@ -320,9 +220,13 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_EndpointNotFo
 		}
 	}`, ulid.Make().String(), s.DefaultProject.UID, ulid.Make().String())
 
-	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultProject.UID)
-	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/subscriptions",
+		s.DefaultProject.OrganisationID,
+		s.DefaultProject.UID)
+	req := createRequest(http.MethodPost, url, "", body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -353,9 +257,13 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_InvalidBody()
 		}
 	}`
 
-	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultProject.UID)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/subscriptions", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	req := createRequest(http.MethodPost, url, "", body)
+
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -369,8 +277,12 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_SubscriptionN
 	subscriptionId := "123"
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultProject.UID, subscriptionId)
-	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/subscriptions/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, subscriptionId)
+	req := createRequest(http.MethodGet, url, "", nil)
+
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -396,8 +308,12 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingProje
 	require.NoError(s.T(), err)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultProject.UID, subscriptionId)
-	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/subscriptions/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, subscriptionId)
+	req := createRequest(http.MethodGet, url, "", nil)
+
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -443,8 +359,12 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingProje
 	require.NoError(s.T(), err)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", project.UID, subscriptionId)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/subscriptions/%s", project.OrganisationID, project.UID, subscriptionId)
 	req := createRequest(http.MethodGet, url, apiKey, nil)
+
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -479,9 +399,14 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetSubscriptions_ValidSubscripti
 		_, err = testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
 		require.NoError(s.T(), err)
 	}
+
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultProject.UID)
-	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/subscriptions", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
+	req := createRequest(http.MethodGet, url, "", nil)
+
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -510,8 +435,12 @@ func (s *SubscriptionIntegrationTestSuite) Test_DeleteSubscription() {
 	require.NoError(s.T(), err)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultProject.UID, subscriptionId)
-	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/subscriptions/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, subscriptionId)
+	req := createRequest(http.MethodDelete, url, "", nil)
+
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -540,7 +469,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	require.NoError(s.T(), err)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultProject.UID, subscriptionId)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/subscriptions/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, subscriptionId)
 	bodyStr := `{
 		"alert_config": {
 			"threshold": "1h",
@@ -561,7 +490,11 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	}`
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPut, url, s.APIKey, body)
+	req := createRequest(http.MethodPut, url, "", body)
+
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act

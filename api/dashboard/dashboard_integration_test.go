@@ -276,7 +276,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 			initRealmChain(t, apiRepo, userRepo, s.ConvoyApp.A.Cache)
 
-			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/organisations/%s/projects/%s/dashboard/summary?startDate=%s&endDate=%s&type=%s", s.DefaultOrg.UID, tc.urlQuery.projectID, tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type), nil)
+			req := httptest.NewRequest(tc.method, fmt.Sprintf("/organisations/%s/projects/%s/dashboard/summary?startDate=%s&endDate=%s&type=%s", s.DefaultOrg.UID, tc.urlQuery.projectID, tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type), nil)
 			err = s.AuthenticatorFn(req, s.Router)
 			require.NoError(s.T(), err)
 
@@ -300,6 +300,7 @@ func TestDashboardIntegrationTestSuiteTest(t *testing.T) {
 func verifyMatch(t *testing.T, w httptest.ResponseRecorder) {
 	g := goldie.New(
 		t,
+		goldie.WithFixtureDir("../testdata"),
 		goldie.WithDiffEngine(goldie.ColoredDiff),
 	)
 	g.Assert(t, t.Name(), w.Body.Bytes())

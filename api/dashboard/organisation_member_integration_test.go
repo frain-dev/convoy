@@ -88,7 +88,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 	require.NoError(s.T(), err)
 
 	// Arrange.
-	url := fmt.Sprintf("/ui/organisations/%s/members", s.DefaultOrg.UID)
+	url := fmt.Sprintf("/organisations/%s/members", s.DefaultOrg.UID)
 	req := createRequest(http.MethodGet, url, "", nil)
 
 	err = s.AuthenticatorFn(req, s.Router)
@@ -135,7 +135,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{Type: auth.RoleAdmin})
 
 	// Arrange.
-	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
+	url := fmt.Sprintf("/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
 	req := createRequest(http.MethodGet, url, "", nil)
 
 	err = s.AuthenticatorFn(req, s.Router)
@@ -178,7 +178,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 	require.NoError(s.T(), err)
 
 	// Arrange.
-	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
+	url := fmt.Sprintf("/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
 
 	body := serialize(`{"role":{ "type":"api", "project":"%s"}}`, s.DefaultProject.UID)
 	req := createRequest(http.MethodPut, url, "", body)
@@ -216,7 +216,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember()
 	require.NoError(s.T(), err)
 
 	// Arrange.
-	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
+	url := fmt.Sprintf("/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
 	req := createRequest(http.MethodDelete, url, "", nil)
 
 	err = s.AuthenticatorFn(req, s.Router)
@@ -243,7 +243,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_CannotDeleteOrganisationOw
 	require.NoError(s.T(), err)
 
 	// Arrange.
-	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
+	url := fmt.Sprintf("/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
 	req := createRequest(http.MethodDelete, url, "", nil)
 
 	err = s.AuthenticatorFn(req, s.Router)

@@ -19,8 +19,8 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/testdb"
-	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jaswdr/faker"
@@ -30,14 +30,13 @@ import (
 
 type EndpointIntegrationTestSuite struct {
 	suite.Suite
-	DB             database.Database
-	Router         http.Handler
-	ConvoyApp      *DashboardHandler
-	DefaultOrg     *datastore.Organisation
-	DefaultProject *datastore.Project
-	DefaultUser    *datastore.User
-	APIKey         string
-	PersonalAPIKey string
+	DB              database.Database
+	Router          http.Handler
+	ConvoyApp       *DashboardHandler
+	AuthenticatorFn AuthenticatorFn
+	DefaultOrg      *datastore.Organisation
+	DefaultProject  *datastore.Project
+	DefaultUser     *datastore.User
 }
 
 func (s *EndpointIntegrationTestSuite) SetupSuite() {
@@ -48,6 +47,7 @@ func (s *EndpointIntegrationTestSuite) SetupSuite() {
 
 func (s *EndpointIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
+	s.DB = getDB()
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -58,23 +58,16 @@ func (s *EndpointIntegrationTestSuite) SetupTest() {
 	s.DefaultOrg = org
 
 	// Setup Default Project.
-	s.DefaultProject, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, s.DefaultOrg.UID)
+	s.DefaultProject, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, org.UID)
 	require.NoError(s.T(), err)
 
-	// Seed Auth
-	role := auth.Role{
-		Type:    auth.RoleAdmin,
-		Project: s.DefaultProject.UID,
-	}
-
-	_, s.APIKey, err = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
-	require.NoError(s.T(), err)
-
-	_, s.PersonalAPIKey, err = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test-personal-key", string(datastore.PersonalKey), s.DefaultUser.UID)
-	require.NoError(s.T(), err)
+	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
+		Username: user.Email,
+		Password: testdb.DefaultUserPassword,
+	})
 
 	// Setup Config.
-	err = config.LoadConfig("../testdata/Auth_Config/full-convoy.json")
+	err = config.LoadConfig("../testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
@@ -92,8 +85,11 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoint_EndpointNotFound() {
 	expectedStatusCode := http.StatusNotFound
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s", s.DefaultProject.UID, appID)
-	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/endpoints/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, appID)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -111,37 +107,11 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", true, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s", s.DefaultProject.UID, endpointID)
-	req := createRequest(http.MethodGet, url, s.APIKey, nil)
-	w := httptest.NewRecorder()
-
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var endpoint datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &endpoint)
-
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
-	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/endpoints/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointID)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
-	require.Equal(s.T(), endpoint.Title, dbEndpoint.Title)
-}
 
-func (s *EndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint_WithPersonalAPIKey() {
-	endpointID := "123456789"
-	expectedStatusCode := http.StatusOK
-
-	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", true, datastore.ActiveEndpointStatus)
-
-	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s", s.DefaultProject.UID, endpointID)
-	req := createRequest(http.MethodGet, url, s.PersonalAPIKey, nil)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -171,8 +141,11 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints() {
 	require.NoError(s.T(), err)
 
 	// Arrange.
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints", s.DefaultProject.UID)
-	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/endpoints", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -186,31 +159,6 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints() {
 	parseResponse(s.T(), w.Result(), &resp)
 	require.Equal(s.T(), totalEndpoints, len(resp.Content.([]interface{})))
 
-}
-
-func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints_WithPersonalAPIKey() {
-	rand.Seed(time.Now().UnixNano())
-	totalEndpoints := rand.Intn(5) + 1
-	expectedStatusCode := http.StatusOK
-
-	// Just Before.
-	_ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.DB, s.DefaultProject, totalEndpoints)
-
-	// Arrange.
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints", s.DefaultProject.UID)
-	req := createRequest(http.MethodGet, url, s.PersonalAPIKey, nil)
-	w := httptest.NewRecorder()
-
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var resp pagedResponse
-	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), totalEndpoints, len(resp.Content.([]interface{})))
 }
 
 func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
@@ -223,14 +171,17 @@ func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint() {
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints", s.DefaultProject.UID)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/endpoints", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
 	plainBody := fmt.Sprintf(`{
 		"name": "%s",
 		"description": "test endpoint",
 		"url": "%s"
 	}`, endpointTitle, endpointURL)
 	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	req := createRequest(http.MethodPost, url, "", body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -250,49 +201,20 @@ func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint() {
 	require.Equal(s.T(), endpointURL, dbEndpoint.TargetURL)
 }
 
-func (s *EndpointIntegrationTestSuite) Test_CreateEndpointWithPersonalAPIKey() {
-	endpointTitle := fmt.Sprintf("Test-%s", ulid.Make().String())
-	endpointURL := faker.New().Internet().URL()
-	expectedStatusCode := http.StatusCreated
-
-	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints", s.DefaultProject.UID)
-	body := serialize(`{
-		"name": "%s",
-		"description": "test endpoint",
-		"url": "%s"
-		}`, endpointTitle, endpointURL)
-	req := createRequest(http.MethodPost, url, s.PersonalAPIKey, body)
-	w := httptest.NewRecorder()
-
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var endpoint datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &endpoint)
-
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
-	dbApp, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, s.DefaultProject.UID)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), endpointTitle, dbApp.Title)
-	require.Equal(s.T(), endpointURL, dbApp.TargetURL)
-}
-
 func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_NoName() {
 	endpointTitle := ""
 	expectedStatusCode := http.StatusBadRequest
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints", s.DefaultProject.UID)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/endpoints", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
 	plainBody := fmt.Sprintf(`{
 		"name": "%s"
 	}`, endpointTitle)
 	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	req := createRequest(http.MethodPost, url, "", body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -310,10 +232,13 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_InvalidRequest() {
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", true, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s", s.DefaultProject.UID, endpointID)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/endpoints/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointID)
 	plainBody := ""
 	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPut, url, s.APIKey, body)
+	req := createRequest(http.MethodPut, url, "", body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -334,7 +259,7 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s", s.DefaultProject.UID, endpointID)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/endpoints/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointID)
 	plainBody := fmt.Sprintf(`{
 		"name": "%s",
 		"description": "test endpoint",
@@ -342,55 +267,14 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 		"support_email": "%s"
  	}`, title, endpointURL, supportEmail)
 	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPut, url, s.APIKey, body)
-	w := httptest.NewRecorder()
-
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var endpoint datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &endpoint)
-
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
-	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	req := createRequest(http.MethodPut, url, "", body)
+	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
-	require.Equal(s.T(), title, dbEndpoint.Title)
-	require.Equal(s.T(), supportEmail, dbEndpoint.SupportEmail)
-	require.Equal(s.T(), endpointURL, dbEndpoint.TargetURL)
-}
 
-func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_WithPersonalAPIKey() {
-	title := "random-name"
-	supportEmail := "10xengineer@getconvoy.io"
-	isDisabled := randBool()
-	endpointID := ulid.Make().String()
-	expectedStatusCode := http.StatusAccepted
-	endpointURL := faker.New().Internet().URL()
-
-	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", isDisabled, datastore.ActiveEndpointStatus)
-
-	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s", s.DefaultProject.UID, endpointID)
-	body := serialize(`{
-		"name": "%s",
-		"description": "test endpoint",
-		"support_email": "%s",
-		"url": "%s",
-		"is_disabled": %t
-	}`, title, supportEmail, endpointURL, !isDisabled)
-	req := createRequest(http.MethodPut, url, s.PersonalAPIKey, body)
 	w := httptest.NewRecorder()
 
 	// Act.
 	s.Router.ServeHTTP(w, req)
-
-	fmt.Println(w.Body.String())
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -416,8 +300,11 @@ func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint() {
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", true, datastore.ActiveEndpointStatus)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s", s.DefaultProject.UID, endpointID)
-	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/endpoints/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointID)
+	req := createRequest(http.MethodDelete, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -428,31 +315,7 @@ func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint() {
 
 	// Deep Assert.
 	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
-	_, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
-	require.Error(s.T(), err, datastore.ErrEndpointNotFound)
-}
-
-func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint_WithPersonalAPIKey() {
-	endpointID := ulid.Make().String()
-	expectedStatusCode := http.StatusOK
-
-	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", true, datastore.ActiveEndpointStatus)
-
-	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s", s.DefaultProject.UID, endpointID)
-	req := createRequest(http.MethodDelete, url, s.PersonalAPIKey, nil)
-	w := httptest.NewRecorder()
-
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
-	_, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	_, err = endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.Error(s.T(), err, datastore.ErrEndpointNotFound)
 }
 
@@ -464,7 +327,7 @@ func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Authentic
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints", s.DefaultProject.UID)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/endpoints", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
 	plainBody := fmt.Sprintf(`{
 		"name": "%s",
 		"url": "%s",
@@ -479,7 +342,10 @@ func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Authentic
 		}
 	}`, title, endpointURL, secret)
 	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	req := createRequest(http.MethodPost, url, "", body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -511,12 +377,15 @@ func (s *EndpointIntegrationTestSuite) Test_ExpireEndpointSecret() {
 	_, _ = testdb.SeedEndpointSecret(s.ConvoyApp.A.DB, e, secret)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/expire_secret", s.DefaultProject.UID, endpointID)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/endpoints/%s/expire_secret", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointID)
 	plainBody := fmt.Sprintf(`{
 		"expiration": %d
 	}`, expiration)
 	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPut, url, s.APIKey, body)
+	req := createRequest(http.MethodPut, url, "", body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -543,8 +412,11 @@ func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_ActiveStatus() 
 	require.NoError(s.T(), err)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.UID, endpointId)
-	req := createRequest(http.MethodPut, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointId)
+	req := createRequest(http.MethodPut, url, "", nil)
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -571,8 +443,11 @@ func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_InactiveStatus(
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.InactiveEndpointStatus)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.UID, endpointId)
-	req := createRequest(http.MethodPut, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointId)
+	req := createRequest(http.MethodPut, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -599,8 +474,11 @@ func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_PendingStatus()
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.PendingEndpointStatus)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.UID, endpointId)
-	req := createRequest(http.MethodPut, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointId)
+	req := createRequest(http.MethodPut, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -617,8 +495,11 @@ func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_UnknownStatus()
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.EndpointStatus("abc"))
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.UID, endpointID)
-	req := createRequest(http.MethodPut, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointID)
+	req := createRequest(http.MethodPut, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -636,8 +517,11 @@ func (s *EndpointIntegrationTestSuite) Test_PauseEndpoint_PausedStatus() {
 	require.NoError(s.T(), err)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/pause", s.DefaultProject.UID, endpointId)
-	req := createRequest(http.MethodPut, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/endpoints/%s/pause", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointId)
+	req := createRequest(http.MethodPut, url, "", nil)
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -665,8 +549,11 @@ func (s *EndpointIntegrationTestSuite) Test_PauseEndpoint_ActiveStatus() {
 	require.NoError(s.T(), err)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/pause", s.DefaultProject.UID, endpointId)
-	req := createRequest(http.MethodPut, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/endpoints/%s/pause", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointId)
+	req := createRequest(http.MethodPut, url, "", nil)
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act

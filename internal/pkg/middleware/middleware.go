@@ -449,27 +449,6 @@ func headerFields(header http.Header) map[string]string {
 	return headerField
 }
 
-var guestRoutes = []string{
-	"/ui/auth/login",
-	"/ui/auth/token/refresh",
-	"/ui/organisations/process_invite",
-	"/ui/users/token",
-	"/ui/users/forgot-password",
-	"/ui/users/reset-password",
-	"/ui/users/verify_email",
-	"/ui/auth/register",
-}
-
-func ShouldAuthRoute(r *http.Request) bool {
-	for _, route := range guestRoutes {
-		if r.URL.Path == route {
-			return false
-		}
-	}
-
-	return true
-}
-
 func EnsurePeriod(start time.Time, end time.Time) error {
 	if start.Unix() > end.Unix() {
 		return errors.New("startDate cannot be greater than endDate")

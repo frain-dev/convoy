@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/testdb"
-	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -26,13 +26,13 @@ import (
 
 type SourceIntegrationTestSuite struct {
 	suite.Suite
-	DB             database.Database
-	Router         http.Handler
-	ConvoyApp      *DashboardHandler
-	DefaultOrg     *datastore.Organisation
-	DefaultProject *datastore.Project
-	DefaultUser    *datastore.User
-	APIKey         string
+	DB              database.Database
+	Router          http.Handler
+	ConvoyApp       *DashboardHandler
+	AuthenticatorFn AuthenticatorFn
+	DefaultOrg      *datastore.Organisation
+	DefaultProject  *datastore.Project
+	DefaultUser     *datastore.User
 }
 
 func (s *SourceIntegrationTestSuite) SetupSuite() {
@@ -43,6 +43,7 @@ func (s *SourceIntegrationTestSuite) SetupSuite() {
 
 func (s *SourceIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
+	s.DB = getDB()
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -53,24 +54,20 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 	s.DefaultOrg = org
 
 	// Setup Default Project.
-	s.DefaultProject, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, s.DefaultOrg.UID)
+	s.DefaultProject, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, org.UID)
 	require.NoError(s.T(), err)
 
-	// Seed Auth
-	role := auth.Role{
-		Type:    auth.RoleAdmin,
-		Project: s.DefaultProject.UID,
-	}
-
-	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
+	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
+		Username: user.Email,
+		Password: testdb.DefaultUserPassword,
+	})
 
 	// Setup Config.
-	err = config.LoadConfig("../testdata/Auth_Config/full-convoy.json")
+	err = config.LoadConfig("../testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	// orgRepo := postgres.NewOrgRepo(s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -83,8 +80,12 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceByID_SourceNotFound() {
 	sourceID := "123"
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultProject.UID, sourceID)
-	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/sources/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, sourceID)
+	req := createRequest(http.MethodGet, url, "", nil)
+
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -101,8 +102,12 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 	_, _ = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, "", "", nil)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultProject.UID, sourceID)
-	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/sources/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, sourceID)
+	req := createRequest(http.MethodGet, url, "", nil)
+
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -134,8 +139,12 @@ func (s *SourceIntegrationTestSuite) Test_GetSource_ValidSources() {
 	}
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultProject.UID)
-	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/sources", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
+	req := createRequest(http.MethodGet, url, "", nil)
+
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -166,9 +175,13 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource() {
 		}
 	}`
 
-	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultProject.UID)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/sources", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	req := createRequest(http.MethodPost, url, "", body)
+
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -186,34 +199,6 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource() {
 	require.Equal(s.T(), datastore.VerifierType("hmac"), source.Verifier.Type)
 }
 
-func (s *SourceIntegrationTestSuite) Test_CreateSource_RedirectToProjects() {
-	bodyStr := `{
-		"name": "convoy-prod",
-		"type": "http",
-		"is_disabled": false,
-		"verifier": {
-			"type": "hmac",
-			"hmac": {
-				"encoding": "base64",
-				"header": "X-Convoy-Header",
-				"hash": "SHA512",
-				"secret": "convoy-secret"
-			}
-		}
-	}`
-
-	url := fmt.Sprintf("/api/v1/sources?groupID=%s", s.DefaultProject.UID)
-	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusTemporaryRedirect, w.Code)
-}
-
 func (s *SourceIntegrationTestSuite) Test_CreateSource_NoName() {
 	bodyStr := `{
 		"type": "http",
@@ -229,9 +214,13 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_NoName() {
 		}
 	}`
 
-	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultProject.UID)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/sources", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	req := createRequest(http.MethodPost, url, "", body)
+
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -257,10 +246,14 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_InvalidSourceType() {
 		}
 	}`
 
-	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultProject.UID)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/sources", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	req := createRequest(http.MethodPost, url, "", body)
+
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -279,7 +272,7 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 	_, _ = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, "", "", nil)
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultProject.UID, sourceID)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/sources/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, sourceID)
 	bodyStr := fmt.Sprintf(`{
 		"name": "%s",
 		"type": "http",
@@ -296,7 +289,11 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 	}`, name, !isDisabled)
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPut, url, s.APIKey, body)
+	req := createRequest(http.MethodPut, url, "", body)
+
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -324,8 +321,12 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 	_, _ = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, "", "", nil)
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultProject.UID, sourceID)
-	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/sources/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, sourceID)
+	req := createRequest(http.MethodDelete, url, "", nil)
+
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -336,7 +337,7 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 
 	// Deep Assert.
 	sourceRepo := postgres.NewSourceRepo(s.ConvoyApp.A.DB)
-	_, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultProject.UID, sourceID)
+	_, err = sourceRepo.FindSourceByID(context.Background(), s.DefaultProject.UID, sourceID)
 	require.ErrorIs(s.T(), err, datastore.ErrSourceNotFound)
 }
 

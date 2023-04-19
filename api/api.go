@@ -9,7 +9,6 @@ import (
 
 	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/api/dashboard"
-	"github.com/frain-dev/convoy/api/policies"
 	portalapi "github.com/frain-dev/convoy/api/portal-api"
 	"github.com/frain-dev/convoy/api/public"
 	"github.com/frain-dev/convoy/api/types"
@@ -132,39 +131,5 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 }
 
 func (a *ApplicationHandler) RegisterPolicy() error {
-	var err error
-
-	// Register Organisation Policy.
-	err = a.A.Authz.RegisterPolicy(func() authz.Policy {
-		po := &policies.OrganisationPolicy{
-			BasePolicy:             authz.NewBasePolicy(),
-			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
-		}
-
-		po.SetRule("get", authz.RuleFunc(po.Get))
-		po.SetRule("update", authz.RuleFunc(po.Update))
-		po.SetRule("delete", authz.RuleFunc(po.Delete))
-
-		return po
-	}())
-
-	if err != nil {
-		return err
-	}
-
-	err = a.A.Authz.RegisterPolicy(func() authz.Policy {
-		po := &policies.ProjectPolicy{
-			BasePolicy:             authz.NewBasePolicy(),
-			OrganisationRepo:       postgres.NewOrgRepo(a.A.DB),
-			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
-		}
-
-		po.SetRule("get", authz.RuleFunc(po.Get))
-		po.SetRule("update", authz.RuleFunc(po.Update))
-		po.SetRule("delete", authz.RuleFunc(po.Delete))
-
-		return po
-	}())
-
-	return err
+	return a.A.Authz.RegisterPolicy()
 }

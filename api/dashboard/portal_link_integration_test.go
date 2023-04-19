@@ -17,13 +17,11 @@ import (
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/testdb"
-	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/jaswdr/faker"
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -31,14 +29,13 @@ import (
 
 type PortalLinkIntegrationTestSuite struct {
 	suite.Suite
-	DB             database.Database
-	Router         http.Handler
-	ConvoyApp      *DashboardHandler
-	DefaultOrg     *datastore.Organisation
-	DefaultProject *datastore.Project
-	DefaultUser    *datastore.User
-	APIKey         string
-	PersonalAPIKey string
+	DB              database.Database
+	Router          http.Handler
+	ConvoyApp       *DashboardHandler
+	AuthenticatorFn AuthenticatorFn
+	DefaultOrg      *datastore.Organisation
+	DefaultProject  *datastore.Project
+	DefaultUser     *datastore.User
 }
 
 func (s *PortalLinkIntegrationTestSuite) SetupSuite() {
@@ -49,6 +46,7 @@ func (s *PortalLinkIntegrationTestSuite) SetupSuite() {
 
 func (s *PortalLinkIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
+	s.DB = getDB()
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -56,21 +54,19 @@ func (s *PortalLinkIntegrationTestSuite) SetupTest() {
 
 	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, user)
 	require.NoError(s.T(), err)
+	s.DefaultOrg = org
 
 	// Setup Default Project.
 	s.DefaultProject, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, org.UID)
 	require.NoError(s.T(), err)
 
-	// Seed Auth
-	role := auth.Role{
-		Type:    auth.RoleAdmin,
-		Project: s.DefaultProject.UID,
-	}
-
-	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
+	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
+		Username: user.Email,
+		Password: testdb.DefaultUserPassword,
+	})
 
 	// Setup Config.
-	err = config.LoadConfig("../testdata/Auth_Config/full-convoy.json")
+	err = config.LoadConfig("../testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
@@ -89,13 +85,18 @@ func (s *PortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/portal-links", s.DefaultProject.UID)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/portal-links",
+		s.DefaultProject.OrganisationID,
+		s.DefaultProject.UID)
 	plainBody := fmt.Sprintf(`{
 		"name": "test_portal_link",
 		"endpoints": ["%s", "%s"]
 	}`, endpoint1.UID, endpoint2.UID)
 	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	req := createRequest(http.MethodPost, url, "", body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
 	w := httptest.NewRecorder()
 
 	// Act
@@ -123,8 +124,10 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_PortalLinkNotFou
 	portalLinkID := "123"
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/portal-links/%s", s.DefaultProject.UID, portalLinkID)
-	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/portal-links/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, portalLinkID)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -140,8 +143,10 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_ValidPortalLink(
 	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/portal-links/%s", s.DefaultProject.UID, portalLink.UID)
-	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/portal-links/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, portalLink.UID)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -180,8 +185,10 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLinks() 
 	}
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/portal-links", s.DefaultProject.UID)
-	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/portal-links", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -213,8 +220,10 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLinks_Fi
 	_, _ = testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
 
 	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/portal-links?endpointId=%s", s.DefaultProject.UID, endpoint.UID)
-	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/portal-links?endpointId=%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpoint.UID)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -235,14 +244,16 @@ func (s *PortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 	endpoint2, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
 	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint1.UID})
 
-	url := fmt.Sprintf("/api/v1/projects/%s/portal-links/%s", s.DefaultProject.UID, portalLink.UID)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/portal-links/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, portalLink.UID)
 	bodyStr := fmt.Sprintf(`{
 		    "name": "test_portal_link",
 			"endpoints": ["%s"]
 		}`, endpoint2.UID)
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPut, url, s.APIKey, body)
+	req := createRequest(http.MethodPut, url, "", body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
 
 	// Act
@@ -272,8 +283,10 @@ func (s *PortalLinkIntegrationTestSuite) Test_RevokePortalLink() {
 	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint1.UID})
 
 	// Arrange Request.
-	url := fmt.Sprintf("/api/v1/projects/%s/portal-links/%s/revoke", s.DefaultProject.UID, portalLink.UID)
-	req := createRequest(http.MethodPut, url, s.APIKey, nil)
+	url := fmt.Sprintf("/organisations/%s/projects/%s/portal-links/%s/revoke", s.DefaultProject.OrganisationID, s.DefaultProject.UID, portalLink.UID)
+	req := createRequest(http.MethodPut, url, "", nil)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
 
 	// Act.
@@ -284,170 +297,8 @@ func (s *PortalLinkIntegrationTestSuite) Test_RevokePortalLink() {
 
 	// Deep Assert.
 	plRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
-	_, err := plRepo.FindPortalLinkByID(context.Background(), s.DefaultProject.UID, portalLink.UID)
+	_, err = plRepo.FindPortalLinkByID(context.Background(), s.DefaultProject.UID, portalLink.UID)
 	require.ErrorIs(s.T(), err, datastore.ErrPortalLinkNotFound)
-}
-
-func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpoints() {
-	// Just Before
-	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
-	require.NoError(s.T(), err)
-
-	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
-	require.NoError(s.T(), err)
-
-	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint1.UID, endpoint2.UID})
-	require.NoError(s.T(), err)
-
-	// Arrange Request
-	url := fmt.Sprintf("/portal-api/endpoints?token=%s", portalLink.Token)
-	req := createRequest(http.MethodGet, url, "", nil)
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusOK, w.Code)
-
-	// Deep Assert
-	var resp []datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), 2, len(resp))
-}
-
-func (s *PortalLinkIntegrationTestSuite) Test_CreatePortalLinkEndpoint() {
-	endpointTitle := fmt.Sprintf("Test-%s", ulid.Make().String())
-	endpointURL := faker.New().Internet().URL()
-	expectedStatusCode := http.StatusCreated
-
-	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
-	require.NoError(s.T(), err)
-
-	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint1.UID})
-	require.NoError(s.T(), err)
-
-	// Arrange Request
-	url := fmt.Sprintf("/portal-api/endpoints?token=%s", portalLink.Token)
-	plainBody := fmt.Sprintf(`{
-		"name": "%s",
-		"description": "test endpoint",
-		"url": "%s"
-	}`, endpointTitle, endpointURL)
-
-	body := strings.NewReader(plainBody)
-	req := createRequest(http.MethodPost, url, "", body)
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert
-	var endpoint datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &endpoint)
-
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
-	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, s.DefaultProject.UID)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), endpointTitle, dbEndpoint.Title)
-	require.Equal(s.T(), endpointURL, dbEndpoint.TargetURL)
-
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
-	dbPLink, err := portalLinkRepo.FindPortalLinkByID(context.Background(), s.DefaultProject.UID, portalLink.UID)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), 2, len(dbPLink.Endpoints))
-}
-
-func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpointEvents() {
-	expectedStatusCode := http.StatusOK
-
-	// Just Before.
-	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
-	require.NoError(s.T(), err)
-
-	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
-	require.NoError(s.T(), err)
-
-	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint1.UID, endpoint2.UID})
-	require.NoError(s.T(), err)
-
-	for i := 0; i < 5; i++ {
-		_, err = testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint1, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
-		require.NoError(s.T(), err)
-
-	}
-
-	_, err = testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint2, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
-	require.NoError(s.T(), err)
-
-	req := createRequest(http.MethodGet, fmt.Sprintf("/portal-api/events?token=%s", portalLink.Token), "", nil)
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	var respEvents []datastore.Event
-	resp := &pagedResponse{Content: &respEvents}
-
-	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), 6, len(respEvents))
-}
-
-func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpointSubscriptions() {
-	expectedStatusCode := http.StatusOK
-
-	// Just Before.
-	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
-	require.NoError(s.T(), err)
-
-	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
-	require.NoError(s.T(), err)
-
-	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint2.UID})
-	require.NoError(s.T(), err)
-
-	vc := &datastore.VerifierConfig{
-		Type: datastore.BasicAuthVerifier,
-		BasicAuth: &datastore.BasicAuth{
-			UserName: "Convoy",
-			Password: "Convoy",
-		},
-	}
-
-	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", vc)
-	require.NoError(s.T(), err)
-
-	// seed subscriptions
-	for i := 0; i < 5; i++ {
-		_, err = testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, source, endpoint1, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
-		require.NoError(s.T(), err)
-
-	}
-
-	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, source, endpoint2, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
-	require.NoError(s.T(), err)
-
-	req := createRequest(http.MethodGet, fmt.Sprintf("/portal-api/subscriptions?token=%s", portalLink.Token), "", nil)
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	var respSubs []datastore.Subscription
-	resp := &pagedResponse{Content: &respSubs}
-
-	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), 1, len(respSubs))
-	require.Equal(s.T(), sub.UID, respSubs[0].UID)
 }
 
 func TestPortalLinkIntegrationTestSuite(t *testing.T) {

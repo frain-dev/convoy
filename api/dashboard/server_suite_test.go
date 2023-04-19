@@ -16,10 +16,12 @@ import (
 	"testing"
 	"time"
 
+	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/util"
 
@@ -110,16 +112,25 @@ func buildServer() *DashboardHandler {
 	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
 
-	return NewDashboardHandler(
-		types.App{
-			DB:       db,
-			Queue:    queue,
-			Logger:   logger,
-			Tracer:   tracer,
-			Cache:    cache,
-			Limiter:  limiter,
-			Searcher: searcher,
-		})
+	az, _ := authz.NewAuthz(&authz.AuthzOpts{
+		AuthCtxKey: authz.AuthCtxType(middleware.AuthUserCtx),
+	})
+
+	app := &types.App{
+		DB:       db,
+		Queue:    queue,
+		Logger:   logger,
+		Tracer:   tracer,
+		Cache:    cache,
+		Limiter:  limiter,
+		Searcher: searcher,
+		Authz:    az,
+	}
+	_ = app.RegisterPolicy()
+
+	ah := NewDashboardHandler(app)
+
+	return ah
 }
 
 func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, cache cache.Cache) {
@@ -161,7 +172,7 @@ func authenticateRequest(auth *models.LoginUser) AuthenticatorFn {
 			return err
 		}
 
-		req := createRequest(http.MethodPost, "/ui/auth/login", "", bytes.NewBuffer(body))
+		req := createRequest(http.MethodPost, "/auth/login", "", bytes.NewBuffer(body))
 
 		w := httptest.NewRecorder()
 

@@ -76,7 +76,7 @@ func (c *ConfigurationIntegrationTestSuite) Test_LoadConfiguration() {
 	require.NoError(c.T(), err)
 
 	// Arrange Request
-	url := "/ui/configuration"
+	url := "/configuration"
 	req := createRequest(http.MethodGet, url, "", nil)
 	err = c.AuthenticatorFn(req, c.Router)
 	require.NoError(c.T(), err)
@@ -107,7 +107,7 @@ func (c *ConfigurationIntegrationTestSuite) Test_CreateConfiguration() {
 	}`
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/ui/configuration", "", body)
+	req := createRequest(http.MethodPost, "/configuration", "", body)
 	err := c.AuthenticatorFn(req, c.Router)
 	require.NoError(c.T(), err)
 	w := httptest.NewRecorder()
@@ -143,7 +143,7 @@ func (c *ConfigurationIntegrationTestSuite) Test_UpdateConfiguration() {
 	}`
 
 	body := serialize(bodyStr)
-	req := createRequest(http.MethodPut, "/ui/configuration", "", body)
+	req := createRequest(http.MethodPut, "/configuration", "", body)
 	err = c.AuthenticatorFn(req, c.Router)
 	require.NoError(c.T(), err)
 	w := httptest.NewRecorder()

@@ -61,7 +61,7 @@ func getConfig() config.Configuration {
 	}
 }
 
-func getDB() database.Database {
+func GetDB() database.Database {
 	db, err := postgres.NewDB(getConfig())
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect to db: %v", err))
@@ -93,7 +93,7 @@ func getQueueOptions(name string) (queue.QueueOptions, error) {
 	return opts, nil
 }
 
-func buildServer() *ApplicationHandler {
+func BuildServer() *ApplicationHandler {
 	var tracer tracer.Tracer
 	var logger *log.Logger
 	var qOpts queue.QueueOptions
@@ -110,7 +110,7 @@ func buildServer() *ApplicationHandler {
 	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
 
-	return NewApplicationHandler(
+	ah := NewApplicationHandler(
 		types.App{
 			DB:       db,
 			Queue:    queue,
@@ -120,6 +120,10 @@ func buildServer() *ApplicationHandler {
 			Limiter:  limiter,
 			Searcher: searcher,
 		})
+
+	ah.RegisterPolicy()
+
+	return ah
 }
 
 func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, cache cache.Cache) {
