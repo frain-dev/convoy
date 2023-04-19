@@ -123,6 +123,7 @@ type (
 	KeyType          string
 	PubSubType       string
 	PubSubHandler    func(*Source, string) error
+	MetaEventType    string
 )
 
 type EndpointAuthenticationType string
@@ -132,6 +133,11 @@ const (
 	RestApiSource  SourceType = "rest_api"
 	PubSubSource   SourceType = "pub_sub"
 	DBChangeStream SourceType = "db_change_stream"
+)
+
+const (
+	HTTPMetaEvent   MetaEventType = "http"
+	PubSubMetaEvent MetaEventType = "pub_sub"
 )
 
 const (
@@ -468,6 +474,7 @@ type ProjectConfig struct {
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
 	Strategy                 *StrategyConfiguration        `json:"strategy" db:"strategy"`
 	Signature                *SignatureConfiguration       `json:"signature" db:"signature"`
+	MetaEvent                *MetaEventConfiguration       `json:"meta_event" db:"meta_event"`
 }
 
 func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {
@@ -520,6 +527,20 @@ type SignatureVersion struct {
 	Hash      string       `json:"hash,omitempty" db:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
 	Encoding  EncodingType `json:"encoding" db:"encoding" valid:"required~please provide a valid signature header"`
 	CreatedAt time.Time    `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
+}
+
+type MetaEventConfiguration struct {
+	IsEnabled bool                   `json:"is_enabled" db:"is_enabled"`
+	Type      MetaEventType          `json:"type" db:"type"`
+	EventType []string               `json:"event_type" db:"event_type"`
+	URL       string                 `json:"url" db:"url"`
+	PubSub    *MetaEventPubSubConfig `json:"pub_sub" db:"pub_sub"`
+}
+
+type MetaEventPubSubConfig struct {
+	Type   PubSubType          `json:"type" db:"type"`
+	Sqs    *SQSPubSubConfig    `json:"sqs" db:"sqs"`
+	Google *GooglePubSubConfig `json:"google" db:"google"`
 }
 
 type RetentionPolicyConfiguration struct {
@@ -1280,6 +1301,21 @@ type DeprecatedEndpoint struct {
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+type MetaEvent struct {
+	UID       string          `json:"uid" db:"id"`
+	ProjectID string          `json:"project_id" db:"project_id"`
+	EventType string          `json:"event_type" db:"event_type"`
+	Data      json.RawMessage `json:"data" db:"data"`
+	Status    string          `json:"status" db:"status"`
+
+	RetryCount    int `json:"retry_count" db:"retry_count"`
+	MaxRetryCount int `json:"max_retry_count" db:"max_retry_count"`
+
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 type Password struct {

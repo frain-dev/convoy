@@ -158,3 +158,8 @@ type PortalLinkRepository interface {
 type ExportRepository interface {
 	ExportRecords(ctx context.Context, tableName, projectID string, createdAt time.Time) (json.RawMessage, int64, error)
 }
+
+type MetaEventRepository interface {
+	CreateMetaEvent(context.Context, *MetaEvent) error
+	LoadMetaEventsPaged(ctx context.Context, projectID string, f *Filter) ([]MetaEvent, PaginationData, error)
+}
