@@ -128,9 +128,8 @@ func buildServer() *DashboardHandler {
 	}
 	_ = app.RegisterPolicy()
 
-	ah := NewDashboardHandler(app)
+	return NewDashboardHandler(app)
 
-	return ah
 }
 
 func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, cache cache.Cache) {

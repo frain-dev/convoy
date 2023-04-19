@@ -913,7 +913,7 @@ info:
   title: Convoy API Reference
   version: 0.9.0
 paths:
-  /api/v1/projects:
+  /v1/projects:
     get:
       consumes:
       - application/json
@@ -1034,7 +1034,7 @@ paths:
       summary: Create a project
       tags:
       - Projects
-  /api/v1/projects/{projectID}:
+  /v1/projects/{projectID}:
     delete:
       consumes:
       - application/json
@@ -1203,7 +1203,7 @@ paths:
       summary: Update a project
       tags:
       - Projects
-  /api/v1/projects/{projectID}/endpoints:
+  /v1/projects/{projectID}/endpoints:
     get:
       consumes:
       - application/json
@@ -1320,7 +1320,7 @@ paths:
       summary: Create an endpoint
       tags:
       - Endpoints
-  /api/v1/projects/{projectID}/endpoints/{endpointID}:
+  /v1/projects/{projectID}/endpoints/{endpointID}:
     delete:
       consumes:
       - application/json
@@ -1504,7 +1504,7 @@ paths:
       summary: Update an endpoint
       tags:
       - Endpoints
-  /api/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret:
+  /v1/projects/{projectID}/endpoints/{endpointID}/expire_secret:
     put:
       consumes:
       - application/json
@@ -1570,7 +1570,7 @@ paths:
       summary: Roll endpoint secret
       tags:
       - Endpoints
-  /api/v1/projects/{projectID}/endpoints/{endpointID}/pause:
+  /v1/projects/{projectID}/endpoints/{endpointID}/pause:
     put:
       consumes:
       - application/json
@@ -1631,7 +1631,7 @@ paths:
       summary: Pause endpoint
       tags:
       - Endpoints
-  /api/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status:
+  /v1/projects/{projectID}/endpoints/{endpointID}/toggle_status:
     put:
       consumes:
       - application/json
@@ -1692,7 +1692,7 @@ paths:
       summary: Toggle endpoint status
       tags:
       - Endpoints
-  /api/v1/projects/{projectID}/eventdeliveries:
+  /v1/projects/{projectID}/eventdeliveries:
     get:
       consumes:
       - application/json
@@ -1793,7 +1793,7 @@ paths:
       summary: List all event deliveries
       tags:
       - Event Deliveries
-  /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}:
+  /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}:
     get:
       consumes:
       - application/json
@@ -1858,7 +1858,7 @@ paths:
       summary: Retrieve an event delivery
       tags:
       - Event Deliveries
-  /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
+  /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
     get:
       consumes:
       - application/json
@@ -1920,7 +1920,7 @@ paths:
       summary: List delivery attempts
       tags:
       - Delivery Attempts
-  /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
+  /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
     get:
       consumes:
       - application/json
@@ -1985,7 +1985,7 @@ paths:
       summary: Retrieve a delivery attempt
       tags:
       - Delivery Attempts
-  /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend:
+  /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend:
     put:
       consumes:
       - application/json
@@ -2050,7 +2050,7 @@ paths:
       summary: Retry event delivery
       tags:
       - Event Deliveries
-  /api/v1/projects/{projectID}/eventdeliveries/batchretry:
+  /v1/projects/{projectID}/eventdeliveries/batchretry:
     post:
       consumes:
       - application/json
@@ -2118,7 +2118,7 @@ paths:
       summary: Batch retry event delivery
       tags:
       - Event Deliveries
-  /api/v1/projects/{projectID}/eventdeliveries/forceresend:
+  /v1/projects/{projectID}/eventdeliveries/forceresend:
     post:
       consumes:
       - application/json
@@ -2186,7 +2186,7 @@ paths:
       summary: Force retry event delivery
       tags:
       - Event Deliveries
-  /api/v1/projects/{projectID}/events:
+  /v1/projects/{projectID}/events:
     get:
       consumes:
       - application/json
@@ -2346,7 +2346,7 @@ paths:
       summary: Create an event
       tags:
       - Events
-  /api/v1/projects/{projectID}/events/{eventID}:
+  /v1/projects/{projectID}/events/{eventID}:
     get:
       consumes:
       - application/json
@@ -2411,7 +2411,7 @@ paths:
       summary: Retrieve an event
       tags:
       - Events
-  /api/v1/projects/{projectID}/events/{eventID}/replay:
+  /v1/projects/{projectID}/events/{eventID}/replay:
     put:
       consumes:
       - application/json
@@ -2476,7 +2476,7 @@ paths:
       summary: Replay event
       tags:
       - Events
-  /api/v1/projects/{projectID}/events/batchreplay:
+  /v1/projects/{projectID}/events/batchreplay:
     post:
       consumes:
       - application/json
@@ -2548,7 +2548,7 @@ paths:
       summary: Batch replay events
       tags:
       - Events
-  /api/v1/projects/{projectID}/events/fanout:
+  /v1/projects/{projectID}/events/fanout:
     post:
       consumes:
       - application/json
@@ -2615,7 +2615,7 @@ paths:
       summary: Fan out an event
       tags:
       - Events
-  /api/v1/projects/{projectID}/portal-links:
+  /v1/projects/{projectID}/portal-links:
     get:
       consumes:
       - application/json
@@ -2749,7 +2749,7 @@ paths:
       summary: Create a portal link
       tags:
       - Portal Links
-  /api/v1/projects/{projectID}/portal-links/{portalLinkID}:
+  /v1/projects/{projectID}/portal-links/{portalLinkID}:
     get:
       consumes:
       - application/json
@@ -2874,7 +2874,7 @@ paths:
       summary: Update a portal link
       tags:
       - Portal Links
-  /api/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke:
+  /v1/projects/{projectID}/portal-links/{portalLinkID}/revoke:
     put:
       consumes:
       - application/json
@@ -2934,7 +2934,7 @@ paths:
       summary: Revoke a portal link
       tags:
       - Portal Links
-  /api/v1/projects/{projectID}/sources:
+  /v1/projects/{projectID}/sources:
     get:
       consumes:
       - application/json
@@ -3068,7 +3068,7 @@ paths:
       summary: Create a source
       tags:
       - Sources
-  /api/v1/projects/{projectID}/sources/{sourceID}:
+  /v1/projects/{projectID}/sources/{sourceID}:
     delete:
       consumes:
       - application/json
@@ -3252,7 +3252,7 @@ paths:
       summary: Update a source
       tags:
       - Sources
-  /api/v1/projects/{projectID}/subscriptions:
+  /v1/projects/{projectID}/subscriptions:
     get:
       consumes:
       - application/json
@@ -3397,7 +3397,7 @@ paths:
       summary: Create a subscription
       tags:
       - Subscriptions
-  /api/v1/projects/{projectID}/subscriptions/{subscriptionID}:
+  /v1/projects/{projectID}/subscriptions/{subscriptionID}:
     delete:
       consumes:
       - application/json
@@ -3581,7 +3581,7 @@ paths:
       summary: Update a subscription
       tags:
       - Subscriptions
-  /api/v1/projects/{projectID}/subscriptions/test_filter:
+  /v1/projects/{projectID}/subscriptions/test_filter:
     post:
       consumes:
       - application/json

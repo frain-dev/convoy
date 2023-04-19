@@ -31,7 +31,7 @@ func createSourceService(a *PublicHandler) *services.SourceService {
 // @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/sources [post]
+// @Router /v1/projects/{projectID}/sources [post]
 func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 	var newSource models.Source
 	if err := util.ReadJSON(r, &newSource); err != nil {
@@ -80,7 +80,7 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/sources/{sourceID} [get]
+// @Router /v1/projects/{projectID}/sources/{sourceID} [get]
 func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -123,7 +123,7 @@ func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/sources/{sourceID} [put]
+// @Router /v1/projects/{projectID}/sources/{sourceID} [put]
 func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 	var sourceUpdate models.UpdateSource
 	err := util.ReadJSON(r, &sourceUpdate)
@@ -179,7 +179,7 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/sources/{sourceID} [delete]
+// @Router /v1/projects/{projectID}/sources/{sourceID} [delete]
 func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -216,7 +216,7 @@ func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.SourceResponse}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/sources [get]
+// @Router /v1/projects/{projectID}/sources [get]
 func (a *PublicHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	project, err := a.retrieveProject(r)

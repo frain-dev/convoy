@@ -21,7 +21,7 @@
     "host": "dashboard.getconvoy.io",
     "basePath": "/",
     "paths": {
-        "/api/v1/projects": {
+        "/v1/projects": {
             "get": {
                 "security": [
                     {
@@ -243,7 +243,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}": {
+        "/v1/projects/{projectID}": {
             "get": {
                 "security": [
                     {
@@ -557,7 +557,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/endpoints": {
+        "/v1/projects/{projectID}/endpoints": {
             "get": {
                 "security": [
                     {
@@ -773,7 +773,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/endpoints/{endpointID}": {
+        "/v1/projects/{projectID}/endpoints/{endpointID}": {
             "get": {
                 "security": [
                     {
@@ -1108,7 +1108,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret": {
+        "/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret": {
             "put": {
                 "security": [
                     {
@@ -1227,7 +1227,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/endpoints/{endpointID}/pause": {
+        "/v1/projects/{projectID}/endpoints/{endpointID}/pause": {
             "put": {
                 "security": [
                     {
@@ -1337,7 +1337,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status": {
+        "/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status": {
             "put": {
                 "security": [
                     {
@@ -1447,7 +1447,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/eventdeliveries": {
+        "/v1/projects/{projectID}/eventdeliveries": {
             "get": {
                 "security": [
                     {
@@ -1628,7 +1628,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/eventdeliveries/batchretry": {
+        "/v1/projects/{projectID}/eventdeliveries/batchretry": {
             "post": {
                 "security": [
                     {
@@ -1755,7 +1755,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/eventdeliveries/forceresend": {
+        "/v1/projects/{projectID}/eventdeliveries/forceresend": {
             "post": {
                 "security": [
                     {
@@ -1882,7 +1882,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}": {
+        "/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}": {
             "get": {
                 "security": [
                     {
@@ -2004,7 +2004,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts": {
+        "/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts": {
             "get": {
                 "security": [
                     {
@@ -2117,7 +2117,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}": {
+        "/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}": {
             "get": {
                 "security": [
                     {
@@ -2234,7 +2234,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend": {
+        "/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend": {
             "put": {
                 "security": [
                     {
@@ -2356,7 +2356,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/events": {
+        "/v1/projects/{projectID}/events": {
             "get": {
                 "security": [
                     {
@@ -2650,7 +2650,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/events/batchreplay": {
+        "/v1/projects/{projectID}/events/batchreplay": {
             "post": {
                 "security": [
                     {
@@ -2783,7 +2783,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/events/fanout": {
+        "/v1/projects/{projectID}/events/fanout": {
             "post": {
                 "security": [
                     {
@@ -2907,7 +2907,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/events/{eventID}": {
+        "/v1/projects/{projectID}/events/{eventID}": {
             "get": {
                 "security": [
                     {
@@ -3029,7 +3029,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/events/{eventID}/replay": {
+        "/v1/projects/{projectID}/events/{eventID}/replay": {
             "put": {
                 "security": [
                     {
@@ -3151,7 +3151,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/portal-links": {
+        "/v1/projects/{projectID}/portal-links": {
             "get": {
                 "security": [
                     {
@@ -3397,7 +3397,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/portal-links/{portalLinkID}": {
+        "/v1/projects/{projectID}/portal-links/{portalLinkID}": {
             "get": {
                 "security": [
                     {
@@ -3624,7 +3624,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke": {
+        "/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke": {
             "put": {
                 "security": [
                     {
@@ -3734,7 +3734,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/sources": {
+        "/v1/projects/{projectID}/sources": {
             "get": {
                 "security": [
                     {
@@ -3980,7 +3980,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/sources/{sourceID}": {
+        "/v1/projects/{projectID}/sources/{sourceID}": {
             "get": {
                 "security": [
                     {
@@ -4315,7 +4315,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/subscriptions": {
+        "/v1/projects/{projectID}/subscriptions": {
             "get": {
                 "security": [
                     {
@@ -4582,7 +4582,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/subscriptions/test_filter": {
+        "/v1/projects/{projectID}/subscriptions/test_filter": {
             "post": {
                 "security": [
                     {
@@ -4694,7 +4694,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/subscriptions/{subscriptionID}": {
+        "/v1/projects/{projectID}/subscriptions/{subscriptionID}": {
             "get": {
                 "security": [
                     {

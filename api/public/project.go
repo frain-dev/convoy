@@ -33,7 +33,7 @@ func createProjectService(a *PublicHandler) *services.ProjectService {
 // @Success 200 {object} util.ServerResponse{data=datastore.Project}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID} [get]
+// @Router /v1/projects/{projectID} [get]
 func (a *PublicHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -71,7 +71,7 @@ func (a *PublicHandler) GetProjectStatistics(w http.ResponseWriter, r *http.Requ
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID} [delete]
+// @Router /v1/projects/{projectID} [delete]
 func (a *PublicHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -111,28 +111,28 @@ func (a *PublicHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} util.ServerResponse{data=datastore.Project}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects [post]
+// @Router /v1/projects [post]
 func (a *PublicHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
+	org, err := a.retrieveHeadlessOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	member, err := a.retrieveHeadlessMembership(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+		return
+	}
+
 	var newProject models.Project
-	err := util.ReadJSON(r, &newProject)
+	err = util.ReadJSON(r, &newProject)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	org, err := a.retrieveOrganisation(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	member, err := a.retrieveMembership(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
 	projectService := createProjectService(a)
-
 	project, apiKey, err := projectService.CreateProject(r.Context(), &newProject, org, member)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -158,7 +158,7 @@ func (a *PublicHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} util.ServerResponse{data=datastore.Project}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID} [put]
+// @Router /v1/projects/{projectID} [put]
 func (a *PublicHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	var update models.UpdateProject
 	err := util.ReadJSON(r, &update)
@@ -194,9 +194,9 @@ func (a *PublicHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} util.ServerResponse{data=[]datastore.Project}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects [get]
+// @Router /v1/projects [get]
 func (a *PublicHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
-	org, err := a.retrieveOrganisation(r)
+	org, err := a.retrieveHeadlessOrganisation(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -212,4 +212,26 @@ func (a *PublicHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Projects fetched successfully", projects, http.StatusOK))
+}
+
+func (a *PublicHandler) retrieveHeadlessOrganisation(r *http.Request) (*datastore.Organisation, error) {
+	orgID := r.URL.Query().Get("orgID")
+	orgRepo := postgres.NewOrgRepo(a.A.DB)
+
+	return orgRepo.FetchOrganisationByID(r.Context(), orgID)
+}
+
+func (a *PublicHandler) retrieveHeadlessMembership(r *http.Request) (*datastore.OrganisationMember, error) {
+	org, err := a.retrieveHeadlessOrganisation(r)
+	if err != nil {
+		return &datastore.OrganisationMember{}, err
+	}
+
+	user, err := a.retrieveUser(r)
+	if err != nil {
+		return &datastore.OrganisationMember{}, err
+	}
+
+	orgMemberRepo := postgres.NewOrgMemberRepo(a.A.DB)
+	return orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
 }

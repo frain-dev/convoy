@@ -37,7 +37,7 @@ func createSubscriptionService(a *PublicHandler) *services.SubcriptionService {
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Subscription}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/subscriptions [get]
+// @Router /v1/projects/{projectID}/subscriptions [get]
 func (a *PublicHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	project, err := a.retrieveProject(r)
@@ -95,7 +95,7 @@ func (a *PublicHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request)
 // @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [get]
+// @Router /v1/projects/{projectID}/subscriptions/{subscriptionID} [get]
 func (a *PublicHandler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 	subId := chi.URLParam(r, "subscriptionID")
 	project, err := a.retrieveProject(r)
@@ -125,7 +125,7 @@ func (a *PublicHandler) GetSubscription(w http.ResponseWriter, r *http.Request) 
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Subscription}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/subscriptions [post]
+// @Router /v1/projects/{projectID}/subscriptions [post]
 func (a *PublicHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -162,7 +162,7 @@ func (a *PublicHandler) CreateSubscription(w http.ResponseWriter, r *http.Reques
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [delete]
+// @Router /v1/projects/{projectID}/subscriptions/{subscriptionID} [delete]
 func (a *PublicHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -199,7 +199,7 @@ func (a *PublicHandler) DeleteSubscription(w http.ResponseWriter, r *http.Reques
 // @Success 200 {object} util.ServerResponse{data=datastore.Subscription}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/subscriptions/{subscriptionID} [put]
+// @Router /v1/projects/{projectID}/subscriptions/{subscriptionID} [put]
 func (a *PublicHandler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 	var update models.UpdateSubscription
 	err := util.ReadJSON(r, &update)
@@ -242,7 +242,7 @@ func (a *PublicHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.
 // @Success 200 {object} util.ServerResponse{data=boolean}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/subscriptions/test_filter [post]
+// @Router /v1/projects/{projectID}/subscriptions/test_filter [post]
 func (a *PublicHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request) {
 	var test models.TestFilter
 	err := util.ReadJSON(r, &test)

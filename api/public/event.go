@@ -44,7 +44,7 @@ func createEventService(a *PublicHandler) *services.EventService {
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/events [post]
+// @Router /v1/projects/{projectID}/events [post]
 func (a *PublicHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	var newMessage models.Event
 	err := util.ReadJSON(r, &newMessage)
@@ -80,7 +80,7 @@ func (a *PublicHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/events/fanout [post]
+// @Router /v1/projects/{projectID}/events/fanout [post]
 func (a *PublicHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Request) {
 	var newMessage models.FanoutEvent
 	err := util.ReadJSON(r, &newMessage)
@@ -116,7 +116,7 @@ func (a *PublicHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/events/{eventID}/replay [put]
+// @Router /v1/projects/{projectID}/events/{eventID}/replay [put]
 func (a *PublicHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -153,7 +153,7 @@ func (a *PublicHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/events/batchreplay [post]
+// @Router /v1/projects/{projectID}/events/batchreplay [post]
 func (a *PublicHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 	p, err := a.retrieveProject(r)
 	if err != nil {
@@ -235,11 +235,11 @@ func (a *PublicHandler) CountAffectedEvents(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/events/{eventID} [get]
+// @Router /v1/projects/{projectID}/events/{eventID} [get]
 func (a *PublicHandler) GetEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	event, err := a.retrieveEvent(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 		return
 	}
 
@@ -258,11 +258,11 @@ func (a *PublicHandler) GetEndpointEvent(w http.ResponseWriter, r *http.Request)
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID} [get]
+// @Router /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID} [get]
 func (a *PublicHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
 	eventDelivery, err := a.retrieveEventDelivery(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 		return
 	}
 
@@ -281,7 +281,7 @@ func (a *PublicHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request)
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend [put]
+// @Router /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend [put]
 func (a *PublicHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -317,7 +317,7 @@ func (a *PublicHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/eventdeliveries/batchretry [post]
+// @Router /v1/projects/{projectID}/eventdeliveries/batchretry [post]
 func (a *PublicHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
 	status := make([]datastore.EventDeliveryStatus, 0)
 
@@ -374,7 +374,7 @@ func (a *PublicHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.R
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/eventdeliveries/forceresend [post]
+// @Router /v1/projects/{projectID}/eventdeliveries/forceresend [post]
 func (a *PublicHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	eventDeliveryIDs := models.IDs{}
 
@@ -417,7 +417,7 @@ func (a *PublicHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *htt
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Event{data=Stub}}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/events [get]
+// @Router /v1/projects/{projectID}/events [get]
 func (a *PublicHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 
 	cfg, err := config.Get()
@@ -494,7 +494,7 @@ func (a *PublicHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.EventDelivery{data=Stub}}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/eventdeliveries [get]
+// @Router /v1/projects/{projectID}/eventdeliveries [get]
 func (a *PublicHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
 	status := make([]datastore.EventDeliveryStatus, 0)
 	for _, s := range r.URL.Query()["status"] {

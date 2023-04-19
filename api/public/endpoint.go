@@ -43,7 +43,7 @@ type pagedResponse struct {
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints [post]
+// @Router /v1/projects/{projectID}/endpoints [post]
 func (a *PublicHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.Endpoint
 	err := util.ReadJSON(r, &e)
@@ -79,11 +79,11 @@ func (a *PublicHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints/{endpointID} [get]
+// @Router /v1/projects/{projectID}/endpoints/{endpointID} [get]
 func (a *PublicHandler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint, err := a.retrieveEndpoint(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 		return
 	}
 
@@ -100,7 +100,7 @@ func (a *PublicHandler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} util.ServerResponse{data=[]datastore.Endpoint}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints [get]
+// @Router /v1/projects/{projectID}/endpoints [get]
 func (a *PublicHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -138,7 +138,7 @@ func (a *PublicHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints/{endpointID} [put]
+// @Router /v1/projects/{projectID}/endpoints/{endpointID} [put]
 func (a *PublicHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.UpdateEndpoint
 
@@ -181,7 +181,7 @@ func (a *PublicHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints/{endpointID} [delete]
+// @Router /v1/projects/{projectID}/endpoints/{endpointID} [delete]
 func (a *PublicHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint, err := a.retrieveEndpoint(r)
 	if err != nil {
@@ -218,7 +218,7 @@ func (a *PublicHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret [put]
+// @Router /v1/projects/{projectID}/endpoints/{endpointID}/expire_secret [put]
 func (a *PublicHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 	var e *models.ExpireSecret
 	err := util.ReadJSON(r, &e)
@@ -261,7 +261,7 @@ func (a *PublicHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status [put]
+// @Router /v1/projects/{projectID}/endpoints/{endpointID}/toggle_status [put]
 func (a *PublicHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -291,7 +291,7 @@ func (a *PublicHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.Requ
 // @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/endpoints/{endpointID}/pause [put]
+// @Router /v1/projects/{projectID}/endpoints/{endpointID}/pause [put]
 func (a *PublicHandler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {

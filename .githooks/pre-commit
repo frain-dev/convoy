@@ -5,7 +5,7 @@
 
 echo $(pwd)
 
-changed=$(git status -s | grep api/)
+changed=$(git status -s | grep api/public)
 
 echo "$changed"
 

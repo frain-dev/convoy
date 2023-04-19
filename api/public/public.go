@@ -22,7 +22,7 @@ type PublicHandler struct {
 	A      types.App
 }
 
-func NewPublicHandler(a types.App) *PublicHandler {
+func NewPublicHandler(a *types.App) *PublicHandler {
 	m := middleware.NewMiddleware(&middleware.CreateMiddleware{
 		Cache:             a.Cache,
 		Logger:            a.Logger,
@@ -54,6 +54,7 @@ func NewPublicHandler(a types.App) *PublicHandler {
 			Logger:   a.Logger,
 			Tracer:   a.Tracer,
 			Limiter:  a.Limiter,
+			Authz:    a.Authz,
 		},
 	}
 }
@@ -66,13 +67,13 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 		r.Use(a.M.JsonResponse)
 		r.Use(a.M.RequireAuth())
 
-		r.With(a.M.Pagination).Get("/organisations", a.GetOrganisationsPaged)
+		r.With(a.M.Pagination, RequirePersonalAPIKeys(a)).Get("/organisations", a.GetOrganisationsPaged)
 
 		r.Route("/projects", func(projectRouter chi.Router) {
 
-			// These routes require a Personal API Key or JWT Token to work
-			projectRouter.Get("/", a.GetProjects)
-			projectRouter.Post("/", a.CreateProject)
+			// These routes require a Personal API Key.
+			projectRouter.With(RequirePersonalAPIKeys(a)).Get("/", a.GetProjects)
+			projectRouter.With(RequirePersonalAPIKeys(a)).Post("/", a.CreateProject)
 
 			projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 				projectSubRouter.Use(RequireProjectAccess(a))
@@ -90,6 +91,7 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 						e.Delete("/", a.DeleteEndpoint)
 						e.Put("/expire_secret", a.ExpireSecret)
 						e.Put("/toggle_status", a.ToggleEndpointStatus)
+						e.Put("/pause", a.PauseEndpoint)
 					})
 				})
 
@@ -134,7 +136,6 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 				})
 
 				projectSubRouter.Route("/sources", func(sourceRouter chi.Router) {
-
 					sourceRouter.Post("/", a.CreateSource)
 					sourceRouter.Get("/{sourceID}", a.GetSourceByID)
 					sourceRouter.With(a.M.Pagination).Get("/", a.LoadSourcesPaged)
@@ -143,7 +144,6 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 				})
 
 				projectSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
-
 					portalLinkRouter.Post("/", a.CreatePortalLink)
 					portalLinkRouter.Get("/{portalLinkID}", a.GetPortalLinkByID)
 					portalLinkRouter.With(a.M.Pagination).Get("/", a.LoadPortalLinksPaged)
@@ -226,7 +226,22 @@ func RequireProjectAccess(a *PublicHandler) func(next http.Handler) http.Handler
 
 			err = a.A.Authz.Authorize(r.Context(), "project.get", project)
 			if err != nil {
-				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func RequirePersonalAPIKeys(a *PublicHandler) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := middleware.GetAuthUserFromContext(r.Context())
+			_, ok := authUser.Metadata.(*datastore.User)
+			if !ok {
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
 			}
 

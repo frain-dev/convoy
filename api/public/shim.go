@@ -12,12 +12,12 @@ import (
 )
 
 var redirectRoutes = []string{
-	"/api/v1/applications",
-	"/api/v1/events",
-	"/api/v1/eventdeliveries",
-	"/api/v1/security",
-	"/api/v1/subscriptions",
-	"/api/v1/sources",
+	"/v1/applications",
+	"/v1/events",
+	"/v1/eventdeliveries",
+	"/v1/security",
+	"/v1/subscriptions",
+	"/v1/sources",
 }
 
 func (a *PublicHandler) RedirectToProjects(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +51,7 @@ func (a *PublicHandler) RedirectToProjects(w http.ResponseWriter, r *http.Reques
 
 	if ok := contains(redirectRoutes, resourcePrefix); ok {
 		forwardedPath := strings.Join(rElems[3:], "/")
-		redirectURL := fmt.Sprintf("/api/v1/projects/%s/%s?%s", projectID, forwardedPath, r.URL.RawQuery)
+		redirectURL := fmt.Sprintf("/v1/projects/%s/%s?%s", projectID, forwardedPath, r.URL.RawQuery)
 
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 	}

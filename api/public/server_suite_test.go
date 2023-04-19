@@ -16,10 +16,12 @@ import (
 	"testing"
 	"time"
 
+	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/util"
 
@@ -110,16 +112,23 @@ func buildServer() *PublicHandler {
 	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
 
-	return NewPublicHandler(
-		types.App{
-			DB:       db,
-			Queue:    queue,
-			Logger:   logger,
-			Tracer:   tracer,
-			Cache:    cache,
-			Limiter:  limiter,
-			Searcher: searcher,
-		})
+	az, _ := authz.NewAuthz(&authz.AuthzOpts{
+		AuthCtxKey: authz.AuthCtxType(middleware.AuthUserCtx),
+	})
+
+	app := &types.App{
+		DB:       db,
+		Queue:    queue,
+		Logger:   logger,
+		Tracer:   tracer,
+		Cache:    cache,
+		Limiter:  limiter,
+		Searcher: searcher,
+		Authz:    az,
+	}
+	_ = app.RegisterPolicy()
+
+	return NewPublicHandler(app)
 }
 
 func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, cache cache.Cache) {

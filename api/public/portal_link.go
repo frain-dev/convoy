@@ -33,7 +33,7 @@ func createPortalLinkService(a *PublicHandler) *services.PortalLinkService {
 // @Success 200 {object} util.ServerResponse{data=models.PortalLinkResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/portal-links [post]
+// @Router /v1/projects/{projectID}/portal-links [post]
 func (a *PublicHandler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 	var newPortalLink models.PortalLink
 	if err := util.ReadJSON(r, &newPortalLink); err != nil {
@@ -75,7 +75,7 @@ func (a *PublicHandler) CreatePortalLink(w http.ResponseWriter, r *http.Request)
 // @Success 200 {object} util.ServerResponse{data=models.PortalLinkResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/portal-links/{portalLinkID} [get]
+// @Router /v1/projects/{projectID}/portal-links/{portalLinkID} [get]
 func (a *PublicHandler) GetPortalLinkByID(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -112,7 +112,7 @@ func (a *PublicHandler) GetPortalLinkByID(w http.ResponseWriter, r *http.Request
 // @Success 200 {object} util.ServerResponse{data=models.PortalLinkResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/portal-links/{portalLinkID} [put]
+// @Router /v1/projects/{projectID}/portal-links/{portalLinkID} [put]
 func (a *PublicHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 	var updatePortalLink models.PortalLink
 	err := util.ReadJSON(r, &updatePortalLink)
@@ -161,7 +161,7 @@ func (a *PublicHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Request)
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke [put]
+// @Router /v1/projects/{projectID}/portal-links/{portalLinkID}/revoke [put]
 func (a *PublicHandler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -198,7 +198,7 @@ func (a *PublicHandler) RevokePortalLink(w http.ResponseWriter, r *http.Request)
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.PortalLinkResponse}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/portal-links [get]
+// @Router /v1/projects/{projectID}/portal-links [get]
 func (a *PublicHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 	project, err := a.retrieveProject(r)

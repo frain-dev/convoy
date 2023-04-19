@@ -1357,7 +1357,7 @@
 	},
 	"openapi": "3.0.3",
 	"paths": {
-		"/api/v1/projects": {
+		"/v1/projects": {
 			"get": {
 				"description": "This endpoint fetches projects",
 				"parameters": [
@@ -1608,7 +1608,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}": {
+		"/v1/projects/{projectID}": {
 			"delete": {
 				"description": "This endpoint deletes a project using its id",
 				"parameters": [
@@ -1961,7 +1961,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/endpoints": {
+		"/v1/projects/{projectID}/endpoints": {
 			"get": {
 				"description": "This endpoint fetches an endpoints",
 				"parameters": [
@@ -2204,7 +2204,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/endpoints/{endpointID}": {
+		"/v1/projects/{projectID}/endpoints/{endpointID}": {
 			"delete": {
 				"description": "This endpoint deletes an endpoint",
 				"parameters": [
@@ -2584,7 +2584,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret": {
+		"/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret": {
 			"put": {
 				"description": "This endpoint expires and re-generates the endpoint secret.",
 				"parameters": [
@@ -2720,7 +2720,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/endpoints/{endpointID}/pause": {
+		"/v1/projects/{projectID}/endpoints/{endpointID}/pause": {
 			"put": {
 				"description": "This endpoint toggles an endpoint status between the active and paused states",
 				"parameters": [
@@ -2844,7 +2844,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status": {
+		"/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status": {
 			"put": {
 				"description": "This endpoint toggles an endpoint status between the active and inactive statetes",
 				"parameters": [
@@ -2968,7 +2968,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/eventdeliveries": {
+		"/v1/projects/{projectID}/eventdeliveries": {
 			"get": {
 				"description": "This endpoint retrieves all event deliveries paginated.",
 				"parameters": [
@@ -3177,7 +3177,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/eventdeliveries/batchretry": {
+		"/v1/projects/{projectID}/eventdeliveries/batchretry": {
 			"post": {
 				"description": "This endpoint batch retries multiple event deliveries at once.",
 				"parameters": [
@@ -3319,7 +3319,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/eventdeliveries/forceresend": {
+		"/v1/projects/{projectID}/eventdeliveries/forceresend": {
 			"post": {
 				"description": "This endpoint enables you retry a previously successful event delivery",
 				"parameters": [
@@ -3461,7 +3461,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}": {
+		"/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}": {
 			"get": {
 				"description": "This endpoint fetches an event delivery.",
 				"parameters": [
@@ -3597,7 +3597,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts": {
+		"/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts": {
 			"get": {
 				"description": "This endpoint fetches an app message's delivery attempts",
 				"parameters": [
@@ -3724,7 +3724,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}": {
+		"/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}": {
 			"get": {
 				"description": "This endpoint fetches an app event delivery attempt",
 				"parameters": [
@@ -3857,7 +3857,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend": {
+		"/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend": {
 			"put": {
 				"description": "This endpoint retries an event delivery.",
 				"parameters": [
@@ -3993,7 +3993,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/events": {
+		"/v1/projects/{projectID}/events": {
 			"get": {
 				"description": "This endpoint fetches app events with pagination",
 				"parameters": [
@@ -4328,7 +4328,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/events/batchreplay": {
+		"/v1/projects/{projectID}/events/batchreplay": {
 			"post": {
 				"description": "This endpoint replays multiple events at once.",
 				"parameters": [
@@ -4479,7 +4479,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/events/fanout": {
+		"/v1/projects/{projectID}/events/fanout": {
 			"post": {
 				"description": "This endpoint uses the owner_id to fan out an event to multiple endpoints.",
 				"parameters": [
@@ -4618,7 +4618,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/events/{eventID}": {
+		"/v1/projects/{projectID}/events/{eventID}": {
 			"get": {
 				"description": "This endpoint retrieves an event",
 				"parameters": [
@@ -4754,7 +4754,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/events/{eventID}/replay": {
+		"/v1/projects/{projectID}/events/{eventID}/replay": {
 			"put": {
 				"description": "This endpoint replays an event afresh assuming it is a new event.",
 				"parameters": [
@@ -4890,7 +4890,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/portal-links": {
+		"/v1/projects/{projectID}/portal-links": {
 			"get": {
 				"description": "This endpoint fetches multiple portal links",
 				"parameters": [
@@ -5169,7 +5169,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/portal-links/{portalLinkID}": {
+		"/v1/projects/{projectID}/portal-links/{portalLinkID}": {
 			"get": {
 				"description": "This endpoint retrieves a portal link by its id.",
 				"parameters": [
@@ -5427,7 +5427,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke": {
+		"/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke": {
 			"put": {
 				"description": "This endpoint revokes a portal link",
 				"parameters": [
@@ -5551,7 +5551,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/sources": {
+		"/v1/projects/{projectID}/sources": {
 			"get": {
 				"description": "This endpoint fetches multiple sources",
 				"parameters": [
@@ -5830,7 +5830,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/sources/{sourceID}": {
+		"/v1/projects/{projectID}/sources/{sourceID}": {
 			"delete": {
 				"description": "This endpoint deletes a source",
 				"parameters": [
@@ -6210,7 +6210,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/subscriptions": {
+		"/v1/projects/{projectID}/subscriptions": {
 			"get": {
 				"description": "This endpoint fetches all the subscriptions",
 				"parameters": [
@@ -6512,7 +6512,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/subscriptions/test_filter": {
+		"/v1/projects/{projectID}/subscriptions/test_filter": {
 			"post": {
 				"description": "This endpoint validates that a filter will match a certain payload structure.",
 				"parameters": [
@@ -6639,7 +6639,7 @@
 				]
 			}
 		},
-		"/api/v1/projects/{projectID}/subscriptions/{subscriptionID}": {
+		"/v1/projects/{projectID}/subscriptions/{subscriptionID}": {
 			"delete": {
 				"description": "This endpoint deletes a subscription",
 				"parameters": [

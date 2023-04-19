@@ -22,7 +22,7 @@ import (
 // @Success 200 {object} util.ServerResponse{data=datastore.DeliveryAttempt}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID} [get]
+// @Router /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID} [get]
 func (a *PublicHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 	eventDelivery, err := a.retrieveEventDelivery(r)
 	if err != nil {
@@ -53,7 +53,7 @@ func (a *PublicHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Reques
 // @Success 200 {object} util.ServerResponse{data=[]datastore.DeliveryAttempt}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
-// @Router /api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts [get]
+// @Router /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts [get]
 func (a *PublicHandler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
 	eventDelivery, err := a.retrieveEventDelivery(r)
 	if err != nil {
