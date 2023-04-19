@@ -169,21 +169,6 @@ func (a *PublicHandler) retrieveOrganisation(r *http.Request) (*datastore.Organi
 	return orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
 }
 
-func (a *PublicHandler) retrieveMembership(r *http.Request) (*datastore.OrganisationMember, error) {
-	org, err := a.retrieveOrganisation(r)
-	if err != nil {
-		return &datastore.OrganisationMember{}, err
-	}
-
-	user, err := a.retrieveUser(r)
-	if err != nil {
-		return &datastore.OrganisationMember{}, err
-	}
-
-	orgMemberRepo := postgres.NewOrgMemberRepo(a.A.DB)
-	return orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
-}
-
 func (a *PublicHandler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 	projectID := chi.URLParam(r, "projectID")
 

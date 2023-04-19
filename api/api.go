@@ -131,5 +131,5 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 }
 
 func (a *ApplicationHandler) RegisterPolicy() error {
-	return a.A.Authz.RegisterPolicy()
+	return a.A.RegisterPolicy()
 }
