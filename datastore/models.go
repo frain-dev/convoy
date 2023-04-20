@@ -505,6 +505,14 @@ func (p *ProjectConfig) GetRetentionPolicyConfig() RetentionPolicyConfiguration 
 	return RetentionPolicyConfiguration{}
 }
 
+func (p *ProjectConfig) GetMetaEventConfig() MetaEventConfiguration {
+	if p.MetaEvent != nil {
+		return *p.MetaEvent
+	}
+
+	return MetaEventConfiguration{}
+}
+
 type RateLimitConfiguration struct {
 	Count    int    `json:"count" db:"count"`
 	Duration uint64 `json:"duration" db:"duration"`
@@ -530,17 +538,11 @@ type SignatureVersion struct {
 }
 
 type MetaEventConfiguration struct {
-	IsEnabled bool                   `json:"is_enabled" db:"is_enabled"`
-	Type      MetaEventType          `json:"type" db:"type"`
-	EventType []string               `json:"event_type" db:"event_type"`
-	URL       string                 `json:"url" db:"url"`
-	PubSub    *MetaEventPubSubConfig `json:"pub_sub" db:"pub_sub"`
-}
-
-type MetaEventPubSubConfig struct {
-	Type   PubSubType          `json:"type" db:"type"`
-	Sqs    *SQSPubSubConfig    `json:"sqs" db:"sqs"`
-	Google *GooglePubSubConfig `json:"google" db:"google"`
+	IsEnabled bool           `json:"is_enabled" db:"is_enabled"`
+	Type      MetaEventType  `json:"type" db:"type" valid:"optional, in(http|pub_sub)~unsupported meta event type"`
+	EventType pq.StringArray `json:"event_type" db:"event_type"`
+	URL       string         `json:"url" db:"url"`
+	PubSub    *PubSubConfig  `json:"pub_sub" db:"pub_sub"`
 }
 
 type RetentionPolicyConfiguration struct {
@@ -569,25 +571,6 @@ type EventDeliveryFilter struct {
 	CreatedAtStart int64  `json:"created_at_start" bson:"created_at_start"`
 	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
 }
-
-// func (g *ProjectFilter) WithNamesTrimmed() *ProjectFilter {
-// 	f := ProjectFilter{OrgID: g.OrgID, Names: []string{}}
-
-// 	for _, s := range g.Names {
-// 		s = strings.TrimSpace(s)
-// 		if len(s) == 0 {
-// 			continue
-// 		}
-// 		f.Names = append(f.Names, s)
-// 	}
-
-// 	return &f
-// }
-
-// func (g *ProjectFilter) ToGenericMap() map[string]interface{} {
-// 	m := map[string]interface{}{"name": g.Names}
-// 	return m
-// }
 
 func (o *Project) IsDeleted() bool { return o.DeletedAt.Valid }
 
