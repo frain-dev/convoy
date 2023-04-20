@@ -72,11 +72,6 @@ func (s *PortalLinkIntegrationTestSuite) SetupTest() {
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
 
-func (s *PortalLinkIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
-}
-
 func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpoints() {
 	// Just Before
 	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
@@ -89,7 +84,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpoints() {
 	require.NoError(s.T(), err)
 
 	// Arrange Request
-	url := fmt.Sprintf("/portal-api/endpoints?token=%s", portalLink.Token)
+	url := fmt.Sprintf("/endpoints?token=%s", portalLink.Token)
 	req := createRequest(http.MethodGet, url, "", nil)
 	w := httptest.NewRecorder()
 
@@ -103,6 +98,11 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpoints() {
 	var resp []datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &resp)
 	require.Equal(s.T(), 2, len(resp))
+}
+
+func (s *PortalLinkIntegrationTestSuite) TearDownTest() {
+	testdb.PurgeDB(s.T(), s.DB)
+	metrics.Reset()
 }
 
 func TestPortalLinkIntegrationTestSuite(t *testing.T) {

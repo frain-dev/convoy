@@ -177,7 +177,7 @@ func (a *PortalLinkHandler) CountAffectedEvents(w http.ResponseWriter, r *http.R
 func (a *PortalLinkHandler) GetEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	event, err := a.retrieveEvent(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 		return
 	}
 
@@ -187,7 +187,7 @@ func (a *PortalLinkHandler) GetEndpointEvent(w http.ResponseWriter, r *http.Requ
 func (a *PortalLinkHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
 	eventDelivery, err := a.retrieveEventDelivery(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 		return
 	}
 

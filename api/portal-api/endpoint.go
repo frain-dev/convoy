@@ -59,7 +59,7 @@ func (a *PortalLinkHandler) CreateEndpoint(w http.ResponseWriter, r *http.Reques
 func (a *PortalLinkHandler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint, err := a.retrieveEndpoint(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 		return
 	}
 

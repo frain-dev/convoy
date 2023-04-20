@@ -21,7 +21,7 @@ type PortalLinkHandler struct {
 	A      types.App
 }
 
-func NewPortalLinkHandler(a types.App) *PortalLinkHandler {
+func NewPortalLinkHandler(a *types.App) *PortalLinkHandler {
 	m := middleware.NewMiddleware(&middleware.CreateMiddleware{
 		Cache:             a.Cache,
 		Logger:            a.Logger,
@@ -69,7 +69,6 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 
 		endpointRouter.Route("/{endpointID}", func(endpointSubRouter chi.Router) {
 			endpointSubRouter.Get("/", a.GetEndpoint)
-			endpointSubRouter.Put("/", a.UpdateEndpoint)
 		})
 	})
 

@@ -61,7 +61,7 @@ func getConfig() config.Configuration {
 	}
 }
 
-func GetDB() database.Database {
+func getDB() database.Database {
 	db, err := postgres.NewDB(getConfig())
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect to db: %v", err))
@@ -93,7 +93,7 @@ func getQueueOptions(name string) (queue.QueueOptions, error) {
 	return opts, nil
 }
 
-func BuildServer() *ApplicationHandler {
+func buildServer() *ApplicationHandler {
 	var tracer tracer.Tracer
 	var logger *log.Logger
 	var qOpts queue.QueueOptions
