@@ -8,6 +8,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/analytics"
 	route "github.com/frain-dev/convoy/api"
+	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -171,7 +172,7 @@ func StartConvoyServer(a *cli.App, cfg config.Configuration, withWorkers bool) e
 	srv := server.NewServer(cfg.Server.HTTP.Port, func() {})
 
 	handler := route.NewApplicationHandler(
-		route.App{
+		types.App{
 			DB:       a.DB,
 			Queue:    a.Queue,
 			Logger:   lo,
@@ -180,6 +181,11 @@ func StartConvoyServer(a *cli.App, cfg config.Configuration, withWorkers bool) e
 			Limiter:  a.Limiter,
 			Searcher: a.Searcher,
 		})
+
+	err = handler.RegisterPolicy()
+	if err != nil {
+		return err
+	}
 
 	if withWorkers {
 		sc, err := smtp.NewClient(&cfg.SMTP)

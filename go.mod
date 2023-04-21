@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	cloud.google.com/go/pubsub v1.26.0
+	github.com/Subomi/go-authz v0.2.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go v1.34.28
 	github.com/cip8/autoname v1.0.1
@@ -13,7 +14,6 @@ require (
 	github.com/getkin/kin-openapi v0.80.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi/v5 v5.0.6
-	github.com/go-chi/httprate v0.5.2
 	github.com/go-chi/render v1.0.1
 	github.com/go-redis/cache/v8 v8.4.3
 	github.com/go-redis/redis/v8 v8.11.5
@@ -42,7 +42,8 @@ require (
 	github.com/slack-go/slack v0.10.2
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.8.1
+	github.com/swaggo/swag v1.8.12
 	github.com/typesense/typesense-go v0.4.0
 	github.com/xdg-go/pbkdf2 v1.0.0
 	golang.org/x/crypto v0.5.0
@@ -92,7 +93,6 @@ require (
 	github.com/sergi/go-diff v1.0.0 // indirect
 	github.com/sony/gobreaker v0.5.0 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
-	github.com/swaggo/swag v1.8.12 // indirect
 	github.com/vmihailenco/go-tinylfu v0.2.2 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect

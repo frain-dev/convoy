@@ -25,3 +25,6 @@ generate_migration_time:
 
 generate_docs:
 	swag init --generatedTime --parseDependency --parseInternal -d api/ api/*
+
+run_dependencies:
+	docker compose -f docker-compose.dep.yml up -d

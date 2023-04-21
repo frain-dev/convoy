@@ -70,6 +70,7 @@ func BuildRoutes(h *Hub, r *Repo, m *m.Middleware) http.Handler {
 			m.RequirePersonalAccessToken(),
 		)
 
+		// TODO(subomi): Add authz
 		streamRouter.Get("/listen", ListenHandler(h, r))
 		streamRouter.Post("/login", LoginHandler(h, r))
 	})

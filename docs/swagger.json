@@ -21,136 +21,7 @@
     "host": "dashboard.getconvoy.io",
     "basePath": "/",
     "paths": {
-        "/api/v1/organisations": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint fetches the organisations a user is part of, this route can only be accessed with a personal api key",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Organisations"
-                ],
-                "summary": "List all organisations",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "results per page",
-                        "name": "perPage",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "sort order",
-                        "name": "sort",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "allOf": [
-                                                {
-                                                    "$ref": "#/definitions/api.pagedResponse"
-                                                },
-                                                {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "content": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "$ref": "#/definitions/datastore.Organisation"
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/api.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/projects": {
+        "/v1/projects": {
             "get": {
                 "security": [
                     {
@@ -216,7 +87,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -234,7 +105,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -252,7 +123,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -326,7 +197,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -344,7 +215,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -362,7 +233,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -372,7 +243,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}": {
+        "/v1/projects/{projectID}": {
             "get": {
                 "security": [
                     {
@@ -429,7 +300,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -447,7 +318,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -465,7 +336,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -539,7 +410,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -557,7 +428,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -575,7 +446,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -622,7 +493,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -640,7 +511,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -658,7 +529,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -676,7 +547,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -686,7 +557,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/endpoints": {
+        "/v1/projects/{projectID}/endpoints": {
             "get": {
                 "security": [
                     {
@@ -746,7 +617,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -764,7 +635,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -782,7 +653,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -856,7 +727,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -874,7 +745,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -892,7 +763,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -902,7 +773,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/endpoints/{endpointID}": {
+        "/v1/projects/{projectID}/endpoints/{endpointID}": {
             "get": {
                 "security": [
                     {
@@ -966,7 +837,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -984,7 +855,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1002,7 +873,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1083,7 +954,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1101,7 +972,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1119,7 +990,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1173,7 +1044,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1191,7 +1062,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1209,7 +1080,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1227,7 +1098,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1237,7 +1108,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret": {
+        "/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret": {
             "put": {
                 "security": [
                     {
@@ -1310,7 +1181,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1328,7 +1199,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1346,7 +1217,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1356,7 +1227,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/endpoints/{endpointID}/pause": {
+        "/v1/projects/{projectID}/endpoints/{endpointID}/pause": {
             "put": {
                 "security": [
                     {
@@ -1420,7 +1291,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1438,7 +1309,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1456,7 +1327,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1466,7 +1337,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status": {
+        "/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status": {
             "put": {
                 "security": [
                     {
@@ -1530,7 +1401,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1548,7 +1419,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1566,7 +1437,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1576,7 +1447,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/eventdeliveries": {
+        "/v1/projects/{projectID}/eventdeliveries": {
             "get": {
                 "security": [
                     {
@@ -1668,7 +1539,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/api.pagedResponse"
+                                                    "$ref": "#/definitions/public.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -1684,7 +1555,7 @@
                                                                         "type": "object",
                                                                         "properties": {
                                                                             "data": {
-                                                                                "$ref": "#/definitions/api.Stub"
+                                                                                "$ref": "#/definitions/public.Stub"
                                                                             }
                                                                         }
                                                                     }
@@ -1711,7 +1582,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1729,7 +1600,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1747,7 +1618,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1757,7 +1628,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/eventdeliveries/batchretry": {
+        "/v1/projects/{projectID}/eventdeliveries/batchretry": {
             "post": {
                 "security": [
                     {
@@ -1791,7 +1662,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/api.Stub"
+                                    "$ref": "#/definitions/public.Stub"
                                 },
                                 {
                                     "type": "object",
@@ -1820,7 +1691,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1838,7 +1709,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1856,7 +1727,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1874,7 +1745,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1884,7 +1755,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/eventdeliveries/forceresend": {
+        "/v1/projects/{projectID}/eventdeliveries/forceresend": {
             "post": {
                 "security": [
                     {
@@ -1918,7 +1789,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/api.Stub"
+                                    "$ref": "#/definitions/public.Stub"
                                 },
                                 {
                                     "type": "object",
@@ -1947,7 +1818,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1965,7 +1836,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -1983,7 +1854,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2001,7 +1872,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2011,7 +1882,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}": {
+        "/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}": {
             "get": {
                 "security": [
                     {
@@ -2065,7 +1936,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/api.Stub"
+                                                            "$ref": "#/definitions/public.Stub"
                                                         }
                                                     }
                                                 }
@@ -2087,7 +1958,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2105,7 +1976,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2123,7 +1994,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2133,7 +2004,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts": {
+        "/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts": {
             "get": {
                 "security": [
                     {
@@ -2200,7 +2071,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2218,7 +2089,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2236,7 +2107,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2246,7 +2117,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}": {
+        "/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}": {
             "get": {
                 "security": [
                     {
@@ -2317,7 +2188,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2335,7 +2206,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2353,7 +2224,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2363,7 +2234,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend": {
+        "/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend": {
             "put": {
                 "security": [
                     {
@@ -2417,7 +2288,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/api.Stub"
+                                                            "$ref": "#/definitions/public.Stub"
                                                         }
                                                     }
                                                 }
@@ -2439,7 +2310,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2457,7 +2328,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2475,7 +2346,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2485,7 +2356,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/events": {
+        "/v1/projects/{projectID}/events": {
             "get": {
                 "security": [
                     {
@@ -2568,7 +2439,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/api.pagedResponse"
+                                                    "$ref": "#/definitions/public.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -2584,7 +2455,7 @@
                                                                         "type": "object",
                                                                         "properties": {
                                                                             "data": {
-                                                                                "$ref": "#/definitions/api.Stub"
+                                                                                "$ref": "#/definitions/public.Stub"
                                                                             }
                                                                         }
                                                                     }
@@ -2611,7 +2482,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2629,7 +2500,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2647,7 +2518,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2711,7 +2582,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/api.Stub"
+                                                            "$ref": "#/definitions/public.Stub"
                                                         }
                                                     }
                                                 }
@@ -2733,7 +2604,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2751,7 +2622,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2769,7 +2640,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2779,7 +2650,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/events/batchreplay": {
+        "/v1/projects/{projectID}/events/batchreplay": {
             "post": {
                 "security": [
                     {
@@ -2844,7 +2715,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/api.Stub"
+                                                            "$ref": "#/definitions/public.Stub"
                                                         }
                                                     }
                                                 }
@@ -2866,7 +2737,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2884,7 +2755,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2902,7 +2773,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -2912,7 +2783,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/events/fanout": {
+        "/v1/projects/{projectID}/events/fanout": {
             "post": {
                 "security": [
                     {
@@ -2968,7 +2839,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/api.Stub"
+                                                            "$ref": "#/definitions/public.Stub"
                                                         }
                                                     }
                                                 }
@@ -2990,7 +2861,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3008,7 +2879,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3026,7 +2897,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3036,7 +2907,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/events/{eventID}": {
+        "/v1/projects/{projectID}/events/{eventID}": {
             "get": {
                 "security": [
                     {
@@ -3090,7 +2961,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/api.Stub"
+                                                            "$ref": "#/definitions/public.Stub"
                                                         }
                                                     }
                                                 }
@@ -3112,7 +2983,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3130,7 +3001,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3148,7 +3019,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3158,7 +3029,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/events/{eventID}/replay": {
+        "/v1/projects/{projectID}/events/{eventID}/replay": {
             "put": {
                 "security": [
                     {
@@ -3212,7 +3083,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/api.Stub"
+                                                            "$ref": "#/definitions/public.Stub"
                                                         }
                                                     }
                                                 }
@@ -3234,7 +3105,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3252,7 +3123,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3270,7 +3141,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3280,7 +3151,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/portal-links": {
+        "/v1/projects/{projectID}/portal-links": {
             "get": {
                 "security": [
                     {
@@ -3339,7 +3210,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/api.pagedResponse"
+                                                    "$ref": "#/definitions/public.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -3370,7 +3241,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3388,7 +3259,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3406,7 +3277,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3480,7 +3351,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3498,7 +3369,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3516,7 +3387,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3526,7 +3397,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/portal-links/{portalLinkID}": {
+        "/v1/projects/{projectID}/portal-links/{portalLinkID}": {
             "get": {
                 "security": [
                     {
@@ -3590,7 +3461,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3608,7 +3479,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3626,7 +3497,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3707,7 +3578,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3725,7 +3596,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3743,7 +3614,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3753,7 +3624,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke": {
+        "/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke": {
             "put": {
                 "security": [
                     {
@@ -3799,7 +3670,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3817,7 +3688,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3835,7 +3706,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3853,7 +3724,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3863,7 +3734,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/sources": {
+        "/v1/projects/{projectID}/sources": {
             "get": {
                 "security": [
                     {
@@ -3922,7 +3793,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/api.pagedResponse"
+                                                    "$ref": "#/definitions/public.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -3953,7 +3824,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3971,7 +3842,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -3989,7 +3860,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4063,7 +3934,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4081,7 +3952,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4099,7 +3970,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4109,7 +3980,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/sources/{sourceID}": {
+        "/v1/projects/{projectID}/sources/{sourceID}": {
             "get": {
                 "security": [
                     {
@@ -4173,7 +4044,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4191,7 +4062,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4209,7 +4080,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4290,7 +4161,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4308,7 +4179,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4326,7 +4197,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4380,7 +4251,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4398,7 +4269,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4416,7 +4287,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4434,7 +4305,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4444,7 +4315,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/subscriptions": {
+        "/v1/projects/{projectID}/subscriptions": {
             "get": {
                 "security": [
                     {
@@ -4509,7 +4380,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/api.pagedResponse"
+                                                    "$ref": "#/definitions/public.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -4540,7 +4411,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4558,7 +4429,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4576,7 +4447,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4634,7 +4505,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/api.pagedResponse"
+                                                    "$ref": "#/definitions/public.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -4665,7 +4536,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4683,7 +4554,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4701,7 +4572,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4711,7 +4582,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/subscriptions/test_filter": {
+        "/v1/projects/{projectID}/subscriptions/test_filter": {
             "post": {
                 "security": [
                     {
@@ -4777,7 +4648,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4795,7 +4666,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4813,7 +4684,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4823,7 +4694,7 @@
                 }
             }
         },
-        "/api/v1/projects/{projectID}/subscriptions/{subscriptionID}": {
+        "/v1/projects/{projectID}/subscriptions/{subscriptionID}": {
             "get": {
                 "security": [
                     {
@@ -4887,7 +4758,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4905,7 +4776,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -4923,7 +4794,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -5004,7 +4875,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -5022,7 +4893,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -5040,7 +4911,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -5094,7 +4965,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -5112,7 +4983,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -5130,7 +5001,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -5148,7 +5019,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/api.Stub"
+                                            "$ref": "#/definitions/public.Stub"
                                         }
                                     }
                                 }
@@ -5160,18 +5031,6 @@
         }
     },
     "definitions": {
-        "api.Stub": {
-            "type": "object"
-        },
-        "api.pagedResponse": {
-            "type": "object",
-            "properties": {
-                "content": {},
-                "pagination": {
-                    "$ref": "#/definitions/datastore.PaginationData"
-                }
-            }
-        },
         "config.SignatureHeaderProvider": {
             "type": "string",
             "enum": [
@@ -5671,35 +5530,6 @@
                 },
                 "strategy": {
                     "$ref": "#/definitions/datastore.StrategyProvider"
-                }
-            }
-        },
-        "datastore.Organisation": {
-            "type": "object",
-            "properties": {
-                "assigned_domain": {
-                    "$ref": "#/definitions/null.String"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "custom_domain": {
-                    "$ref": "#/definitions/null.String"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "ownerID": {
-                    "type": "string"
-                },
-                "uid": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -6502,15 +6332,15 @@
                 }
             }
         },
-        "null.String": {
+        "public.Stub": {
+            "type": "object"
+        },
+        "public.pagedResponse": {
             "type": "object",
             "properties": {
-                "string": {
-                    "type": "string"
-                },
-                "valid": {
-                    "description": "Valid is true if String is not NULL",
-                    "type": "boolean"
+                "content": {},
+                "pagination": {
+                    "$ref": "#/definitions/datastore.PaginationData"
                 }
             }
         },

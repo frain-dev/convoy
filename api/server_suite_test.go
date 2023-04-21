@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
@@ -109,8 +110,8 @@ func buildServer() *ApplicationHandler {
 	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
 
-	return NewApplicationHandler(
-		App{
+	ah := NewApplicationHandler(
+		types.App{
 			DB:       db,
 			Queue:    queue,
 			Logger:   logger,
@@ -119,6 +120,10 @@ func buildServer() *ApplicationHandler {
 			Limiter:  limiter,
 			Searcher: searcher,
 		})
+
+	ah.RegisterPolicy()
+
+	return ah
 }
 
 func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, cache cache.Cache) {
