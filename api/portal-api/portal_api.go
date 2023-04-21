@@ -160,6 +160,11 @@ func (a *PortalLinkHandler) retrieveHost() (string, error) {
 func (a *PortalLinkHandler) retrievePortalLink(r *http.Request) (*datastore.PortalLink, error) {
 	token := r.URL.Query().Get("token")
 
+	if util.IsStringEmpty(token) {
+		cred, _ := middleware.GetAuthFromRequest(r)
+		token = cred.Token
+	}
+
 	portalLinkRepo := postgres.NewPortalLinkRepo(a.A.DB)
 	pLink, err := portalLinkRepo.FindPortalLinkByToken(r.Context(), token)
 	if err != nil {
