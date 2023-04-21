@@ -67,6 +67,7 @@ func BuildRoutes(h *Hub, r *Repo, m *m.Middleware) http.Handler {
 	router.Route("/stream", func(streamRouter chi.Router) {
 		streamRouter.Use(
 			m.RequireAuth(),
+			m.RequirePersonalAccessToken(),
 		)
 
 		// TODO(subomi): Add authz

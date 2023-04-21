@@ -89,9 +89,6 @@ func NewApplicationHandler(a types.App) *ApplicationHandler {
 		},
 	}
 
-	// TODO(subomi): Fix this.
-	_ = ah.RegisterPolicy()
-
 	return ah
 }
 

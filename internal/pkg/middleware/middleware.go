@@ -223,6 +223,22 @@ func (m *Middleware) RequireAuth() func(next http.Handler) http.Handler {
 	}
 }
 
+func (m *Middleware) RequirePersonalAccessToken() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := GetAuthUserFromContext(r.Context())
+			_, ok := authUser.User.(*datastore.User)
+
+			if authUser.AuthenticatedByRealm == auth.NativeRealmName && ok {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusBadRequest))
+		})
+	}
+}
+
 func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 	val := r.Header.Get("Authorization")
 	authInfo := strings.Split(val, " ")

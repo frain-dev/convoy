@@ -182,6 +182,11 @@ func StartConvoyServer(a *cli.App, cfg config.Configuration, withWorkers bool) e
 			Searcher: a.Searcher,
 		})
 
+	err = handler.RegisterPolicy()
+	if err != nil {
+		return err
+	}
+
 	if withWorkers {
 		sc, err := smtp.NewClient(&cfg.SMTP)
 		if err != nil {
