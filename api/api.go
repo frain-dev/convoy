@@ -12,7 +12,6 @@ import (
 	portalapi "github.com/frain-dev/convoy/api/portal-api"
 	"github.com/frain-dev/convoy/api/public"
 	"github.com/frain-dev/convoy/api/types"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -23,9 +22,8 @@ import (
 )
 
 type ApplicationHandler struct {
-	M      *middleware.Middleware
 	Router http.Handler
-	A      types.App
+	A      types.APIOptions
 }
 
 //go:embed dashboard/ui/build
@@ -49,35 +47,13 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 	http.FileServer(http.FS(static)).ServeHTTP(rw, req)
 }
 
-func NewApplicationHandler(a types.App) *ApplicationHandler {
-	m := middleware.NewMiddleware(&middleware.CreateMiddleware{
-		Cache:             a.Cache,
-		Logger:            a.Logger,
-		Limiter:           a.Limiter,
-		Tracer:            a.Tracer,
-		EventRepo:         postgres.NewEventRepo(a.DB),
-		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.DB),
-		EndpointRepo:      postgres.NewEndpointRepo(a.DB),
-		ProjectRepo:       postgres.NewProjectRepo(a.DB),
-		ApiKeyRepo:        postgres.NewAPIKeyRepo(a.DB),
-		SubRepo:           postgres.NewSubscriptionRepo(a.DB),
-		SourceRepo:        postgres.NewSourceRepo(a.DB),
-		OrgRepo:           postgres.NewOrgRepo(a.DB),
-		OrgMemberRepo:     postgres.NewOrgMemberRepo(a.DB),
-		OrgInviteRepo:     postgres.NewOrgInviteRepo(a.DB),
-		UserRepo:          postgres.NewUserRepo(a.DB),
-		ConfigRepo:        postgres.NewConfigRepo(a.DB),
-		DeviceRepo:        postgres.NewDeviceRepo(a.DB),
-		PortalLinkRepo:    postgres.NewPortalLinkRepo(a.DB),
-	})
-
+func NewApplicationHandler(a types.APIOptions) *ApplicationHandler {
 	az, _ := authz.NewAuthz(&authz.AuthzOpts{
 		AuthCtxKey: authz.AuthCtxType(middleware.AuthUserCtx),
 	})
 
 	ah := &ApplicationHandler{
-		M: m,
-		A: types.App{
+		A: types.APIOptions{
 			DB:       a.DB,
 			Queue:    a.Queue,
 			Cache:    a.Cache,
@@ -97,9 +73,9 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 
 	router.Use(chiMiddleware.RequestID)
 	router.Use(chiMiddleware.Recoverer)
-	router.Use(a.M.WriteRequestIDHeader)
-	router.Use(a.M.InstrumentRequests())
-	router.Use(a.M.LogHttpRequest())
+	router.Use(middleware.WriteRequestIDHeader)
+	router.Use(middleware.InstrumentRequests())
+	router.Use(middleware.LogHttpRequest(&a.A))
 
 	// Ingestion API
 	router.Route("/ingest", func(ingestRouter chi.Router) {
@@ -107,13 +83,13 @@ func (a *ApplicationHandler) BuildRoutes() http.Handler {
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
 
-	publicAPI := &public.PublicHandler{M: a.M, A: a.A}
+	publicAPI := &public.PublicHandler{A: a.A}
 	router.Mount("/api", publicAPI.BuildRoutes())
 
-	dashboardAPI := &dashboard.DashboardHandler{M: a.M, A: a.A}
+	dashboardAPI := &dashboard.DashboardHandler{A: a.A}
 	router.Mount("/ui", dashboardAPI.BuildRoutes())
 
-	portalAPI := &portalapi.PortalLinkHandler{M: a.M, A: a.A}
+	portalAPI := &portalapi.PortalLinkHandler{A: a.A}
 	router.Mount("/portal-api", portalAPI.BuildRoutes())
 
 	router.Handle("/queue/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())

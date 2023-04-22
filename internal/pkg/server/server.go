@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
@@ -18,7 +17,6 @@ import (
 
 type Server struct {
 	s      *http.Server
-	M      *middleware.Middleware
 	StopFn func()
 }
 

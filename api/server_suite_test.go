@@ -111,7 +111,7 @@ func buildServer() *ApplicationHandler {
 	tracer = nil
 
 	ah := NewApplicationHandler(
-		types.App{
+		types.APIOptions{
 			DB:       db,
 			Queue:    queue,
 			Logger:   logger,

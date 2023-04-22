@@ -13,7 +13,7 @@ import (
 	"github.com/frain-dev/convoy/tracer"
 )
 
-type App struct {
+type APIOptions struct {
 	DB       database.Database
 	Queue    queue.Queuer
 	Logger   log.StdLogger
@@ -24,7 +24,7 @@ type App struct {
 	Authz    *authz.Authz
 }
 
-func (a *App) RegisterPolicy() error {
+func (a *APIOptions) RegisterPolicy() error {
 	var err error
 
 	err = a.Authz.RegisterPolicy(func() authz.Policy {

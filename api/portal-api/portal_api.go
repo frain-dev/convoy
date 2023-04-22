@@ -16,36 +16,13 @@ import (
 )
 
 type PortalLinkHandler struct {
-	M      *middleware.Middleware
 	Router http.Handler
-	A      types.App
+	A      types.APIOptions
 }
 
-func NewPortalLinkHandler(a *types.App) *PortalLinkHandler {
-	m := middleware.NewMiddleware(&middleware.CreateMiddleware{
-		Cache:             a.Cache,
-		Logger:            a.Logger,
-		Limiter:           a.Limiter,
-		Tracer:            a.Tracer,
-		EventRepo:         postgres.NewEventRepo(a.DB),
-		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.DB),
-		EndpointRepo:      postgres.NewEndpointRepo(a.DB),
-		ProjectRepo:       postgres.NewProjectRepo(a.DB),
-		ApiKeyRepo:        postgres.NewAPIKeyRepo(a.DB),
-		SubRepo:           postgres.NewSubscriptionRepo(a.DB),
-		SourceRepo:        postgres.NewSourceRepo(a.DB),
-		OrgRepo:           postgres.NewOrgRepo(a.DB),
-		OrgMemberRepo:     postgres.NewOrgMemberRepo(a.DB),
-		OrgInviteRepo:     postgres.NewOrgInviteRepo(a.DB),
-		UserRepo:          postgres.NewUserRepo(a.DB),
-		ConfigRepo:        postgres.NewConfigRepo(a.DB),
-		DeviceRepo:        postgres.NewDeviceRepo(a.DB),
-		PortalLinkRepo:    postgres.NewPortalLinkRepo(a.DB),
-	})
-
+func NewPortalLinkHandler(a *types.APIOptions) *PortalLinkHandler {
 	return &PortalLinkHandler{
-		M: m,
-		A: types.App{
+		A: types.APIOptions{
 			DB:       a.DB,
 			Queue:    a.Queue,
 			Cache:    a.Cache,
@@ -61,8 +38,8 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 	router := chi.NewRouter()
 
 	// App Portal API.
-	router.Use(a.M.JsonResponse)
-	router.Use(a.M.SetupCORS)
+	router.Use(middleware.JsonResponse)
+	router.Use(middleware.SetupCORS)
 
 	router.Route("/endpoints", func(endpointRouter chi.Router) {
 		endpointRouter.Get("/", a.GetPortalLinkEndpoints)
@@ -73,7 +50,7 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 	})
 
 	router.Route("/events", func(eventRouter chi.Router) {
-		eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
+		eventRouter.With(middleware.Pagination).Get("/", a.GetEventsPaged)
 		eventRouter.Post("/batchreplay", a.BatchReplayEvents)
 		eventRouter.Get("/countbatchreplayevents", a.CountAffectedEvents)
 
@@ -86,14 +63,14 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 	router.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 		subscriptionRouter.Post("/", a.CreateSubscription)
 		subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
-		subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
+		subscriptionRouter.With(middleware.Pagination).Get("/", a.GetSubscriptions)
 		subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
 		subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
 		subscriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
 	})
 
 	router.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-		eventDeliveryRouter.With(a.M.Pagination).Get("/", a.GetEventDeliveriesPaged)
+		eventDeliveryRouter.With(middleware.Pagination).Get("/", a.GetEventDeliveriesPaged)
 		eventDeliveryRouter.Post("/forceresend", a.ForceResendEventDeliveries)
 		eventDeliveryRouter.Post("/batchretry", a.BatchRetryEventDelivery)
 		eventDeliveryRouter.Get("/countbatchretryevents", a.CountAffectedEventDeliveries)

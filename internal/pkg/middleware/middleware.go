@@ -10,11 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/tracer"
-
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/internal/pkg/apm"
-	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/newrelic/go-agent/v3/newrelic"
 
@@ -23,6 +19,7 @@ import (
 
 	"github.com/felixge/httpsnoop"
 	"github.com/frain-dev/convoy/api/policies"
+	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -54,78 +51,13 @@ const (
 	portalLinkCtx       contextKey = "portal_link"
 )
 
-type Middleware struct {
-	eventRepo         datastore.EventRepository
-	eventDeliveryRepo datastore.EventDeliveryRepository
-	endpointRepo      datastore.EndpointRepository
-	projectRepo       datastore.ProjectRepository
-	apiKeyRepo        datastore.APIKeyRepository
-	subRepo           datastore.SubscriptionRepository
-	sourceRepo        datastore.SourceRepository
-	orgRepo           datastore.OrganisationRepository
-	orgMemberRepo     datastore.OrganisationMemberRepository
-	orgInviteRepo     datastore.OrganisationInviteRepository
-	userRepo          datastore.UserRepository
-	configRepo        datastore.ConfigurationRepository
-	deviceRepo        datastore.DeviceRepository
-	portalLinkRepo    datastore.PortalLinkRepository
-	cache             cache.Cache
-	logger            log.StdLogger
-	limiter           limiter.RateLimiter
-	tracer            tracer.Tracer
-}
-
-type CreateMiddleware struct {
-	EventRepo         datastore.EventRepository
-	EventDeliveryRepo datastore.EventDeliveryRepository
-	EndpointRepo      datastore.EndpointRepository
-	ProjectRepo       datastore.ProjectRepository
-	ApiKeyRepo        datastore.APIKeyRepository
-	SubRepo           datastore.SubscriptionRepository
-	SourceRepo        datastore.SourceRepository
-	OrgRepo           datastore.OrganisationRepository
-	OrgMemberRepo     datastore.OrganisationMemberRepository
-	OrgInviteRepo     datastore.OrganisationInviteRepository
-	UserRepo          datastore.UserRepository
-	ConfigRepo        datastore.ConfigurationRepository
-	DeviceRepo        datastore.DeviceRepository
-	PortalLinkRepo    datastore.PortalLinkRepository
-	Cache             cache.Cache
-	Logger            log.StdLogger
-	Limiter           limiter.RateLimiter
-	Tracer            tracer.Tracer
-}
-
-func NewMiddleware(cs *CreateMiddleware) *Middleware {
-	return &Middleware{
-		eventRepo:         cs.EventRepo,
-		eventDeliveryRepo: cs.EventDeliveryRepo,
-		endpointRepo:      cs.EndpointRepo,
-		projectRepo:       cs.ProjectRepo,
-		apiKeyRepo:        cs.ApiKeyRepo,
-		subRepo:           cs.SubRepo,
-		sourceRepo:        cs.SourceRepo,
-		orgRepo:           cs.OrgRepo,
-		orgMemberRepo:     cs.OrgMemberRepo,
-		orgInviteRepo:     cs.OrgInviteRepo,
-		userRepo:          cs.UserRepo,
-		configRepo:        cs.ConfigRepo,
-		deviceRepo:        cs.DeviceRepo,
-		portalLinkRepo:    cs.PortalLinkRepo,
-		cache:             cs.Cache,
-		logger:            cs.Logger,
-		limiter:           cs.Limiter,
-		tracer:            cs.Tracer,
-	}
-}
-
 type AuthorizedLogin struct {
 	Username   string    `json:"username,omitempty"`
 	Token      string    `json:"token"`
 	ExpiryTime time.Time `json:"expiry_time"`
 }
 
-func (m *Middleware) InstrumentPath(path string) func(http.Handler) http.Handler {
+func InstrumentPath(path string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			m := httpsnoop.CaptureMetrics(next, w, r)
@@ -135,7 +67,7 @@ func (m *Middleware) InstrumentPath(path string) func(http.Handler) http.Handler
 	}
 }
 
-func (m *Middleware) InstrumentRequests() func(next http.Handler) http.Handler {
+func InstrumentRequests() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			txn, r, w := apm.StartWebTransaction(r.URL.Path, r, w)
@@ -146,18 +78,18 @@ func (m *Middleware) InstrumentRequests() func(next http.Handler) http.Handler {
 	}
 }
 
-func (m *Middleware) WriteRequestIDHeader(next http.Handler) http.Handler {
+func WriteRequestIDHeader(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Request-ID", r.Context().Value(middleware.RequestIDKey).(string))
 		next.ServeHTTP(w, r)
 	})
 }
 
-func (m *Middleware) SetupCORS(next http.Handler) http.Handler {
+func SetupCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cfg, err := config.Get()
 		if err != nil {
-			m.logger.WithError(err).Error("failed to load configuration")
+			log.FromContext(r.Context()).WithError(err).Error("failed to load configuration")
 			return
 		}
 
@@ -174,7 +106,7 @@ func (m *Middleware) SetupCORS(next http.Handler) http.Handler {
 	})
 }
 
-func (m *Middleware) JsonResponse(next http.Handler) http.Handler {
+func JsonResponse(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
@@ -191,26 +123,26 @@ func FilterDeletedEndpoints(endpoints []datastore.Endpoint) []datastore.Endpoint
 	return activeEndpoints
 }
 
-func (m *Middleware) RequireAuth() func(next http.Handler) http.Handler {
+func RequireAuth() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			creds, err := GetAuthFromRequest(r)
 			if err != nil {
-				m.logger.WithError(err).Error("failed to get auth from request")
+				log.FromContext(r.Context()).WithError(err).Error("failed to get auth from request")
 				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
 				return
 			}
 
 			rc, err := realm_chain.Get()
 			if err != nil {
-				m.logger.WithError(err).Error("failed to get realm chain")
+				log.FromContext(r.Context()).WithError(err).Error("failed to get realm chain")
 				_ = render.Render(w, r, util.NewErrorResponse("internal server error", http.StatusInternalServerError))
 				return
 			}
 
 			authUser, err := rc.Authenticate(r.Context(), creds)
 			if err != nil {
-				m.logger.WithError(err).Error("failed to authenticate")
+				log.FromContext(r.Context()).WithError(err).Error("failed to authenticate")
 				_ = render.Render(w, r, util.NewErrorResponse("authorization failed", http.StatusUnauthorized))
 				return
 			}
@@ -223,7 +155,7 @@ func (m *Middleware) RequireAuth() func(next http.Handler) http.Handler {
 	}
 }
 
-func (m *Middleware) RequirePersonalAccessToken() func(next http.Handler) http.Handler {
+func RequirePersonalAccessToken() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := GetAuthUserFromContext(r.Context())
@@ -294,7 +226,7 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 	}
 }
 
-func (m *Middleware) Pagination(next http.Handler) http.Handler {
+func Pagination(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawPerPage := r.URL.Query().Get("perPage")
 		rawDirection := r.URL.Query().Get("direction")
@@ -337,7 +269,7 @@ func (m *Middleware) Pagination(next http.Handler) http.Handler {
 	})
 }
 
-func (m *Middleware) LogHttpRequest() func(next http.Handler) http.Handler {
+func LogHttpRequest(a *types.APIOptions) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
@@ -352,16 +284,16 @@ func (m *Middleware) LogHttpRequest() func(next http.Handler) http.Handler {
 					"httpResponse": responseFields,
 				}
 
-				lvl, err := m.statusLevel(ww.Status()).ToLogrusLevel()
+				lvl, err := statusLevel(ww.Status()).ToLogrusLevel()
 				if err != nil {
-					m.logger.WithError(err).Error("Failed to generate status level")
+					log.FromContext(r.Context()).WithError(err).Error("Failed to generate status level")
 				}
 
-				m.logger.WithFields(logFields).Log(lvl, requestFields["requestURL"])
+				log.FromContext(r.Context()).WithFields(logFields).Log(lvl, requestFields["requestURL"])
 			}()
 
 			requestID := middleware.GetReqID(r.Context())
-			ctx := log.NewContext(r.Context(), m.logger, log.Fields{"request_id": requestID})
+			ctx := log.NewContext(r.Context(), a.Logger, log.Fields{"request_id": requestID})
 			r = r.WithContext(ctx)
 
 			next.ServeHTTP(ww, r)
@@ -429,7 +361,7 @@ func responseLogFields(w middleware.WrapResponseWriter, t time.Time) map[string]
 	return responseFields
 }
 
-func (m *Middleware) statusLevel(status int) log.Level {
+func statusLevel(status int) log.Level {
 	switch {
 	case status <= 0:
 		return log.WarnLevel
@@ -471,22 +403,6 @@ func EnsurePeriod(start time.Time, end time.Time) error {
 	}
 
 	return nil
-}
-
-func (m *Middleware) ComputeDashboardMessages(ctx context.Context, projectID string, searchParams datastore.SearchParams, period datastore.Period) (uint64, []datastore.EventInterval, error) {
-	var messagesSent uint64
-
-	messages, err := m.eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, projectID, searchParams, period, 1)
-	if err != nil {
-		m.logger.WithError(err).Error("failed to load message intervals - ")
-		return 0, nil, err
-	}
-
-	for _, m := range messages {
-		messagesSent += m.Count
-	}
-
-	return messagesSent, messages, nil
 }
 
 func setPageableInContext(ctx context.Context, pageable datastore.Pageable) context.Context {

@@ -1,9 +1,11 @@
 package dashboard
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -11,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -22,36 +25,13 @@ import (
 )
 
 type DashboardHandler struct {
-	M      *middleware.Middleware
-	A      types.App
+	A      types.APIOptions
 	Router http.Handler
 }
 
-func NewDashboardHandler(a *types.App) *DashboardHandler {
-	m := middleware.NewMiddleware(&middleware.CreateMiddleware{
-		Cache:             a.Cache,
-		Logger:            a.Logger,
-		Limiter:           a.Limiter,
-		Tracer:            a.Tracer,
-		EventRepo:         postgres.NewEventRepo(a.DB),
-		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.DB),
-		EndpointRepo:      postgres.NewEndpointRepo(a.DB),
-		ProjectRepo:       postgres.NewProjectRepo(a.DB),
-		ApiKeyRepo:        postgres.NewAPIKeyRepo(a.DB),
-		SubRepo:           postgres.NewSubscriptionRepo(a.DB),
-		SourceRepo:        postgres.NewSourceRepo(a.DB),
-		OrgRepo:           postgres.NewOrgRepo(a.DB),
-		OrgMemberRepo:     postgres.NewOrgMemberRepo(a.DB),
-		OrgInviteRepo:     postgres.NewOrgInviteRepo(a.DB),
-		UserRepo:          postgres.NewUserRepo(a.DB),
-		ConfigRepo:        postgres.NewConfigRepo(a.DB),
-		DeviceRepo:        postgres.NewDeviceRepo(a.DB),
-		PortalLinkRepo:    postgres.NewPortalLinkRepo(a.DB),
-	})
-
+func NewDashboardHandler(a *types.APIOptions) *DashboardHandler {
 	return &DashboardHandler{
-		M: m,
-		A: types.App{
+		A: types.APIOptions{
 			DB:       a.DB,
 			Queue:    a.Queue,
 			Cache:    a.Cache,
@@ -68,9 +48,9 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 	router := chi.NewRouter()
 
 	// UI API.
-	router.Use(a.M.JsonResponse)
-	router.Use(a.M.SetupCORS)
-	router.Use(chiMiddleware.Maybe(a.M.RequireAuth(), shouldAuthRoute))
+	router.Use(middleware.JsonResponse)
+	router.Use(middleware.SetupCORS)
+	router.Use(chiMiddleware.Maybe(middleware.RequireAuth(), shouldAuthRoute))
 
 	router.Post("/organisations/process_invite", a.ProcessOrganisationMemberInvite)
 	router.Get("/users/token", a.FindUserByInviteToken)
@@ -84,7 +64,7 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 			userSubRouter.Route("/security/personal_api_keys", func(securityRouter chi.Router) {
 				securityRouter.Post("/", a.CreatePersonalAPIKey)
 				securityRouter.Put("/{keyID}/revoke", a.RevokePersonalAPIKey)
-				securityRouter.With(a.M.Pagination).Get("/", a.GetAPIKeys)
+				securityRouter.With(middleware.Pagination).Get("/", a.GetAPIKeys)
 			})
 		})
 	})
@@ -102,7 +82,7 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 	})
 
 	router.Route("/organisations", func(orgRouter chi.Router) {
-		orgRouter.With(a.M.Pagination).Get("/", a.GetOrganisationsPaged)
+		orgRouter.With(middleware.Pagination).Get("/", a.GetOrganisationsPaged)
 		orgRouter.Post("/", a.CreateOrganisation)
 
 		orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
@@ -116,11 +96,11 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 				orgInvitesRouter.Post("/", a.InviteUserToOrganisation)
 				orgInvitesRouter.Post("/{inviteID}/resend", a.ResendOrganizationInvite)
 				orgInvitesRouter.Post("/{inviteID}/cancel", a.CancelOrganizationInvite)
-				orgInvitesRouter.With(a.M.Pagination).Get("/pending", a.GetPendingOrganisationInvites)
+				orgInvitesRouter.With(middleware.Pagination).Get("/pending", a.GetPendingOrganisationInvites)
 			})
 
 			orgSubRouter.Route("/members", func(orgMemberRouter chi.Router) {
-				orgMemberRouter.With(a.M.Pagination).Get("/", a.GetOrganisationMembers)
+				orgMemberRouter.With(middleware.Pagination).Get("/", a.GetOrganisationMembers)
 
 				orgMemberRouter.Route("/{memberID}", func(orgMemberSubRouter chi.Router) {
 					orgMemberSubRouter.Get("/", a.GetOrganisationMember)
@@ -148,7 +128,7 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 
 					projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
 						endpointSubRouter.Post("/", a.CreateEndpoint)
-						endpointSubRouter.With(a.M.Pagination).Get("/", a.GetEndpoints)
+						endpointSubRouter.With(middleware.Pagination).Get("/", a.GetEndpoints)
 
 						endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 							e.Get("/", a.GetEndpoint)
@@ -160,12 +140,12 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 
 							e.Route("/keys", func(keySubRouter chi.Router) {
 								keySubRouter.With(fflag.CanAccessFeature(fflag.Features[fflag.CanCreateCLIAPIKey])).Post("/", a.CreateEndpointAPIKey)
-								keySubRouter.With(a.M.Pagination).Get("/", a.LoadEndpointAPIKeysPaged)
+								keySubRouter.With(middleware.Pagination).Get("/", a.LoadEndpointAPIKeysPaged)
 								keySubRouter.Put("/{keyID}/revoke", a.RevokeEndpointAPIKey)
 							})
 
 							e.Route("/devices", func(deviceRouter chi.Router) {
-								deviceRouter.With(a.M.Pagination).Get("/", a.FindDevicesByAppID)
+								deviceRouter.With(middleware.Pagination).Get("/", a.FindDevicesByAppID)
 							})
 						})
 					})
@@ -174,7 +154,7 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 
 						eventRouter.Post("/", a.CreateEndpointEvent)
 						eventRouter.Post("/fanout", a.CreateEndpointFanoutEvent)
-						eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
+						eventRouter.With(middleware.Pagination).Get("/", a.GetEventsPaged)
 						eventRouter.Post("/batchreplay", a.BatchReplayEvents)
 						eventRouter.Get("/countbatchreplayevents", a.CountAffectedEvents)
 
@@ -185,7 +165,7 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 					})
 
 					projectSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-						eventDeliveryRouter.With(a.M.Pagination).Get("/", a.GetEventDeliveriesPaged)
+						eventDeliveryRouter.With(middleware.Pagination).Get("/", a.GetEventDeliveriesPaged)
 						eventDeliveryRouter.Post("/forceresend", a.ForceResendEventDeliveries)
 						eventDeliveryRouter.Post("/batchretry", a.BatchRetryEventDelivery)
 						eventDeliveryRouter.Get("/countbatchretryevents", a.CountAffectedEventDeliveries)
@@ -205,7 +185,7 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 
 						subscriptionRouter.Post("/", a.CreateSubscription)
 						subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
-						subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
+						subscriptionRouter.With(middleware.Pagination).Get("/", a.GetSubscriptions)
 						subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
 						subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
 						subscriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
@@ -214,7 +194,7 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 					projectSubRouter.Route("/sources", func(sourceRouter chi.Router) {
 						sourceRouter.Post("/", a.CreateSource)
 						sourceRouter.Get("/{sourceID}", a.GetSourceByID)
-						sourceRouter.With(a.M.Pagination).Get("/", a.LoadSourcesPaged)
+						sourceRouter.With(middleware.Pagination).Get("/", a.LoadSourcesPaged)
 						sourceRouter.Put("/{sourceID}", a.UpdateSource)
 						sourceRouter.Delete("/{sourceID}", a.DeleteSource)
 					})
@@ -226,7 +206,7 @@ func (a *DashboardHandler) BuildRoutes() http.Handler {
 					projectSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
 						portalLinkRouter.Post("/", a.CreatePortalLink)
 						portalLinkRouter.Get("/{portalLinkID}", a.GetPortalLinkByID)
-						portalLinkRouter.With(a.M.Pagination).Get("/", a.LoadPortalLinksPaged)
+						portalLinkRouter.With(middleware.Pagination).Get("/", a.LoadPortalLinksPaged)
 						portalLinkRouter.Put("/{portalLinkID}", a.UpdatePortalLink)
 						portalLinkRouter.Put("/{portalLinkID}/revoke", a.RevokePortalLink)
 					})
@@ -323,7 +303,7 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	eventsSent, messages, err := a.M.ComputeDashboardMessages(r.Context(), project.UID, searchParams, p)
+	eventsSent, messages, err := a.computeDashboardMessages(r.Context(), project.UID, searchParams, p)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching messages", http.StatusInternalServerError))
 		return
@@ -344,6 +324,23 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 
 	_ = render.Render(w, r, util.NewServerResponse("Dashboard summary fetched successfully",
 		dashboard, http.StatusOK))
+}
+
+func (a *DashboardHandler) computeDashboardMessages(ctx context.Context, projectID string, searchParams datastore.SearchParams, period datastore.Period) (uint64, []datastore.EventInterval, error) {
+	var messagesSent uint64
+
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
+	messages, err := eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, projectID, searchParams, period, 1)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to load message intervals - ")
+		return 0, nil, err
+	}
+
+	for _, m := range messages {
+		messagesSent += m.Count
+	}
+
+	return messagesSent, messages, nil
 }
 
 func (a *DashboardHandler) retrieveOrganisation(r *http.Request) (*datastore.Organisation, error) {
@@ -455,7 +452,7 @@ var guestRoutes = []string{
 
 func shouldAuthRoute(r *http.Request) bool {
 	for _, route := range guestRoutes {
-		if r.URL.Path == route {
+		if strings.HasSuffix(r.URL.Path, route) {
 			return false
 		}
 	}
