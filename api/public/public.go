@@ -17,36 +17,13 @@ import (
 )
 
 type PublicHandler struct {
-	M      *middleware.Middleware
 	Router http.Handler
-	A      types.App
+	A      types.APIOptions
 }
 
-func NewPublicHandler(a *types.App) *PublicHandler {
-	m := middleware.NewMiddleware(&middleware.CreateMiddleware{
-		Cache:             a.Cache,
-		Logger:            a.Logger,
-		Limiter:           a.Limiter,
-		Tracer:            a.Tracer,
-		EventRepo:         postgres.NewEventRepo(a.DB),
-		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.DB),
-		EndpointRepo:      postgres.NewEndpointRepo(a.DB),
-		ProjectRepo:       postgres.NewProjectRepo(a.DB),
-		ApiKeyRepo:        postgres.NewAPIKeyRepo(a.DB),
-		SubRepo:           postgres.NewSubscriptionRepo(a.DB),
-		SourceRepo:        postgres.NewSourceRepo(a.DB),
-		OrgRepo:           postgres.NewOrgRepo(a.DB),
-		OrgMemberRepo:     postgres.NewOrgMemberRepo(a.DB),
-		OrgInviteRepo:     postgres.NewOrgInviteRepo(a.DB),
-		UserRepo:          postgres.NewUserRepo(a.DB),
-		ConfigRepo:        postgres.NewConfigRepo(a.DB),
-		DeviceRepo:        postgres.NewDeviceRepo(a.DB),
-		PortalLinkRepo:    postgres.NewPortalLinkRepo(a.DB),
-	})
-
+func NewPublicHandler(a *types.APIOptions) *PublicHandler {
 	return &PublicHandler{
-		M: m,
-		A: types.App{
+		A: types.APIOptions{
 			DB:       a.DB,
 			Queue:    a.Queue,
 			Cache:    a.Cache,
@@ -64,10 +41,10 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 
 	router.Route("/v1", func(r chi.Router) {
 		r.Use(chiMiddleware.AllowContentType("application/json"))
-		r.Use(a.M.JsonResponse)
-		r.Use(a.M.RequireAuth())
+		r.Use(middleware.JsonResponse)
+		r.Use(middleware.RequireAuth())
 
-		r.With(a.M.Pagination, RequirePersonalAPIKeys(a)).Get("/organisations", a.GetOrganisationsPaged)
+		r.With(middleware.Pagination, RequirePersonalAPIKeys(a)).Get("/organisations", a.GetOrganisationsPaged)
 
 		r.Route("/projects", func(projectRouter chi.Router) {
 
@@ -83,7 +60,7 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 
 				projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
 					endpointSubRouter.Post("/", a.CreateEndpoint)
-					endpointSubRouter.With(a.M.Pagination).Get("/", a.GetEndpoints)
+					endpointSubRouter.With(middleware.Pagination).Get("/", a.GetEndpoints)
 
 					endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 						e.Get("/", a.GetEndpoint)
@@ -98,9 +75,9 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 				projectSubRouter.Route("/events", func(eventRouter chi.Router) {
 
 					// TODO(all): should the InstrumentPath change?
-					eventRouter.With(a.M.InstrumentPath("/events")).Post("/", a.CreateEndpointEvent)
+					eventRouter.With(middleware.InstrumentPath("/events")).Post("/", a.CreateEndpointEvent)
 					eventRouter.Post("/fanout", a.CreateEndpointFanoutEvent)
-					eventRouter.With(a.M.Pagination).Get("/", a.GetEventsPaged)
+					eventRouter.With(middleware.Pagination).Get("/", a.GetEventsPaged)
 					eventRouter.Post("/batchreplay", a.BatchReplayEvents)
 
 					eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
@@ -110,7 +87,7 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 				})
 
 				projectSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-					eventDeliveryRouter.With(a.M.Pagination).Get("/", a.GetEventDeliveriesPaged)
+					eventDeliveryRouter.With(middleware.Pagination).Get("/", a.GetEventDeliveriesPaged)
 					eventDeliveryRouter.Post("/forceresend", a.ForceResendEventDeliveries)
 					eventDeliveryRouter.Post("/batchretry", a.BatchRetryEventDelivery)
 
@@ -128,7 +105,7 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 				projectSubRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 					subscriptionRouter.Post("/", a.CreateSubscription)
 					subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
-					subscriptionRouter.With(a.M.Pagination).Get("/", a.GetSubscriptions)
+					subscriptionRouter.With(middleware.Pagination).Get("/", a.GetSubscriptions)
 					subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
 					subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
 					subscriptionRouter.Put("/{subscriptionID}", a.UpdateSubscription)
@@ -138,7 +115,7 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 				projectSubRouter.Route("/sources", func(sourceRouter chi.Router) {
 					sourceRouter.Post("/", a.CreateSource)
 					sourceRouter.Get("/{sourceID}", a.GetSourceByID)
-					sourceRouter.With(a.M.Pagination).Get("/", a.LoadSourcesPaged)
+					sourceRouter.With(middleware.Pagination).Get("/", a.LoadSourcesPaged)
 					sourceRouter.Put("/{sourceID}", a.UpdateSource)
 					sourceRouter.Delete("/{sourceID}", a.DeleteSource)
 				})
@@ -146,7 +123,7 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 				projectSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
 					portalLinkRouter.Post("/", a.CreatePortalLink)
 					portalLinkRouter.Get("/{portalLinkID}", a.GetPortalLinkByID)
-					portalLinkRouter.With(a.M.Pagination).Get("/", a.LoadPortalLinksPaged)
+					portalLinkRouter.With(middleware.Pagination).Get("/", a.LoadPortalLinksPaged)
 					portalLinkRouter.Put("/{portalLinkID}", a.UpdatePortalLink)
 					portalLinkRouter.Put("/{portalLinkID}/revoke", a.RevokePortalLink)
 				})

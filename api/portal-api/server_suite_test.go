@@ -116,7 +116,7 @@ func buildServer() *PortalLinkHandler {
 		AuthCtxKey: authz.AuthCtxType(middleware.AuthUserCtx),
 	})
 
-	app := &types.App{
+	app := &types.APIOptions{
 		DB:       db,
 		Queue:    queue,
 		Logger:   logger,

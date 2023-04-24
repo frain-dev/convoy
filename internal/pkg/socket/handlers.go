@@ -9,16 +9,16 @@ import (
 	"strings"
 	"time"
 
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/gorilla/websocket"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
 type ListenRequest struct {
@@ -60,14 +60,14 @@ var ug = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func BuildRoutes(h *Hub, r *Repo, m *m.Middleware) http.Handler {
+func BuildRoutes(h *Hub, r *Repo) http.Handler {
 	router := chi.NewRouter()
-	router.Use(middleware.Recoverer)
+	router.Use(chiMiddleware.Recoverer)
 
 	router.Route("/stream", func(streamRouter chi.Router) {
 		streamRouter.Use(
-			m.RequireAuth(),
-			m.RequirePersonalAccessToken(),
+			middleware.RequireAuth(),
+			middleware.RequirePersonalAccessToken(),
 		)
 
 		// TODO(subomi): Add authz
@@ -127,7 +127,7 @@ func LoginHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 			return
 		}
 
-		authUser := m.GetAuthUserFromContext(r.Context())
+		authUser := middleware.GetAuthUserFromContext(r.Context())
 
 		lr, err := login(r.Context(), loginRequest, repo, authUser.User.(*datastore.User))
 		if err != nil {

@@ -8,7 +8,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
-	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/socket"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -73,15 +72,7 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 			}
 			lo.SetLevel(lvl)
 
-			m := middleware.NewMiddleware(&middleware.CreateMiddleware{
-				UserRepo:     userRepo,
-				EndpointRepo: endpointRepo,
-				ProjectRepo:  projectRepo,
-				Cache:        a.Cache,
-				Logger:       lo,
-			})
-
-			handler := socket.BuildRoutes(h, r, m)
+			handler := socket.BuildRoutes(h, r)
 
 			consumer := worker.NewConsumer(a.Queue, lo)
 			consumer.RegisterHandlers(convoy.StreamCliEventsProcessor, h.EventDeliveryCLiHandler(r))
