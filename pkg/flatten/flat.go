@@ -27,11 +27,11 @@ var ErrOrAndMustBeArray = errors.New("the value of $or and $and must be an array
 //		  "$gte": 5
 //		}
 //	}
-func Flatten(input map[string]interface{}) (map[string]interface{}, error) {
+func Flatten(input interface{}) (map[string]interface{}, error) {
 	return flatten("", input)
 }
 
-func FlattenWithPrefix(prefix string, input map[string]interface{}) (map[string]interface{}, error) {
+func FlattenWithPrefix(prefix string, input interface{}) (map[string]interface{}, error) {
 	return flatten(prefix, input)
 }
 
@@ -43,7 +43,20 @@ func flatten(prefix string, nested interface{}) (map[string]interface{}, error) 
 		for key, value := range n {
 			if strings.HasPrefix(key, "$") {
 				if key == "$or" || key == "$and" {
+					fmt.Printf("value: %T\n", value)
 					switch a := value.(type) {
+					case []interface{}:
+						for i := range a {
+							t, err := flatten("", a[i])
+							if err != nil {
+								return nil, err
+							}
+
+							a[i] = t
+						}
+
+						f[key] = a
+						return f, nil
 					case []map[string]interface{}:
 						for i := range a {
 							t, err := flatten("", a[i])
@@ -56,19 +69,8 @@ func flatten(prefix string, nested interface{}) (map[string]interface{}, error) 
 
 						f[key] = a
 						return f, nil
-					case []interface{}:
-						for i := range a {
-							t, err := flatten("", a[i].(map[string]interface{}))
-							if err != nil {
-								return nil, err
-							}
-
-							a[i] = t
-						}
-
-						f[key] = a
-						return f, nil
 					default:
+						fmt.Printf("k: %v, v: %v\n", key, value)
 						return nil, ErrOrAndMustBeArray
 					}
 				}
@@ -98,6 +100,35 @@ func flatten(prefix string, nested interface{}) (map[string]interface{}, error) 
 				}
 				f[key] = value
 			}
+		}
+	case []interface{}:
+		ff := map[string]interface{}{}
+
+		for i := range n {
+			switch t := n[i].(type) {
+			case map[string]interface{}:
+				var p string
+				if len(prefix) > 0 {
+					p = fmt.Sprintf("%v.%v", prefix, i)
+				} else {
+					p = fmt.Sprintf("%v", i)
+				}
+
+				t, err := flatten(p, t)
+				if err != nil {
+					return nil, err
+				}
+
+				for k, v := range t {
+					ff[k] = v
+				}
+			default:
+				continue
+			}
+		}
+
+		for k, v := range ff {
+			f[k] = v
 		}
 	default:
 		f[prefix] = n

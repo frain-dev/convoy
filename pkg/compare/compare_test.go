@@ -1,16 +1,17 @@
 package compare
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/frain-dev/convoy/pkg/flatten"
-	"github.com/stretchr/testify/require"
+	"github.com/nsf/jsondiff"
 )
 
 func TestCompare(t *testing.T) {
 	tests := []struct {
 		name    string
-		payload map[string]interface{}
+		payload interface{}
 		filter  map[string]interface{}
 		want    bool
 	}{
@@ -316,18 +317,155 @@ func TestCompare(t *testing.T) {
 			},
 			want: true,
 		},
+		{
+			name: "array operator ($.) -  root level",
+			payload: []interface{}{
+				map[string]interface{}{
+					"event": "meetup",
+				},
+				map[string]interface{}{
+					"venues": []interface{}{
+						map[string]interface{}{
+							"lagos": []interface{}{
+								"ikeja",
+								"lekki",
+							},
+						},
+						map[string]interface{}{
+							"ibadan": []interface{}{
+								"bodija",
+								"dugbe",
+							},
+						},
+					},
+				},
+				map[string]interface{}{
+					"speakers": []interface{}{
+						map[string]interface{}{
+							"name": "raymond",
+						},
+						map[string]interface{}{
+							"name": "subomi",
+						},
+					},
+				},
+			},
+			filter: map[string]interface{}{
+				"$.venue": "test",
+			},
+			want: true,
+		},
+		{
+			name: "array operator ($.) -  1 level",
+			payload: map[string]interface{}{
+				"data": []interface{}{
+					map[string]interface{}{
+						"event": "meetup",
+					},
+					map[string]interface{}{
+						"venue": "test",
+					},
+				},
+				"speakers": []interface{}{
+					"raymond",
+					"subomi",
+				},
+				"swag": "hoodies",
+			},
+			filter: map[string]interface{}{
+				"data.$.event": "meetup",
+				"data.$.venue": "test",
+			},
+			want: true,
+		},
+		{
+			name: "nested array operator ($.) -  2 levels",
+			payload: map[string]interface{}{
+				"data": []interface{}{
+					map[string]interface{}{
+						"event": "meetup",
+					},
+					map[string]interface{}{
+						"venue": "test",
+					},
+					map[string]interface{}{
+						"speakers": []interface{}{
+							map[string]interface{}{
+								"name": "raymond",
+							},
+							map[string]interface{}{
+								"name": "subomi",
+							},
+						},
+					},
+				},
+				"swag": "hoodies",
+			},
+			filter: map[string]interface{}{
+				"data.$.speakers.$.name": "raymond",
+				"swag":                   "hoodies",
+			},
+			want: true,
+		},
+		{
+			name: "nested array operator ($.) - 3 levels",
+			payload: map[string]interface{}{
+				"data": []interface{}{
+					map[string]interface{}{
+						"event": "meetup",
+					},
+					map[string]interface{}{
+						"venue": "test",
+					},
+					map[string]interface{}{
+						"speakers": []interface{}{
+							map[string]interface{}{
+								"name": "raymond",
+							},
+							map[string]interface{}{
+								"name": "subomi",
+							},
+						},
+					},
+				},
+				"swag": "hoodies",
+			},
+
+			filter: map[string]interface{}{
+				"data.$.speakers.$.name": "raymond",
+				"swag":                   "hoodies",
+			},
+			want: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p, err := flatten.Flatten(tt.payload)
-			require.NoError(t, err)
+			if err != nil {
+				t.Errorf("failed to flatten JSON: %v", err)
+			}
 
 			f, err := flatten.Flatten(tt.filter)
-			require.NoError(t, err)
+			if err != nil {
+				t.Errorf("failed to flatten JSON: %v", err)
+			}
 
 			matched := Compare(p, f)
-			require.Equal(t, tt.want, matched)
+
+			if !jsonEqual(matched, tt.want) {
+				t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", matched, tt.want)
+			}
 		})
 	}
+}
+
+func jsonEqual(got, want interface{}) bool {
+	var a, b []byte
+	a, _ = json.Marshal(got)
+	b, _ = json.Marshal(want)
+
+	diff, _ := jsondiff.Compare(a, b, &jsondiff.Options{})
+	// fmt.Printf("str: %v\n", str)
+	return diff == jsondiff.FullMatch
 }
