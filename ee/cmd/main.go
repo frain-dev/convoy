@@ -10,12 +10,12 @@ import (
 	"github.com/frain-dev/convoy/cmd/migrate"
 	"github.com/frain-dev/convoy/cmd/retry"
 	"github.com/frain-dev/convoy/cmd/scheduler"
-	"github.com/frain-dev/convoy/cmd/server"
 	"github.com/frain-dev/convoy/cmd/version"
 	"github.com/frain-dev/convoy/cmd/worker"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/ee"
 	"github.com/frain-dev/convoy/ee/cmd/domain"
+	"github.com/frain-dev/convoy/ee/cmd/server"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/sirupsen/logrus"
 )

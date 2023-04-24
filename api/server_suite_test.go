@@ -110,8 +110,8 @@ func buildServer() *ApplicationHandler {
 	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
 
-	ah := NewApplicationHandler(
-		types.APIOptions{
+	ah, _ := NewApplicationHandler(
+		&types.APIOptions{
 			DB:       db,
 			Queue:    queue,
 			Logger:   logger,

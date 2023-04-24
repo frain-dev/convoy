@@ -18,22 +18,11 @@ import (
 
 type PublicHandler struct {
 	Router http.Handler
-	A      types.APIOptions
+	A      *types.APIOptions
 }
 
 func NewPublicHandler(a *types.APIOptions) *PublicHandler {
-	return &PublicHandler{
-		A: types.APIOptions{
-			DB:       a.DB,
-			Queue:    a.Queue,
-			Cache:    a.Cache,
-			Searcher: a.Searcher,
-			Logger:   a.Logger,
-			Tracer:   a.Tracer,
-			Limiter:  a.Limiter,
-			Authz:    a.Authz,
-		},
-	}
+	return &PublicHandler{A: a}
 }
 
 func (a *PublicHandler) BuildRoutes() http.Handler {
