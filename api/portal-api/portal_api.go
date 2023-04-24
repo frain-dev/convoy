@@ -17,21 +17,11 @@ import (
 
 type PortalLinkHandler struct {
 	Router http.Handler
-	A      types.APIOptions
+	A      *types.APIOptions
 }
 
 func NewPortalLinkHandler(a *types.APIOptions) *PortalLinkHandler {
-	return &PortalLinkHandler{
-		A: types.APIOptions{
-			DB:       a.DB,
-			Queue:    a.Queue,
-			Cache:    a.Cache,
-			Searcher: a.Searcher,
-			Logger:   a.Logger,
-			Tracer:   a.Tracer,
-			Limiter:  a.Limiter,
-		},
-	}
+	return &PortalLinkHandler{A: a}
 }
 
 func (a *PortalLinkHandler) BuildRoutes() http.Handler {

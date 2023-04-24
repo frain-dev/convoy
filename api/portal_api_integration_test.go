@@ -1,7 +1,7 @@
 //go:build integration
 // +build integration
 
-package public
+package api
 
 import (
 	"context"
@@ -11,36 +11,181 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/oklog/ulid/v2"
-
-	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
-
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
-type EventIntegrationTestSuite struct {
+type PortalEndpointIntegrationTestSuite struct {
 	suite.Suite
 	DB             database.Database
 	Router         http.Handler
-	ConvoyApp      *PublicHandler
+	ConvoyApp      *ApplicationHandler
+	DefaultOrg     *datastore.Organisation
 	DefaultProject *datastore.Project
+	DefaultUser    *datastore.User
 	APIKey         string
+	PersonalAPIKey string
 }
 
-func (s *EventIntegrationTestSuite) SetupSuite() {
+func (s *PortalEndpointIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
 	s.Router = s.ConvoyApp.BuildRoutes()
 }
 
-func (s *EventIntegrationTestSuite) SetupTest() {
+func (s *PortalEndpointIntegrationTestSuite) SetupTest() {
+	testdb.PurgeDB(s.T(), s.DB)
+
+	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
+	require.NoError(s.T(), err)
+	s.DefaultUser = user
+
+	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, user)
+	require.NoError(s.T(), err)
+	s.DefaultOrg = org
+
+	// Setup Default Project.
+	s.DefaultProject, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, s.DefaultOrg.UID)
+	require.NoError(s.T(), err)
+
+	// Seed Auth
+	role := auth.Role{
+		Type:    auth.RoleAdmin,
+		Project: s.DefaultProject.UID,
+	}
+
+	_, s.APIKey, err = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
+	require.NoError(s.T(), err)
+
+	_, s.PersonalAPIKey, err = testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test-personal-key", string(datastore.PersonalKey), s.DefaultUser.UID)
+	require.NoError(s.T(), err)
+
+	// Setup Config.
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	require.NoError(s.T(), err)
+
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+}
+
+func (s *PortalEndpointIntegrationTestSuite) TearDownTest() {
+	testdb.PurgeDB(s.T(), s.DB)
+	metrics.Reset()
+}
+
+func (s *PortalEndpointIntegrationTestSuite) Test_GetEndpoint_EndpointNotFound() {
+	appID := "123"
+	expectedStatusCode := http.StatusNotFound
+
+	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "", "", true, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+	require.NoError(s.T(), err)
+
+	// Arrange Request.
+	url := fmt.Sprintf("/portal-api/endpoints/%s?token=%s", appID, portalLink.Token)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
+func (s *PortalEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
+	endpointID := "123456789"
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", true, datastore.ActiveEndpointStatus)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpointID})
+	require.NoError(s.T(), err)
+
+	// Arrange Request.
+	url := fmt.Sprintf("/portal-api/endpoints/%s?token=%s", endpointID, portalLink.Token)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var endpoint datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &endpoint)
+
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
+	require.Equal(s.T(), endpoint.Title, dbEndpoint.Title)
+}
+func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpoints() {
+	// Just Before
+	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint1.UID, endpoint2.UID})
+	require.NoError(s.T(), err)
+
+	// Arrange Request
+	url := fmt.Sprintf("/portal-api/endpoints?token=%s", portalLink.Token)
+	req := createRequest(http.MethodGet, url, "", nil)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), http.StatusOK, w.Code)
+
+	// Deep Assert
+	var resp []datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &resp)
+	require.Equal(s.T(), 2, len(resp))
+}
+func (s *PortalEndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
+	s.T().Skip("Depends on #637")
+}
+
+func TestPortalEndpointIntegrationTestSuite(t *testing.T) {
+	suite.Run(t, new(PortalEndpointIntegrationTestSuite))
+}
+
+type PortalEventIntegrationTestSuite struct {
+	suite.Suite
+	DB             database.Database
+	Router         http.Handler
+	ConvoyApp      *ApplicationHandler
+	DefaultProject *datastore.Project
+	APIKey         string
+}
+
+func (s *PortalEventIntegrationTestSuite) SetupSuite() {
+	s.DB = getDB()
+	s.ConvoyApp = buildServer()
+	s.Router = s.ConvoyApp.BuildRoutes()
+}
+
+func (s *PortalEventIntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
@@ -61,7 +206,7 @@ func (s *EventIntegrationTestSuite) SetupTest() {
 	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
 
 	// Setup Config.
-	err = config.LoadConfig("../testdata/Auth_Config/full-convoy.json")
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
@@ -69,130 +214,12 @@ func (s *EventIntegrationTestSuite) SetupTest() {
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
 
-func (s *EventIntegrationTestSuite) TearDownTest() {
+func (s *PortalEventIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
-func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent() {
-	endpointID := ulid.Make().String()
-	expectedStatusCode := http.StatusCreated
-
-	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
-
-	bodyStr := `{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`
-	body := serialize(bodyStr, endpointID)
-
-	url := fmt.Sprintf("/v1/projects/%s/events", s.DefaultProject.UID)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
-	w := httptest.NewRecorder()
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var event datastore.Event
-	parseResponse(s.T(), w.Result(), &event)
-
-	require.NotEmpty(s.T(), event.UID)
-	require.Equal(s.T(), event.Endpoints[0], endpointID)
-}
-
-func (s *EventIntegrationTestSuite) Test_CreateFanoutEvent_MultipleEndpoints() {
-	endpointID := ulid.Make().String()
-	expectedStatusCode := http.StatusCreated
-	ownerID := ulid.Make().String()
-
-	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", ownerID, false, datastore.ActiveEndpointStatus)
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", ownerID, false, datastore.ActiveEndpointStatus)
-
-	bodyStr := `{"owner_id":"%s", "event_type":"*", "data":{"level":"test"}}`
-	body := serialize(bodyStr, ownerID)
-
-	url := fmt.Sprintf("/v1/projects/%s/events/fanout", s.DefaultProject.UID)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
-	w := httptest.NewRecorder()
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var event datastore.Event
-	parseResponse(s.T(), w.Result(), &event)
-
-	require.NotEmpty(s.T(), event.UID)
-	require.Equal(s.T(), event.Endpoints[0], endpointID)
-	require.Equal(s.T(), 2, len(event.Endpoints))
-}
-
-func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_Event() {
-	endpointID := ulid.Make().String()
-	appID := ulid.Make().String()
-	expectedStatusCode := http.StatusCreated
-
-	// Just Before.
-	// Create an Endpoint with an app ID
-	endpoint := &datastore.Endpoint{
-		UID:       endpointID,
-		Title:     fmt.Sprintf("TestEndpoint-%s", endpointID),
-		ProjectID: s.DefaultProject.UID,
-		AppID:     appID,
-		Secrets: datastore.Secrets{
-			{UID: ulid.Make().String()},
-		},
-		Status: datastore.ActiveEndpointStatus,
-	}
-
-	err := postgres.NewEndpointRepo(s.ConvoyApp.A.DB).CreateEndpoint(context.TODO(), endpoint, s.DefaultProject.UID)
-	require.NoError(s.T(), err)
-
-	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
-	body := serialize(bodyStr, appID)
-
-	url := fmt.Sprintf("/v1/projects/%s/events", s.DefaultProject.UID)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
-	w := httptest.NewRecorder()
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var event datastore.Event
-	parseResponse(s.T(), w.Result(), &event)
-
-	require.NotEmpty(s.T(), event.UID)
-	require.Equal(s.T(), event.Endpoints[0], endpointID)
-}
-
-func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_Endpoint_is_disabled() {
-	endpointID := ulid.Make().String()
-	expectedStatusCode := http.StatusCreated
-
-	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", true, datastore.ActiveEndpointStatus)
-
-	bodyStr := `{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`
-	body := serialize(bodyStr, endpointID)
-
-	url := fmt.Sprintf("/v1/projects/%s/events", s.DefaultProject.UID)
-	req := createRequest(http.MethodPost, url, s.APIKey, body)
-	w := httptest.NewRecorder()
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-}
-
-func (s *EventIntegrationTestSuite) Test_GetEndpointEvent_Valid_Event() {
+func (s *PortalEventIntegrationTestSuite) Test_GetEndpointEvent_Valid_Event() {
 	eventID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
@@ -203,7 +230,10 @@ func (s *EventIntegrationTestSuite) Test_GetEndpointEvent_Valid_Event() {
 	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, eventID, "*", "", []byte(`{}`))
 	require.NoError(s.T(), err)
 
-	url := fmt.Sprintf("/v1/projects/%s/events/%s", s.DefaultProject.UID, eventID)
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/events/%s?token=%s", eventID, portalLink.Token)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -219,28 +249,7 @@ func (s *EventIntegrationTestSuite) Test_GetEndpointEvent_Valid_Event() {
 	require.Equal(s.T(), event.UID, respEvent.UID)
 }
 
-func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_Valid_Event_RedirectToProjects() {
-	s.T().Skip("Deprecated Redirects")
-	//	endpointID := ulid.Make().String()
-	//	expectedStatusCode := http.StatusTemporaryRedirect
-	//
-	//	// Just Before.
-	//	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
-	//
-	//	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
-	//	body := serialize(bodyStr, endpointID)
-	//
-	//	url := fmt.Sprintf("/v1/events?projectID=%s", s.DefaultProject.UID)
-	//	req := createRequest(http.MethodPost, url, s.APIKey, body)
-	//	w := httptest.NewRecorder()
-	//	// Act.
-	//	s.Router.ServeHTTP(w, req)
-	//
-	//	// Assert.
-	//	require.Equal(s.T(), expectedStatusCode, w.Code)
-}
-
-func (s *EventIntegrationTestSuite) Test_ReplayEndpointEvent_Valid_Event() {
+func (s *PortalEventIntegrationTestSuite) Test_ReplayEndpointEvent_Valid_Event() {
 	eventID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
@@ -248,7 +257,10 @@ func (s *EventIntegrationTestSuite) Test_ReplayEndpointEvent_Valid_Event() {
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
 	_, _ = testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, eventID, "*", "", []byte(`{}`))
 
-	url := fmt.Sprintf("/v1/projects/%s/events/%s/replay", s.DefaultProject.UID, eventID)
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/events/%s/replay?token=%s", eventID, portalLink.Token)
 	req := createRequest(http.MethodPut, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -259,11 +271,15 @@ func (s *EventIntegrationTestSuite) Test_ReplayEndpointEvent_Valid_Event() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
-func (s *EventIntegrationTestSuite) Test_GetEndpointEvent_Event_not_found() {
-	eventID := ulid.Make().String()
+func (s *PortalEventIntegrationTestSuite) Test_GetEndpointEvent_Event_not_found() {
 	expectedStatusCode := http.StatusNotFound
 
-	url := fmt.Sprintf("/v1/projects/%s/events/%s", s.DefaultProject.UID, eventID)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/events/%s?token=%s", "123", portalLink.Token)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -274,7 +290,7 @@ func (s *EventIntegrationTestSuite) Test_GetEndpointEvent_Event_not_found() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
-func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery() {
+func (s *PortalEventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery() {
 	eventDeliveryID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
@@ -290,7 +306,10 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery() 
 	eventDelivery, err := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event, endpoint, s.DefaultProject.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
 	require.NoError(s.T(), err)
 
-	url := fmt.Sprintf("/v1/projects/%s/eventdeliveries/%s", s.DefaultProject.UID, eventDeliveryID)
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/eventdeliveries/%s?token=%s", eventDeliveryID, portalLink.Token)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -306,31 +325,15 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery() 
 	require.Equal(s.T(), eventDelivery.UID, respEventDelivery.UID)
 }
 
-func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDelivery_RedirectToProjects() {
-	s.T().Skip("Deprecated Redirects")
-	//	eventDeliveryID := ulid.Make().String()
-	//	expectedStatusCode := http.StatusTemporaryRedirect
-	//
-	//	// Just Before.
-	//	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
-	//	_, _ = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, &datastore.Event{}, endpoint, s.DefaultProject.UID, eventDeliveryID, datastore.SuccessEventStatus, &datastore.Subscription{})
-	//
-	//	url := fmt.Sprintf("/v1/eventdeliveries/%s?groupID=%s", eventDeliveryID, s.DefaultProject.UID)
-	//	req := createRequest(http.MethodGet, url, s.APIKey, nil)
-	//	w := httptest.NewRecorder()
-	//
-	//	// Act.
-	//	s.Router.ServeHTTP(w, req)
-	//
-	//	// Assert.
-	//	require.Equal(s.T(), expectedStatusCode, w.Code)
-}
-
-func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Event_not_found() {
-	eventDeliveryID := ulid.Make().String()
+func (s *PortalEventIntegrationTestSuite) Test_GetEventDelivery_Event_not_found() {
 	expectedStatusCode := http.StatusNotFound
 
-	url := fmt.Sprintf("/v1/projects/%s/eventdeliveries/%s", s.DefaultProject.UID, eventDeliveryID)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/eventdeliveries/%s?token=%s", "123", portalLink.Token)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -341,7 +344,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventDelivery_Event_not_found() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
-func (s *EventIntegrationTestSuite) Test_ResendEventDelivery_Valid_Resend() {
+func (s *PortalEventIntegrationTestSuite) Test_ResendEventDelivery_Valid_Resend() {
 	eventDeliveryID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
@@ -361,7 +364,10 @@ func (s *EventIntegrationTestSuite) Test_ResendEventDelivery_Valid_Resend() {
 	eventDelivery, err := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event, endpoint, s.DefaultProject.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
 	require.NoError(s.T(), err)
 
-	url := fmt.Sprintf("/v1/projects/%s/eventdeliveries/%s/resend", s.DefaultProject.UID, eventDeliveryID)
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/eventdeliveries/%s/resend?token=%s", eventDelivery.UID, portalLink.Token)
 	req := createRequest(http.MethodPut, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -378,7 +384,7 @@ func (s *EventIntegrationTestSuite) Test_ResendEventDelivery_Valid_Resend() {
 	require.Equal(s.T(), eventDelivery.UID, respEventDelivery.UID)
 }
 
-func (s *EventIntegrationTestSuite) Test_BatchRetryEventDelivery_Valid_EventDeliveries() {
+func (s *PortalEventIntegrationTestSuite) Test_BatchRetryEventDelivery_Valid_EventDeliveries() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -399,7 +405,10 @@ func (s *EventIntegrationTestSuite) Test_BatchRetryEventDelivery_Valid_EventDeli
 	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event, endpoint, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
 	require.NoError(s.T(), err)
 
-	url := fmt.Sprintf("/v1/projects/%s/eventdeliveries/batchretry?endpointId=%s&eventId=%s&status=%s", s.DefaultProject.UID, endpoint.UID, event.UID, datastore.FailureEventStatus)
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/eventdeliveries/batchretry?endpointId=%s&eventId=%s&status=%s&token=%s", endpoint.UID, event.UID, datastore.FailureEventStatus, portalLink.Token)
 	req := createRequest(http.MethodPost, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -410,7 +419,49 @@ func (s *EventIntegrationTestSuite) Test_BatchRetryEventDelivery_Valid_EventDeli
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
-func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventDeliveries() {
+func (s *PortalEventIntegrationTestSuite) Test_CountAffectedEventDeliveries_Valid_Filters() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+	event, _ := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	subscription, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
+		EventTypes: []string{"*"},
+		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
+	})
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event, endpoint, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event, endpoint, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event, endpoint, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/eventdeliveries/countbatchretryevents?endpointId=%s&eventId=%s&status=%s&token=%s", endpoint.UID, event.UID, datastore.FailureEventStatus, portalLink.Token)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var num struct {
+		Num int `json:"num"`
+	}
+	parseResponse(s.T(), w.Result(), &num)
+	require.Equal(s.T(), 3, num.Num)
+}
+
+func (s *PortalEventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventDeliveries() {
 	expectedStatusCode := http.StatusOK
 	expectedMessage := "3 successful, 0 failed"
 
@@ -429,7 +480,10 @@ func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventD
 	e2, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event, endpoint, s.DefaultProject.UID, ulid.Make().String(), datastore.SuccessEventStatus, subscription)
 	e3, _ := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event, endpoint, s.DefaultProject.UID, ulid.Make().String(), datastore.SuccessEventStatus, subscription)
 
-	url := fmt.Sprintf("/v1/projects/%s/eventdeliveries/forceresend", s.DefaultProject.UID)
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/eventdeliveries/forceresend?token=%s", portalLink.Token)
 
 	bodyStr := `{"ids":["%s", "%s", "%s"]}`
 	body := serialize(bodyStr, e1.UID, e2.UID, e3.UID)
@@ -450,7 +504,7 @@ func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventD
 	require.Equal(s.T(), expectedMessage, response["message"].(string))
 }
 
-func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
+func (s *PortalEventIntegrationTestSuite) Test_GetEventsPaged() {
 	eventID := ulid.Make().String()
 	sourceID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
@@ -482,7 +536,10 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 	_, err = testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint2, s.DefaultProject.UID, ulid.Make().String(), "*", sourceID, []byte(`{}`))
 	require.NoError(s.T(), err)
 
-	url := fmt.Sprintf("/v1/projects/%s/events?endpointId=%s&sourceId=%s", s.DefaultProject.UID, endpoint1.UID, sourceID)
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint2.UID})
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/events?endpointId=%s&sourceId=%s&token=%s", endpoint1.UID, sourceID, portalLink.Token)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -504,7 +561,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 	}
 }
 
-func (s *EventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
+func (s *PortalEventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	eventDeliveryID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
@@ -536,7 +593,10 @@ func (s *EventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event2, endpoint2, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
 	require.NoError(s.T(), err)
 
-	url := fmt.Sprintf("/v1/projects/%s/eventdeliveries?endpointId=%s", s.DefaultProject.UID, endpoint1.UID)
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint2.UID})
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/portal-api/eventdeliveries?endpointId=%s&token=%s", endpoint1.UID, portalLink.Token)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
@@ -558,6 +618,6 @@ func (s *EventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	}
 }
 
-func TestEventIntegrationTestSuite(t *testing.T) {
-	suite.Run(t, new(EventIntegrationTestSuite))
+func TestPortalEventIntegrationTestSuite(t *testing.T) {
+	suite.Run(t, new(PortalEventIntegrationTestSuite))
 }
