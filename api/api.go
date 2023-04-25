@@ -75,6 +75,7 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 	router.Use(middleware.WriteRequestIDHeader)
 	router.Use(middleware.InstrumentRequests())
 	router.Use(middleware.LogHttpRequest(a.A))
+	router.Use(chiMiddleware.Maybe(middleware.SetupCORS, shouldApplyCORS))
 
 	// Ingestion API.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
@@ -104,10 +105,10 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 }
 
 func (a *ApplicationHandler) RegisterDashboardRoutes(r *chi.Mux) {
+
 	dh := &dashboard.DashboardHandler{A: a.A}
 	uiMiddlewares := chi.Middlewares{
 		middleware.JsonResponse,
-		middleware.SetupCORS,
 		chiMiddleware.Maybe(middleware.RequireAuth(), shouldAuthRoute),
 	}
 	uiMiddlewaresWithPagination := chi.Chain(append(
@@ -283,4 +284,17 @@ func shouldAuthRoute(r *http.Request) bool {
 	}
 
 	return true
+}
+
+func shouldApplyCORS(r *http.Request) bool {
+	corsRoutes := []string{"/ui", "portal-api"}
+
+	for _, route := range corsRoutes {
+		if strings.HasPrefix(r.URL.Path, route) {
+			return true
+		}
+
+	}
+
+	return false
 }
