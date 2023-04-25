@@ -21,7 +21,7 @@
 		Deleting this project will delete all of it's data including events, apps, subscriptions and config.
 		<strong>Are you sure you want to delete this project?</strong>
 	</p>
-	<button convoy-button color="danger" size="sm" class="mt-32px" (click)="showDeleteProjectModal = true">
+	<button convoy-button convoy-permission="Project Settings|MANAGE" color="danger" size="sm" class="mt-32px" (click)="showDeleteProjectModal = true">
 		<svg width="18" height="18" class="mr-2 fill-white-100">
 			<use xlink:href="#delete-icon"></use>
 		</svg>

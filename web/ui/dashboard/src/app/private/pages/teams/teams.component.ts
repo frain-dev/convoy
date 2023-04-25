@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PAGINATION } from 'src/app/models/global.model';
@@ -6,6 +6,7 @@ import { TEAMS } from 'src/app/models/teams.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { TeamsService } from './teams.service';
+import { RbacService } from 'src/app/services/rbac/rbac.service';
 
 @Component({
 	selector: 'app-teams',
@@ -42,11 +43,13 @@ export class TeamsComponent implements OnInit {
 			type: ['super_user', Validators.required]
 		})
 	});
+	private rbacService = inject(RbacService);
 
 	constructor(private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private teamService: TeamsService, private formBuilder: FormBuilder) {}
 
 	ngOnInit() {
 		this.toggleFilter(this.route.snapshot.queryParams?.inviteType ?? 'active');
+		if (!this.rbacService.userCanAccess('Team|MANAGE')) this.inviteUserForm.disable();
 	}
 
 	async fetchTeamMembers(requestDetails?: { searchString?: string; page?: number }) {

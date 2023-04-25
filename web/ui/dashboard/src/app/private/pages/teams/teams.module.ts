@@ -15,6 +15,7 @@ import { BadgeComponent } from 'src/app/components/badge/badge.component';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { DeleteModalComponent } from '../../components/delete-modal/delete-modal.component';
+import { PermissionDirective } from '../../components/permission/permission.directive';
 
 const routes: Routes = [
 	{ path: '', component: TeamsComponent },
@@ -31,12 +32,12 @@ const routes: Routes = [
 		DeleteModalComponent,
 		PageDirective,
 		ModalComponent,
-        ModalHeaderComponent,
+		ModalHeaderComponent,
 		DropdownComponent,
 		ButtonComponent,
 		BadgeComponent,
 		EmptyStateComponent,
-
+		PermissionDirective,
 		CardComponent,
 		TableComponent,
 		TableHeadComponent,

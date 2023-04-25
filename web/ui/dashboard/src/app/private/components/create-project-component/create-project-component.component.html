@@ -1,6 +1,6 @@
 <p class="text-14 text-grey-60 mb-24px max-w-[500px]">A project represents the top level namespace for grouping event sources, applications, endpoints and events.</p>
 
-<form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()">
+<form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()" disabled>
 	<div convoy-card class="p-24px mt-24px">
 		<convoy-input-field>
 			<label for="project-name" required="true" convoy-label>Project name</label>
@@ -16,7 +16,7 @@
 			</div>
 
 			<div class="flex justify-end mt-24px">
-				<button convoy-button color="primary" fill="outline" size="sm" type="button" (click)="confirmRegenerateKey = true" [disabled]="regeneratingKey">
+				<button convoy-button convoy-permission="Project Settings|MANAGE" color="primary" fill="outline" size="sm" type="button" (click)="confirmRegenerateKey = true" [disabled]="regeneratingKey">
 					<svg width="16" height="16" class="mr-8px" [ngClass]="{ 'animate-spin-slow': regeneratingKey }">
 						<use xlink:href="#refresh-icon"></use>
 					</svg>
@@ -45,7 +45,7 @@
 							Signature Details
 							<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 						</p>
-						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
+						<button convoy-permission="Project Settings|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
 							<svg width="16" height="16" class="fill-grey-60">
 								<use xlink:href="#delete-icon"></use>
 							</svg>
@@ -83,7 +83,7 @@
 								attempt.
 							</convoy-tooltip>
 						</p>
-						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('retry-config')">
+						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('retry-config')">
 							<svg width="16" height="16" class="fill-grey-60">
 								<use xlink:href="#delete-icon"></use>
 							</svg>
@@ -113,7 +113,7 @@
 							Rate Limit Parameters
 							<convoy-tooltip size="sm" position="right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
 						</p>
-						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('rate-limit')">
+						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('rate-limit')">
 							<svg width="16" height="16" class="fill-grey-60">
 								<use xlink:href="#delete-icon"></use>
 							</svg>
@@ -140,7 +140,7 @@
 				<ng-container *ngIf="showConfig('retention')">
 					<div class="flex justify-between items-center mb-24px">
 						<p class="text-14 font-medium text-grey-60">Retention Policy</p>
-						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('retention')">
+						<button convoy-button type="button" size="xs" fill="outline" convoy-permission="Project Settings|MANAGE" color="grey" texture="light" (click)="toggleConfigForm('retention')">
 							<svg width="16" height="16" class="fill-grey-60">
 								<use xlink:href="#delete-icon"></use>
 							</svg>
@@ -186,8 +186,8 @@
 	</div>
 
 	<div class="flex justify-end mt-48px">
-		<button convoy-button fill="outline" *ngIf="action !== 'update'" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" type="button" (click)="cancel()">Cancel</button>
-		<button convoy-button [disabled]="isCreatingProject">
+		<button [disabled]="projectForm.disabled" convoy-button fill="outline" *ngIf="action !== 'update'" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" type="button" (click)="cancel()">Cancel</button>
+		<button convoy-button [disabled]="isCreatingProject || !rbacService.userCanAccess('Project Settings|MANAGE')">
 			{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
 			<svg width="24" height="24" class="ml-8px fill-white-100">
 				<use xlink:href="#arrow-right-icon"></use>

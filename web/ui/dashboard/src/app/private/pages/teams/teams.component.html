@@ -28,7 +28,7 @@
 				</ul>
 			</div>
 
-			<button convoy-button size="sm" class="min-w-[150px] h-36px" (click)="openCreateTeamModal(); currentId = ''">Add team member</button>
+			<button convoy-permission="Team|MANAGE" convoy-button size="sm" class="min-w-[150px] h-36px" (click)="openCreateTeamModal(); currentId = ''">Add team member</button>
 		</div>
 	</div>
 
@@ -62,7 +62,9 @@
 
 									<ul dropdownOptions>
 										<li>
-											<button convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full" (click)="showDeactivateModal = !showDeactivateModal; selectedMember = team; currentId = ''; showOverlay = false">Deactivate team member</button>
+											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full" (click)="showDeactivateModal = !showDeactivateModal; selectedMember = team; currentId = ''; showOverlay = false">
+												Deactivate team member
+											</button>
 										</li>
 									</ul>
 								</div>
@@ -195,8 +197,8 @@
 			<convoy-input-error *ngIf="inviteUserForm.get('invitee_email')?.touched && inviteUserForm.get('invitee_email')?.invalid">Please enter a valid email</convoy-input-error>
 		</convoy-input-field>
 		<div class="flex justify-end pt-24px pb-40px">
-			<button convoy-button fill="outline" type="button" routerLink="/team">Discard</button>
-			<button convoy-button class="ml-16px" [disabled]="invitingUser">
+			<button convoy-button [disabled]="inviteUserForm.disabled" fill="outline" type="button" routerLink="/team">Discard</button>
+			<button convoy-button class="ml-16px" [disabled]="invitingUser || inviteUserForm.disabled">
 				{{ invitingUser ? 'Inviting User..' : 'Send Invite' }}
 			</button>
 		</div>

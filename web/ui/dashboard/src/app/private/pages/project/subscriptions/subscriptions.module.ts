@@ -15,6 +15,7 @@ import { DeleteModalComponent } from 'src/app/private/components/delete-modal/de
 import { SourceValueModule } from 'src/app/pipes/source-value/source-value.module';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
+import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';
 
 const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 
@@ -37,7 +38,8 @@ const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 		SourceValueModule,
 		TooltipComponent,
 		CardComponent,
-		PaginationComponent
+		PaginationComponent,
+		PermissionDirective
 	]
 })
 export class SubscriptionsModule {}
