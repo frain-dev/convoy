@@ -287,7 +287,7 @@ func shouldAuthRoute(r *http.Request) bool {
 }
 
 func shouldApplyCORS(r *http.Request) bool {
-	corsRoutes := []string{"/ui", "portal-api"}
+	corsRoutes := []string{"/ui", "/portal-api"}
 
 	for _, route := range corsRoutes {
 		if strings.HasPrefix(r.URL.Path, route) {
