@@ -86,6 +86,7 @@ const (
 	DeadLetterProcessor      TaskName = "DeadLetterProcessor"
 	CreateEventProcessor     TaskName = "CreateEventProcessor"
 	NotificationProcessor    TaskName = "NotificationProcessor"
+	MetaEventProcessor       TaskName = "MetaEventProcessor"
 	IndexDocument            TaskName = "index document"
 	DailyAnalytics           TaskName = "daily analytics"
 	StreamCliEventsProcessor TaskName = "StreamCliEventsProcessor"
@@ -106,6 +107,7 @@ const (
 const (
 	EventQueue       QueueName = "EventQueue"
 	CreateEventQueue QueueName = "CreateEventQueue"
+	MetaEventQueue   QueueName = "MetaEventQueue"
 	SearchIndexQueue QueueName = "SearchIndexQueue"
 	StreamQueue      QueueName = "StreamQueue"
 	ScheduleQueue    QueueName = "ScheduleQueue"

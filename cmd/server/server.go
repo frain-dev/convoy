@@ -10,6 +10,7 @@ import (
 	route "github.com/frain-dev/convoy/api"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/server"
@@ -199,14 +200,15 @@ func StartConvoyServer(a *cli.App, cfg config.Configuration, withWorkers bool) e
 
 		// register worker.
 		consumer := worker.NewConsumer(a.Queue, lo)
-
-		endpointRepo := postgres.NewEndpointRepo(a.DB)
+		endpointListener := listener.NewEndpointListener(a.Queue)
+		endpointRepo := postgres.NewEndpointRepo(a.DB, endpointListener)
 		eventRepo := postgres.NewEventRepo(a.DB)
 		eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 		projectRepo := postgres.NewProjectRepo(a.DB)
 		subRepo := postgres.NewSubscriptionRepo(a.DB)
 		deviceRepo := postgres.NewDeviceRepo(a.DB)
 		configRepo := postgres.NewConfigRepo(a.DB)
+		metaEventRepo := postgres.NewMetaEventRepo(a.DB)
 
 		consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 			endpointRepo,
@@ -247,6 +249,7 @@ func StartConvoyServer(a *cli.App, cfg config.Configuration, withWorkers bool) e
 		consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 		consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.Searcher))
 		consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
+		consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo))
 
 		// start worker
 		a.Logger.Infof("Starting Convoy workers...")

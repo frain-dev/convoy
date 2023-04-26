@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/fflag/flipt"
@@ -65,6 +66,7 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 }
 
 func NewApplicationHandler(a App) *ApplicationHandler {
+	listener := listener.NewEndpointListener(a.Queue)
 	m := middleware.NewMiddleware(&middleware.CreateMiddleware{
 		Cache:             a.Cache,
 		Logger:            a.Logger,
@@ -72,7 +74,7 @@ func NewApplicationHandler(a App) *ApplicationHandler {
 		Tracer:            a.Tracer,
 		EventRepo:         postgres.NewEventRepo(a.DB),
 		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.DB),
-		EndpointRepo:      postgres.NewEndpointRepo(a.DB),
+		EndpointRepo:      postgres.NewEndpointRepo(a.DB, listener),
 		ProjectRepo:       postgres.NewProjectRepo(a.DB),
 		ApiKeyRepo:        postgres.NewAPIKeyRepo(a.DB),
 		SubRepo:           postgres.NewSubscriptionRepo(a.DB),

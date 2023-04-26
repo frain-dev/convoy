@@ -2,6 +2,7 @@ package ingest
 
 import (
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
@@ -22,7 +23,8 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 			}
 
 			sourceRepo := postgres.NewSourceRepo(a.DB)
-			endpointRepo := postgres.NewEndpointRepo(a.DB)
+			listener := listener.NewEndpointListener(a.Queue)
+			endpointRepo := postgres.NewEndpointRepo(a.DB, listener)
 			projectRepo := postgres.NewProjectRepo(a.DB)
 
 			lo := a.Logger.(*log.Logger)

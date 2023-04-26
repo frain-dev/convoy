@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/services"
@@ -17,7 +18,8 @@ import (
 )
 
 func createEndpointService(a *ApplicationHandler) *services.EndpointService {
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+	listener := listener.NewEndpointListener(a.A.Queue)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB, listener)
 	eventRepo := postgres.NewEventRepo(a.A.DB)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
 	projectRepo := postgres.NewProjectRepo(a.A.DB)
@@ -262,4 +264,3 @@ func (a *ApplicationHandler) PauseEndpoint(w http.ResponseWriter, r *http.Reques
 
 	_ = render.Render(w, r, util.NewServerResponse("endpoint status updated successfully", endpoint, http.StatusAccepted))
 }
-

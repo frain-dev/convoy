@@ -141,6 +141,11 @@ const (
 )
 
 const (
+	EndpointCreated MetaEventType = "endpoint.created"
+	EndpointUpdated MetaEventType = "endpoint.updated"
+)
+
+const (
 	GithubSourceProvider  SourceProvider = "github"
 	TwitterSourceProvider SourceProvider = "twitter"
 	ShopifySourceProvider SourceProvider = "shopify"
@@ -594,6 +599,7 @@ var (
 	ErrDuplicateEmail                = errors.New("a user with this email already exists")
 	ErrNoActiveSecret                = errors.New("no active secret found")
 	ErrSecretNotFound                = errors.New("secret not found")
+	ErrMetaEventNotFound             = errors.New("meta event not found")
 )
 
 type AppMetadata struct {
@@ -1289,7 +1295,7 @@ type DeprecatedEndpoint struct {
 type MetaEvent struct {
 	UID       string          `json:"uid" db:"id"`
 	ProjectID string          `json:"project_id" db:"project_id"`
-	EventType string          `json:"event_type" db:"event_type"`
+	EventType MetaEventType   `json:"event_type" db:"event_type"`
 	Data      json.RawMessage `json:"data" db:"data"`
 	Status    string          `json:"status" db:"status"`
 
@@ -1299,6 +1305,11 @@ type MetaEvent struct {
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+type MetaEventPayload struct {
+	EventType string          `json:"event_type"`
+	Data      json.RawMessage `json:"data"`
 }
 
 type Password struct {

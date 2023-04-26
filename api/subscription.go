@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/services"
@@ -17,7 +18,8 @@ import (
 
 func createSubscriptionService(a *ApplicationHandler) *services.SubcriptionService {
 	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+	listener := listener.NewEndpointListener(a.A.Queue)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB, listener)
 	sourceRepo := postgres.NewSourceRepo(a.A.DB)
 
 	return services.NewSubscriptionService(subRepo, endpointRepo, sourceRepo)

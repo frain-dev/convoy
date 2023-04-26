@@ -15,6 +15,7 @@ import (
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +24,7 @@ func Test_UpdateEndpoint(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, listener.NoopEndpointListener)
 
 	project := seedProject(t, db)
 	endpoint := generateEndpoint(project)
@@ -85,7 +86,7 @@ func Test_UpdateEndpointStatus(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, listener.NoopEndpointListener)
 
 	project := seedProject(t, db)
 
@@ -110,7 +111,7 @@ func Test_DeleteEndpoint(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, listener.NoopEndpointListener)
 
 	project := seedProject(t, db)
 
@@ -156,7 +157,7 @@ func Test_CreateEndpoint(t *testing.T) {
 	defer closeFn()
 
 	projectRepo := NewProjectRepo(db)
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, listener.NoopEndpointListener)
 
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -200,7 +201,7 @@ func Test_LoadEndpointsPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, listener.NoopEndpointListener)
 	eventRepo := NewEventRepo(db)
 
 	project := seedProject(t, db)
@@ -239,7 +240,7 @@ func Test_FindEndpointsByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, listener.NoopEndpointListener)
 	eventRepo := NewEventRepo(db)
 
 	project := seedProject(t, db)
@@ -297,7 +298,7 @@ func Test_FindEndpointsByAppID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, listener.NoopEndpointListener)
 	eventRepo := NewEventRepo(db)
 
 	project := seedProject(t, db)
@@ -353,7 +354,7 @@ func Test_FindEndpointsByOwnerID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, listener.NoopEndpointListener)
 	eventRepo := NewEventRepo(db)
 
 	project := seedProject(t, db)
@@ -409,7 +410,7 @@ func Test_CountProjectEndpoints(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, listener.NoopEndpointListener)
 
 	project := seedProject(t, db)
 	for i := 0; i < 6; i++ {
@@ -437,7 +438,7 @@ func Test_FindEndpointByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, listener.NoopEndpointListener)
 	eventRepo := NewEventRepo(db)
 
 	_, err := endpointRepo.FindEndpointByID(context.Background(), ulid.Make().String(), "")
@@ -480,7 +481,7 @@ func Test_UpdateSecrets(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, listener.NoopEndpointListener)
 
 	project := seedProject(t, db)
 	endpoint := generateEndpoint(project)
@@ -521,7 +522,7 @@ func Test_DeleteSecret(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, listener.NoopEndpointListener)
 
 	project := seedProject(t, db)
 	endpoint := generateEndpoint(project)
@@ -598,7 +599,7 @@ func seedEndpoint(t *testing.T, db database.Database) *datastore.Endpoint {
 	project := seedProject(t, db)
 	endpoint := generateEndpoint(project)
 
-	err := NewEndpointRepo(db).CreateEndpoint(context.Background(), endpoint, project.UID)
+	err := NewEndpointRepo(db, listener.NoopEndpointListener).CreateEndpoint(context.Background(), endpoint, project.UID)
 	require.NoError(t, err)
 
 	return endpoint

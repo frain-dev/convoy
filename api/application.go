@@ -10,6 +10,7 @@ import (
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/services"
@@ -57,7 +58,8 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 		endpoint.Status = datastore.InactiveEndpointStatus
 	}
 
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+	listener := listener.NewEndpointListener(a.A.Queue)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB, listener)
 	err = endpointRepo.CreateEndpoint(r.Context(), endpoint, project.UID)
 	if err != nil {
 		msg := "failed to create application"
@@ -75,7 +77,8 @@ func (a *ApplicationHandler) CreateApp(w http.ResponseWriter, r *http.Request) {
 
 func (a *ApplicationHandler) GetApps(w http.ResponseWriter, r *http.Request) {
 	project := m.GetProjectFromContext(r.Context())
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+	listener := listener.NewEndpointListener(a.A.Queue)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB, listener)
 	filter := &datastore.Filter{
 		Query:   r.URL.Query().Get("q"),
 		OwnerID: r.URL.Query().Get("ownerId"),
@@ -132,7 +135,8 @@ func (a *ApplicationHandler) GetApp(w http.ResponseWriter, r *http.Request) {
 func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 	endpoints := m.GetEndpointsFromContext(r.Context())
 	project := m.GetProjectFromContext(r.Context())
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+	listener := listener.NewEndpointListener(a.A.Queue)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB, listener)
 
 	appUpdate := struct {
 		Name            *string `json:"name" valid:"required~please provide your appName"`
@@ -185,7 +189,8 @@ func (a *ApplicationHandler) UpdateApp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *ApplicationHandler) DeleteApp(w http.ResponseWriter, r *http.Request) {
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+	listener := listener.NewEndpointListener(a.A.Queue)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB, listener)
 	project := m.GetProjectFromContext(r.Context())
 
 	endpoints := m.GetEndpointsFromContext(r.Context())
@@ -320,7 +325,8 @@ func (a *ApplicationHandler) CreateAppEndpoint(w http.ResponseWriter, r *http.Re
 
 		endpoint.Authentication = auth
 
-		endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+		listener := listener.NewEndpointListener(a.A.Queue)
+		endpointRepo := postgres.NewEndpointRepo(a.A.DB, listener)
 		err = endpointRepo.UpdateEndpoint(r.Context(), endpoint, project.UID)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))

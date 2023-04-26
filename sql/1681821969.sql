@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS convoy.meta_events (
 
     event_type TEXT NOT NULL,
     project_id CHAR(26) NOT NULL REFERENCES convoy.projects (id),
-    metadata BYTEA NOT NULL,
+    data BYTEA NOT NULL,
     status TEXT NOT NULL,
     retry_count INTEGER NOT NULL,
     max_retry_count INTEGER NOT NULL,

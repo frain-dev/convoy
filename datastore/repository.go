@@ -161,5 +161,6 @@ type ExportRepository interface {
 
 type MetaEventRepository interface {
 	CreateMetaEvent(context.Context, *MetaEvent) error
+	FindMetaEventByID(ctx context.Context, projectID string, id string) (*MetaEvent, error)
 	LoadMetaEventsPaged(ctx context.Context, projectID string, f *Filter) ([]MetaEvent, PaginationData, error)
 }

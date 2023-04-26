@@ -146,11 +146,12 @@ const (
 )
 
 type endpointRepo struct {
-	db *sqlx.DB
+	db       *sqlx.DB
+	listener datastore.EndpointListener
 }
 
-func NewEndpointRepo(db database.Database) datastore.EndpointRepository {
-	return &endpointRepo{db: db.GetDB()}
+func NewEndpointRepo(db database.Database, listener datastore.EndpointListener) datastore.EndpointRepository {
+	return &endpointRepo{db: db.GetDB(), listener: listener}
 }
 
 func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
@@ -159,6 +160,10 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 	defer rollbackTx(tx)
+
+	defer func() {
+		go e.listener.AfterCreate(endpoint)
+	}()
 
 	ac := endpoint.GetAuthConfig()
 	args := []interface{}{
@@ -252,6 +257,7 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 		return ErrEndpointNotUpdated
 	}
 
+	e.listener.AfterUpdate(endpoint)
 	return nil
 }
 

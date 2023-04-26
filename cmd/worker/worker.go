@@ -8,6 +8,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -55,7 +56,8 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			// register worker.
 			consumer := worker.NewConsumer(a.Queue, lo)
 
-			endpointRepo := postgres.NewEndpointRepo(a.DB)
+			listener := listener.NewEndpointListener(a.Queue)
+			endpointRepo := postgres.NewEndpointRepo(a.DB, listener)
 			eventRepo := postgres.NewEventRepo(a.DB)
 			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 			projectRepo := postgres.NewProjectRepo(a.DB)

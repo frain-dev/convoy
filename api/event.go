@@ -9,6 +9,7 @@ import (
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/services"
@@ -20,7 +21,8 @@ import (
 
 func createEventService(a *ApplicationHandler) *services.EventService {
 	sourceRepo := postgres.NewSourceRepo(a.A.DB)
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+	listener := listener.NewEndpointListener(a.A.Queue)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB, listener)
 	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
 	eventRepo := postgres.NewEventRepo(a.A.DB)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
