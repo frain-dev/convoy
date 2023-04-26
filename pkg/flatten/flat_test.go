@@ -15,6 +15,55 @@ var ghEvent []byte
 //go:embed gh_event_flat.json
 var ghEventFlat []byte
 
+func TestFlattenMap(t *testing.T) {
+	tests := []struct {
+		name  string
+		given interface{}
+		want  map[string]interface{}
+	}{
+		/////////////////// string
+		{
+			name:  "string value",
+			given: map[string]interface{}{"name": "ukpe"},
+			want:  map[string]interface{}{"name": "ukpe"},
+		},
+		{
+			name:  "nested string value",
+			given: map[string]interface{}{"$.venues.$.lagos": "lekki"},
+			want:  map[string]interface{}{"$.venues.$.lagos": "lekki"},
+		},
+		{
+			name:  "empty map",
+			given: map[string]interface{}{},
+			want:  map[string]interface{}{},
+		},
+		{
+			name:  "empty array",
+			given: []interface{}{},
+			want:  map[string]interface{}{},
+		},
+		{
+			name:  "nothing",
+			given: nil,
+			want:  map[string]interface{}{},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := Flatten(test.given)
+			if err != nil {
+				t.Errorf("failed to flatten: %+v", err)
+			}
+
+			fmt.Printf("test.given: %v\n", test.given)
+
+			if !jsonEqual(got, test.want) {
+				t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", got, test.want)
+			}
+		})
+	}
+}
+
 func TestFlatten(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -26,6 +75,16 @@ func TestFlatten(t *testing.T) {
 			name:  "string value",
 			given: `{"hello": "world"}`,
 			want:  map[string]interface{}{"hello": "world"},
+		},
+		{
+			name:  "string value",
+			given: `{"$.name": "ukpe"}`,
+			want:  map[string]interface{}{"$.name": "ukpe"},
+		},
+		{
+			name:  "string value",
+			given: `{"$.venues.$.lagos": "lekki"}`,
+			want:  map[string]interface{}{"$.venues.$.lagos": "lekki"},
 		},
 		{
 			name:  "nested string value",
@@ -182,7 +241,7 @@ func TestFlatten(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			var given map[string]interface{}
+			var given interface{}
 			err := json.Unmarshal([]byte(test.given), &given)
 			if err != nil {
 				t.Errorf("failed to unmarshal JSON: %v", err)
@@ -367,7 +426,7 @@ func TestFlattenWithPrefix(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			var given map[string]interface{}
+			var given interface{}
 			err := json.Unmarshal([]byte(test.given), &given)
 			if err != nil {
 				t.Errorf("failed to unmarshal JSON: %v", err)

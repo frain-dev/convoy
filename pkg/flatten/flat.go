@@ -41,9 +41,8 @@ func flatten(prefix string, nested interface{}) (map[string]interface{}, error) 
 	switch n := nested.(type) {
 	case map[string]interface{}:
 		for key, value := range n {
-			if strings.HasPrefix(key, "$") {
+			if strings.HasPrefix(key, "$") && !strings.HasPrefix(key, "$.") {
 				if key == "$or" || key == "$and" {
-					fmt.Printf("value: %T\n", value)
 					switch a := value.(type) {
 					case []interface{}:
 						for i := range a {
@@ -70,7 +69,6 @@ func flatten(prefix string, nested interface{}) (map[string]interface{}, error) 
 						f[key] = a
 						return f, nil
 					default:
-						fmt.Printf("k: %v, v: %v\n", key, value)
 						return nil, ErrOrAndMustBeArray
 					}
 				}
@@ -130,8 +128,13 @@ func flatten(prefix string, nested interface{}) (map[string]interface{}, error) 
 		for k, v := range ff {
 			f[k] = v
 		}
+	case nil:
 	default:
-		f[prefix] = n
+		if prefix != "" {
+			f[prefix] = n
+		} else {
+			f = n.(map[string]interface{})
+		}
 	}
 
 	return f, nil

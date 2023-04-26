@@ -34,8 +34,8 @@ func compare(payload map[string]interface{}, filter map[string]interface{}) bool
 	pass := true
 	cmp := defaultCompareMap()
 	for key, filterVal := range filter {
-
 		if strings.Contains(key, "$.") {
+			var chks []bool
 			possibleKeys, err := genCombos(key)
 			if err != nil {
 				fmt.Println(err.Error())
@@ -43,11 +43,26 @@ func compare(payload map[string]interface{}, filter map[string]interface{}) bool
 			}
 
 			for _, newKey := range possibleKeys {
-				if kk, ok := payload[newKey]; ok {
-					check := cmp["$eq"](kk, filterVal)
-					pass = pass || check
+				if _, ok := payload[newKey]; ok {
+					chk := compare(payload, map[string]interface{}{newKey: filterVal})
+					chks = append(chks, chk)
 				}
 			}
+
+			chkReduced := false
+
+			if len(chks) > 0 {
+				chkReduced = chks[0]
+			}
+
+			for i := range chks {
+				if i == 0 {
+					continue
+				}
+				chkReduced = chkReduced || chks[i]
+			}
+
+			pass = pass && chkReduced
 		}
 
 		payloadVal, ok := payload[key]
@@ -166,11 +181,14 @@ func in(payload, filter interface{}) bool {
 		return false
 	})
 
-	index := sort.Search(len(p), func(i int) bool {
-		return reflect.DeepEqual(p[i], filter)
-	})
+	found := false
+	for _, v := range p {
+		if v == filter {
+			found = true
+		}
+	}
 
-	return index < len(p)
+	return found
 }
 
 func nin(payload, filter interface{}) bool {
@@ -188,8 +206,6 @@ func eq(x, y interface{}) bool {
 	if fy, ok := toFloat64(y); ok {
 		y = fy
 	}
-
-	fmt.Printf("x: %v y: %v\n", x, y)
 
 	return reflect.DeepEqual(x, y)
 }
@@ -310,12 +326,21 @@ func toFloat64(v interface{}) (float64, bool) {
 // If the number of segments in the input string is more than 3, the function
 // returns an error with a message indicating the number of segments.
 func genCombos(s string) ([]string, error) {
-	segments := strings.Split(s, "$")
-	n := len(segments) - 1
+	n := 0
+	for i := 0; i < len(s); {
+		if s[i] == '$' && s[i+1] == '.' {
+			n++
+			i += 2
+		} else {
+			i++
+		}
+	}
+
 	if n > 3 {
 		return nil, fmt.Errorf("too many segments, expected at most 3 but got %d", n)
 	}
 
+	segments := strings.Split(s, "$")
 	combinations := make([]string, 2*len(segments)-1)
 	for i := range combinations {
 		if i%2 == 0 {

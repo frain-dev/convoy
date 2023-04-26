@@ -1325,7 +1325,7 @@ func (mr *MockSubscriptionRepositoryMockRecorder) LoadSubscriptionsPaged(ctx, pr
 }
 
 // TestSubscriptionFilter mocks base method.
-func (m *MockSubscriptionRepository) TestSubscriptionFilter(ctx context.Context, payload, filter map[string]interface{}) (bool, error) {
+func (m *MockSubscriptionRepository) TestSubscriptionFilter(ctx context.Context, payload, filter interface{}) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TestSubscriptionFilter", ctx, payload, filter)
 	ret0, _ := ret[0].(bool)

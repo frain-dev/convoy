@@ -239,7 +239,7 @@ func (s *SubcriptionService) DeleteSubscription(ctx context.Context, groupId str
 	return nil
 }
 
-func (s *SubcriptionService) TestSubscriptionFilter(ctx context.Context, testRequest map[string]interface{}, filter map[string]interface{}) (bool, error) {
+func (s *SubcriptionService) TestSubscriptionFilter(ctx context.Context, testRequest, filter interface{}) (bool, error) {
 	passed, err := s.subRepo.TestSubscriptionFilter(ctx, testRequest, filter)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrValidateSubscriptionFilterError.Error())

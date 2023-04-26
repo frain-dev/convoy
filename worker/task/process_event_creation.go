@@ -264,7 +264,8 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs)
 		if err != nil {
-			return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
+			log.WithError(err).Error("error find a matching subscription for this source")
+			return subscriptions, &EndpointError{Err: errors.New("error find a matching subscription for this source"), delay: 10 * time.Second}
 		}
 	}
 
@@ -273,7 +274,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 func matchSubscriptionsUsingFilter(ctx context.Context, e datastore.Event, subRepo datastore.SubscriptionRepository, subscriptions []datastore.Subscription) ([]datastore.Subscription, error) {
 	var matched []datastore.Subscription
-	var payload map[string]interface{}
+	var payload interface{}
 	err := json.Unmarshal(e.Data, &payload)
 	if err != nil {
 		return nil, err

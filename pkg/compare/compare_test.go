@@ -351,7 +351,7 @@ func TestCompare(t *testing.T) {
 				},
 			},
 			filter: map[string]interface{}{
-				"$.venue": "test",
+				"$.venues.$.lagos": "ikeja",
 			},
 			want: true,
 		},
@@ -466,6 +466,5 @@ func jsonEqual(got, want interface{}) bool {
 	b, _ = json.Marshal(want)
 
 	diff, _ := jsondiff.Compare(a, b, &jsondiff.Options{})
-	// fmt.Printf("str: %v\n", str)
 	return diff == jsondiff.FullMatch
 }
