@@ -83,15 +83,7 @@ func (pp *ProjectPolicy) Create(ctx context.Context, res interface{}) error {
 	orgPolicy := OrganisationPolicy{
 		OrganisationMemberRepo: pp.OrganisationMemberRepo,
 	}
-	return orgPolicy.Get(ctx, org)
-}
-
-func (pp *ProjectPolicy) Update(ctx context.Context, res interface{}) error {
-	return pp.Manage(ctx, res)
-}
-
-func (pp *ProjectPolicy) Delete(ctx context.Context, res interface{}) error {
-	return pp.Manage(ctx, res)
+	return orgPolicy.Manage(ctx, org)
 }
 
 func (pp *ProjectPolicy) GetName() string {
