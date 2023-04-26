@@ -71,6 +71,12 @@ func (a *DashboardHandler) UpdateOrganisationMember(w http.ResponseWriter, r *ht
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+
+	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		return
+	}
+
 	orgMemberService := createOrganisationMemberService(a)
 
 	member, err := orgMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
@@ -95,8 +101,13 @@ func (a *DashboardHandler) DeleteOrganisationMember(w http.ResponseWriter, r *ht
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	orgMemberService := createOrganisationMemberService(a)
 
+	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		return
+	}
+
+	orgMemberService := createOrganisationMemberService(a)
 	err = orgMemberService.DeleteOrganisationMember(r.Context(), memberID, org)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

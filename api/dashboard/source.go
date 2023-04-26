@@ -34,8 +34,7 @@ func (a *DashboardHandler) CreateSource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = a.A.Authz.Authorize(r.Context(), "project.get", project)
-	if err != nil {
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
 		return
 	}
@@ -109,6 +108,11 @@ func (a *DashboardHandler) UpdateSource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		return
+	}
+
 	sourceService := createSourceService(a)
 	source, err := sourceService.FindSourceByID(r.Context(), project, chi.URLParam(r, "sourceID"))
 	if err != nil {
@@ -146,6 +150,12 @@ func (a *DashboardHandler) DeleteSource(w http.ResponseWriter, r *http.Request) 
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		return
+	}
+
 	sourceService := createSourceService(a)
 
 	source, err := sourceService.FindSourceByID(r.Context(), project, chi.URLParam(r, "sourceID"))

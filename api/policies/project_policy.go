@@ -15,7 +15,7 @@ type ProjectPolicy struct {
 	OrganisationMemberRepo datastore.OrganisationMemberRepository
 }
 
-func (pp *ProjectPolicy) Get(ctx context.Context, res interface{}) error {
+func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
 	authCtx := ctx.Value(AuthCtxKey).(*auth.AuthenticatedUser)
 
 	project, ok := res.(*datastore.Project)
@@ -52,7 +52,7 @@ func (pp *ProjectPolicy) Get(ctx context.Context, res interface{}) error {
 	orgPolicy := OrganisationPolicy{
 		OrganisationMemberRepo: pp.OrganisationMemberRepo,
 	}
-	return orgPolicy.Get(ctx, org)
+	return orgPolicy.Manage(ctx, org)
 }
 
 func (pp *ProjectPolicy) Create(ctx context.Context, res interface{}) error {
@@ -87,11 +87,11 @@ func (pp *ProjectPolicy) Create(ctx context.Context, res interface{}) error {
 }
 
 func (pp *ProjectPolicy) Update(ctx context.Context, res interface{}) error {
-	return pp.Get(ctx, res)
+	return pp.Manage(ctx, res)
 }
 
 func (pp *ProjectPolicy) Delete(ctx context.Context, res interface{}) error {
-	return pp.Get(ctx, res)
+	return pp.Manage(ctx, res)
 }
 
 func (pp *ProjectPolicy) GetName() string {

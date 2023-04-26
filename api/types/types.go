@@ -51,9 +51,7 @@ func (a *APIOptions) RegisterPolicy() error {
 			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.DB),
 		}
 
-		po.SetRule("get", authz.RuleFunc(po.Get))
-		po.SetRule("update", authz.RuleFunc(po.Update))
-		po.SetRule("delete", authz.RuleFunc(po.Delete))
+		po.SetRule("manage", authz.RuleFunc(po.Manage))
 
 		return po
 	}())

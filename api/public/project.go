@@ -119,6 +119,11 @@ func (a *PublicHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		return
+	}
+
 	member, err := a.retrieveHeadlessMembership(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))

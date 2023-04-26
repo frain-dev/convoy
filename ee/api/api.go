@@ -5,8 +5,11 @@ import (
 
 	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/api"
+	base "github.com/frain-dev/convoy/api/dashboard"
 	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/ee/api/dashboard"
+	"github.com/frain-dev/convoy/ee/api/policies"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/go-chi/chi/v5"
 )
@@ -45,7 +48,28 @@ func (eh *EHandler) BuildRoutes() http.Handler {
 }
 
 func (eh *EHandler) RegisterEnterpriseDashboardHandler(r *chi.Mux) {
-	edh := &dashboard.DashboardHandler{Opts: eh.opts}
+	edh := &dashboard.DashboardHandler{
+		DashboardHandler: base.NewDashboardHandler(eh.opts),
+		Opts:             eh.opts,
+	}
 
-	r.Method(api.POST, "/ui/organisations/{orgID}/invites", http.HandlerFunc(edh.InviteUserToOrganisation))
+	r.Method(api.POST,
+		"/ui/organisations/{orgID}/invites", http.HandlerFunc(edh.InviteUserToOrganisation))
+}
+
+func (eh *EHandler) RegisterPolicy() error {
+	var err error
+
+	err = eh.opts.Authz.RegisterPolicy(func() authz.Policy {
+		po := &policies.ProjectPolicy{
+			BasePolicy:             authz.NewBasePolicy(),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(eh.opts.DB),
+		}
+
+		po.SetRule("manage", authz.RuleFunc(po.Manage))
+
+		return po
+	}())
+
+	return err
 }

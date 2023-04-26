@@ -102,6 +102,7 @@ func SetupCORS(next http.Handler) http.Handler {
 		if r.Method == "OPTIONS" {
 			return
 		}
+
 		next.ServeHTTP(w, r)
 	})
 }

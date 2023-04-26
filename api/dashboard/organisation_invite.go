@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -37,12 +38,6 @@ func (a *DashboardHandler) InviteUserToOrganisation(w http.ResponseWriter, r *ht
 		return
 	}
 
-	baseUrl, err := a.retrieveHost()
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
 	user, err := a.retrieveUser(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -55,10 +50,23 @@ func (a *DashboardHandler) InviteUserToOrganisation(w http.ResponseWriter, r *ht
 		return
 	}
 
-	organisationInviteService := CreateOrganisationInviteService(a)
-	_, err = organisationInviteService.CreateOrganisationMemberInvite(r.Context(), &newIV, org, user, baseUrl)
+	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		return
+	}
+
+	inviteService := &services.InviteUserService{
+		Queue:        a.A.Queue,
+		DB:           a.A.DB,
+		InviteeEmail: newIV.InviteeEmail,
+		Role:         newIV.Role,
+		User:         user,
+		Organisation: org,
+	}
+
+	_, err = inviteService.Run(r.Context())
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to create organisation member invite")
+		log.FromContext(r.Context()).Error(err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -149,6 +157,11 @@ func (a *DashboardHandler) ResendOrganizationInvite(w http.ResponseWriter, r *ht
 		return
 	}
 
+	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		return
+	}
+
 	organisationInviteService := CreateOrganisationInviteService(a)
 	_, err = organisationInviteService.ResendOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"), org, user, baseUrl)
 	if err != nil {
@@ -162,6 +175,17 @@ func (a *DashboardHandler) ResendOrganizationInvite(w http.ResponseWriter, r *ht
 
 func (a *DashboardHandler) CancelOrganizationInvite(w http.ResponseWriter, r *http.Request) {
 	organisationInviteService := CreateOrganisationInviteService(a)
+
+	org, err := a.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		return
+	}
 
 	iv, err := organisationInviteService.CancelOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"))
 	if err != nil {

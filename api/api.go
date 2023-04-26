@@ -167,7 +167,6 @@ func (a *ApplicationHandler) RegisterDashboardRoutes(r *chi.Mux) {
 	r.Method(PUT, "/ui/organisations/{orgID}/projects/{projectID}/endpoints/{endpointID}/pause", uiMiddlewares.HandlerFunc(dh.PauseEndpoint))
 
 	r.Method(POST, "/ui/organisations/{orgID}/projects/{projectID}/events", uiMiddlewares.HandlerFunc(dh.CreateEndpointEvent))
-	r.Method(POST, "/ui/organisations/{orgID}/projects/{projectID}/events/fanout", uiMiddlewares.HandlerFunc(dh.CreateEndpointFanoutEvent))
 	r.Method(GET, "/ui/organisations/{orgID}/projects/{projectID}/events", uiMiddlewaresWithPagination.HandlerFunc(dh.GetEventsPaged))
 	r.Method(POST, "/ui/organisations/{orgID}/projects/{projectID}/events/batchreplay", uiMiddlewares.HandlerFunc(dh.BatchReplayEvents))
 	r.Method(GET, "/ui/organisations/{orgID}/projects/{projectID}/events/countbatchreplayevents", uiMiddlewares.HandlerFunc(dh.CountAffectedEvents))

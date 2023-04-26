@@ -40,12 +40,12 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 			// These routes require a Personal API Key.
 			projectRouter.With(RequirePersonalAPIKeys(a)).Get("/", a.GetProjects)
 			projectRouter.With(RequirePersonalAPIKeys(a)).Post("/", a.CreateProject)
+			projectRouter.With(RequirePersonalAPIKeys(a)).With(RequireProjectAccess(a)).Get("/{projectID}", a.GetProject)
+			projectRouter.With(RequirePersonalAPIKeys(a)).With(RequireProjectAccess(a)).Put("/{projectID}", a.UpdateProject)
+			projectRouter.With(RequirePersonalAPIKeys(a)).With(RequireProjectAccess(a)).Delete("/{projectID}", a.DeleteProject)
 
 			projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 				projectSubRouter.Use(RequireProjectAccess(a))
-				projectSubRouter.With().Get("/", a.GetProject)
-				projectSubRouter.Put("/", a.UpdateProject)
-				projectSubRouter.Delete("/", a.DeleteProject)
 
 				projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
 					endpointSubRouter.Post("/", a.CreateEndpoint)
@@ -175,7 +175,7 @@ func RequireProjectAccess(a *PublicHandler) func(next http.Handler) http.Handler
 				return
 			}
 
-			err = a.A.Authz.Authorize(r.Context(), "project.get", project)
+			err = a.A.Authz.Authorize(r.Context(), "project.manage", project)
 			if err != nil {
 				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
@@ -190,7 +190,7 @@ func RequirePersonalAPIKeys(a *PublicHandler) func(next http.Handler) http.Handl
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authUser := middleware.GetAuthUserFromContext(r.Context())
-			_, ok := authUser.Metadata.(*datastore.User)
+			_, ok := authUser.User.(*datastore.User)
 			if !ok {
 				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 				return

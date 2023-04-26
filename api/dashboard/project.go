@@ -39,6 +39,12 @@ func (a *DashboardHandler) GetProjectStatistics(w http.ResponseWriter, r *http.R
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		return
+	}
+
 	projectService := createProjectService(a)
 
 	err = projectService.FillProjectStatistics(r.Context(), project)
@@ -56,6 +62,12 @@ func (a *DashboardHandler) DeleteProject(w http.ResponseWriter, r *http.Request)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		return
+	}
+
 	projectService := createProjectService(a)
 
 	err = projectService.DeleteProject(r.Context(), project.UID)
@@ -79,6 +91,11 @@ func (a *DashboardHandler) CreateProject(w http.ResponseWriter, r *http.Request)
 	org, err := a.retrieveOrganisation(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
 		return
 	}
 
@@ -116,8 +133,13 @@ func (a *DashboardHandler) UpdateProject(w http.ResponseWriter, r *http.Request)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	projectService := createProjectService(a)
 
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", p); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		return
+	}
+
+	projectService := createProjectService(a)
 	project, err := projectService.UpdateProject(r.Context(), p, &update)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
