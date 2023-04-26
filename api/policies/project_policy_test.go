@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
@@ -29,7 +30,7 @@ func Test_ProjectPolicy_Create(t *testing.T) {
 							UID: "randomstring",
 						},
 					},
-					wantErr:       true,
+					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
 				organisation: &datastore.Organisation{
@@ -47,14 +48,14 @@ func Test_ProjectPolicy_Create(t *testing.T) {
 							Type: datastore.PersonalKey,
 						},
 					},
-					wantErr:       true,
+					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
 				organisation: &datastore.Organisation{
 					UID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
-					orgMemberRepo := pp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMemberRepo := pp.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -70,14 +71,14 @@ func Test_ProjectPolicy_Create(t *testing.T) {
 							Type: datastore.PersonalKey,
 						},
 					},
-					wantErr:       false,
+					assertion:     require.NoError,
 					expectedError: nil,
 				},
 				organisation: &datastore.Organisation{
 					UID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
-					orgMemberRepo := pp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMemberRepo := pp.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -94,14 +95,14 @@ func Test_ProjectPolicy_Create(t *testing.T) {
 							UID: "randomstring",
 						},
 					},
-					wantErr:       true,
+					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
 				organisation: &datastore.Organisation{
 					UID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
-					orgMemberRepo := pp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMemberRepo := pp.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -116,14 +117,14 @@ func Test_ProjectPolicy_Create(t *testing.T) {
 							UID: "randomstring",
 						},
 					},
-					wantErr:       false,
+					assertion:     require.NoError,
 					expectedError: nil,
 				},
 				organisation: &datastore.Organisation{
 					UID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
-					orgMemberRepo := pp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMemberRepo := pp.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -145,29 +146,28 @@ func Test_ProjectPolicy_Create(t *testing.T) {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
 
-					opts := &ProjectPolicyOpts{
+					policy := &ProjectPolicy{
+						BasePolicy:             authz.NewBasePolicy(),
 						OrganisationRepo:       mocks.NewMockOrganisationRepository(ctrl),
 						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 					}
-					policy := &ProjectPolicy{
-						opts: opts,
-					}
-					authCtx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
+
+					policy.SetRule("create", authz.RuleFunc(policy.Create))
 
 					if tc.storeFn != nil {
 						tc.storeFn(policy)
 					}
 
+					ctx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
+
+					az, _ := authz.NewAuthz(&authz.AuthzOpts{})
+					_ = az.RegisterPolicy(policy)
+
 					// Act.
-					err := policy.Create(authCtx, tc.organisation)
+					err := az.Authorize(ctx, "project.create", tc.organisation)
 
 					// Assert.
-					if tc.wantErr {
-						require.ErrorIs(t, err, tc.expectedError)
-						return
-					}
-
-					require.NoError(t, err)
+					tc.assertion(t, err)
 				})
 			}
 		})
@@ -194,14 +194,14 @@ func Test_ProjectPolicy_Update(t *testing.T) {
 							UID: "randomstring",
 						},
 					},
-					wantErr:       true,
+					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
 				project: &datastore.Project{
 					UID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
-					orgRepo := pp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
@@ -217,14 +217,14 @@ func Test_ProjectPolicy_Update(t *testing.T) {
 							Role: auth.Role{Project: "project-uid"},
 						},
 					},
-					wantErr:       false,
+					assertion:     require.NoError,
 					expectedError: nil,
 				},
 				project: &datastore.Project{
 					UID: "project-uid",
 				},
 				storeFn: func(pp *ProjectPolicy) {
-					orgRepo := pp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
@@ -242,20 +242,20 @@ func Test_ProjectPolicy_Update(t *testing.T) {
 							Type: datastore.PersonalKey,
 						},
 					},
-					wantErr:       true,
+					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
 				project: &datastore.Project{
 					UID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
-					orgRepo := pp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
 						Return(&datastore.Organisation{UID: "randomstring"}, nil)
 
-					orgMemberRepo := pp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMemberRepo := pp.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -271,20 +271,20 @@ func Test_ProjectPolicy_Update(t *testing.T) {
 							Type: datastore.PersonalKey,
 						},
 					},
-					wantErr:       false,
+					assertion:     require.NoError,
 					expectedError: nil,
 				},
 				project: &datastore.Project{
 					UID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
-					orgRepo := pp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
 						Return(&datastore.Organisation{UID: "randomstring"}, nil)
 
-					orgMemberRepo := pp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMemberRepo := pp.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -301,20 +301,20 @@ func Test_ProjectPolicy_Update(t *testing.T) {
 							UID: "randomstring",
 						},
 					},
-					wantErr:       true,
+					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
 				project: &datastore.Project{
 					UID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
-					orgRepo := pp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
 						Return(&datastore.Organisation{UID: "randomstring"}, nil)
 
-					orgMemberRepo := pp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMemberRepo := pp.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -329,20 +329,20 @@ func Test_ProjectPolicy_Update(t *testing.T) {
 							UID: "randomstring",
 						},
 					},
-					wantErr:       false,
+					assertion:     require.NoError,
 					expectedError: nil,
 				},
 				project: &datastore.Project{
 					UID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
-					orgRepo := pp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
 						Return(&datastore.Organisation{UID: "randomstring"}, nil)
 
-					orgMemberRepo := pp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMemberRepo := pp.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -365,29 +365,28 @@ func Test_ProjectPolicy_Update(t *testing.T) {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
 
-					opts := &ProjectPolicyOpts{
+					policy := &ProjectPolicy{
+						BasePolicy:             authz.NewBasePolicy(),
 						OrganisationRepo:       mocks.NewMockOrganisationRepository(ctrl),
 						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 					}
-					policy := &ProjectPolicy{
-						opts: opts,
-					}
-					authCtx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
+
+					policy.SetRule("update", authz.RuleFunc(policy.Update))
 
 					if tc.storeFn != nil {
 						tc.storeFn(policy)
 					}
 
+					ctx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
+
+					az, _ := authz.NewAuthz(&authz.AuthzOpts{})
+					_ = az.RegisterPolicy(policy)
+
 					// Act.
-					err := policy.Update(authCtx, tc.project)
+					err := az.Authorize(ctx, "project.update", tc.project)
 
 					// Assert.
-					if tc.wantErr {
-						require.ErrorIs(t, err, tc.expectedError)
-						return
-					}
-
-					require.NoError(t, err)
+					tc.assertion(t, err)
 				})
 			}
 		})
@@ -411,14 +410,14 @@ func Test_ProjectPolicy_Delete(t *testing.T) {
 							UID: "randomstring",
 						},
 					},
-					wantErr:       true,
+					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
 				project: &datastore.Project{
 					UID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
-					orgRepo := pp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
@@ -434,14 +433,14 @@ func Test_ProjectPolicy_Delete(t *testing.T) {
 							Role: auth.Role{Project: "project-uid"},
 						},
 					},
-					wantErr:       false,
+					assertion:     require.NoError,
 					expectedError: nil,
 				},
 				project: &datastore.Project{
 					UID: "project-uid",
 				},
 				storeFn: func(pp *ProjectPolicy) {
-					orgRepo := pp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
@@ -459,20 +458,20 @@ func Test_ProjectPolicy_Delete(t *testing.T) {
 							Type: datastore.PersonalKey,
 						},
 					},
-					wantErr:       true,
+					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
 				project: &datastore.Project{
 					UID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
-					orgRepo := pp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
 						Return(&datastore.Organisation{UID: "randomstring"}, nil)
 
-					orgMemberRepo := pp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMemberRepo := pp.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -488,20 +487,20 @@ func Test_ProjectPolicy_Delete(t *testing.T) {
 							Type: datastore.PersonalKey,
 						},
 					},
-					wantErr:       false,
+					assertion:     require.NoError,
 					expectedError: nil,
 				},
 				project: &datastore.Project{
 					UID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
-					orgRepo := pp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
 						Return(&datastore.Organisation{UID: "randomstring"}, nil)
 
-					orgMemberRepo := pp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMemberRepo := pp.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -518,20 +517,20 @@ func Test_ProjectPolicy_Delete(t *testing.T) {
 							UID: "randomstring",
 						},
 					},
-					wantErr:       true,
+					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
 				project: &datastore.Project{
 					UID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
-					orgRepo := pp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
 						Return(&datastore.Organisation{UID: "randomstring"}, nil)
 
-					orgMemberRepo := pp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMemberRepo := pp.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -546,20 +545,20 @@ func Test_ProjectPolicy_Delete(t *testing.T) {
 							UID: "randomstring",
 						},
 					},
-					wantErr:       false,
+					assertion:     require.NoError,
 					expectedError: nil,
 				},
 				project: &datastore.Project{
 					UID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
-					orgRepo := pp.opts.OrganisationRepo.(*mocks.MockOrganisationRepository)
+					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
 						FetchOrganisationByID(gomock.Any(), gomock.Any()).
 						Return(&datastore.Organisation{UID: "randomstring"}, nil)
 
-					orgMemberRepo := pp.opts.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+					orgMemberRepo := pp.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -582,30 +581,28 @@ func Test_ProjectPolicy_Delete(t *testing.T) {
 					ctrl := gomock.NewController(t)
 					defer ctrl.Finish()
 
-					opts := &ProjectPolicyOpts{
+					policy := &ProjectPolicy{
+						BasePolicy:             authz.NewBasePolicy(),
 						OrganisationRepo:       mocks.NewMockOrganisationRepository(ctrl),
 						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 					}
-					policy := &ProjectPolicy{
-						opts: opts,
-					}
 
-					authCtx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
+					policy.SetRule("delete", authz.RuleFunc(policy.Get))
 
 					if tc.storeFn != nil {
 						tc.storeFn(policy)
 					}
 
+					ctx := context.WithValue(context.Background(), AuthCtxKey, tc.authCtx)
+
+					az, _ := authz.NewAuthz(&authz.AuthzOpts{})
+					_ = az.RegisterPolicy(policy)
+
 					// Act.
-					err := policy.Delete(authCtx, tc.project)
+					err := az.Authorize(ctx, "project.delete", tc.project)
 
 					// Assert.
-					if tc.wantErr {
-						require.ErrorIs(t, err, tc.expectedError)
-						return
-					}
-
-					require.NoError(t, err)
+					tc.assertion(t, err)
 				})
 			}
 		})

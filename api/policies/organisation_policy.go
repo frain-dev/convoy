@@ -2,26 +2,19 @@ package policies
 
 import (
 	"context"
+	"errors"
 
+	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 )
 
 type OrganisationPolicy struct {
-	opts *OrganisationPolicyOpts
-}
-
-type OrganisationPolicyOpts struct {
+	*authz.BasePolicy
 	OrganisationMemberRepo datastore.OrganisationMemberRepository
 }
 
-func NewOrganisationPolicy(opts *OrganisationPolicyOpts) *OrganisationPolicy {
-	return &OrganisationPolicy{
-		opts: opts,
-	}
-}
-
-func (op *OrganisationPolicy) Get(ctx context.Context, org *datastore.Organisation) error {
+func (op *OrganisationPolicy) Get(ctx context.Context, res interface{}) error {
 	authCtx := ctx.Value(AuthCtxKey).(*auth.AuthenticatedUser)
 
 	user, ok := authCtx.User.(*datastore.User)
@@ -29,7 +22,12 @@ func (op *OrganisationPolicy) Get(ctx context.Context, org *datastore.Organisati
 		return ErrNotAllowed
 	}
 
-	member, err := op.opts.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
+	org, ok := res.(*datastore.Organisation)
+	if !ok {
+		return errors.New("Wrong organisation type")
+	}
+
+	member, err := op.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
 	if err != nil {
 		return ErrNotAllowed
 	}
@@ -41,7 +39,7 @@ func (op *OrganisationPolicy) Get(ctx context.Context, org *datastore.Organisati
 	return nil
 }
 
-func (op *OrganisationPolicy) Update(ctx context.Context, org *datastore.Organisation) error {
+func (op *OrganisationPolicy) Update(ctx context.Context, res interface{}) error {
 	authCtx := ctx.Value(AuthCtxKey).(*auth.AuthenticatedUser)
 
 	user, ok := authCtx.User.(*datastore.User)
@@ -49,7 +47,12 @@ func (op *OrganisationPolicy) Update(ctx context.Context, org *datastore.Organis
 		return ErrNotAllowed
 	}
 
-	member, err := op.opts.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
+	org, ok := res.(*datastore.Organisation)
+	if !ok {
+		return errors.New("Wrong organisation type")
+	}
+
+	member, err := op.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
 	if err != nil {
 		return ErrNotAllowed
 	}
@@ -61,7 +64,7 @@ func (op *OrganisationPolicy) Update(ctx context.Context, org *datastore.Organis
 	return nil
 }
 
-func (op *OrganisationPolicy) Delete(ctx context.Context, org *datastore.Organisation) error {
+func (op *OrganisationPolicy) Delete(ctx context.Context, res interface{}) error {
 	authCtx := ctx.Value(AuthCtxKey).(*auth.AuthenticatedUser)
 
 	user, ok := authCtx.User.(*datastore.User)
@@ -69,7 +72,12 @@ func (op *OrganisationPolicy) Delete(ctx context.Context, org *datastore.Organis
 		return ErrNotAllowed
 	}
 
-	member, err := op.opts.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
+	org, ok := res.(*datastore.Organisation)
+	if !ok {
+		return errors.New("Wrong organisation type")
+	}
+
+	member, err := op.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
 	if err != nil {
 		return ErrNotAllowed
 	}
@@ -79,4 +87,8 @@ func (op *OrganisationPolicy) Delete(ctx context.Context, org *datastore.Organis
 	}
 
 	return nil
+}
+
+func (op *OrganisationPolicy) GetName() string {
+	return "organisation"
 }

@@ -7,7 +7,8 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/analytics"
-	route "github.com/frain-dev/convoy/api"
+	"github.com/frain-dev/convoy/api"
+	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/listener"
@@ -73,11 +74,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 		Aliases: []string{"serve", "s"},
 		Short:   "Start the HTTP server",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c, err := config.Get()
-			if err != nil {
-				return err
-			}
-
 			// override config with cli flags
 			cliConfig, err := buildServerCliConfiguration(cmd)
 			if err != nil {
@@ -88,7 +84,7 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			err = StartConvoyServer(a, c, withWorkers)
+			err = StartConvoyServer(a, withWorkers)
 
 			if err != nil {
 				a.Logger.Errorf("Error starting convoy server: %v", err)
@@ -145,13 +141,18 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	return cmd
 }
 
-func StartConvoyServer(a *cli.App, cfg config.Configuration, withWorkers bool) error {
+func StartConvoyServer(a *cli.App, withWorkers bool) error {
+	cfg, err := config.Get()
+	if err != nil {
+		a.Logger.WithError(err).Fatal("Failed to load configuration")
+	}
+
 	start := time.Now()
 	a.Logger.Info("Starting Convoy server...")
 
 	apiKeyRepo := postgres.NewAPIKeyRepo(a.DB)
 	userRepo := postgres.NewUserRepo(a.DB)
-	err := realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, a.Cache)
+	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, a.Cache)
 	if err != nil {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 	}
@@ -171,8 +172,8 @@ func StartConvoyServer(a *cli.App, cfg config.Configuration, withWorkers bool) e
 
 	srv := server.NewServer(cfg.Server.HTTP.Port, func() {})
 
-	handler := route.NewApplicationHandler(
-		route.App{
+	handler, err := api.NewApplicationHandler(
+		&types.APIOptions{
 			DB:       a.DB,
 			Queue:    a.Queue,
 			Logger:   lo,
@@ -181,6 +182,15 @@ func StartConvoyServer(a *cli.App, cfg config.Configuration, withWorkers bool) e
 			Limiter:  a.Limiter,
 			Searcher: a.Searcher,
 		})
+
+	if err != nil {
+		return err
+	}
+
+	err = handler.RegisterPolicy()
+	if err != nil {
+		return err
+	}
 
 	if withWorkers {
 		sc, err := smtp.NewClient(&cfg.SMTP)

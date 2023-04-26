@@ -1,5 +1,5 @@
 # Build UI.
-UIDIR="api/ui/build"
+UIDIR="api/dashboard/ui/build"
 
 # Remove build folder
 rm -rf $UIDIR
