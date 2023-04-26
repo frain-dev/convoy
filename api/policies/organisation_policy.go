@@ -15,7 +15,7 @@ type OrganisationPolicy struct {
 }
 
 func (op *OrganisationPolicy) Manage(ctx context.Context, res interface{}) error {
-	authCtx := ctx.Value(AuthCtxKey).(*auth.AuthenticatedUser)
+	authCtx := ctx.Value(AuthUserCtx).(*auth.AuthenticatedUser)
 
 	user, ok := authCtx.User.(*datastore.User)
 	if !ok {

@@ -3,6 +3,7 @@ package policies
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	authz "github.com/Subomi/go-authz"
 	basepolicy "github.com/frain-dev/convoy/api/policies"
@@ -12,12 +13,14 @@ import (
 
 type OrganisationPolicy struct {
 	*authz.BasePolicy
+	OrganisationMemberRepo datastore.OrganisationMemberRepository
 }
 
 func (op *OrganisationPolicy) Manage(ctx context.Context, res interface{}) error {
-	authCtx := ctx.Value(basepolicy.AuthCtxKey).(*auth.AuthenticatedUser)
+	fmt.Println("CHANDLER")
+	authCtx := ctx.Value(basepolicy.AuthUserCtx).(*auth.AuthenticatedUser)
 
-	org, ok := res.(*datastore.Organisation
+	org, ok := res.(*datastore.Organisation)
 	if !ok {
 		return errors.New("Wrong organisation type")
 	}
@@ -29,7 +32,7 @@ func (op *OrganisationPolicy) Manage(ctx context.Context, res interface{}) error
 		return basepolicy.ErrNotAllowed
 	}
 
-	member, err := pp.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
+	member, err := op.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
 	if err != nil {
 		return basepolicy.ErrNotAllowed
 	}
@@ -39,4 +42,8 @@ func (op *OrganisationPolicy) Manage(ctx context.Context, res interface{}) error
 	}
 
 	return nil
+}
+
+func (op *OrganisationPolicy) GetName() string {
+	return "organisation"
 }

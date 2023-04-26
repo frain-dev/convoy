@@ -9,9 +9,11 @@ import (
 
 	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/api/dashboard"
+	"github.com/frain-dev/convoy/api/policies"
 	portalapi "github.com/frain-dev/convoy/api/portal-api"
 	"github.com/frain-dev/convoy/api/public"
 	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -101,6 +103,39 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 	a.Router = router
 
 	return router
+}
+
+func (a *ApplicationHandler) RegisterPolicy() error {
+	var err error
+
+	err = a.A.Authz.RegisterPolicy(func() authz.Policy {
+		po := &policies.OrganisationPolicy{
+			BasePolicy:             authz.NewBasePolicy(),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+		}
+
+		po.SetRule("manage", authz.RuleFunc(po.Manage))
+
+		return po
+	}())
+
+	if err != nil {
+		return err
+	}
+
+	err = a.A.Authz.RegisterPolicy(func() authz.Policy {
+		po := &policies.ProjectPolicy{
+			BasePolicy:             authz.NewBasePolicy(),
+			OrganisationRepo:       postgres.NewOrgRepo(a.A.DB),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+		}
+
+		po.SetRule("manage", authz.RuleFunc(po.Manage))
+
+		return po
+	}())
+
+	return err
 }
 
 func (a *ApplicationHandler) RegisterDashboardRoutes(r *chi.Mux) {
@@ -257,10 +292,6 @@ func (a *ApplicationHandler) RegisterDashboardRoutes(r *chi.Mux) {
 	r.Method(PUT,
 		"/ui/configuration", uiMiddlewares.HandlerFunc(dh.UpdateConfiguration))
 
-}
-
-func (a *ApplicationHandler) RegisterPolicy() error {
-	return a.A.RegisterPolicy()
 }
 
 var guestRoutes = []string{

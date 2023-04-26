@@ -16,7 +16,7 @@ type ProjectPolicy struct {
 }
 
 func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
-	authCtx := ctx.Value(AuthCtxKey).(*auth.AuthenticatedUser)
+	authCtx := ctx.Value(AuthUserCtx).(*auth.AuthenticatedUser)
 
 	project, ok := res.(*datastore.Project)
 	if !ok {
@@ -49,37 +49,6 @@ func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
 	}
 
 	// JWT Access.
-	orgPolicy := OrganisationPolicy{
-		OrganisationMemberRepo: pp.OrganisationMemberRepo,
-	}
-	return orgPolicy.Manage(ctx, org)
-}
-
-func (pp *ProjectPolicy) Create(ctx context.Context, res interface{}) error {
-	authCtx := ctx.Value(AuthCtxKey).(*auth.AuthenticatedUser)
-
-	org, ok := res.(*datastore.Organisation)
-	if !ok {
-		return errors.New("Wrong organisation type")
-	}
-
-	apiKey, ok := authCtx.APIKey.(*datastore.APIKey)
-	if ok {
-		// Personal Access Tokens.
-		if apiKey.Type == datastore.PersonalKey {
-			_, err := pp.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, apiKey.UserID, org.UID)
-			if err != nil {
-				return ErrNotAllowed
-			}
-
-			return nil
-		}
-
-		// API Key
-		return ErrNotAllowed
-	}
-
-	// JWT Access
 	orgPolicy := OrganisationPolicy{
 		OrganisationMemberRepo: pp.OrganisationMemberRepo,
 	}

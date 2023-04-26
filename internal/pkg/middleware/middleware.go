@@ -18,7 +18,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
 	"github.com/felixge/httpsnoop"
-	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
@@ -29,26 +28,24 @@ import (
 	"github.com/go-chi/render"
 )
 
-type contextKey string
-
 const (
-	AuthUserCtx         contextKey = "authUser"
-	projectCtx          contextKey = "project"
-	orgCtx              contextKey = "organisation"
-	orgMemberCtx        contextKey = "organisation_member"
-	endpointCtx         contextKey = "endpoint"
-	endpointsCtx        contextKey = "endpoints"
-	eventCtx            contextKey = "event"
-	eventDeliveryCtx    contextKey = "eventDelivery"
-	authLoginCtx        contextKey = "authLogin"
-	userCtx             contextKey = "user"
-	pageableCtx         contextKey = "pageable"
-	pageDataCtx         contextKey = "pageData"
-	deliveryAttemptsCtx contextKey = "deliveryAttempts"
-	hostCtx             contextKey = "host"
-	endpointIdCtx       contextKey = "endpointId"
-	endpointIdsCtx      contextKey = "endpointIds"
-	portalLinkCtx       contextKey = "portal_link"
+	AuthUserCtx         types.ContextKey = "authUser"
+	projectCtx          types.ContextKey = "project"
+	orgCtx              types.ContextKey = "organisation"
+	orgMemberCtx        types.ContextKey = "organisation_member"
+	endpointCtx         types.ContextKey = "endpoint"
+	endpointsCtx        types.ContextKey = "endpoints"
+	eventCtx            types.ContextKey = "event"
+	eventDeliveryCtx    types.ContextKey = "eventDelivery"
+	authLoginCtx        types.ContextKey = "authLogin"
+	userCtx             types.ContextKey = "user"
+	pageableCtx         types.ContextKey = "pageable"
+	pageDataCtx         types.ContextKey = "pageData"
+	deliveryAttemptsCtx types.ContextKey = "deliveryAttempts"
+	hostCtx             types.ContextKey = "host"
+	endpointIdCtx       types.ContextKey = "endpointId"
+	endpointIdsCtx      types.ContextKey = "endpointIds"
+	portalLinkCtx       types.ContextKey = "portal_link"
 )
 
 type AuthorizedLogin struct {
@@ -148,7 +145,7 @@ func RequireAuth() func(next http.Handler) http.Handler {
 				return
 			}
 
-			authCtx := context.WithValue(r.Context(), policies.AuthCtxKey, authUser)
+			authCtx := context.WithValue(r.Context(), AuthUserCtx, authUser)
 
 			r = r.WithContext(setAuthUserInContext(authCtx, authUser))
 			next.ServeHTTP(w, r)

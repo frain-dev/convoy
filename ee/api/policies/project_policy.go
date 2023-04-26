@@ -17,7 +17,7 @@ type ProjectPolicy struct {
 }
 
 func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
-	authCtx := ctx.Value(basepolicy.AuthCtxKey).(*auth.AuthenticatedUser)
+	authCtx := ctx.Value(basepolicy.AuthUserCtx).(*auth.AuthenticatedUser)
 
 	project, ok := res.(*datastore.Project)
 	if !ok {
