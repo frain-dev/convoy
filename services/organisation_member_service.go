@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -52,6 +53,8 @@ func (om *OrganisationMemberService) UpdateOrganisationMember(ctx context.Contex
 		log.FromContext(ctx).WithError(err).Error("failed to validate organisation member role update")
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
+
+	fmt.Println(role)
 
 	organisationMember.UpdatedAt = time.Now()
 	organisationMember.Role = *role

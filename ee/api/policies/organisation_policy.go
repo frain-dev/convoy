@@ -3,7 +3,6 @@ package policies
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	authz "github.com/Subomi/go-authz"
 	basepolicy "github.com/frain-dev/convoy/api/policies"
@@ -17,7 +16,6 @@ type OrganisationPolicy struct {
 }
 
 func (op *OrganisationPolicy) Manage(ctx context.Context, res interface{}) error {
-	fmt.Println("CHANDLER")
 	authCtx := ctx.Value(basepolicy.AuthUserCtx).(*auth.AuthenticatedUser)
 
 	org, ok := res.(*datastore.Organisation)

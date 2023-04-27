@@ -48,14 +48,10 @@ func (eh *EHandler) BuildRoutes() http.Handler {
 }
 
 func (eh *EHandler) RegisterEnterpriseDashboardHandler(r *chi.Mux) {
-	edh := &dashboard.DashboardHandler{
+	_ = &dashboard.DashboardHandler{
 		DashboardHandler: base.NewDashboardHandler(eh.opts),
 		Opts:             eh.opts,
 	}
-
-	r.Method(api.PUT,
-		"/ui/organisations/{orgID}/members/{memberID}",
-		http.HandlerFunc(edh.UpdateOrganisationMembership))
 }
 
 func (eh *EHandler) RegisterPolicy() error {

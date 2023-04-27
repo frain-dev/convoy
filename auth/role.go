@@ -51,10 +51,5 @@ func (r *Role) Validate(credType string) error {
 		return fmt.Errorf("invalid role type: %s", r.Type.String())
 	}
 
-	// projects will never be checked for superuser
-	if r.Project == "" && !r.Type.Is(RoleSuperUser) {
-		return fmt.Errorf("please specify project for %s", credType)
-	}
-
 	return nil
 }
