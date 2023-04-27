@@ -54,8 +54,6 @@ func (om *OrganisationMemberService) UpdateOrganisationMember(ctx context.Contex
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	fmt.Println(role)
-
 	organisationMember.UpdatedAt = time.Now()
 	organisationMember.Role = *role
 	err = om.orgMemberRepo.UpdateOrganisationMember(ctx, organisationMember)
