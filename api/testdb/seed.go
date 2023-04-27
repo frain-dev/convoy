@@ -48,7 +48,7 @@ func SeedEndpoint(db database.Database, g *datastore.Project, uid, title, ownerI
 	}
 
 	// Seed Data.
-	endpointRepo := postgres.NewEndpointRepo(db, listener.NoopEndpointListener)
+	endpointRepo := postgres.NewEndpointRepo(db, listener.NewNoopEndpointListener())
 	err := endpointRepo.CreateEndpoint(context.TODO(), endpoint, g.UID)
 	if err != nil {
 		return &datastore.Endpoint{}, err
@@ -71,7 +71,7 @@ func SeedMultipleEndpoints(db database.Database, g *datastore.Project, count int
 		}
 
 		// Seed Data.
-		appRepo := postgres.NewEndpointRepo(db, listener.NoopEndpointListener)
+		appRepo := postgres.NewEndpointRepo(db, listener.NewNoopEndpointListener())
 		err := appRepo.CreateEndpoint(context.TODO(), app, app.ProjectID)
 		if err != nil {
 			return err
@@ -89,7 +89,7 @@ func SeedEndpointSecret(db database.Database, e *datastore.Endpoint, value strin
 	e.Secrets = append(e.Secrets, sc)
 
 	// Seed Data.
-	endpointRepo := postgres.NewEndpointRepo(db, listener.NoopEndpointListener)
+	endpointRepo := postgres.NewEndpointRepo(db, listener.NewNoopEndpointListener())
 	err := endpointRepo.UpdateEndpoint(context.TODO(), e, e.ProjectID)
 	if err != nil {
 		return nil, err

@@ -13,13 +13,15 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
+	"github.com/frain-dev/convoy/internal/pkg/mevent"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 func createSubscriptionService(a *PublicHandler) *services.SubcriptionService {
 	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
-	listener := listener.NewEndpointListener(a.A.Queue)
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB, listener)
+	projectRepo := postgres.NewProjectRepo(a.A.DB)
+	endpointListener := listener.NewEndpointListener(mevent.NewMetaEvent(a.A.Queue, projectRepo))
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB, endpointListener)
 	sourceRepo := postgres.NewSourceRepo(a.A.DB)
 
 	return services.NewSubscriptionService(subRepo, endpointRepo, sourceRepo)

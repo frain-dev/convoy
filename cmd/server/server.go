@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/mevent"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -210,11 +211,11 @@ func StartConvoyServer(a *cli.App, withWorkers bool) error {
 
 		// register worker.
 		consumer := worker.NewConsumer(a.Queue, lo)
-		endpointListener := listener.NewEndpointListener(a.Queue)
+		projectRepo := postgres.NewProjectRepo(a.DB)
+		endpointListener := listener.NewEndpointListener(mevent.NewMetaEvent(a.Queue, projectRepo))
 		endpointRepo := postgres.NewEndpointRepo(a.DB, endpointListener)
 		eventRepo := postgres.NewEventRepo(a.DB)
 		eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
-		projectRepo := postgres.NewProjectRepo(a.DB)
 		subRepo := postgres.NewSubscriptionRepo(a.DB)
 		deviceRepo := postgres.NewDeviceRepo(a.DB)
 		configRepo := postgres.NewConfigRepo(a.DB)

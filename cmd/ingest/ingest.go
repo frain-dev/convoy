@@ -5,6 +5,7 @@ import (
 	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/mevent"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/spf13/cobra"
@@ -23,9 +24,9 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 			}
 
 			sourceRepo := postgres.NewSourceRepo(a.DB)
-			listener := listener.NewEndpointListener(a.Queue)
-			endpointRepo := postgres.NewEndpointRepo(a.DB, listener)
 			projectRepo := postgres.NewProjectRepo(a.DB)
+			endpointListener := listener.NewEndpointListener(mevent.NewMetaEvent(a.Queue, projectRepo))
+			endpointRepo := postgres.NewEndpointRepo(a.DB, endpointListener)
 
 			lo := a.Logger.(*log.Logger)
 			lo.SetPrefix("ingester")

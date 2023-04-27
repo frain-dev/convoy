@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/mevent"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/socket"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -30,13 +31,13 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			listener := listener.NewEndpointListener(a.Queue)
-			endpointRepo := postgres.NewEndpointRepo(a.DB, listener)
+			projectRepo := postgres.NewProjectRepo(a.DB)
+			endpointListener := listener.NewEndpointListener(mevent.NewMetaEvent(a.Queue, projectRepo))
+			endpointRepo := postgres.NewEndpointRepo(a.DB, endpointListener)
 			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 			sourceRepo := postgres.NewSourceRepo(a.DB)
 			subRepo := postgres.NewSubscriptionRepo(a.DB)
 			deviceRepo := postgres.NewDeviceRepo(a.DB)
-			projectRepo := postgres.NewProjectRepo(a.DB)
 			apiKeyRepo := postgres.NewAPIKeyRepo(a.DB)
 			userRepo := postgres.NewUserRepo(a.DB)
 			orgMemberRepo := postgres.NewOrgMemberRepo(a.DB)

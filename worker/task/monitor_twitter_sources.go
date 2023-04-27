@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
+	"github.com/frain-dev/convoy/internal/pkg/mevent"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 )
@@ -21,7 +22,8 @@ import (
 func MonitorTwitterSources(db database.Database, queue queue.Queuer) func(context.Context, *asynq.Task) error {
 	sourceRepo := postgres.NewSourceRepo(db)
 	subRepo := postgres.NewSubscriptionRepo(db)
-	endpointListener := listener.NewEndpointListener(queue)
+	projectRepo := postgres.NewProjectRepo(db)
+	endpointListener := listener.NewEndpointListener(mevent.NewMetaEvent(queue, projectRepo))
 	endpointRepo := postgres.NewEndpointRepo(db, endpointListener)
 
 	return func(ctx context.Context, t *asynq.Task) error {
