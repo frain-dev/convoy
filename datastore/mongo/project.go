@@ -86,9 +86,8 @@ func (db *projectRepo) UpdateProject(ctx context.Context, o *datastore.Project) 
 	}
 
 	if !o.Config.DisableEndpoint {
-		status := []datastore.EndpointStatus{datastore.InactiveEndpointStatus, datastore.PendingEndpointStatus}
 		filter := bson.M{"project_id": o.UID, "status": bson.M{
-			"$in": status,
+			"$ne": datastore.ActiveEndpointStatus,
 		}}
 
 		update := bson.M{
