@@ -177,7 +177,7 @@ func RequireProjectAccess(a *PublicHandler) func(next http.Handler) http.Handler
 
 			err = a.A.Authz.Authorize(r.Context(), "project.manage", project)
 			if err != nil {
-				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+				_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 				return
 			}
 
@@ -192,7 +192,7 @@ func RequirePersonalAPIKeys(a *PublicHandler) func(next http.Handler) http.Handl
 			authUser := middleware.GetAuthUserFromContext(r.Context())
 			_, ok := authUser.User.(*datastore.User)
 			if !ok {
-				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+				_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 				return
 			}
 

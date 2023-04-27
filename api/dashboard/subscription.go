@@ -95,7 +95,7 @@ func (a *DashboardHandler) CreateSubscription(w http.ResponseWriter, r *http.Req
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
@@ -125,7 +125,7 @@ func (a *DashboardHandler) DeleteSubscription(w http.ResponseWriter, r *http.Req
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
@@ -162,7 +162,7 @@ func (a *DashboardHandler) UpdateSubscription(w http.ResponseWriter, r *http.Req
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 

@@ -36,7 +36,7 @@ func (a *DashboardHandler) CreatePortalLink(w http.ResponseWriter, r *http.Reque
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
@@ -96,7 +96,7 @@ func (a *DashboardHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Reque
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
@@ -131,7 +131,7 @@ func (a *DashboardHandler) RevokePortalLink(w http.ResponseWriter, r *http.Reque
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 

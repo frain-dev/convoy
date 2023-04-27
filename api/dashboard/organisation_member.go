@@ -73,7 +73,7 @@ func (a *DashboardHandler) UpdateOrganisationMember(w http.ResponseWriter, r *ht
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
@@ -103,7 +103,7 @@ func (a *DashboardHandler) DeleteOrganisationMember(w http.ResponseWriter, r *ht
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
