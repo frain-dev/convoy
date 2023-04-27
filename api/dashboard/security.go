@@ -263,7 +263,7 @@ func (a *DashboardHandler) RegenerateProjectAPIKey(w http.ResponseWriter, r *htt
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 

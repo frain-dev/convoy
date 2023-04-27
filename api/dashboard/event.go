@@ -89,7 +89,7 @@ func (a *DashboardHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Re
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "events.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 
@@ -117,7 +117,7 @@ func (a *DashboardHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "events.manage", p); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 
@@ -212,7 +212,7 @@ func (a *DashboardHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Re
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "events.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 
@@ -256,7 +256,7 @@ func (a *DashboardHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *htt
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "events.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 
@@ -338,7 +338,7 @@ func (a *DashboardHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "events.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 

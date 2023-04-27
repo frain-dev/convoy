@@ -212,7 +212,7 @@ func RequireDashboardAccess(a *DashboardHandler) func(next http.Handler) http.Ha
 
 			err = a.A.Authz.Authorize(r.Context(), "organisation.get", organisation)
 			if err != nil {
-				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
 			}
 
@@ -232,7 +232,7 @@ func RequireProjectAccess(a *DashboardHandler) func(next http.Handler) http.Hand
 
 			err = a.A.Authz.Authorize(r.Context(), "project.get", project)
 			if err != nil {
-				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 				return
 			}
 

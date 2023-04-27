@@ -47,7 +47,7 @@ func (a *DashboardHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 
@@ -118,7 +118,7 @@ func (a *DashboardHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 
@@ -146,7 +146,7 @@ func (a *DashboardHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 
@@ -182,7 +182,7 @@ func (a *DashboardHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 
@@ -205,7 +205,7 @@ func (a *DashboardHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.R
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 
@@ -228,7 +228,7 @@ func (a *DashboardHandler) PauseEndpoint(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 
