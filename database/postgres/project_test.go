@@ -13,6 +13,7 @@ import (
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/stretchr/testify/require"
@@ -288,7 +289,7 @@ func Test_FillProjectStatistics(t *testing.T) {
 		},
 	}
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, listener.NewNoopEndpointListener())
 	err = endpointRepo.CreateEndpoint(context.Background(), endpoint1, project1.UID)
 	require.NoError(t, err)
 
@@ -379,7 +380,7 @@ func Test_DeleteProject(t *testing.T) {
 		RateLimit:   3000,
 	}
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, listener.NewNoopEndpointListener())
 	err = endpointRepo.CreateEndpoint(context.Background(), endpoint, project.UID)
 	require.NoError(t, err)
 
@@ -422,7 +423,7 @@ func Test_DeleteProject(t *testing.T) {
 	_, err = NewEventRepo(db).FindEventByID(context.Background(), event.ProjectID, event.UID)
 	require.Equal(t, datastore.ErrEventNotFound, err)
 
-	_, err = NewEndpointRepo(db).FindEndpointByID(context.Background(), project.UID, endpoint.UID)
+	_, err = NewEndpointRepo(db, listener.NewNoopEndpointListener()).FindEndpointByID(context.Background(), project.UID, endpoint.UID)
 	require.Equal(t, datastore.ErrEndpointNotFound, err)
 
 	_, err = NewSubscriptionRepo(db).FindSubscriptionByID(context.Background(), project.UID, sub.UID)
