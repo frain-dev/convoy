@@ -1,8 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormGroup, Validators, FormBuilder, FormArray } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Observable, Subscription } from 'rxjs';
 import { GROUP, VERSIONS } from 'src/app/models/group.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
@@ -14,7 +13,6 @@ import { CreateProjectComponentService } from './create-project-component.servic
 	styleUrls: ['./create-project-component.component.scss']
 })
 export class CreateProjectComponent implements OnInit {
-	destroyDisableEndpointValueChange$ = new Subject();
 	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding'];
 	projectForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
@@ -74,10 +72,7 @@ export class CreateProjectComponent implements OnInit {
 	ngOnInit(): void {
 		if (this.action === 'update') this.getProjectDetails();
 	}
-	ngOnDestroy() {
-		this.destroyDisableEndpointValueChange$.next();
-		this.destroyDisableEndpointValueChange$.complete();
-	}
+
 	get versions(): FormArray {
 		return this.projectForm.get('config.signature.versions') as FormArray;
 	}
@@ -282,9 +277,8 @@ export class CreateProjectComponent implements OnInit {
 		document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
 	}
 
-	confirmAction() {
-		this.projectForm.get('config.disable_endpoint')?.valueChanges.pipe(takeUntil(this.destroyDisableEndpointValueChange$)).subscribe(selectedValue => {
-			if (!selectedValue) this.disableEndpointsModal = true;
-		});
+	confirmAction(event: any) {
+		const disableEndpointValue = event.target.checked;
+		disableEndpointValue ? this.updateProject() : (this.disableEndpointsModal = true);
 	}
 }
