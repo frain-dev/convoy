@@ -32,7 +32,8 @@ export class CreateProjectComponent implements OnInit {
 			retention_policy: this.formBuilder.group({
 				policy: ['30d']
 			}),
-			is_retention_policy_enabled: [true]
+			is_retention_policy_enabled: [true],
+			disable_endpoint: [false, Validators.required]
 		}),
 		type: [null, Validators.required]
 	});
@@ -63,6 +64,7 @@ export class CreateProjectComponent implements OnInit {
 		{ uid: 'retention', name: 'Retention Policy', show: false },
 		{ uid: 'signature', name: 'Signature Format', show: false }
 	];
+	disableEndpointsModal = false;
 
 	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router) {}
 
@@ -272,5 +274,10 @@ export class CreateProjectComponent implements OnInit {
 	cancel() {
 		this.confirmModal = true;
 		document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
+	}
+
+	confirmAction(event: any) {
+		const disableEndpointValue = event.target.checked;
+		disableEndpointValue ? this.updateProject() : (this.disableEndpointsModal = true);
 	}
 }

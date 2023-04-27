@@ -171,6 +171,18 @@
 				</ng-container>
 			</div>
 		</div>
+
+		<div class="border-t border-grey-20 pt-24px mt-24px" *ngIf="action === 'update'" formGroupName="config">
+			<h3 class="font-semibold mb-24px">Endpoint Configurations</h3>
+
+			<div class="flex justify-between items-start">
+				<div class="max-w-[500px]">
+					<h4 class="font-medium text-grey-60">Disable Failing Endpoint</h4>
+					<p class="text-12 text-grey-40 mt-10px">Toggling this configuration on will automatically disable all endpoints in this project with failure response untill request to them are manually retried</p>
+				</div>
+				<convoy-toggle formControlName="disable_endpoint" (onChange)="confirmAction($event)"></convoy-toggle>
+			</div>
+		</div>
 	</convoy-card>
 
 	<div class="flex justify-end mt-48px">
@@ -252,3 +264,12 @@
 ></convoy-token-modal>
 
 <convoy-confirmation-modal *ngIf="confirmModal" (confirmAction)="router.navigateByUrl('/')" (closeModal)="confirmModal = false"></convoy-confirmation-modal>
+
+<div convoy-modal *ngIf="disableEndpointsModal" position="center" size="sm">
+	<div modalBody class="flex flex-col justify-center items-center p-30px">
+		<h3 class="text-16 font-semibold text-black mb-8px">Confirm Action</h3>
+		<p class="text-14 font-medium text-grey-40 text-center mb-20px">You are about to re-enable all endpoints on this project, please confirm this action</p>
+		<button convoy-button class="mb-24px" (click)="updateProject(); disableEndpointsModal = false">Confirm</button>
+		<button convoy-button fill="text" class="font-semibold" (click)="disableEndpointsModal = false">Close</button>
+	</div>
+</div>

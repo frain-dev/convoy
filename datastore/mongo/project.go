@@ -85,6 +85,25 @@ func (db *projectRepo) UpdateProject(ctx context.Context, o *datastore.Project) 
 		return datastore.ErrDuplicateProjectName
 	}
 
+	if !o.Config.DisableEndpoint {
+		filter := bson.M{"project_id": o.UID, "status": bson.M{
+			"$ne": datastore.ActiveEndpointStatus,
+		}}
+
+		update := bson.M{
+			"$set": bson.M{
+				"status":     datastore.ActiveEndpointStatus,
+				"updated_at": primitive.NewDateTimeFromTime(time.Now()),
+			},
+		}
+
+		ctx := context.WithValue(ctx, datastore.CollectionCtx, datastore.EndpointCollection)
+		err := db.store.UpdateMany(ctx, filter, update, true)
+		if err != nil {
+			return err
+		}
+	}
+
 	return err
 }
 

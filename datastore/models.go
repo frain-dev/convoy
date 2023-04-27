@@ -308,6 +308,7 @@ type ProjectConfig struct {
 	MaxIngestSize            uint64                        `json:"max_payload_read_size" bson:"max_payload_read_size"`
 	ReplayAttacks            bool                          `json:"replay_attacks" bson:"replay_attacks"`
 	IsRetentionPolicyEnabled bool                          `json:"is_retention_policy_enabled" bson:"is_retention_policy_enabled"`
+	DisableEndpoint          bool                          `json:"disable_endpoint" bson:"disable_endpoint"`
 }
 
 type RateLimitConfiguration struct {
