@@ -1600,6 +1600,7 @@ func (s *PublicProjectIntegrationTestSuite) TestDeleteProjectWithPersonalAPIKey(
 
 	// Act.
 	s.Router.ServeHTTP(w, req)
+	fmt.Println(w.Body.String())
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)

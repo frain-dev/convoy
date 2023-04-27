@@ -88,11 +88,6 @@ func (a *DashboardHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if err = a.A.Authz.Authorize(r.Context(), "events.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
-		return
-	}
-
 	event, err := a.retrieveEvent(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -113,11 +108,6 @@ func (a *DashboardHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Requ
 	p, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	if err = a.A.Authz.Authorize(r.Context(), "events.manage", p); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 
@@ -211,11 +201,6 @@ func (a *DashboardHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if err = a.A.Authz.Authorize(r.Context(), "events.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
-		return
-	}
-
 	eventDelivery, err := a.retrieveEventDelivery(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -252,11 +237,6 @@ func (a *DashboardHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *htt
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	if err = a.A.Authz.Authorize(r.Context(), "events.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 
@@ -334,11 +314,6 @@ func (a *DashboardHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	if err = a.A.Authz.Authorize(r.Context(), "events.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 		return
 	}
 

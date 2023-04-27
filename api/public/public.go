@@ -40,12 +40,12 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 			// These routes require a Personal API Key.
 			projectRouter.With(RequirePersonalAPIKeys(a)).Get("/", a.GetProjects)
 			projectRouter.With(RequirePersonalAPIKeys(a)).Post("/", a.CreateProject)
-			projectRouter.With(RequirePersonalAPIKeys(a)).With(RequireProjectAccess(a)).Get("/{projectID}", a.GetProject)
-			projectRouter.With(RequirePersonalAPIKeys(a)).With(RequireProjectAccess(a)).Put("/{projectID}", a.UpdateProject)
-			projectRouter.With(RequirePersonalAPIKeys(a)).With(RequireProjectAccess(a)).Delete("/{projectID}", a.DeleteProject)
 
 			projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 				projectSubRouter.Use(RequireProjectAccess(a))
+				projectSubRouter.Get("/", a.GetProject)
+				projectSubRouter.Put("/", a.UpdateProject)
+				projectSubRouter.Delete("/", a.DeleteProject)
 
 				projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
 					endpointSubRouter.Post("/", a.CreateEndpoint)

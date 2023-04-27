@@ -79,16 +79,6 @@ func (a *PublicHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//opts := &policies.ProjectPolicyOpts{
-	//	OrganisationRepo:       mongo.NewOrgRepo(a.A.DB),
-	//	OrganisationMemberRepo: mongo.NewOrgMemberRepo(a.A.DB),
-	//}
-	//gp := policies.NewProjectPolicy(opts)
-	//if err := gp.Delete(r.Context(), group); err != nil {
-	//	_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
-	//	return
-	//}
-
 	projectService := createProjectService(a)
 	err = projectService.DeleteProject(r.Context(), project.UID)
 	if err != nil {
