@@ -201,46 +201,6 @@ func (a *DashboardHandler) retrieveHost() (string, error) {
 	return cfg.Host, nil
 }
 
-func RequireDashboardAccess(a *DashboardHandler) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			organisation, err := a.retrieveOrganisation(r)
-			if err != nil {
-				_ = render.Render(w, r, util.NewServiceErrResponse(err))
-				return
-			}
-
-			err = a.A.Authz.Authorize(r.Context(), "organisation.get", organisation)
-			if err != nil {
-				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
-				return
-			}
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func RequireProjectAccess(a *DashboardHandler) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			project, err := a.retrieveProject(r)
-			if err != nil {
-				_ = render.Render(w, r, util.NewServiceErrResponse(err))
-				return
-			}
-
-			err = a.A.Authz.Authorize(r.Context(), "project.get", project)
-			if err != nil {
-				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
-				return
-			}
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
 var guestRoutes = []string{
 	"/auth/login",
 	"/auth/register",

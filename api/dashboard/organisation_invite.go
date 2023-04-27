@@ -51,7 +51,7 @@ func (a *DashboardHandler) InviteUserToOrganisation(w http.ResponseWriter, r *ht
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
 		return
 	}
 
@@ -158,7 +158,7 @@ func (a *DashboardHandler) ResendOrganizationInvite(w http.ResponseWriter, r *ht
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
 		return
 	}
 
@@ -183,7 +183,7 @@ func (a *DashboardHandler) CancelOrganizationInvite(w http.ResponseWriter, r *ht
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
 		return
 	}
 

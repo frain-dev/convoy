@@ -76,7 +76,7 @@ func (a *DashboardHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.R
 
 	user, ok := m.GetAuthUserFromContext(r.Context()).Metadata.(*datastore.User)
 	if !ok {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
 		return
 	}
 
@@ -235,7 +235,7 @@ func (a *DashboardHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request) 
 func (a *DashboardHandler) RevokePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 	user, ok := m.GetAuthUserFromContext(r.Context()).Metadata.(*datastore.User)
 	if !ok {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
 		return
 	}
 
@@ -263,7 +263,7 @@ func (a *DashboardHandler) RegenerateProjectAPIKey(w http.ResponseWriter, r *htt
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
 		return
 	}
 
@@ -388,7 +388,7 @@ func (a *DashboardHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 		if keyType == datastore.PersonalKey {
 			user, ok := m.GetAuthUserFromContext(r.Context()).Metadata.(*datastore.User)
 			if !ok {
-				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
 				return
 			}
 			f.UserID = user.UID

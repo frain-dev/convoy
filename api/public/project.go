@@ -110,7 +110,7 @@ func (a *PublicHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
 		return
 	}
 
