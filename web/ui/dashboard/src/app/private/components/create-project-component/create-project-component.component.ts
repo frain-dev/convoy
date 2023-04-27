@@ -14,7 +14,7 @@ import { CreateProjectComponentService } from './create-project-component.servic
 	styleUrls: ['./create-project-component.component.scss']
 })
 export class CreateProjectComponent implements OnInit {
-	destroy$ = new Subject();
+	destroyDisableEndpointValueChange$ = new Subject();
 	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding'];
 	projectForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
@@ -75,8 +75,8 @@ export class CreateProjectComponent implements OnInit {
 		if (this.action === 'update') this.getProjectDetails();
 	}
 	ngOnDestroy() {
-		this.destroy$.next();
-		this.destroy$.complete();
+		this.destroyDisableEndpointValueChange$.next();
+		this.destroyDisableEndpointValueChange$.complete();
 	}
 	get versions(): FormArray {
 		return this.projectForm.get('config.signature.versions') as FormArray;
@@ -283,7 +283,7 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	confirmAction() {
-		this.projectForm.get('config.disable_endpoint')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(selectedValue => {
+		this.projectForm.get('config.disable_endpoint')?.valueChanges.pipe(takeUntil(this.destroyDisableEndpointValueChange$)).subscribe(selectedValue => {
 			if (!selectedValue) this.disableEndpointsModal = true;
 		});
 	}
