@@ -73,6 +73,10 @@ func (eh *EHandler) RegisterPolicy() error {
 		return po
 	}())
 
+	if err != nil {
+		return err
+	}
+
 	err = eh.opts.Authz.RegisterPolicy(func() authz.Policy {
 		po := &policies.OrganisationPolicy{
 			BasePolicy:             authz.NewBasePolicy(),
