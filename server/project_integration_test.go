@@ -391,7 +391,7 @@ func (s *ProjectIntegrationTestSuite) TestUpdateProject() {
 	expectedStatusCode := http.StatusAccepted
 
 	// Just Before.
-	project, err := testdb.SeedProject(s.ConvoyApp.A.Store, projectID, "", "test-project", datastore.OutgoingProject, nil)
+	project, err := testdb.SeedProject(s.ConvoyApp.A.Store, projectID, "", "test-project", datastore.OutgoingProject, &datastore.ProjectConfig{})
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s", s.DefaultOrg.UID, project.UID)
@@ -434,7 +434,7 @@ func (s *ProjectIntegrationTestSuite) TestUpdateProjectWithPersonalAPIKey() {
 	projectID := uuid.NewString()
 
 	// Just Before.
-	project, err := testdb.SeedProject(s.ConvoyApp.A.Store, projectID, "test", s.DefaultOrg.UID, datastore.OutgoingProject, nil)
+	project, err := testdb.SeedProject(s.ConvoyApp.A.Store, projectID, "test", s.DefaultOrg.UID, datastore.OutgoingProject, &datastore.ProjectConfig{})
 	require.NoError(s.T(), err)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.Store, auth.Role{}, uuid.NewString(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
