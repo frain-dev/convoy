@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	authz "github.com/Subomi/go-authz"
+	basepolicy "github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 )
@@ -15,25 +16,27 @@ type OrganisationPolicy struct {
 }
 
 func (op *OrganisationPolicy) Manage(ctx context.Context, res interface{}) error {
-	authCtx := ctx.Value(AuthUserCtx).(*auth.AuthenticatedUser)
-
-	user, ok := authCtx.User.(*datastore.User)
-	if !ok {
-		return ErrNotAllowed
-	}
+	authCtx := ctx.Value(basepolicy.AuthUserCtx).(*auth.AuthenticatedUser)
 
 	org, ok := res.(*datastore.Organisation)
 	if !ok {
 		return errors.New("Wrong organisation type")
 	}
 
-	member, err := op.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
-	if err != nil {
-		return ErrNotAllowed
+	// Dashboard Access or Personal Access Token
+
+	user, ok := authCtx.User.(*datastore.User)
+	if !ok {
+		return basepolicy.ErrNotAllowed
 	}
 
-	if member.Role.Type != auth.RoleSuperUser {
-		return ErrNotAllowed
+	member, err := op.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
+	if err != nil {
+		return basepolicy.ErrNotAllowed
+	}
+
+	if isAllowed := isSuperAdmin(member); !isAllowed {
+		return basepolicy.ErrNotAllowed
 	}
 
 	return nil

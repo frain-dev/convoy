@@ -14,7 +14,6 @@ import (
 	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
 
-	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -37,44 +36,6 @@ func NewOrganisationInviteService(orgRepo datastore.OrganisationRepository, user
 		orgMemberRepo: orgMemberRepo,
 		orgInviteRepo: orgInviteRepo,
 	}
-}
-
-func (ois *OrganisationInviteService) CreateOrganisationMemberInvite(ctx context.Context, newIV *models.OrganisationInvite, org *datastore.Organisation, user *datastore.User, baseURL string) (*datastore.OrganisationInvite, error) {
-	err := util.Validate(newIV)
-	if err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
-	err = newIV.Role.Validate("organisation member")
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to validate organisation member invite role")
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
-	iv := &datastore.OrganisationInvite{
-		UID:            ulid.Make().String(),
-		OrganisationID: org.UID,
-		InviteeEmail:   newIV.InviteeEmail,
-		Token:          uniuri.NewLen(64),
-		Role:           newIV.Role,
-		Status:         datastore.InviteStatusPending,
-		ExpiresAt:      time.Now().Add(time.Hour * 24 * 14), // expires in 2 weeks
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
-	}
-
-	err = ois.orgInviteRepo.CreateOrganisationInvite(ctx, iv)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to create organisation member invite")
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member invite"))
-	}
-
-	err = ois.sendInviteEmail(context.Background(), iv, org, user, baseURL)
-	if err != nil {
-		return nil, err
-	}
-
-	return iv, nil
 }
 
 func (ois *OrganisationInviteService) LoadOrganisationInvitesPaged(ctx context.Context, org *datastore.Organisation, inviteStatus datastore.InviteStatus, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {

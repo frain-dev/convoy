@@ -15,8 +15,8 @@ type ProjectPolicy struct {
 	OrganisationMemberRepo datastore.OrganisationMemberRepository
 }
 
-func (pp *ProjectPolicy) Get(ctx context.Context, res interface{}) error {
-	authCtx := ctx.Value(AuthCtxKey).(*auth.AuthenticatedUser)
+func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
+	authCtx := ctx.Value(AuthUserCtx).(*auth.AuthenticatedUser)
 
 	project, ok := res.(*datastore.Project)
 	if !ok {
@@ -52,46 +52,7 @@ func (pp *ProjectPolicy) Get(ctx context.Context, res interface{}) error {
 	orgPolicy := OrganisationPolicy{
 		OrganisationMemberRepo: pp.OrganisationMemberRepo,
 	}
-	return orgPolicy.Get(ctx, org)
-}
-
-func (pp *ProjectPolicy) Create(ctx context.Context, res interface{}) error {
-	authCtx := ctx.Value(AuthCtxKey).(*auth.AuthenticatedUser)
-
-	org, ok := res.(*datastore.Organisation)
-	if !ok {
-		return errors.New("Wrong organisation type")
-	}
-
-	apiKey, ok := authCtx.APIKey.(*datastore.APIKey)
-	if ok {
-		// Personal Access Tokens.
-		if apiKey.Type == datastore.PersonalKey {
-			_, err := pp.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, apiKey.UserID, org.UID)
-			if err != nil {
-				return ErrNotAllowed
-			}
-
-			return nil
-		}
-
-		// API Key
-		return ErrNotAllowed
-	}
-
-	// JWT Access
-	orgPolicy := OrganisationPolicy{
-		OrganisationMemberRepo: pp.OrganisationMemberRepo,
-	}
-	return orgPolicy.Get(ctx, org)
-}
-
-func (pp *ProjectPolicy) Update(ctx context.Context, res interface{}) error {
-	return pp.Get(ctx, res)
-}
-
-func (pp *ProjectPolicy) Delete(ctx context.Context, res interface{}) error {
-	return pp.Get(ctx, res)
+	return orgPolicy.Manage(ctx, org)
 }
 
 func (pp *ProjectPolicy) GetName() string {

@@ -1325,40 +1325,6 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent() {
 	require.Equal(s.T(), event.Endpoints[0], endpointID)
 }
 
-func (s *EventIntegrationTestSuite) Test_CreateFanoutEvent_MultipleEndpoints() {
-	endpointID := ulid.Make().String()
-	expectedStatusCode := http.StatusCreated
-	ownerID := ulid.Make().String()
-
-	// Just Before.
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", ownerID, false, datastore.ActiveEndpointStatus)
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", ownerID, false, datastore.ActiveEndpointStatus)
-
-	bodyStr := `{"owner_id":"%s", "event_type":"*", "data":{"level":"test"}}`
-	body := serialize(bodyStr, ownerID)
-
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/events/fanout", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
-	req := createRequest(http.MethodPost, url, "", body)
-
-	err := s.AuthenticatorFn(req, s.Router)
-	require.NoError(s.T(), err)
-
-	w := httptest.NewRecorder()
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var event datastore.Event
-	parseResponse(s.T(), w.Result(), &event)
-
-	require.NotEmpty(s.T(), event.UID)
-	require.Equal(s.T(), event.Endpoints[0], endpointID)
-	require.Equal(s.T(), 2, len(event.Endpoints))
-}
-
 func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_Event() {
 	endpointID := ulid.Make().String()
 	appID := ulid.Make().String()

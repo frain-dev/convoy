@@ -68,20 +68,6 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_error_for_invalid_role",
-			args: args{
-				ctx: ctx,
-				org: &datastore.Organisation{UID: "1234"},
-				role: &auth.Role{
-					Type: auth.RoleAdmin,
-				},
-				user: &datastore.User{UID: "1234"},
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "please specify project for organisation member",
-		},
-		{
 			name: "should_fail_to_create_organisation_member",
 			args: args{
 				ctx: ctx,
@@ -182,21 +168,6 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 					Times(1).Return(nil)
 			},
 			wantErr: false,
-		},
-		{
-			name: "should_error_for_invalid_role",
-			args: args{
-				ctx:                ctx,
-				organisationMember: &datastore.OrganisationMember{},
-				role: &auth.Role{
-					Type:     auth.RoleAPI,
-					Project:  "",
-					Endpoint: "",
-				},
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "please specify project for organisation member",
 		},
 		{
 			name: "should_update_organisation_member",
