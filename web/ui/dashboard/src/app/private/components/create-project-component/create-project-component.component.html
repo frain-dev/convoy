@@ -283,3 +283,13 @@
 		</div>
 	</div>
 </div>
+
+
+<div convoy-modal *ngIf="disableEndpointsModal" position="center" size="sm">
+	<div modalBody class="flex flex-col justify-center items-center p-30px">
+		<h3 class="text-16 font-semibold text-black mb-8px">Confirm Action</h3>
+		<p class="text-14 font-medium text-grey-40 text-center mb-20px">You are about to re-enable all endpoints on this project, please confirm this action</p>
+		<button convoy-button class="mb-24px" (click)="updateProject(); disableEndpointsModal = false">Confirm</button>
+		<button convoy-button fill="text" class="font-semibold" (click)="disableEndpointsModal = false">Close</button>
+	</div>
+</div>
