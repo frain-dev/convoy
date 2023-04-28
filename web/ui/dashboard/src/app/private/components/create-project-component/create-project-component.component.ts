@@ -68,6 +68,7 @@ export class CreateProjectComponent implements OnInit {
 		{ uid: 'signature', name: 'Signature Format', show: false }
 	];
 	public rbacService = inject(RbacService);
+	disableEndpointsModal = false;
 
 	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router) {}
 
@@ -283,5 +284,10 @@ export class CreateProjectComponent implements OnInit {
 	cancel() {
 		this.confirmModal = true;
 		document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
+	}
+
+	confirmAction(event: any) {
+		const disableEndpointValue = event.target.checked;
+		disableEndpointValue ? this.updateProject() : (this.disableEndpointsModal = true);
 	}
 }

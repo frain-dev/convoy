@@ -60,7 +60,7 @@ func (a *DashboardHandler) RegisterUser(w http.ResponseWriter, r *http.Request) 
 func (a *DashboardHandler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 	user, ok := getUser(r)
 	if !ok {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
@@ -83,7 +83,7 @@ func (a *DashboardHandler) ResendVerificationEmail(w http.ResponseWriter, r *htt
 func (a *DashboardHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	user, ok := getUser(r)
 	if !ok {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
@@ -100,7 +100,7 @@ func (a *DashboardHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	user, ok := getUser(r)
 	if !ok {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
@@ -124,7 +124,7 @@ func (a *DashboardHandler) UpdatePassword(w http.ResponseWriter, r *http.Request
 
 	user, ok := getUser(r)
 	if !ok {
-		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 

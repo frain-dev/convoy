@@ -46,6 +46,11 @@ func (a *DashboardHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
 	endpointService := createEndpointService(a)
 	endpoint, err := endpointService.CreateEndpoint(r.Context(), e, project.UID)
 	if err != nil {
@@ -112,6 +117,11 @@ func (a *DashboardHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
 	endpointService := createEndpointService(a)
 	endpoint, err = endpointService.UpdateEndpoint(r.Context(), e, endpoint, project)
 	if err != nil {
@@ -132,6 +142,11 @@ func (a *DashboardHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
@@ -166,6 +181,11 @@ func (a *DashboardHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
 	endpointService := createEndpointService(a)
 	endpoint, err = endpointService.ExpireSecret(r.Context(), e, endpoint, project)
 	if err != nil {
@@ -184,6 +204,11 @@ func (a *DashboardHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
 	endpointID := chi.URLParam(r, "endpointID")
 	endpointService := createEndpointService(a)
 	endpoint, err := endpointService.ToggleEndpointStatus(r.Context(), project.UID, endpointID)
@@ -199,6 +224,11 @@ func (a *DashboardHandler) PauseEndpoint(w http.ResponseWriter, r *http.Request)
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 

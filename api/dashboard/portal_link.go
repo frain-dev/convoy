@@ -35,6 +35,11 @@ func (a *DashboardHandler) CreatePortalLink(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
 	portalLinkService := createPortalLinkService(a)
 	portalLink, err := portalLinkService.CreatePortalLink(r.Context(), &newPortalLink, project)
 	if err != nil {
@@ -90,6 +95,11 @@ func (a *DashboardHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
 	portalLinkService := createPortalLinkService(a)
 	portalLink, err := portalLinkService.FindPortalLinkByID(r.Context(), project, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
@@ -119,8 +129,13 @@ func (a *DashboardHandler) RevokePortalLink(w http.ResponseWriter, r *http.Reque
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	portalLinkService := createPortalLinkService(a)
 
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
+	portalLinkService := createPortalLinkService(a)
 	portalLink, err := portalLinkService.FindPortalLinkByID(r.Context(), project, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
