@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
+	dbhook "github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/server"
@@ -155,6 +156,10 @@ func StartConvoyServer(a *cli.App, withWorkers bool) error {
 	if err != nil {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 	}
+
+	projectRepo := postgres.NewProjectRepo(a.DB)
+	metaEventRepo := postgres.NewMetaEventRepo(a.DB)
+	dbhook.Init(a.Queue, projectRepo, metaEventRepo)
 
 	if cfg.Server.HTTP.Port <= 0 {
 		return errors.New("please provide the HTTP port in the convoy.json file")

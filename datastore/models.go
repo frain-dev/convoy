@@ -124,6 +124,7 @@ type (
 	PubSubType       string
 	PubSubHandler    func(*Source, string) error
 	MetaEventType    string
+	HookEventType    string
 )
 
 type EndpointAuthenticationType string
@@ -141,8 +142,11 @@ const (
 )
 
 const (
-	EndpointCreated MetaEventType = "endpoint.created"
-	EndpointUpdated MetaEventType = "endpoint.updated"
+	EndpointCreated      HookEventType = "endpoint.created"
+	EndpointUpdated      HookEventType = "endpoint.updated"
+	EndpointDeleted      HookEventType = "endpoint.deleted"
+	EventDeliverySuccess HookEventType = "eventdelivery.success"
+	EventDeliveryFailed  HookEventType = "eventdelivery.failed"
 )
 
 const (
@@ -1296,7 +1300,7 @@ type DeprecatedEndpoint struct {
 type MetaEvent struct {
 	UID       string          `json:"uid" db:"id"`
 	ProjectID string          `json:"project_id" db:"project_id"`
-	EventType MetaEventType   `json:"event_type" db:"event_type"`
+	EventType string          `json:"event_type" db:"event_type"`
 	Data      json.RawMessage `json:"data" db:"data"`
 	Status    string          `json:"status" db:"status"`
 

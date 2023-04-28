@@ -48,7 +48,7 @@ func generateMetaEvent(t *testing.T, db database.Database) *datastore.MetaEvent 
 
 	return &datastore.MetaEvent{
 		UID:           ulid.Make().String(),
-		EventType:     datastore.EndpointCreated,
+		EventType:     string(datastore.EndpointCreated),
 		ProjectID:     project.UID,
 		Data:          data,
 		RetryCount:    1,

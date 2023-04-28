@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -25,12 +26,7 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 
 		// switch meta event status to processing
 
-		err = metaEventRepo.CreateMetaEvent(context.Background(), data.Event)
-		if err != nil {
-			log.WithError(err).Error("failed to create meta event")
-			return &EndpointError{Err: err, delay: defaultDelay}
-		}
-
+		fmt.Println("INSIDE WORKER >>>>>")
 		return nil
 	}
 }

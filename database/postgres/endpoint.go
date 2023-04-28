@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
@@ -147,6 +148,7 @@ const (
 
 type endpointRepo struct {
 	db *sqlx.DB
+	// hook *hooks.Hook
 }
 
 func NewEndpointRepo(db database.Database) datastore.EndpointRepository {
@@ -160,9 +162,14 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 	}
 	defer rollbackTx(tx)
 
-	defer func() {
-		// go e.listener.AfterCreate(endpoint)
-	}()
+	ho, err := hooks.Get()
+	if err != nil {
+		return err
+	}
+
+	defer func(hook *hooks.Hook) {
+		go hook.Fire(datastore.EndpointCreated, endpoint)
+	}(ho)
 
 	ac := endpoint.GetAuthConfig()
 	args := []interface{}{
@@ -237,6 +244,10 @@ func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID str
 
 func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ac := endpoint.GetAuthConfig()
+
+	// defer func() {
+	// 	go e.hook.Fire("endpoint.updated", endpoint)
+	// }()
 
 	r, err := e.db.ExecContext(ctx, updateEndpoint, endpoint.UID, projectID, endpoint.Title, endpoint.Status, endpoint.OwnerID, endpoint.TargetURL,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,

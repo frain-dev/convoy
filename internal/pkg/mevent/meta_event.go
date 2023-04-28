@@ -22,7 +22,7 @@ func NewMetaEvent(queue queue.Queuer, projectRepo datastore.ProjectRepository, m
 	return &MetaEvent{queue: queue, projectRepo: projectRepo, metaEventRepo: metaEventRepo}
 }
 
-func (m *MetaEvent) Run(eventType datastore.MetaEventType, projectID string, data interface{}) error {
+func (m *MetaEvent) Run(eventType string, projectID string, data interface{}) error {
 	project, err := m.projectRepo.FetchProjectByID(context.Background(), projectID)
 	if err != nil {
 		return err
@@ -33,7 +33,7 @@ func (m *MetaEvent) Run(eventType datastore.MetaEventType, projectID string, dat
 		return nil
 	}
 
-	if !m.isSubscribed(string(eventType), cfg.EventType) {
+	if !m.isSubscribed(eventType, cfg.EventType) {
 		return nil
 	}
 
@@ -43,7 +43,7 @@ func (m *MetaEvent) Run(eventType datastore.MetaEventType, projectID string, dat
 	}
 
 	mP := datastore.MetaEventPayload{
-		EventType: string(eventType),
+		EventType: eventType,
 		Data:      dByte,
 	}
 
