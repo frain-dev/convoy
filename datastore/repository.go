@@ -89,6 +89,7 @@ type EndpointRepository interface {
 	FindEndpointsByID(ctx context.Context, ids []string, projectID string) ([]Endpoint, error)
 	FindEndpointsByAppID(ctx context.Context, appID string, projectID string) ([]Endpoint, error)
 	FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]Endpoint, error)
+	FindEndpointByTargetURL(ctx context.Context, projectID string, targetURL string) (*Endpoint, error)
 	UpdateEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
 	UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status EndpointStatus) error
 	DeleteEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error

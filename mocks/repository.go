@@ -1079,6 +1079,21 @@ func (mr *MockEndpointRepositoryMockRecorder) FindEndpointByID(çtx, id, project
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointByID", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointByID), çtx, id, projectID)
 }
 
+// FindEndpointByTargetURL mocks base method.
+func (m *MockEndpointRepository) FindEndpointByTargetURL(ctx context.Context, projectID, targetURL string) (*datastore.Endpoint, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindEndpointByTargetURL", ctx, projectID, targetURL)
+	ret0, _ := ret[0].(*datastore.Endpoint)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindEndpointByTargetURL indicates an expected call of FindEndpointByTargetURL.
+func (mr *MockEndpointRepositoryMockRecorder) FindEndpointByTargetURL(ctx, projectID, targetURL interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointByTargetURL", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointByTargetURL), ctx, projectID, targetURL)
+}
+
 // FindEndpointsByAppID mocks base method.
 func (m *MockEndpointRepository) FindEndpointsByAppID(ctx context.Context, appID, projectID string) ([]datastore.Endpoint, error) {
 	m.ctrl.T.Helper()

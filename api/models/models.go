@@ -219,6 +219,19 @@ type UpdateSource struct {
 	PubSub         *datastore.PubSubConfig  `json:"pub_sub"`
 }
 
+type DynamicEvent struct {
+	Endpoint     Endpoint         `json:"endpoint"`
+	Subscription Subscription     `json:"subscription"`
+	Event        DynamicEventStub `json:"event"`
+}
+
+type DynamicEventStub struct {
+	EventType string `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
+	// Data is an arbitrary JSON value that gets sent as the body of the webhook to the endpoints
+	Data          json.RawMessage   `json:"data" bson:"data" valid:"required~please provide your data"`
+	CustomHeaders map[string]string `json:"custom_headers"`
+}
+
 type Event struct {
 	EndpointID string `json:"endpoint_id"`
 	AppID      string `json:"app_id" bson:"app_id"` // Deprecated but necessary for backward compatibility

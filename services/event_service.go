@@ -126,6 +126,17 @@ func (e *EventService) CreateFanoutEvent(ctx context.Context, newMessage *models
 	return event, nil
 }
 
+func (e *EventService) CreateDynamicEvents(ctx context.Context, de *models.DynamicEvent, p *datastore.Project) error {
+	if p == nil {
+		return util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while creating event - invalid project"))
+	}
+
+	if err := util.Validate(de); err != nil {
+		return util.NewServiceError(http.StatusBadRequest, err)
+	}
+	return nil
+}
+
 func (e *EventService) ReplayEvent(ctx context.Context, event *datastore.Event, g *datastore.Project) error {
 	taskName := convoy.CreateEventProcessor
 
