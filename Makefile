@@ -28,3 +28,6 @@ generate_docs:
 
 run_dependencies:
 	docker compose -f docker-compose.dep.yml up -d
+
+build_ee:
+	scripts/build_ee.sh
