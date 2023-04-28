@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/hibiken/asynq"
@@ -14,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
-	"github.com/frain-dev/convoy/internal/pkg/mevent"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 )
@@ -22,9 +20,7 @@ import (
 func MonitorTwitterSources(db database.Database, queue queue.Queuer) func(context.Context, *asynq.Task) error {
 	sourceRepo := postgres.NewSourceRepo(db)
 	subRepo := postgres.NewSubscriptionRepo(db)
-	projectRepo := postgres.NewProjectRepo(db)
-	endpointListener := listener.NewEndpointListener(mevent.NewMetaEvent(queue, projectRepo))
-	endpointRepo := postgres.NewEndpointRepo(db, endpointListener)
+	endpointRepo := postgres.NewEndpointRepo(db)
 
 	return func(ctx context.Context, t *asynq.Task) error {
 		p := datastore.Pageable{PerPage: 100, Direction: datastore.Next, NextCursor: datastore.DefaultCursor}

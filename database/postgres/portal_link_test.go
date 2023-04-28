@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
@@ -88,7 +87,7 @@ func Test_UpdatePortalLink(t *testing.T) {
 
 	portalLinkRepo := NewPortalLinkRepo(db)
 	projectRepo := NewProjectRepo(db)
-	endpointRepo := NewEndpointRepo(db, listener.NewNoopEndpointListener())
+	endpointRepo := NewEndpointRepo(db)
 
 	portalLink := generatePortalLink(t, db)
 	ctx := context.Background()
@@ -195,7 +194,7 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 			project := seedProject(t, db)
 			endpoint := generateEndpoint(project)
 			portalLinkRepo := NewPortalLinkRepo(db)
-			NewEndpointRepo(db, listener.NewNoopEndpointListener()).CreateEndpoint(context.Background(), endpoint, project.UID)
+			NewEndpointRepo(db).CreateEndpoint(context.Background(), endpoint, project.UID)
 
 			for i := 0; i < tc.count; i++ {
 				portalLink := &datastore.PortalLink{
@@ -220,7 +219,7 @@ func generatePortalLink(t *testing.T, db database.Database) *datastore.PortalLin
 	project := seedProject(t, db)
 
 	endpoint := generateEndpoint(project)
-	err := NewEndpointRepo(db, listener.NewNoopEndpointListener()).CreateEndpoint(context.Background(), endpoint, project.UID)
+	err := NewEndpointRepo(db).CreateEndpoint(context.Background(), endpoint, project.UID)
 	require.NoError(t, err)
 
 	return &datastore.PortalLink{

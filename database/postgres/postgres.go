@@ -51,3 +51,6 @@ func rollbackTx(tx *sqlx.Tx) {
 		log.WithError(err).Error("failed to rollback tx")
 	}
 }
+
+// create a singleton
+// hooks.load(), hooks.get()

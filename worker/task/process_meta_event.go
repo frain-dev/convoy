@@ -23,6 +23,8 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
+		// switch meta event status to processing
+
 		err = metaEventRepo.CreateMetaEvent(context.Background(), data.Event)
 		if err != nil {
 			log.WithError(err).Error("failed to create meta event")

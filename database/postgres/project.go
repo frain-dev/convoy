@@ -36,12 +36,12 @@ const (
 		strategy_duration, strategy_retry_count,
 		signature_header, signature_versions, disable_endpoint,
 		meta_events_enabled, meta_events_type, meta_events_event_type,
-		meta_events_url, meta_events_pub_sub
+		meta_events_url, meta_events_secret, meta_events_pub_sub
 	  )
 	  VALUES
 		(
 		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-		  $14, $15, $16, $17, $18
+		  $14, $15, $16, $17, $18, $19
 		);
 	`
 
@@ -63,7 +63,8 @@ const (
 		meta_events_type = $15,
 		meta_events_event_type = $16,
 		meta_events_url = $17,
-		meta_events_pub_sub = $18,
+		meta_events_secret = $18,
+		meta_events_pub_sub = $19,
 		updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -224,6 +225,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 		me.Type,
 		me.EventType,
 		me.URL,
+		me.Secret,
 		me.PubSub,
 	)
 	if err != nil {
@@ -322,6 +324,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		me.Type,
 		me.EventType,
 		me.URL,
+		me.Secret,
 		me.PubSub,
 	)
 	if err != nil {

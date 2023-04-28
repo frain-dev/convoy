@@ -20,6 +20,7 @@ ALTER TABLE convoy.project_configurations ADD meta_events_enabled BOOLEAN NOT NU
 ALTER TABLE convoy.project_configurations ADD meta_events_type TEXT;
 ALTER TABLE convoy.project_configurations ADD meta_events_event_type TEXT; 
 ALTER TABLE convoy.project_configurations ADD meta_events_url TEXT;
+ALTER TABLE convoy.project_configurations add meta_events_url_secret TEXT;
 ALTER TABLE convoy.project_configurations ADD meta_events_pub_sub JSONB;
 
 -- +migrate Down

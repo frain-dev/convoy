@@ -218,5 +218,14 @@ func validateMetaEvent(metaEvent *datastore.MetaEventConfiguration) error {
 		}
 	}
 
+	if util.IsStringEmpty(metaEvent.Secret) {
+		sc, err := util.GenerateSecret()
+		if err != nil {
+			return err
+		}
+
+		metaEvent.Secret = sc
+	}
+
 	return nil
 }

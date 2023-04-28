@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
@@ -119,7 +118,7 @@ func Test_CountProjectMessages(t *testing.T) {
 			endpoint := generateEndpoint(project)
 			eventRepo := NewEventRepo(db)
 
-			err := NewEndpointRepo(db, listener.NewNoopEndpointListener()).CreateEndpoint(context.Background(), endpoint, project.UID)
+			err := NewEndpointRepo(db).CreateEndpoint(context.Background(), endpoint, project.UID)
 			require.NoError(t, err)
 
 			for i := 0; i < tc.count; i++ {
@@ -186,7 +185,7 @@ func Test_CountEvents(t *testing.T) {
 			endpoint := generateEndpoint(project)
 			eventRepo := NewEventRepo(db)
 
-			err := NewEndpointRepo(db, listener.NewNoopEndpointListener()).CreateEndpoint(context.Background(), endpoint, project.UID)
+			err := NewEndpointRepo(db).CreateEndpoint(context.Background(), endpoint, project.UID)
 			require.NoError(t, err)
 
 			for i := 0; i < tc.count; i++ {
@@ -312,7 +311,7 @@ func Test_LoadEventsPaged(t *testing.T) {
 				endpoint.UID = tc.endpointID
 			}
 
-			err := NewEndpointRepo(db, listener.NewNoopEndpointListener()).CreateEndpoint(context.Background(), endpoint, project.UID)
+			err := NewEndpointRepo(db).CreateEndpoint(context.Background(), endpoint, project.UID)
 			require.NoError(t, err)
 
 			for i := 0; i < tc.count; i++ {
@@ -398,7 +397,7 @@ func generateEvent(t *testing.T, db database.Database) *datastore.Event {
 	project := seedProject(t, db)
 	endpoint := generateEndpoint(project)
 
-	err := NewEndpointRepo(db, listener.NewNoopEndpointListener()).CreateEndpoint(context.Background(), endpoint, project.UID)
+	err := NewEndpointRepo(db).CreateEndpoint(context.Background(), endpoint, project.UID)
 	require.NoError(t, err)
 
 	data := json.RawMessage([]byte(`{

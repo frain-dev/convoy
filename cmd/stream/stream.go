@@ -6,10 +6,8 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
-	"github.com/frain-dev/convoy/internal/pkg/mevent"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/socket"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -32,8 +30,7 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 			}
 
 			projectRepo := postgres.NewProjectRepo(a.DB)
-			endpointListener := listener.NewEndpointListener(mevent.NewMetaEvent(a.Queue, projectRepo))
-			endpointRepo := postgres.NewEndpointRepo(a.DB, endpointListener)
+			endpointRepo := postgres.NewEndpointRepo(a.DB)
 			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 			sourceRepo := postgres.NewSourceRepo(a.DB)
 			subRepo := postgres.NewSubscriptionRepo(a.DB)

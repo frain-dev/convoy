@@ -15,7 +15,6 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -130,7 +129,7 @@ func (s *PortalEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, listener.NewNoopEndpointListener())
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)

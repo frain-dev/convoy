@@ -6,13 +6,11 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 
-	"github.com/frain-dev/convoy/internal/pkg/mevent"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 
 	"github.com/go-chi/render"
@@ -20,8 +18,7 @@ import (
 
 func createEndpointService(a *DashboardHandler) *services.EndpointService {
 	projectRepo := postgres.NewProjectRepo(a.A.DB)
-	endpointListener := listener.NewEndpointListener(mevent.NewMetaEvent(a.A.Queue, projectRepo))
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB, endpointListener)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 	eventRepo := postgres.NewEventRepo(a.A.DB)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
 
@@ -222,9 +219,7 @@ func (a *DashboardHandler) retrieveEndpoint(r *http.Request) (*datastore.Endpoin
 		return &datastore.Endpoint{}, err
 	}
 
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
-	endpointListener := listener.NewEndpointListener(mevent.NewMetaEvent(a.A.Queue, projectRepo))
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB, endpointListener)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 	endpointID := chi.URLParam(r, "endpointID")
 	return endpointRepo.FindEndpointByID(r.Context(), endpointID, project.UID)
 }

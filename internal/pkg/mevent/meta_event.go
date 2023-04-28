@@ -7,17 +7,19 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/oklog/ulid/v2"
 )
 
 type MetaEvent struct {
-	queue       queue.Queuer
-	projectRepo datastore.ProjectRepository
+	queue         queue.Queuer
+	projectRepo   datastore.ProjectRepository
+	metaEventRepo datastore.MetaEventRepository
 }
 
-func NewMetaEvent(queue queue.Queuer, projectRepo datastore.ProjectRepository) *MetaEvent {
-	return &MetaEvent{queue: queue, projectRepo: projectRepo}
+func NewMetaEvent(queue queue.Queuer, projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository) *MetaEvent {
+	return &MetaEvent{queue: queue, projectRepo: projectRepo, metaEventRepo: metaEventRepo}
 }
 
 func (m *MetaEvent) Run(eventType datastore.MetaEventType, projectID string, data interface{}) error {
@@ -27,7 +29,6 @@ func (m *MetaEvent) Run(eventType datastore.MetaEventType, projectID string, dat
 	}
 
 	cfg := project.Config.MetaEvent
-
 	if !cfg.IsEnabled {
 		return nil
 	}
@@ -61,6 +62,12 @@ func (m *MetaEvent) Run(eventType datastore.MetaEventType, projectID string, dat
 		Data:          mpByte,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
+	}
+
+	err = m.metaEventRepo.CreateMetaEvent(context.Background(), metaEvent)
+	if err != nil {
+		log.WithError(err).Error("failed to create meta event")
+		return err
 	}
 
 	mE, err := json.Marshal(metaEvent)

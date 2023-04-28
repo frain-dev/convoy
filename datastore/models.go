@@ -547,6 +547,7 @@ type MetaEventConfiguration struct {
 	Type      MetaEventType  `json:"type" db:"type" valid:"optional, in(http|pub_sub)~unsupported meta event type"`
 	EventType pq.StringArray `json:"event_type" db:"event_type"`
 	URL       string         `json:"url" db:"url"`
+	Secret    string         `json:"secret" db:"secret"`
 	PubSub    *PubSubConfig  `json:"pub_sub" db:"pub_sub"`
 }
 
