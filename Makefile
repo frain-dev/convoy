@@ -15,7 +15,7 @@ ui_install:
  	 npm run build
 
 build:
-	scripts/build.sh
+	scripts/build.sh -b $(type)
 
 integration_tests:
 	go test -tags integration -p 1 ./...
@@ -28,6 +28,3 @@ generate_docs:
 
 run_dependencies:
 	docker compose -f docker-compose.dep.yml up -d
-
-build_ee:
-	scripts/build_ee.sh
