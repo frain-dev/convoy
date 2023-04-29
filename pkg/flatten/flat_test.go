@@ -3,6 +3,7 @@ package flatten
 import (
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -20,6 +21,7 @@ func TestFlattenMap(t *testing.T) {
 		name  string
 		given interface{}
 		want  map[string]interface{}
+		err   error
 	}{
 		/////////////////// string
 		{
@@ -31,6 +33,36 @@ func TestFlattenMap(t *testing.T) {
 			name:  "nested string value",
 			given: map[string]interface{}{"$.venues.$.lagos": "lekki"},
 			want:  map[string]interface{}{"$.venues.$.lagos": "lekki"},
+		},
+		{
+			name:  "invalid operator",
+			given: map[string]interface{}{"$venues": "bariga"},
+			err:   errors.New("$venues starts with a $ and is not a valid operator"),
+		},
+		{
+			name:  "weird case",
+			given: map[string]interface{}{"$$$$$": "lmao"},
+			err:   errors.New("$$$$$ starts with a $ and is not a valid operator"),
+		},
+		{
+			name:  "string value with trailing $",
+			given: map[string]interface{}{"lagos$": "lekki"},
+			want:  map[string]interface{}{"lagos$": "lekki"},
+		},
+		{
+			name:  "nested string value - trailing .$",
+			given: map[string]interface{}{"$.venues.$.lagos.$": "lekki"},
+			want:  map[string]interface{}{"$.venues.$.lagos.$": "lekki"},
+		},
+		{
+			name:  "nested string value - trailing .$ with inner operator",
+			given: map[string]interface{}{"$.venues.$lagos.$": "lekki"},
+			want:  map[string]interface{}{"$.venues.$lagos.$": "lekki"},
+		},
+		{
+			name:  "nested string value - trailing .$ with invalid operator prefix",
+			given: map[string]interface{}{"$venues.$.lagos.$": "bariga"},
+			err:   errors.New("$venues.$.lagos.$ starts with a $ and is not a valid operator"),
 		},
 		{
 			name:  "empty map",
@@ -48,17 +80,18 @@ func TestFlattenMap(t *testing.T) {
 			want:  map[string]interface{}{},
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := Flatten(test.given)
-			if err != nil {
-				t.Errorf("failed to flatten: %+v", err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Flatten(tt.given)
+			if tt.err != nil {
+				if tt.err.Error() != err.Error() {
+					t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", err.Error(), tt.err.Error())
+				}
+				return
 			}
 
-			fmt.Printf("test.given: %v\n", test.given)
-
-			if !jsonEqual(got, test.want) {
-				t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", got, test.want)
+			if !jsonEqual(got, tt.want) {
+				t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", got, tt.want)
 			}
 		})
 	}
@@ -1057,7 +1090,7 @@ func TestFlattenArray(t *testing.T) {
 			},
 		},
 		{
-			name: "",
+			name: "flatten nested arrays",
 			given: `{
 				"data": [
 				  {

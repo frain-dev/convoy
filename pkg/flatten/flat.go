@@ -42,6 +42,10 @@ func flatten(prefix string, nested interface{}) (map[string]interface{}, error) 
 	case map[string]interface{}:
 		for key, value := range n {
 			if strings.HasPrefix(key, "$") && !strings.HasPrefix(key, "$.") {
+				if !isKeyValidOperator(key) {
+					return nil, fmt.Errorf("%s starts with a $ and is not a valid operator", key)
+				}
+
 				if key == "$or" || key == "$and" {
 					switch a := value.(type) {
 					case []interface{}:
@@ -138,4 +142,28 @@ func flatten(prefix string, nested interface{}) (map[string]interface{}, error) 
 	}
 
 	return f, nil
+}
+
+func isKeyValidOperator(op string) bool {
+	operators := []string{
+		"$gte",
+		"$gt",
+		"$lte",
+		"$lt",
+		"$in",
+		"$nin",
+		"$eq",
+		"$neq",
+		"$or",
+		"$and",
+		"$exist",
+	}
+
+	for _, o := range operators {
+		if o == op {
+			return true
+		}
+	}
+
+	return false
 }
