@@ -435,9 +435,7 @@ func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload, 
 		return false, err
 	}
 
-	isValid := compare.Compare(p, f)
-
-	return isValid, nil
+	return compare.Compare(p, f)
 }
 
 var (
