@@ -2,6 +2,7 @@ package compare
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/frain-dev/convoy/pkg/flatten"
@@ -250,6 +251,73 @@ func TestCompare(t *testing.T) {
 			want: false,
 		},
 		{
+			name: "$and",
+			payload: map[string]interface{}{
+				"cities": []interface{}{
+					"lagos",
+					"ibadan",
+					"agodi",
+				},
+				"type": "weekly",
+				"temperatures": []interface{}{
+					30,
+					12,
+					39.9,
+					10,
+				},
+				"person": map[string]interface{}{
+					"age": 12,
+				},
+			},
+			filter: map[string]interface{}{
+				"$and": []interface{}{
+					map[string]interface{}{
+						"person.age": map[string]interface{}{
+							"$gte": 10,
+						},
+					},
+					map[string]interface{}{
+						"type": "weekly",
+					},
+					map[string]interface{}{
+						"cities": "lagos",
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "$or",
+			payload: map[string]interface{}{
+				"cities": []interface{}{
+					"lagos",
+					"ibadan",
+					"agodi",
+				},
+				"type": "weekly",
+				"temperatures": []interface{}{
+					30,
+					12,
+					39.9,
+					10,
+				},
+				"person": map[string]interface{}{
+					"age": 12,
+				},
+			},
+			filter: map[string]interface{}{
+				"$or": []interface{}{
+					map[string]interface{}{
+						"type": "monthly",
+					},
+					map[string]interface{}{
+						"cities": "lagos",
+					},
+				},
+			},
+			want: true,
+		},
+		{
 			name: "$and and $or",
 			payload: map[string]interface{}{
 				"cities": []interface{}{
@@ -271,7 +339,7 @@ func TestCompare(t *testing.T) {
 			filter: map[string]interface{}{
 				"$and": []interface{}{
 					map[string]interface{}{
-						"age": map[string]interface{}{
+						"person.age": map[string]interface{}{
 							"$gte": 10,
 						},
 					},
@@ -430,12 +498,17 @@ func TestCompare(t *testing.T) {
 				},
 				"swag": "hoodies",
 			},
-
 			filter: map[string]interface{}{
 				"data.$.speakers.$.name": "raymond",
 				"swag":                   "hoodies",
 			},
 			want: true,
+		},
+		{
+			name:    "Nothing",
+			payload: map[string]interface{}{},
+			filter:  map[string]interface{}{},
+			want:    true,
 		},
 	}
 
@@ -451,7 +524,353 @@ func TestCompare(t *testing.T) {
 				t.Errorf("failed to flatten JSON: %v", err)
 			}
 
-			matched := Compare(p, f)
+			matched, err := Compare(p, f)
+			if err != nil {
+				t.Error(err)
+			}
+			if !jsonEqual(matched, tt.want) {
+				t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", matched, tt.want)
+			}
+		})
+	}
+}
+
+func TestCompareEdgeCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		payload interface{}
+		filter  map[string]interface{}
+		want    bool
+		err     error
+	}{
+		{
+			name: "trailing array operator (.$) - 1",
+			payload: map[string]interface{}{
+				"data": []interface{}{
+					map[string]interface{}{
+						"event": "meetup",
+					},
+					map[string]interface{}{
+						"venue": "test",
+					},
+				},
+				"speakers": []interface{}{
+					"raymond",
+					"subomi",
+				},
+				"swag": "hoodies",
+			},
+			filter: map[string]interface{}{
+				"data.$.venue.$": "test",
+			},
+			err: ErrTrailingDollarOpNotAllowed,
+		},
+		{
+			name: "trailing array operator (.$) - 2",
+			payload: []interface{}{
+				map[string]interface{}{
+					"event": "meetup",
+				},
+				map[string]interface{}{
+					"venues": []interface{}{
+						map[string]interface{}{
+							"lagos": []interface{}{
+								"ikeja",
+								"lekki",
+							},
+						},
+						map[string]interface{}{
+							"ibadan": []interface{}{
+								"bodija",
+								"dugbe",
+							},
+						},
+					},
+				},
+				map[string]interface{}{
+					"speakers": []interface{}{
+						map[string]interface{}{
+							"name": "raymond",
+						},
+						map[string]interface{}{
+							"name": "subomi",
+						},
+					},
+				},
+			},
+			filter: map[string]interface{}{
+				"$.venues.$.lagos.$": "ikeja",
+			},
+			err: ErrTrailingDollarOpNotAllowed,
+		},
+		{
+			name: "array operator (.$) - 3",
+			payload: []interface{}{
+				map[string]interface{}{
+					"event": "meetup",
+				},
+				map[string]interface{}{
+					"venues": []interface{}{
+						map[string]interface{}{
+							"lagos": []interface{}{
+								"ikeja",
+								"lekki",
+							},
+						},
+						map[string]interface{}{
+							"ibadan": []interface{}{
+								"bodija",
+								"dugbe",
+							},
+						},
+					},
+				},
+				map[string]interface{}{
+					"speakers": []interface{}{
+						map[string]interface{}{
+							"name": "raymond",
+						},
+						map[string]interface{}{
+							"name": "subomi",
+						},
+					},
+				},
+			},
+			filter: map[string]interface{}{
+				"$.venues.$.lagos.$": "bariga",
+			},
+			err: ErrTrailingDollarOpNotAllowed,
+		},
+		{
+			name: "array operator (.$) - 4",
+			payload: []interface{}{
+				map[string]interface{}{
+					"event": "meetup",
+				},
+				map[string]interface{}{
+					"venues": []interface{}{
+						map[string]interface{}{
+							"lagos": []interface{}{
+								"ikeja",
+								"lekki",
+							},
+						},
+						map[string]interface{}{
+							"ibadan": []interface{}{
+								"bodija",
+								"dugbe",
+							},
+						},
+					},
+				},
+				map[string]interface{}{
+					"speakers": []interface{}{
+						map[string]interface{}{
+							"name": "raymond",
+						},
+						map[string]interface{}{
+							"name": "subomi",
+						},
+					},
+				},
+			},
+			filter: map[string]interface{}{
+				"$.": "bariga",
+			},
+			want: false,
+		},
+		{
+			name: "array operator (.$) - 5",
+			payload: []interface{}{
+				map[string]interface{}{
+					"event": "meetup",
+				},
+				map[string]interface{}{
+					"venues": []interface{}{
+						map[string]interface{}{
+							"lagos": []interface{}{
+								"ikeja",
+								"lekki",
+							},
+						},
+						map[string]interface{}{
+							"ibadan": []interface{}{
+								"bodija",
+								"dugbe",
+							},
+						},
+					},
+				},
+				map[string]interface{}{
+					"speakers": []interface{}{
+						map[string]interface{}{
+							"name": "raymond",
+						},
+						map[string]interface{}{
+							"name": "subomi",
+						},
+					},
+				},
+			},
+			filter: map[string]interface{}{
+				".$": "bariga",
+			},
+			err:  ErrTrailingDollarOpNotAllowed,
+		},
+		{
+			name: "weird case",
+			payload: []interface{}{
+				map[string]interface{}{
+					"event": "meetup",
+				},
+				map[string]interface{}{
+					"place": "bariga",
+				},
+			},
+			filter: map[string]interface{}{
+				"$.$": "test",
+			},
+			err: ErrTrailingDollarOpNotAllowed,
+		},
+		{
+			name: "weird case",
+			payload: []interface{}{
+				map[string]interface{}{
+					"event": "meetup",
+				},
+				map[string]interface{}{
+					"place": "bariga",
+				},
+			},
+			filter: map[string]interface{}{
+				"$..$": "test",
+			},
+			err: ErrTrailingDollarOpNotAllowed,
+		},
+		{
+			name: "weird case",
+			payload: []interface{}{
+				map[string]interface{}{
+					"event": "meetup",
+				},
+				map[string]interface{}{
+					"place": "bariga",
+				},
+			},
+			filter: map[string]interface{}{
+				"a.$.b.$.c.$.d.$.e": "test",
+			},
+			err: fmt.Errorf("too many segments, expected at most 3 but got 4"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := flatten.Flatten(tt.payload)
+			if err != nil {
+				t.Errorf("failed to flatten JSON: %v", err)
+				return
+			}
+
+			f, err := flatten.Flatten(tt.filter)
+			if err != nil {
+				t.Errorf("failed to flatten JSON: %v", err)
+				return
+			}
+
+			matched, err := Compare(p, f)
+			if tt.err != nil {
+				if tt.err.Error() != err.Error() {
+					t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", err.Error(), tt.err.Error())
+				}
+				return
+			}
+
+			if !jsonEqual(matched, tt.want) {
+				t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", matched, tt.want)
+			}
+		})
+	}
+}
+
+func TestCompareEdgeCasesWithOperators(t *testing.T) {
+	tests := []struct {
+		name    string
+		payload interface{}
+		filter  map[string]interface{}
+		want    bool
+		err     error
+	}{
+		{
+			name: "weird case",
+			payload: []interface{}{
+				map[string]interface{}{
+					"event": "meetup",
+				},
+				map[string]interface{}{
+					"venues": []interface{}{
+						map[string]interface{}{
+							"lagos": []interface{}{
+								"ikeja",
+								"lekki",
+								"ifako",
+							},
+						},
+						map[string]interface{}{
+							"ibadan": []interface{}{
+								"bodija",
+								"dugbe",
+							},
+						},
+					},
+				},
+				map[string]interface{}{
+					"speakers": []interface{}{
+						map[string]interface{}{
+							"name": "raymond",
+						},
+						map[string]interface{}{
+							"name": "subomi",
+						},
+					},
+				},
+			},
+			filter: map[string]interface{}{
+				"$or": []interface{}{
+					map[string]interface{}{
+						"$.venues.$.lagos": "ifako",
+					},
+					map[string]interface{}{
+						"$.venues.$.ibadan": "dugbe",
+					},
+				},
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := flatten.Flatten(tt.payload)
+			if err != nil {
+				t.Errorf("failed to flatten JSON: %v", err)
+				return
+			}
+
+			f, err := flatten.Flatten(tt.filter)
+			if err != nil {
+				t.Errorf("failed to flatten JSON: %v", err)
+				return
+			}
+
+			matched, err := Compare(p, f)
+			if tt.err != nil {
+				if tt.err.Error() != err.Error() {
+					fmt.Printf("f: %v\n", f)
+					t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", err.Error(), tt.err.Error())
+				}
+				return
+			}
 
 			if !jsonEqual(matched, tt.want) {
 				t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", matched, tt.want)
