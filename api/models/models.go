@@ -226,6 +226,7 @@ type DynamicEvent struct {
 }
 
 type DynamicEventStub struct {
+	ProjectID string
 	EventType string `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
 	// Data is an arbitrary JSON value that gets sent as the body of the webhook to the endpoints
 	Data          json.RawMessage   `json:"data" bson:"data" valid:"required~please provide your data"`

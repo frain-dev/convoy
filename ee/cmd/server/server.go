@@ -181,7 +181,6 @@ func StartConvoyServer(a *cli.App, cfg config.Configuration, withWorkers bool) e
 			Limiter:  a.Limiter,
 			Searcher: a.Searcher,
 		})
-
 	if err != nil {
 		return err
 	}
@@ -227,6 +226,17 @@ func StartConvoyServer(a *cli.App, cfg config.Configuration, withWorkers bool) e
 			a.Queue))
 
 		consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
+			endpointRepo,
+			eventRepo,
+			projectRepo,
+			eventDeliveryRepo,
+			a.Cache,
+			a.Queue,
+			subRepo,
+			a.Searcher,
+			deviceRepo))
+
+		consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
 			endpointRepo,
 			eventRepo,
 			projectRepo,

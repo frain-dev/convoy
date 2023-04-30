@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
@@ -134,6 +136,27 @@ func (e *EventService) CreateDynamicEvents(ctx context.Context, de *models.Dynam
 	if err := util.Validate(de); err != nil {
 		return util.NewServiceError(http.StatusBadRequest, err)
 	}
+
+	taskName := convoy.CreateDynamicEventProcessor
+
+	eventByte, err := json.Marshal(de)
+	if err != nil {
+		return util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	payload := json.RawMessage(eventByte)
+
+	job := &queue.Job{
+		ID:      uuid.NewString(),
+		Payload: payload,
+		Delay:   0,
+	}
+
+	err = e.queue.Write(taskName, convoy.CreateEventQueue, job)
+	if err != nil {
+		log.FromContext(ctx).Errorf("Error occurred sending new dynamic event to the queue %s", err)
+	}
+
 	return nil
 }
 
