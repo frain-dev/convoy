@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
@@ -17,7 +19,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
 )
@@ -54,6 +55,12 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 		endpoint, err := findEndpoint(ctx, project, endpointRepo, &dynamicEvent.Endpoint)
 		if err != nil {
 			return err
+		}
+
+		endpointCacheKey := convoy.EndpointsCacheKey.Get(endpoint.UID).String()
+		err = cache.Set(ctx, endpointCacheKey, endpoint, 10*time.Minute)
+		if err != nil {
+			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
 		s, err := findDynamicSubscription(ctx, &dynamicEvent.Subscription, subRepo, project, endpoint)
@@ -161,7 +168,9 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 				if err != nil {
 					log.WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
 				}
-			} else if s.Type == datastore.SubscriptionTypeCLI {
+			}
+
+			if s.Type == datastore.SubscriptionTypeCLI {
 				err = eventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
 				if err != nil {
 					log.WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
@@ -198,13 +207,9 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 			endpoint.Description = newEndpoint.Description
 		}
 
-		if !util.IsStringEmpty(newEndpoint.Description) {
-			endpoint.Description = newEndpoint.Description
+		if !util.IsStringEmpty(newEndpoint.Name) {
+			endpoint.Title = newEndpoint.Name
 		}
-
-		endpoint.Description = newEndpoint.Description
-
-		endpoint.Title = newEndpoint.Name
 
 		if !util.IsStringEmpty(newEndpoint.SupportEmail) {
 			endpoint.SupportEmail = newEndpoint.SupportEmail
@@ -244,6 +249,10 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 
 		endpoint.UpdatedAt = time.Now()
 
+		if endpoint.Status == datastore.InactiveEndpointStatus {
+			endpoint.Status = datastore.PendingEndpointStatus
+		}
+
 		err = endpointRepo.UpdateEndpoint(ctx, endpoint, project.UID)
 		if err != nil {
 			log.WithError(err).Error("failed to update endpoint")
@@ -251,6 +260,14 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 		}
 
 	case datastore.ErrEndpointNotFound:
+		if newEndpoint.RateLimit == 0 {
+			newEndpoint.RateLimit = convoy.RATE_LIMIT
+		}
+
+		if util.IsStringEmpty(newEndpoint.RateLimitDuration) {
+			newEndpoint.RateLimitDuration = convoy.RATE_LIMIT_DURATION
+		}
+
 		duration, err := time.ParseDuration(newEndpoint.RateLimitDuration)
 		if err != nil {
 			return nil, fmt.Errorf("an error occurred parsing the rate limit duration: %v", err)
@@ -274,8 +291,13 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 			CreatedAt:          time.Now(),
 			UpdatedAt:          time.Now(),
 		}
+
 		if util.IsStringEmpty(endpoint.AppID) {
 			endpoint.AppID = endpoint.UID
+		}
+
+		if util.IsStringEmpty(endpoint.Title) {
+			endpoint.Title = uuid.NewString()
 		}
 
 		if util.IsStringEmpty(newEndpoint.Secret) {
@@ -337,7 +359,7 @@ func ValidateEndpointAuthentication(auth *datastore.EndpointAuthentication) (*da
 	return nil, nil
 }
 
-func findDynamicSubscription(ctx context.Context, newSubscription *models.Subscription, subRepo datastore.SubscriptionRepository, project *datastore.Project, endpoint *datastore.Endpoint) (*datastore.Subscription, error) {
+func findDynamicSubscription(ctx context.Context, newSubscription *models.DynamicSubscription, subRepo datastore.SubscriptionRepository, project *datastore.Project, endpoint *datastore.Endpoint) (*datastore.Subscription, error) {
 	subscriptions, err := subRepo.FindSubscriptionsByEndpointID(ctx, project.UID, endpoint.UID)
 
 	var subscription *datastore.Subscription
@@ -347,18 +369,15 @@ func findDynamicSubscription(ctx context.Context, newSubscription *models.Subscr
 		subscription = &subscriptions[0]
 
 		if newSubscription.AlertConfig != nil {
-			if newSubscription.AlertConfig.Count > 0 {
-				if subscription.AlertConfig == nil {
-					subscription.AlertConfig = &datastore.AlertConfiguration{}
-				}
+			if subscription.AlertConfig == nil {
+				subscription.AlertConfig = &datastore.AlertConfiguration{}
+			}
 
+			if newSubscription.AlertConfig.Count > 0 {
 				subscription.AlertConfig.Count = newSubscription.AlertConfig.Count
 			}
-			if !util.IsStringEmpty(newSubscription.AlertConfig.Threshold) {
-				if subscription.AlertConfig == nil {
-					subscription.AlertConfig = &datastore.AlertConfiguration{}
-				}
 
+			if !util.IsStringEmpty(newSubscription.AlertConfig.Threshold) {
 				subscription.AlertConfig.Threshold = newSubscription.AlertConfig.Threshold
 			}
 		}
@@ -413,10 +432,9 @@ func findDynamicSubscription(ctx context.Context, newSubscription *models.Subscr
 		subscription = &datastore.Subscription{
 			UID:        ulid.Make().String(),
 			ProjectID:  project.UID,
-			Name:       fmt.Sprintf("%s-%s", newSubscription.Name, uuid.NewString()),
+			Name:       newSubscription.Name,
 			Type:       datastore.SubscriptionTypeAPI,
-			SourceID:   newSubscription.SourceID,
-			EndpointID: newSubscription.EndpointID,
+			EndpointID: endpoint.UID,
 
 			RetryConfig:     retryConfig,
 			AlertConfig:     newSubscription.AlertConfig,
@@ -424,6 +442,15 @@ func findDynamicSubscription(ctx context.Context, newSubscription *models.Subscr
 
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
+		}
+
+		if util.IsStringEmpty(subscription.Name) {
+			subscription.Name = uuid.NewString()
+		}
+
+		err = subRepo.CreateSubscription(ctx, project.UID, subscription)
+		if err != nil {
+			return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 	default:
 		return nil, &EndpointError{Err: err, delay: 10 * time.Second}
