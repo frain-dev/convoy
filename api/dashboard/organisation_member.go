@@ -26,9 +26,11 @@ func (a *DashboardHandler) GetOrganisationMembers(w http.ResponseWriter, r *http
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	orgMemberService := createOrganisationMemberService(a)
 
-	members, paginationData, err := orgMemberService.LoadOrganisationMembersPaged(r.Context(), org, pageable)
+	userID := r.URL.Query().Get("userID")
+
+	orgMemberService := createOrganisationMemberService(a)
+	members, paginationData, err := orgMemberService.LoadOrganisationMembersPaged(r.Context(), org, userID, pageable)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to load organisations")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
