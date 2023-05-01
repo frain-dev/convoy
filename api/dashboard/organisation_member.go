@@ -28,7 +28,6 @@ func (a *DashboardHandler) GetOrganisationMembers(w http.ResponseWriter, r *http
 	}
 
 	userID := r.URL.Query().Get("userID")
-
 	orgMemberService := createOrganisationMemberService(a)
 	members, paginationData, err := orgMemberService.LoadOrganisationMembersPaged(r.Context(), org, userID, pageable)
 	if err != nil {

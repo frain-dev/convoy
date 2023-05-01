@@ -92,7 +92,7 @@ const (
 	FROM convoy.organisation_members o
 	LEFT JOIN convoy.users u ON o.user_id = u.id
 	WHERE o.organisation_id = :organisation_id 
-	AND (o.user_id = :user_id OR user_id = '')
+	AND (o.user_id = :user_id OR :user_id = '')
 	AND o.deleted_at IS NULL
 	`
 
@@ -233,10 +233,7 @@ func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organi
 		"limit":           pageable.Limit(),
 		"cursor":          pageable.Cursor(),
 		"organisation_id": organisationID,
-	}
-
-	if !util.IsStringEmpty(userID) {
-		arg["user_id"] = userID
+		"user_id":         userID,
 	}
 
 	query, args, err := sqlx.Named(query, arg)
