@@ -1220,6 +1220,21 @@ func (m *MockSubscriptionRepository) EXPECT() *MockSubscriptionRepositoryMockRec
 	return m.recorder
 }
 
+// CountEndpointSubscriptions mocks base method.
+func (m *MockSubscriptionRepository) CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountEndpointSubscriptions", ctx, projectID, endpointID)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountEndpointSubscriptions indicates an expected call of CountEndpointSubscriptions.
+func (mr *MockSubscriptionRepositoryMockRecorder) CountEndpointSubscriptions(ctx, projectID, endpointID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountEndpointSubscriptions", reflect.TypeOf((*MockSubscriptionRepository)(nil).CountEndpointSubscriptions), ctx, projectID, endpointID)
+}
+
 // CreateSubscription mocks base method.
 func (m *MockSubscriptionRepository) CreateSubscription(arg0 context.Context, arg1 string, arg2 *datastore.Subscription) error {
 	m.ctrl.T.Helper()

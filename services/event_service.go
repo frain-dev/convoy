@@ -128,7 +128,7 @@ func (e *EventService) CreateFanoutEvent(ctx context.Context, newMessage *models
 	return event, nil
 }
 
-func (e *EventService) CreateDynamicEvents(ctx context.Context, de *models.DynamicEvent, p *datastore.Project) error {
+func (e *EventService) CreateDynamicEvent(ctx context.Context, de *models.DynamicEvent, p *datastore.Project) error {
 	if p == nil {
 		return util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while creating event - invalid project"))
 	}
@@ -136,6 +136,8 @@ func (e *EventService) CreateDynamicEvents(ctx context.Context, de *models.Dynam
 	if err := util.Validate(de); err != nil {
 		return util.NewServiceError(http.StatusBadRequest, err)
 	}
+
+	de.Event.ProjectID = p.UID
 
 	taskName := convoy.CreateDynamicEventProcessor
 
@@ -155,6 +157,7 @@ func (e *EventService) CreateDynamicEvents(ctx context.Context, de *models.Dynam
 	err = e.queue.Write(taskName, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.FromContext(ctx).Errorf("Error occurred sending new dynamic event to the queue %s", err)
+		return util.NewServiceError(http.StatusInternalServerError, errors.New("failed to create dynamic event"))
 	}
 
 	return nil

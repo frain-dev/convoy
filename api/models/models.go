@@ -219,14 +219,22 @@ type UpdateSource struct {
 	PubSub         *datastore.PubSubConfig  `json:"pub_sub"`
 }
 
+type DynamicSubscription struct {
+	Name            string                            `json:"name" bson:"name" valid:"required~please provide a valid subscription name"`
+	AlertConfig     *datastore.AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
+	RetryConfig     *RetryConfiguration               `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
+	FilterConfig    *datastore.FilterConfiguration    `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
+	RateLimitConfig *datastore.RateLimitConfiguration `json:"rate_limit_config,omitempty" bson:"rate_limit_config,omitempty"`
+}
+
 type DynamicEvent struct {
-	Endpoint     Endpoint         `json:"endpoint"`
-	Subscription Subscription     `json:"subscription"`
-	Event        DynamicEventStub `json:"event"`
+	Endpoint     Endpoint            `json:"endpoint"`
+	Subscription DynamicSubscription `json:"subscription"`
+	Event        DynamicEventStub    `json:"event"`
 }
 
 type DynamicEventStub struct {
-	ProjectID string
+	ProjectID string `json:"project_id"`
 	EventType string `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
 	// Data is an arbitrary JSON value that gets sent as the body of the webhook to the endpoints
 	Data          json.RawMessage   `json:"data" bson:"data" valid:"required~please provide your data"`
