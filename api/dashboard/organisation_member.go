@@ -26,9 +26,10 @@ func (a *DashboardHandler) GetOrganisationMembers(w http.ResponseWriter, r *http
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	orgMemberService := createOrganisationMemberService(a)
 
-	members, paginationData, err := orgMemberService.LoadOrganisationMembersPaged(r.Context(), org, pageable)
+	userID := r.URL.Query().Get("userID")
+	orgMemberService := createOrganisationMemberService(a)
+	members, paginationData, err := orgMemberService.LoadOrganisationMembersPaged(r.Context(), org, userID, pageable)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to load organisations")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -71,6 +72,12 @@ func (a *DashboardHandler) UpdateOrganisationMember(w http.ResponseWriter, r *ht
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+
+	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
 	orgMemberService := createOrganisationMemberService(a)
 
 	member, err := orgMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
@@ -95,8 +102,13 @@ func (a *DashboardHandler) DeleteOrganisationMember(w http.ResponseWriter, r *ht
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	orgMemberService := createOrganisationMemberService(a)
 
+	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
+	orgMemberService := createOrganisationMemberService(a)
 	err = orgMemberService.DeleteOrganisationMember(r.Context(), memberID, org)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

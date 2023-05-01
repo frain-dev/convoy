@@ -48,7 +48,7 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	members, _, err := organisationMemberRepo.LoadOrganisationMembersPaged(context.Background(), org.UID, datastore.Pageable{
+	members, _, err := organisationMemberRepo.LoadOrganisationMembersPaged(context.Background(), org.UID, "", datastore.Pageable{
 		PerPage: 2,
 	})
 

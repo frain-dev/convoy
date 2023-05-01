@@ -73,8 +73,8 @@ func (om *OrganisationMemberService) FindOrganisationMemberByID(ctx context.Cont
 	return member, err
 }
 
-func (om *OrganisationMemberService) LoadOrganisationMembersPaged(ctx context.Context, org *datastore.Organisation, pageable datastore.Pageable) ([]*datastore.OrganisationMember, datastore.PaginationData, error) {
-	organisationMembers, paginationData, err := om.orgMemberRepo.LoadOrganisationMembersPaged(ctx, org.UID, pageable)
+func (om *OrganisationMemberService) LoadOrganisationMembersPaged(ctx context.Context, org *datastore.Organisation, userID string, pageable datastore.Pageable) ([]*datastore.OrganisationMember, datastore.PaginationData, error) {
+	organisationMembers, paginationData, err := om.orgMemberRepo.LoadOrganisationMembersPaged(ctx, org.UID, userID, pageable)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch organisation members")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, errors.New("failed to load organisation members"))

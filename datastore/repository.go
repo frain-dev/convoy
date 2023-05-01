@@ -73,7 +73,7 @@ type OrganisationInviteRepository interface {
 }
 
 type OrganisationMemberRepository interface {
-	LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable Pageable) ([]*OrganisationMember, PaginationData, error)
+	LoadOrganisationMembersPaged(ctx context.Context, organisationID, userID string, pageable Pageable) ([]*OrganisationMember, PaginationData, error)
 	LoadUserOrganisationsPaged(ctx context.Context, userID string, pageable Pageable) ([]Organisation, PaginationData, error)
 	FindUserProjects(ctx context.Context, userID string) ([]Project, error)
 	CreateOrganisationMember(ctx context.Context, member *OrganisationMember) error

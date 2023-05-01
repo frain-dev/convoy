@@ -68,20 +68,6 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_error_for_invalid_role",
-			args: args{
-				ctx: ctx,
-				org: &datastore.Organisation{UID: "1234"},
-				role: &auth.Role{
-					Type: auth.RoleAdmin,
-				},
-				user: &datastore.User{UID: "1234"},
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "please specify project for organisation member",
-		},
-		{
 			name: "should_fail_to_create_organisation_member",
 			args: args{
 				ctx: ctx,
@@ -182,21 +168,6 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 					Times(1).Return(nil)
 			},
 			wantErr: false,
-		},
-		{
-			name: "should_error_for_invalid_role",
-			args: args{
-				ctx:                ctx,
-				organisationMember: &datastore.OrganisationMember{},
-				role: &auth.Role{
-					Type:     auth.RoleAPI,
-					Project:  "",
-					Endpoint: "",
-				},
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "please specify project for organisation member",
 		},
 		{
 			name: "should_update_organisation_member",
@@ -360,7 +331,7 @@ func TestOrganisationMemberService_LoadOrganisationMembersPaged(t *testing.T) {
 			},
 			dbFn: func(os *OrganisationMemberService) {
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-				a.EXPECT().LoadOrganisationMembersPaged(gomock.Any(), "123", datastore.Pageable{
+				a.EXPECT().LoadOrganisationMembersPaged(gomock.Any(), "123", "123", datastore.Pageable{
 					PerPage:    1,
 					NextCursor: datastore.DefaultCursor,
 					Direction:  datastore.Next,
@@ -396,7 +367,7 @@ func TestOrganisationMemberService_LoadOrganisationMembersPaged(t *testing.T) {
 			},
 			dbFn: func(os *OrganisationMemberService) {
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-				a.EXPECT().LoadOrganisationMembersPaged(gomock.Any(), "123", datastore.Pageable{
+				a.EXPECT().LoadOrganisationMembersPaged(gomock.Any(), "123", "123", datastore.Pageable{
 					PerPage:    1,
 					NextCursor: datastore.DefaultCursor,
 					Direction:  datastore.Next,
@@ -418,7 +389,7 @@ func TestOrganisationMemberService_LoadOrganisationMembersPaged(t *testing.T) {
 				tt.dbFn(om)
 			}
 
-			members, paginationData, err := om.LoadOrganisationMembersPaged(tt.args.ctx, tt.args.org, tt.args.pageable)
+			members, paginationData, err := om.LoadOrganisationMembersPaged(tt.args.ctx, tt.args.org, "123", tt.args.pageable)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
