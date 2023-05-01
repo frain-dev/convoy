@@ -15,7 +15,7 @@ ui_install:
  	 npm run build
 
 build:
-	scripts/build.sh
+	scripts/build.sh -b $(type)
 
 integration_tests:
 	go test -tags integration -p 1 ./...
