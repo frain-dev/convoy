@@ -2013,10 +2013,7 @@ func TestEventService_CreateDynamicEvents(t *testing.T) {
 		},
 		{
 			name: "should_error_for_nil_project",
-			dbFn: func(es *EventService) {
-				q, _ := es.queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(convoy.CreateDynamicEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(1).Return(nil)
-			},
+			dbFn: func(es *EventService) {},
 			args: args{
 				ctx:          ctx,
 				dynamicEvent: &models.DynamicEvent{},
