@@ -389,7 +389,7 @@ func TestOrganisationMemberService_LoadOrganisationMembersPaged(t *testing.T) {
 				tt.dbFn(om)
 			}
 
-			members, paginationData, err := om.LoadOrganisationMembersPaged(tt.args.ctx, tt.args.org, "", tt.args.pageable)
+			members, paginationData, err := om.LoadOrganisationMembersPaged(tt.args.ctx, tt.args.org, "123", tt.args.pageable)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
