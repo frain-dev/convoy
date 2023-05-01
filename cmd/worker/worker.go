@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
@@ -155,12 +156,20 @@ func buildWorkerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 	if err != nil {
 		return nil, err
 	}
-	c.Logger.Level = logLevel
+
+	if !util.IsStringEmpty(logLevel) {
+		c.Logger.Level = logLevel
+	}
 
 	workerPort, err := cmd.Flags().GetUint32("worker-port")
 	if err != nil {
 		return nil, err
 	}
+
+	if workerPort != 0 {
+		c.Server.HTTP.WorkerPort = workerPort
+	}
+
 	c.Server.HTTP.WorkerPort = workerPort
 
 	return c, nil
