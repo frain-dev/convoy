@@ -31,7 +31,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 		{
 			name: "should_create_dynamic_event",
 			dynamicEvent: &models.DynamicEvent{
-				Endpoint: models.Endpoint{
+				Endpoint: models.DynamicEndpoint{
 					URL:    "https://google.com",
 					Secret: "1234",
 					Name:   "testing",
@@ -134,7 +134,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 		{
 			name: "should_create_new_endpoint_and_subscription_for_dynamic_event",
 			dynamicEvent: &models.DynamicEvent{
-				Endpoint: models.Endpoint{
+				Endpoint: models.DynamicEndpoint{
 					URL:    "https://google.com",
 					Secret: "1234",
 					Name:   "testing",

@@ -145,7 +145,7 @@ const (
     `
 
 	countEventDeliveries = `
-    SELECT COUNT(id) FROM convoy.event_deliveries WHERE (user_id = :user_id OR :user_id = '') AND (event_id = ? OR ? = '') AND created_at >= ? AND created_at <= ? AND deleted_at IS NULL
+    SELECT COUNT(id) FROM convoy.event_deliveries WHERE (project_id = ? OR ? = '') AND (event_id = ? OR ? = '') AND created_at >= ? AND created_at <= ? AND deleted_at IS NULL
     `
 
 	updateEventDeliveriesStatus = `

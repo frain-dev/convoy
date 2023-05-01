@@ -223,7 +223,7 @@ func Test_CountEndpointSubscriptions(t *testing.T) {
 	count, err := subRepo.CountEndpointSubscriptions(context.Background(), newSub1.ProjectID, endpoint.UID)
 	require.NoError(t, err)
 
-	require.Equal(t, 2, count)
+	require.Equal(t, int64(2), count)
 }
 
 func Test_UpdateSubscription(t *testing.T) {

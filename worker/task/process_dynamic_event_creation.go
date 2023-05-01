@@ -198,7 +198,7 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 	}
 }
 
-func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo datastore.EndpointRepository, newEndpoint *models.Endpoint) (*datastore.Endpoint, error) {
+func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo datastore.EndpointRepository, newEndpoint *models.DynamicEndpoint) (*datastore.Endpoint, error) {
 	endpoint, err := endpointRepo.FindEndpointByTargetURL(ctx, project.UID, newEndpoint.URL)
 
 	switch err {
@@ -363,6 +363,10 @@ func findDynamicSubscription(ctx context.Context, newSubscription *models.Dynami
 	subscriptions, err := subRepo.FindSubscriptionsByEndpointID(ctx, project.UID, endpoint.UID)
 
 	var subscription *datastore.Subscription
+
+	if len(subscriptions) == 0 && err == nil {
+		err = datastore.ErrSubscriptionNotFound
+	}
 
 	switch err {
 	case nil:

@@ -1987,7 +1987,7 @@ func TestEventService_CreateDynamicEvents(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				dynamicEvent: &models.DynamicEvent{
-					Endpoint: models.Endpoint{
+					Endpoint: models.DynamicEndpoint{
 						URL:    "https://google.com",
 						Secret: "abc",
 						Name:   "test_endpoint",
