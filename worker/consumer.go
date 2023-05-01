@@ -17,12 +17,15 @@ type Consumer struct {
 	log   log.StdLogger
 }
 
-func NewConsumer(q queue.Queuer, l log.StdLogger) *Consumer {
+func NewConsumer(q queue.Queuer, lo log.StdLogger) *Consumer {
 	srv := asynq.NewServer(
 		q.Options().RedisClient,
 		asynq.Config{
 			Concurrency: convoy.Concurrency,
-			Queues:      q.Options().Names,
+			BaseContext: func() context.Context {
+				return log.NewContext(context.Background(), lo, nil)
+			},
+			Queues: q.Options().Names,
 			IsFailure: func(err error) bool {
 				if _, ok := err.(*task.RateLimitError); ok {
 					return false
@@ -30,7 +33,7 @@ func NewConsumer(q queue.Queuer, l log.StdLogger) *Consumer {
 				return true
 			},
 			RetryDelayFunc: task.GetRetryDelay,
-			Logger:         l,
+			Logger:         lo,
 		},
 	)
 
@@ -38,7 +41,7 @@ func NewConsumer(q queue.Queuer, l log.StdLogger) *Consumer {
 
 	return &Consumer{
 		queue: q,
-		log:   l,
+		log:   lo,
 		mux:   mux,
 		srv:   srv,
 	}
