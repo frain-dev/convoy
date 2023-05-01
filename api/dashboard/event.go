@@ -110,8 +110,8 @@ func (a *DashboardHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Requ
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	eventService := createEventService(a)
 
+	eventService := createEventService(a)
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))

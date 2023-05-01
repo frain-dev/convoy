@@ -158,7 +158,7 @@ func RequirePortalAccess(a *PortalLinkHandler) func(next http.Handler) http.Hand
 
 			err = a.A.Authz.Authorize(r.Context(), "project.get", project)
 			if err != nil {
-				_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusForbidden))
+				_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 				return
 			}
 
