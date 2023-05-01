@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/hibiken/asynq"
 )
 
@@ -27,7 +26,6 @@ func SearchIndex(search searcher.Searcher) func(ctx context.Context, t *asynq.Ta
 		var event map[string]interface{}
 		err := json.Unmarshal(buf, &event)
 		if err != nil {
-			log.WithError(err).Error("[json]: failed to unmarshal event payload")
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
@@ -36,15 +34,12 @@ func SearchIndex(search searcher.Searcher) func(ctx context.Context, t *asynq.Ta
 			if project_id, ok := g.(string); ok {
 				err = search.Index(project_id, event)
 				if err != nil {
-					log.Errorf("[typesense] error indexing event: %s", err)
 					return &EndpointError{Err: err, delay: time.Second * 5}
 				}
 			} else {
-				log.Errorf("[typesense] error indexing event: %s", ErrProjectIdFieldIsNotString)
 				return &EndpointError{Err: ErrProjectIdFieldIsNotString, delay: time.Second * 1}
 			}
 		} else {
-			log.Errorf("[typesense] error indexing event: %s", ErrProjectIdFieldIsRequired)
 			return &EndpointError{Err: ErrProjectIdFieldIsRequired, delay: time.Second * 1}
 		}
 

@@ -29,6 +29,16 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 		Use:   "worker",
 		Short: "Start worker instance",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			//override config with cli Flags
+			cliConfig, err := buildWorkerCliConfiguration(cmd)
+			if err != nil {
+				return err
+			}
+
+			if err = config.Override(cliConfig); err != nil {
+				return err
+			}
+
 			cfg, err := config.Get()
 			if err != nil {
 				a.Logger.Errorf("Failed to retrieve config: %v", err)
@@ -136,4 +146,22 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&logLevel, "log-level", "error", "scheduler log level")
 
 	return cmd
+}
+
+func buildWorkerCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
+	c := &config.Configuration{}
+
+	logLevel, err := cmd.Flags().GetString("log-level")
+	if err != nil {
+		return nil, err
+	}
+	c.Logger.Level = logLevel
+
+	workerPort, err := cmd.Flags().GetUint32("worker-port")
+	if err != nil {
+		return nil, err
+	}
+	c.Server.HTTP.WorkerPort = workerPort
+
+	return c, nil
 }

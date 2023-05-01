@@ -53,11 +53,22 @@ func (c *Consumer) Start() {
 	}
 }
 
-func (c *Consumer) RegisterHandlers(taskName convoy.TaskName, handler func(context.Context, *asynq.Task) error) {
-	c.mux.HandleFunc(string(taskName), handler)
+func (c *Consumer) RegisterHandlers(taskName convoy.TaskName, handlerFn func(context.Context, *asynq.Task) error) {
+	c.mux.HandleFunc(string(taskName), c.loggingMiddleware(asynq.HandlerFunc(handlerFn)).ProcessTask)
 }
 
 func (c *Consumer) Stop() {
 	c.srv.Stop()
 	c.srv.Shutdown()
+}
+
+func (c *Consumer) loggingMiddleware(h asynq.Handler) asynq.Handler {
+	return asynq.HandlerFunc(func(ctx context.Context, t *asynq.Task) error {
+		err := h.ProcessTask(ctx, t)
+		if err != nil {
+			c.log.WithError(err).WithField("job", t.Type()).Error("job failed")
+			return err
+		}
+		return nil
+	})
 }
