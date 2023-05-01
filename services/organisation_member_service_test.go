@@ -331,7 +331,7 @@ func TestOrganisationMemberService_LoadOrganisationMembersPaged(t *testing.T) {
 			},
 			dbFn: func(os *OrganisationMemberService) {
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-				a.EXPECT().LoadOrganisationMembersPaged(gomock.Any(), "123", datastore.Pageable{
+				a.EXPECT().LoadOrganisationMembersPaged(gomock.Any(), "123", "123", datastore.Pageable{
 					PerPage:    1,
 					NextCursor: datastore.DefaultCursor,
 					Direction:  datastore.Next,
@@ -367,7 +367,7 @@ func TestOrganisationMemberService_LoadOrganisationMembersPaged(t *testing.T) {
 			},
 			dbFn: func(os *OrganisationMemberService) {
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-				a.EXPECT().LoadOrganisationMembersPaged(gomock.Any(), "123", datastore.Pageable{
+				a.EXPECT().LoadOrganisationMembersPaged(gomock.Any(), "123", "123", datastore.Pageable{
 					PerPage:    1,
 					NextCursor: datastore.DefaultCursor,
 					Direction:  datastore.Next,
@@ -389,7 +389,7 @@ func TestOrganisationMemberService_LoadOrganisationMembersPaged(t *testing.T) {
 				tt.dbFn(om)
 			}
 
-			members, paginationData, err := om.LoadOrganisationMembersPaged(tt.args.ctx, tt.args.org, tt.args.pageable)
+			members, paginationData, err := om.LoadOrganisationMembersPaged(tt.args.ctx, tt.args.org, "", tt.args.pageable)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
