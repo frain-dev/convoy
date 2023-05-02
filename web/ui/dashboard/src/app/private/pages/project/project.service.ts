@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
-import { GROUP } from 'src/app/models/group.model';
+import { PROJECT } from 'src/app/models/project.model';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class ProjectService {
-	activeProjectDetails?: GROUP;
+	activeProjectDetails?: PROJECT;
 
 	constructor() {}
 }

@@ -16,6 +16,7 @@ import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/d
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { DeleteModalComponent } from '../../components/delete-modal/delete-modal.component';
 import { PermissionDirective } from '../../components/permission/permission.directive';
+import { SelectComponent } from 'src/app/components/select/select.component';
 
 const routes: Routes = [
 	{ path: '', component: TeamsComponent },
@@ -50,7 +51,8 @@ const routes: Routes = [
 		InputErrorComponent,
 		InputDirective,
 		LabelComponent,
-		DropdownOptionDirective
+		DropdownOptionDirective,
+		SelectComponent
 	]
 })
 export class TeamsModule {}

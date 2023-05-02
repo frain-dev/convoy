@@ -1,6 +1,6 @@
 import { DEVICE } from './device.model';
 import { ENDPOINT } from './endpoint.model';
-import { SOURCE } from './group.model';
+import { SOURCE } from './source.model';
 
 export interface SUBSCRIPTION {
 	created_at: string;

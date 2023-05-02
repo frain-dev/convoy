@@ -10,14 +10,11 @@ export class PermissionDirective implements OnInit {
 
 	constructor(private rbacService: RbacService, private elementRef: ElementRef) {}
 
-	ngOnInit(): void {
-		if (this.permissions.find(permission => permission == this.userAction)) return;
+	async ngOnInit() {
+		const permissions = await this.rbacService.userPermission();
+		if (permissions.find(permission => permission == this.userAction)) return;
 
 		const element = this.elementRef.nativeElement;
 		element.classList.add('disabled');
-	}
-
-	private get permissions() {
-		return this.rbacService.userPermission;
 	}
 }

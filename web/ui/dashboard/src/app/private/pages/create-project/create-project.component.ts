@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { GROUP } from 'src/app/models/group.model';
+import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
 
 export type STAGES = 'createProject' | 'setupSDK' | 'createSource' | 'createApplication' | 'createSubscription';
@@ -14,7 +14,7 @@ export class CreateProjectComponent implements OnInit {
 
 	ngOnInit() {}
 
-	async createProject(newProjectData: { action: string; data: GROUP }) {
+	async createProject(newProjectData: { action: string; data: PROJECT }) {
 		const projectId = newProjectData.data.uid;
 		this.router.navigateByUrl('/projects/' + projectId + '/setup');
 	}

@@ -4,12 +4,13 @@ import { PrivateComponent } from './private.component';
 import { PrivateService } from './private.service';
 
 export const fetchOrganisations = async (privateService = inject(PrivateService)) => await privateService.getOrganizations();
+export const fetchMembership = async (privateService = inject(PrivateService)) => await privateService.getOrganizationMembership();
 
 const routes: Routes = [
 	{
 		path: '',
 		component: PrivateComponent,
-		resolve: [() => fetchOrganisations()],
+		resolve: [() => fetchOrganisations(), () => fetchMembership()],
 		children: [
 			{
 				path: '',
@@ -50,10 +51,6 @@ const routes: Routes = [
 			},
 			{
 				path: 'get-started',
-				loadComponent: () => import('./pages/onboarding/onboarding.component').then(mod => mod.OnboardingComponent)
-			},
-			{
-				path: 'ee',
 				loadComponent: () => import('./pages/onboarding/onboarding.component').then(mod => mod.OnboardingComponent)
 			}
 		]

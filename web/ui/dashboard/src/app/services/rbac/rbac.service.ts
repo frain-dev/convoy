@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { PrivateService } from 'src/app/private/private.service';
 
 @Injectable({
 	providedIn: 'root'
@@ -10,18 +11,32 @@ export class RbacService {
 		ADMIN: ['Sources|MANAGE', 'Subscriptions|MANAGE', 'Endpoints|MANAGE', 'Portal Links|MANAGE', 'Meta Events|MANAGE', 'Project Settings|MANAGE', 'Projects|MANAGE']
 	};
 
-	constructor() {}
+	constructor(private privateService: PrivateService) {}
 
-	private get getUserRole(): ROLE {
-		return 'MEMBER';
+	async getUserRole(): Promise<ROLE> {
+		try {
+			const member = await this.privateService.getOrganizationMembership();
+			const role = member.data.content[0].role.type;
+			switch (role) {
+				case 'super_user':
+					return 'SUPER_ADMIN';
+				case 'admin':
+					return 'ADMIN';
+				default:
+					return 'MEMBER';
+			}
+		} catch (error) {
+			return 'MEMBER';
+		}
 	}
 
-	public userCanAccess(requestPermission: PERMISSION): boolean {
-		return !!this.userPermission.find(permission => permission == requestPermission);
+	public async userCanAccess(requestPermission: PERMISSION): Promise<boolean> {
+		const permissions = await this.userPermission();
+		return !!permissions.find(permission => permission == requestPermission);
 	}
 
-	public get userPermission(): string[] {
-		const role = this.getUserRole;
+	async userPermission(): Promise<string[]> {
+		const role = await this.getUserRole();
 
 		let permissions;
 		switch (role) {

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { FLIPT_API_RESPONSE } from 'src/app/models/flipt.model';
-import { HTTP_RESPONSE } from 'src/app/models/http.model';
+import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { HttpService } from 'src/app/services/http/http.service';
 
 @Injectable({

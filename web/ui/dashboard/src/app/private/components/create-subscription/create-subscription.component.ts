@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output, ViewChild, inject } fro
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/endpoint.model';
-import { SOURCE } from 'src/app/models/group.model';
+import { SOURCE } from 'src/app/models/source.model';
 import { PrivateService } from '../../private.service';
 import { CreateEndpointComponent } from '../create-endpoint/create-endpoint.component';
 import { CreateSourceComponent } from '../create-source/create-source.component';

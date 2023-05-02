@@ -196,6 +196,11 @@
 			<input type="email" id="email" convoy-input autocomplete="email" formControlName="invitee_email" placeholder="Enter member email" />
 			<convoy-input-error *ngIf="inviteUserForm.get('invitee_email')?.touched && inviteUserForm.get('invitee_email')?.invalid">Please enter a valid email</convoy-input-error>
 		</convoy-input-field>
+
+		<ng-container formGroupName="role">
+			<convoy-select className="mb-24px" label="role" name="role" formControlName="type" [options]="roles" errorMessage="Select user role" [required]="true" (selectedOption)="inviteUserForm.get('role')?.patchValue({ type: $event })"></convoy-select>
+		</ng-container>
+
 		<div class="flex justify-end pt-24px pb-40px">
 			<button convoy-button [disabled]="inviteUserForm.disabled" fill="outline" type="button" routerLink="/team">Discard</button>
 			<button convoy-button class="ml-16px" [disabled]="invitingUser || inviteUserForm.disabled">
