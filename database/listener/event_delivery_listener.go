@@ -1,7 +1,6 @@
 package listener
 
 import (
-	"errors"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/mevent"
 	"github.com/frain-dev/convoy/pkg/log"

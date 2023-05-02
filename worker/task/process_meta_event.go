@@ -54,7 +54,8 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 			return nil
 		}
 
-		err = metaEventRepo.UpdateStatusOfMetaEvent(ctx, metaEvent.ProjectID, metaEvent, datastore.ProcessingEventStatus)
+		metaEvent.Status = datastore.ProcessingEventStatus
+		err = metaEventRepo.UpdateMetaEvent(ctx, metaEvent.ProjectID, metaEvent)
 		if err != nil {
 			log.WithError(err).Error("failed to update meta event status")
 			return &EndpointError{Err: err, delay: defaultDelay}
@@ -147,18 +148,20 @@ func sendUrlRequest(project *datastore.Project, metaEvent *datastore.MetaEvent) 
 		return nil, err
 	}
 
+	var status string
+	var statusCode int
+
 	start := time.Now()
+	if resp != nil {
+		status = resp.Status
+		statusCode = resp.StatusCode
+	}
 	requestLogger := log.WithFields(log.Fields{
-		"status":   resp.Status,
+		"status":   status,
 		"uri":      url,
 		"method":   convoy.HttpPost,
 		"duration": time.Since(start),
 	})
-
-	var statusCode int
-	if resp != nil {
-		statusCode = resp.StatusCode
-	}
 
 	if statusCode >= 200 && statusCode <= 299 {
 		requestLogger.Infof("%s", metaEvent.UID)

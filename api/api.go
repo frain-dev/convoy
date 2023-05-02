@@ -259,6 +259,9 @@ func (a *ApplicationHandler) RegisterDashboardRoutes(r *chi.Mux) {
 	r.Method(PUT,
 		"/ui/configuration", uiMiddlewares.HandlerFunc(dh.UpdateConfiguration))
 
+	r.Method(GET, "/ui/organisations/{orgID}/projects/{projectID}/meta-events", uiMiddlewaresWithPagination.HandlerFunc(dh.GetMetaEventsPaged))
+	r.Method(GET, "/ui/organisations/{orgID}/projects/{projectID}/meta-events/{metaEventID}", uiMiddlewares.HandlerFunc(dh.GetMetaEvent))
+
 }
 
 func (a *ApplicationHandler) RegisterPolicy() error {

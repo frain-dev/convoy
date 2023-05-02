@@ -116,6 +116,14 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 					portalLinkRouter.Put("/{portalLinkID}", a.UpdatePortalLink)
 					portalLinkRouter.Put("/{portalLinkID}/revoke", a.RevokePortalLink)
 				})
+
+				projectSubRouter.Route("/meta-events", func(metaEventRouter chi.Router) {
+					metaEventRouter.With(middleware.Pagination).Get("/", a.GetMetaEventsPaged)
+
+					metaEventRouter.Route("/{metaEventID}", func(metaEventSubRouter chi.Router) {
+						metaEventSubRouter.Get("/", a.GetMetaEvent)
+					})
+				})
 			})
 		})
 

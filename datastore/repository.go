@@ -164,5 +164,4 @@ type MetaEventRepository interface {
 	FindMetaEventByID(ctx context.Context, projectID string, id string) (*MetaEvent, error)
 	LoadMetaEventsPaged(ctx context.Context, projectID string, f *Filter) ([]MetaEvent, PaginationData, error)
 	UpdateMetaEvent(ctx context.Context, projectID string, metaEvent *MetaEvent) error
-	UpdateStatusOfMetaEvent(ctx context.Context, projectID string, metaEvent *MetaEvent, status EventDeliveryStatus) error
 }

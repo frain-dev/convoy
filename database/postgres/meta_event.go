@@ -28,16 +28,19 @@ const (
 	`
 	baseMetaEventsPaged = `
 	SELECT mv.id, mv.project_id, mv.event_type,
-	mv.data, mv.status, mv.retry_count, mv.max_retry_count, 
+	mv.metadata, mv.attempt, mv.status, 
 	mv.created_at, mv.updated_at FROM convoy.meta_events mv
+	WHERE mv.deleted_at IS NULL
 	`
 	baseMetaEventsPagedForward = `%s %s AND mv.id <= :cursor
+	GROUP BY mv.id
 	ORDER BY mv.id DESC
 	LIMIT :limit
 	`
 	baseMetaEventsPagedBackward = `
 	WITH meta_events AS (
 		%s %s AND mv.id >= :cursor
+		GROUP BY mv.id
 		ORDER BY mv.id ASC
 		LIMIT :limit
 	)
@@ -52,7 +55,7 @@ const (
 	SELECT count(distinct(mv.id)) as count
 	FROM convoy.meta_events mv WHERE mv.deleted_at IS NULL
 	`
-	countPrevMetaEvents = ` AND mv.id > :cursor ORDER BY mv.id DESC LIMIT 1`
+	countPrevMetaEvents = ` AND mv.id > :cursor GROUP BY mv.id ORDER BY mv.id DESC LIMIT 1`
 
 	updateMetaEventStatus = `
 	UPDATE convoy.meta_events SET status = $1 WHERE id = $2 AND project_id = $3
@@ -179,27 +182,27 @@ func (m *metaEventRepo) LoadMetaEventsPaged(ctx context.Context, projectID strin
 
 		if rows.Next() {
 			err = rows.StructScan(&count)
+			if err != nil {
+				return nil, datastore.PaginationData{}, err
+			}
 		}
-	}
-	return nil, datastore.PaginationData{}, nil
-}
 
-func (m *metaEventRepo) UpdateStatusOfMetaEvent(ctx context.Context, projectID string, metaEvent *datastore.MetaEvent, status datastore.EventDeliveryStatus) error {
-	result, err := m.db.ExecContext(ctx, updateMetaEventStatus, status, metaEvent.UID, projectID)
-	if err != nil {
-		return err
+		rows.Close()
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
+	ids := make([]string, len(metaEvents))
+	for i := range metaEvents {
+		ids[i] = metaEvents[i].UID
 	}
 
-	if rowsAffected < 1 {
-		return ErrMetaEventNotUpdated
+	if len(metaEvents) > filter.Pageable.PerPage {
+		metaEvents = metaEvents[:len(metaEvents)-1]
 	}
 
-	return nil
+	pagination := &datastore.PaginationData{PrevRowCount: count}
+	pagination = pagination.Build(filter.Pageable, ids)
+
+	return metaEvents, *pagination, rows.Close()
 }
 
 func (m *metaEventRepo) UpdateMetaEvent(ctx context.Context, projectID string, metaEvent *datastore.MetaEvent) error {
