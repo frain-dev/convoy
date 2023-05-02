@@ -11,10 +11,27 @@ import { FileInputComponent } from 'src/app/components/file-input/file-input.com
 import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.component';
 import { TokenModalComponent } from '../token-modal/token-modal.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { PermissionDirective } from '../permission/permission.directive';
 
 @NgModule({
 	declarations: [CreateSourceComponent],
-	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, SelectComponent, RadioComponent, CardComponent, InputFieldDirective, InputErrorComponent, InputDirective, LabelComponent, FileInputComponent, FormLoaderComponent, ModalComponent, TokenModalComponent],
+	imports: [
+		CommonModule,
+		ReactiveFormsModule,
+		ButtonComponent,
+		SelectComponent,
+		RadioComponent,
+		CardComponent,
+		InputFieldDirective,
+		InputErrorComponent,
+		InputDirective,
+		LabelComponent,
+		FileInputComponent,
+		FormLoaderComponent,
+		ModalComponent,
+		TokenModalComponent,
+		PermissionDirective
+	],
 	exports: [CreateSourceComponent]
 })
 export class CreateSourceModule {}

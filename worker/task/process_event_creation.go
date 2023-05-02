@@ -89,7 +89,6 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			if s.Type == datastore.SubscriptionTypeAPI {
 				endpoint, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID, project.UID)
 				if err != nil {
-					log.Errorf("Error fetching endpoint %s", err)
 					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}
 
@@ -143,7 +142,6 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 
 			err = eventDeliveryRepo.CreateEventDelivery(ctx, eventDelivery)
 			if err != nil {
-				log.WithError(err).Error("error occurred creating event delivery")
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
@@ -155,7 +153,6 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 
 				data, err := json.Marshal(payload)
 				if err != nil {
-					log.WithError(err).Error("failed to marshal process event delivery payload")
 					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}
 
@@ -168,12 +165,12 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 				if s.Type == datastore.SubscriptionTypeAPI {
 					err = eventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
 					if err != nil {
-						log.WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
+						log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
 					}
 				} else if s.Type == datastore.SubscriptionTypeCLI {
 					err = eventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
 					if err != nil {
-						log.WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
+						log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
 					}
 				}
 			}
@@ -181,7 +178,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 
 		eBytes, err := json.Marshal(event)
 		if err != nil {
-			log.Errorf("[asynq]: an error occurred marshalling event to be indexed %s", err)
+			log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred marshalling event to be indexed")
 		}
 
 		job := &queue.Job{
@@ -192,7 +189,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 
 		err = eventQueue.Write(convoy.IndexDocument, convoy.SearchIndexQueue, job)
 		if err != nil {
-			log.Errorf("[asynq]: an error occurred sending event to be indexed %s", err)
+			log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event to be indexed")
 		}
 
 		return nil
@@ -229,7 +226,6 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 			subs, err := subRepo.FindSubscriptionsByEndpointID(ctx, project.UID, endpoint.UID)
 			if err != nil {
-				log.Errorf("Failed to find subscription by endpoint %s", err)
 				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
 			}
 
@@ -237,7 +233,6 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 				subs := generateSubscription(project, endpoint)
 				err := subRepo.CreateSubscription(ctx, project.UID, subs)
 				if err != nil {
-					log.Errorf("error creating subscription for endpoint %s", err)
 					return subscriptions, &EndpointError{Err: errors.New("error creating subscription for endpoint"), delay: 10 * time.Second}
 				}
 
@@ -249,7 +244,6 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 			subs, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs)
 			if err != nil {
-				log.Errorf("Failed to match subscription filter %s", err)
 				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
 			}
 
@@ -258,13 +252,13 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 	} else if project.Type == datastore.IncomingProject {
 		subs, err := subRepo.FindSubscriptionsBySourceID(ctx, project.UID, event.SourceID)
 		if err != nil {
-			log.WithError(err).Error("error fetching subscriptions for this source")
 			return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
 		}
 
 		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs)
 		if err != nil {
-			return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
+			log.WithError(err).Error("error find a matching subscription for this source")
+			return subscriptions, &EndpointError{Err: errors.New("error find a matching subscription for this source"), delay: 10 * time.Second}
 		}
 	}
 
@@ -273,7 +267,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 func matchSubscriptionsUsingFilter(ctx context.Context, e datastore.Event, subRepo datastore.SubscriptionRepository, subscriptions []datastore.Subscription) ([]datastore.Subscription, error) {
 	var matched []datastore.Subscription
-	var payload map[string]interface{}
+	var payload interface{}
 	err := json.Unmarshal(e.Data, &payload)
 	if err != nil {
 		return nil, err
@@ -326,7 +320,6 @@ func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscri
 	case datastore.SubscriptionTypeCLI:
 		device, err := deviceRepo.FetchDeviceByID(ctx, subscription.DeviceID, "", subscription.ProjectID)
 		if err != nil {
-			log.WithError(err).Error("an error occurred fetching the subscription's device")
 			return datastore.DiscardedEventStatus
 		}
 
@@ -334,7 +327,7 @@ func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscri
 			return datastore.DiscardedEventStatus
 		}
 	default:
-		log.Errorf("unknown subscription type: %s", subscription.Type)
+		log.FromContext(ctx).Debug("unknown subscription type: %s", subscription.Type)
 	}
 
 	return datastore.ScheduledEventStatus

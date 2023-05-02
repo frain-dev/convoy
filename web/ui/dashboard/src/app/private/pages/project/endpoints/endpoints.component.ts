@@ -21,6 +21,7 @@ import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { ProjectService } from '../project.service';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
+import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';
 
 @Component({
 	selector: 'convoy-endpoints',
@@ -48,7 +49,8 @@ import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.
 		StatusColorModule,
 		TooltipComponent,
 		PaginationComponent,
-		CopyButtonComponent
+		CopyButtonComponent,
+		PermissionDirective
 	],
 	templateUrl: './endpoints.component.html',
 	styleUrls: ['./endpoints.component.scss']

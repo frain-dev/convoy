@@ -1,10 +1,11 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
 import { FormGroup, Validators, FormBuilder, FormArray } from '@angular/forms';
 import { Router } from '@angular/router';
-import { GROUP, VERSIONS } from 'src/app/models/group.model';
+import { PROJECT, VERSIONS } from 'src/app/models/project.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
 import { CreateProjectComponentService } from './create-project-component.service';
+import { RbacService } from 'src/app/services/rbac/rbac.service';
 
 @Component({
 	selector: 'app-create-project-component',
@@ -58,7 +59,7 @@ export class CreateProjectComponent implements OnInit {
 	encodings = ['base64', 'hex'];
 	@Output('onAction') onAction = new EventEmitter<any>();
 	@Input('action') action: 'create' | 'update' = 'create';
-	projectDetails?: GROUP;
+	projectDetails?: PROJECT;
 	signatureVersions!: { date: string; content: VERSIONS[] }[];
 	configurations = [
 		{ uid: 'retry-config', name: 'Retry Config', show: false },
@@ -66,12 +67,14 @@ export class CreateProjectComponent implements OnInit {
 		{ uid: 'retention', name: 'Retention Policy', show: false },
 		{ uid: 'signature', name: 'Signature Format', show: false }
 	];
-    disableEndpointsModal = false;
+	public rbacService = inject(RbacService);
+	disableEndpointsModal = false;
 
 	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router) {}
 
 	ngOnInit(): void {
 		if (this.action === 'update') this.getProjectDetails();
+		if (!this.rbacService.userCanAccess('Project Settings|MANAGE')) this.projectForm.disable();
 	}
 
 	get versions(): FormArray {
@@ -283,7 +286,7 @@ export class CreateProjectComponent implements OnInit {
 		document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
 	}
 
-    confirmAction(event: any) {
+	confirmAction(event: any) {
 		const disableEndpointValue = event.target.checked;
 		disableEndpointValue ? this.updateProject() : (this.disableEndpointsModal = true);
 	}

@@ -20,6 +20,7 @@ import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'r
 import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
+import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';
 
 @Component({
 	selector: 'convoy-portal-links',
@@ -40,7 +41,8 @@ import { PaginationComponent } from 'src/app/private/components/pagination/pagin
 		ModalComponent,
 		ModalHeaderComponent,
 		TooltipComponent,
-		PaginationComponent
+		PaginationComponent,
+		PermissionDirective
 	],
 	templateUrl: './portal-links.component.html',
 	styleUrls: ['./portal-links.component.scss']

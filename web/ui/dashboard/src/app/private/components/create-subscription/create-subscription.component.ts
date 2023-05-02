@@ -1,12 +1,13 @@
-import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/endpoint.model';
-import { SOURCE } from 'src/app/models/group.model';
+import { SOURCE } from 'src/app/models/source.model';
 import { PrivateService } from '../../private.service';
 import { CreateEndpointComponent } from '../create-endpoint/create-endpoint.component';
 import { CreateSourceComponent } from '../create-source/create-source.component';
 import { CreateSubscriptionService } from './create-subscription.service';
+import { RbacService } from 'src/app/services/rbac/rbac.service';
 
 @Component({
 	selector: 'convoy-create-subscription',
@@ -68,6 +69,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		{ uid: 'events', name: 'Event Types', show: false }
 	];
 	createdSubscription = false;
+	private rbacService = inject(RbacService);
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router) {}
 
@@ -84,6 +86,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 
 		if (this.configSetting) this.toggleConfigForm(this.configSetting, true);
+		if (!this.rbacService.userCanAccess('Subscriptions|MANAGE')) this.subscriptionForm.disable();
 	}
 
 	toggleConfig(configValue: string) {

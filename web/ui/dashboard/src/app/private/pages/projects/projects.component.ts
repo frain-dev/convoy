@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
-import { GROUP } from 'src/app/models/group.model';
+import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
 
 @Component({
@@ -9,7 +9,7 @@ import { PrivateService } from '../../private.service';
 	styleUrls: ['./projects.component.scss']
 })
 export class ProjectsComponent implements OnInit, OnDestroy {
-	projects: GROUP[] = [];
+	projects: PROJECT[] = [];
 	isLoadingProjects = false;
 	projectsLoaderIndex: number[] = [0, 1, 2, 3, 4];
 	showOrganisationModal = false;

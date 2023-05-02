@@ -5,8 +5,8 @@ import { EVENT, EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT, EVENT_TIME } from './mod
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { PAGINATION } from './models/global.model';
-import { HTTP_RESPONSE } from './models/http.model';
-import { GROUP } from './models/group.model';
+import { HTTP_RESPONSE } from './models/global.model';
+import { GROUP } from './models/source.model';
 import { ConvoyDashboardService } from './convoy-dashboard.service';
 import { format } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';

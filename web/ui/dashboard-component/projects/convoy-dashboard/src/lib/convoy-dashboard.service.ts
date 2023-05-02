@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { HTTP_RESPONSE } from './models/http.model';
+import { HTTP_RESPONSE } from './models/global.model';
 import { BehaviorSubject } from 'rxjs';
 
 @Injectable({

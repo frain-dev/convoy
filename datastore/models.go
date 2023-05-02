@@ -644,7 +644,7 @@ type Event struct {
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
-func (e *Event) GetRawHeaders() map[string]interface{} {
+func (e *Event) GetRawHeaders() interface{} {
 	h := map[string]interface{}{}
 	for k, v := range e.Headers {
 		h[k] = v[0]
