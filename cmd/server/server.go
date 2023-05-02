@@ -12,7 +12,9 @@ import (
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	dbhook "github.com/frain-dev/convoy/database/hooks"
+	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
@@ -159,7 +161,14 @@ func StartConvoyServer(a *cli.App, withWorkers bool) error {
 
 	projectRepo := postgres.NewProjectRepo(a.DB)
 	metaEventRepo := postgres.NewMetaEventRepo(a.DB)
-	dbhook.Init(a.Queue, projectRepo, metaEventRepo)
+	endpointListener := listener.NewEndpointListener(a.Queue, projectRepo, metaEventRepo)
+	eventDeliveryListener := listener.NewEventDeliveryListener(a.Queue, projectRepo, metaEventRepo)
+
+	hooks := dbhook.Init()
+	hooks.RegisterHook(datastore.EndpointCreated, endpointListener.AfterCreate)
+	hooks.RegisterHook(datastore.EndpointUpdated, endpointListener.AfterUpdate)
+	hooks.RegisterHook(datastore.EndpointDeleted, endpointListener.AfterDelete)
+	hooks.RegisterHook(datastore.EventDeliveryUpdated, eventDeliveryListener.AfterUpdate)
 
 	if cfg.Server.HTTP.Port <= 0 {
 		return errors.New("please provide the HTTP port in the convoy.json file")

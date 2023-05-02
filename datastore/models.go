@@ -145,6 +145,7 @@ const (
 	EndpointCreated      HookEventType = "endpoint.created"
 	EndpointUpdated      HookEventType = "endpoint.updated"
 	EndpointDeleted      HookEventType = "endpoint.deleted"
+	EventDeliveryUpdated HookEventType = "eventdelivery.updated"
 	EventDeliverySuccess HookEventType = "eventdelivery.success"
 	EventDeliveryFailed  HookEventType = "eventdelivery.failed"
 )
@@ -1298,14 +1299,12 @@ type DeprecatedEndpoint struct {
 }
 
 type MetaEvent struct {
-	UID       string          `json:"uid" db:"id"`
-	ProjectID string          `json:"project_id" db:"project_id"`
-	EventType string          `json:"event_type" db:"event_type"`
-	Data      json.RawMessage `json:"data" db:"data"`
-	Status    string          `json:"status" db:"status"`
-
-	RetryCount    int `json:"retry_count" db:"retry_count"`
-	MaxRetryCount int `json:"max_retry_count" db:"max_retry_count"`
+	UID       string              `json:"uid" db:"id"`
+	ProjectID string              `json:"project_id" db:"project_id"`
+	EventType string              `json:"event_type" db:"event_type"`
+	Metadata  *Metadata           `json:"metadata" db:"metadata"`
+	Attempt   *MetaEventAttempt   `json:"attempt" db:"attempt"`
+	Status    EventDeliveryStatus `json:"status" db:"status"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
@@ -1315,6 +1314,46 @@ type MetaEvent struct {
 type MetaEventPayload struct {
 	EventType string          `json:"event_type"`
 	Data      json.RawMessage `json:"data"`
+}
+
+type MetaEventAttempt struct {
+	RequestHeader  HttpHeader `json:"request_http_header" db:"request_http_header"`
+	ResponseHeader HttpHeader `json:"response_http_header" db:"response_http_header"`
+	ResponseData   string     `json:"response_data,omitempty" db:"response_data"`
+}
+
+func (m *MetaEventAttempt) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *MetaEventAttempt) Value() (driver.Value, error) {
+	if m == nil {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 type Password struct {

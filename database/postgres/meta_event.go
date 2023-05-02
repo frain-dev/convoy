@@ -12,16 +12,19 @@ import (
 )
 
 var (
-	ErrMetaEventNotCreated = errors.New("metaevent could not be created")
+	ErrMetaEventNotCreated = errors.New("meta event could not be created")
+	ErrMetaEventNotUpdated = errors.New("meta event could not be updated")
 )
 
 const (
 	createMetaEvent = `
-	INSERT INTO convoy.meta_events (id, event_type, project_id, data, status, retry_count, max_retry_count)
-	VALUES ($1, $2, $3, $4, $5, $6, $7)
+	INSERT INTO convoy.meta_events (id, event_type, project_id, metadata, status)
+	VALUES ($1, $2, $3, $4, $5)
 	`
 	fetchMetaEventById = `
-	SELECT * from convoy.meta_events WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
+	SELECT id, project_id, event_type, metadata,
+	attempt, status, created_at, updated_at
+	from convoy.meta_events WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 	baseMetaEventsPaged = `
 	SELECT mv.id, mv.project_id, mv.event_type,
@@ -50,6 +53,20 @@ const (
 	FROM convoy.meta_events mv WHERE mv.deleted_at IS NULL
 	`
 	countPrevMetaEvents = ` AND mv.id > :cursor ORDER BY mv.id DESC LIMIT 1`
+
+	updateMetaEventStatus = `
+	UPDATE convoy.meta_events SET status = $1 WHERE id = $2 AND project_id = $3
+	AND deleted_at IS NULL;
+	`
+	updateMetaEvent = `
+	UPDATE convoy.meta_events SET 
+	  event_type = $3,
+	  metadata = $4,
+	  attempt = $5,
+	  status = $6,
+	  updated_at = now()
+	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL; 
+	`
 )
 
 type metaEventRepo struct {
@@ -62,7 +79,7 @@ func NewMetaEventRepo(db database.Database) datastore.MetaEventRepository {
 
 func (m *metaEventRepo) CreateMetaEvent(ctx context.Context, metaEvent *datastore.MetaEvent) error {
 	r, err := m.db.ExecContext(ctx, createMetaEvent, metaEvent.UID, metaEvent.EventType, metaEvent.ProjectID,
-		metaEvent.Data, metaEvent.Status, metaEvent.RetryCount, metaEvent.MaxRetryCount,
+		metaEvent.Metadata, metaEvent.Status,
 	)
 	if err != nil {
 		return err
@@ -125,7 +142,6 @@ func (m *metaEventRepo) LoadMetaEventsPaged(ctx context.Context, projectID strin
 	}
 
 	query = m.db.Rebind(query)
-	fmt.Println("query is >>>>", query)
 	rows, err := m.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
@@ -166,4 +182,42 @@ func (m *metaEventRepo) LoadMetaEventsPaged(ctx context.Context, projectID strin
 		}
 	}
 	return nil, datastore.PaginationData{}, nil
+}
+
+func (m *metaEventRepo) UpdateStatusOfMetaEvent(ctx context.Context, projectID string, metaEvent *datastore.MetaEvent, status datastore.EventDeliveryStatus) error {
+	result, err := m.db.ExecContext(ctx, updateMetaEventStatus, status, metaEvent.UID, projectID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected < 1 {
+		return ErrMetaEventNotUpdated
+	}
+
+	return nil
+}
+
+func (m *metaEventRepo) UpdateMetaEvent(ctx context.Context, projectID string, metaEvent *datastore.MetaEvent) error {
+	result, err := m.db.ExecContext(ctx, updateMetaEvent, metaEvent.UID, projectID, metaEvent.EventType, metaEvent.Metadata,
+		metaEvent.Attempt, metaEvent.Status,
+	)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected < 1 {
+		return ErrMetaEventNotUpdated
+	}
+
+	return nil
 }

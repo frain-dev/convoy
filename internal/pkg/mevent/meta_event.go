@@ -52,16 +52,24 @@ func (m *MetaEvent) Run(eventType string, projectID string, data interface{}) er
 		return err
 	}
 
+	metaData := &datastore.Metadata{
+		NumTrials:       0,
+		RetryLimit:      project.Config.Strategy.RetryCount,
+		Data:            mpByte,
+		Raw:             string(mpByte),
+		IntervalSeconds: project.Config.Strategy.Duration,
+		Strategy:        project.Config.Strategy.Type,
+		NextSendTime:    time.Now(),
+	}
+
 	metaEvent := &datastore.MetaEvent{
-		UID:           ulid.Make().String(),
-		ProjectID:     projectID,
-		EventType:     eventType,
-		Status:        string(datastore.ScheduledEventStatus),
-		RetryCount:    1,
-		MaxRetryCount: 3,
-		Data:          mpByte,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		UID:       ulid.Make().String(),
+		ProjectID: projectID,
+		EventType: eventType,
+		Status:    datastore.ScheduledEventStatus,
+		Metadata:  metaData,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	err = m.metaEventRepo.CreateMetaEvent(context.Background(), metaEvent)
@@ -70,7 +78,15 @@ func (m *MetaEvent) Run(eventType string, projectID string, data interface{}) er
 		return err
 	}
 
-	mE, err := json.Marshal(metaEvent)
+	s := struct {
+		ProjectID   string
+		MetaEventID string
+	}{
+		ProjectID:   projectID,
+		MetaEventID: metaEvent.UID,
+	}
+
+	mE, err := json.Marshal(s)
 	if err != nil {
 		return err
 	}

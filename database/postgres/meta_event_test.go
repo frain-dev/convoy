@@ -5,7 +5,6 @@ package postgres
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 	"time"
 
@@ -26,6 +25,10 @@ func Test_CreateMetaEvent(t *testing.T) {
 	require.NoError(t, metaEventRepo.CreateMetaEvent(ctx, metaEvent))
 
 	newMetaEvent, err := metaEventRepo.FindMetaEventByID(ctx, metaEvent.ProjectID, metaEvent.UID)
+
+	require.NoError(t, err)
+
+	err = metaEventRepo.UpdateMetaEvent(ctx, metaEvent.ProjectID, metaEvent)
 	require.NoError(t, err)
 
 	newMetaEvent.CreatedAt = time.Time{}
@@ -38,22 +41,12 @@ func Test_CreateMetaEvent(t *testing.T) {
 func generateMetaEvent(t *testing.T, db database.Database) *datastore.MetaEvent {
 	project := seedProject(t, db)
 
-	data := json.RawMessage([]byte(`{
-		"event_type": "endpoint.created",
-		"data": {
-			"id": "123456",
-			"status": "processing"
-		}
-	}`))
-
 	return &datastore.MetaEvent{
-		UID:           ulid.Make().String(),
-		EventType:     string(datastore.EndpointCreated),
-		ProjectID:     project.UID,
-		Data:          data,
-		RetryCount:    1,
-		MaxRetryCount: 3,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		UID:       ulid.Make().String(),
+		EventType: string(datastore.EndpointCreated),
+		ProjectID: project.UID,
+		Metadata:  &datastore.Metadata{},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 }

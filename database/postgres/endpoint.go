@@ -147,31 +147,21 @@ const (
 )
 
 type endpointRepo struct {
-	db *sqlx.DB
-	// hook *hooks.Hook
+	db   *sqlx.DB
+	hook *hooks.Hook
 }
 
 func NewEndpointRepo(db database.Database) datastore.EndpointRepository {
-	return &endpointRepo{db: db.GetDB()}
+	return &endpointRepo{db: db.GetDB(), hook: db.GetHook()}
 }
 
 func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
-	tx, err := e.db.BeginTxx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return err
-	}
-	defer rollbackTx(tx)
-
-	ho, err := hooks.Get()
-	if err != nil {
-		return err
-	}
-
-	defer func(hook *hooks.Hook) {
-		go hook.Fire(datastore.EndpointCreated, endpoint)
-	}(ho)
-
 	ac := endpoint.GetAuthConfig()
+	
+	defer func() {
+		go e.hook.Fire(datastore.EndpointCreated, endpoint)
+	}()
+
 	args := []interface{}{
 		endpoint.UID, endpoint.Title, endpoint.Status, endpoint.Secrets, endpoint.OwnerID, endpoint.TargetURL,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
@@ -179,7 +169,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		projectID, ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue,
 	}
 
-	result, err := tx.ExecContext(ctx, createEndpoint, args...)
+	result, err := e.db.ExecContext(ctx, createEndpoint, args...)
 	if err != nil {
 		return err
 	}
@@ -193,7 +183,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		return ErrEndpointNotCreated
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 func (e *endpointRepo) FindEndpointByID(ctx context.Context, id, projectID string) (*datastore.Endpoint, error) {
@@ -245,9 +235,9 @@ func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID str
 func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ac := endpoint.GetAuthConfig()
 
-	// defer func() {
-	// 	go e.hook.Fire("endpoint.updated", endpoint)
-	// }()
+	defer func() {
+		go e.hook.Fire(datastore.EndpointUpdated, endpoint)
+	}()
 
 	r, err := e.db.ExecContext(ctx, updateEndpoint, endpoint.UID, projectID, endpoint.Title, endpoint.Status, endpoint.OwnerID, endpoint.TargetURL,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
@@ -294,6 +284,10 @@ func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 	defer rollbackTx(tx)
+
+	defer func() {
+		go e.hook.Fire(datastore.EndpointDeleted, endpoint)
+	}()
 
 	_, err = tx.ExecContext(ctx, deleteEndpoint, endpoint.UID, projectID)
 	if err != nil {

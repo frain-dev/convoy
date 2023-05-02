@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/config"
@@ -20,7 +21,8 @@ const pkgName = "postgres"
 var ErrPendingMigrationsFound = errors.New("migrate: Pending migrations exist, please run convoy migrate first")
 
 type Postgres struct {
-	dbx *sqlx.DB
+	dbx  *sqlx.DB
+	hook *hooks.Hook
 }
 
 func NewDB(cfg config.Configuration) (*Postgres, error) {
@@ -45,12 +47,23 @@ func (p *Postgres) Close() error {
 	return p.dbx.Close()
 }
 
+func (p *Postgres) GetHook() *hooks.Hook {
+	if p.hook != nil {
+		return p.hook
+	}
+
+	hook, err := hooks.Get()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	p.hook = hook
+	return p.hook
+}
+
 func rollbackTx(tx *sqlx.Tx) {
 	err := tx.Rollback()
 	if err != nil && !errors.Is(err, sql.ErrTxDone) {
 		log.WithError(err).Error("failed to rollback tx")
 	}
 }
-
-// create a singleton
-// hooks.load(), hooks.get()
