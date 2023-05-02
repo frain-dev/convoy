@@ -173,13 +173,11 @@ func StartConvoyServer(a *cli.App, withWorkers bool) error {
 
 	handler, err := api.NewApplicationHandler(
 		&types.APIOptions{
-			DB:       a.DB,
-			Queue:    a.Queue,
-			Logger:   lo,
-			Tracer:   a.Tracer,
-			Cache:    a.Cache,
-			Limiter:  a.Limiter,
-			Searcher: a.Searcher,
+			DB:     a.DB,
+			Queue:  a.Queue,
+			Logger: lo,
+			Tracer: a.Tracer,
+			Cache:  a.Cache,
 		})
 
 	if err != nil {
@@ -222,7 +220,6 @@ func StartConvoyServer(a *cli.App, withWorkers bool) error {
 			endpointRepo,
 			eventDeliveryRepo,
 			projectRepo,
-			a.Limiter,
 			subRepo,
 			a.Queue))
 
@@ -234,7 +231,6 @@ func StartConvoyServer(a *cli.App, withWorkers bool) error {
 			a.Cache,
 			a.Queue,
 			subRepo,
-			a.Searcher,
 			deviceRepo))
 
 		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
@@ -243,7 +239,6 @@ func StartConvoyServer(a *cli.App, withWorkers bool) error {
 			eventRepo,
 			eventDeliveryRepo,
 			postgres.NewExportRepo(a.DB),
-			a.Searcher,
 		))
 
 		consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(
@@ -255,7 +250,7 @@ func StartConvoyServer(a *cli.App, withWorkers bool) error {
 
 		consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, cfg))
 		consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
-		consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.Searcher))
+		consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex)
 		consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 
 		// start worker

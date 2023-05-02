@@ -67,7 +67,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				endpointRepo,
 				eventDeliveryRepo,
 				projectRepo,
-				a.Limiter,
 				subRepo,
 				a.Queue))
 
@@ -79,7 +78,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				a.Cache,
 				a.Queue,
 				subRepo,
-				a.Searcher,
 				deviceRepo))
 
 			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
@@ -88,7 +86,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				eventRepo,
 				eventDeliveryRepo,
 				postgres.NewExportRepo(a.DB),
-				a.Searcher,
 			))
 
 			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(
@@ -100,7 +97,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 
 			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, cfg))
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
-			consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.Searcher))
+			consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex)
 			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 
 			// start worker

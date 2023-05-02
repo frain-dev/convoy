@@ -3,31 +3,34 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"errors"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/golang/mock/gomock"
 	"github.com/hibiken/asynq"
+	"github.com/jarcoal/httpmock"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
+
+var successBody = []byte("event indexed successfully")
 
 func TestIndexDocument(t *testing.T) {
 	tests := []struct {
 		name       string
 		event      *datastore.Event
-		dbFn       func(args *args)
+		nFn        func(string) func()
 		wantErr    bool
 		wantErrMsg string
 		wantDelay  time.Duration
 	}{
 		{
-			name: "should_index_ducment",
+			name: "should_index_document",
 			event: &datastore.Event{
 				UID:       ulid.Make().String(),
 				EventType: "*",
@@ -39,9 +42,18 @@ func TestIndexDocument(t *testing.T) {
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
-			dbFn: func(args *args) {
-				s, _ := args.search.(*mocks.MockSearcher)
-				s.EXPECT().Index(gomock.Any(), gomock.Any())
+			nFn: func(url string) func() {
+				httpmock.Activate()
+
+				httpmock.RegisterResponder(http.MethodGet, url+"/health",
+					httpmock.NewStringResponder(http.StatusOK, string(successBody)))
+
+				httpmock.RegisterResponder(http.MethodPost, url+"/collections",
+					httpmock.NewStringResponder(http.StatusOK, string(successBody)))
+
+				return func() {
+					httpmock.DeactivateAndReset()
+				}
 			},
 			wantErr: false,
 		},
@@ -58,17 +70,22 @@ func TestIndexDocument(t *testing.T) {
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
-			dbFn: func(args *args) {
-				srh, _ := args.search.(*mocks.MockSearcher)
-				srh.EXPECT().Index(gomock.Any(), gomock.Any()).
-					Return(errors.New("[typesense]: 400 Bad Request"))
+			nFn: func(url string) func() {
+				httpmock.Activate()
+
+				httpmock.RegisterResponder(http.MethodPost, url,
+					httpmock.NewStringResponder(http.StatusBadRequest, string(`{}`)))
+
+				return func() {
+					httpmock.DeactivateAndReset()
+				}
 			},
 			wantErr:    true,
 			wantDelay:  time.Second * 5,
 			wantErrMsg: "[typesense]: 400 Bad Request",
 		},
 		{
-			name: "should_not_index_ducment_missing_project_id",
+			name: "should_not_index_document_with_missing_project_id",
 			event: &datastore.Event{
 				UID:       ulid.Make().String(),
 				EventType: "*",
@@ -79,10 +96,15 @@ func TestIndexDocument(t *testing.T) {
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
-			dbFn: func(args *args) {
-				srh, _ := args.search.(*mocks.MockSearcher)
-				srh.EXPECT().Index(gomock.Any(), gomock.Any()).
-					Return(ErrProjectIdFieldIsRequired)
+			nFn: func(url string) func() {
+				httpmock.Activate()
+
+				httpmock.RegisterResponder(http.MethodPost, url,
+					httpmock.NewStringResponder(http.StatusBadRequest, string(`{}`)))
+
+				return func() {
+					httpmock.DeactivateAndReset()
+				}
 			},
 			wantErr:    true,
 			wantDelay:  time.Second * 5,
@@ -94,10 +116,15 @@ func TestIndexDocument(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			args := provideArgs(ctrl)
+			err := config.LoadConfig("./testdata/Config/basic-convoy.json")
+			require.NoError(t, err)
 
-			if tt.dbFn != nil {
-				tt.dbFn(args)
+			cfg, err := config.Get()
+			require.NoError(t, err)
+
+			if tt.nFn != nil {
+				deferFn := tt.nFn(cfg.Search.Typesense.Host)
+				defer deferFn()
 			}
 
 			payload, err := json.Marshal(tt.event)
@@ -110,7 +137,7 @@ func TestIndexDocument(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.IndexDocument), job.Payload, asynq.Queue(string(convoy.SearchIndexQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := SearchIndex(args.search)
+			fn := SearchIndex
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

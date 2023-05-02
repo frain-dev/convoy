@@ -16,8 +16,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/apm"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"github.com/frain-dev/convoy/internal/pkg/searcher"
-	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -71,7 +69,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		var tr tracer.Tracer
 		var ca cache.Cache
-		var li limiter.RateLimiter
 		var q queue.Queuer
 
 		if cfg.Queue.Type == config.RedisQueueProvider {
@@ -111,16 +108,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
-		li, err = limiter.NewLimiter(cfg.Limiter)
-		if err != nil {
-			return err
-		}
-
-		se, err := searcher.NewSearchClient(cfg)
-		if err != nil {
-			return err
-		}
-
 		postgresDB, err := postgres.NewDB(cfg)
 		if err != nil {
 			return err
@@ -140,8 +127,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		app.Logger = lo
 		app.Tracer = tr
 		app.Cache = ca
-		app.Limiter = li
-		app.Searcher = se
 
 		if ok := shouldBootstrap(cmd); ok {
 			err = ensureDefaultUser(context.Background(), app)
