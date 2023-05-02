@@ -38,14 +38,12 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 
 		objectStoreClient, exportDir, err := NewObjectStoreClient(config.StoragePolicy)
 		if err != nil {
-			log.WithError(err)
 			return err
 		}
 
 		filter := &datastore.ProjectFilter{}
 		projects, err := projectRepo.LoadProjects(context.Background(), filter)
 		if err != nil {
-			log.WithError(err).Error("failed to load projects.")
 			return err
 		}
 
@@ -61,7 +59,6 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 				for _, table := range tables {
 					err = ExportCollection(ctx, table, exportDir, expDate, objectStoreClient, p, eventRepo, eventDeliveriesRepo, projectRepo, exportRepo, searcher)
 					if err != nil {
-						log.WithError(err).Errorf("Error exporting table %v", table)
 						return err
 					}
 				}
