@@ -27,11 +27,11 @@ var ErrOrAndMustBeArray = errors.New("the value of $or and $and must be an array
 //		  "$gte": 5
 //		}
 //	}
-func Flatten(input map[string]interface{}) (map[string]interface{}, error) {
+func Flatten(input interface{}) (map[string]interface{}, error) {
 	return flatten("", input)
 }
 
-func FlattenWithPrefix(prefix string, input map[string]interface{}) (map[string]interface{}, error) {
+func FlattenWithPrefix(prefix string, input interface{}) (map[string]interface{}, error) {
 	return flatten(prefix, input)
 }
 
@@ -41,10 +41,14 @@ func flatten(prefix string, nested interface{}) (map[string]interface{}, error) 
 	switch n := nested.(type) {
 	case map[string]interface{}:
 		for key, value := range n {
-			if strings.HasPrefix(key, "$") {
+			if strings.HasPrefix(key, "$") && !strings.HasPrefix(key, "$.") {
+				if !isKeyValidOperator(key) {
+					return nil, fmt.Errorf("%s starts with a $ and is not a valid operator", key)
+				}
+
 				if key == "$or" || key == "$and" {
 					switch a := value.(type) {
-					case []map[string]interface{}:
+					case []interface{}:
 						for i := range a {
 							t, err := flatten("", a[i])
 							if err != nil {
@@ -56,9 +60,9 @@ func flatten(prefix string, nested interface{}) (map[string]interface{}, error) 
 
 						f[key] = a
 						return f, nil
-					case []interface{}:
+					case []map[string]interface{}:
 						for i := range a {
-							t, err := flatten("", a[i].(map[string]interface{}))
+							t, err := flatten("", a[i])
 							if err != nil {
 								return nil, err
 							}
@@ -99,9 +103,67 @@ func flatten(prefix string, nested interface{}) (map[string]interface{}, error) 
 				f[key] = value
 			}
 		}
+	case []interface{}:
+		ff := map[string]interface{}{}
+
+		for i := range n {
+			switch t := n[i].(type) {
+			case map[string]interface{}:
+				var p string
+				if len(prefix) > 0 {
+					p = fmt.Sprintf("%v.%v", prefix, i)
+				} else {
+					p = fmt.Sprintf("%v", i)
+				}
+
+				t, err := flatten(p, t)
+				if err != nil {
+					return nil, err
+				}
+
+				for k, v := range t {
+					ff[k] = v
+				}
+			default:
+				continue
+			}
+		}
+
+		for k, v := range ff {
+			f[k] = v
+		}
+	case nil:
 	default:
-		f[prefix] = n
+		if prefix != "" {
+			f[prefix] = n
+		} else {
+			f = n.(map[string]interface{})
+		}
 	}
 
 	return f, nil
+}
+
+func isKeyValidOperator(op string) bool {
+	operators := []string{
+		"$gte",
+		"$gt",
+		"$lte",
+		"$lt",
+		"$in",
+		"$nin",
+		"$eq",
+		"$neq",
+		"$or",
+		"$and",
+		"$exist",
+	}
+
+	for _, o := range operators {
+		if o == op {
+			return true
+		}
+	}
+
+	return false
 }

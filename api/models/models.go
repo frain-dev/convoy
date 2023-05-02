@@ -366,6 +366,6 @@ type TestFilter struct {
 }
 
 type FilterSchema struct {
-	Headers map[string]interface{} `json:"header" bson:"header"`
-	Body    map[string]interface{} `json:"body" bson:"body"`
+	Headers interface{} `json:"header" bson:"header"`
+	Body    interface{} `json:"body" bson:"body"`
 }

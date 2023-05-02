@@ -424,7 +424,7 @@ func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID s
 	return scanSubscriptions(rows)
 }
 
-func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload map[string]interface{}, filter map[string]interface{}) (bool, error) {
+func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload, filter interface{}) (bool, error) {
 	p, err := flatten.Flatten(payload)
 	if err != nil {
 		return false, err
@@ -435,9 +435,7 @@ func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload m
 		return false, err
 	}
 
-	isValid := compare.Compare(p, f)
-
-	return isValid, nil
+	return compare.Compare(p, f)
 }
 
 var (

@@ -527,6 +527,8 @@ github.com/newrelic/go-agent/v3/integrations/nrlogrus v1.0.1/go.mod h1:JpiVn2lqR
 github.com/newrelic/go-agent/v3/integrations/nrredis-v8 v1.0.0 h1:lKNlA35kMBOjJGLusSHE6ydLhmQ7QmjzGzdRidfcWRI=
 github.com/newrelic/go-agent/v3/integrations/nrredis-v8 v1.0.0/go.mod h1:xL0cXGWOoPJDg16IqEUncqjZR3Qca5ng7yUCRrPYwyI=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
+github.com/nsf/jsondiff v0.0.0-20210926074059-1e845ec5d249 h1:NHrXEjTNQY7P0Zfx1aMrNhpgxHmow66XQtm0aQLY0AE=
+github.com/nsf/jsondiff v0.0.0-20210926074059-1e845ec5d249/go.mod h1:mpRZBD8SJ55OIICQ3iWH0Yz3cjzA61JdqMLoWXeB2+8=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/nxadm/tail v1.4.8/go.mod h1:+ncqLTQzXmGhMZNUePPaPqPvBxHAIsmXswZKocGu+AU=
