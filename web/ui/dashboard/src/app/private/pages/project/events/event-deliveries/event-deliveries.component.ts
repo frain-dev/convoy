@@ -6,11 +6,11 @@ import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'r
 import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { EVENT_DELIVERY } from 'src/app/models/event.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
-import { HTTP_RESPONSE } from 'src/app/models/http.model';
+import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { EventsService } from '../events.service';
 import { PrivateService } from 'src/app/private/private.service';
-import { SOURCE } from 'src/app/models/group.model';
+import { SOURCE } from 'src/app/models/source.model';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
 import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.component';
 import { ProjectService } from '../../project.service';

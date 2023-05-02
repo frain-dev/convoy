@@ -1,5 +1,5 @@
 import { Component, HostListener, OnInit } from '@angular/core';
-import { GROUP } from 'src/app/models/group.model';
+import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
 
 @Component({
@@ -42,7 +42,7 @@ export class ProjectComponent implements OnInit {
 		}
 	];
 	shouldShowFullSideBar = true;
-	projectDetails!: GROUP;
+	projectDetails!: PROJECT;
 	isLoadingProjectDetails: boolean = true;
 	showHelpDropdown = false;
 

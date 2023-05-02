@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
-import { HTTP_RESPONSE } from 'src/app/models/http.model';
 import { environment } from 'src/environments/environment';
-import axios, { Axios, AxiosInstance } from 'axios';
+import axios from 'axios';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GeneralService } from '../general/general.service';
 import { ProjectService } from 'src/app/private/pages/project/project.service';
+import { HTTP_RESPONSE } from 'src/app/models/global.model';
 
 @Injectable({
 	providedIn: 'root'
@@ -51,7 +51,7 @@ export class HttpService {
 
 	buildRequestPath(level?: 'org' | 'org_project'): string {
 		if (!level) return '';
-		const orgId = this.getOrganisation().uid;
+		const orgId = this.getOrganisation()?.uid;
 
 		if (level === 'org' && !orgId) return 'error';
 		if (level === 'org_project' && (orgId === '' || !this.projectService.activeProjectDetails?.uid)) return 'error';
@@ -99,7 +99,6 @@ export class HttpService {
 				resolve(data);
 			} catch (error) {
 				if (axios.isAxiosError(error)) {
-					console.log('error message: ', error.message);
 					return reject(error.message);
 				} else {
 					console.log('unexpected error: ', error);

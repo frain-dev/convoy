@@ -16,7 +16,7 @@ import { PrismModule } from './prism/prism.module';
 import { MetricPipe } from './shared/pipes';
 import { SharedModule } from './shared/shared.module';
 import Chart from 'chart.js/auto';
-import { HTTP_RESPONSE } from './models/http.model';
+import { HTTP_RESPONSE } from './models/global.model';
 import { ConvoyNotificationComponent } from './shared-components/notification.component';
 
 describe('ConvoyDashboardComponent', () => {

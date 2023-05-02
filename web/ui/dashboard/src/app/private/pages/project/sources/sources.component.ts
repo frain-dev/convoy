@@ -2,7 +2,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
-import { SOURCE } from 'src/app/models/group.model';
+import { SOURCE } from 'src/app/models/source.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { SourcesService } from './sources.service';

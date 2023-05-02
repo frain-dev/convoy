@@ -13,6 +13,7 @@ import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { TokenModalComponent } from '../token-modal/token-modal.component';
+import { PermissionDirective } from '../permission/permission.directive';
 
 @NgModule({
 	declarations: [CreateProjectComponent],
@@ -26,7 +27,7 @@ import { TokenModalComponent } from '../token-modal/token-modal.component';
 		SelectComponent,
 		ButtonComponent,
 		ModalComponent,
-        ModalHeaderComponent,
+		ModalHeaderComponent,
 		CopyButtonComponent,
 		CardComponent,
 		ButtonComponent,
@@ -40,7 +41,8 @@ import { TokenModalComponent } from '../token-modal/token-modal.component';
 		InputErrorComponent,
 		InputDirective,
 		LabelComponent,
-        TokenModalComponent
+		TokenModalComponent,
+		PermissionDirective
 	],
 	exports: [CreateProjectComponent]
 })

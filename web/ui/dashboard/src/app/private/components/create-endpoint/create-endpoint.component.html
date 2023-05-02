@@ -19,7 +19,7 @@
 			<ng-container *ngIf="showConfig('alert-config')">
 				<div class="flex justify-between items-center mb-16px">
 					<p class="text-14 font-medium text-grey-60 flex items-center">Alert Configuration</p>
-					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('alert-config')">
+					<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('alert-config')">
 						<svg width="16" height="16" class="fill-grey-60">
 							<use xlink:href="#delete-icon"></use>
 						</svg>
@@ -44,7 +44,7 @@
 						Endpoint Authentication
 						<convoy-tooltip size="sm" position="right" class="ml-4px">You can set your provided endpoint authentication is any is required</convoy-tooltip>
 					</p>
-					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('auth')">
+					<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('auth')">
 						<svg width="16" height="16" class="fill-grey-60">
 							<use xlink:href="#delete-icon"></use>
 						</svg>
@@ -70,7 +70,7 @@
 						Signature Details
 						<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your signature format for your project.</convoy-tooltip>
 					</p>
-					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
+					<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
 						<svg width="16" height="16" class="fill-grey-60">
 							<use xlink:href="#delete-icon"></use>
 						</svg>
@@ -85,7 +85,18 @@
 			<div class="flex items-center">
 				<ng-container *ngFor="let config of configurations; let i = index">
 					<ng-container *ngIf="!config.show">
-						<button *ngIf="i < 2 || privateService.activeProjectDetails?.type === 'outgoing'" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" class="mr-24px font-normal" (click)="toggleConfigForm(config.uid)">
+						<button
+							convoy-permission="Endpoints|MANAGE"
+							*ngIf="i < 2 || privateService.activeProjectDetails?.type === 'outgoing'"
+							convoy-button
+							size="sm"
+							fill="outline"
+							color="grey"
+							texture="light"
+							type="button"
+							class="mr-24px font-normal"
+							(click)="toggleConfigForm(config.uid)"
+						>
 							{{ config.name }}
 							<img src="assets/img/svg/plus-icon.svg" class="ml-24px" alt="plus icon" />
 						</button>
@@ -101,11 +112,11 @@
 	</div>
 
 	<div class="flex justify-end mt-40px mb-60px" [ngClass]="{ hidden: showAction === 'false' }">
-		<button convoy-button fill="outline" class="mr-24px" (click)="cancel()">Discard</button>
-		<button convoy-button *ngIf="!editMode" [disabled]="savingEndpoint" (click)="saveEndpoint()">
+		<button convoy-button [disabled]="addNewEndpointForm.disabled" fill="outline" class="mr-24px" (click)="cancel()">Discard</button>
+		<button convoy-button *ngIf="!editMode" [disabled]="savingEndpoint || addNewEndpointForm.disabled" (click)="saveEndpoint()">
 			{{ savingEndpoint ? 'Creating Endpoint..' : 'Create Endpoint' }}
 		</button>
-		<button convoy-button *ngIf="editMode" [disabled]="savingEndpoint" (click)="saveEndpoint()">
+		<button convoy-button *ngIf="editMode" [disabled]="savingEndpoint || addNewEndpointForm.disabled" (click)="saveEndpoint()">
 			{{ savingEndpoint ? 'Updating Endpoint..' : 'Update Endpoint' }}
 		</button>
 	</div>

@@ -28,7 +28,7 @@
 		</form>
 	</div>
 
-	<button *ngIf="displayedEndpoints?.length" convoy-button size="sm" class="h-36px" id="create-endpoint-modal-button" routerLink="./new">Create Endpoint</button>
+	<button convoy-permission="Endpoints|MANAGE" *ngIf="displayedEndpoints?.length" convoy-button size="sm" class="h-36px" id="create-endpoint-modal-button" routerLink="./new">Create Endpoint</button>
 </div>
 
 <!-- empty state  -->
@@ -74,10 +74,10 @@
 							{{ endpoint.title }}
 						</td>
 						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]">
-							{{ endpoint.created_at | date: 'hh:mm:ss a' }}
+							{{ endpoint.created_at | date : 'hh:mm:ss a' }}
 						</td>
 						<td convoy-table-cell [routerLink]="['./' + endpoint.uid]">
-							{{ endpoint.updated_at | date: 'mediumTime' }}
+							{{ endpoint.updated_at | date : 'mediumTime' }}
 						</td>
 						<td convoy-table-cell>
 							<button convoy-button size="sm" [routerLink]="['../events']" [relativeTo]="route" [queryParams]="{ linksEndpoint: endpoint.uid }" texture="light">
