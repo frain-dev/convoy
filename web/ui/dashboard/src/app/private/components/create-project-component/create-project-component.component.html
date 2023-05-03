@@ -161,7 +161,18 @@
 			<div class="flex items-center">
 				<ng-container *ngFor="let config of configurations; let i = index">
 					<ng-container *ngIf="!config.show">
-						<button *ngIf="i < 3 || this.projectForm.controls['type'].value === 'outgoing'" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" class="mr-24px" (click)="toggleConfigForm(config.uid)">
+						<button
+							*ngIf="i < 3 || this.projectForm.controls['type'].value === 'outgoing'"
+							convoy-permission="Project Settings|MANAGE"
+							convoy-button
+							size="sm"
+							fill="outline"
+							color="grey"
+							texture="light"
+							type="button"
+							class="mr-24px"
+							(click)="toggleConfigForm(config.uid)"
+						>
 							{{ config.name }}
 							<svg width="12" height="12" class="ml-8px fill-grey-60">
 								<use xlink:href="#add-icon" width="12" height="12"></use>
@@ -187,7 +198,7 @@
 
 	<div class="flex justify-end mt-48px">
 		<button [disabled]="projectForm.disabled" convoy-button fill="outline" *ngIf="action !== 'update'" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" type="button" (click)="cancel()">Cancel</button>
-		<button convoy-button [disabled]="isCreatingProject || !rbacService.userCanAccess('Project Settings|MANAGE')">
+		<button convoy-button [disabled]="isCreatingProject || projectForm.disabled">
 			{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
 			<svg width="24" height="24" class="ml-8px fill-white-100">
 				<use xlink:href="#arrow-right-icon"></use>
@@ -195,13 +206,15 @@
 		</button>
 	</div>
 
+	<hr class="border-t border-grey-10 my-40px" />
+
 	<ng-container *ngIf="action === 'update' && projectDetails?.type === 'outgoing'">
 		<div class="flex items-center justify-between mt-52px mb-20px">
 			<h5 class="font-medium flex items-center">
 				Signature Format
 				<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 			</h5>
-			<button convoy-button size="sm" fill="outline" type="button" (click)="versions.push(newVersion()); showNewSignatureModal = true">
+			<button convoy-permission="Project Settings|MANAGE" convoy-button size="sm" fill="outline" type="button" (click)="versions.push(newVersion()); showNewSignatureModal = true">
 				<svg width="18" height="18" class="mr-2 fill-primary-100">
 					<use xlink:href="#plus-icon"></use>
 				</svg>
@@ -283,7 +296,6 @@
 		</div>
 	</div>
 </div>
-
 
 <div convoy-modal *ngIf="disableEndpointsModal" position="center" size="sm">
 	<div modalBody class="flex flex-col justify-center items-center p-30px">

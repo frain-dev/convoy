@@ -81,7 +81,7 @@
 	<!-- empty state  -->
 	<div class="py-100px mt-24px" convoy-card *ngIf="!isLoadingProjects && !projects.length">
 		<div convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" heading="You currently have no projects" description="Your incoming and outgoing projects appear here." id="subscriptions-empty-state">
-			<button convoy-button emptyStateCTA routerLink="./new" class="mt-36px">Create a Project</button>
+			<button convoy-button convoy-permission="Project Settings|MANAGE" emptyStateCTA routerLink="./new" class="mt-36px">Create a Project</button>
 		</div>
 	</div>
 

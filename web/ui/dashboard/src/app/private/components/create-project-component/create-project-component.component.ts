@@ -72,9 +72,9 @@ export class CreateProjectComponent implements OnInit {
 
 	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router) {}
 
-	ngOnInit(): void {
+	async ngOnInit() {
 		if (this.action === 'update') this.getProjectDetails();
-		if (!this.rbacService.userCanAccess('Project Settings|MANAGE')) this.projectForm.disable();
+		if (!(await this.rbacService.userCanAccess('Project Settings|MANAGE'))) this.projectForm.disable();
 	}
 
 	get versions(): FormArray {

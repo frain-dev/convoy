@@ -16,5 +16,6 @@ export class PermissionDirective implements OnInit {
 
 		const element = this.elementRef.nativeElement;
 		element.classList.add('disabled');
+		element.setAttribute('disabled', 'true');
 	}
 }
