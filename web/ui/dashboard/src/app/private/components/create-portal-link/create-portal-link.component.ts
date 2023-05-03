@@ -38,7 +38,7 @@ export class CreatePortalLinkComponent implements OnInit {
 	async ngOnInit() {
 		this.getEndpoints();
 		if (this.linkUid) await this.getPortalLink();
-		if (!this.rbacService.userCanAccess('Portal Links|MANAGE')) this.portalLinkForm.disable();
+		if (!(await this.rbacService.userCanAccess('Portal Links|MANAGE'))) this.portalLinkForm.disable();
 	}
 
 	async savePortalLink() {

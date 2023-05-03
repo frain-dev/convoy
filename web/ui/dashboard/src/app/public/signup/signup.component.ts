@@ -30,7 +30,7 @@ export class SignupComponent implements OnInit {
 	ngOnInit(): void {}
 
 	async signup() {
-		if (this.signupForm.invalid) return this.signupForm.markAsTouched();
+		if (this.signupForm.invalid) return this.signupForm.markAllAsTouched();
 
 		this.disableSignupBtn = true;
 		try {

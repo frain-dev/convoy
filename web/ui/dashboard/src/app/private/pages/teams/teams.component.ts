@@ -63,9 +63,9 @@ export class TeamsComponent implements OnInit {
 
 	constructor(private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private teamService: TeamsService, private formBuilder: FormBuilder, private privateService: PrivateService) {}
 
-	ngOnInit() {
+	async ngOnInit() {
 		this.toggleFilter(this.route.snapshot.queryParams?.inviteType ?? 'active');
-		if (!this.rbacService.userCanAccess('Team|MANAGE')) this.inviteUserForm.disable();
+		if (!(await this.rbacService.userCanAccess('Team|MANAGE'))) this.inviteUserForm.disable();
 	}
 
 	async fetchTeamMembers(requestDetails?: { searchString?: string; page?: number }) {
@@ -131,7 +131,7 @@ export class TeamsComponent implements OnInit {
 	}
 
 	async inviteUser() {
-		if (this.inviteUserForm.invalid) return this.inviteUserForm.markAsTouched();
+		if (this.inviteUserForm.invalid) return this.inviteUserForm.markAllAsTouched();
 		this.invitingUser = true;
 		try {
 			const response = await this.teamService.inviteUserToOrganisation(this.inviteUserForm.value);
@@ -145,7 +145,7 @@ export class TeamsComponent implements OnInit {
 	}
 
 	async updateMember() {
-		if (this.memberForm.invalid) return this.memberForm.markAsTouched();
+		if (this.memberForm.invalid) return this.memberForm.markAllAsTouched();
 		this.updatingMember = true;
 
 		try {

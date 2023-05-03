@@ -220,7 +220,7 @@
 			</convoy-input-field>
 
 			<ng-container formGroupName="role">
-				<convoy-select className="mb-24px" label="Role" name="role" formControlName="type" [options]="roles" errorMessage="Select user role" [required]="true" (selectedOption)="memberForm.get('role')?.patchValue({ type: $event })"></convoy-select>
+				<convoy-select *convoy-enterprise className="mb-24px" label="Role" name="role" formControlName="type" [options]="roles" errorMessage="Select user role" [required]="true" (selectedOption)="memberForm.get('role')?.patchValue({ type: $event })"></convoy-select>
 			</ng-container>
 
 			<div class="flex justify-end pt-24px pb-40px">
