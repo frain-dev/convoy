@@ -12,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/internal/email"
 	notification "github.com/frain-dev/convoy/internal/notifications"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/hibiken/asynq"
 
 	"github.com/slack-go/slack"
@@ -29,13 +28,11 @@ func ProcessNotifications(sc smtp.SmtpClient) func(context.Context, *asynq.Task)
 		n := &notification.Notification{}
 		err := json.Unmarshal(buf, n)
 		if err != nil {
-			log.WithError(err).Error("failed to unmarshal notification payload")
 			return ErrInvalidNotificationPayload
 		}
 
 		bufP, err := json.Marshal(n.Payload)
 		if err != nil {
-			log.WithError(err).Error("Failed to marshal payload")
 			return err
 		}
 
@@ -44,7 +41,6 @@ func ProcessNotifications(sc smtp.SmtpClient) func(context.Context, *asynq.Task)
 			np := &email.Message{}
 			err := json.Unmarshal(bufP, np)
 			if err != nil {
-				log.WithError(err).Error("Failed to unmarshal email notification payload")
 				return ErrInvalidEmailPayload
 			}
 
@@ -59,7 +55,6 @@ func ProcessNotifications(sc smtp.SmtpClient) func(context.Context, *asynq.Task)
 			np := &notification.SlackNotification{}
 			err := json.Unmarshal(bufP, np)
 			if err != nil {
-				log.WithError(err).Error("Failed to unmarshal email notification payload")
 				return ErrInvalidSlackPayload
 			}
 

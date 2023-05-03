@@ -25,3 +25,10 @@ export interface CURSOR {
 	prev_page_cursor?: string;
 	direction?: 'next' | 'prev';
 }
+
+export interface HTTP_RESPONSE {
+	data: any;
+	message: string;
+	error?: any;
+	status: boolean;
+}

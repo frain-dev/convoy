@@ -219,6 +219,46 @@ type UpdateSource struct {
 	PubSub         *datastore.PubSubConfig  `json:"pub_sub"`
 }
 
+type DynamicSubscription struct {
+	Name            string                            `json:"name" bson:"name"`
+	AlertConfig     *datastore.AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
+	RetryConfig     *RetryConfiguration               `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
+	FilterConfig    *datastore.FilterConfiguration    `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
+	RateLimitConfig *datastore.RateLimitConfiguration `json:"rate_limit_config,omitempty" bson:"rate_limit_config,omitempty"`
+}
+
+type DynamicEvent struct {
+	Endpoint     DynamicEndpoint     `json:"endpoint"`
+	Subscription DynamicSubscription `json:"subscription"`
+	Event        DynamicEventStub    `json:"event"`
+}
+
+type DynamicEndpoint struct {
+	URL                string `json:"url" bson:"url" valid:"required~please provide a url for your endpoint"`
+	Secret             string `json:"secret" bson:"secret"`
+	OwnerID            string `json:"owner_id" bson:"owner_id"`
+	Description        string `json:"description" bson:"description"`
+	AdvancedSignatures bool   `json:"advanced_signatures" bson:"advanced_signatures"`
+	Name               string `json:"name" bson:"name"`
+	SupportEmail       string `json:"support_email" bson:"support_email"`
+	IsDisabled         bool   `json:"is_disabled"`
+	SlackWebhookURL    string `json:"slack_webhook_url" bson:"slack_webhook_url"`
+
+	HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
+	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
+	AppID             string                            // Deprecated but necessary for backward compatibility
+}
+
+type DynamicEventStub struct {
+	ProjectID string `json:"project_id"`
+	EventType string `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
+	// Data is an arbitrary JSON value that gets sent as the body of the webhook to the endpoints
+	Data          json.RawMessage   `json:"data" bson:"data" valid:"required~please provide your data"`
+	CustomHeaders map[string]string `json:"custom_headers"`
+}
+
 type Event struct {
 	EndpointID string `json:"endpoint_id"`
 	AppID      string `json:"app_id" bson:"app_id"` // Deprecated but necessary for backward compatibility
@@ -366,6 +406,6 @@ type TestFilter struct {
 }
 
 type FilterSchema struct {
-	Headers map[string]interface{} `json:"header" bson:"header"`
-	Body    map[string]interface{} `json:"body" bson:"body"`
+	Headers interface{} `json:"header" bson:"header"`
+	Body    interface{} `json:"body" bson:"body"`
 }

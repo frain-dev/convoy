@@ -63,7 +63,7 @@
 		</div>
 	</div>
 
-	<convoy-button size="sm" *ngIf="!isLoadingPortalLinks && portalLinks?.content?.length" routerLink="./new">Create Portal Link</convoy-button>
+	<convoy-button convoy-permission="Portal Links|MANAGE" size="sm" routerLink="./new">Create Portal Link</convoy-button>
 </div>
 
 <!-- loader  -->
@@ -109,9 +109,7 @@
 		imgSrc="/assets/img/portal-link-empty-state.png"
 		heading="You currently do not have any portal links"
 		description="Portal Links enable you create customer-facing dashboards for your user endpoints. You can link a portal link to more than one endpoint at a time."
-		buttonText="Create Portal Link"
 		id="links-empty-state"
-		(onAction)="openCreateLinkModal()"
 	></div>
 </div>
 
@@ -137,7 +135,7 @@
 			</li>
 		</ul>
 
-		<div class="flex justify-end mt-40px mr-16px">
+		<div class="flex justify-end mt-40px mr-16px" convoy-permission="Project Settings|MANAGE">
 			<button convoy-button fill="outline" color="danger" size="sm" (click)="showDeleteModal = true">
 				Delete Portal Link
 				<svg width="18" height="18" class="ml-8px fill-danger-100">

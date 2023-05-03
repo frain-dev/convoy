@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
@@ -12,6 +12,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { CreatePortalLinkService } from './create-portal-link.service';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
+import { RbacService } from 'src/app/services/rbac/rbac.service';
 
 @Component({
 	selector: 'convoy-create-portal-link',
@@ -30,12 +31,14 @@ export class CreatePortalLinkComponent implements OnInit {
 	fetchingLinkDetails = false;
 	portalLink!: string;
 	linkUid = this.route.snapshot.params.id;
+	private rbacService = inject(RbacService);
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private generalService: GeneralService, private createPortalLinkService: CreatePortalLinkService, private router: Router, private route: ActivatedRoute) {}
 
 	async ngOnInit() {
 		this.getEndpoints();
 		if (this.linkUid) await this.getPortalLink();
+		if (!(await this.rbacService.userCanAccess('Portal Links|MANAGE'))) this.portalLinkForm.disable();
 	}
 
 	async savePortalLink() {

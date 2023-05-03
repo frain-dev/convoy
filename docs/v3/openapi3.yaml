@@ -659,6 +659,77 @@ components:
           type: string
         type: array
       type: object
+    models.DynamicEndpoint:
+      properties:
+        advanced_signatures:
+          type: boolean
+        appID:
+          description: Deprecated but necessary for backward compatibility
+          type: string
+        authentication:
+          $ref: '#/components/schemas/datastore.EndpointAuthentication'
+        description:
+          type: string
+        http_timeout:
+          type: string
+        is_disabled:
+          type: boolean
+        name:
+          type: string
+        owner_id:
+          type: string
+        rate_limit:
+          type: integer
+        rate_limit_duration:
+          type: string
+        secret:
+          type: string
+        slack_webhook_url:
+          type: string
+        support_email:
+          type: string
+        url:
+          type: string
+      type: object
+    models.DynamicEvent:
+      properties:
+        endpoint:
+          $ref: '#/components/schemas/models.DynamicEndpoint'
+        event:
+          $ref: '#/components/schemas/models.DynamicEventStub'
+        subscription:
+          $ref: '#/components/schemas/models.DynamicSubscription'
+      type: object
+    models.DynamicEventStub:
+      properties:
+        custom_headers:
+          additionalProperties:
+            type: string
+          type: object
+        data:
+          description: Data is an arbitrary JSON value that gets sent as the body
+            of the webhook to the endpoints
+          items:
+            type: integer
+          type: array
+        event_type:
+          type: string
+        project_id:
+          type: string
+      type: object
+    models.DynamicSubscription:
+      properties:
+        alert_config:
+          $ref: '#/components/schemas/datastore.AlertConfiguration'
+        filter_config:
+          $ref: '#/components/schemas/datastore.FilterConfiguration'
+        name:
+          type: string
+        rate_limit_config:
+          $ref: '#/components/schemas/datastore.RateLimitConfiguration'
+        retry_config:
+          $ref: '#/components/schemas/models.RetryConfiguration'
+      type: object
     models.Endpoint:
       properties:
         advanced_signatures:
@@ -739,12 +810,8 @@ components:
       type: object
     models.FilterSchema:
       properties:
-        body:
-          additionalProperties: true
-          type: object
-        header:
-          additionalProperties: true
-          type: object
+        body: {}
+        header: {}
       type: object
     models.PortalLink:
       properties:
@@ -2724,6 +2791,69 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Batch replay events
+      tags:
+      - Events
+  /v1/projects/{projectID}/events/dynamic:
+    post:
+      description: This endpoint Creates an event with supplied endpoint and subscription
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.DynamicEvent'
+        description: Event Details
+        required: true
+        x-originalParamName: event
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/public.Stub'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/public.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/public.Stub'
+                  type: object
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/public.Stub'
+                  type: object
+          description: Not Found
+      security:
+      - ApiKeyAuth: []
+      summary: Creates an event with supplied endpoint and subscription
       tags:
       - Events
   /v1/projects/{projectID}/events/fanout:

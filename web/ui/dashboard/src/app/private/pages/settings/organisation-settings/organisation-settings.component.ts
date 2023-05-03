@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SettingsService } from '../settings.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { Router } from '@angular/router';
 import { PrivateService } from 'src/app/private/private.service';
+import { RbacService } from 'src/app/services/rbac/rbac.service';
 
 @Component({
 	selector: 'organisation-settings',
@@ -19,11 +20,13 @@ export class OrganisationSettingsComponent implements OnInit {
 	editOrganisationForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required]
 	});
+	private rbacService = inject(RbacService);
 
 	constructor(private formBuilder: FormBuilder, private settingService: SettingsService, private generalService: GeneralService, private router: Router, private privateService: PrivateService) {}
 
-	ngOnInit() {
+	async ngOnInit() {
 		this.getOrganisationDetails();
+		if (!(await this.rbacService.userCanAccess('Organisations|MANAGE'))) this.editOrganisationForm.disable();
 	}
 
 	async updateOrganisation() {

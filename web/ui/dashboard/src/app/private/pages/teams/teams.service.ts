@@ -1,29 +1,12 @@
 import { Injectable } from '@angular/core';
-import { HTTP_RESPONSE } from 'src/app/models/http.model';
+import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { HttpService } from 'src/app/services/http/http.service';
-import { PrivateService } from '../../private.service';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class TeamsService {
-	constructor(private http: HttpService, private privateService: PrivateService) {}
-
-	getTeamMembers(requestDetails: { q?: string; page?: number }): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: `/members`,
-					method: 'get',
-					level: 'org',
-					query: requestDetails
-				});
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
+	constructor(private http: HttpService) {}
 
 	getPendingTeamMembers(requestDetails: { page?: number }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
@@ -80,6 +63,22 @@ export class TeamsService {
 					url: `/invites`,
 					body: requestDetails,
 					method: 'post',
+					level: 'org'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	updateMember(requestDetails: { email: string; role: { type: string } }, memberId: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/members/${memberId}`,
+					body: requestDetails,
+					method: 'put',
 					level: 'org'
 				});
 				return resolve(response);

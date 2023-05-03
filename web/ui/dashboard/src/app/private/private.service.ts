@@ -1,22 +1,24 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { HTTP_RESPONSE } from 'src/app/models/http.model';
+import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { HttpService } from 'src/app/services/http/http.service';
 import { FLIPT_API_RESPONSE } from '../models/flipt.model';
 import { CURSOR } from '../models/global.model';
-import { GROUP } from '../models/group.model';
+import { PROJECT } from '../models/project.model';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
 import { ProjectService } from './pages/project/project.service';
+import { USER } from '../models/user.model';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class PrivateService {
-	activeProjectDetails?: GROUP; // we should depricate this
+	activeProjectDetails?: PROJECT; // we should depricate this
 	organisationDetails!: ORGANIZATION_DATA;
 	apiFlagResponse!: FLIPT_API_RESPONSE;
-	projects: GROUP[] = [];
+	projects: PROJECT[] = [];
 	organisations!: HTTP_RESPONSE;
+	membership!: HTTP_RESPONSE;
 	configutation!: HTTP_RESPONSE;
 	showCreateOrgModal = false;
 	projectDetails!: HTTP_RESPONSE;
@@ -25,13 +27,18 @@ export class PrivateService {
 
 	constructor(private http: HttpService, private router: Router, private projectService: ProjectService) {}
 
-	getOrganisation(): ORGANIZATION_DATA {
+	get getOrganisation(): ORGANIZATION_DATA | null {
 		let org = localStorage.getItem('CONVOY_ORG');
 		return org ? JSON.parse(org) : null;
 	}
 
+	get getUserProfile(): USER | null {
+		const authDetails = localStorage.getItem('CONVOY_AUTH');
+		return authDetails ? JSON.parse(authDetails) : false;
+	}
+
 	urlFactory(level: 'org' | 'org_project'): string {
-		const orgId = this.getOrganisation().uid;
+		const orgId = this.getOrganisation?.uid;
 
 		switch (level) {
 			case 'org':
@@ -123,11 +130,7 @@ export class PrivateService {
 	async organisationConfig(organisations: ORGANIZATION_DATA[]) {
 		if (!organisations || (organisations && organisations?.length == 0)) return;
 
-		const selectedOrganisation = localStorage.getItem('CONVOY_ORG');
-		if (!selectedOrganisation || selectedOrganisation === 'undefined') return;
-
-		const organisationDetails = JSON.parse(selectedOrganisation);
-		const existingOrg = organisations.find((org: { uid: string }) => org.uid === organisationDetails?.uid);
+		const existingOrg = organisations.find((org: { uid: string }) => org.uid === this.getOrganisation?.uid);
 		if (existingOrg) return localStorage.setItem('CONVOY_ORG', JSON.stringify(existingOrg));
 
 		this.organisationDetails = organisations[0];
@@ -148,6 +151,36 @@ export class PrivateService {
 				await this.organisationConfig(response.data?.content);
 				this.organisations = response;
 				if (!response.data.content.length) return this.router.navigateByUrl('/get-started');
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getTeamMembers(requestDetails?: { q?: string; page?: number; userID?: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/members`,
+					method: 'get',
+					level: 'org',
+					query: requestDetails
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getOrganizationMembership(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			if (this.membership && !requestDetails?.refresh) return resolve(this.membership);
+
+			try {
+				const response = await this.getTeamMembers({ userID: this.getUserProfile?.uid });
+				this.membership = response;
 				return resolve(response);
 			} catch (error) {
 				return reject(error);

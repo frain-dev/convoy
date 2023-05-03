@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
@@ -13,11 +13,13 @@ import { PrivateService } from '../../private.service';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.component';
 import { EndpointDetailsService } from '../../pages/project/endpoint-details/endpoint-details.service';
+import { PermissionDirective } from '../permission/permission.directive';
+import { RbacService } from 'src/app/services/rbac/rbac.service';
 
 @Component({
 	selector: 'convoy-create-endpoint',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, ButtonComponent, RadioComponent, TooltipComponent, CardComponent, ToggleComponent, FormLoaderComponent],
+	imports: [CommonModule, ReactiveFormsModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, ButtonComponent, RadioComponent, TooltipComponent, CardComponent, ToggleComponent, FormLoaderComponent, PermissionDirective],
 	templateUrl: './create-endpoint.component.html',
 	styleUrls: ['./create-endpoint.component.scss']
 })
@@ -54,6 +56,7 @@ export class CreateEndpointComponent implements OnInit {
 		{ uid: 'signature', name: 'Signature Format', show: false }
 	];
 	endpointCreated: boolean = false;
+	private rbacService = inject(RbacService);
 
 	constructor(
 		private formBuilder: FormBuilder,
@@ -65,8 +68,9 @@ export class CreateEndpointComponent implements OnInit {
 		private endpointService: EndpointDetailsService
 	) {}
 
-	ngOnInit() {
+	async ngOnInit() {
 		if (this.endpointUid && this.editMode) this.getEndpointDetails();
+		if (!(await this.rbacService.userCanAccess('Endpoints|MANAGE'))) this.addNewEndpointForm.disable();
 	}
 
 	async saveEndpoint() {

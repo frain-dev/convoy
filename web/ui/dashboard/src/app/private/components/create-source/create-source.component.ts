@@ -1,10 +1,11 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { SOURCE } from 'src/app/models/group.model';
+import { SOURCE } from 'src/app/models/source.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
 import { CreateSourceService } from './create-source.service';
+import { RbacService } from 'src/app/services/rbac/rbac.service';
 
 @Component({
 	selector: 'convoy-create-source',
@@ -122,12 +123,15 @@ export class CreateSourceComponent implements OnInit {
 	sourceCreated: boolean = false;
 	showSourceUrl = false;
 	sourceData!: SOURCE;
+	private rbacService = inject(RbacService);
 
 	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
 
-	ngOnInit(): void {
+	async ngOnInit() {
 		if (this.action === 'update') this.getSourceDetails();
 		this.privateService.activeProjectDetails?.type === 'incoming' ? this.sourceForm.patchValue({ type: 'http' }) : this.sourceForm.patchValue({ type: 'pub_sub' });
+
+		if (!(await this.rbacService.userCanAccess('Sources|MANAGE'))) this.sourceForm.disable();
 	}
 
 	async getSourceDetails() {

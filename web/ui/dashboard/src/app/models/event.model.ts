@@ -1,6 +1,6 @@
 import { DEVICE } from './device.model';
 import { APP, ENDPOINT } from './endpoint.model';
-import { SOURCE } from './group.model';
+import { SOURCE } from './source.model';
 
 export interface EVENT {
 	created_at: Date;

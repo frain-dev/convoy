@@ -36,7 +36,7 @@
 		<p class="text-grey-40 text-14 font-medium mb-24px">All your project's summary at a glance</p>
 
 		<div class="grid grid-cols-3 desktop:grid-cols-2 gap-6">
-			<a routerLink="./new" class="rounded-8px bg-white-100 border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]">
+			<a convoy-permission="Project Settings|MANAGE" routerLink="./new" class="rounded-8px bg-white-100 border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]">
 				<svg width="22" height="22" class="mr-2" fill="#477db3">
 					<use xlink:href="#plus-icon"></use>
 				</svg>
@@ -81,7 +81,7 @@
 	<!-- empty state  -->
 	<div class="py-100px mt-24px" convoy-card *ngIf="!isLoadingProjects && !projects.length">
 		<div convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" heading="You currently have no projects" description="Your incoming and outgoing projects appear here." id="subscriptions-empty-state">
-			<button convoy-button emptyStateCTA routerLink="./new" class="mt-36px">Create a Project</button>
+			<button convoy-button convoy-permission="Project Settings|MANAGE" emptyStateCTA routerLink="./new" class="mt-36px">Create a Project</button>
 		</div>
 	</div>
 
