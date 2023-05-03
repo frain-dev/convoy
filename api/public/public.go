@@ -122,6 +122,7 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 
 					metaEventRouter.Route("/{metaEventID}", func(metaEventSubRouter chi.Router) {
 						metaEventSubRouter.Get("/", a.GetMetaEvent)
+						metaEventSubRouter.Put("/resend", a.ResendMetaEvent)
 					})
 				})
 			})

@@ -6,6 +6,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -57,7 +58,7 @@ func (a *PublicHandler) GetMetaEventsPaged(w http.ResponseWriter, r *http.Reques
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Param eventID path string true "meta event id"
+// @Param metaEventID path string true "meta event id"
 // @Success 200 {object} util.ServerResponse{data=datastore.MetaEvent{data=Stub}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -71,6 +72,35 @@ func (a *PublicHandler) GetMetaEvent(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, util.NewServerResponse("Meta event fetched successfully",
 		metEvent, http.StatusOK))
+}
+
+// ResendMetaEvent
+// @Summary Retry meta event
+// @Description This endpoint retries a meta event
+// @Tags Meta Event
+// @Accept  json
+// @Produce  json
+// @Param projectID path string true "Project ID"
+// @Param metaEventID path string true "meta event id"
+// @Success 200 {object} util.ServerResponse{data=datastore.MetaEvent{data=Stub}}
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /v1/projects/{projectID}/meta-events/{metaEventID}/resend [put]
+func (a *PublicHandler) ResendMetaEvent(w http.ResponseWriter, r *http.Request) {
+	metaEvent, err := a.retrieveMetaEvent(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+		return
+	}
+
+	metaEventService := &services.MetaEventService{Queue: a.A.Queue, DB: a.A.DB}
+	err = metaEventService.Run(r.Context(), metaEvent)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Meta event processed for retry successfully", metaEvent, http.StatusOK))
 }
 
 func (a *PublicHandler) retrieveMetaEvent(r *http.Request) (*datastore.MetaEvent, error) {

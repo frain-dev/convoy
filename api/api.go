@@ -295,6 +295,7 @@ func (a *ApplicationHandler) RegisterDashboardRoutes(r *chi.Mux) {
 
 	r.Method(GET, "/ui/organisations/{orgID}/projects/{projectID}/meta-events", uiMiddlewaresWithPagination.HandlerFunc(dh.GetMetaEventsPaged))
 	r.Method(GET, "/ui/organisations/{orgID}/projects/{projectID}/meta-events/{metaEventID}", uiMiddlewares.HandlerFunc(dh.GetMetaEvent))
+	r.Method(PUT, "/ui/organisations/{orgID}/projects/{projectID}/meta-events/{metaEventID}/resend", uiMiddlewares.HandlerFunc(dh.ResendMetaEvent))
 
 }
 

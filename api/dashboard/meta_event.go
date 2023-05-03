@@ -6,6 +6,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -45,6 +46,23 @@ func (a *DashboardHandler) GetMetaEvent(w http.ResponseWriter, r *http.Request) 
 
 	_ = render.Render(w, r, util.NewServerResponse("Meta event fetched successfully",
 		metEvent, http.StatusOK))
+}
+
+func (a *DashboardHandler) ResendMetaEvent(w http.ResponseWriter, r *http.Request) {
+	metaEvent, err := a.retrieveMetaEvent(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+		return
+	}
+
+	metaEventService := &services.MetaEventService{Queue: a.A.Queue, DB: a.A.DB}
+	err = metaEventService.Run(r.Context(), metaEvent)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Meta event processed for retry successfully", metaEvent, http.StatusOK))
 }
 
 func (a *DashboardHandler) retrieveMetaEvent(r *http.Request) (*datastore.MetaEvent, error) {

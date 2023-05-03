@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/worker/task"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -78,12 +79,9 @@ func (m *MetaEvent) Run(eventType string, projectID string, data interface{}) er
 		return err
 	}
 
-	s := struct {
-		ProjectID   string
-		MetaEventID string
-	}{
-		ProjectID:   projectID,
+	s := task.MetaEvent{
 		MetaEventID: metaEvent.UID,
+		ProjectID:   projectID,
 	}
 
 	mE, err := json.Marshal(s)
