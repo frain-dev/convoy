@@ -89,6 +89,7 @@ type EndpointRepository interface {
 	FindEndpointsByID(ctx context.Context, ids []string, projectID string) ([]Endpoint, error)
 	FindEndpointsByAppID(ctx context.Context, appID string, projectID string) ([]Endpoint, error)
 	FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]Endpoint, error)
+	FindEndpointByTargetURL(ctx context.Context, projectID string, targetURL string) (*Endpoint, error)
 	UpdateEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
 	UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status EndpointStatus) error
 	DeleteEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
@@ -107,6 +108,7 @@ type SubscriptionRepository interface {
 	FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]Subscription, error)
 	FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string, subscriptionType SubscriptionType) (*Subscription, error)
 	FindCLISubscriptions(ctx context.Context, projectID string) ([]Subscription, error)
+	CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error)
 	TestSubscriptionFilter(ctx context.Context, payload, filter interface{}) (bool, error)
 }
 

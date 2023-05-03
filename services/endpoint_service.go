@@ -110,7 +110,7 @@ func (a *EndpointService) CreateEndpoint(ctx context.Context, e models.Endpoint,
 	if util.IsStringEmpty(e.Secret) {
 		sc, err := util.GenerateSecret()
 		if err != nil {
-			return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf(fmt.Sprintf("could not generate secret...%v", err.Error())))
+			return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("could not generate secret: %v", err))
 		}
 
 		endpoint.Secrets = []datastore.Secret{

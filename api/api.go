@@ -60,7 +60,6 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 	az, err := authz.NewAuthz(&authz.AuthzOpts{
 		AuthCtxKey: authz.AuthCtxType(middleware.AuthUserCtx),
 	})
-
 	if err != nil {
 		return &ApplicationHandler{}, err
 	}
@@ -140,7 +139,6 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 }
 
 func (a *ApplicationHandler) RegisterDashboardRoutes(r *chi.Mux) {
-
 	dh := &dashboard.DashboardHandler{A: a.A}
 	uiMiddlewares := chi.Middlewares{
 		middleware.JsonResponse,
@@ -292,7 +290,6 @@ func (a *ApplicationHandler) RegisterDashboardRoutes(r *chi.Mux) {
 
 	r.Method(PUT,
 		"/ui/configuration", uiMiddlewares.HandlerFunc(dh.UpdateConfiguration))
-
 }
 
 var guestRoutes = []string{
@@ -323,7 +320,6 @@ func shouldApplyCORS(r *http.Request) bool {
 		if strings.HasPrefix(r.URL.Path, route) {
 			return true
 		}
-
 	}
 
 	return false
