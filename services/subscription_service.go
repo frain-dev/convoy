@@ -22,7 +22,7 @@ var (
 	ErrDeletedSubscriptionError        = errors.New("failed to delete subscription")
 	ErrValidateSubscriptionError       = errors.New("failed to validate subscription")
 	ErrInvalidSubscriptionFilterFormat = errors.New("invalid subscription filter format")
-	ErrValidateSubscriptionFilterError = errors.New("failed to validate subscription filter")
+	ErrFailedToValidateSubscriptionFilter = errors.New("failed to validate subscription filter")
 	ErrCannotFetchSubcriptionsError    = errors.New("an error occurred while fetching subscriptions")
 )
 
@@ -239,10 +239,10 @@ func (s *SubcriptionService) DeleteSubscription(ctx context.Context, groupId str
 	return nil
 }
 
-func (s *SubcriptionService) TestSubscriptionFilter(ctx context.Context, testRequest map[string]interface{}, filter map[string]interface{}) (bool, error) {
+func (s *SubcriptionService) TestSubscriptionFilter(ctx context.Context, testRequest, filter interface{}) (bool, error) {
 	passed, err := s.subRepo.TestSubscriptionFilter(ctx, testRequest, filter)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error(ErrValidateSubscriptionFilterError.Error())
+		log.FromContext(ctx).WithError(err).Error(ErrFailedToValidateSubscriptionFilter.Error())
 		return false, util.NewServiceError(http.StatusBadRequest, err)
 	}
 

@@ -1559,7 +1559,7 @@ func (s *PublicProjectIntegrationTestSuite) TestGetProjectWithPersonalAPIKey() {
 }
 
 func (s *PublicProjectIntegrationTestSuite) TestGetProjectWithPersonalAPIKey_UnauthorizedRole() {
-	expectedStatusCode := http.StatusUnauthorized
+	expectedStatusCode := http.StatusForbidden
 
 	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
@@ -1575,8 +1575,6 @@ func (s *PublicProjectIntegrationTestSuite) TestGetProjectWithPersonalAPIKey_Una
 
 	// Act.
 	s.Router.ServeHTTP(w, req)
-
-	fmt.Println(w.Body.String())
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -1610,7 +1608,7 @@ func (s *PublicProjectIntegrationTestSuite) TestDeleteProjectWithPersonalAPIKey(
 }
 
 func (s *PublicProjectIntegrationTestSuite) TestDeleteProjectWithPersonalAPIKey_UnauthorizedRole() {
-	expectedStatusCode := http.StatusUnauthorized
+	expectedStatusCode := http.StatusForbidden
 
 	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
@@ -1688,7 +1686,7 @@ func (s *PublicProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey(
 }
 
 func (s *PublicProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey_UnauthorizedRole() {
-	expectedStatusCode := http.StatusUnauthorized
+	expectedStatusCode := http.StatusForbidden
 
 	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
@@ -1739,7 +1737,7 @@ func (s *PublicProjectIntegrationTestSuite) TestUpdateProjectWithPersonalAPIKey(
 }
 
 func (s *PublicProjectIntegrationTestSuite) TestUpdateProjectWithPersonalAPIKey_UnauthorizedRole() {
-	expectedStatusCode := http.StatusUnauthorized
+	expectedStatusCode := http.StatusForbidden
 
 	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)

@@ -73,11 +73,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 		Aliases: []string{"serve", "s"},
 		Short:   "Start the HTTP server",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c, err := config.Get()
-			if err != nil {
-				return err
-			}
-
 			// override config with cli flags
 			cliConfig, err := buildServerCliConfiguration(cmd)
 			if err != nil {
@@ -88,7 +83,7 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			err = StartConvoyServer(a, c, withWorkers)
+			err = StartConvoyServer(a, withWorkers)
 
 			if err != nil {
 				a.Logger.Errorf("Error starting convoy server: %v", err)
@@ -145,13 +140,18 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	return cmd
 }
 
-func StartConvoyServer(a *cli.App, cfg config.Configuration, withWorkers bool) error {
+func StartConvoyServer(a *cli.App, withWorkers bool) error {
+	cfg, err := config.Get()
+	if err != nil {
+		a.Logger.WithError(err).Fatal("Failed to load configuration")
+	}
+
 	start := time.Now()
 	a.Logger.Info("Starting Convoy server...")
 
 	apiKeyRepo := postgres.NewAPIKeyRepo(a.DB)
 	userRepo := postgres.NewUserRepo(a.DB)
-	err := realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, a.Cache)
+	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, a.Cache)
 	if err != nil {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 	}

@@ -195,8 +195,8 @@
 	</div>
 
 	<div class="flex justify-end mt-32px" [ngClass]="{ hidden: showAction === 'false' }">
-		<button convoy-button fill="outline" type="button" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" (click)="cancel()">Cancel</button>
-		<button convoy-button [disabled]="isloading">
+		<button convoy-button [disabled]="sourceForm.disabled" fill="outline" type="button" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" (click)="cancel()">Cancel</button>
+		<button convoy-button [disabled]="isloading || sourceForm.disabled">
 			{{ action === 'update' ? 'Update Source' : 'Create Source' }}
 			<svg width="24" height="24" class="ml-8px fill-white-100">
 				<use xlink:href="#arrow-right-icon"></use>

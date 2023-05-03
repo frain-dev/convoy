@@ -17,12 +17,13 @@ type RoleType string
 const (
 	RoleSuperUser = RoleType("super_user")
 	RoleAdmin     = RoleType("admin")
+	RoleMember    = RoleType("member")
 	RoleAPI       = RoleType("api")
 )
 
 func (r RoleType) IsValid() bool {
 	switch r {
-	case RoleSuperUser, RoleAdmin, RoleAPI:
+	case RoleSuperUser, RoleAdmin, RoleMember, RoleAPI:
 		return true
 	default:
 		return false
@@ -48,11 +49,6 @@ func (r RoleType) Is(rt RoleType) bool {
 func (r *Role) Validate(credType string) error {
 	if !r.Type.IsValid() {
 		return fmt.Errorf("invalid role type: %s", r.Type.String())
-	}
-
-	// projects will never be checked for superuser
-	if r.Project == "" && !r.Type.Is(RoleSuperUser) {
-		return fmt.Errorf("please specify project for %s", credType)
 	}
 
 	return nil

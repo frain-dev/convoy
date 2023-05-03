@@ -17,6 +17,7 @@ import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.
 import { EndpointSecretComponent } from './endpoint-secret/endpoint-secret.component';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
+import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';
 
 @Component({
 	selector: 'convoy-endpoint-details',
@@ -36,7 +37,8 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 		EndpointSecretComponent,
 		DropdownComponent,
 		DropdownOptionDirective,
-		TagComponent
+		TagComponent,
+		PermissionDirective
 	],
 	templateUrl: './endpoint-details.component.html',
 	styleUrls: ['./endpoint-details.component.scss']

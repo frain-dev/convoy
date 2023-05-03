@@ -31,12 +31,6 @@ func (a *DashboardHandler) GetSubscriptions(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = a.A.Authz.Authorize(r.Context(), "project.get", project)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
 	endpointIDs := getEndpointIDs(r)
 	filter := &datastore.FilterBy{ProjectID: project.UID, EndpointIDs: endpointIDs}
 
@@ -100,6 +94,11 @@ func (a *DashboardHandler) CreateSubscription(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
 	var sub models.Subscription
 	err = util.ReadJSON(r, &sub)
 	if err != nil {
@@ -122,6 +121,11 @@ func (a *DashboardHandler) DeleteSubscription(w http.ResponseWriter, r *http.Req
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
@@ -154,6 +158,11 @@ func (a *DashboardHandler) UpdateSubscription(w http.ResponseWriter, r *http.Req
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 

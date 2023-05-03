@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { SOURCE } from 'src/app/models/group.model';
-import { HTTP_RESPONSE } from 'src/app/models/http.model';
+import { SOURCE } from 'src/app/models/source.model';
+import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { HttpService } from 'src/app/services/http/http.service';
 
 @Injectable({

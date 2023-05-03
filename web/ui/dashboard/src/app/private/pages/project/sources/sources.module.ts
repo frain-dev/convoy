@@ -16,6 +16,7 @@ import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/d
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
+import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';
 
 const routes: Routes = [{ path: '', component: SourcesComponent }];
 
@@ -39,7 +40,8 @@ const routes: Routes = [{ path: '', component: SourcesComponent }];
 		DropdownOptionDirective,
 		SkeletonLoaderComponent,
 		TooltipComponent,
-		PaginationComponent
+		PaginationComponent,
+		PermissionDirective
 	]
 })
 export class SourcesModule {}

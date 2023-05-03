@@ -44,14 +44,12 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		err := json.Unmarshal(t.Payload(), &data)
 		if err != nil {
-			log.WithError(err).Error("failed to unmarshal process event delivery payload")
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
 		// Load message from DB and switch state to prevent concurrent processing.
 		ed, err := eventDeliveryRepo.FindEventDeliveryByID(context.Background(), data.ProjectID, data.EventDeliveryID)
 		if err != nil {
-			log.WithError(err).Errorf("Failed to load event - %s", data.EventDeliveryID)
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
@@ -69,7 +67,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		p, err := projectRepo.FetchProjectByID(context.Background(), endpoint.ProjectID)
 		if err != nil {
-			log.WithError(err).Error("could not find error")
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
@@ -102,7 +99,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), p.UID, *ed, datastore.ProcessingEventStatus)
 		if err != nil {
-			log.WithError(err).Error("failed to update status of messages - ")
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
@@ -131,7 +127,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		done := true
 		dispatch, err := net.NewDispatcher(httpDuration, cfg.Server.HTTP.HttpProxy)
 		if err != nil {
-			log.Errorf("error occurred while creating the http client - %+v\n", err)
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
@@ -144,7 +139,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		if e.Status == datastore.InactiveEndpointStatus {
 			err = eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), p.UID, *ed, datastore.DiscardedEventStatus)
 			if err != nil {
-				log.WithError(err).Error("failed to update event delivery status")
 				return &EndpointError{Err: err, delay: delayDuration}
 			}
 
@@ -155,7 +149,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		sig := newSignature(endpoint, p, json.RawMessage(ed.Metadata.Raw))
 		header, err := sig.ComputeHeaderValue()
 		if err != nil {
-			log.Errorf("error occurred while generating hmac - %+v", err)
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
@@ -198,7 +191,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			ed.Metadata.NextSendTime = nextTime
 			attempts := ed.Metadata.NumTrials + 1
 
-			log.Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", ed.UID, nextTime.Format(time.ANSIC), ed.Metadata.Strategy, ed.Metadata.IntervalSeconds, attempts, ed.Metadata.RetryLimit)
+			log.FromContext(ctx).Info("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", ed.UID, nextTime.Format(time.ANSIC), ed.Metadata.Strategy, ed.Metadata.IntervalSeconds, attempts, ed.Metadata.RetryLimit)
 		}
 
 		// Request failed but statusCode is 200 <= x <= 299
@@ -224,7 +217,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			endpointStatus := datastore.InactiveEndpointStatus
 			err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
 			if err != nil {
-				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
+				log.FromContext(ctx).Info("Failed to reactivate endpoint after successful retry")
 			}
 		}
 

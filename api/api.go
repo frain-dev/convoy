@@ -9,9 +9,11 @@ import (
 
 	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/api/dashboard"
+	"github.com/frain-dev/convoy/api/policies"
 	portalapi "github.com/frain-dev/convoy/api/portal-api"
 	"github.com/frain-dev/convoy/api/public"
 	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -104,6 +106,39 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 	return router
 }
 
+func (a *ApplicationHandler) RegisterPolicy() error {
+	var err error
+
+	err = a.A.Authz.RegisterPolicy(func() authz.Policy {
+		po := &policies.OrganisationPolicy{
+			BasePolicy:             authz.NewBasePolicy(),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+		}
+
+		po.SetRule("manage", authz.RuleFunc(po.Manage))
+
+		return po
+	}())
+
+	if err != nil {
+		return err
+	}
+
+	err = a.A.Authz.RegisterPolicy(func() authz.Policy {
+		po := &policies.ProjectPolicy{
+			BasePolicy:             authz.NewBasePolicy(),
+			OrganisationRepo:       postgres.NewOrgRepo(a.A.DB),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+		}
+
+		po.SetRule("manage", authz.RuleFunc(po.Manage))
+
+		return po
+	}())
+
+	return err
+}
+
 func (a *ApplicationHandler) RegisterDashboardRoutes(r *chi.Mux) {
 
 	dh := &dashboard.DashboardHandler{A: a.A}
@@ -168,7 +203,6 @@ func (a *ApplicationHandler) RegisterDashboardRoutes(r *chi.Mux) {
 	r.Method(PUT, "/ui/organisations/{orgID}/projects/{projectID}/endpoints/{endpointID}/pause", uiMiddlewares.HandlerFunc(dh.PauseEndpoint))
 
 	r.Method(POST, "/ui/organisations/{orgID}/projects/{projectID}/events", uiMiddlewares.HandlerFunc(dh.CreateEndpointEvent))
-	r.Method(POST, "/ui/organisations/{orgID}/projects/{projectID}/events/fanout", uiMiddlewares.HandlerFunc(dh.CreateEndpointFanoutEvent))
 	r.Method(GET, "/ui/organisations/{orgID}/projects/{projectID}/events", uiMiddlewaresWithPagination.HandlerFunc(dh.GetEventsPaged))
 	r.Method(POST, "/ui/organisations/{orgID}/projects/{projectID}/events/batchreplay", uiMiddlewares.HandlerFunc(dh.BatchReplayEvents))
 	r.Method(GET, "/ui/organisations/{orgID}/projects/{projectID}/events/countbatchreplayevents", uiMiddlewares.HandlerFunc(dh.CountAffectedEvents))
@@ -262,10 +296,6 @@ func (a *ApplicationHandler) RegisterDashboardRoutes(r *chi.Mux) {
 	r.Method(GET, "/ui/organisations/{orgID}/projects/{projectID}/meta-events", uiMiddlewaresWithPagination.HandlerFunc(dh.GetMetaEventsPaged))
 	r.Method(GET, "/ui/organisations/{orgID}/projects/{projectID}/meta-events/{metaEventID}", uiMiddlewares.HandlerFunc(dh.GetMetaEvent))
 
-}
-
-func (a *ApplicationHandler) RegisterPolicy() error {
-	return a.A.RegisterPolicy()
 }
 
 var guestRoutes = []string{

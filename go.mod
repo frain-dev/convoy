@@ -84,6 +84,7 @@ require (
 	github.com/klauspost/compress v1.15.4 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
+	github.com/nsf/jsondiff v0.0.0-20210926074059-1e845ec5d249
 	github.com/onsi/gomega v1.19.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect

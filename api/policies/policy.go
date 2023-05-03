@@ -1,10 +1,12 @@
 package policies
 
-import "errors"
+import (
+	"errors"
 
-type AuthKey string
+	"github.com/frain-dev/convoy/api/types"
+)
 
-const AuthCtxKey AuthKey = "GoAuthzKey"
+const AuthUserCtx types.ContextKey = "authUser"
 
 // ErrNotAllowed is returned when request is not permitted.
 var ErrNotAllowed = errors.New("unauthorized to process request")

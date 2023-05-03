@@ -13,7 +13,7 @@
 <!-- empty state  -->
 <div class="py-100px" convoy-card *ngIf="!isLoadingSources && sources?.content?.length == 0">
 	<div convoy-empty-state imgSrc="/assets/img/sources-empty-state.png" heading="Create your first source" description="Sources are how your webhook events are routed into the Convoy." id="sources-empty-state">
-		<button convoy-button emptyStateCTA routerLink="./new" class="mt-36px">Connect a source</button>
+		<button convoy-permission="Sources|MANAGE" convoy-button emptyStateCTA routerLink="./new" class="mt-36px">Connect a source</button>
 	</div>
 </div>
 
@@ -34,7 +34,7 @@
 			<convoy-tooltip tooltipContent="Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints" position="right"></convoy-tooltip>
 		</div>
 
-		<button convoy-button size="sm" routerLink="./new">Connect a source</button>
+		<button convoy-button size="sm" routerLink="./new" convoy-permission="Sources|MANAGE">Connect a source</button>
 	</div>
 
 	<!-- list of sources  -->
@@ -47,7 +47,7 @@
 						<div class="flex items-center">
 							<img [src]="'assets/img/' + source.pub_sub.type + '.png'" alt="icon" class="mr-12px" />
 							<div>
-								<p class="text-10 text-grey-40 capitalize mb-4px">{{ source.pub_sub.type | sourceValue: 'pub_sub' }}</p>
+								<p class="text-10 text-grey-40 capitalize mb-4px">{{ source.pub_sub.type | sourceValue : 'pub_sub' }}</p>
 								<p class="text-14 font-medium">{{ source.name }}</p>
 							</div>
 						</div>
@@ -66,7 +66,7 @@
 									</button>
 								</li>
 								<li>
-									<button convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="activeSource = source; showDeleteSourceModal = true">
+									<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="activeSource = source; showDeleteSourceModal = true">
 										<svg width="16" height="16" class="mr-8px fill-danger-100">
 											<use xlink:href="#delete-icon"></use>
 										</svg>
@@ -81,7 +81,7 @@
 				<!-- incoming project sources -->
 				<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
 					<div class="px-24px pb-12px border-b border-b-grey-10 cursor-pointer">
-						<div class="text-grey-40 text-10 mb-4px">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</div>
+						<div class="text-grey-40 text-10 mb-4px">{{ source.provider || (source.verifier.type | sourceValue : 'verifier') }}</div>
 						<div class="flex justify-between items-center">
 							<div class="text-14 font-medium">{{ source.name }}</div>
 
@@ -104,7 +104,7 @@
 										</button>
 									</li>
 									<li>
-										<button convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="activeSource = source; showDeleteSourceModal = true">
+										<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="activeSource = source; showDeleteSourceModal = true">
 											<svg width="16" height="16" class="mr-8px fill-danger-100">
 												<use xlink:href="#delete-icon"></use>
 											</svg>

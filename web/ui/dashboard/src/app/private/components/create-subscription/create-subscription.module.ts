@@ -16,6 +16,7 @@ import { FormatSecondsPipe } from 'src/app/pipes/formatSeconds/format-seconds.pi
 import { CreateSubscriptionFilterComponent } from '../create-subscription-filter/create-subscription-filter.component';
 import { CreateEndpointComponent } from '../create-endpoint/create-endpoint.component';
 import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.component';
+import { PermissionDirective } from '../permission/permission.directive';
 
 @NgModule({
 	declarations: [CreateSubscriptionComponent],
@@ -30,16 +31,17 @@ import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.
 		TooltipComponent,
 		ToggleComponent,
 		ModalComponent,
-        ModalHeaderComponent,
+		ModalHeaderComponent,
 		CardComponent,
 		RadioComponent,
 		FormatSecondsPipe,
-        CreateSubscriptionFilterComponent,
+		CreateSubscriptionFilterComponent,
 		InputFieldDirective,
 		InputErrorComponent,
 		InputDirective,
 		LabelComponent,
-        FormLoaderComponent
+		FormLoaderComponent,
+		PermissionDirective
 	],
 	exports: [CreateSubscriptionComponent]
 })

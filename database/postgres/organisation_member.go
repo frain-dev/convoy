@@ -92,6 +92,7 @@ const (
 	FROM convoy.organisation_members o
 	LEFT JOIN convoy.users u ON o.user_id = u.id
 	WHERE o.organisation_id = :organisation_id 
+	AND (o.user_id = :user_id OR :user_id = '')
 	AND o.deleted_at IS NULL
 	`
 
@@ -218,7 +219,7 @@ func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *da
 	return nil
 }
 
-func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organisationID string, pageable datastore.Pageable) ([]*datastore.OrganisationMember, datastore.PaginationData, error) {
+func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organisationID, userID string, pageable datastore.Pageable) ([]*datastore.OrganisationMember, datastore.PaginationData, error) {
 	var query string
 	if pageable.Direction == datastore.Next {
 		query = baseFetchOrganisationMembersPagedForward
@@ -232,6 +233,7 @@ func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organi
 		"limit":           pageable.Limit(),
 		"cursor":          pageable.Cursor(),
 		"organisation_id": organisationID,
+		"user_id":         userID,
 	}
 
 	query, args, err := sqlx.Named(query, arg)

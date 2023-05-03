@@ -41,13 +41,13 @@
 					</button>
 
 					<ng-template #pause_endpoint>
-						<button convoy-button size="sm" fill="clear" class="w-full !justify-start" *ngIf="endpointDetails.status === 'active'" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
+						<button convoy-button convoy-permission="Endpoints|MANAGE" size="sm" fill="clear" class="w-full !justify-start" *ngIf="endpointDetails.status === 'active'" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
 							<svg width="16" height="16" class="mr-8px fill-primary-100">
 								<use xlink:href="#pause-icon"></use>
 							</svg>
 							{{ isTogglingEndpoint ? 'Pausing endpoint...' : 'Pause Endpoint' }}
 						</button>
-						<button convoy-button size="sm" fill="clear" class="w-full !justify-start" *ngIf="endpointDetails.status === 'paused'" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
+						<button convoy-permission="Endpoints|MANAGE" convoy-button size="sm" fill="clear" class="w-full !justify-start" *ngIf="endpointDetails.status === 'paused'" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
 							<svg width="16" height="16" class="mr-8px fill-primary-100">
 								<use xlink:href="#play-icon"></use>
 							</svg>
@@ -74,7 +74,7 @@
 							</li>
 							<ng-container *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
 								<li class="border-b border-grey-20" *ngIf="endpointDetails.status === 'active'">
-									<button convoy-button size="sm" fill="clear" class="w-full !justify-start" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
+									<button convoy-permission="Endpoints|MANAGE" convoy-button size="sm" fill="clear" class="w-full !justify-start" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
 										<svg width="16" height="16" class="mr-8px fill-primary-100">
 											<use xlink:href="#pause-icon"></use>
 										</svg>
@@ -82,7 +82,7 @@
 									</button>
 								</li>
 								<li class="border-b border-grey-20" *ngIf="endpointDetails.status === 'paused'">
-									<button convoy-button size="sm" fill="clear" class="w-full !justify-start" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
+									<button convoy-permission="Endpoints|MANAGE" convoy-button size="sm" fill="clear" class="w-full !justify-start" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
 										<svg width="16" height="16" class="mr-8px fill-primary-100">
 											<use xlink:href="#play-icon"></use>
 										</svg>
@@ -99,7 +99,7 @@
 								</button>
 							</li>
 							<li>
-								<button convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="showDeleteModal = true">
+								<button convoy-permission="Endpoints|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="showDeleteModal = true">
 									<svg width="16" height="16" class="mr-8px fill-danger-100">
 										<use xlink:href="#delete-icon"></use>
 									</svg>

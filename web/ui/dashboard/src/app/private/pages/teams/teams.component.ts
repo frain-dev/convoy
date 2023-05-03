@@ -1,11 +1,13 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PAGINATION } from 'src/app/models/global.model';
-import { TEAMS } from 'src/app/models/teams.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { TeamsService } from './teams.service';
+import { RbacService } from 'src/app/services/rbac/rbac.service';
+import { PrivateService } from '../../private.service';
+import { TEAM } from 'src/app/models/organisation.model';
 
 @Component({
 	selector: 'app-teams',
@@ -20,14 +22,14 @@ export class TeamsComponent implements OnInit {
 	showDeactivateModal = false;
 	showCancelInviteModal = false;
 	cancelingInvite = false;
-	selectedMember?: TEAMS;
+	selectedMember?: TEAM;
 	isFetchingTeamMembers = false;
 	isFetchingPendingInvites = false;
 	deactivatingUser = false;
 	searchString!: string;
 	organisationId!: string;
-	teams!: { pagination: PAGINATION; content: TEAMS[] };
-	pendingInvites!: { pagination: PAGINATION; content: TEAMS[] };
+	teams!: { pagination: PAGINATION; content: TEAM[] };
+	pendingInvites!: { pagination: PAGINATION; content: TEAM[] };
 	currentId!: string;
 	selectedFilterOption: 'active' | 'pending' = 'active';
 	showOverlay = false;
@@ -42,18 +44,25 @@ export class TeamsComponent implements OnInit {
 			type: ['super_user', Validators.required]
 		})
 	});
+	roles = [
+		{ name: 'Super User', uid: 'super_user' },
+		{ name: 'Admin', uid: 'admin' },
+		{ name: 'Member', uid: 'member' }
+	];
+	private rbacService = inject(RbacService);
 
-	constructor(private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private teamService: TeamsService, private formBuilder: FormBuilder) {}
+	constructor(private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private teamService: TeamsService, private formBuilder: FormBuilder, private privateService: PrivateService) {}
 
 	ngOnInit() {
 		this.toggleFilter(this.route.snapshot.queryParams?.inviteType ?? 'active');
+		if (!this.rbacService.userCanAccess('Team|MANAGE')) this.inviteUserForm.disable();
 	}
 
 	async fetchTeamMembers(requestDetails?: { searchString?: string; page?: number }) {
 		this.isFetchingTeamMembers = true;
 		const page = requestDetails?.page || this.route.snapshot.queryParams.page || 1;
 		try {
-			const response = await this.teamService.getTeamMembers({ page: page, q: requestDetails?.searchString });
+			const response = await this.privateService.getTeamMembers({ page: page, q: requestDetails?.searchString });
 			this.teams = response.data;
 			response.data.content.length === 0 ? (this.noData = true) : (this.noData = false);
 
