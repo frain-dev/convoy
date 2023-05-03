@@ -18,6 +18,7 @@ import { DeleteModalComponent } from '../../components/delete-modal/delete-modal
 import { PermissionDirective } from '../../components/permission/permission.directive';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { EnterpriseDirective } from '../../components/enterprise/enterprise.directive';
+import { RolePipe } from 'src/app/pipes/role/role.pipe';
 
 const routes: Routes = [
 	{ path: '', component: TeamsComponent },
@@ -54,7 +55,8 @@ const routes: Routes = [
 		LabelComponent,
 		DropdownOptionDirective,
 		SelectComponent,
-		EnterpriseDirective
+		EnterpriseDirective,
+		RolePipe
 	]
 })
 export class TeamsModule {}

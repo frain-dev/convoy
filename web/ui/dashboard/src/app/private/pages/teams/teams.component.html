@@ -51,7 +51,7 @@
 								<convoy-badge texture="dark" [text]="team?.user_metadata?.first_name + ' ' + team?.user_metadata?.last_name"></convoy-badge>
 							</td>
 							<td convoy-table-cell>
-								{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}
+								{{ team.role.type | role }}
 							</td>
 							<td convoy-table-cell>All projects</td>
 							<td convoy-table-cell>
@@ -115,7 +115,7 @@
 						<td convoy-table-cell class="pl-20px">
 							{{ team.invitee_email }}
 						</td>
-						<td convoy-table-cell>{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</td>
+						<td convoy-table-cell>{{ team.role.type | role }}</td>
 						<td convoy-table-cell>All projects</td>
 						<td convoy-table-cell>
 							<div convoy-dropdown>
