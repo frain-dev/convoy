@@ -247,6 +247,7 @@ var (
 		RateLimit:                &DefaultRateLimitConfig,
 		Strategy:                 &DefaultStrategyConfig,
 		Signature:                GetDefaultSignatureConfig(),
+		MetaEvent:                &MetaEventConfiguration{IsEnabled: false},
 	}
 
 	DefaultStrategyConfig = StrategyConfiguration{
