@@ -19,6 +19,7 @@ import (
 )
 
 var successBody = []byte("event indexed successfully")
+var healthCheckBody = []byte(`{}`)
 
 func TestIndexDocument(t *testing.T) {
 	tests := []struct {
@@ -46,10 +47,34 @@ func TestIndexDocument(t *testing.T) {
 				httpmock.Activate()
 
 				httpmock.RegisterResponder(http.MethodGet, url+"/health",
-					httpmock.NewStringResponder(http.StatusOK, string(successBody)))
+					httpmock.NewStringResponder(http.StatusOK, string(healthCheckBody)).
+						HeaderAdd(http.Header{
+							"Content-Type": []string{"application/json"},
+						}),
+				)
+
+				httpmock.RegisterResponder(http.MethodGet, url+"/collections",
+					httpmock.NewStringResponder(http.StatusOK, string(`[]`)).
+						HeaderAdd(http.Header{
+							"Content-Type": []string{"application/json"},
+						}),
+				)
 
 				httpmock.RegisterResponder(http.MethodPost, url+"/collections",
-					httpmock.NewStringResponder(http.StatusOK, string(successBody)))
+					httpmock.NewStringResponder(http.StatusCreated, string(healthCheckBody)).
+						HeaderAdd(http.Header{
+							"Content-Type": []string{"application/json"},
+						}),
+				)
+
+				httpmock.RegisterResponderWithQuery(http.MethodPost,
+					url+"/collections/project-id-1/documents",
+					"action=upsert",
+					httpmock.NewStringResponder(http.StatusCreated, string(healthCheckBody)).
+						HeaderAdd(http.Header{
+							"Content-Type": []string{"application/json"},
+						}),
+				)
 
 				return func() {
 					httpmock.DeactivateAndReset()

@@ -24,7 +24,7 @@ require (
 	github.com/hibiken/asynq v0.23.0
 	github.com/hibiken/asynq/x v0.0.0-20221219051101-0b8cfad70341
 	github.com/hibiken/asynqmon v0.7.1
-	github.com/jarcoal/httpmock v1.0.8
+	github.com/jarcoal/httpmock v1.3.0
 	github.com/jaswdr/faker v1.10.2
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -74,7 +74,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/uuid v1.3.0 // indirect
+	github.com/google/uuid v1.3.0
 	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect

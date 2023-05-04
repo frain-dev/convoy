@@ -11,16 +11,22 @@ import (
 	"github.com/go-chi/render"
 )
 
-func createProjectService(a *PublicHandler) *services.ProjectService {
+func createProjectService(a *PublicHandler) (*services.ProjectService, error) {
 	apiKeyRepo := postgres.NewAPIKeyRepo(a.A.DB)
 	projectRepo := postgres.NewProjectRepo(a.A.DB)
 	eventRepo := postgres.NewEventRepo(a.A.DB)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
 
-	return services.NewProjectService(
+	projectService, err := services.NewProjectService(
 		apiKeyRepo, projectRepo, eventRepo,
-		eventDeliveryRepo, a.A.Limiter, a.A.Cache,
+		eventDeliveryRepo, a.A.Cache,
 	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return projectService, nil
 }
 
 // GetProject - this is a duplicate annotation for the api/v1 route of this handler
@@ -51,7 +57,12 @@ func (a *PublicHandler) GetProjectStatistics(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	projectService := createProjectService(a)
+	projectService, err := createProjectService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	err = projectService.FillProjectStatistics(r.Context(), project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -79,7 +90,12 @@ func (a *PublicHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	projectService := createProjectService(a)
+	projectService, err := createProjectService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	err = projectService.DeleteProject(r.Context(), project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -127,7 +143,12 @@ func (a *PublicHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	projectService := createProjectService(a)
+	projectService, err := createProjectService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	project, apiKey, err := projectService.CreateProject(r.Context(), &newProject, org, member)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -168,7 +189,12 @@ func (a *PublicHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	projectService := createProjectService(a)
+	projectService, err := createProjectService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	project, err = projectService.UpdateProject(r.Context(), project, &update)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -198,7 +224,11 @@ func (a *PublicHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filter := &datastore.ProjectFilter{OrgID: org.UID}
-	projectService := createProjectService(a)
+	projectService, err := createProjectService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	projects, err := projectService.GetProjects(r.Context(), filter)
 	if err != nil {

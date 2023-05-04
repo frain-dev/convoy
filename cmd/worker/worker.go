@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -73,6 +74,10 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			subRepo := postgres.NewSubscriptionRepo(a.DB)
 			deviceRepo := postgres.NewDeviceRepo(a.DB)
 			configRepo := postgres.NewConfigRepo(a.DB)
+			searchBackend, err := searcher.NewSearchClient(cfg)
+			if err != nil {
+				a.Logger.Debug("Failed to initialise search backend")
+			}
 
 			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 				endpointRepo,
@@ -99,7 +104,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				a.Cache,
 				a.Queue,
 				subRepo,
-				a.Searcher,
 				deviceRepo))
 
 			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
@@ -108,6 +112,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				eventRepo,
 				eventDeliveryRepo,
 				postgres.NewExportRepo(a.DB),
+				searchBackend,
 			))
 
 			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(
