@@ -46,11 +46,6 @@ func (a *DashboardHandler) GetProjectStatistics(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
-		return
-	}
-
 	projectService, err := createProjectService(a)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
