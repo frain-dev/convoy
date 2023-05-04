@@ -112,13 +112,11 @@ func buildServer() *ApplicationHandler {
 
 	ah, _ := NewApplicationHandler(
 		&types.APIOptions{
-			DB:       db,
-			Queue:    queue,
-			Logger:   logger,
-			Tracer:   tracer,
-			Cache:    cache,
-			Limiter:  limiter,
-			Searcher: searcher,
+			DB:     db,
+			Queue:  queue,
+			Logger: logger,
+			Tracer: tracer,
+			Cache:  cache,
 		})
 
 	ah.RegisterPolicy()

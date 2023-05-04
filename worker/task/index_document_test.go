@@ -3,17 +3,16 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"testing"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/golang/mock/gomock"
 	"github.com/hibiken/asynq"
-	"github.com/jarcoal/httpmock"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
@@ -25,7 +24,7 @@ func TestIndexDocument(t *testing.T) {
 	tests := []struct {
 		name       string
 		event      *datastore.Event
-		nFn        func(string) func()
+		mFn        func(*testing.T, config.SearchConfiguration) func()
 		wantErr    bool
 		wantErrMsg string
 		wantDelay  time.Duration
@@ -43,42 +42,8 @@ func TestIndexDocument(t *testing.T) {
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
-			nFn: func(url string) func() {
-				httpmock.Activate()
-
-				httpmock.RegisterResponder(http.MethodGet, url+"/health",
-					httpmock.NewStringResponder(http.StatusOK, string(healthCheckBody)).
-						HeaderAdd(http.Header{
-							"Content-Type": []string{"application/json"},
-						}),
-				)
-
-				httpmock.RegisterResponder(http.MethodGet, url+"/collections",
-					httpmock.NewStringResponder(http.StatusOK, string(`[]`)).
-						HeaderAdd(http.Header{
-							"Content-Type": []string{"application/json"},
-						}),
-				)
-
-				httpmock.RegisterResponder(http.MethodPost, url+"/collections",
-					httpmock.NewStringResponder(http.StatusCreated, string(healthCheckBody)).
-						HeaderAdd(http.Header{
-							"Content-Type": []string{"application/json"},
-						}),
-				)
-
-				httpmock.RegisterResponderWithQuery(http.MethodPost,
-					url+"/collections/project-id-1/documents",
-					"action=upsert",
-					httpmock.NewStringResponder(http.StatusCreated, string(healthCheckBody)).
-						HeaderAdd(http.Header{
-							"Content-Type": []string{"application/json"},
-						}),
-				)
-
-				return func() {
-					httpmock.DeactivateAndReset()
-				}
+			mFn: func(t *testing.T, cfg config.SearchConfiguration) func() {
+				return searcher.MockIndexSuccess(t, cfg)
 			},
 			wantErr: false,
 		},
@@ -95,19 +60,12 @@ func TestIndexDocument(t *testing.T) {
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
-			nFn: func(url string) func() {
-				httpmock.Activate()
-
-				httpmock.RegisterResponder(http.MethodPost, url,
-					httpmock.NewStringResponder(http.StatusBadRequest, string(`{}`)))
-
-				return func() {
-					httpmock.DeactivateAndReset()
-				}
+			mFn: func(t *testing.T, cfg config.SearchConfiguration) func() {
+				return searcher.MockIndexFailed(t, cfg)
 			},
 			wantErr:    true,
 			wantDelay:  time.Second * 5,
-			wantErrMsg: "[typesense]: 400 Bad Request",
+			wantErrMsg: "status: 400 response: failed",
 		},
 		{
 			name: "should_not_index_document_with_missing_project_id",
@@ -115,24 +73,13 @@ func TestIndexDocument(t *testing.T) {
 				UID:       ulid.Make().String(),
 				EventType: "*",
 				SourceID:  "source-id-1",
-				ProjectID: "project-id-1",
 				Endpoints: []string{"endpoint-id-1"},
 				Data:      []byte(`{}`),
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
-			nFn: func(url string) func() {
-				httpmock.Activate()
-
-				httpmock.RegisterResponder(http.MethodPost, url,
-					httpmock.NewStringResponder(http.StatusBadRequest, string(`{}`)))
-
-				return func() {
-					httpmock.DeactivateAndReset()
-				}
-			},
 			wantErr:    true,
-			wantDelay:  time.Second * 5,
+			wantDelay:  time.Second * 1,
 			wantErrMsg: ErrProjectIdFieldIsRequired.Error(),
 		},
 	}
@@ -147,8 +94,8 @@ func TestIndexDocument(t *testing.T) {
 			cfg, err := config.Get()
 			require.NoError(t, err)
 
-			if tt.nFn != nil {
-				deferFn := tt.nFn(cfg.Search.Typesense.Host)
+			if tt.mFn != nil {
+				deferFn := tt.mFn(t, cfg.Search)
 				defer deferFn()
 			}
 
