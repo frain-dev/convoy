@@ -2,6 +2,9 @@ package server
 
 import (
 	"errors"
+	dbhook "github.com/frain-dev/convoy/database/hooks"
+	"github.com/frain-dev/convoy/database/listener"
+	"github.com/frain-dev/convoy/datastore"
 	"os"
 	"time"
 
@@ -156,6 +159,17 @@ func StartConvoyServer(a *cli.App, withWorkers bool) error {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
+	projectRepo := postgres.NewProjectRepo(a.DB)
+	metaEventRepo := postgres.NewMetaEventRepo(a.DB)
+	endpointListener := listener.NewEndpointListener(a.Queue, projectRepo, metaEventRepo)
+	eventDeliveryListener := listener.NewEventDeliveryListener(a.Queue, projectRepo, metaEventRepo)
+
+	hooks := dbhook.Init()
+	hooks.RegisterHook(datastore.EndpointCreated, endpointListener.AfterCreate)
+	hooks.RegisterHook(datastore.EndpointUpdated, endpointListener.AfterUpdate)
+	hooks.RegisterHook(datastore.EndpointDeleted, endpointListener.AfterDelete)
+	hooks.RegisterHook(datastore.EventDeliveryUpdated, eventDeliveryListener.AfterUpdate)
+
 	if cfg.Server.HTTP.Port <= 0 {
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
@@ -209,7 +223,6 @@ func StartConvoyServer(a *cli.App, withWorkers bool) error {
 		// register worker.
 		consumer := worker.NewConsumer(a.Queue, lo)
 
-		projectRepo := postgres.NewProjectRepo(a.DB)
 		endpointRepo := postgres.NewEndpointRepo(a.DB)
 		eventRepo := postgres.NewEventRepo(a.DB)
 		eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
@@ -267,6 +280,7 @@ func StartConvoyServer(a *cli.App, withWorkers bool) error {
 		consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 		consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.Searcher))
 		consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
+		consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo))
 
 		// start worker
 		a.Logger.Infof("Starting Convoy workers...")
