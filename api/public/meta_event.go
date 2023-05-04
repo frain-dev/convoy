@@ -93,7 +93,8 @@ func (a *PublicHandler) ResendMetaEvent(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	metaEventService := &services.MetaEventService{Queue: a.A.Queue, DB: a.A.DB}
+	metaEventRepo := postgres.NewMetaEventRepo(a.A.DB)
+	metaEventService := &services.MetaEventService{Queue: a.A.Queue, MetaEventRepo: metaEventRepo}
 	err = metaEventService.Run(r.Context(), metaEvent)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
