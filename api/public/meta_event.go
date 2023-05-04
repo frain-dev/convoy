@@ -77,7 +77,7 @@ func (a *PublicHandler) GetMetaEvent(w http.ResponseWriter, r *http.Request) {
 // ResendMetaEvent
 // @Summary Retry meta event
 // @Description This endpoint retries a meta event
-// @Tags Meta Event
+// @Tags MetaEvents
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
