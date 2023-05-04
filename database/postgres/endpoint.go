@@ -168,10 +168,6 @@ func NewEndpointRepo(db database.Database) datastore.EndpointRepository {
 
 func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ac := endpoint.GetAuthConfig()
-	
-	defer func() {
-		go e.hook.Fire(datastore.EndpointCreated, endpoint)
-	}()
 
 	args := []interface{}{
 		endpoint.UID, endpoint.Title, endpoint.Status, endpoint.Secrets, endpoint.OwnerID, endpoint.TargetURL,
@@ -194,6 +190,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		return ErrEndpointNotCreated
 	}
 
+	go e.hook.Fire(datastore.EndpointCreated, endpoint)
 	return nil
 }
 
@@ -246,10 +243,6 @@ func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID str
 func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ac := endpoint.GetAuthConfig()
 
-	defer func() {
-		go e.hook.Fire(datastore.EndpointUpdated, endpoint)
-	}()
-
 	r, err := e.db.ExecContext(ctx, updateEndpoint, endpoint.UID, projectID, endpoint.Title, endpoint.Status, endpoint.OwnerID, endpoint.TargetURL,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail,
@@ -268,6 +261,7 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 		return ErrEndpointNotUpdated
 	}
 
+	go e.hook.Fire(datastore.EndpointUpdated, endpoint)
 	return nil
 }
 
@@ -296,10 +290,6 @@ func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.E
 	}
 	defer rollbackTx(tx)
 
-	defer func() {
-		go e.hook.Fire(datastore.EndpointDeleted, endpoint)
-	}()
-
 	_, err = tx.ExecContext(ctx, deleteEndpoint, endpoint.UID, projectID)
 	if err != nil {
 		return err
@@ -310,7 +300,13 @@ func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	go e.hook.Fire(datastore.EndpointDeleted, endpoint)
+	return nil
 }
 
 func (e *endpointRepo) CountProjectEndpoints(ctx context.Context, projectID string) (int64, error) {

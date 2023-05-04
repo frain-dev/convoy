@@ -363,10 +363,6 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, pr
 func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, delivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
 	delivery.DeliveryAttempts = append(delivery.DeliveryAttempts, attempt)
 
-	defer func() {
-		go e.hook.Fire(datastore.EventDeliveryUpdated, &delivery)
-	}()
-
 	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, delivery.DeliveryAttempts, delivery.Status, delivery.Metadata, delivery.UID, projectID)
 	if err != nil {
 		return err
@@ -381,6 +377,7 @@ func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, 
 		return ErrEventDeliveryAttemptsNotUpdated
 	}
 
+	go e.hook.Fire(datastore.EventDeliveryUpdated, &delivery)
 	return nil
 }
 
