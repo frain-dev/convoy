@@ -204,6 +204,28 @@ func Test_CreateSubscription(t *testing.T) {
 	require.Equal(t, dbSub, newSub)
 }
 
+func Test_CountEndpointSubscriptions(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	subRepo := NewSubscriptionRepo(db)
+
+	project := seedProject(t, db)
+	source := seedSource(t, db)
+	endpoint := seedEndpoint(t, db)
+
+	newSub1 := generateSubscription(project, source, endpoint, &datastore.Device{})
+	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub1.ProjectID, newSub1))
+
+	newSub2 := generateSubscription(project, source, endpoint, &datastore.Device{})
+	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub2.ProjectID, newSub2))
+
+	count, err := subRepo.CountEndpointSubscriptions(context.Background(), newSub1.ProjectID, endpoint.UID)
+	require.NoError(t, err)
+
+	require.Equal(t, int64(2), count)
+}
+
 func Test_UpdateSubscription(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()

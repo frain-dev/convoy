@@ -60,6 +60,18 @@ func (s *SubcriptionService) CreateSubscription(ctx context.Context, project *da
 		}
 	}
 
+	if project.Type == datastore.OutgoingProject {
+		count, err := s.subRepo.CountEndpointSubscriptions(ctx, project.UID, endpoint.UID)
+		if err != nil {
+			log.FromContext(ctx).WithError(err).Error("failed to count endpoint subscriptions")
+			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to count endpoint subscriptions"))
+		}
+
+		if count > 0 {
+			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("a subscription for this endpoint already exists"))
+		}
+	}
+
 	retryConfig, err := getRetryConfig(newSubscription.RetryConfig)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)

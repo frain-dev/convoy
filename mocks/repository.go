@@ -1079,6 +1079,21 @@ func (mr *MockEndpointRepositoryMockRecorder) FindEndpointByID(çtx, id, project
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointByID", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointByID), çtx, id, projectID)
 }
 
+// FindEndpointByTargetURL mocks base method.
+func (m *MockEndpointRepository) FindEndpointByTargetURL(ctx context.Context, projectID, targetURL string) (*datastore.Endpoint, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindEndpointByTargetURL", ctx, projectID, targetURL)
+	ret0, _ := ret[0].(*datastore.Endpoint)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindEndpointByTargetURL indicates an expected call of FindEndpointByTargetURL.
+func (mr *MockEndpointRepositoryMockRecorder) FindEndpointByTargetURL(ctx, projectID, targetURL interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointByTargetURL", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointByTargetURL), ctx, projectID, targetURL)
+}
+
 // FindEndpointsByAppID mocks base method.
 func (m *MockEndpointRepository) FindEndpointsByAppID(ctx context.Context, appID, projectID string) ([]datastore.Endpoint, error) {
 	m.ctrl.T.Helper()
@@ -1203,6 +1218,21 @@ func NewMockSubscriptionRepository(ctrl *gomock.Controller) *MockSubscriptionRep
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockSubscriptionRepository) EXPECT() *MockSubscriptionRepositoryMockRecorder {
 	return m.recorder
+}
+
+// CountEndpointSubscriptions mocks base method.
+func (m *MockSubscriptionRepository) CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountEndpointSubscriptions", ctx, projectID, endpointID)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountEndpointSubscriptions indicates an expected call of CountEndpointSubscriptions.
+func (mr *MockSubscriptionRepositoryMockRecorder) CountEndpointSubscriptions(ctx, projectID, endpointID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountEndpointSubscriptions", reflect.TypeOf((*MockSubscriptionRepository)(nil).CountEndpointSubscriptions), ctx, projectID, endpointID)
 }
 
 // CreateSubscription mocks base method.

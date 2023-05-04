@@ -44,7 +44,7 @@ const (
 	filter_config_filter_body=$13,
 	rate_limit_config_count=$14,
 	rate_limit_config_duration=$15
-    WHERE id = $1 AND project_id = $2 
+    WHERE id = $1 AND project_id = $2
 	AND deleted_at IS NULL;
     `
 
@@ -96,34 +96,40 @@ const (
 	COALESCE(sv.hmac_secret, '') as "source_metadata.verifier.hmac.secret",
 	COALESCE(sv.hmac_encoding, '') as "source_metadata.verifier.hmac.encoding"
 
-	FROM convoy.subscriptions s 
-	LEFT JOIN convoy.endpoints em ON s.endpoint_id = em.id 
-	LEFT JOIN convoy.sources sm ON s.source_id = sm.id 
-	LEFT JOIN convoy.source_verifiers sv ON sv.id = sm.source_verifier_id 
+	FROM convoy.subscriptions s
+	LEFT JOIN convoy.endpoints em ON s.endpoint_id = em.id
+	LEFT JOIN convoy.sources sm ON s.source_id = sm.id
+	LEFT JOIN convoy.source_verifiers sv ON sv.id = sm.source_verifier_id
 	LEFT JOIN convoy.devices d ON s.device_id = d.id
 	WHERE s.deleted_at IS NULL `
 
 	baseFetchSubscriptionsPagedForward = `
-	%s 
-	%s 
-	AND s.id <= :cursor 
+	%s
+	%s
+	AND s.id <= :cursor
 	GROUP BY s.id, em.id, sm.id, sv.id, d.id
-	ORDER BY s.id DESC 
+	ORDER BY s.id DESC
 	LIMIT :limit
 	`
 
 	baseFetchSubscriptionsPagedBackward = `
-	WITH subscriptions AS (  
-		%s 
-		%s 
-		AND s.id >= :cursor 
+	WITH subscriptions AS (
+		%s
+		%s
+		AND s.id >= :cursor
 		GROUP BY s.id, em.id, sm.id, sv.id, d.id
-		ORDER BY s.id ASC 
+		ORDER BY s.id ASC
 		LIMIT :limit
 	)
 
 	SELECT * FROM subscriptions ORDER BY id DESC
 	`
+
+	countEndpointSubscriptions = `
+	SELECT count(distinct(s.id)) as count
+	FROM convoy.subscriptions s
+	WHERE s.deleted_at IS NULL
+	AND s.project_id = $1 AND s.endpoint_id = $2`
 
 	countPrevSubscriptions = `
 	SELECT count(distinct(s.id)) as count
@@ -423,6 +429,17 @@ func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID s
 
 	return scanSubscriptions(rows)
 }
+
+func (s *subscriptionRepo) CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error) {
+	var count int64
+	err := s.db.GetContext(ctx, &count, countEndpointSubscriptions, projectID, endpointID)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 
 func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload, filter interface{}) (bool, error) {
 	p, err := flatten.Flatten(payload)

@@ -36,7 +36,6 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 		r.With(middleware.Pagination, RequirePersonalAPIKeys(a)).Get("/organisations", a.GetOrganisationsPaged)
 
 		r.Route("/projects", func(projectRouter chi.Router) {
-
 			// These routes require a Personal API Key.
 			projectRouter.With(RequirePersonalAPIKeys(a)).Get("/", a.GetProjects)
 			projectRouter.With(RequirePersonalAPIKeys(a)).Post("/", a.CreateProject)
@@ -62,10 +61,10 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 				})
 
 				projectSubRouter.Route("/events", func(eventRouter chi.Router) {
-
 					// TODO(all): should the InstrumentPath change?
 					eventRouter.With(middleware.InstrumentPath("/events")).Post("/", a.CreateEndpointEvent)
 					eventRouter.Post("/fanout", a.CreateEndpointFanoutEvent)
+					eventRouter.Post("/dynamic", a.CreateDynamicEvent)
 					eventRouter.With(middleware.Pagination).Get("/", a.GetEventsPaged)
 					eventRouter.Post("/batchreplay", a.BatchReplayEvents)
 

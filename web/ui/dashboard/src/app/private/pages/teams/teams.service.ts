@@ -72,6 +72,22 @@ export class TeamsService {
 		});
 	}
 
+	updateMember(requestDetails: { email: string; role: { type: string } }, memberId: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/members/${memberId}`,
+					body: requestDetails,
+					method: 'put',
+					level: 'org'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
 	deactivateTeamMember(requestOptions: { memberId: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {

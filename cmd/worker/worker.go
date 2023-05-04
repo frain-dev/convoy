@@ -106,6 +106,17 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				a.Searcher,
 				deviceRepo))
 
+			consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
+				endpointRepo,
+				eventRepo,
+				projectRepo,
+				eventDeliveryRepo,
+				a.Cache,
+				a.Queue,
+				subRepo,
+				a.Searcher,
+				deviceRepo))
+
 			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
 				configRepo,
 				projectRepo,

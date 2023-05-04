@@ -104,6 +104,42 @@ func (a *PublicHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", event, http.StatusCreated))
 }
 
+// CreateDynamicEvent
+// @Summary Creates an event with supplied endpoint and subscription
+// @Description This endpoint Creates an event with supplied endpoint and subscription
+// @Tags Events
+// @Accept json
+// @Produce json
+// @Param projectID path string true "Project ID"
+// @Param event body models.DynamicEvent true "Event Details"
+// @Success 200 {object} Stub
+// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
+// @Security ApiKeyAuth
+// @Router /v1/projects/{projectID}/events/dynamic [post]
+func (a *PublicHandler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
+	var newMessage models.DynamicEvent
+	err := util.ReadJSON(r, &newMessage)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	eventService := createEventService(a)
+	err = eventService.CreateDynamicEvent(r.Context(), &newMessage, project)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Dynamic event created successfully", nil, http.StatusCreated))
+}
+
 // ReplayEndpointEvent
 // @Summary Replay event
 // @Description This endpoint replays an event afresh assuming it is a new event.

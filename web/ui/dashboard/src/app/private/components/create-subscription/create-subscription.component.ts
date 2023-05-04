@@ -86,7 +86,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 
 		if (this.configSetting) this.toggleConfigForm(this.configSetting, true);
-		if (!this.rbacService.userCanAccess('Subscriptions|MANAGE')) this.subscriptionForm.disable();
+		if (!(await this.rbacService.userCanAccess('Subscriptions|MANAGE'))) this.subscriptionForm.disable();
 	}
 
 	toggleConfig(configValue: string) {

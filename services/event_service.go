@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
@@ -124,6 +126,41 @@ func (e *EventService) CreateFanoutEvent(ctx context.Context, newMessage *models
 	}
 
 	return event, nil
+}
+
+func (e *EventService) CreateDynamicEvent(ctx context.Context, de *models.DynamicEvent, p *datastore.Project) error {
+	if p == nil {
+		return util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while creating event - invalid project"))
+	}
+
+	if err := util.Validate(de); err != nil {
+		return util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	de.Event.ProjectID = p.UID
+
+	taskName := convoy.CreateDynamicEventProcessor
+
+	eventByte, err := json.Marshal(de)
+	if err != nil {
+		return util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	payload := json.RawMessage(eventByte)
+
+	job := &queue.Job{
+		ID:      uuid.NewString(),
+		Payload: payload,
+		Delay:   0,
+	}
+
+	err = e.queue.Write(taskName, convoy.CreateEventQueue, job)
+	if err != nil {
+		log.FromContext(ctx).Errorf("Error occurred sending new dynamic event to the queue %s", err)
+		return util.NewServiceError(http.StatusInternalServerError, errors.New("failed to create dynamic event"))
+	}
+
+	return nil
 }
 
 func (e *EventService) ReplayEvent(ctx context.Context, event *datastore.Event, g *datastore.Project) error {

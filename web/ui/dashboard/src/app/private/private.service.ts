@@ -158,7 +158,7 @@ export class PrivateService {
 		});
 	}
 
-	getTeamMembers(requestDetails?: { q?: string; page?: number; user_id?: string }): Promise<HTTP_RESPONSE> {
+	getTeamMembers(requestDetails?: { q?: string; page?: number; userID?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -179,7 +179,7 @@ export class PrivateService {
 			if (this.membership && !requestDetails?.refresh) return resolve(this.membership);
 
 			try {
-				const response = await this.getTeamMembers({ user_id: this.getUserProfile?.uid });
+				const response = await this.getTeamMembers({ userID: this.getUserProfile?.uid });
 				this.membership = response;
 				return resolve(response);
 			} catch (error) {
