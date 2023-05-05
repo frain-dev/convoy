@@ -34,7 +34,14 @@ export class CreateProjectComponent implements OnInit {
 				policy: ['30d']
 			}),
 			is_retention_policy_enabled: [true],
-			disable_endpoint: [false, Validators.required]
+			disable_endpoint: [false, Validators.required],
+			meta_event: this.formBuilder.group({
+				is_enabled: [true, Validators.required],
+				type: ['http', Validators.required],
+				event_type: [[], Validators.required],
+				url: ['', Validators.required],
+				secret: [null]
+			})
 		}),
 		type: [null, Validators.required],
 		disable_endpoint: [false, Validators.required]
@@ -50,6 +57,7 @@ export class CreateProjectComponent implements OnInit {
 	confirmRegenerateKey = false;
 	showNewSignatureModal = false;
 	regeneratingKey = false;
+	showMetaEventPrompt = false;
 	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512'];
 	retryLogicTypes = [
@@ -69,12 +77,15 @@ export class CreateProjectComponent implements OnInit {
 	];
 	public rbacService = inject(RbacService);
 	disableEndpointsModal = false;
+	tabs: string[] = ['project config', 'signature history', 'endpoints config', 'meta events'];
+	activeTab = 'project config';
+	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed'];
 
 	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router) {}
 
-	ngOnInit(): void {
+	async ngOnInit() {
 		if (this.action === 'update') this.getProjectDetails();
-		if (!this.rbacService.userCanAccess('Project Settings|MANAGE')) this.projectForm.disable();
+		if (!(await this.rbacService.userCanAccess('Project Settings|MANAGE'))) this.projectForm.disable();
 	}
 
 	get versions(): FormArray {
@@ -96,43 +107,9 @@ export class CreateProjectComponent implements OnInit {
 		this.versions.push(this.newVersion());
 	}
 
-	toggleMoreConfig(event: any) {
-		this.enableMoreConfig = !this.enableMoreConfig;
-
-		if (this.action === 'create') {
-			event.target.checked ? this.addVersion() : this.projectForm.get('config.signature.versions')?.reset();
-		}
-
-		const strategyControls = Object.keys((this.projectForm.get('config.strategy') as FormGroup).controls);
-		const signatureControls = Object.keys((this.projectForm.get('config.signature') as FormGroup).controls);
-		const ratelimitControls = Object.keys((this.projectForm.get('config.ratelimit') as FormGroup).controls);
-		const retentionPolicyControls = Object.keys((this.projectForm.get('config.retention_policy') as FormGroup).controls);
-
-		if (this.enableMoreConfig) {
-			strategyControls.forEach(key => this.projectForm.get(`config.strategy.${key}`)?.setValidators(Validators.required));
-			strategyControls.forEach(key => this.projectForm.get(`config.strategy.${key}`)?.updateValueAndValidity());
-
-			signatureControls.forEach(key => this.projectForm.get(`config.signature.${key}`)?.setValidators(Validators.required));
-			signatureControls.forEach(key => this.projectForm.get(`config.signature.${key}`)?.updateValueAndValidity());
-
-			ratelimitControls.forEach(key => this.projectForm.get(`config.ratelimit.${key}`)?.setValidators(Validators.required));
-			ratelimitControls.forEach(key => this.projectForm.get(`config.ratelimit.${key}`)?.updateValueAndValidity());
-
-			retentionPolicyControls.forEach(key => this.projectForm.get(`config.retention_policy.${key}`)?.setValidators(Validators.required));
-			retentionPolicyControls.forEach(key => this.projectForm.get(`config.retention_policy.${key}`)?.updateValueAndValidity());
-		} else {
-			strategyControls.forEach(key => this.projectForm.get(`config.strategy.${key}`)?.removeValidators(Validators.required));
-			strategyControls.forEach(key => this.projectForm.get(`config.strategy.${key}`)?.updateValueAndValidity());
-
-			signatureControls.forEach(key => this.projectForm.get(`config.signature.${key}`)?.removeValidators(Validators.required));
-			signatureControls.forEach(key => this.projectForm.get(`config.signature.${key}`)?.updateValueAndValidity());
-
-			ratelimitControls.forEach(key => this.projectForm.get(`config.ratelimit.${key}`)?.removeValidators(Validators.required));
-			ratelimitControls.forEach(key => this.projectForm.get(`config.ratelimit.${key}`)?.updateValueAndValidity());
-
-			retentionPolicyControls.forEach(key => this.projectForm.get(`config.retention_policy.${key}`)?.removeValidators(Validators.required));
-			retentionPolicyControls.forEach(key => this.projectForm.get(`config.retention_policy.${key}`)?.updateValueAndValidity());
-		}
+	switchTab(tab: string) {
+		if (tab === 'meta events') this.projectForm.patchValue({ config: { meta_event: { type: 'http' } } });
+		this.activeTab = tab;
 	}
 
 	toggleConfigForm(configValue: string) {
@@ -151,6 +128,8 @@ export class CreateProjectComponent implements OnInit {
 			const response = await this.privateService.getProjectDetails({ ...requestDetails });
 			this.projectDetails = response.data;
 
+			if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab !== 'signature history');
+
 			this.projectForm.patchValue(response.data);
 			this.projectForm.get('config.strategy')?.patchValue(response.data.config.strategy);
 			this.projectForm.get('config.signature')?.patchValue(response.data.config.signature);
@@ -159,6 +138,7 @@ export class CreateProjectComponent implements OnInit {
 				if (this.privateService.activeProjectDetails?.type === 'outgoing') this.toggleConfigForm(config.uid);
 				else if (config.uid !== 'signature') this.toggleConfigForm(config.uid);
 			});
+			localStorage.setItem('IS_META_EVENTS_ENABLED', JSON.stringify(response.data.config.meta_event.is_enabled));
 			const versions = response.data.config.signature.versions;
 			if (!versions?.length) return;
 			this.signatureVersions = this.generalService.setContentDisplayed(versions);
@@ -286,8 +266,9 @@ export class CreateProjectComponent implements OnInit {
 		document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
 	}
 
-	confirmAction(event: any) {
-		const disableEndpointValue = event.target.checked;
-		disableEndpointValue ? this.updateProject() : (this.disableEndpointsModal = true);
+	confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints') {
+		const disableValue = event.target.checked;
+		if (actionType !== 'metaEvents') disableValue ? this.updateProject() : (this.disableEndpointsModal = true);
+		else if (!disableValue && actionType === 'metaEvents') this.showMetaEventPrompt = true;
 	}
 }
