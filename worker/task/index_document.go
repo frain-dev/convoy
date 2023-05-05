@@ -16,25 +16,26 @@ var (
 	ErrProjectIdFieldIsNotString = errors.New("project_id field does not exist on the document")
 )
 
-func SearchIndex(ctx context.Context, t *asynq.Task) error {
-	cfg, err := config.Get()
-	if err != nil {
-		return err
-	}
+type IndexDocument struct {
+	searchBackend searcher.Searcher
+}
 
+func NewIndexDocument(cfg config.Configuration) (*IndexDocument, error) {
 	search, err := searcher.NewSearchClient(cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if search == nil {
-		return nil
-	}
+	return &IndexDocument{
+		searchBackend: search,
+	}, nil
+}
 
+func (id *IndexDocument) ProcessTask(ctx context.Context, t *asynq.Task) error {
 	buf := t.Payload()
 
 	var event map[string]interface{}
-	err = json.Unmarshal(buf, &event)
+	err := json.Unmarshal(buf, &event)
 	if err != nil {
 		return &EndpointError{Err: err, delay: defaultDelay}
 	}
@@ -42,7 +43,7 @@ func SearchIndex(ctx context.Context, t *asynq.Task) error {
 	event["id"] = event["uid"]
 	if g, found := event["project_id"]; found {
 		if project_id, ok := g.(string); ok {
-			err = search.Index(project_id, event)
+			err = id.searchBackend.Index(project_id, event)
 			if err != nil {
 				return &EndpointError{Err: err, delay: time.Second * 5}
 			}

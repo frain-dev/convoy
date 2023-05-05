@@ -3,13 +3,14 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/searcher"
+	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/golang/mock/gomock"
 	"github.com/hibiken/asynq"
@@ -17,14 +18,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var successBody = []byte("event indexed successfully")
-var healthCheckBody = []byte(`{}`)
-
 func TestIndexDocument(t *testing.T) {
 	tests := []struct {
 		name       string
 		event      *datastore.Event
-		mFn        func(*testing.T, config.SearchConfiguration) func()
+		mFn        func(args *args)
 		wantErr    bool
 		wantErrMsg string
 		wantDelay  time.Duration
@@ -42,8 +40,9 @@ func TestIndexDocument(t *testing.T) {
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
-			mFn: func(t *testing.T, cfg config.SearchConfiguration) func() {
-				return searcher.MockIndexSuccess(t, cfg)
+			mFn: func(args *args) {
+				s, _ := args.search.(*mocks.MockSearcher)
+				s.EXPECT().Index(gomock.Any(), gomock.Any())
 			},
 			wantErr: false,
 		},
@@ -60,12 +59,14 @@ func TestIndexDocument(t *testing.T) {
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
-			mFn: func(t *testing.T, cfg config.SearchConfiguration) func() {
-				return searcher.MockIndexFailed(t, cfg)
+			mFn: func(args *args) {
+				srh, _ := args.search.(*mocks.MockSearcher)
+				srh.EXPECT().Index(gomock.Any(), gomock.Any()).
+					Return(errors.New("[typesense]: 400 Bad Request"))
 			},
 			wantErr:    true,
 			wantDelay:  time.Second * 5,
-			wantErrMsg: "status: 400 response: failed",
+			wantErrMsg: "[typesense]: 400 Bad Request",
 		},
 		{
 			name: "should_not_index_document_with_missing_project_id",
@@ -91,12 +92,9 @@ func TestIndexDocument(t *testing.T) {
 			err := config.LoadConfig("./testdata/Config/basic-convoy.json")
 			require.NoError(t, err)
 
-			cfg, err := config.Get()
-			require.NoError(t, err)
-
+			args := provideArgs(ctrl)
 			if tt.mFn != nil {
-				deferFn := tt.mFn(t, cfg.Search)
-				defer deferFn()
+				tt.mFn(args)
 			}
 
 			payload, err := json.Marshal(tt.event)
@@ -109,8 +107,9 @@ func TestIndexDocument(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.IndexDocument), job.Payload, asynq.Queue(string(convoy.SearchIndexQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := SearchIndex
-			err = fn(context.Background(), task)
+			indexDocument := &IndexDocument{searchBackend: args.search}
+			handler := indexDocument.ProcessTask
+			err = handler(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tt.wantErrMsg, err.(*EndpointError).Error())

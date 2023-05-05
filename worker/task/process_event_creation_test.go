@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/golang/mock/gomock"
@@ -25,12 +26,14 @@ type args struct {
 	cache             cache.Cache
 	eventQueue        queue.Queuer
 	subRepo           datastore.SubscriptionRepository
+	search            searcher.Searcher
 	deviceRepo        datastore.DeviceRepository
 }
 
 func provideArgs(ctrl *gomock.Controller) *args {
 	cache := mocks.NewMockCache(ctrl)
 	queue := mocks.NewMockQueuer(ctrl)
+	search := mocks.NewMockSearcher(ctrl)
 	projectRepo := mocks.NewMockProjectRepository(ctrl)
 	deviceRepo := mocks.NewMockDeviceRepository(ctrl)
 	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
@@ -47,6 +50,7 @@ func provideArgs(ctrl *gomock.Controller) *args {
 		cache:             cache,
 		eventQueue:        queue,
 		subRepo:           subRepo,
+		search:            search,
 	}
 }
 
