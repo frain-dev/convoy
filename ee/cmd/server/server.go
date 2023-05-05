@@ -47,7 +47,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	var basicAuthConfig string
 
 	var ssl bool
-	var withWorkers bool
 	var disableEndpoint bool
 	var replayAttacks bool
 	var multipleTenants bool
@@ -77,7 +76,7 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			err = StartConvoyServer(a, withWorkers)
+			err = StartConvoyServer(a)
 
 			if err != nil {
 				a.Logger.Errorf("Error starting convoy server: %v", err)
@@ -116,7 +115,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&promaddr, "promaddr", "", `Prometheus dsn`)
 
 	cmd.Flags().BoolVar(&ssl, "ssl", false, "Configure SSL")
-	cmd.Flags().BoolVarP(&withWorkers, "with-workers", "w", true, "Should run workers")
 	cmd.Flags().BoolVar(&nativeRealmEnabled, "native", false, "Enable native-realm authentication")
 	cmd.Flags().BoolVar(&disableEndpoint, "disable-endpoint", false, "Disable all application endpoints")
 	cmd.Flags().BoolVar(&replayAttacks, "replay-attacks", false, "Enable feature to prevent replay attacks")
@@ -134,7 +132,7 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	return cmd
 }
 
-func StartConvoyServer(a *cli.App, withWorkers bool) error {
+func StartConvoyServer(a *cli.App) error {
 	cfg, err := config.Get()
 	if err != nil {
 		a.Logger.WithError(err).Fatal("Failed to load configuration")
