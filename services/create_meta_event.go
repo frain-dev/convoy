@@ -1,4 +1,4 @@
-package mevent
+package services
 
 import (
 	"context"
