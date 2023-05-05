@@ -18,77 +18,78 @@
 	</div>
 </div>
 
-<div convoy-card class="flex" *ngIf="isMetaEventEnabled">
-	<div class="min-w-[605px] w-full h-full overflow-hidden relative">
-		<convoy-table-loader id="meta_events_loader" [tableHead]="metaEventsTableHead" *ngIf="isLoadingMetaEvents"></convoy-table-loader>
+<ng-container *ngIf="isMetaEventEnabled">
+	<div convoy-card class="flex">
+		<div class="min-w-[605px] w-full h-full overflow-hidden relative">
+			<convoy-table-loader id="meta_events_loader" [tableHead]="metaEventsTableHead" *ngIf="isLoadingMetaEvents"></convoy-table-loader>
 
-		<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="events-table-container" *ngIf="!isLoadingMetaEvents">
-			<table convoy-table>
-				<thead convoy-table-head>
-					<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of metaEventsTableHead; let i = index">{{ head }}</th>
-				</thead>
-				<tbody>
-					<ng-container *ngFor="let eventGroup of displayedMetaEvents; let i = index">
-						<tr convoy-table-row [forDate]="true">
-							<td convoy-table-cell [forDate]="true">{{ eventGroup.date }}</td>
-							<td convoy-table-cell [forDate]="true"></td>
-							<td convoy-table-cell [forDate]="true"></td>
-						</tr>
-						<tr convoy-table-row class="group" *ngFor="let event of eventGroup.content; let index = index" (click)="selectedMetaEvent = event" [active]="selectedMetaEvent?.uid === event.uid">
-							<td convoy-table-cell class="w-130px pl-16px pr-30px relative">
-								<convoy-tag [type]="event.status | statuscolor">{{ event.status }}</convoy-tag>
-							</td>
+			<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="events-table-container" *ngIf="!isLoadingMetaEvents">
+				<table convoy-table>
+					<thead convoy-table-head>
+						<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of metaEventsTableHead; let i = index">{{ head }}</th>
+					</thead>
+					<tbody>
+						<ng-container *ngFor="let eventGroup of displayedMetaEvents; let i = index">
+							<tr convoy-table-row [forDate]="true">
+								<td convoy-table-cell [forDate]="true">{{ eventGroup.date }}</td>
+								<td convoy-table-cell [forDate]="true"></td>
+								<td convoy-table-cell [forDate]="true"></td>
+							</tr>
+							<tr convoy-table-row class="group" *ngFor="let event of eventGroup.content; let index = index" (click)="selectedMetaEvent = event" [active]="selectedMetaEvent?.uid === event.uid">
+								<td convoy-table-cell class="w-130px pl-16px pr-30px relative">
+									<convoy-tag [type]="event.status | statuscolor">{{ event.status }}</convoy-tag>
+								</td>
 
-							<td convoy-table-cell>
-								<convoy-tag type="grey">{{ event.event_type }}</convoy-tag>
-							</td>
+								<td convoy-table-cell>
+									<convoy-tag type="grey">{{ event.event_type }}</convoy-tag>
+								</td>
 
-							<td convoy-table-cell class="">{{ event.metadata.num_trials }}</td>
-							<td convoy-table-cell class="">{{ event.created_at | date: 'mediumTime' }}</td>
-							<td convoy-table-cell class="">
-								<button convoy-button size="xs" texture="light" [disabled]="isRetryingMetaEvent" (click)="retryMetaEvent(event.uid)">
-									<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
-									Retry
-								</button>
-							</td>
+								<td convoy-table-cell class="">{{ event.metadata.num_trials }}</td>
+								<td convoy-table-cell class="">{{ event.created_at | date: 'mediumTime' }}</td>
+								<td convoy-table-cell class="">
+									<button convoy-button size="xs" texture="light" [disabled]="isRetryingMetaEvent" (click)="retryMetaEvent(event.uid)">
+										<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
+										Retry
+									</button>
+								</td>
 
-							<td convoy-table-cell>
-								<button convoy-button fill="clear" size="sm" (click)="selectedMetaEvent = event">
-									<img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px h-16px" alt="arrow right" />
-								</button>
-							</td>
-						</tr>
-					</ng-container>
-				</tbody>
-			</table>
+								<td convoy-table-cell>
+									<button convoy-button fill="clear" size="sm" (click)="selectedMetaEvent = event">
+										<img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px h-16px" alt="arrow right" />
+									</button>
+								</td>
+							</tr>
+						</ng-container>
+					</tbody>
+				</table>
+			</div>
+
+			<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="!isLoadingMetaEvents && (!displayedMetaEvents || displayedMetaEvents?.length === 0)"></convoy-empty-state>
 		</div>
 
-		<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="!isLoadingMetaEvents && (!displayedMetaEvents || displayedMetaEvents?.length === 0)"></convoy-empty-state>
-	</div>
+		<div class="max-w-[450px] w-full max-h-[calc(100vh - 950px)] min-h-[707px] overflow-auto relative border-l border-grey-10">
+			<div class="p-16px">
+				<ng-container *ngIf="isLoadingMetaEvents">
+					<div class="bg-grey-10 rounded-8px animate-pulse h-150px w-full mr-40px mb-20px"></div>
+					<div class="bg-grey-10 rounded-8px animate-pulse h-150px w-full mr-40px"></div>
+				</ng-container>
 
-	<div class="max-w-[450px] w-full max-h-[calc(100vh - 950px)] min-h-[707px] overflow-auto relative border-l border-grey-10">
-		<div class="p-16px">
-			<ng-container *ngIf="isLoadingMetaEvents">
-				<div class="bg-grey-10 rounded-8px animate-pulse h-150px w-full mr-40px mb-20px"></div>
-				<div class="bg-grey-10 rounded-8px animate-pulse h-150px w-full mr-40px"></div>
-			</ng-container>
-
-			<ng-container *ngIf="displayedMetaEvents && displayedMetaEvents.length > 0">
-				<h3 class="text-16 font-bold mb-16px">Details</h3>
-				<prism language="json" [code]="getCodeSnippetString('req_header')" title="Request header"></prism>
-				<div class="mb-20px"></div>
-				<prism language="json" [code]="getCodeSnippetString('res_header')" title="Response Header"></prism>
-				<div class="mb-20px"></div>
-				<prism language="json" [code]="getCodeSnippetString('res_body')" title="Response Body"></prism>
-			</ng-container>
-			<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event details to show here" *ngIf="!isLoadingMetaEvents && (!displayedMetaEvents || displayedMetaEvents?.length === 0)"></convoy-empty-state>
+				<ng-container *ngIf="displayedMetaEvents && displayedMetaEvents.length > 0">
+					<h3 class="text-16 font-bold mb-16px">Details</h3>
+					<prism language="json" [code]="getCodeSnippetString('req_header')" title="Request header"></prism>
+					<div class="mb-20px"></div>
+					<prism language="json" [code]="getCodeSnippetString('res_header')" title="Response Header"></prism>
+					<div class="mb-20px"></div>
+					<prism language="json" [code]="getCodeSnippetString('res_body')" title="Response Body"></prism>
+				</ng-container>
+				<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event details to show here" *ngIf="!isLoadingMetaEvents && (!displayedMetaEvents || displayedMetaEvents?.length === 0)"></convoy-empty-state>
+			</div>
 		</div>
 	</div>
-</div>
 
-<!-- Pagination -->
-<convoy-pagination *ngIf="metaEvents?.pagination?.has_next_page || metaEvents?.pagination?.has_prev_page" [pagination]="metaEvents.pagination" (paginate)="getMetaEvents($event)"></convoy-pagination>
-
+	<!-- Pagination -->
+	<convoy-pagination *ngIf="metaEvents?.pagination?.has_next_page || metaEvents?.pagination?.has_prev_page" [pagination]="metaEvents.pagination" (paginate)="getMetaEvents($event)"></convoy-pagination>
+</ng-container>
 
 <!-- empty state  -->
 <div class="py-100px" convoy-card *ngIf="!isMetaEventEnabled">
