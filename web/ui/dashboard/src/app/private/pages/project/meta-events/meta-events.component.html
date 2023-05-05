@@ -86,6 +86,10 @@
 	</div>
 </div>
 
+<!-- Pagination -->
+<convoy-pagination *ngIf="metaEvents?.pagination?.has_next_page || metaEvents?.pagination?.has_prev_page" [pagination]="metaEvents.pagination" (paginate)="getMetaEvents($event)"></convoy-pagination>
+
+
 <!-- empty state  -->
 <div class="py-100px" convoy-card *ngIf="!isMetaEventEnabled">
 	<div

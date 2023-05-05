@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HTTP_RESPONSE } from 'src/app/models/global.model';
+import { CURSOR, HTTP_RESPONSE } from 'src/app/models/global.model';
 import { HttpService } from 'src/app/services/http/http.service';
 
 @Injectable({
@@ -8,7 +8,9 @@ import { HttpService } from 'src/app/services/http/http.service';
 export class MetaEventsService {
 	constructor(private http: HttpService) {}
 
-	getMetaEvents(requestDetails?: { page?: number; next_page_cursor?: string; prev_page_cursor?: string; direction?: 'next' | 'prev' }): Promise<HTTP_RESPONSE> {
+	getMetaEvents(requestDetails?: CURSOR): Promise<HTTP_RESPONSE> {
+		if (!requestDetails) requestDetails = { next_page_cursor: String(Number.MAX_SAFE_INTEGER), direction: 'next' };
+
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({

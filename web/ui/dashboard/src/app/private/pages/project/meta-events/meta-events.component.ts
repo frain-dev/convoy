@@ -13,6 +13,9 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { PrismModule } from 'src/app/private/components/prism/prism.module';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
+import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
+import { META_EVENT } from 'src/app/models/project.model';
+import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 
 @Component({
 	selector: 'convoy-meta-events',
@@ -33,7 +36,8 @@ import { StatusColorModule } from 'src/app/pipes/status-color/status-color.modul
 		TableRowComponent,
 		TagComponent,
 		StatusColorModule,
-		PrismModule
+		PrismModule,
+		PaginationComponent
 	],
 	templateUrl: './meta-events.component.html',
 	styleUrls: ['./meta-events.component.scss']
@@ -43,7 +47,8 @@ export class MetaEventsComponent implements OnInit {
 	showMetaConfig = false;
 	isLoadingMetaEvents = false;
 	isRetryingMetaEvent = false;
-	displayedMetaEvents: any;
+	metaEvents!: { pagination: PAGINATION; content: META_EVENT[] };
+	displayedMetaEvents!: { date: string; content: META_EVENT[] }[];
 	selectedMetaEvent: any;
 
 	constructor(public privateService: PrivateService, private generalService: GeneralService, private metaEventsService: MetaEventsService) {}
@@ -63,12 +68,12 @@ export class MetaEventsComponent implements OnInit {
 		this.showMetaConfig = isConfigfureMetaEventsChecked;
 	}
 
-	async getMetaEvents() {
+	async getMetaEvents(requestDetails?: CURSOR) {
 		this.isLoadingMetaEvents = true;
 		try {
-			const response = await this.metaEventsService.getMetaEvents();
-			const metaEvents = response.data.content;
-			if (metaEvents.length) this.selectedMetaEvent = metaEvents[0];
+			const response = await this.metaEventsService.getMetaEvents(requestDetails);
+			this.metaEvents = response.data;
+			if (this.metaEvents?.content?.length) this.selectedMetaEvent = this.metaEvents?.content[0];
 			this.displayedMetaEvents = await this.generalService.setContentDisplayed(response.data.content);
 			this.isLoadingMetaEvents = false;
 		} catch {
