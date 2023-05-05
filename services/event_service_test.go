@@ -24,11 +24,22 @@ func provideEventService(ctrl *gomock.Controller) (*EventService, error) {
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	queue := mocks.NewMockQueuer(ctrl)
 	cache := mocks.NewMockCache(ctrl)
+	searcher := mocks.NewMockSearcher(ctrl)
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
 	deviceRepo := mocks.NewMockDeviceRepository(ctrl)
 
-	return NewEventService(endpointRepo, eventRepo, eventDeliveryRepo, queue, cache, subRepo, sourceRepo, deviceRepo)
+	return &EventService{
+		endpointRepo:      endpointRepo,
+		eventRepo:         eventRepo,
+		eventDeliveryRepo: eventDeliveryRepo,
+		subRepo:           subRepo,
+		sourceRepo:        sourceRepo,
+		deviceRepo:        deviceRepo,
+		queue:             queue,
+		cache:             cache,
+		searcher:          searcher,
+	}, nil
 }
 
 func TestEventService_CreateEvent(t *testing.T) {
