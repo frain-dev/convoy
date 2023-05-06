@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/config"
+
 	"github.com/frain-dev/convoy/util"
 	"github.com/stretchr/testify/require"
 
@@ -37,6 +39,7 @@ func TestResendOrgMemberService_Run(t *testing.T) {
 	}
 	tests := []struct {
 		name        string
+		cfgPath     string
 		args        args
 		dbFn        func(rs *ResendOrgMemberService)
 		want        *datastore.OrganisationInvite
@@ -45,7 +48,8 @@ func TestResendOrgMemberService_Run(t *testing.T) {
 		wantErrMsg  string
 	}{
 		{
-			name: "should_resend_organisation_member_invite",
+			name:    "should_resend_organisation_member_invite",
+			cfgPath: "./testdata/basic-convoy.json",
 			args: args{
 				ctx:          ctx,
 				Organisation: &datastore.Organisation{UID: "123"},
@@ -88,6 +92,9 @@ func TestResendOrgMemberService_Run(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			err := config.LoadConfig(tt.cfgPath)
+			require.NoError(t, err)
+
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
@@ -107,7 +114,8 @@ func TestResendOrgMemberService_Run(t *testing.T) {
 			}
 
 			require.Nil(t, err)
-			require.Equal(t, iv, tt.want)
+			stripVariableFields(t, "organisation_invite", iv)
+			require.Equal(t, tt.want, iv)
 		})
 	}
 }
