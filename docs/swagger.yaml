@@ -659,10 +659,42 @@ definitions:
         type: string
       type: array
     type: object
+  models.DynamicEndpoint:
+    properties:
+      advanced_signatures:
+        type: boolean
+      appID:
+        description: Deprecated but necessary for backward compatibility
+        type: string
+      authentication:
+        $ref: '#/definitions/datastore.EndpointAuthentication'
+      description:
+        type: string
+      http_timeout:
+        type: string
+      is_disabled:
+        type: boolean
+      name:
+        type: string
+      owner_id:
+        type: string
+      rate_limit:
+        type: integer
+      rate_limit_duration:
+        type: string
+      secret:
+        type: string
+      slack_webhook_url:
+        type: string
+      support_email:
+        type: string
+      url:
+        type: string
+    type: object
   models.DynamicEvent:
     properties:
       endpoint:
-        $ref: '#/definitions/models.Endpoint'
+        $ref: '#/definitions/models.DynamicEndpoint'
       event:
         $ref: '#/definitions/models.DynamicEventStub'
       subscription:
@@ -778,12 +810,8 @@ definitions:
     type: object
   models.FilterSchema:
     properties:
-      body:
-        additionalProperties: true
-        type: object
-      header:
-        additionalProperties: true
-        type: object
+      body: {}
+      header: {}
     type: object
   models.PortalLink:
     properties:

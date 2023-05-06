@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -199,25 +198,4 @@ func (a *DashboardHandler) retrieveHost() (string, error) {
 	}
 
 	return cfg.Host, nil
-}
-
-var guestRoutes = []string{
-	"/auth/login",
-	"/auth/register",
-	"/auth/token/refresh",
-	"/users/token",
-	"/users/forgot-password",
-	"/users/reset-password",
-	"/users/verify_email",
-	"/organisations/process_invite",
-}
-
-func shouldAuthRoute(r *http.Request) bool {
-	for _, route := range guestRoutes {
-		if strings.HasSuffix(r.URL.Path, route) {
-			return false
-		}
-	}
-
-	return true
 }
