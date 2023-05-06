@@ -57,7 +57,7 @@ func (a *DashboardHandler) InviteUserToOrganisation(w http.ResponseWriter, r *ht
 
 	inviteService := &services.InviteUserService{
 		Queue:        a.A.Queue,
-		DB:           a.A.DB,
+		InviteRepo:   postgres.NewOrgInviteRepo(a.A.DB),
 		InviteeEmail: newIV.InviteeEmail,
 		Role:         newIV.Role,
 		User:         user,

@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy/cmd/migrate"
 	"github.com/frain-dev/convoy/cmd/retry"
 	"github.com/frain-dev/convoy/cmd/scheduler"
+	"github.com/frain-dev/convoy/cmd/stream"
 	"github.com/frain-dev/convoy/cmd/version"
 	"github.com/frain-dev/convoy/cmd/worker"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -58,6 +59,7 @@ func main() {
 	cli.AddCommand(configCmd.AddConfigCommand(app))
 	cli.AddCommand(domain.AddDomainCommand(app))
 	cli.AddCommand(ingest.AddIngestCommand(app))
+	cli.AddCommand(stream.AddStreamCommand(app))
 
 	if err := cli.Execute(); err != nil {
 		slog.Fatal(err)

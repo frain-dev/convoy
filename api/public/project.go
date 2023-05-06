@@ -50,28 +50,6 @@ func (a *PublicHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Project fetched successfully", project, http.StatusOK))
 }
 
-func (a *PublicHandler) GetProjectStatistics(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	projectService, err := createProjectService(a)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	err = projectService.FillProjectStatistics(r.Context(), project)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Project Stats fetched successfully", project.Statistics, http.StatusOK))
-}
-
 // DeleteProject - this is a duplicate annotation for the api/v1 route of this handler
 // @Summary Delete a project
 // @Description This endpoint deletes a project using its id

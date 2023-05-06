@@ -252,46 +252,6 @@ func (a *PublicHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("%d successful, %d failed", successes, failures), nil, http.StatusOK))
 }
 
-func (a *PublicHandler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
-	p, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	eventService, err := createEventService(a)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	searchParams, err := getSearchParams(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	f := &datastore.Filter{
-		Project: p,
-		Pageable: datastore.Pageable{
-			Direction:  datastore.Next,
-			PerPage:    1000000000000, // large number so we get everything in most cases
-			NextCursor: datastore.DefaultCursor,
-		},
-		SourceID:     r.URL.Query().Get("sourceId"),
-		EndpointID:   r.URL.Query().Get("endpointId"),
-		SearchParams: searchParams,
-	}
-
-	count, err := eventService.CountAffectedEvents(r.Context(), f)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("events count successful", map[string]interface{}{"num": count}, http.StatusOK))
-}
-
 // GetEndpointEvent
 // @Summary Retrieve an event
 // @Description This endpoint retrieves an event
