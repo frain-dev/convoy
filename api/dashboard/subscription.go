@@ -177,11 +177,6 @@ func (a *DashboardHandler) UpdateSubscription(w http.ResponseWriter, r *http.Req
 	_ = render.Render(w, r, util.NewServerResponse("Subscription updated successfully", sub, http.StatusAccepted))
 }
 
-func (a *DashboardHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
-	// For backward compatibility
-	_ = render.Render(w, r, util.NewServerResponse("Subscription status updated successfully", nil, http.StatusAccepted))
-}
-
 func (a *DashboardHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request) {
 	var test models.TestFilter
 	err := util.ReadJSON(r, &test)

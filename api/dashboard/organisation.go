@@ -3,10 +3,8 @@ package dashboard
 import (
 	"net/http"
 
-	"github.com/frain-dev/convoy/database/postgres"
-	"github.com/frain-dev/convoy/datastore"
-
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
@@ -55,25 +53,6 @@ func (a *DashboardHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.
 
 	_ = render.Render(w, r, util.NewServerResponse("Organisations fetched successfully",
 		pagedResponse{Content: &organisations, Pagination: &paginationData}, http.StatusOK))
-}
-
-func (a *DashboardHandler) GetUserOrganisations(w http.ResponseWriter, r *http.Request) { // TODO: change to GetUserOrganisationsPaged
-	user, err := a.retrieveUser(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	orgService := createOrganisationService(a)
-	organisations, _, err := orgService.LoadUserOrganisationsPaged(r.Context(), user, datastore.Pageable{NextCursor: datastore.DefaultCursor, PerPage: 100, Direction: datastore.Next})
-	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to load organisations")
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Organisations fetched successfully",
-		organisations, http.StatusOK))
 }
 
 func (a *DashboardHandler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
