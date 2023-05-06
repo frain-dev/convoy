@@ -49,7 +49,7 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 		return nil, err
 	}
 
-	err = iu.sendInviteEmail(ctx, iv)
+	err = sendInviteEmail(ctx, iv, iu.User, iu.Organisation, iu.Queue)
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +57,7 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 	return iv, nil
 }
 
-func (iu *InviteUserService) sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite) error {
-
+func sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, user *datastore.User, org *datastore.Organisation, queuer queue.Queuer) error {
 	cfg, err := config.Get()
 	if err != nil {
 		return err
@@ -71,8 +70,8 @@ func (iu *InviteUserService) sendInviteEmail(ctx context.Context, iv *datastore.
 		TemplateName: email.TemplateOrganisationInvite,
 		Params: map[string]string{
 			"invite_url":        fmt.Sprintf("%s/accept-invite?invite-token=%s", baseURL, iv.Token),
-			"organisation_name": iu.Organisation.Name,
-			"inviter_name":      fmt.Sprintf("%s %s", iu.User.FirstName, iu.User.LastName),
+			"organisation_name": org.Name,
+			"inviter_name":      fmt.Sprintf("%s %s", user.FirstName, user.LastName),
 			"expires_at":        iv.ExpiresAt.String(),
 		},
 	}
@@ -88,7 +87,7 @@ func (iu *InviteUserService) sendInviteEmail(ctx context.Context, iv *datastore.
 		Delay:   0,
 	}
 
-	err = iu.Queue.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)
+	err = queuer.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to write new notification to the queue")
 	}
