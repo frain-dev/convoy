@@ -88,7 +88,7 @@ export class EventLogsComponent implements OnInit {
 	isRetrying = false;
 	batchRetryCount: any;
 
-	constructor(private eventsLogService: EventLogsService, private generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService, private _location: Location) {}
+	constructor(private eventsLogService: EventLogsService, public generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService, private _location: Location) {}
 
 	async ngOnInit() {
 		this.getFiltersFromURL();
@@ -154,18 +154,6 @@ export class EventLogsComponent implements OnInit {
 	getSelectedDateRange(dateRange: { startDate: Date; endDate: Date }) {
 		this.eventsDateFilterFromURL = { ...dateRange };
 		this.getEvents({ addToURL: true });
-	}
-
-	getCodeSnippetString(type: 'res_data' | 'header') {
-		if (type === 'res_data') {
-			if (!this.eventsDetailsItem?.data) return 'No event data was sent';
-			return JSON.stringify(this.eventsDetailsItem?.data || this.eventsDetailsItem?.metadata?.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
-		}
-		if (type === 'header') {
-			if (!this.eventsDetailsItem?.headers) return 'No event header was sent';
-			return JSON.stringify(this.eventsDetailsItem?.headers, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
-		}
-		return '';
 	}
 
 	setDateForFilter(requestDetails: { startDate: any; endDate: any; startTime?: string; endTime?: string }) {

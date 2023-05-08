@@ -51,7 +51,7 @@ export class MetaEventsComponent implements OnInit {
 	displayedMetaEvents!: { date: string; content: META_EVENT[] }[];
 	selectedMetaEvent: any;
 
-	constructor(public privateService: PrivateService, private generalService: GeneralService, private metaEventsService: MetaEventsService) {}
+	constructor(public privateService: PrivateService, public generalService: GeneralService, private metaEventsService: MetaEventsService) {}
 
 	ngOnInit(): void {
 		this.getMetaEvents();
@@ -91,21 +91,5 @@ export class MetaEventsComponent implements OnInit {
 		} catch {
 			this.isRetryingMetaEvent = false;
 		}
-	}
-
-	getCodeSnippetString(type: 'req_header' | 'res_header' | 'res_body') {
-		if (type === 'req_header') {
-			if (!this.selectedMetaEvent?.attempt?.request_http_header) return 'No request data was sent';
-			return JSON.stringify(this.selectedMetaEvent?.attempt?.request_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
-		}
-		if (type === 'res_header') {
-			if (!this.selectedMetaEvent?.attempt?.response_http_header) return 'No response header was sent';
-			return JSON.stringify(this.selectedMetaEvent?.attempt?.response_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
-		}
-		if (type === 'res_body') {
-			if (!this.selectedMetaEvent?.metadata?.data) return 'No response header was sent';
-			return JSON.stringify(this.selectedMetaEvent?.metadata?.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
-		}
-		return '';
 	}
 }

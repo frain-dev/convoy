@@ -76,11 +76,11 @@
 
 				<ng-container *ngIf="displayedMetaEvents && displayedMetaEvents.length > 0">
 					<h3 class="text-16 font-bold mb-16px">Details</h3>
-					<prism language="json" [code]="getCodeSnippetString('req_header')" title="Request header"></prism>
+					<prism language="json" [code]="generalService.getCodeSnippetString('req_header', selectedMetaEvent?.attempt?.request_http_header)" title="Request header"></prism>
 					<div class="mb-20px"></div>
-					<prism language="json" [code]="getCodeSnippetString('res_header')" title="Response Header"></prism>
+					<prism language="json" [code]="generalService.getCodeSnippetString('res_header', selectedMetaEvent?.attempt?.response_http_header)" title="Response Header"></prism>
 					<div class="mb-20px"></div>
-					<prism language="json" [code]="getCodeSnippetString('res_body')" title="Response Body"></prism>
+					<prism language="json" [code]="generalService.getCodeSnippetString('res_body', selectedMetaEvent?.metadata?.data)" title="Response Body"></prism>
 				</ng-container>
 				<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event details to show here" *ngIf="!isLoadingMetaEvents && (!displayedMetaEvents || displayedMetaEvents?.length === 0)"></convoy-empty-state>
 			</div>

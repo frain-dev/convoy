@@ -23,7 +23,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 	screenWidth = window.innerWidth;
 	portalToken = this.route.snapshot.queryParams?.token;
 
-	constructor(private route: ActivatedRoute, private router: Router, private privateService: PrivateService, private eventDeliveryDetailsService: EventDeliveryDetailsService, private generalService: GeneralService, private eventsService: EventsService) {}
+	constructor(private route: ActivatedRoute, private router: Router, private privateService: PrivateService, private eventDeliveryDetailsService: EventDeliveryDetailsService, public generalService: GeneralService, private eventsService: EventsService) {}
 
 	ngOnInit(): void {
 		const eventDeliveryId = this.route.snapshot.params.id;
@@ -83,26 +83,6 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		} catch (error) {
 			this.isloadingDeliveryAttempts = false;
 		}
-	}
-
-	getCodeSnippetString(type: 'res_body' | 'event' | 'event_delivery' | 'res_head' | 'req' | 'error') {
-		if (type === 'event_delivery') {
-			if (!this.eventDelsDetails?.metadata?.data) return 'No event data was sent';
-			return JSON.stringify(this.eventDelsDetails.metadata.data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
-		} else if (type === 'res_body') {
-			if (!this.selectedDeliveryAttempt || !this.selectedDeliveryAttempt?.response_data) return 'No response body was sent';
-			return this.selectedDeliveryAttempt?.response_data;
-		} else if (type === 'res_head') {
-			if (!this.selectedDeliveryAttempt || !this.selectedDeliveryAttempt?.response_http_header) return 'No response header was sent';
-			return JSON.stringify(this.selectedDeliveryAttempt.response_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
-		} else if (type === 'req') {
-			if (!this.selectedDeliveryAttempt || !this.selectedDeliveryAttempt?.request_http_header) return 'No request header was sent';
-			return JSON.stringify(this.selectedDeliveryAttempt.request_http_header, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
-		} else if (type === 'error') {
-			if (this.selectedDeliveryAttempt?.error) return JSON.stringify(this.selectedDeliveryAttempt.error, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
-			return '';
-		}
-		return '';
 	}
 
 	viewEndpoint(endpointId: string) {
