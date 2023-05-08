@@ -65,4 +65,4 @@ checksum:
 
 release:
     # Will not auto-publish the release on GitHub
-    draft: true
+    disable: true
