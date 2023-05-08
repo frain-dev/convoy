@@ -164,11 +164,6 @@ func (a *PortalLinkHandler) UpdateSubscription(w http.ResponseWriter, r *http.Re
 	_ = render.Render(w, r, util.NewServerResponse("Subscription updated successfully", sub, http.StatusAccepted))
 }
 
-func (a *PortalLinkHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
-	// For backward compatibility
-	_ = render.Render(w, r, util.NewServerResponse("Subscription status updated successfully", nil, http.StatusAccepted))
-}
-
 func (a *PortalLinkHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request) {
 	var test models.TestFilter
 	err := util.ReadJSON(r, &test)

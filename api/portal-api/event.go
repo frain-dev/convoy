@@ -33,54 +33,6 @@ func createEventService(a *PortalLinkHandler) *services.EventService {
 	)
 }
 
-func (a *PortalLinkHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
-	var newMessage models.Event
-	err := util.ReadJSON(r, &newMessage)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	eventService := createEventService(a)
-	event, err := eventService.CreateEvent(r.Context(), &newMessage, project)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", event, http.StatusCreated))
-}
-
-func (a *PortalLinkHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Request) {
-	var newMessage models.FanoutEvent
-	err := util.ReadJSON(r, &newMessage)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	eventService := createEventService(a)
-	event, err := eventService.CreateFanoutEvent(r.Context(), &newMessage, project)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", event, http.StatusCreated))
-}
-
 func (a *PortalLinkHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {

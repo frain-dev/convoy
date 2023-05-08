@@ -1,0 +1,61 @@
+{
+    "queue": {
+        "type": "redis",
+        "redis": {
+            "dsn": "abc"
+        }
+    },
+    "server": {
+        "http": {
+            "port": 80
+        }
+    },
+    "auth": {
+        "file": {
+            "basic": [
+                {
+                    "username": "testx",
+                    "password": "test",
+                    "role": {
+                        "type": "admin",
+                        "group":"sendcash-pay"
+                    }
+                },
+                {
+                    "username": "test",
+                    "password": "test",
+                    "role": {
+                        "type": "super_user",
+                        "groups": [
+                            "buycoins"
+                        ]
+                    }
+                }
+            ],
+            "api_key": [
+                {
+                    "api_key": "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
+                    "role": {
+                        "type": "ui_admin",
+                        "groups": [
+                            "sendcash-pay"
+                        ]
+                    }
+                }
+            ]
+        }
+    },
+    "group": {
+        "strategy": {
+            "type": "default",
+            "default": {
+                "intervalSeconds": 125,
+                "retryLimit": 15
+            }
+        },
+        "signature": {
+            "header": "X-Company-Event-WebHook-Signature",
+            "hash": "SHA256"
+        }
+    }
+}

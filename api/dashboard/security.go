@@ -2,13 +2,9 @@ package dashboard
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
 
-	"github.com/cip8/autoname"
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/services"
@@ -24,46 +20,6 @@ func createSecurityService(a *DashboardHandler) *services.SecurityService {
 	apiKeyRepo := postgres.NewAPIKeyRepo(a.A.DB)
 
 	return services.NewSecurityService(projectRepo, apiKeyRepo)
-}
-
-func (a *DashboardHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
-	var newApiKey models.APIKey
-	err := json.NewDecoder(r.Body).Decode(&newApiKey)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Request is invalid", http.StatusBadRequest))
-		return
-	}
-
-	member, err := a.retrieveMembership(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	securityService := createSecurityService(a)
-	apiKey, keyString, err := securityService.CreateAPIKey(r.Context(), member, &newApiKey)
-	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to create api key")
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	resp := &models.APIKeyResponse{
-		APIKey: models.APIKey{
-			Name: apiKey.Name,
-			Role: models.Role{
-				Type:    apiKey.Role.Type,
-				Project: apiKey.Role.Project,
-			},
-			Type:      apiKey.Type,
-			ExpiresAt: apiKey.ExpiresAt,
-		},
-		UID:       apiKey.UID,
-		CreatedAt: apiKey.CreatedAt,
-		Key:       keyString,
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("API Key created successfully", resp, http.StatusCreated))
 }
 
 func (a *DashboardHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
@@ -105,131 +61,6 @@ func (a *DashboardHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.R
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Personal API Key created successfully", resp, http.StatusCreated))
-}
-
-func (a *DashboardHandler) CreateEndpointAPIKey(w http.ResponseWriter, r *http.Request) {
-	var keyType datastore.KeyType
-	var newApiKey models.CreateEndpointApiKey
-
-	if err := util.ReadJSON(r, &newApiKey); err != nil {
-		// Disregard the ErrEmptyBody err to ensure backward compatibility
-		if !errors.Is(err, util.ErrEmptyBody) {
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-			return
-		}
-	}
-
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	endpoint, err := a.retrieveEndpoint(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	baseUrl, err := a.retrieveHost()
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	k := string(newApiKey.KeyType)
-
-	if util.IsStringEmpty(k) {
-		keyType = datastore.AppPortalKey
-	}
-
-	if !util.IsStringEmpty(k) {
-		keyType = datastore.KeyType(k)
-		if !keyType.IsValidAppKey() {
-			_ = render.Render(w, r, util.NewErrorResponse(errors.New("type is not supported").Error(), http.StatusBadRequest))
-			return
-		}
-	}
-
-	if newApiKey.Expiration == 0 {
-		newApiKey.Expiration = 7
-	}
-
-	if util.IsStringEmpty(newApiKey.Name) {
-		newApiKey.Name = autoname.Generate(" ")
-	}
-
-	newApiKey.Project = project
-	newApiKey.Endpoint = endpoint
-	newApiKey.BaseUrl = baseUrl
-	newApiKey.KeyType = keyType
-
-	securityService := createSecurityService(a)
-	apiKey, key, err := securityService.CreateEndpointAPIKey(r.Context(), &newApiKey)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	if !util.IsStringEmpty(baseUrl) && newApiKey.KeyType == datastore.AppPortalKey {
-		baseUrl = fmt.Sprintf("%s/endpoint/%s?projectID=%s&endpointId=%s", baseUrl, key, newApiKey.Project.UID, newApiKey.Endpoint.UID)
-	}
-
-	resp := models.PortalAPIKeyResponse{
-		Key:        key,
-		Url:        baseUrl,
-		Role:       apiKey.Role,
-		ProjectID:  project.UID,
-		EndpointID: endpoint.UID,
-		Type:       string(apiKey.Type),
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("API Key created successfully", resp, http.StatusCreated))
-}
-
-func (a *DashboardHandler) LoadEndpointAPIKeysPaged(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	endpoint, err := a.retrieveEndpoint(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-	pageable := m.GetPageableFromContext(r.Context())
-
-	f := &datastore.ApiKeyFilter{
-		ProjectID:  project.UID,
-		EndpointID: endpoint.UID,
-		KeyType:    datastore.CLIKey,
-	}
-
-	securityService := createSecurityService(a)
-	apiKeys, paginationData, err := securityService.GetAPIKeys(r.Context(), f, &pageable)
-	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to load api keys")
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	apiKeyByIDResponse := apiKeyByIDResponse(apiKeys)
-	_ = render.Render(w, r, util.NewServerResponse("api keys fetched successfully",
-		pagedResponse{Content: &apiKeyByIDResponse, Pagination: &paginationData}, http.StatusOK))
-}
-
-func (a *DashboardHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request) {
-	securityService := createSecurityService(a)
-
-	err := securityService.RevokeAPIKey(r.Context(), chi.URLParam(r, "keyID"))
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("api key revoked successfully", nil, http.StatusOK))
 }
 
 func (a *DashboardHandler) RevokePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
@@ -289,92 +120,6 @@ func (a *DashboardHandler) RegenerateProjectAPIKey(w http.ResponseWriter, r *htt
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("api key regenerated successfully", resp, http.StatusOK))
-}
-
-func (a *DashboardHandler) RevokeEndpointAPIKey(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	endpoint, err := a.retrieveEndpoint(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	securityService := createSecurityService(a)
-	key, err := securityService.GetAPIKeyByID(r.Context(), chi.URLParam(r, "keyID"))
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	if key.Role.Project != project.UID || key.Role.Endpoint != endpoint.UID {
-		_ = render.Render(w, r, util.NewErrorResponse(datastore.ErrNotAuthorisedToAccessDocument.Error(), http.StatusForbidden))
-		return
-	}
-
-	err = securityService.RevokeAPIKey(r.Context(), chi.URLParam(r, "keyID"))
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("api key revoked successfully", nil, http.StatusOK))
-}
-
-func (a *DashboardHandler) GetAPIKeyByID(w http.ResponseWriter, r *http.Request) {
-	securityService := createSecurityService(a)
-
-	apiKey, err := securityService.GetAPIKeyByID(r.Context(), chi.URLParam(r, "keyID"))
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-	resp := models.APIKeyByIDResponse{
-		UID:       apiKey.UID,
-		Name:      apiKey.Name,
-		Role:      apiKey.Role,
-		Type:      apiKey.Type,
-		ExpiresAt: apiKey.ExpiresAt,
-		UpdatedAt: apiKey.UpdatedAt,
-		CreatedAt: apiKey.CreatedAt,
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("api key fetched successfully", resp, http.StatusOK))
-}
-
-func (a *DashboardHandler) UpdateAPIKey(w http.ResponseWriter, r *http.Request) {
-	var updateApiKey struct {
-		Role auth.Role `json:"role"`
-	}
-
-	err := util.ReadJSON(r, &updateApiKey)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	securityService := createSecurityService(a)
-	apiKey, err := securityService.UpdateAPIKey(r.Context(), chi.URLParam(r, "keyID"), &updateApiKey.Role)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	resp := models.APIKeyByIDResponse{
-		UID:       apiKey.UID,
-		Name:      apiKey.Name,
-		Role:      apiKey.Role,
-		Type:      apiKey.Type,
-		ExpiresAt: apiKey.ExpiresAt,
-		UpdatedAt: apiKey.UpdatedAt,
-		CreatedAt: apiKey.CreatedAt,
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("api key updated successfully", resp, http.StatusOK))
 }
 
 func (a *DashboardHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
