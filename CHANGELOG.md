@@ -1,3 +1,10 @@
+## 23.05.1
+
+-   [Enhancement] Add prompt for disabling endpoints #1556
+-   [Enhancement] Extend subscription filter capabilities #1545 #1566
+-   [Enhancement] Improved logging for all workers #1560
+-   [Feature] Add support for on the fly events #1558
+
 ## 0.9.2
 
 -   [Documentation] Fix noun/verb agreement #1504
