@@ -9,7 +9,7 @@ helpFunc() {
 
 buildUi() {
     # Enter UI directory
-    cd ./web/ui/dashboard
+    cd ./web/ui/dashboard || exit 1
 
     # Install dependencies
     npm ci
@@ -39,7 +39,6 @@ while getopts ":b:" opt; do
 			echo ""
 			buildUi
 			;;
-		?) helpFunc ;;
 		:) helpFunc ;;
 	esac
 done

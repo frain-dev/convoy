@@ -9,7 +9,7 @@ on:
   push:
     tags:
       # Release binary for every tag.
-      - v0.*
+      - v.*
 
 jobs:
   build_ui:
