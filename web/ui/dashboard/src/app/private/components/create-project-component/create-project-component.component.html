@@ -257,7 +257,7 @@
 					<convoy-toggle formControlName="is_enabled" (onChange)="confirmToggleAction($event, 'metaEvents')"></convoy-toggle>
 				</div>
 				<ng-container *ngIf="projectForm.get('config.meta_event.is_enabled')?.value">
-					<div class="project-types grid grid-cols-2 gap-24px">
+					<div class="grid grid-cols-2 gap-24px">
 						<convoy-input-field>
 							<label for="url" convoy-label required="true">Webhook URL</label>
 							<input type="url" id="url" convoy-input autocomplete="url" formControlName="url" placeholder="Enter URL" />
@@ -266,7 +266,7 @@
 
 						<convoy-input-field>
 							<label for="secret" convoy-label>Endpoint Secret</label>
-							<input type="text" id="secret" convoy-input autocomplete="secret" formControlName="secret" placeholder="secret" />
+							<input type="text" id="secret" convoy-input autocomplete="secret" formControlName="secret" placeholder="Secret" />
 						</convoy-input-field>
 					</div>
 					<convoy-select
@@ -294,9 +294,6 @@
 			</svg>
 		</button>
 	</div>
-	<<<<<<< HEAD =======
-
-	<hr class="border-t border-grey-10 my-40px" />
 
 	<ng-container *ngIf="action === 'update' && projectDetails?.type === 'outgoing'">
 		<div class="flex items-center justify-between mt-52px mb-20px">
@@ -340,7 +337,6 @@
 			</table>
 		</div>
 	</ng-container>
-	>>>>>>> 08f87954d7f62c0f4b882267f11be4382d3b8eaa
 </form>
 
 <div convoy-modal *ngIf="showNewSignatureModal" (closeModal)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">

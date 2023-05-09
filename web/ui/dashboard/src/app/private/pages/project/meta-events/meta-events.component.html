@@ -23,7 +23,7 @@
 		<div class="min-w-[605px] w-full h-full overflow-hidden relative">
 			<convoy-table-loader id="meta_events_loader" [tableHead]="metaEventsTableHead" *ngIf="isLoadingMetaEvents"></convoy-table-loader>
 
-			<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="events-table-container" *ngIf="!isLoadingMetaEvents">
+			<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="events-table-container" *ngIf="!isLoadingMetaEvents && displayedMetaEvents && displayedMetaEvents.length > 0">
 				<table convoy-table>
 					<thead convoy-table-head>
 						<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of metaEventsTableHead; let i = index">{{ head }}</th>
@@ -64,7 +64,7 @@
 				</table>
 			</div>
 
-			<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="!isLoadingMetaEvents && (!displayedMetaEvents || displayedMetaEvents?.length === 0)"></convoy-empty-state>
+			<div convoy-empty-state type="table" class="my-150px" imgSrc="/assets/img/empty-state.svg" description="No meta event has been sent" *ngIf="!isLoadingMetaEvents && (!displayedMetaEvents || displayedMetaEvents?.length === 0)"></div>
 		</div>
 
 		<div class="max-w-[450px] w-full max-h-[calc(100vh - 950px)] min-h-[707px] overflow-auto relative border-l border-grey-10">
@@ -82,7 +82,7 @@
 					<div class="mb-20px"></div>
 					<prism language="json" [code]="generalService.getCodeSnippetString('res_body', selectedMetaEvent?.metadata?.data)" title="Response Body"></prism>
 				</ng-container>
-				<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event details to show here" *ngIf="!isLoadingMetaEvents && (!displayedMetaEvents || displayedMetaEvents?.length === 0)"></convoy-empty-state>
+				<div convoy-empty-state type="table" class="my-150px" imgSrc="/assets/img/empty-state.svg" description="No meta event has been sent" *ngIf="!isLoadingMetaEvents && (!displayedMetaEvents || displayedMetaEvents?.length === 0)"></div>
 			</div>
 		</div>
 	</div>
@@ -99,5 +99,7 @@
 		heading="Turn On Meta Events to Start Seeing Events"
 		description="Meta events are operation events that occur on your project, such as: event delivery, endpoints status, e.t.c. You can receive this events notification via HTTPS or Pub/Sub."
 		id="meta-events-empty-state"
-	></div>
+	>
+		<button convoy-button emptyStateCTA class="mt-36px" (click)="routeToMetaEvents()">Turn on Meta Events</button>
+	</div>
 </div>

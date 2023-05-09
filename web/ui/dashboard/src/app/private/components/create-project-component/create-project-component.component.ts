@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
 import { FormGroup, Validators, FormBuilder, FormArray } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PROJECT, VERSIONS } from 'src/app/models/project.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
@@ -81,11 +81,12 @@ export class CreateProjectComponent implements OnInit {
 	activeTab = 'project config';
 	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed'];
 
-	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router) {}
+	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router, private route: ActivatedRoute) {}
 
 	async ngOnInit() {
 		if (this.action === 'update') this.getProjectDetails();
 		if (!(await this.rbacService.userCanAccess('Project Settings|MANAGE'))) this.projectForm.disable();
+		this.switchTab(this.route.snapshot.queryParams?.activePage ?? 'project config');
 	}
 
 	get versions(): FormArray {
@@ -105,11 +106,6 @@ export class CreateProjectComponent implements OnInit {
 
 	addVersion() {
 		this.versions.push(this.newVersion());
-	}
-
-	switchTab(tab: string) {
-		if (tab === 'meta events') this.projectForm.patchValue({ config: { meta_event: { type: 'http' } } });
-		this.activeTab = tab;
 	}
 
 	toggleConfigForm(configValue: string) {
@@ -270,5 +266,17 @@ export class CreateProjectComponent implements OnInit {
 		const disableValue = event.target.checked;
 		if (actionType !== 'metaEvents') disableValue ? this.updateProject() : (this.disableEndpointsModal = true);
 		else if (!disableValue && actionType === 'metaEvents') this.showMetaEventPrompt = true;
+	}
+
+	switchTab(tab: string) {
+		if (tab === 'meta events') this.projectForm.patchValue({ config: { meta_event: { type: 'http' } } });
+		this.activeTab = tab;
+		this.addPageToUrl();
+	}
+
+	addPageToUrl() {
+		const queryParams: any = {};
+		queryParams.activePage = this.activeTab;
+		this.router.navigate([], { queryParams: Object.assign({}, queryParams) });
 	}
 }

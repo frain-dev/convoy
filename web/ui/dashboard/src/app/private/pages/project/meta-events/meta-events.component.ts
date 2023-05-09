@@ -16,6 +16,7 @@ import { StatusColorModule } from 'src/app/pipes/status-color/status-color.modul
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { META_EVENT } from 'src/app/models/project.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
+import { Router } from '@angular/router';
 
 @Component({
 	selector: 'convoy-meta-events',
@@ -51,7 +52,7 @@ export class MetaEventsComponent implements OnInit {
 	displayedMetaEvents!: { date: string; content: META_EVENT[] }[];
 	selectedMetaEvent: any;
 
-	constructor(public privateService: PrivateService, public generalService: GeneralService, private metaEventsService: MetaEventsService) {}
+	constructor(public privateService: PrivateService, public generalService: GeneralService, private metaEventsService: MetaEventsService, private router: Router) {}
 
 	ngOnInit(): void {
 		this.getMetaEvents();
@@ -91,5 +92,9 @@ export class MetaEventsComponent implements OnInit {
 		} catch {
 			this.isRetryingMetaEvent = false;
 		}
+	}
+
+	routeToMetaEvents() {
+		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.name + '/settings?activePage=meta%20events');
 	}
 }
