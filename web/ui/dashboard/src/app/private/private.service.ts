@@ -176,6 +176,7 @@ export class PrivateService {
 
 	getOrganizationMembership(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
+			if (!this.organisations?.data?.content.length) return resolve(this.membership);
 			if (this.membership && !requestDetails?.refresh) return resolve(this.membership);
 
 			try {

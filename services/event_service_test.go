@@ -9,6 +9,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -17,7 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func provideEventService(ctrl *gomock.Controller) *EventService {
+func provideEventService(ctrl *gomock.Controller) (*EventService, error) {
 	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
@@ -27,7 +28,18 @@ func provideEventService(ctrl *gomock.Controller) *EventService {
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
 	deviceRepo := mocks.NewMockDeviceRepository(ctrl)
-	return NewEventService(endpointRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo, sourceRepo, deviceRepo)
+
+	return &EventService{
+		endpointRepo:      endpointRepo,
+		eventRepo:         eventRepo,
+		eventDeliveryRepo: eventDeliveryRepo,
+		subRepo:           subRepo,
+		sourceRepo:        sourceRepo,
+		deviceRepo:        deviceRepo,
+		queue:             queue,
+		cache:             cache,
+		searcher:          searcher,
+	}, nil
 }
 
 func TestEventService_CreateEvent(t *testing.T) {
@@ -315,7 +327,12 @@ func TestEventService_CreateEvent(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
@@ -447,7 +464,12 @@ func TestEventService_CreateFanoutEvent(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
@@ -530,13 +552,18 @@ func TestEventService_ReplayAppEvent(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
 			}
 
-			err := es.ReplayEvent(tc.args.ctx, tc.args.event, tc.args.g)
+			err = es.ReplayEvent(tc.args.ctx, tc.args.event, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -548,6 +575,7 @@ func TestEventService_ReplayAppEvent(t *testing.T) {
 		})
 	}
 }
+
 
 func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 	ctx := context.Background()
@@ -713,7 +741,12 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
@@ -829,7 +862,12 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
@@ -849,6 +887,7 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 		})
 	}
 }
+
 
 func TestEventService_SearchEvents(t *testing.T) {
 	ctx := context.Background()
@@ -934,7 +973,12 @@ func TestEventService_SearchEvents(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
@@ -1010,13 +1054,18 @@ func TestEventService_ResendEventDelivery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
 			}
 
-			err := es.ResendEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g)
+			err = es.ResendEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
@@ -1211,13 +1260,18 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
 			}
 
-			err := es.RetryEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g)
+			err = es.RetryEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrMsg, err.Error())
@@ -1312,13 +1366,18 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
 			}
 
-			err := es.forceResendEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g)
+			err = es.forceResendEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrMsg, err.Error())
@@ -1400,13 +1459,18 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
 			}
 
-			err := es.requeueEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g)
+			err = es.requeueEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrMsg, err.Error())
@@ -1483,13 +1547,18 @@ func TestEventService_CreateDynamicEvents(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
 			}
 
-			err := es.CreateDynamicEvent(tc.args.ctx, tc.args.dynamicEvent, tc.args.g)
+			err = es.CreateDynamicEvent(tc.args.ctx, tc.args.dynamicEvent, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrMsg, err.Error())
