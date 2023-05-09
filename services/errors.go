@@ -1,14 +1,14 @@
 package services
 
 type ServiceError struct {
-	errMsg string
-	err    error
+	ErrMsg string
+	Err    error
 }
 
 func (a *ServiceError) Error() string {
-	return a.errMsg
+	return a.ErrMsg
 }
 
 func (a *ServiceError) Unwrap() error {
-	return a.err
+	return a.Err
 }
