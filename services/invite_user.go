@@ -42,8 +42,9 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 
 	err := iu.InviteRepo.CreateOrganisationInvite(ctx, iv)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to invite member")
-		return nil, err
+		errMsg := "failed to invite member"
+		log.FromContext(ctx).WithError(err).Error(errMsg)
+		return nil, &ServiceError{ErrMsg: errMsg, Err: err}
 	}
 
 	err = sendInviteEmail(ctx, iv, iu.User, iu.Organisation, iu.Queue)
