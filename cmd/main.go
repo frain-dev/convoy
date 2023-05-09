@@ -76,7 +76,7 @@ func main() {
 	c.Flags().StringVar(&queueScheme, "queue-scheme", "redis", "Queue Scheme")
 	c.Flags().StringVar(&queueUsername, "queue-username", "", "Queue Username")
 	c.Flags().StringVar(&queuePassword, "queue-password", "", "Queue Password")
-	c.Flags().StringVar(&queueDatabase, "queue-database", "0", "Queue database")
+	c.Flags().StringVar(&queueDatabase, "queue-database", "", "Queue database")
 	c.Flags().IntVar(&queuePort, "queue-port", 5432, "Queue Port")
 
 	c.PersistentPreRunE(hooks.PreRun(app, db))

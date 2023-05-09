@@ -47,13 +47,10 @@ var DefaultConfiguration = Configuration{
 		SetConnMaxLifetime:    3600,
 	},
 	Queue: QueueConfiguration{
-		Type:     RedisQueueProvider,
-		Scheme:   "redis",
-		Host:     "localhost",
-		Username: "",
-		Password: "",
-		Database: "0",
-		Port:     6379,
+		Type:   RedisQueueProvider,
+		Scheme: "redis",
+		Host:   "localhost",
+		Port:   6379,
 	},
 	Logger: LoggerConfiguration{
 		Level: "error",
@@ -69,6 +66,12 @@ var DefaultConfiguration = Configuration{
 	},
 	Auth: AuthConfiguration{
 		IsSignupEnabled: true,
+		Native: NativeRealmOptions{
+			Enabled: true,
+		},
+		Jwt: JwtRealmOptions{
+			Enabled: true,
+		},
 	},
 }
 
@@ -93,7 +96,18 @@ func (dc DatabaseConfiguration) BuildDsn() string {
 	if len(dc.Dsn) > 0 {
 		return dc.Dsn
 	}
-	return fmt.Sprintf("%s://%s:%s@%s:%d/%s", dc.Scheme, dc.Username, dc.Password, dc.Host, dc.Port, dc.Database)
+
+	authPart := ""
+	if dc.Username != "" || dc.Password != "" {
+		authPart = fmt.Sprintf("%s:%s@", dc.Username, dc.Password)
+	}
+
+	dbPart := ""
+	if dc.Database != "" {
+		dbPart = fmt.Sprintf("/%s", dc.Database)
+	}
+
+	return fmt.Sprintf("%s://%s%s:%d%s", dc.Scheme, authPart, dc.Host, dc.Port, dbPart)
 }
 
 type ServerConfiguration struct {
@@ -144,7 +158,18 @@ func (rc QueueConfiguration) BuildDsn() string {
 	if len(rc.Dsn) > 0 {
 		return rc.Dsn
 	}
-	return fmt.Sprintf("%s://%s:%s@%s:%d/%s", rc.Scheme, rc.Username, rc.Password, rc.Host, rc.Port, rc.Database)
+
+	authPart := ""
+	if rc.Username != "" || rc.Password != "" {
+		authPart = fmt.Sprintf("%s:%s@", rc.Username, rc.Password)
+	}
+
+	dbPart := ""
+	if rc.Database != "" {
+		dbPart = fmt.Sprintf("/%s", rc.Database)
+	}
+
+	return fmt.Sprintf("%s://%s%s:%d%s", rc.Scheme, authPart, rc.Host, rc.Port, dbPart)
 }
 
 type FileRealmOption struct {
