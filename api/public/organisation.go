@@ -30,7 +30,7 @@ func (a *PublicHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Req
 	organisations, paginationData, err := postgres.NewOrgMemberRepo(a.A.DB).LoadUserOrganisationsPaged(r.Context(), user.UID, pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch user organisations")
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch user organisations", http.StatusBadRequest))
 		return
 	}
 

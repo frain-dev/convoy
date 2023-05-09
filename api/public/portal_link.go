@@ -88,11 +88,11 @@ func (a *PublicHandler) GetPortalLinkByID(w http.ResponseWriter, r *http.Request
 	portalLink, err := postgres.NewPortalLinkRepo(a.A.DB).FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
 		if err == datastore.ErrPortalLinkNotFound {
-			_ = render.Render(w, r, util.NewServerResponse(err.Error(), nil, http.StatusNotFound))
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
 
-		_ = render.Render(w, r, util.NewServerResponse("error retrieving portal link", nil, http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse("error retrieving portal link", http.StatusBadRequest))
 		return
 	}
 
@@ -136,11 +136,11 @@ func (a *PublicHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Request)
 	portalLink, err := postgres.NewPortalLinkRepo(a.A.DB).FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
 		if err == datastore.ErrPortalLinkNotFound {
-			_ = render.Render(w, r, util.NewServerResponse(err.Error(), nil, http.StatusNotFound))
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
 
-		_ = render.Render(w, r, util.NewServerResponse("error retrieving portal link", nil, http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse("error retrieving portal link", http.StatusBadRequest))
 		return
 	}
 
@@ -184,17 +184,18 @@ func (a *PublicHandler) RevokePortalLink(w http.ResponseWriter, r *http.Request)
 	portalLink, err := portalLinkRepo.FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
 		if err == datastore.ErrPortalLinkNotFound {
-			_ = render.Render(w, r, util.NewServerResponse(err.Error(), nil, http.StatusNotFound))
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
 
-		_ = render.Render(w, r, util.NewServerResponse("error retrieving portal link", nil, http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse("error retrieving portal link", http.StatusBadRequest))
 		return
 	}
 
 	err = portalLinkRepo.RevokePortalLink(r.Context(), project.UID, portalLink.UID)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		log.FromContext(r.Context()).WithError(err).Error("failed to revoke portal link")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to revoke portal link", http.StatusBadRequest))
 		return
 	}
 
@@ -228,8 +229,8 @@ func (a *PublicHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Requ
 
 	portalLinks, paginationData, err := postgres.NewPortalLinkRepo(a.A.DB).LoadPortalLinksPaged(r.Context(), project.UID, filter, pageable)
 	if err != nil {
-		log.WithError(err).Println("an error occurred while fetching portal links")
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		log.FromContext(r.Context()).WithError(err).Println("an error occurred while fetching portal links")
+		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching portal links", http.StatusBadRequest))
 		return
 	}
 

@@ -33,7 +33,6 @@ func createEventService(a *PortalLinkHandler) (*services.EventService, error) {
 		endpointRepo, eventRepo, eventDeliveryRepo,
 		a.A.Queue, a.A.Cache, subRepo, sourceRepo, deviceRepo,
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +136,7 @@ func (a *PortalLinkHandler) CountAffectedEvents(w http.ResponseWriter, r *http.R
 	count, err := postgres.NewEventRepo(a.A.DB).CountEvents(r.Context(), project.UID, f)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event")
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event", http.StatusBadRequest))
 		return
 	}
 
@@ -277,7 +276,7 @@ func (a *PortalLinkHandler) CountAffectedEventDeliveries(w http.ResponseWriter, 
 	count, err := postgres.NewEventDeliveryRepo(a.A.DB).CountEventDeliveries(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event deliveries")
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusBadRequest))
 		return
 	}
 
