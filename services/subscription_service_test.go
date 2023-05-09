@@ -62,15 +62,94 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					Times(1).
 					Return(nil)
 
+				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1").
+					Times(1).
+					Return(int64(0), nil)
+
 				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
 					&datastore.Endpoint{
+						UID:       "endpoint-id-1",
 						ProjectID: "12345",
 					},
 					nil,
 				)
 			},
+		},
+		{
+			name: "should fail to count endpoint subscriptions for outgoing project",
+			args: args{
+				ctx: ctx,
+				newSubscription: &models.Subscription{
+					Name:       "sub 1",
+					SourceID:   "source-id-1",
+					EndpointID: "endpoint-id-1",
+				},
+				project: &datastore.Project{UID: "12345", Type: datastore.OutgoingProject},
+			},
+			wantSubscription: &datastore.Subscription{
+				Name:       "sub 1",
+				Type:       datastore.SubscriptionTypeAPI,
+				SourceID:   "source-id-1",
+				EndpointID: "endpoint-id-1",
+			},
+			dbFn: func(ss *SubcriptionService) {
+				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1").
+					Times(1).
+					Return(int64(0), errors.New("failed"))
+
+				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
+					Times(1).Return(
+					&datastore.Endpoint{
+						UID:       "endpoint-id-1",
+						ProjectID: "12345",
+					},
+					nil,
+				)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "failed to count endpoint subscriptions",
+		},
+		{
+			name: "should error for endpoint already has a subscription",
+			args: args{
+				ctx: ctx,
+				newSubscription: &models.Subscription{
+					Name:       "sub 1",
+					SourceID:   "source-id-1",
+					EndpointID: "endpoint-id-1",
+				},
+				project: &datastore.Project{UID: "12345", Type: datastore.OutgoingProject},
+			},
+			wantSubscription: &datastore.Subscription{
+				Name:       "sub 1",
+				Type:       datastore.SubscriptionTypeAPI,
+				SourceID:   "source-id-1",
+				EndpointID: "endpoint-id-1",
+			},
+			dbFn: func(ss *SubcriptionService) {
+				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1").
+					Times(1).
+					Return(int64(1), nil)
+
+				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
+					Times(1).Return(
+					&datastore.Endpoint{
+						UID:       "endpoint-id-1",
+						ProjectID: "12345",
+					},
+					nil,
+				)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "a subscription for this endpoint already exists",
 		},
 		{
 			name: "should create subscription for incoming project",
@@ -291,10 +370,15 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					Times(1).
 					Return(nil)
 
+				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1").
+					Times(1).
+					Return(int64(0), nil)
+
 				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
 					&datastore.Endpoint{
+						UID:       "endpoint-id-1",
 						ProjectID: "12345",
 					},
 					nil,

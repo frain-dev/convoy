@@ -6,8 +6,6 @@ import (
 	"fmt"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
@@ -15,17 +13,16 @@ import (
 )
 
 type MetaEventService struct {
-	Queue queue.Queuer
-	DB    database.Database
+	Queue         queue.Queuer
+	MetaEventRepo datastore.MetaEventRepository
 }
 
 func (m *MetaEventService) Run(ctx context.Context, metaEvent *datastore.MetaEvent) error {
-	metaEventRepo := postgres.NewMetaEventRepo(m.DB)
-
 	metaEvent.Status = datastore.ScheduledEventStatus
-	err := metaEventRepo.UpdateMetaEvent(ctx, metaEvent.ProjectID, metaEvent)
+	err := m.MetaEventRepo.UpdateMetaEvent(ctx, metaEvent.ProjectID, metaEvent)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to update meta event")
+		return err
 	}
 
 	payload := task.MetaEvent{

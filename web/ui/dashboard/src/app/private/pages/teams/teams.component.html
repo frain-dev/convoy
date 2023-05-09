@@ -28,7 +28,7 @@
 				</ul>
 			</div>
 
-			<button convoy-permission="Team|MANAGE" convoy-button size="sm" class="min-w-[150px] h-36px" (click)="openCreateTeamModal(); currentId = ''">Add team member</button>
+			<button convoy-permission="Team|MANAGE" convoy-button size="sm" class="min-w-[150px] h-36px" (click)="openCreateTeamModal()">Add team member</button>
 		</div>
 	</div>
 
@@ -51,19 +51,22 @@
 								<convoy-badge texture="dark" [text]="team?.user_metadata?.first_name + ' ' + team?.user_metadata?.last_name"></convoy-badge>
 							</td>
 							<td convoy-table-cell>
-								{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}
+								{{ team.role.type | role }}
 							</td>
 							<td convoy-table-cell>All projects</td>
 							<td convoy-table-cell>
-								<div convoy-dropdown size="lg">
+								<div convoy-dropdown size="md" position="left" *ngIf="team.user_id !== userDetails?.uid">
 									<button dropdownTrigger convoy-button size="sm" fill="clear">
 										<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
 									</button>
 
 									<ul dropdownOptions>
 										<li>
-											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full" (click)="showDeactivateModal = !showDeactivateModal; selectedMember = team; currentId = ''; showOverlay = false">
-												Deactivate team member
+											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="clear" class="w-full !justify-start" (click)="selectedMember = team; showUpdateMemberModal()">Update</button>
+										</li>
+										<li>
+											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full !justify-start" (click)="showDeactivateModal = !showDeactivateModal; selectedMember = team; showOverlay = false">
+												Deactivate
 											</button>
 										</li>
 									</ul>
@@ -112,7 +115,7 @@
 						<td convoy-table-cell class="pl-20px">
 							{{ team.invitee_email }}
 						</td>
-						<td convoy-table-cell>{{ team.role.type === 'super_user' ? 'Super user' : team.role.type }}</td>
+						<td convoy-table-cell>{{ team.role.type | role }}</td>
 						<td convoy-table-cell>All projects</td>
 						<td convoy-table-cell>
 							<div convoy-dropdown>
@@ -122,7 +125,7 @@
 
 								<ul dropdownOptions>
 									<li class="border-b border-b-grey-10">
-										<button convoy-dropdown-option convoy-button fill="clear" color="grey" class="w-full" (click)="resendInvite(team.uid); currentId = ''">Resend Invite</button>
+										<button convoy-dropdown-option convoy-button fill="clear" color="grey" class="w-full" (click)="resendInvite(team.uid)">Resend Invite</button>
 									</li>
 									<li>
 										<button convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
@@ -181,16 +184,16 @@
 	</div>
 </div>
 
-<div convoy-modal (closeModal)="goToTeams()" *ngIf="showInviteTeamMemberModal">
+<div convoy-modal (closeModal)="goToTeams()" *ngIf="showInviteTeamMemberModal || showUpdateMember">
 	<div convoy-modal-header>
-		<h2 class="font-semibold capitalize">Add Team Member</h2>
+		<h2 class="font-semibold capitalize">{{ showUpdateMember ? 'Update' : 'Add' }} Team Member</h2>
 
 		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="goToTeams()">
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</button>
 	</div>
 
-	<form class="p-20px" [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()">
+	<form class="p-20px" [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()" *ngIf="!showUpdateMember; else updateMemberForm">
 		<convoy-input-field>
 			<label for="email" convoy-label required="true">Email</label>
 			<input type="email" id="email" convoy-input autocomplete="email" formControlName="invitee_email" placeholder="Enter member email" />
@@ -198,16 +201,35 @@
 		</convoy-input-field>
 
 		<ng-container formGroupName="role">
-			<convoy-select className="mb-24px" label="role" name="role" formControlName="type" [options]="roles" errorMessage="Select user role" [required]="true" (selectedOption)="inviteUserForm.get('role')?.patchValue({ type: $event })"></convoy-select>
+			<convoy-select *convoy-enterprise className="mb-24px" label="Role" name="role" formControlName="type" [options]="roles" errorMessage="Select user role" [required]="true" (selectedOption)="inviteUserForm.get('role')?.patchValue({ type: $event })"></convoy-select>
 		</ng-container>
 
 		<div class="flex justify-end pt-24px pb-40px">
-			<button convoy-button [disabled]="inviteUserForm.disabled" fill="outline" type="button" routerLink="/team">Discard</button>
 			<button convoy-button class="ml-16px" [disabled]="invitingUser || inviteUserForm.disabled">
-				{{ invitingUser ? 'Inviting User..' : 'Send Invite' }}
+				{{ invitingUser ? 'Inviting User...' : 'Send Invite' }}
 			</button>
 		</div>
 	</form>
+
+	<ng-template #updateMemberForm>
+		<form class="p-20px" [formGroup]="memberForm" (ngSubmit)="updateMember()">
+			<convoy-input-field formGroupName="user_metadata">
+				<label for="email" convoy-label required="true">Email</label>
+				<input type="email" id="email" convoy-input autocomplete="email" formControlName="email" placeholder="Enter member email" />
+				<convoy-input-error *ngIf="memberForm.get('email')?.touched && memberForm.get('email')?.invalid">Please enter a valid email</convoy-input-error>
+			</convoy-input-field>
+
+			<ng-container formGroupName="role">
+				<convoy-select *convoy-enterprise className="mb-24px" label="Role" name="role" formControlName="type" [options]="roles" errorMessage="Select user role" [required]="true" (selectedOption)="memberForm.get('role')?.patchValue({ type: $event })"></convoy-select>
+			</ng-container>
+
+			<div class="flex justify-end pt-24px pb-40px">
+				<button convoy-button class="ml-16px" [disabled]="updatingMember || memberForm.disabled">
+					{{ updatingMember ? 'Updating...' : 'Update' }}
+				</button>
+			</div>
+		</form>
+	</ng-template>
 </div>
 
 <app-delete-modal

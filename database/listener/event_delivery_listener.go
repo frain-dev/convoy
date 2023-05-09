@@ -2,17 +2,17 @@ package listener
 
 import (
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/mevent"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/services"
 )
 
 type EventDeliveryListener struct {
-	mEvent *mevent.MetaEvent
+	mEvent *services.MetaEvent
 }
 
 func NewEventDeliveryListener(queue queue.Queuer, projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository) *EventDeliveryListener {
-	mEvent := mevent.NewMetaEvent(queue, projectRepo, metaEventRepo)
+	mEvent := services.NewMetaEvent(queue, projectRepo, metaEventRepo)
 	return &EventDeliveryListener{mEvent: mEvent}
 }
 

@@ -46,7 +46,7 @@ const (
 	e.authentication_type AS "authentication.type",
 	e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
 	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value"
-	FROM convoy.endpoints AS e 
+	FROM convoy.endpoints AS e
 	LEFT JOIN convoy.events_endpoints AS ee ON e.id = ee.endpoint_id
 	WHERE e.deleted_at IS NULL
 	`
@@ -58,6 +58,17 @@ const (
 	fetchEndpointsByAppId = baseEndpointFetch + ` AND e.app_id = $1 AND e.project_id = $2 GROUP BY e.id ORDER BY e.id;`
 
 	fetchEndpointsByOwnerId = baseEndpointFetch + ` AND e.project_id = $1 AND e.owner_id = $2 GROUP BY e.id ORDER BY e.id;`
+
+	fetchEndpointByTargetURL = `
+    SELECT e.id, e.title, e.status, e.owner_id, e.target_url,
+    e.description, e.http_timeout, e.rate_limit, e.rate_limit_duration,
+    e.advanced_signatures, e.slack_webhook_url, e.support_email,
+    e.app_id, e.project_id, e.secrets, e.created_at, e.updated_at,
+    e.authentication_type AS "authentication.type",
+    e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
+    e.authentication_type_api_key_header_value AS "authentication.api_key.header_value"
+    FROM convoy.endpoints AS e WHERE e.deleted_at IS NULL AND e.target_url = $1 AND e.project_id = $2;
+    `
 
 	updateEndpoint = `
 	UPDATE convoy.endpoints SET
@@ -107,27 +118,27 @@ const (
 	e.authentication_type AS "authentication.type",
 	e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
 	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value"
-	FROM convoy.endpoints AS e 
-	WHERE e.deleted_at IS NULL 
+	FROM convoy.endpoints AS e
+	WHERE e.deleted_at IS NULL
 	AND e.project_id = :project_id
 	AND (e.owner_id = :owner_id OR :owner_id = '')
 	AND (e.title ILIKE :title OR :title = '')
 	`
 
 	fetchEndpointsPagedForward = `
-	%s 
-	AND e.id <= :cursor 
+	%s
+	AND e.id <= :cursor
 	GROUP BY e.id
-	ORDER BY e.id DESC 
+	ORDER BY e.id DESC
 	LIMIT :limit
 	`
 
 	fetchEndpointsPagedBackward = `
-	WITH endpoints AS (  
-		%s 
-		AND e.id >= :cursor 
+	WITH endpoints AS (
+		%s
+		AND e.id >= :cursor
 		GROUP BY e.id
-		ORDER BY e.id ASC 
+		ORDER BY e.id ASC
 		LIMIT :limit
 	)
 
@@ -140,9 +151,9 @@ const (
 	WHERE s.deleted_at IS NULL
 	AND s.project_id = :project_id
 	AND (s.title ILIKE :title OR :title = '')
-	AND s.id > :cursor 
-	GROUP BY s.id 
-	ORDER BY s.id DESC 
+	AND s.id > :cursor
+	GROUP BY s.id
+	ORDER BY s.id DESC
 	LIMIT 1`
 )
 
@@ -157,10 +168,6 @@ func NewEndpointRepo(db database.Database) datastore.EndpointRepository {
 
 func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ac := endpoint.GetAuthConfig()
-	
-	defer func() {
-		go e.hook.Fire(datastore.EndpointCreated, endpoint)
-	}()
 
 	args := []interface{}{
 		endpoint.UID, endpoint.Title, endpoint.Status, endpoint.Secrets, endpoint.OwnerID, endpoint.TargetURL,
@@ -183,6 +190,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		return ErrEndpointNotCreated
 	}
 
+	go e.hook.Fire(datastore.EndpointCreated, endpoint)
 	return nil
 }
 
@@ -235,10 +243,6 @@ func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID str
 func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ac := endpoint.GetAuthConfig()
 
-	defer func() {
-		go e.hook.Fire(datastore.EndpointUpdated, endpoint)
-	}()
-
 	r, err := e.db.ExecContext(ctx, updateEndpoint, endpoint.UID, projectID, endpoint.Title, endpoint.Status, endpoint.OwnerID, endpoint.TargetURL,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail,
@@ -257,6 +261,7 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 		return ErrEndpointNotUpdated
 	}
 
+	go e.hook.Fire(datastore.EndpointUpdated, endpoint)
 	return nil
 }
 
@@ -285,10 +290,6 @@ func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.E
 	}
 	defer rollbackTx(tx)
 
-	defer func() {
-		go e.hook.Fire(datastore.EndpointDeleted, endpoint)
-	}()
-
 	_, err = tx.ExecContext(ctx, deleteEndpoint, endpoint.UID, projectID)
 	if err != nil {
 		return err
@@ -299,7 +300,13 @@ func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	go e.hook.Fire(datastore.EndpointDeleted, endpoint)
+	return nil
 }
 
 func (e *endpointRepo) CountProjectEndpoints(ctx context.Context, projectID string) (int64, error) {
@@ -311,6 +318,19 @@ func (e *endpointRepo) CountProjectEndpoints(ctx context.Context, projectID stri
 	}
 
 	return count, nil
+}
+
+func (e *endpointRepo) FindEndpointByTargetURL(ctx context.Context, projectID string, targetURL string) (*datastore.Endpoint, error) {
+	endpoint := &datastore.Endpoint{}
+	err := e.db.QueryRowxContext(ctx, fetchEndpointByTargetURL, targetURL, projectID).StructScan(endpoint)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrEndpointNotFound
+		}
+		return nil, err
+	}
+
+	return endpoint, nil
 }
 
 func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string, filter *datastore.Filter, pageable datastore.Pageable) ([]datastore.Endpoint, datastore.PaginationData, error) {

@@ -472,6 +472,89 @@
 				"additionalProperties": true,
 				"type": "object"
 			},
+			"datastore.MetaEvent": {
+				"properties": {
+					"attempt": {
+						"$ref": "#/components/schemas/datastore.MetaEventAttempt"
+					},
+					"created_at": {
+						"type": "string"
+					},
+					"deleted_at": {
+						"type": "string"
+					},
+					"event_type": {
+						"type": "string"
+					},
+					"metadata": {
+						"$ref": "#/components/schemas/datastore.Metadata"
+					},
+					"project_id": {
+						"type": "string"
+					},
+					"status": {
+						"$ref": "#/components/schemas/datastore.EventDeliveryStatus"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.MetaEventAttempt": {
+				"properties": {
+					"request_http_header": {
+						"$ref": "#/components/schemas/datastore.HttpHeader"
+					},
+					"response_data": {
+						"type": "string"
+					},
+					"response_http_header": {
+						"$ref": "#/components/schemas/datastore.HttpHeader"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.MetaEventConfiguration": {
+				"properties": {
+					"event_type": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"is_enabled": {
+						"type": "boolean"
+					},
+					"pub_sub": {
+						"$ref": "#/components/schemas/datastore.PubSubConfig"
+					},
+					"secret": {
+						"type": "string"
+					},
+					"type": {
+						"$ref": "#/components/schemas/datastore.MetaEventType"
+					},
+					"url": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.MetaEventType": {
+				"enum": [
+					"http",
+					"pub_sub"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"HTTPMetaEvent",
+					"PubSubMetaEvent"
+				]
+			},
 			"datastore.Metadata": {
 				"properties": {
 					"data": {
@@ -568,6 +651,9 @@
 					},
 					"max_payload_read_size": {
 						"type": "integer"
+					},
+					"meta_event": {
+						"$ref": "#/components/schemas/datastore.MetaEventConfiguration"
 					},
 					"ratelimit": {
 						"$ref": "#/components/schemas/datastore.RateLimitConfiguration"
@@ -975,6 +1061,112 @@
 				},
 				"type": "object"
 			},
+			"models.DynamicEndpoint": {
+				"properties": {
+					"advanced_signatures": {
+						"type": "boolean"
+					},
+					"appID": {
+						"description": "Deprecated but necessary for backward compatibility",
+						"type": "string"
+					},
+					"authentication": {
+						"$ref": "#/components/schemas/datastore.EndpointAuthentication"
+					},
+					"description": {
+						"type": "string"
+					},
+					"http_timeout": {
+						"type": "string"
+					},
+					"is_disabled": {
+						"type": "boolean"
+					},
+					"name": {
+						"type": "string"
+					},
+					"owner_id": {
+						"type": "string"
+					},
+					"rate_limit": {
+						"type": "integer"
+					},
+					"rate_limit_duration": {
+						"type": "string"
+					},
+					"secret": {
+						"type": "string"
+					},
+					"slack_webhook_url": {
+						"type": "string"
+					},
+					"support_email": {
+						"type": "string"
+					},
+					"url": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.DynamicEvent": {
+				"properties": {
+					"endpoint": {
+						"$ref": "#/components/schemas/models.DynamicEndpoint"
+					},
+					"event": {
+						"$ref": "#/components/schemas/models.DynamicEventStub"
+					},
+					"subscription": {
+						"$ref": "#/components/schemas/models.DynamicSubscription"
+					}
+				},
+				"type": "object"
+			},
+			"models.DynamicEventStub": {
+				"properties": {
+					"custom_headers": {
+						"additionalProperties": {
+							"type": "string"
+						},
+						"type": "object"
+					},
+					"data": {
+						"description": "Data is an arbitrary JSON value that gets sent as the body of the webhook to the endpoints",
+						"items": {
+							"type": "integer"
+						},
+						"type": "array"
+					},
+					"event_type": {
+						"type": "string"
+					},
+					"project_id": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.DynamicSubscription": {
+				"properties": {
+					"alert_config": {
+						"$ref": "#/components/schemas/datastore.AlertConfiguration"
+					},
+					"filter_config": {
+						"$ref": "#/components/schemas/datastore.FilterConfiguration"
+					},
+					"name": {
+						"type": "string"
+					},
+					"rate_limit_config": {
+						"$ref": "#/components/schemas/datastore.RateLimitConfiguration"
+					},
+					"retry_config": {
+						"$ref": "#/components/schemas/models.RetryConfiguration"
+					}
+				},
+				"type": "object"
+			},
 			"models.Endpoint": {
 				"properties": {
 					"advanced_signatures": {
@@ -1088,14 +1280,8 @@
 			},
 			"models.FilterSchema": {
 				"properties": {
-					"body": {
-						"additionalProperties": true,
-						"type": "object"
-					},
-					"header": {
-						"additionalProperties": true,
-						"type": "object"
-					}
+					"body": {},
+					"header": {}
 				},
 				"type": "object"
 			},
@@ -1207,53 +1393,6 @@
 					},
 					"type": {
 						"$ref": "#/components/schemas/datastore.SourceType"
-					},
-					"verifier": {
-						"$ref": "#/components/schemas/datastore.VerifierConfig"
-					}
-				},
-				"type": "object"
-			},
-			"models.SourceResponse": {
-				"properties": {
-					"created_at": {
-						"type": "string"
-					},
-					"deleted_at": {
-						"type": "string"
-					},
-					"is_disabled": {
-						"type": "boolean"
-					},
-					"mask_id": {
-						"type": "string"
-					},
-					"name": {
-						"type": "string"
-					},
-					"project_id": {
-						"type": "string"
-					},
-					"provider": {
-						"$ref": "#/components/schemas/datastore.SourceProvider"
-					},
-					"provider_config": {
-						"$ref": "#/components/schemas/datastore.ProviderConfig"
-					},
-					"pub_sub": {
-						"$ref": "#/components/schemas/datastore.PubSubConfig"
-					},
-					"type": {
-						"$ref": "#/components/schemas/datastore.SourceType"
-					},
-					"uid": {
-						"type": "string"
-					},
-					"updated_at": {
-						"type": "string"
-					},
-					"url": {
-						"type": "string"
 					},
 					"verifier": {
 						"$ref": "#/components/schemas/datastore.VerifierConfig"
@@ -4479,6 +4618,121 @@
 				]
 			}
 		},
+		"/v1/projects/{projectID}/events/dynamic": {
+			"post": {
+				"description": "This endpoint Creates an event with supplied endpoint and subscription",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.DynamicEvent"
+							}
+						}
+					},
+					"description": "Event Details",
+					"required": true,
+					"x-originalParamName": "event"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/public.Stub"
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/public.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/public.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/public.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Creates an event with supplied endpoint and subscription",
+				"tags": [
+					"Events"
+				]
+			}
+		},
 		"/v1/projects/{projectID}/events/fanout": {
 			"post": {
 				"description": "This endpoint uses the owner_id to fan out an event to multiple endpoints.",
@@ -4887,6 +5141,443 @@
 				"summary": "Replay event",
 				"tags": [
 					"Events"
+				]
+			}
+		},
+		"/v1/projects/{projectID}/meta-events": {
+			"get": {
+				"description": "This endpoint fetches meta events with pagination",
+				"parameters": [
+					{
+						"description": "start date",
+						"in": "query",
+						"name": "startDate",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "end date",
+						"in": "query",
+						"name": "endDate",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "results per page",
+						"in": "query",
+						"name": "perPage",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "page number",
+						"in": "query",
+						"name": "page",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/public.pagedResponse"
+														},
+														{
+															"properties": {
+																"content": {
+																	"items": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/datastore.MetaEvent"
+																			},
+																			{
+																				"properties": {
+																					"data": {
+																						"$ref": "#/components/schemas/public.Stub"
+																					}
+																				},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"type": "array"
+																}
+															},
+															"type": "object"
+														}
+													]
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/public.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/public.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/public.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "List all meta events",
+				"tags": [
+					"MetaEvents"
+				]
+			}
+		},
+		"/v1/projects/{projectID}/meta-events/{metaEventID}": {
+			"get": {
+				"description": "This endpoint retrieves a meta event",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "meta event id",
+						"in": "path",
+						"name": "metaEventID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/datastore.MetaEvent"
+														},
+														{
+															"properties": {
+																"data": {
+																	"$ref": "#/components/schemas/public.Stub"
+																}
+															},
+															"type": "object"
+														}
+													]
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/public.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/public.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/public.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Retrieve a meta event",
+				"tags": [
+					"MetaEvents"
+				]
+			}
+		},
+		"/v1/projects/{projectID}/meta-events/{metaEventID}/resend": {
+			"put": {
+				"description": "This endpoint retries a meta event",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "meta event id",
+						"in": "path",
+						"name": "metaEventID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/datastore.MetaEvent"
+														},
+														{
+															"properties": {
+																"data": {
+																	"$ref": "#/components/schemas/public.Stub"
+																}
+															},
+															"type": "object"
+														}
+													]
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/public.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/public.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/public.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Retry meta event",
+				"tags": [
+					"MetaEvents"
 				]
 			}
 		},
@@ -5609,7 +6300,7 @@
 															"properties": {
 																"content": {
 																	"items": {
-																		"$ref": "#/components/schemas/models.SourceResponse"
+																		"$ref": "#/components/schemas/models.Source"
 																	},
 																	"type": "array"
 																}
@@ -5741,7 +6432,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/models.SourceResponse"
+													"$ref": "#/components/schemas/models.Source"
 												}
 											},
 											"type": "object"
@@ -5987,7 +6678,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/models.SourceResponse"
+													"$ref": "#/components/schemas/models.Source"
 												}
 											},
 											"type": "object"
@@ -6121,7 +6812,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/models.SourceResponse"
+													"$ref": "#/components/schemas/models.Source"
 												}
 											},
 											"type": "object"

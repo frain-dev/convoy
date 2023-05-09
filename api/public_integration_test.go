@@ -185,7 +185,6 @@ func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints() 
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
 	require.Equal(s.T(), totalEndpoints, len(resp.Content.([]interface{})))
-
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints_WithPersonalAPIKey() {
@@ -762,6 +761,36 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent() {
 
 	require.NotEmpty(s.T(), event.UID)
 	require.Equal(s.T(), event.Endpoints[0], endpointID)
+}
+
+func (s *PublicEventIntegrationTestSuite) Test_CreateDynamicEvent() {
+	endpointID := ulid.Make().String()
+	expectedStatusCode := http.StatusCreated
+
+	// Just Before.
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
+
+	bodyStr := `{
+        "endpoint": {
+            "url":"https://testing.com",
+            "secret": "12345"
+        },
+        "event": {
+            "event_type":"*",
+            "data": {"name":"daniel"},
+            "custom_headers": {"x-sig":"convoy"}
+        }
+}`
+	body := serialize(bodyStr, endpointID)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/events/dynamic", s.DefaultProject.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateFanoutEvent_MultipleEndpoints() {

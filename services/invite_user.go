@@ -10,8 +10,6 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -20,8 +18,8 @@ import (
 )
 
 type InviteUserService struct {
-	Queue queue.Queuer
-	DB    database.Database
+	Queue      queue.Queuer
+	InviteRepo datastore.OrganisationInviteRepository
 
 	InviteeEmail string
 	Role         auth.Role
@@ -42,8 +40,7 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 		UpdatedAt:      time.Now(),
 	}
 
-	inviteRepo := postgres.NewOrgInviteRepo(iu.DB)
-	err := inviteRepo.CreateOrganisationInvite(ctx, iv)
+	err := iu.InviteRepo.CreateOrganisationInvite(ctx, iv)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to invite member")
 		return nil, err
@@ -51,7 +48,7 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 
 	err = iu.sendInviteEmail(ctx, iv)
 	if err != nil {
-		return nil, err
+		log.FromContext(ctx).WithError(err).Error("failed to send email invite")
 	}
 
 	return iv, nil
@@ -79,7 +76,6 @@ func (iu *InviteUserService) sendInviteEmail(ctx context.Context, iv *datastore.
 
 	buf, err := json.Marshal(em)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to marshal notification payload")
 		return nil
 	}
 
@@ -90,7 +86,7 @@ func (iu *InviteUserService) sendInviteEmail(ctx context.Context, iv *datastore.
 
 	err = iu.Queue.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to write new notification to the queue")
+		return err
 	}
 
 	return nil

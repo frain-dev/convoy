@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/frain-dev/convoy/util"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -14,7 +15,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/signature"
 	"github.com/frain-dev/convoy/retrystrategies"
-	"github.com/frain-dev/convoy/util"
 	"github.com/hibiken/asynq"
 )
 
@@ -65,13 +65,16 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 
 		resp, err := sendUrlRequest(project, metaEvent)
 		metaEvent.Metadata.NumTrials++
-		responseHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)
-		requestHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
 
-		metaEvent.Attempt = &datastore.MetaEventAttempt{
-			ResponseHeader: *responseHeader,
-			RequestHeader:  *requestHeader,
-			ResponseData:   string(resp.Body),
+		if resp != nil {
+			responseHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)
+			requestHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
+
+			metaEvent.Attempt = &datastore.MetaEventAttempt{
+				ResponseHeader: *responseHeader,
+				RequestHeader:  *requestHeader,
+				ResponseData:   string(resp.Body),
+			}
 		}
 
 		if err != nil {

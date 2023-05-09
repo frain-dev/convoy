@@ -49,15 +49,15 @@ const (
         COALESCE(ep.target_url, '') as "endpoint_metadata.target_url",
         ev.id as "event_metadata.id",
         ev.event_type as "event_metadata.event_type",
-		
+
 		COALESCE(d.id,'') as "device_metadata.id",
 		COALESCE(d.status,'') as "device_metadata.status",
 		COALESCE(d.host_name,'') as "device_metadata.host_name",
-		
+
 		COALESCE(s.id, '') AS "source_metadata.id",
 		COALESCE(s.name, '') AS "source_metadata.name"
-    FROM convoy.event_deliveries ed 
-	LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id 
+    FROM convoy.event_deliveries ed
+	LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id
 	LEFT JOIN convoy.events ev ON ed.event_id = ev.id
     LEFT JOIN convoy.devices d ON ed.device_id = d.id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
@@ -65,21 +65,21 @@ const (
     `
 
 	baseEventDeliveryPagedForward = `
-	%s 
-	%s 
-	AND ed.id <= :cursor 
+	%s
+	%s
+	AND ed.id <= :cursor
 	GROUP BY ed.id, ep.id, ev.id, d.id, s.id
-	ORDER BY ed.id DESC 
+	ORDER BY ed.id DESC
 	LIMIT :limit
 	`
 
 	baseEventDeliveryPagedBackward = `
-	WITH event_deliveries AS (  
-		%s 
-		%s 
-		AND ed.id >= :cursor 
+	WITH event_deliveries AS (
+		%s
+		%s
+		AND ed.id >= :cursor
 		GROUP BY ed.id, ep.id, ev.id, d.id, s.id
-		ORDER BY ed.id ASC 
+		ORDER BY ed.id ASC
 		LIMIT :limit
 	)
 
@@ -88,9 +88,9 @@ const (
 
 	fetchEventDeliveryByID = baseFetchEventDelivery + ` AND ed.id = $1 AND ed.project_id = $2`
 
-	baseEventDeliveryFilter = ` AND (ed.project_id = :project_id OR :project_id = '') 
-	AND (ed.event_id = :event_id OR :event_id = '') 
-	AND ed.created_at >= :start_date 
+	baseEventDeliveryFilter = ` AND (ed.project_id = :project_id OR :project_id = '')
+	AND (ed.event_id = :event_id OR :event_id = '')
+	AND ed.created_at >= :start_date
 	AND ed.created_at <= :end_date
 	AND ed.deleted_at IS NULL`
 
@@ -136,8 +136,8 @@ const (
         headers,attempts,status,metadata,cli_metadata,
         description,created_at,updated_at,
         COALESCE(device_id,'') as "device_id"
-    FROM convoy.event_deliveries 
-	WHERE status=$1 AND project_id = $2 AND device_id = $3 
+    FROM convoy.event_deliveries
+	WHERE status=$1 AND project_id = $2 AND device_id = $3
 	AND created_at >= $4 AND created_at <= $5
 	AND deleted_at IS NULL;
     `
@@ -363,10 +363,6 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, pr
 func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, delivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
 	delivery.DeliveryAttempts = append(delivery.DeliveryAttempts, attempt)
 
-	defer func() {
-		go e.hook.Fire(datastore.EventDeliveryUpdated, &delivery)
-	}()
-
 	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, delivery.DeliveryAttempts, delivery.Status, delivery.Metadata, delivery.UID, projectID)
 	if err != nil {
 		return err
@@ -381,6 +377,7 @@ func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, 
 		return ErrEventDeliveryAttemptsNotUpdated
 	}
 
+	go e.hook.Fire(datastore.EventDeliveryUpdated, &delivery)
 	return nil
 }
 

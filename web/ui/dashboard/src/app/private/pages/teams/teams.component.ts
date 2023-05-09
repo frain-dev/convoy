@@ -30,12 +30,12 @@ export class TeamsComponent implements OnInit {
 	organisationId!: string;
 	teams!: { pagination: PAGINATION; content: TEAM[] };
 	pendingInvites!: { pagination: PAGINATION; content: TEAM[] };
-	currentId!: string;
 	selectedFilterOption: 'active' | 'pending' = 'active';
 	showOverlay = false;
 	noData = false;
 	noInvitesData = false;
 	showFilterDropdown = false;
+	updatingMember = false;
 	invitingUser = false;
 	showPendingInvitesDropdown = false;
 	inviteUserForm: FormGroup = this.formBuilder.group({
@@ -44,18 +44,28 @@ export class TeamsComponent implements OnInit {
 			type: ['super_user', Validators.required]
 		})
 	});
+	memberForm: FormGroup = this.formBuilder.group({
+		role: this.formBuilder.group({
+			type: ['super_user', Validators.required]
+		}),
+		user_metadata: this.formBuilder.group({
+			email: ['', Validators.compose([Validators.required, Validators.email])]
+		})
+	});
 	roles = [
 		{ name: 'Super User', uid: 'super_user' },
 		{ name: 'Admin', uid: 'admin' },
 		{ name: 'Member', uid: 'member' }
 	];
+	showUpdateMember = false;
+	userDetails = this.privateService.getUserProfile;
 	private rbacService = inject(RbacService);
 
 	constructor(private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private teamService: TeamsService, private formBuilder: FormBuilder, private privateService: PrivateService) {}
 
-	ngOnInit() {
+	async ngOnInit() {
 		this.toggleFilter(this.route.snapshot.queryParams?.inviteType ?? 'active');
-		if (!this.rbacService.userCanAccess('Team|MANAGE')) this.inviteUserForm.disable();
+		if (!(await this.rbacService.userCanAccess('Team|MANAGE'))) this.inviteUserForm.disable();
 	}
 
 	async fetchTeamMembers(requestDetails?: { searchString?: string; page?: number }) {
@@ -121,7 +131,7 @@ export class TeamsComponent implements OnInit {
 	}
 
 	async inviteUser() {
-		if (this.inviteUserForm.invalid) return this.inviteUserForm.markAsTouched();
+		if (this.inviteUserForm.invalid) return this.inviteUserForm.markAllAsTouched();
 		this.invitingUser = true;
 		try {
 			const response = await this.teamService.inviteUserToOrganisation(this.inviteUserForm.value);
@@ -131,6 +141,21 @@ export class TeamsComponent implements OnInit {
 			this.router.navigate(['/team'], { queryParams: { inviteType: 'pending' } });
 		} catch {
 			this.invitingUser = false;
+		}
+	}
+
+	async updateMember() {
+		if (this.memberForm.invalid) return this.memberForm.markAllAsTouched();
+		this.updatingMember = true;
+
+		try {
+			const response = await this.teamService.updateMember(this.memberForm.value, this.selectedMember?.uid || '');
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.memberForm.reset();
+			this.updatingMember = false;
+			this.showUpdateMember = false;
+		} catch {
+			this.updatingMember = false;
 		}
 	}
 
@@ -150,7 +175,6 @@ export class TeamsComponent implements OnInit {
 			const response = await this.teamService.cancelPendingInvite(this.selectedMember.uid);
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.fetchPendingTeamMembers();
-			this.currentId = '';
 			this.showCancelInviteModal = false;
 			this.cancelingInvite = false;
 		} catch {
@@ -159,10 +183,18 @@ export class TeamsComponent implements OnInit {
 	}
 
 	goToTeams() {
+		this.showUpdateMember = false;
 		this.router.navigateByUrl('/team');
 	}
 
 	openCreateTeamModal() {
 		this.router.navigateByUrl('/team/new');
+	}
+
+	showUpdateMemberModal() {
+		if (this.selectedMember) {
+			this.memberForm.patchValue(this.selectedMember);
+			this.showUpdateMember = true;
+		}
 	}
 }

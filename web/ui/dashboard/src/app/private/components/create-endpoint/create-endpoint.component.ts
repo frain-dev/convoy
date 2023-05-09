@@ -68,9 +68,9 @@ export class CreateEndpointComponent implements OnInit {
 		private endpointService: EndpointDetailsService
 	) {}
 
-	ngOnInit() {
+	async ngOnInit() {
 		if (this.endpointUid && this.editMode) this.getEndpointDetails();
-		if (!this.rbacService.userCanAccess('Endpoints|MANAGE')) this.addNewEndpointForm.disable();
+		if (!(await this.rbacService.userCanAccess('Endpoints|MANAGE'))) this.addNewEndpointForm.disable();
 	}
 
 	async saveEndpoint() {

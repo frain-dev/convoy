@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptrace"
@@ -12,7 +11,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -66,54 +64,6 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 	r.Method = req.Method
 
 	err = d.do(req, r, maxResponseSize)
-
-	return r, err
-}
-
-func (d *Dispatcher) SendCliRequest(url string, method convoy.HttpMethod, apiKey string, jsonData json.RawMessage) (*Response, error) {
-	r := &Response{}
-
-	req, err := http.NewRequest(string(method), url, bytes.NewBuffer(jsonData))
-	if err != nil {
-		log.WithError(err).Error("error occurred while creating request")
-		return r, err
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("User-Agent", defaultUserAgent())
-	req.Header.Add("Authorization", fmt.Sprintf(" Bearer %s", apiKey))
-
-	r.RequestHeader = req.Header
-	r.URL = req.URL
-	r.Method = req.Method
-
-	err = d.do(req, r, config.MaxRequestSize)
-
-	return r, err
-}
-
-func (d *Dispatcher) ForwardCliEvent(url string, method convoy.HttpMethod, jsonData json.RawMessage, headers httpheader.HTTPHeader) (*Response, error) {
-	r := &Response{}
-
-	req, err := http.NewRequest(string(method), url, bytes.NewBuffer(jsonData))
-	if err != nil {
-		log.WithError(err).Error("error occurred while creating request")
-		return r, err
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("User-Agent", defaultUserAgent())
-
-	header := httpheader.HTTPHeader(req.Header)
-	header.MergeHeaders(headers)
-
-	req.Header = http.Header(header)
-
-	r.RequestHeader = req.Header
-	r.URL = req.URL
-	r.Method = req.Method
-
-	err = d.do(req, r, config.MaxRequestSize)
 
 	return r, err
 }

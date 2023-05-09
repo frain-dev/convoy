@@ -29,7 +29,7 @@ export class ResetPasswordComponent implements OnInit {
 	ngOnInit() {}
 
 	async resetPassword() {
-		if (this.resetPasswordForm.invalid) return this.resetPasswordForm.markAsTouched();
+		if (this.resetPasswordForm.invalid) return this.resetPasswordForm.markAllAsTouched();
 
 		this.resetingPassword = true;
 		try {

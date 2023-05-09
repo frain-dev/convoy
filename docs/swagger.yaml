@@ -320,6 +320,61 @@ definitions:
   datastore.M:
     additionalProperties: true
     type: object
+  datastore.MetaEvent:
+    properties:
+      attempt:
+        $ref: '#/definitions/datastore.MetaEventAttempt'
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      event_type:
+        type: string
+      metadata:
+        $ref: '#/definitions/datastore.Metadata'
+      project_id:
+        type: string
+      status:
+        $ref: '#/definitions/datastore.EventDeliveryStatus'
+      uid:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  datastore.MetaEventAttempt:
+    properties:
+      request_http_header:
+        $ref: '#/definitions/datastore.HttpHeader'
+      response_data:
+        type: string
+      response_http_header:
+        $ref: '#/definitions/datastore.HttpHeader'
+    type: object
+  datastore.MetaEventConfiguration:
+    properties:
+      event_type:
+        items:
+          type: string
+        type: array
+      is_enabled:
+        type: boolean
+      pub_sub:
+        $ref: '#/definitions/datastore.PubSubConfig'
+      secret:
+        type: string
+      type:
+        $ref: '#/definitions/datastore.MetaEventType'
+      url:
+        type: string
+    type: object
+  datastore.MetaEventType:
+    enum:
+    - http
+    - pub_sub
+    type: string
+    x-enum-varnames:
+    - HTTPMetaEvent
+    - PubSubMetaEvent
   datastore.Metadata:
     properties:
       data:
@@ -387,6 +442,8 @@ definitions:
         type: boolean
       max_payload_read_size:
         type: integer
+      meta_event:
+        $ref: '#/definitions/datastore.MetaEventConfiguration'
       ratelimit:
         $ref: '#/definitions/datastore.RateLimitConfiguration'
       replay_attacks_prevention_enabled:
@@ -659,6 +716,77 @@ definitions:
         type: string
       type: array
     type: object
+  models.DynamicEndpoint:
+    properties:
+      advanced_signatures:
+        type: boolean
+      appID:
+        description: Deprecated but necessary for backward compatibility
+        type: string
+      authentication:
+        $ref: '#/definitions/datastore.EndpointAuthentication'
+      description:
+        type: string
+      http_timeout:
+        type: string
+      is_disabled:
+        type: boolean
+      name:
+        type: string
+      owner_id:
+        type: string
+      rate_limit:
+        type: integer
+      rate_limit_duration:
+        type: string
+      secret:
+        type: string
+      slack_webhook_url:
+        type: string
+      support_email:
+        type: string
+      url:
+        type: string
+    type: object
+  models.DynamicEvent:
+    properties:
+      endpoint:
+        $ref: '#/definitions/models.DynamicEndpoint'
+      event:
+        $ref: '#/definitions/models.DynamicEventStub'
+      subscription:
+        $ref: '#/definitions/models.DynamicSubscription'
+    type: object
+  models.DynamicEventStub:
+    properties:
+      custom_headers:
+        additionalProperties:
+          type: string
+        type: object
+      data:
+        description: Data is an arbitrary JSON value that gets sent as the body of
+          the webhook to the endpoints
+        items:
+          type: integer
+        type: array
+      event_type:
+        type: string
+      project_id:
+        type: string
+    type: object
+  models.DynamicSubscription:
+    properties:
+      alert_config:
+        $ref: '#/definitions/datastore.AlertConfiguration'
+      filter_config:
+        $ref: '#/definitions/datastore.FilterConfiguration'
+      name:
+        type: string
+      rate_limit_config:
+        $ref: '#/definitions/datastore.RateLimitConfiguration'
+      retry_config:
+        $ref: '#/definitions/models.RetryConfiguration'
+    type: object
   models.Endpoint:
     properties:
       advanced_signatures:
@@ -739,12 +867,8 @@ definitions:
     type: object
   models.FilterSchema:
     properties:
-      body:
-        additionalProperties: true
-        type: object
-      header:
-        additionalProperties: true
-        type: object
+      body: {}
+      header: {}
     type: object
   models.PortalLink:
     properties:
@@ -818,37 +942,6 @@ definitions:
         $ref: '#/definitions/datastore.PubSubConfig'
       type:
         $ref: '#/definitions/datastore.SourceType'
-      verifier:
-        $ref: '#/definitions/datastore.VerifierConfig'
-    type: object
-  models.SourceResponse:
-    properties:
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      is_disabled:
-        type: boolean
-      mask_id:
-        type: string
-      name:
-        type: string
-      project_id:
-        type: string
-      provider:
-        $ref: '#/definitions/datastore.SourceProvider'
-      provider_config:
-        $ref: '#/definitions/datastore.ProviderConfig'
-      pub_sub:
-        $ref: '#/definitions/datastore.PubSubConfig'
-      type:
-        $ref: '#/definitions/datastore.SourceType'
-      uid:
-        type: string
-      updated_at:
-        type: string
-      url:
-        type: string
       verifier:
         $ref: '#/definitions/datastore.VerifierConfig'
     type: object
@@ -2548,6 +2641,62 @@ paths:
       summary: Batch replay events
       tags:
       - Events
+  /v1/projects/{projectID}/events/dynamic:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint Creates an event with supplied endpoint and subscription
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Event Details
+        in: body
+        name: event
+        required: true
+        schema:
+          $ref: '#/definitions/models.DynamicEvent'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/public.Stub'
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/public.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/public.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/public.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Creates an event with supplied endpoint and subscription
+      tags:
+      - Events
   /v1/projects/{projectID}/events/fanout:
     post:
       consumes:
@@ -2615,6 +2764,214 @@ paths:
       summary: Fan out an event
       tags:
       - Events
+  /v1/projects/{projectID}/meta-events:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches meta events with pagination
+      parameters:
+      - description: start date
+        in: query
+        name: startDate
+        type: string
+      - description: end date
+        in: query
+        name: endDate
+        type: string
+      - description: results per page
+        in: query
+        name: perPage
+        type: string
+      - description: page number
+        in: query
+        name: page
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/public.pagedResponse'
+                  - properties:
+                      content:
+                        items:
+                          allOf:
+                          - $ref: '#/definitions/datastore.MetaEvent'
+                          - properties:
+                              data:
+                                $ref: '#/definitions/public.Stub'
+                            type: object
+                        type: array
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/public.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/public.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/public.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List all meta events
+      tags:
+      - MetaEvents
+  /v1/projects/{projectID}/meta-events/{metaEventID}:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint retrieves a meta event
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: meta event id
+        in: path
+        name: metaEventID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/datastore.MetaEvent'
+                  - properties:
+                      data:
+                        $ref: '#/definitions/public.Stub'
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/public.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/public.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/public.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Retrieve a meta event
+      tags:
+      - MetaEvents
+  /v1/projects/{projectID}/meta-events/{metaEventID}/resend:
+    put:
+      consumes:
+      - application/json
+      description: This endpoint retries a meta event
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: meta event id
+        in: path
+        name: metaEventID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/datastore.MetaEvent'
+                  - properties:
+                      data:
+                        $ref: '#/definitions/public.Stub'
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/public.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/public.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/public.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Retry meta event
+      tags:
+      - MetaEvents
   /v1/projects/{projectID}/portal-links:
     get:
       consumes:
@@ -2972,7 +3329,7 @@ paths:
                   - properties:
                       content:
                         items:
-                          $ref: '#/definitions/models.SourceResponse'
+                          $ref: '#/definitions/models.Source'
                         type: array
                     type: object
               type: object
@@ -3034,7 +3391,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.SourceResponse'
+                  $ref: '#/definitions/models.Source'
               type: object
         "400":
           description: Bad Request
@@ -3153,7 +3510,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.SourceResponse'
+                  $ref: '#/definitions/models.Source'
               type: object
         "400":
           description: Bad Request
@@ -3218,7 +3575,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.SourceResponse'
+                  $ref: '#/definitions/models.Source'
               type: object
         "400":
           description: Bad Request

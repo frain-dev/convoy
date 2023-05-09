@@ -181,7 +181,6 @@ func StartConvoyServer(a *cli.App, withWorkers bool) error {
 			Limiter:  a.Limiter,
 			Searcher: a.Searcher,
 		})
-
 	if err != nil {
 		return err
 	}
@@ -217,6 +216,7 @@ func StartConvoyServer(a *cli.App, withWorkers bool) error {
 		subRepo := postgres.NewSubscriptionRepo(a.DB)
 		deviceRepo := postgres.NewDeviceRepo(a.DB)
 		configRepo := postgres.NewConfigRepo(a.DB)
+		metaEventRepo := postgres.NewMetaEventRepo(a.DB)
 
 		consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 			endpointRepo,
@@ -227,6 +227,17 @@ func StartConvoyServer(a *cli.App, withWorkers bool) error {
 			a.Queue))
 
 		consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
+			endpointRepo,
+			eventRepo,
+			projectRepo,
+			eventDeliveryRepo,
+			a.Cache,
+			a.Queue,
+			subRepo,
+			a.Searcher,
+			deviceRepo))
+
+		consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
 			endpointRepo,
 			eventRepo,
 			projectRepo,
@@ -257,6 +268,7 @@ func StartConvoyServer(a *cli.App, withWorkers bool) error {
 		consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 		consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.Searcher))
 		consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
+		consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo))
 
 		// start worker
 		a.Logger.Infof("Starting Convoy workers...")

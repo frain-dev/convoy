@@ -127,11 +127,11 @@ export class CreateSourceComponent implements OnInit {
 
 	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
 
-	ngOnInit(): void {
+	async ngOnInit() {
 		if (this.action === 'update') this.getSourceDetails();
 		this.privateService.activeProjectDetails?.type === 'incoming' ? this.sourceForm.patchValue({ type: 'http' }) : this.sourceForm.patchValue({ type: 'pub_sub' });
 
-		if (!this.rbacService.userCanAccess('Sources|MANAGE')) this.sourceForm.disable();
+		if (!(await this.rbacService.userCanAccess('Sources|MANAGE'))) this.sourceForm.disable();
 	}
 
 	async getSourceDetails() {

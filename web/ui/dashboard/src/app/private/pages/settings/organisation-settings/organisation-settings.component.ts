@@ -24,9 +24,9 @@ export class OrganisationSettingsComponent implements OnInit {
 
 	constructor(private formBuilder: FormBuilder, private settingService: SettingsService, private generalService: GeneralService, private router: Router, private privateService: PrivateService) {}
 
-	ngOnInit() {
+	async ngOnInit() {
 		this.getOrganisationDetails();
-		if (!this.rbacService.userCanAccess('Organisations|MANAGE')) this.editOrganisationForm.disable();
+		if (!(await this.rbacService.userCanAccess('Organisations|MANAGE'))) this.editOrganisationForm.disable();
 	}
 
 	async updateOrganisation() {
