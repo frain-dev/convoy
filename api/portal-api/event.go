@@ -19,7 +19,7 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-func createEventService(a *PortalLinkHandler) *services.EventService {
+func createEventService(a *PortalLinkHandler) (*services.EventService, error) {
 	sourceRepo := postgres.NewSourceRepo(a.A.DB)
 	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
@@ -27,10 +27,16 @@ func createEventService(a *PortalLinkHandler) *services.EventService {
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
 	deviceRepo := postgres.NewDeviceRepo(a.A.DB)
 
-	return services.NewEventService(
+	eventService, err := services.NewEventService(
 		endpointRepo, eventRepo, eventDeliveryRepo,
-		a.A.Queue, a.A.Cache, a.A.Searcher, subRepo, sourceRepo, deviceRepo,
+		a.A.Queue, a.A.Cache, subRepo, sourceRepo, deviceRepo,
 	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return eventService, nil
 }
 
 func (a *PortalLinkHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +52,12 @@ func (a *PortalLinkHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	err = eventService.ReplayEvent(r.Context(), event, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -63,7 +74,12 @@ func (a *PortalLinkHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -98,7 +114,12 @@ func (a *PortalLinkHandler) CountAffectedEvents(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -153,7 +174,12 @@ func (a *PortalLinkHandler) ResendEventDelivery(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -206,7 +232,12 @@ func (a *PortalLinkHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *ht
 		SearchParams: searchParams,
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	successes, failures, err := eventService.BatchRetryEventDelivery(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -246,7 +277,12 @@ func (a *PortalLinkHandler) CountAffectedEventDeliveries(w http.ResponseWriter, 
 		SearchParams: searchParams,
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	count, err := eventService.CountAffectedEventDeliveries(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -271,7 +307,12 @@ func (a *PortalLinkHandler) ForceResendEventDeliveries(w http.ResponseWriter, r 
 		return
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	successes, failures, err := eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -314,8 +355,13 @@ func (a *PortalLinkHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reques
 		SearchParams: searchParams,
 	}
 
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	if cfg.Search.Type == config.TypesenseSearchProvider && !util.IsStringEmpty(query) {
-		eventService := createEventService(a)
 		m, paginationData, err := eventService.Search(r.Context(), f)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -327,7 +373,6 @@ func (a *PortalLinkHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	eventService := createEventService(a)
 	m, paginationData, err := eventService.GetEventsPaged(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
@@ -369,7 +414,12 @@ func (a *PortalLinkHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *ht
 		SearchParams: searchParams,
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	ed, paginationData, err := eventService.GetEventDeliveriesPaged(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))

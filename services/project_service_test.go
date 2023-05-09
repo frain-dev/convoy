@@ -8,21 +8,22 @@ import (
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	nooplimiter "github.com/frain-dev/convoy/limiter/noop"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
 
-func provideProjectService(ctrl *gomock.Controller) *ProjectService {
+func provideProjectService(ctrl *gomock.Controller) (*ProjectService, error) {
 	projectRepo := mocks.NewMockProjectRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 	cache := mocks.NewMockCache(ctrl)
-	return NewProjectService(apiKeyRepo, projectRepo, eventRepo, eventDeliveryRepo, nooplimiter.NewNoopLimiter(), cache)
+
+	return NewProjectService(apiKeyRepo, projectRepo, eventRepo, eventDeliveryRepo, cache)
 }
 
 func TestProjectService_CreateProject(t *testing.T) {
@@ -383,7 +384,12 @@ func TestProjectService_CreateProject(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			gs := provideProjectService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			gs, err := provideProjectService(ctrl)
+			require.NoError(t, err)
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
@@ -560,7 +566,12 @@ func TestProjectService_UpdateProject(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			gs := provideProjectService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			gs, err := provideProjectService(ctrl)
+			require.NoError(t, err)
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
@@ -667,7 +678,12 @@ func TestProjectService_GetProjects(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			gs := provideProjectService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			gs, err := provideProjectService(ctrl)
+			require.NoError(t, err)
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
@@ -752,14 +768,19 @@ func TestProjectService_FillProjectStatistics(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			gs := provideProjectService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			gs, err := provideProjectService(ctrl)
+			require.NoError(t, err)
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
 				tc.dbFn(gs)
 			}
 
-			err := gs.FillProjectStatistics(tc.args.ctx, tc.args.g)
+			err = gs.FillProjectStatistics(tc.args.ctx, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -818,14 +839,19 @@ func TestProjectService_DeleteProject(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			gs := provideProjectService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			gs, err := provideProjectService(ctrl)
+			require.NoError(t, err)
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
 				tc.dbFn(gs)
 			}
 
-			err := gs.DeleteProject(tc.args.ctx, tc.args.id)
+			err = gs.DeleteProject(tc.args.ctx, tc.args.id)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())

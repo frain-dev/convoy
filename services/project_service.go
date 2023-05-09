@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/config"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
@@ -28,15 +29,25 @@ type ProjectService struct {
 	cache             cache.Cache
 }
 
-func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, limiter limiter.RateLimiter, cache cache.Cache) *ProjectService {
+func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache) (*ProjectService, error) {
+	cfg, err := config.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	rlimiter, err := limiter.NewLimiter(cfg.Limiter)
+	if err != nil {
+		return nil, err
+	}
+
 	return &ProjectService{
 		apiKeyRepo:        apiKeyRepo,
 		projectRepo:       projectRepo,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
-		limiter:           limiter,
+		limiter:           rlimiter,
 		cache:             cache,
-	}
+	}, nil
 }
 
 func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.Project, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Project, *models.APIKeyResponse, error) {
