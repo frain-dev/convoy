@@ -17,7 +17,6 @@ import (
 const (
 	MaxResponseSizeKb = 50                       // in kilobytes
 	MaxResponseSize   = MaxResponseSizeKb * 1024 // in bytes
-	MaxRequestSize    = MaxResponseSize
 
 	DefaultHost = "localhost:5005"
 )
@@ -36,17 +35,25 @@ var DefaultConfiguration = Configuration{
 		},
 	},
 	Database: DatabaseConfiguration{
-		Type:               PostgresDatabaseProvider,
-		Dsn:                "postgres://postgres:postgres@localhost/convoy",
-		SetMaxOpenConns:    10,
-		SetMaxIdleConns:    10,
-		SetConnMaxLifetime: 3600,
+		Type:                  PostgresDatabaseProvider,
+		Scheme:                "postgres",
+		Host:                  "localhost",
+		Username:              "postgres",
+		Password:              "postgres",
+		Database:              "convoy",
+		Port:                  5432,
+		SetMaxOpenConnections: 10,
+		SetMaxIdleConnections: 10,
+		SetConnMaxLifetime:    3600,
 	},
 	Queue: QueueConfiguration{
-		Type: RedisQueueProvider,
-		Redis: RedisQueueConfiguration{
-			Dsn: "redis://localhost:6378",
-		},
+		Type:     RedisQueueProvider,
+		Scheme:   "redis",
+		Host:     "localhost",
+		Username: "",
+		Password: "",
+		Database: "0",
+		Port:     6379,
 	},
 	Logger: LoggerConfiguration{
 		Level: "error",
@@ -66,11 +73,27 @@ var DefaultConfiguration = Configuration{
 }
 
 type DatabaseConfiguration struct {
-	Type               DatabaseProvider `json:"type" envconfig:"CONVOY_DB_TYPE"`
-	Dsn                string           `json:"dsn" envconfig:"CONVOY_DB_DSN"`
-	SetMaxOpenConns    int              `json:"max_open_conn" envconfig:"CONVOY_DB_MAX_OPEN_CONN"`
-	SetMaxIdleConns    int              `json:"max_idle_conn" envconfig:"CONVOY_DB_MAX_IDLE_CONN"`
-	SetConnMaxLifetime int              `json:"conn_max_lifetime" envconfig:"CONVOY_DB_CONN_MAX_LIFETIME"`
+	// deprecated
+	Dsn  string           `json:"dsn" envconfig:"CONVOY_DB_DSN"`
+	Type DatabaseProvider `json:"type" envconfig:"CONVOY_DB_TYPE"`
+
+	Scheme   string `json:"scheme" envconfig:"CONVOY_DB_SCHEME"`
+	Host     string `json:"host" envconfig:"CONVOY_DB_HOST"`
+	Username string `json:"username" envconfig:"CONVOY_DB_USER"`
+	Password string `json:"password" envconfig:"CONVOY_DB_PASSWORD"`
+	Database string `json:"database" envconfig:"CONVOY_DB_DATABASE"`
+	Port     int    `json:"port" envconfig:"CONVOY_DB_PORT"`
+
+	SetMaxOpenConnections int `json:"max_open_conn" envconfig:"CONVOY_DB_MAX_OPEN_CONN"`
+	SetMaxIdleConnections int `json:"max_idle_conn" envconfig:"CONVOY_DB_MAX_IDLE_CONN"`
+	SetConnMaxLifetime    int `json:"conn_max_lifetime" envconfig:"CONVOY_DB_CONN_MAX_LIFETIME"`
+}
+
+func (dc DatabaseConfiguration) BuildDsn() string {
+	if len(dc.Dsn) > 0 {
+		return dc.Dsn
+	}
+	return fmt.Sprintf("%s://%s:%s@%s:%d/%s", dc.Scheme, dc.Username, dc.Password, dc.Host, dc.Port, dc.Database)
 }
 
 type ServerConfiguration struct {
@@ -89,8 +112,16 @@ type HTTPServerConfiguration struct {
 }
 
 type QueueConfiguration struct {
-	Type  QueueProvider           `json:"type" envconfig:"CONVOY_QUEUE_PROVIDER"`
-	Redis RedisQueueConfiguration `json:"redis"`
+	// deprecated
+	Dsn string `json:"dsn" envconfig:"CONVOY_REDIS_DSN"`
+
+	Type     QueueProvider `json:"type" envconfig:"CONVOY_QUEUE_PROVIDER"`
+	Scheme   string        `json:"scheme" envconfig:"CONVOY_REDIS_SCHEME"`
+	Host     string        `json:"host" envconfig:"CONVOY_REDIS_HOST"`
+	Username string        `json:"username" envconfig:"CONVOY_REDIS_USER"`
+	Password string        `json:"password" envconfig:"CONVOY_REDIS_PASSWORD"`
+	Database string        `json:"database" envconfig:"CONVOY_REDIS_DATABASE"`
+	Port     int           `json:"port" envconfig:"CONVOY_REDIS_PORT"`
 }
 
 type PrometheusConfiguration struct {
@@ -98,7 +129,22 @@ type PrometheusConfiguration struct {
 }
 
 type RedisQueueConfiguration struct {
+	// deprecated
 	Dsn string `json:"dsn" envconfig:"CONVOY_REDIS_DSN"`
+
+	Scheme   string `json:"scheme" envconfig:"CONVOY_REDIS_SCHEME"`
+	Host     string `json:"host" envconfig:"CONVOY_REDIS_HOST"`
+	Username string `json:"username" envconfig:"CONVOY_REDIS_USER"`
+	Password string `json:"password" envconfig:"CONVOY_REDIS_PASSWORD"`
+	Database string `json:"database" envconfig:"CONVOY_REDIS_DATABASE"`
+	Port     int    `json:"port" envconfig:"CONVOY_REDIS_PORT"`
+}
+
+func (rc QueueConfiguration) BuildDsn() string {
+	if len(rc.Dsn) > 0 {
+		return rc.Dsn
+	}
+	return fmt.Sprintf("%s://%s:%s@%s:%d/%s", rc.Scheme, rc.Username, rc.Password, rc.Host, rc.Port, rc.Database)
 }
 
 type FileRealmOption struct {
@@ -360,7 +406,7 @@ func ensureSSL(s ServerConfiguration) error {
 func ensureQueueConfig(queueCfg QueueConfiguration) error {
 	switch queueCfg.Type {
 	case RedisQueueProvider:
-		if queueCfg.Redis.Dsn == "" {
+		if queueCfg.BuildDsn() == "" {
 			return errors.New("redis queue dsn is empty")
 		}
 

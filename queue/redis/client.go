@@ -23,12 +23,12 @@ func NewClient(cfg config.Configuration) (*asynq.Client, error) {
 		return nil, errors.New("please select the redis driver in your config")
 	}
 
-	rdb, err := rdb.NewClient(cfg.Queue.Redis.Dsn)
+	redis, err := rdb.NewClient(cfg.Queue.BuildDsn())
 	if err != nil {
 		return nil, err
 	}
 
-	client := asynq.NewClient(rdb)
+	client := asynq.NewClient(redis)
 
 	return client, nil
 }
@@ -69,9 +69,9 @@ func (q *RedisQueue) Inspector() *asynq.Inspector {
 	return q.inspector
 }
 
-func (q *RedisQueue) DeleteEventDeliveriesfromQueue(queuename convoy.QueueName, ids []string) error {
+func (q *RedisQueue) DeleteEventDeliveriesFromQueue(queueName convoy.QueueName, ids []string) error {
 	for _, id := range ids {
-		taskInfo, err := q.inspector.GetTaskInfo(string(queuename), id)
+		taskInfo, err := q.inspector.GetTaskInfo(string(queueName), id)
 		if err != nil {
 			return err
 		}
@@ -81,7 +81,7 @@ func (q *RedisQueue) DeleteEventDeliveriesfromQueue(queuename convoy.QueueName, 
 				return err
 			}
 		}
-		err = q.inspector.DeleteTask(string(queuename), id)
+		err = q.inspector.DeleteTask(string(queueName), id)
 		if err != nil {
 			return err
 		}

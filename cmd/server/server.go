@@ -312,10 +312,122 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		c.Host = host
 	}
 
-	// CONVOY_REDIS_DSN
-	redis, err := cmd.Flags().GetString("redis")
+	// CONVOY_DB_TYPE
+	dbType, err := cmd.Flags().GetString("db-type")
 	if err != nil {
 		return nil, err
+	}
+
+	// CONVOY_DB_DSN
+	dbDsn, err := cmd.Flags().GetString("db-dsn")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_DB_SCHEME
+	dbScheme, err := cmd.Flags().GetString("db-scheme")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_DB_HOST
+	dbHost, err := cmd.Flags().GetString("db-host")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_DB_USERNAME
+	dbUsername, err := cmd.Flags().GetString("db-username")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_DB_PASSWORD
+	dbPassword, err := cmd.Flags().GetString("db-password")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_DB_DATABASE
+	dbDatabase, err := cmd.Flags().GetString("db-database")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_DB_PORT
+	dbPort, err := cmd.Flags().GetInt("db-port")
+	if err != nil {
+		return nil, err
+	}
+
+	c.Database = config.DatabaseConfiguration{
+		Type:     config.DatabaseProvider(dbType),
+		Dsn:      dbDsn,
+		Scheme:   dbScheme,
+		Host:     dbHost,
+		Username: dbUsername,
+		Password: dbPassword,
+		Database: dbDatabase,
+		Port:     dbPort,
+	}
+
+	// CONVOY_QUEUE_TYPE
+	queueType, err := cmd.Flags().GetString("queue-type")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_QUEUE_DSN
+	queueDsn, err := cmd.Flags().GetString("queue-dsn")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_QUEUE_SCHEME
+	queueScheme, err := cmd.Flags().GetString("queue-scheme")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_QUEUE_HOST
+	queueHost, err := cmd.Flags().GetString("queue-host")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_QUEUE_USERNAME
+	queueUsername, err := cmd.Flags().GetString("queue-username")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_QUEUE_PASSWORD
+	queuePassword, err := cmd.Flags().GetString("queue-password")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_QUEUE_DATABASE
+	queueDatabase, err := cmd.Flags().GetString("queue-database")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_QUEUE_PORT
+	queuePort, err := cmd.Flags().GetInt("queue-port")
+	if err != nil {
+		return nil, err
+	}
+
+	c.Queue = config.QueueConfiguration{
+		Type:     config.QueueProvider(queueType),
+		Dsn:      queueDsn,
+		Scheme:   queueScheme,
+		Host:     queueHost,
+		Username: queueUsername,
+		Password: queuePassword,
+		Database: queueDatabase,
+		Port:     queuePort,
 	}
 
 	// CONVOY_LIMITER_PROVIDER
@@ -326,8 +438,8 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	if !util.IsStringEmpty(rateLimiter) {
 		c.Limiter.Type = config.LimiterProvider(rateLimiter)
-		if rateLimiter == "redis" && !util.IsStringEmpty(redis) {
-			c.Limiter.Redis.Dsn = redis
+		if rateLimiter == "redis" {
+			c.Limiter.Redis.Dsn = c.Queue.BuildDsn()
 		}
 	}
 
@@ -339,8 +451,8 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	if !util.IsStringEmpty(cache) {
 		c.Cache.Type = config.CacheProvider(cache)
-		if cache == "redis" && !util.IsStringEmpty(redis) {
-			c.Cache.Redis.Dsn = redis
+		if cache == "redis" {
+			c.Cache.Redis.Dsn = c.Queue.BuildDsn()
 		}
 	}
 
@@ -585,13 +697,13 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 	}
 
 	if !util.IsStringEmpty(apiKeyAuthConfig) {
-		config := config.APIKeyAuthConfig{}
-		err = config.Decode(apiKeyAuthConfig)
+		authConfig := config.APIKeyAuthConfig{}
+		err = authConfig.Decode(apiKeyAuthConfig)
 		if err != nil {
 			return nil, err
 		}
 
-		c.Auth.File.APIKey = config
+		c.Auth.File.APIKey = authConfig
 	}
 
 	// CONVOY_BASIC_AUTH_CONFIG
@@ -601,13 +713,13 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 	}
 
 	if !util.IsStringEmpty(basicAuthConfig) {
-		config := config.BasicAuthConfig{}
-		err = config.Decode(basicAuthConfig)
+		authConfig := config.BasicAuthConfig{}
+		err = authConfig.Decode(basicAuthConfig)
 		if err != nil {
 			return nil, err
 		}
 
-		c.Auth.File.Basic = config
+		c.Auth.File.Basic = authConfig
 	}
 
 	return c, nil

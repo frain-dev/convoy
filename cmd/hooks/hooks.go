@@ -20,9 +20,8 @@ import (
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	redisQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/tracer"
-	"github.com/frain-dev/convoy/util"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/oklog/ulid/v2"
 	"github.com/spf13/cobra"
@@ -75,7 +74,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		var q queue.Queuer
 
 		if cfg.Queue.Type == config.RedisQueueProvider {
-			rdb, err := rdb.NewClient(cfg.Queue.Redis.Dsn)
+			redis, err := rdb.NewClient(cfg.Queue.BuildDsn())
 			if err != nil {
 				return err
 			}
@@ -89,12 +88,12 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			}
 			opts := queue.QueueOptions{
 				Names:             queueNames,
-				RedisClient:       rdb,
-				RedisAddress:      cfg.Queue.Redis.Dsn,
+				RedisClient:       redis,
+				RedisAddress:      cfg.Queue.BuildDsn(),
 				Type:              string(config.RedisQueueProvider),
 				PrometheusAddress: cfg.Prometheus.Dsn,
 			}
-			q = redisqueue.NewQueue(opts)
+			q = redisQueue.NewQueue(opts)
 		}
 
 		lo := log.NewLogger(os.Stdout)
@@ -191,7 +190,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		OnPrem: &onPrem,
 	}
 
-	config, err := configRepo.LoadConfiguration(ctx)
+	configuration, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {
 		if errors.Is(err, datastore.ErrConfigNotFound) {
 			a.Logger.Info("Creating Instance Config")
@@ -208,47 +207,133 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		return err
 	}
 
-	config.StoragePolicy = storagePolicy
-	config.IsSignupEnabled = cfg.Auth.IsSignupEnabled
-	config.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
-	config.UpdatedAt = time.Now()
+	configuration.StoragePolicy = storagePolicy
+	configuration.IsSignupEnabled = cfg.Auth.IsSignupEnabled
+	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
+	configuration.UpdatedAt = time.Now()
 
-	return configRepo.UpdateConfiguration(ctx, config)
+	return configRepo.UpdateConfiguration(ctx, configuration)
 }
 
 func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	c := &config.Configuration{}
 
-	// CONVOY_DB_DSN, CONVOY_DB_TYPE
-	dbDsn, err := cmd.Flags().GetString("db")
+	// CONVOY_DB_TYPE
+	dbType, err := cmd.Flags().GetString("db-type")
 	if err != nil {
 		return nil, err
 	}
 
-	if !util.IsStringEmpty(dbDsn) {
-		c.Database = config.DatabaseConfiguration{
-			Type: config.PostgresDatabaseProvider,
-			Dsn:  dbDsn,
-		}
-	}
-
-	// CONVOY_REDIS_DSN
-	redisDsn, err := cmd.Flags().GetString("redis")
+	// CONVOY_DB_DSN
+	dbDsn, err := cmd.Flags().GetString("db-dsn")
 	if err != nil {
 		return nil, err
 	}
 
-	// CONVOY_QUEUE_PROVIDER
-	queueDsn, err := cmd.Flags().GetString("queue")
+	// CONVOY_DB_SCHEME
+	dbScheme, err := cmd.Flags().GetString("db-scheme")
 	if err != nil {
 		return nil, err
 	}
 
-	if !util.IsStringEmpty(queueDsn) {
-		c.Queue.Type = config.QueueProvider(queueDsn)
-		if queueDsn == "redis" && !util.IsStringEmpty(redisDsn) {
-			c.Queue.Redis.Dsn = redisDsn
-		}
+	// CONVOY_DB_HOST
+	dbHost, err := cmd.Flags().GetString("db-host")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_DB_USERNAME
+	dbUsername, err := cmd.Flags().GetString("db-username")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_DB_PASSWORD
+	dbPassword, err := cmd.Flags().GetString("db-password")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_DB_DATABASE
+	dbDatabase, err := cmd.Flags().GetString("db-database")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_DB_PORT
+	dbPort, err := cmd.Flags().GetInt("db-port")
+	if err != nil {
+		return nil, err
+	}
+
+	c.Database = config.DatabaseConfiguration{
+		Type:     config.DatabaseProvider(dbType),
+		Dsn:      dbDsn,
+		Scheme:   dbScheme,
+		Host:     dbHost,
+		Username: dbUsername,
+		Password: dbPassword,
+		Database: dbDatabase,
+		Port:     dbPort,
+	}
+
+	// CONVOY_QUEUE_TYPE
+	queueType, err := cmd.Flags().GetString("queue-type")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_QUEUE_DSN
+	queueDsn, err := cmd.Flags().GetString("queue-dsn")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_QUEUE_SCHEME
+	queueScheme, err := cmd.Flags().GetString("queue-scheme")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_QUEUE_HOST
+	queueHost, err := cmd.Flags().GetString("queue-host")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_QUEUE_USERNAME
+	queueUsername, err := cmd.Flags().GetString("queue-username")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_QUEUE_PASSWORD
+	queuePassword, err := cmd.Flags().GetString("queue-password")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_QUEUE_DATABASE
+	queueDatabase, err := cmd.Flags().GetString("queue-database")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_QUEUE_PORT
+	queuePort, err := cmd.Flags().GetInt("queue-port")
+	if err != nil {
+		return nil, err
+	}
+
+	c.Queue = config.QueueConfiguration{
+		Type:     config.QueueProvider(queueType),
+		Dsn:      queueDsn,
+		Scheme:   queueScheme,
+		Host:     queueHost,
+		Username: queueUsername,
+		Password: queuePassword,
+		Database: queueDatabase,
+		Port:     queuePort,
 	}
 
 	return c, nil
@@ -295,13 +380,12 @@ func checkPendingMigrations(db database.Database) error {
 			delete(counter, id.Id)
 		}
 	}
-	rows.Close()
 
 	if len(counter) > 0 {
 		return postgres.ErrPendingMigrationsFound
 	}
 
-	return nil
+	return rows.Close()
 }
 
 func shouldCheckMigration(cmd *cobra.Command) bool {
