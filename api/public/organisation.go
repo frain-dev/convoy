@@ -3,6 +3,8 @@ package public
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/frain-dev/convoy/database/postgres"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/services"
@@ -24,11 +26,10 @@ func (a *PublicHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Req
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	orgService := createOrganisationService(a)
 
-	organisations, paginationData, err := orgService.LoadUserOrganisationsPaged(r.Context(), user, pageable)
+	organisations, paginationData, err := postgres.NewOrgMemberRepo(a.A.DB).LoadUserOrganisationsPaged(r.Context(), user.UID, pageable)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to load organisations")
+		log.FromContext(r.Context()).WithError(err).Error("failed to fetch user organisations")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

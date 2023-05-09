@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -78,14 +79,14 @@ func (a *DashboardHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	endpointService := createEndpointService(a)
 	filter := &datastore.Filter{
 		Query:   r.URL.Query().Get("q"),
 		OwnerID: r.URL.Query().Get("ownerId"),
 	}
 
 	pageable := m.GetPageableFromContext(r.Context())
-	endpoints, paginationData, err := endpointService.LoadEndpointsPaged(r.Context(), project.UID, filter, pageable)
+	filter.Query = strings.TrimSpace(filter.Query)
+	endpoints, paginationData, err := postgres.NewEndpointRepo(a.A.DB).LoadEndpointsPaged(r.Context(), project.UID, filter, pageable)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to load endpoints")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))

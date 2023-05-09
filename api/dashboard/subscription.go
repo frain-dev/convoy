@@ -3,6 +3,8 @@ package dashboard
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
@@ -34,12 +36,15 @@ func (a *DashboardHandler) GetSubscriptions(w http.ResponseWriter, r *http.Reque
 	endpointIDs := getEndpointIDs(r)
 	filter := &datastore.FilterBy{ProjectID: project.UID, EndpointIDs: endpointIDs}
 
-	subService := createSubscriptionService(a)
-	subscriptions, paginationData, err := subService.LoadSubscriptionsPaged(r.Context(), filter, pageable)
+	subscriptions, paginationData, err := postgres.NewSubscriptionRepo(a.A.DB).LoadSubscriptionsPaged(r.Context(), project.UID, filter, pageable)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to load subscriptions")
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching subscriptions")
+		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching subscriptions", http.StatusInternalServerError))
 		return
+	}
+
+	if subscriptions == nil {
+		subscriptions = make([]datastore.Subscription, 0)
 	}
 
 	org, err := a.retrieveOrganisation(r)
@@ -136,10 +141,10 @@ func (a *DashboardHandler) DeleteSubscription(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	err = subService.DeleteSubscription(r.Context(), project.UID, sub)
+	err = postgres.NewSubscriptionRepo(a.A.DB).DeleteSubscription(r.Context(), project.UID, sub)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to delete subscription")
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		log.FromContext(r.Context()).WithError(err).Error("failed to delete subscription")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to delete subscription", http.StatusBadRequest))
 		return
 	}
 
@@ -185,19 +190,18 @@ func (a *DashboardHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http
 		return
 	}
 
-	subService := createSubscriptionService(a)
-
-	isBodyValid, err := subService.TestSubscriptionFilter(r.Context(), test.Request.Body, test.Schema.Body)
+	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
+	isBodyValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Body, test.Schema.Body)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("an error occured while validating the subscription filter")
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		log.FromContext(r.Context()).WithError(err).Error("failed to validate subscription filter")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to validate subscription filter", http.StatusBadRequest))
 		return
 	}
 
-	isHeaderValid, err := subService.TestSubscriptionFilter(r.Context(), test.Request.Headers, test.Schema.Headers)
+	isHeaderValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Headers, test.Schema.Headers)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("an error occured while validating the subscription filter")
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		log.FromContext(r.Context()).WithError(err).Error("failed to validate subscription filter")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to validate subscription filter", http.StatusBadRequest))
 		return
 	}
 

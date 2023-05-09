@@ -38,16 +38,6 @@ func NewOrganisationInviteService(orgRepo datastore.OrganisationRepository, user
 	}
 }
 
-func (ois *OrganisationInviteService) LoadOrganisationInvitesPaged(ctx context.Context, org *datastore.Organisation, inviteStatus datastore.InviteStatus, pageable datastore.Pageable) ([]datastore.OrganisationInvite, datastore.PaginationData, error) {
-	invites, paginationData, err := ois.orgInviteRepo.LoadOrganisationsInvitesPaged(ctx, org.UID, inviteStatus, pageable)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to load organisation invites")
-		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, errors.New("failed to load organisation invites"))
-	}
-
-	return invites, paginationData, nil
-}
-
 func (ois *OrganisationInviteService) sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, org *datastore.Organisation, user *datastore.User, baseURL string) error {
 	em := email.Message{
 		Email:        iv.InviteeEmail,

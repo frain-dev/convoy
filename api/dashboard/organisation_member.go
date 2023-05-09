@@ -3,6 +3,8 @@ package dashboard
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/services"
@@ -28,10 +30,10 @@ func (a *DashboardHandler) GetOrganisationMembers(w http.ResponseWriter, r *http
 	}
 
 	userID := r.URL.Query().Get("userID")
-	orgMemberService := createOrganisationMemberService(a)
-	members, paginationData, err := orgMemberService.LoadOrganisationMembersPaged(r.Context(), org, userID, pageable)
+
+	members, paginationData, err := postgres.NewOrgMemberRepo(a.A.DB).LoadOrganisationMembersPaged(r.Context(), org.UID, userID, pageable)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to load organisations")
+		log.FromContext(r.Context()).WithError(err).Error("failed to fetch organisation members")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -47,10 +49,10 @@ func (a *DashboardHandler) GetOrganisationMember(w http.ResponseWriter, r *http.
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	orgMemberService := createOrganisationMemberService(a)
 
-	member, err := orgMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
+	member, err := postgres.NewOrgMemberRepo(a.A.DB).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
 	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation member by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -78,14 +80,14 @@ func (a *DashboardHandler) UpdateOrganisationMember(w http.ResponseWriter, r *ht
 		return
 	}
 
-	orgMemberService := createOrganisationMemberService(a)
-
-	member, err := orgMemberService.FindOrganisationMemberByID(r.Context(), org, memberID)
+	member, err := postgres.NewOrgMemberRepo(a.A.DB).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
 	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation member by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
+	orgMemberService := createOrganisationMemberService(a)
 	organisationMember, err := orgMemberService.UpdateOrganisationMember(r.Context(), member, &roleUpdate.Role)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
