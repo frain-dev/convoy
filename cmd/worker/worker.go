@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -73,12 +74,15 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			subRepo := postgres.NewSubscriptionRepo(a.DB)
 			deviceRepo := postgres.NewDeviceRepo(a.DB)
 			configRepo := postgres.NewConfigRepo(a.DB)
+			searchBackend, err := searcher.NewSearchClient(cfg)
+			if err != nil {
+				a.Logger.Debug("Failed to initialise search backend")
+			}
 
 			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 				endpointRepo,
 				eventDeliveryRepo,
 				projectRepo,
-				a.Limiter,
 				subRepo,
 				a.Queue))
 
@@ -90,7 +94,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				a.Cache,
 				a.Queue,
 				subRepo,
-				a.Searcher,
 				deviceRepo))
 
 			consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
@@ -101,7 +104,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				a.Cache,
 				a.Queue,
 				subRepo,
-				a.Searcher,
 				deviceRepo))
 
 			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
@@ -110,7 +112,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				eventRepo,
 				eventDeliveryRepo,
 				postgres.NewExportRepo(a.DB),
-				a.Searcher,
+				searchBackend,
 			))
 
 			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(
@@ -122,7 +124,13 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 
 			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, cfg))
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
-			consumer.RegisterHandlers(convoy.IndexDocument, task.SearchIndex(a.Searcher))
+
+			indexDocument, err := task.NewIndexDocument(cfg)
+			if err != nil {
+				return err
+			}
+			consumer.RegisterHandlers(convoy.IndexDocument, indexDocument.ProcessTask)
+
 			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 			consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo))
 

@@ -11,14 +11,32 @@
         }
     },
     "auth": {
-        "type": "basic",
         "file": {
             "basic": [
+                {
+                    "username": "testx",
+                    "password": "test",
+                    "role": {
+                        "type": "admin",
+                        "group":"sendcash-pay"
+                    }
+                },
                 {
                     "username": "test",
                     "password": "test",
                     "role": {
-                        "type": "admin",
+                        "type": "super_user",
+                        "groups": [
+                            "buycoins"
+                        ]
+                    }
+                }
+            ],
+            "api_key": [
+                {
+                    "api_key": "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
+                    "role": {
+                        "type": "ui_admin",
                         "groups": [
                             "sendcash-pay"
                         ]
@@ -31,28 +49,13 @@
         "strategy": {
             "type": "default",
             "default": {
-                "intervalSeconds": 20,
-                "retryLimit": 3
+                "intervalSeconds": 125,
+                "retryLimit": 15
             }
         },
         "signature": {
             "header": "X-Company-Event-WebHook-Signature",
             "hash": "SHA256"
         }
-    },
-    "smtp": {
-        "provider": "sendgrid",
-        "url": "smtp.sendgrid.net",
-        "port": 2525,
-        "username": "apikey",
-        "password": "<api-key-from-sendgrid>",
-        "from": "support@frain.dev"
-    },
-    "search": {
-    	"type": "typesense",
-	"typesense": {
-		"host": "http://localhost:8108",
-		"api_key": "convoy"
-	}
     }
 }

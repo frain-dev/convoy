@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/signature"
 	"github.com/oklog/ulid/v2"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/notifications"
-	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
@@ -38,11 +38,16 @@ type EventDelivery struct {
 	ProjectID       string
 }
 
-func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, projectRepo datastore.ProjectRepository, rateLimiter limiter.RateLimiter, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer) func(context.Context, *asynq.Task) error {
+func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, projectRepo datastore.ProjectRepository, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
 
 		err := json.Unmarshal(t.Payload(), &data)
+		if err != nil {
+			return &EndpointError{Err: err, delay: defaultDelay}
+		}
+
+		cfg, err := config.Get()
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
@@ -79,6 +84,12 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		ec := &EventDeliveryConfig{subscription: subscription, project: p}
 		rlc := ec.rateLimitConfig()
 
+		rateLimiter, err := limiter.NewLimiter(cfg.Limiter)
+		if err != nil {
+			log.WithError(err).Error("failed to initialise redis rate limiter")
+			return &EndpointError{Err: err, delay: delayDuration}
+		}
+
 		res, err := rateLimiter.ShouldAllow(context.Background(), endpoint.TargetURL, rlc.Count, int(rlc.Duration))
 		if err != nil {
 			return nil
@@ -103,11 +114,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		}
 
 		var attempt datastore.DeliveryAttempt
-
-		cfg, err := config.Get()
-		if err != nil {
-			return &EndpointError{Err: err, delay: delayDuration}
-		}
 
 		var httpDuration time.Duration
 		if util.IsStringEmpty(endpoint.HttpTimeout) {

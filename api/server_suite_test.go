@@ -30,8 +30,6 @@ import (
 	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	noopsearcher "github.com/frain-dev/convoy/internal/pkg/searcher/noop"
-	nooplimiter "github.com/frain-dev/convoy/limiter/noop"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -110,19 +108,15 @@ func buildServer() *ApplicationHandler {
 	logger.SetLevel(log.FatalLevel)
 
 	cache := ncache.NewNoopCache()
-	limiter := nooplimiter.NewNoopLimiter()
-	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
 
 	ah, _ := NewApplicationHandler(
 		&types.APIOptions{
-			DB:       db,
-			Queue:    queue,
-			Logger:   logger,
-			Tracer:   tracer,
-			Cache:    cache,
-			Limiter:  limiter,
-			Searcher: searcher,
+			DB:     db,
+			Queue:  queue,
+			Logger: logger,
+			Tracer: tracer,
+			Cache:  cache,
 		})
 
 	ah.RegisterPolicy()

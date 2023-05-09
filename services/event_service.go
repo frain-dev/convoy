@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -52,9 +53,19 @@ type createEvent struct {
 
 func NewEventService(
 	endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	queue queue.Queuer, cache cache.Cache, seacher searcher.Searcher, subRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository, deviceRepo datastore.DeviceRepository,
-) *EventService {
-	return &EventService{endpointRepo: endpointRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: seacher, subRepo: subRepo, sourceRepo: sourceRepo, deviceRepo: deviceRepo}
+	queue queue.Queuer, cache cache.Cache, subRepo datastore.SubscriptionRepository, sourceRepo datastore.SourceRepository, deviceRepo datastore.DeviceRepository,
+) (*EventService, error) {
+	cfg, err := config.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	searchBackend, err := searcher.NewSearchClient(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return &EventService{endpointRepo: endpointRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: searchBackend, subRepo: subRepo, sourceRepo: sourceRepo, deviceRepo: deviceRepo}, nil
 }
 
 func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event, g *datastore.Project) (*datastore.Event, error) {
