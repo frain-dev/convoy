@@ -55,10 +55,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 		this.isLoadingProject = true;
 
 		try {
-			await this.privateService.getProjectDetails({ refresh: true, projectId }).then(response => {
-				localStorage.setItem('IS_META_EVENTS_ENABLED', JSON.stringify(response.data.config.meta_event.is_enabled));
-				this.privateService.getProjectStat({ refresh: true });
-			});
+			await this.privateService.getProjectDetails({ refresh: true, projectId }).then(() => this.privateService.getProjectStat({ refresh: true }));
 			this.router.navigate([`/projects/${projectId}`]);
 		} catch (error) {
 			this.isLoadingProject = false;

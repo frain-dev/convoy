@@ -59,9 +59,8 @@ export class MetaEventsComponent implements OnInit {
 	}
 
 	get isMetaEventEnabled(): Boolean {
-		const isMetaEventEnabled = localStorage.getItem('IS_META_EVENTS_ENABLED');
-		if (isMetaEventEnabled) return JSON.parse(isMetaEventEnabled);
-		return false;
+		const isMetaEventEnabled = this.privateService.activeProjectDetails?.config?.meta_event?.is_enabled || false
+		return isMetaEventEnabled;
 	}
 
 	toggleMetaConfig(event: any) {

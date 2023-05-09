@@ -134,7 +134,6 @@ export class CreateProjectComponent implements OnInit {
 				if (this.privateService.activeProjectDetails?.type === 'outgoing') this.toggleConfigForm(config.uid);
 				else if (config.uid !== 'signature') this.toggleConfigForm(config.uid);
 			});
-			localStorage.setItem('IS_META_EVENTS_ENABLED', JSON.stringify(response.data.config.meta_event.is_enabled));
 			const versions = response.data.config.signature.versions;
 			if (!versions?.length) return;
 			this.signatureVersions = this.generalService.setContentDisplayed(versions);
