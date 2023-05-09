@@ -11,13 +11,45 @@
 		<input type="text" [formControl]="control" class="peer" [value]="option" hidden readonly />
 
 		<div
-			class="peer-disabled:text-grey-40 peer-disabled:border-primary-500 peer-disabled:bg-[#F7F9FC] transition-all duration-[.3s] w-full font-medium text-14 text-grey-100 border border-grey-20 valid:border-primary-500 disabled:border-primary-500 disabled:bg-[#F7F9FC] hover:bg-primary-500 hover:border-grey-20 focus:border-primary-100 focus:bg-white-100 outline-none rounded-4px bg-[#F7F9FC] py-12px px-16px appearance-none bg-[url(/assets/img/angle-down.svg)] bg-no-repeat bg-[right_10px_top_15px] min-h-[48px] cursor-pointer flex items-center flex-wrap"
+			class="
+				peer-disabled:text-grey-40 peer-disabled:border-primary-500 peer-disabled:bg-[#F7F9FC]
+				transition-all
+				duration-[.3s]
+				w-full
+				font-medium
+				text-14 text-grey-100
+				border border-grey-20
+				valid:border-primary-500
+				disabled:border-primary-500
+				disabled:bg-[#F7F9FC]
+				hover:bg-primary-500
+				hover:border-grey-20
+				focus:border-primary-100
+				focus:bg-white-100
+				outline-none
+				rounded-4px
+				bg-[#F7F9FC]
+				py-12px
+				px-16px
+				appearance-none
+				bg-[url(/assets/img/angle-down.svg)] bg-no-repeat
+				bg-[right_10px_top_15px]
+				min-h-[48px]
+				cursor-pointer
+				flex
+				items-center
+				flex-wrap
+			"
 		>
 			<span *ngIf="!multiple">{{ selectedValue?.name || selectedValue?.title || selectedValue }}</span>
 			<ng-container *ngIf="multiple">
-				<div *ngFor="let option of selectedOptions" class="border border-grey-10 bg-grey-10 px-4px font-medium text-12 mr-1 mb-1 rounded-4px flex items-center">
+				<div *ngFor="let option of selectedOptions" class="bg-primary-500 px-12px font-medium text-12 text-grey-40 mr-1 mb-1 rounded-[22px] flex items-center">
 					{{ option.name || option.title || option }}
-					<button convoy-button (click)="removeOption(option)" fill="text" type="button" class="py-0 px-0"><img src="/assets/img/close-icon-black.svg" width="12px" class="ml-4px" alt="close icon" /></button>
+					<button convoy-button (click)="removeOption(option)" fill="text" type="button" class="py-0 px-0 ml-4px">
+						<svg width="10" height="10" class="fill-grey-40">
+							<use xlink:href="#close-icon"></use>
+						</svg>
+					</button>
 				</div>
 			</ng-container>
 		</div>
