@@ -106,24 +106,6 @@ type PortalAPIKeyResponse struct {
 	ProjectID  string    `json:"project_id,omitempty"`
 }
 
-type SourceResponse struct {
-	UID            string                    `json:"uid"`
-	MaskID         string                    `json:"mask_id"`
-	ProjectID      string                    `json:"project_id"`
-	Name           string                    `json:"name"`
-	Type           datastore.SourceType      `json:"type"`
-	URL            string                    `json:"url"`
-	IsDisabled     bool                      `json:"is_disabled"`
-	Verifier       *datastore.VerifierConfig `json:"verifier"`
-	Provider       datastore.SourceProvider  `json:"provider"`
-	ProviderConfig *datastore.ProviderConfig `json:"provider_config"`
-	PubSub         *datastore.PubSubConfig   `json:"pub_sub"`
-
-	CreatedAt time.Time `json:"created_at,omitempty"`
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
-	DeletedAt null.Time `json:"deleted_at,omitempty"`
-}
-
 type LoginUser struct {
 	Username string `json:"username" valid:"required~please provide your username"`
 	Password string `json:"password" valid:"required~please provide your password"`

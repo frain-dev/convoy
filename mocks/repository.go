@@ -1976,3 +1976,85 @@ func (mr *MockExportRepositoryMockRecorder) ExportRecords(ctx, tableName, projec
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportRecords", reflect.TypeOf((*MockExportRepository)(nil).ExportRecords), ctx, tableName, projectID, createdAt)
 }
+
+// MockMetaEventRepository is a mock of MetaEventRepository interface.
+type MockMetaEventRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockMetaEventRepositoryMockRecorder
+}
+
+// MockMetaEventRepositoryMockRecorder is the mock recorder for MockMetaEventRepository.
+type MockMetaEventRepositoryMockRecorder struct {
+	mock *MockMetaEventRepository
+}
+
+// NewMockMetaEventRepository creates a new mock instance.
+func NewMockMetaEventRepository(ctrl *gomock.Controller) *MockMetaEventRepository {
+	mock := &MockMetaEventRepository{ctrl: ctrl}
+	mock.recorder = &MockMetaEventRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockMetaEventRepository) EXPECT() *MockMetaEventRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateMetaEvent mocks base method.
+func (m *MockMetaEventRepository) CreateMetaEvent(arg0 context.Context, arg1 *datastore.MetaEvent) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateMetaEvent", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateMetaEvent indicates an expected call of CreateMetaEvent.
+func (mr *MockMetaEventRepositoryMockRecorder) CreateMetaEvent(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateMetaEvent", reflect.TypeOf((*MockMetaEventRepository)(nil).CreateMetaEvent), arg0, arg1)
+}
+
+// FindMetaEventByID mocks base method.
+func (m *MockMetaEventRepository) FindMetaEventByID(ctx context.Context, projectID, id string) (*datastore.MetaEvent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindMetaEventByID", ctx, projectID, id)
+	ret0, _ := ret[0].(*datastore.MetaEvent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindMetaEventByID indicates an expected call of FindMetaEventByID.
+func (mr *MockMetaEventRepositoryMockRecorder) FindMetaEventByID(ctx, projectID, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindMetaEventByID", reflect.TypeOf((*MockMetaEventRepository)(nil).FindMetaEventByID), ctx, projectID, id)
+}
+
+// LoadMetaEventsPaged mocks base method.
+func (m *MockMetaEventRepository) LoadMetaEventsPaged(ctx context.Context, projectID string, f *datastore.Filter) ([]datastore.MetaEvent, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadMetaEventsPaged", ctx, projectID, f)
+	ret0, _ := ret[0].([]datastore.MetaEvent)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadMetaEventsPaged indicates an expected call of LoadMetaEventsPaged.
+func (mr *MockMetaEventRepositoryMockRecorder) LoadMetaEventsPaged(ctx, projectID, f interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadMetaEventsPaged", reflect.TypeOf((*MockMetaEventRepository)(nil).LoadMetaEventsPaged), ctx, projectID, f)
+}
+
+// UpdateMetaEvent mocks base method.
+func (m *MockMetaEventRepository) UpdateMetaEvent(ctx context.Context, projectID string, metaEvent *datastore.MetaEvent) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateMetaEvent", ctx, projectID, metaEvent)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateMetaEvent indicates an expected call of UpdateMetaEvent.
+func (mr *MockMetaEventRepositoryMockRecorder) UpdateMetaEvent(ctx, projectID, metaEvent interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMetaEvent", reflect.TypeOf((*MockMetaEventRepository)(nil).UpdateMetaEvent), ctx, projectID, metaEvent)
+}

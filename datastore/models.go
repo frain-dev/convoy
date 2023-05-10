@@ -123,6 +123,8 @@ type (
 	KeyType          string
 	PubSubType       string
 	PubSubHandler    func(*Source, string) error
+	MetaEventType    string
+	HookEventType    string
 )
 
 type EndpointAuthenticationType string
@@ -132,6 +134,20 @@ const (
 	RestApiSource  SourceType = "rest_api"
 	PubSubSource   SourceType = "pub_sub"
 	DBChangeStream SourceType = "db_change_stream"
+)
+
+const (
+	HTTPMetaEvent   MetaEventType = "http"
+	PubSubMetaEvent MetaEventType = "pub_sub"
+)
+
+const (
+	EndpointCreated      HookEventType = "endpoint.created"
+	EndpointUpdated      HookEventType = "endpoint.updated"
+	EndpointDeleted      HookEventType = "endpoint.deleted"
+	EventDeliveryUpdated HookEventType = "eventdelivery.updated"
+	EventDeliverySuccess HookEventType = "eventdelivery.success"
+	EventDeliveryFailed  HookEventType = "eventdelivery.failed"
 )
 
 const (
@@ -231,6 +247,7 @@ var (
 		RateLimit:                &DefaultRateLimitConfig,
 		Strategy:                 &DefaultStrategyConfig,
 		Signature:                GetDefaultSignatureConfig(),
+		MetaEvent:                &MetaEventConfiguration{IsEnabled: false},
 	}
 
 	DefaultStrategyConfig = StrategyConfiguration{
@@ -468,6 +485,7 @@ type ProjectConfig struct {
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
 	Strategy                 *StrategyConfiguration        `json:"strategy" db:"strategy"`
 	Signature                *SignatureConfiguration       `json:"signature" db:"signature"`
+	MetaEvent                *MetaEventConfiguration       `json:"meta_event" db:"meta_event"`
 }
 
 func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {
@@ -498,6 +516,14 @@ func (p *ProjectConfig) GetRetentionPolicyConfig() RetentionPolicyConfiguration 
 	return RetentionPolicyConfiguration{}
 }
 
+func (p *ProjectConfig) GetMetaEventConfig() MetaEventConfiguration {
+	if p.MetaEvent != nil {
+		return *p.MetaEvent
+	}
+
+	return MetaEventConfiguration{}
+}
+
 type RateLimitConfiguration struct {
 	Count    int    `json:"count" db:"count"`
 	Duration uint64 `json:"duration" db:"duration"`
@@ -520,6 +546,15 @@ type SignatureVersion struct {
 	Hash      string       `json:"hash,omitempty" db:"hash" valid:"required~please provide a valid hash,supported_hash~unsupported hash type"`
 	Encoding  EncodingType `json:"encoding" db:"encoding" valid:"required~please provide a valid signature header"`
 	CreatedAt time.Time    `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
+}
+
+type MetaEventConfiguration struct {
+	IsEnabled bool           `json:"is_enabled" db:"is_enabled"`
+	Type      MetaEventType  `json:"type" db:"type" valid:"optional, in(http|pub_sub)~unsupported meta event type"`
+	EventType pq.StringArray `json:"event_type" db:"event_type"`
+	URL       string         `json:"url" db:"url"`
+	Secret    string         `json:"secret" db:"secret"`
+	PubSub    *PubSubConfig  `json:"pub_sub" db:"pub_sub"`
 }
 
 type RetentionPolicyConfiguration struct {
@@ -549,25 +584,6 @@ type EventDeliveryFilter struct {
 	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
 }
 
-// func (g *ProjectFilter) WithNamesTrimmed() *ProjectFilter {
-// 	f := ProjectFilter{OrgID: g.OrgID, Names: []string{}}
-
-// 	for _, s := range g.Names {
-// 		s = strings.TrimSpace(s)
-// 		if len(s) == 0 {
-// 			continue
-// 		}
-// 		f.Names = append(f.Names, s)
-// 	}
-
-// 	return &f
-// }
-
-// func (g *ProjectFilter) ToGenericMap() map[string]interface{} {
-// 	m := map[string]interface{}{"name": g.Names}
-// 	return m
-// }
-
 func (o *Project) IsDeleted() bool { return o.DeletedAt.Valid }
 
 func (o *Project) IsOwner(e *Endpoint) bool { return o.UID == e.ProjectID }
@@ -590,6 +606,7 @@ var (
 	ErrDuplicateEmail                = errors.New("a user with this email already exists")
 	ErrNoActiveSecret                = errors.New("no active secret found")
 	ErrSecretNotFound                = errors.New("secret not found")
+	ErrMetaEventNotFound             = errors.New("meta event not found")
 )
 
 type AppMetadata struct {
@@ -1280,6 +1297,64 @@ type DeprecatedEndpoint struct {
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+type MetaEvent struct {
+	UID       string              `json:"uid" db:"id"`
+	ProjectID string              `json:"project_id" db:"project_id"`
+	EventType string              `json:"event_type" db:"event_type"`
+	Metadata  *Metadata           `json:"metadata" db:"metadata"`
+	Attempt   *MetaEventAttempt   `json:"attempt" db:"attempt"`
+	Status    EventDeliveryStatus `json:"status" db:"status"`
+
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+type MetaEventPayload struct {
+	EventType string          `json:"event_type"`
+	Data      json.RawMessage `json:"data"`
+}
+
+type MetaEventAttempt struct {
+	RequestHeader  HttpHeader `json:"request_http_header" db:"request_http_header"`
+	ResponseHeader HttpHeader `json:"response_http_header" db:"response_http_header"`
+	ResponseData   string     `json:"response_data,omitempty" db:"response_data"`
+}
+
+func (m *MetaEventAttempt) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *MetaEventAttempt) Value() (driver.Value, error) {
+	if m == nil {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 type Password struct {

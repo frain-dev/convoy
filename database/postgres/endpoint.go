@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
@@ -157,21 +158,17 @@ const (
 )
 
 type endpointRepo struct {
-	db *sqlx.DB
+	db   *sqlx.DB
+	hook *hooks.Hook
 }
 
 func NewEndpointRepo(db database.Database) datastore.EndpointRepository {
-	return &endpointRepo{db: db.GetDB()}
+	return &endpointRepo{db: db.GetDB(), hook: db.GetHook()}
 }
 
 func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
-	tx, err := e.db.BeginTxx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return err
-	}
-	defer rollbackTx(tx)
-
 	ac := endpoint.GetAuthConfig()
+
 	args := []interface{}{
 		endpoint.UID, endpoint.Title, endpoint.Status, endpoint.Secrets, endpoint.OwnerID, endpoint.TargetURL,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
@@ -179,7 +176,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		projectID, ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue,
 	}
 
-	result, err := tx.ExecContext(ctx, createEndpoint, args...)
+	result, err := e.db.ExecContext(ctx, createEndpoint, args...)
 	if err != nil {
 		return err
 	}
@@ -193,7 +190,8 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		return ErrEndpointNotCreated
 	}
 
-	return tx.Commit()
+	go e.hook.Fire(datastore.EndpointCreated, endpoint)
+	return nil
 }
 
 func (e *endpointRepo) FindEndpointByID(ctx context.Context, id, projectID string) (*datastore.Endpoint, error) {
@@ -263,6 +261,7 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 		return ErrEndpointNotUpdated
 	}
 
+	go e.hook.Fire(datastore.EndpointUpdated, endpoint)
 	return nil
 }
 
@@ -301,7 +300,13 @@ func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	go e.hook.Fire(datastore.EndpointDeleted, endpoint)
+	return nil
 }
 
 func (e *endpointRepo) CountProjectEndpoints(ctx context.Context, projectID string) (int64, error) {

@@ -66,11 +66,11 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 
 			// register worker.
 			consumer := worker.NewConsumer(a.Queue, lo)
-
+			projectRepo := postgres.NewProjectRepo(a.DB)
+			metaEventRepo := postgres.NewMetaEventRepo(a.DB)
 			endpointRepo := postgres.NewEndpointRepo(a.DB)
 			eventRepo := postgres.NewEventRepo(a.DB)
 			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
-			projectRepo := postgres.NewProjectRepo(a.DB)
 			subRepo := postgres.NewSubscriptionRepo(a.DB)
 			deviceRepo := postgres.NewDeviceRepo(a.DB)
 			configRepo := postgres.NewConfigRepo(a.DB)
@@ -132,6 +132,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			consumer.RegisterHandlers(convoy.IndexDocument, indexDocument.ProcessTask)
 
 			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
+			consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo))
 
 			// start worker
 			lo.Infof("Starting Convoy workers...")
