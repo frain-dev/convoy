@@ -217,7 +217,20 @@ func (a *PortalLinkHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *ht
 		return
 	}
 
+	portalLink, err := a.retrievePortalLink(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	endpointIDs := getEndpointIDs(r)
+	pLinkEndpoints := portalLink.Endpoints
+
+	valid := fetchPortalLinkEndpoints(endpointIDs, pLinkEndpoints)
+	if !valid {
+		_ = render.Render(w, r, util.NewServiceErrResponse(errors.New("unauthorized")))
+		return
+	}
 
 	f := &datastore.Filter{
 		Project:     project,
@@ -247,6 +260,20 @@ func (a *PortalLinkHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *ht
 	_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("%d successful, %d failed", successes, failures), nil, http.StatusOK))
 }
 
+func fetchPortalLinkEndpoints(endpointIDs []string, pLinkEndpoints []string) bool {
+	for _, id := range endpointIDs {
+		for _, plinkId := range pLinkEndpoints {
+			if id == plinkId {
+				continue
+			}
+
+			return false
+		}
+	}
+
+	return true
+}
+
 func (a *PortalLinkHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	status := make([]datastore.EventDeliveryStatus, 0)
 	for _, s := range r.URL.Query()["status"] {
@@ -267,7 +294,20 @@ func (a *PortalLinkHandler) CountAffectedEventDeliveries(w http.ResponseWriter, 
 		return
 	}
 
+	portalLink, err := a.retrievePortalLink(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	endpointIDs := getEndpointIDs(r)
+	pLinkEndpoints := portalLink.Endpoints
+
+	valid := fetchPortalLinkEndpoints(endpointIDs, pLinkEndpoints)
+	if !valid {
+		_ = render.Render(w, r, util.NewServiceErrResponse(errors.New("unauthorized")))
+		return
+	}
 
 	f := &datastore.Filter{
 		Project:      project,
@@ -342,8 +382,14 @@ func (a *PortalLinkHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	portalLink, err := a.retrievePortalLink(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	query := r.URL.Query().Get("query")
-	endpointIDs := getEndpointIDs(r)
+	endpointIDs := portalLink.Endpoints
 	sourceID := getSourceIDs(r)[0]
 
 	f := &datastore.Filter{
@@ -403,7 +449,13 @@ func (a *PortalLinkHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *ht
 		return
 	}
 
-	endpointIDs := getEndpointIDs(r)
+	portalLink, err := a.retrievePortalLink(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	endpointIDs := portalLink.Endpoints
 
 	f := &datastore.Filter{
 		Project:      project,
