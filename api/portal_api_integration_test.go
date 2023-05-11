@@ -618,6 +618,57 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	}
 }
 
+func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpointSubscriptions() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint2.UID})
+	require.NoError(s.T(), err)
+
+	vc := &datastore.VerifierConfig{
+		Type: datastore.BasicAuthVerifier,
+		BasicAuth: &datastore.BasicAuth{
+			UserName: "Convoy",
+			Password: "Convoy",
+		},
+	}
+
+	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", vc)
+	require.NoError(s.T(), err)
+
+	// seed subscriptions
+	for i := 0; i < 5; i++ {
+		_, err = testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, source, endpoint1, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
+		require.NoError(s.T(), err)
+
+	}
+
+	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, source, endpoint2, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
+	require.NoError(s.T(), err)
+
+	req := createRequest(http.MethodGet, fmt.Sprintf("/portal-api/subscriptions?token=%s", portalLink.Token), "", nil)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var respSubs []datastore.Subscription
+	resp := &pagedResponse{Content: &respSubs}
+
+	parseResponse(s.T(), w.Result(), &resp)
+	require.Equal(s.T(), 1, len(respSubs))
+	require.Equal(s.T(), sub.UID, respSubs[0].UID)
+}
+
 func TestPortalEventIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(PortalEventIntegrationTestSuite))
 }

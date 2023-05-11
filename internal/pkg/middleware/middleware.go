@@ -240,8 +240,7 @@ func Pagination(next http.Handler) http.Handler {
 		}
 
 		if len(rawNextCursor) == 0 {
-			const jsMaxInt = ^uint64(0) >> 1
-			rawNextCursor = fmt.Sprintf("%d", jsMaxInt)
+			rawNextCursor = "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"
 		}
 
 		if len(rawPrevCursor) == 0 {
