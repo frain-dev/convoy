@@ -13,12 +13,11 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 func createEventService(a *DashboardHandler) (*services.EventService, error) {

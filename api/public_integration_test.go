@@ -2646,7 +2646,119 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	require.Equal(s.T(), "1h", dbSub.AlertConfig.Threshold)
 	require.Equal(s.T(), subscription.RetryConfig.Duration, dbSub.RetryConfig.Duration)
 }
-
 func TestPublicSubscriptionIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(PublicSubscriptionIntegrationTestSuite))
+}
+
+type PublicMetaEventIntegrationTestSuite struct {
+	suite.Suite
+	DB             database.Database
+	Router         http.Handler
+	ConvoyApp      *ApplicationHandler
+	DefaultOrg     *datastore.Organisation
+	DefaultProject *datastore.Project
+	APIKey         string
+}
+
+func (s *PublicMetaEventIntegrationTestSuite) SetupSuite() {
+	s.DB = getDB()
+	s.ConvoyApp = buildServer()
+	s.Router = s.ConvoyApp.BuildRoutes()
+}
+
+func (s *PublicMetaEventIntegrationTestSuite) SetupTest() {
+	testdb.PurgeDB(s.T(), s.DB)
+
+	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
+	require.NoError(s.T(), err)
+
+	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, user)
+	require.NoError(s.T(), err)
+	s.DefaultOrg = org
+
+	// Setup Default Project.
+	s.DefaultProject, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, org.UID)
+	require.NoError(s.T(), err)
+
+	// Seed Auth
+	role := auth.Role{
+		Type:    auth.RoleAdmin,
+		Project: s.DefaultProject.UID,
+	}
+
+	_, s.APIKey, err = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
+	require.NoError(s.T(), err)
+
+	// Setup Config.
+	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
+	require.NoError(s.T(), err)
+
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+
+	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+}
+
+func (s *PublicMetaEventIntegrationTestSuite) TearDownTest() {
+	testdb.PurgeDB(s.T(), s.DB)
+	metrics.Reset()
+}
+
+func (s *PublicMetaEventIntegrationTestSuite) Test_GetMetaEventsPaged() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	m1, err := testdb.SeedMetaEvent(s.ConvoyApp.A.DB, s.DefaultProject)
+	require.NoError(s.T(), err)
+
+	m2, err := testdb.SeedMetaEvent(s.ConvoyApp.A.DB, s.DefaultProject)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/meta-events", s.DefaultProject.UID)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var respEvents []datastore.MetaEvent
+	resp := pagedResponse{Content: &respEvents}
+	parseResponse(s.T(), w.Result(), &resp)
+	require.Equal(s.T(), 2, len(respEvents))
+
+	v := []string{m1.UID, m2.UID}
+	for i := range respEvents {
+		require.Contains(s.T(), v, respEvents[i].UID)
+	}
+}
+
+func (s *PublicMetaEventIntegrationTestSuite) Test_GetMetaEvent_Valid_MetaEvent() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	metaEvent, err := testdb.SeedMetaEvent(s.ConvoyApp.A.DB, s.DefaultProject)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/meta-events/%s", s.DefaultProject.UID, metaEvent.UID)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var respMetaEvent datastore.MetaEvent
+	parseResponse(s.T(), w.Result(), &respMetaEvent)
+	require.Equal(s.T(), metaEvent.UID, respMetaEvent.UID)
+}
+
+func TestPublicMetaEventIntegrationTestSuite(t *testing.T) {
+	suite.Run(t, new(PublicMetaEventIntegrationTestSuite))
 }

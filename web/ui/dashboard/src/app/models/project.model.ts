@@ -17,6 +17,13 @@ export interface PROJECT {
 			header: string;
 			versions: VERSIONS[];
 		};
+		meta_event: {
+			event_type: string[];
+			is_enabled: boolean;
+			secret: string;
+			type: string;
+			url: string;
+		};
 		DisableEndpoint: boolean;
 		replay_attacks: boolean;
 	};
@@ -38,4 +45,27 @@ export interface VERSIONS {
 	encoding: string;
 	hash: string;
 	uid: string;
+}
+
+export interface META_EVENT {
+	attempt: {
+		request_http_header: object;
+		response_http_header: object;
+	};
+	created_at: string;
+	deleted_at: string;
+	event_type: string;
+	metadata: {
+		data: object;
+		interval_seconds: number;
+		next_send_time: string;
+		num_trials: number;
+		raw: string;
+		retry_limit: number;
+		strategy: string;
+	};
+	project_id: string;
+	status: string;
+	uid: string;
+	updated_at: string;
 }

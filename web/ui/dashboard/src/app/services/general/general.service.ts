@@ -109,4 +109,28 @@ export class GeneralService {
 		});
 		return displayedItems;
 	}
+
+	getCodeSnippetString(type: 'event_data' | 'res_body' | 'res_header' | 'req_header' | 'error', data: any) {
+		let displayMessage = '';
+		switch (type) {
+			case 'event_data':
+				displayMessage = 'No event payload was sent';
+				break;
+			case 'res_body':
+				displayMessage = 'No response body was sent';
+				break;
+			case 'res_header':
+				displayMessage = 'No response header was sent';
+				break;
+			case 'req_header':
+				displayMessage = 'No request header was sent';
+				break;
+			default:
+				displayMessage = '';
+				break;
+		}
+
+		if (data) return JSON.stringify(data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+		return displayMessage;
+	}
 }

@@ -17,10 +17,10 @@ import (
 )
 
 func createEndpointService(a *PublicHandler) *services.EndpointService {
+	projectRepo := postgres.NewProjectRepo(a.A.DB)
 	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 	eventRepo := postgres.NewEventRepo(a.A.DB)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
 
 	return services.NewEndpointService(
 		projectRepo, endpointRepo, eventRepo, eventDeliveryRepo, a.A.Cache, a.A.Queue,

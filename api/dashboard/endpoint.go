@@ -18,10 +18,10 @@ import (
 )
 
 func createEndpointService(a *DashboardHandler) *services.EndpointService {
+	projectRepo := postgres.NewProjectRepo(a.A.DB)
 	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 	eventRepo := postgres.NewEventRepo(a.A.DB)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
 
 	return services.NewEndpointService(
 		projectRepo, endpointRepo, eventRepo, eventDeliveryRepo, a.A.Cache, a.A.Queue,
@@ -250,7 +250,7 @@ func (a *DashboardHandler) retrieveEndpoint(r *http.Request) (*datastore.Endpoin
 		return &datastore.Endpoint{}, err
 	}
 
-	endpointID := chi.URLParam(r, "endpointID")
 	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+	endpointID := chi.URLParam(r, "endpointID")
 	return endpointRepo.FindEndpointByID(r.Context(), endpointID, project.UID)
 }

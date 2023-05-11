@@ -9,6 +9,7 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
@@ -59,10 +60,14 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 	projectName := newProject.Name
 
 	config := newProject.Config
-	if newProject.Config == nil {
+	if config == nil {
 		config = &datastore.DefaultProjectConfig
 	} else {
-		checkSignatureVersions(newProject.Config.Signature.Versions)
+		checkSignatureVersions(config.Signature.Versions)
+		err = validateMetaEvent(config.MetaEvent)
+		if err != nil {
+			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
+		}
 	}
 
 	project := &datastore.Project{
@@ -131,6 +136,10 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 	if update.Config != nil {
 		project.Config = update.Config
 		checkSignatureVersions(project.Config.Signature.Versions)
+		err = validateMetaEvent(project.Config.MetaEvent)
+		if err != nil {
+			return nil, util.NewServiceError(http.StatusBadRequest, err)
+		}
 	}
 
 	if !util.IsStringEmpty(update.LogoURL) {
@@ -163,4 +172,41 @@ func checkSignatureVersions(versions []datastore.SignatureVersion) {
 			v.CreatedAt = time.Now()
 		}
 	}
+}
+
+func validateMetaEvent(metaEvent *datastore.MetaEventConfiguration) error {
+	if metaEvent == nil {
+		return nil
+	}
+
+	if !metaEvent.IsEnabled {
+		return nil
+	}
+
+	if metaEvent.Type == datastore.HTTPMetaEvent {
+		url, err := util.CleanEndpoint(metaEvent.URL)
+		if err != nil {
+			return err
+		}
+		metaEvent.URL = url
+	}
+
+	if metaEvent.Type == datastore.PubSubMetaEvent {
+		metaEvent.PubSub.Workers = 1
+		err := pubsub.Validate(metaEvent.PubSub)
+		if err != nil {
+			return err
+		}
+	}
+
+	if util.IsStringEmpty(metaEvent.Secret) {
+		sc, err := util.GenerateSecret()
+		if err != nil {
+			return err
+		}
+
+		metaEvent.Secret = sc
+	}
+
+	return nil
 }

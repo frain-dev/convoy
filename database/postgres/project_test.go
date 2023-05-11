@@ -164,6 +164,9 @@ func Test_UpdateProject(t *testing.T) {
 					},
 				},
 			},
+			MetaEvent: &datastore.MetaEventConfiguration{
+				IsEnabled: false,
+			},
 		},
 		RetainedEvents: 300,
 	}

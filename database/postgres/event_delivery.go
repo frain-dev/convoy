@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
@@ -17,7 +18,8 @@ import (
 )
 
 type eventDeliveryRepo struct {
-	db *sqlx.DB
+	db   *sqlx.DB
+	hook *hooks.Hook
 }
 
 var (
@@ -166,7 +168,7 @@ const (
 )
 
 func NewEventDeliveryRepo(db database.Database) datastore.EventDeliveryRepository {
-	return &eventDeliveryRepo{db: db.GetDB()}
+	return &eventDeliveryRepo{db: db.GetDB(), hook: db.GetHook()}
 }
 
 func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *datastore.EventDelivery) error {
@@ -375,6 +377,7 @@ func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, 
 		return ErrEventDeliveryAttemptsNotUpdated
 	}
 
+	go e.hook.Fire(datastore.EventDeliveryUpdated, &delivery)
 	return nil
 }
 

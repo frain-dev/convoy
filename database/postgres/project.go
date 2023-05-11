@@ -34,11 +34,14 @@ const (
 		retention_policy_enabled, ratelimit_count,
 		ratelimit_duration, strategy_type,
 		strategy_duration, strategy_retry_count,
-		signature_header, signature_versions, disable_endpoint
+		signature_header, signature_versions, disable_endpoint,
+		meta_events_enabled, meta_events_type, meta_events_event_type,
+		meta_events_url, meta_events_secret, meta_events_pub_sub
 	  )
 	  VALUES
 		(
-		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+		  $14, $15, $16, $17, $18, $19
 		);
 	`
 
@@ -56,6 +59,12 @@ const (
 		signature_header = $11,
 		signature_versions = $12,
 		disable_endpoint = $13,
+		meta_events_enabled = $14,
+		meta_events_type = $15,
+		meta_events_event_type = $16,
+		meta_events_url = $17,
+		meta_events_secret = $18,
+		meta_events_pub_sub = $19,
 		updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -80,6 +89,12 @@ const (
 		c.signature_header as "config.signature.header",
 		c.signature_versions as "config.signature.versions",
 		c.disable_endpoint as "config.disable_endpoint",
+		c.meta_events_enabled as "config.meta_event.is_enabled",
+		COALESCE(c.meta_events_type, '') as "config.meta_event.type",
+		c.meta_events_event_type as "config.meta_event.event_type",
+		COALESCE(c.meta_events_url, '') as "config.meta_event.url",
+		COALESCE(c.meta_events_secret, '') as "config.meta_event.secret",
+		c.meta_events_pub_sub as "config.meta_event.pub_sub",
 		p.created_at,
 		p.updated_at,
 		p.deleted_at
@@ -109,6 +124,12 @@ const (
 	c.strategy_retry_count as "config.strategy.retry_count",
 	c.signature_header as "config.signature.header",
 	c.signature_versions as "config.signature.versions",
+	c.meta_events_enabled as "config.meta_event.is_enabled",
+	COALESCE(c.meta_events_type, '') as "config.meta_event.type",
+	c.meta_events_event_type as "config.meta_event.event_type",
+	COALESCE(c.meta_events_url, '') as "config.meta_event.url",
+	COALESCE(c.meta_events_secret, '') as "config.meta_event.secret",
+	c.meta_events_pub_sub as "config.meta_event.pub_sub",
 	p.created_at,
 	p.updated_at,
 	p.deleted_at,
@@ -185,6 +206,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 	rlc := project.Config.GetRateLimitConfig()
 	sc := project.Config.GetStrategyConfig()
 	sgc := project.Config.GetSignatureConfig()
+	me := project.Config.GetMetaEventConfig()
 
 	configID := ulid.Make().String()
 	result, err := tx.ExecContext(ctx, createProjectConfiguration,
@@ -201,6 +223,12 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 		sgc.Header,
 		sgc.Versions,
 		project.Config.DisableEndpoint,
+		me.IsEnabled,
+		me.Type,
+		me.EventType,
+		me.URL,
+		me.Secret,
+		me.PubSub,
 	)
 	if err != nil {
 		return err
@@ -279,6 +307,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		return ErrProjectNotUpdated
 	}
 
+	me := project.Config.GetMetaEventConfig()
 	cRes, err := tx.ExecContext(ctx, updateProjectConfiguration,
 		project.ProjectConfigID,
 		project.Config.RetentionPolicy.Policy,
@@ -293,6 +322,12 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		project.Config.Signature.Header,
 		project.Config.Signature.Versions,
 		project.Config.DisableEndpoint,
+		me.IsEnabled,
+		me.Type,
+		me.EventType,
+		me.URL,
+		me.Secret,
+		me.PubSub,
 	)
 	if err != nil {
 		return err

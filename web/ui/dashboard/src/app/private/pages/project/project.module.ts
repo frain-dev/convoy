@@ -91,6 +91,10 @@ const routes: Routes = [
 			{
 				path: 'events-log',
 				loadComponent: () => import('./event-logs/event-logs.component').then(m => m.EventLogsComponent)
+			},
+			{
+				path: 'meta-events',
+				loadComponent: () => import('./meta-events/meta-events.component').then(m => m.MetaEventsComponent)
 			}
 		]
 	}

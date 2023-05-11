@@ -32,7 +32,7 @@ func createSourceService(a *PublicHandler) *services.SourceService {
 // @Produce  json
 // @Param projectID path string true "Project ID"
 // @Param source body models.Source true "Source Details"
-// @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
+// @Success 200 {object} util.ServerResponse{data=models.Source}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/sources [post]
@@ -81,7 +81,7 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param projectID path string true "Project ID"
 // @Param sourceID path string true "Source ID"
-// @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
+// @Success 200 {object} util.ServerResponse{data=models.Source}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/sources/{sourceID} [get]
@@ -129,7 +129,7 @@ func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 // @Param projectID path string true "Project ID"
 // @Param sourceID path string true "source id"
 // @Param source body models.Source true "Source Details"
-// @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
+// @Success 200 {object} util.ServerResponse{data=models.Source}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/sources/{sourceID} [put]
@@ -243,7 +243,7 @@ func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 // @Param perPage query string false "results per page"
 // @Param page query string false "page number"
 // @Param sort query string false "sort order"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.SourceResponse}}
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.Source}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/sources [get]

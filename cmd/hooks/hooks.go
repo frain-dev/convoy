@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	dbhook "github.com/frain-dev/convoy/database/hooks"
+	"github.com/frain-dev/convoy/database/listener"
+	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
 	"os"
 	"time"
 
@@ -22,9 +26,7 @@ import (
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/frain-dev/convoy/util"
 	"github.com/newrelic/go-agent/v3/newrelic"
-	"github.com/oklog/ulid/v2"
 	"github.com/spf13/cobra"
-	"gopkg.in/guregu/null.v4"
 )
 
 func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
@@ -83,6 +85,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 				string(convoy.ScheduleQueue):    1,
 				string(convoy.DefaultQueue):     1,
 				string(convoy.StreamQueue):      1,
+				string(convoy.MetaEventQueue):   1,
 			}
 			opts := queue.QueueOptions{
 				Names:             queueNames,
@@ -114,6 +117,17 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		}
 
 		*db = *postgresDB
+
+		projectRepo := postgres.NewProjectRepo(postgresDB)
+		metaEventRepo := postgres.NewMetaEventRepo(postgresDB)
+		endpointListener := listener.NewEndpointListener(q, projectRepo, metaEventRepo)
+		eventDeliveryListener := listener.NewEventDeliveryListener(q, projectRepo, metaEventRepo)
+
+		hooks := dbhook.Init()
+		hooks.RegisterHook(datastore.EndpointCreated, endpointListener.AfterCreate)
+		hooks.RegisterHook(datastore.EndpointUpdated, endpointListener.AfterUpdate)
+		hooks.RegisterHook(datastore.EndpointDeleted, endpointListener.AfterDelete)
+		hooks.RegisterHook(datastore.EventDeliveryUpdated, eventDeliveryListener.AfterUpdate)
 
 		if ok := shouldCheckMigration(cmd); ok {
 			err = checkPendingMigrations(db)

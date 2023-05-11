@@ -27,6 +27,12 @@ func createSubscriptionService(a *PortalLinkHandler) *services.SubcriptionServic
 }
 
 func (a *PortalLinkHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
+	portalLink, err := a.retrievePortalLink(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	pageable := m.GetPageableFromContext(r.Context())
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -34,7 +40,7 @@ func (a *PortalLinkHandler) GetSubscriptions(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	endpointIDs := getEndpointIDs(r)
+	endpointIDs := portalLink.Endpoints
 	filter := &datastore.FilterBy{ProjectID: project.UID, EndpointIDs: endpointIDs}
 
 	subscriptions, paginationData, err := postgres.NewSubscriptionRepo(a.A.DB).LoadSubscriptionsPaged(r.Context(), project.UID, filter, pageable)
