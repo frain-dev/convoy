@@ -27,8 +27,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	var host string
 	var proxy string
 	var sentry string
-	var limiter string
-	var cache string
 	var logger string
 	var searcher string
 	var logLevel string
@@ -100,8 +98,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&proxy, "proxy", "", "HTTP Proxy")
 	cmd.Flags().StringVar(&env, "env", "development", "Convoy environment")
 	cmd.Flags().StringVar(&host, "host", "", "Host - The application host name")
-	cmd.Flags().StringVar(&cache, "cache", "redis", `Cache Provider ("redis" or "in-memory")`)
-	cmd.Flags().StringVar(&limiter, "limiter", "redis", `Rate limiter provider ("redis" or "in-memory")`)
 	cmd.Flags().StringVar(&sentry, "sentry", "", "Sentry DSN")
 	cmd.Flags().StringVar(&sslCertFile, "ssl-cert-file", "", "SSL certificate file")
 	cmd.Flags().StringVar(&sslKeyFile, "ssl-key-file", "", "SSL key file")
@@ -310,38 +306,6 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	if !util.IsStringEmpty(host) {
 		c.Host = host
-	}
-
-	// CONVOY_REDIS_DSN
-	redis, err := cmd.Flags().GetString("redis")
-	if err != nil {
-		return nil, err
-	}
-
-	// CONVOY_LIMITER_PROVIDER
-	rateLimiter, err := cmd.Flags().GetString("limiter")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(rateLimiter) {
-		c.Limiter.Type = config.LimiterProvider(rateLimiter)
-		if rateLimiter == "redis" && !util.IsStringEmpty(redis) {
-			c.Limiter.Redis.Dsn = redis
-		}
-	}
-
-	// CONVOY_CACHE_PROVIDER
-	cache, err := cmd.Flags().GetString("cache")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(cache) {
-		c.Cache.Type = config.CacheProvider(cache)
-		if cache == "redis" && !util.IsStringEmpty(redis) {
-			c.Cache.Redis.Dsn = redis
-		}
 	}
 
 	// CONVOY_LOGGER_LEVEL
@@ -585,13 +549,13 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 	}
 
 	if !util.IsStringEmpty(apiKeyAuthConfig) {
-		config := config.APIKeyAuthConfig{}
-		err = config.Decode(apiKeyAuthConfig)
+		authConfig := config.APIKeyAuthConfig{}
+		err = authConfig.Decode(apiKeyAuthConfig)
 		if err != nil {
 			return nil, err
 		}
 
-		c.Auth.File.APIKey = config
+		c.Auth.File.APIKey = authConfig
 	}
 
 	// CONVOY_BASIC_AUTH_CONFIG
@@ -601,13 +565,13 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 	}
 
 	if !util.IsStringEmpty(basicAuthConfig) {
-		config := config.BasicAuthConfig{}
-		err = config.Decode(basicAuthConfig)
+		authConfig := config.BasicAuthConfig{}
+		err = authConfig.Decode(basicAuthConfig)
 		if err != nil {
 			return nil, err
 		}
 
-		c.Auth.File.Basic = config
+		c.Auth.File.Basic = authConfig
 	}
 
 	return c, nil

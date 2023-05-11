@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/queue"
 	"os"
 	"time"
 
@@ -19,7 +20,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/newrelic/go-agent/v3/newrelic"
@@ -73,28 +73,27 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		var li limiter.RateLimiter
 		var q queue.Queuer
 
-		if cfg.Queue.Type == config.RedisQueueProvider {
-			redis, err := rdb.NewClient(cfg.Queue.BuildDsn())
-			if err != nil {
-				return err
-			}
-			queueNames := map[string]int{
-				string(convoy.EventQueue):       3,
-				string(convoy.CreateEventQueue): 3,
-				string(convoy.SearchIndexQueue): 1,
-				string(convoy.ScheduleQueue):    1,
-				string(convoy.DefaultQueue):     1,
-				string(convoy.StreamQueue):      1,
-			}
-			opts := queue.QueueOptions{
-				Names:             queueNames,
-				RedisClient:       redis,
-				RedisAddress:      cfg.Queue.BuildDsn(),
-				Type:              string(config.RedisQueueProvider),
-				PrometheusAddress: cfg.Prometheus.Dsn,
-			}
-			q = redisQueue.NewQueue(opts)
+		redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
+		if err != nil {
+			return err
 		}
+		redisNames := map[string]int{
+			string(convoy.EventQueue):       3,
+			string(convoy.CreateEventQueue): 3,
+			string(convoy.SearchIndexQueue): 1,
+			string(convoy.ScheduleQueue):    1,
+			string(convoy.DefaultQueue):     1,
+			string(convoy.StreamQueue):      1,
+		}
+
+		opts := queue.QueueOptions{
+			Names:             redisNames,
+			RedisClient:       redis,
+			RedisAddress:      cfg.Redis.BuildDsn(),
+			Type:              string(config.RedisQueueProvider),
+			PrometheusAddress: cfg.Prometheus.Dsn,
+		}
+		q = redisQueue.NewQueue(opts)
 
 		lo := log.NewLogger(os.Stdout)
 
@@ -105,12 +104,12 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			}
 		}
 
-		ca, err = cache.NewCache(cfg.Cache)
+		ca, err = cache.NewCache(cfg.Redis)
 		if err != nil {
 			return err
 		}
 
-		li, err = limiter.NewLimiter(cfg.Limiter)
+		li, err = limiter.NewLimiter(cfg.Redis)
 		if err != nil {
 			return err
 		}
@@ -224,12 +223,6 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		return nil, err
 	}
 
-	// CONVOY_DB_DSN
-	dbDsn, err := cmd.Flags().GetString("db-dsn")
-	if err != nil {
-		return nil, err
-	}
-
 	// CONVOY_DB_SCHEME
 	dbScheme, err := cmd.Flags().GetString("db-scheme")
 	if err != nil {
@@ -268,7 +261,6 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 
 	c.Database = config.DatabaseConfiguration{
 		Type:     config.DatabaseProvider(dbType),
-		Dsn:      dbDsn,
 		Scheme:   dbScheme,
 		Host:     dbHost,
 		Username: dbUsername,
@@ -277,63 +269,49 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		Port:     dbPort,
 	}
 
-	// CONVOY_QUEUE_TYPE
-	queueType, err := cmd.Flags().GetString("queue-type")
+	// CONVOY_REDIS_SCHEME
+	redisScheme, err := cmd.Flags().GetString("redis-scheme")
 	if err != nil {
 		return nil, err
 	}
 
-	// CONVOY_QUEUE_DSN
-	queueDsn, err := cmd.Flags().GetString("queue-dsn")
+	// CONVOY_REDIS_HOST
+	redisHost, err := cmd.Flags().GetString("redis-host")
 	if err != nil {
 		return nil, err
 	}
 
-	// CONVOY_QUEUE_SCHEME
-	queueScheme, err := cmd.Flags().GetString("queue-scheme")
+	// CONVOY_REDIS_USERNAME
+	redisUsername, err := cmd.Flags().GetString("redis-username")
 	if err != nil {
 		return nil, err
 	}
 
-	// CONVOY_QUEUE_HOST
-	queueHost, err := cmd.Flags().GetString("queue-host")
+	// CONVOY_REDIS_PASSWORD
+	redisPassword, err := cmd.Flags().GetString("redis-password")
 	if err != nil {
 		return nil, err
 	}
 
-	// CONVOY_QUEUE_USERNAME
-	queueUsername, err := cmd.Flags().GetString("queue-username")
+	// CONVOY_REDIS_DATABASE
+	redisDatabase, err := cmd.Flags().GetString("redis-database")
 	if err != nil {
 		return nil, err
 	}
 
-	// CONVOY_QUEUE_PASSWORD
-	queuePassword, err := cmd.Flags().GetString("queue-password")
+	// CONVOY_REDIS_PORT
+	redisPort, err := cmd.Flags().GetInt("redis-port")
 	if err != nil {
 		return nil, err
 	}
 
-	// CONVOY_QUEUE_DATABASE
-	queueDatabase, err := cmd.Flags().GetString("queue-database")
-	if err != nil {
-		return nil, err
-	}
-
-	// CONVOY_QUEUE_PORT
-	queuePort, err := cmd.Flags().GetInt("queue-port")
-	if err != nil {
-		return nil, err
-	}
-
-	c.Queue = config.QueueConfiguration{
-		Type:     config.QueueProvider(queueType),
-		Dsn:      queueDsn,
-		Scheme:   queueScheme,
-		Host:     queueHost,
-		Username: queueUsername,
-		Password: queuePassword,
-		Database: queueDatabase,
-		Port:     queuePort,
+	c.Redis = config.RedisConfiguration{
+		Scheme:   redisScheme,
+		Host:     redisHost,
+		Username: redisUsername,
+		Password: redisPassword,
+		Database: redisDatabase,
+		Port:     redisPort,
 	}
 
 	return c, nil

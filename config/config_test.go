@@ -103,14 +103,16 @@ func TestLoadConfig(t *testing.T) {
 				Host: "localhost:5005",
 				Database: DatabaseConfiguration{
 					Type:                  PostgresDatabaseProvider,
-					Dsn:                   "postgres://inside-config-file",
+					Scheme:                "postgres",
+					Host:                  "inside-config-file",
 					SetMaxOpenConnections: 10,
 					SetMaxIdleConnections: 10,
 					SetConnMaxLifetime:    3600,
 				},
-				Queue: QueueConfiguration{
-					Type: RedisQueueProvider,
-					Dsn:  "redis://localhost:8379",
+				Redis: RedisConfiguration{
+					Scheme: "redis",
+					Host:   "localhost",
+					Port:   8379,
 				},
 				Search: DefaultConfiguration.Search,
 				Server: ServerConfiguration{
@@ -149,14 +151,16 @@ func TestLoadConfig(t *testing.T) {
 				Host: "localhost:5005",
 				Database: DatabaseConfiguration{
 					Type:                  PostgresDatabaseProvider,
-					Dsn:                   "postgres://inside-config-file",
+					Scheme:                "postgres",
+					Host:                  "inside-config-file",
 					SetMaxOpenConnections: 10,
 					SetMaxIdleConnections: 10,
 					SetConnMaxLifetime:    3600,
 				},
-				Queue: QueueConfiguration{
-					Type: RedisQueueProvider,
-					Dsn:  "redis://localhost:8379",
+				Redis: RedisConfiguration{
+					Scheme: "redis",
+					Host:   "localhost",
+					Port:   8379,
 				},
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
@@ -195,14 +199,16 @@ func TestLoadConfig(t *testing.T) {
 				Host: "localhost:5005",
 				Database: DatabaseConfiguration{
 					Type:                  PostgresDatabaseProvider,
-					Dsn:                   "postgres://inside-config-file",
+					Scheme:                "postgres",
+					Host:                  "inside-config-file",
 					SetMaxOpenConnections: 10,
 					SetMaxIdleConnections: 10,
 					SetConnMaxLifetime:    3600,
 				},
-				Queue: QueueConfiguration{
-					Type: RedisQueueProvider,
-					Dsn:  "redis://localhost:8379",
+				Redis: RedisConfiguration{
+					Scheme: "redis",
+					Host:   "localhost",
+					Port:   8379,
 				},
 				Search: DefaultConfiguration.Search,
 				Server: ServerConfiguration{
@@ -320,7 +326,7 @@ func TestOverride(t *testing.T) {
 					SetMaxOpenConnections: 10,
 					SetMaxIdleConnections: 10,
 					SetConnMaxLifetime:    3600,
-					Dsn:                   "localhost",
+					Host:                  "localhost",
 				},
 			},
 			configType: "database",
@@ -336,11 +342,11 @@ func TestOverride(t *testing.T) {
 					SetMaxOpenConnections: 10,
 					SetMaxIdleConnections: 10,
 					SetConnMaxLifetime:    3600,
-					Dsn:                   "localhost",
+					Host:                  "localhost",
 				},
-				Queue: QueueConfiguration{
-					Type: RedisQueueProvider,
-					Dsn:  "localhost:6379",
+				Redis: RedisConfiguration{
+					Host: "localhost",
+					Port: 6379,
 				},
 			},
 			configType: "queue",
@@ -366,7 +372,7 @@ func TestOverride(t *testing.T) {
 			case "database":
 				require.Equal(t, c.Database, tc.config.Database)
 			case "queue":
-				require.Equal(t, c.Queue, tc.config.Queue)
+				require.Equal(t, c.Redis, tc.config.Redis)
 			default:
 			}
 		})

@@ -38,25 +38,21 @@ import (
 )
 
 // TEST HELPERS.
-func getPostgresDSN() string {
-	return os.Getenv("TEST_POSTGRES_DSN")
-}
-
-func getRedisDSN() string {
-	return os.Getenv("TEST_REDIS_DSN")
-}
-
 func getConfig() config.Configuration {
 	return config.Configuration{
-		Queue: config.QueueConfiguration{
-			Type: config.RedisQueueProvider,
-			Redis: config.RedisQueueConfiguration{
-				Dsn: getRedisDSN(),
-			},
+		Redis: config.RedisConfiguration{
+			Scheme: "redis",
+			Host:   os.Getenv("TEST_REDIS_DSN"),
+			Port:   6379,
 		},
 		Database: config.DatabaseConfiguration{
-			Type: config.PostgresDatabaseProvider,
-			Dsn:  getPostgresDSN(),
+			Type:     config.PostgresDatabaseProvider,
+			Host:     os.Getenv("TEST_DB_HOST"),
+			Scheme:   os.Getenv("TEST_DB_SCHEME"),
+			Username: os.Getenv("TEST_DB_USERNAME"),
+			Password: os.Getenv("TEST_DB_PASSWORD"),
+			Database: os.Getenv("TEST_DB_DATABASE"),
+			Port:     5432,
 		},
 	}
 }
@@ -74,7 +70,7 @@ func getDB() database.Database {
 func getQueueOptions(name string) (queue.QueueOptions, error) {
 	var opts queue.QueueOptions
 	cfg := getConfig()
-	rdb, err := rdb.NewClient(cfg.Queue.Redis.Dsn)
+	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
 	if err != nil {
 		return opts, err
 	}
@@ -85,8 +81,8 @@ func getQueueOptions(name string) (queue.QueueOptions, error) {
 	}
 	opts = queue.QueueOptions{
 		Names:        queueNames,
-		RedisClient:  rdb,
-		RedisAddress: cfg.Queue.Redis.Dsn,
+		RedisClient:  redis,
+		RedisAddress: cfg.Redis.BuildDsn(),
 		Type:         string(config.RedisQueueProvider),
 	}
 
@@ -94,34 +90,33 @@ func getQueueOptions(name string) (queue.QueueOptions, error) {
 }
 
 func buildServer() *ApplicationHandler {
-	var tracer tracer.Tracer
+	var t tracer.Tracer = nil
 	var logger *log.Logger
 	var qOpts queue.QueueOptions
 
 	db := getDB()
 	qOpts, _ = getQueueOptions("EventQueue")
 
-	queue := redisqueue.NewQueue(qOpts)
+	newQueue := redisqueue.NewQueue(qOpts)
 	logger = log.NewLogger(os.Stderr)
 	logger.SetLevel(log.FatalLevel)
 
-	cache := ncache.NewNoopCache()
+	noopCache := ncache.NewNoopCache()
 	limiter := nooplimiter.NewNoopLimiter()
 	searcher := noopsearcher.NewNoopSearcher()
-	tracer = nil
 
 	ah, _ := NewApplicationHandler(
 		&types.APIOptions{
 			DB:       db,
-			Queue:    queue,
+			Queue:    newQueue,
 			Logger:   logger,
-			Tracer:   tracer,
-			Cache:    cache,
+			Tracer:   t,
+			Cache:    noopCache,
 			Limiter:  limiter,
 			Searcher: searcher,
 		})
 
-	ah.RegisterPolicy()
+	_ = ah.RegisterPolicy()
 
 	return ah
 }

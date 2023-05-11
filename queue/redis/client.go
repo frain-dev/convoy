@@ -1,11 +1,7 @@
 package redis
 
 import (
-	"errors"
-
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
@@ -16,21 +12,6 @@ type RedisQueue struct {
 	opts      queue.QueueOptions
 	client    *asynq.Client
 	inspector *asynq.Inspector
-}
-
-func NewClient(cfg config.Configuration) (*asynq.Client, error) {
-	if cfg.Queue.Type != config.RedisQueueProvider {
-		return nil, errors.New("please select the redis driver in your config")
-	}
-
-	redis, err := rdb.NewClient(cfg.Queue.BuildDsn())
-	if err != nil {
-		return nil, err
-	}
-
-	client := asynq.NewClient(redis)
-
-	return client, nil
 }
 
 func NewQueue(opts queue.QueueOptions) queue.Queuer {

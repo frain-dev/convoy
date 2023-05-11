@@ -16,7 +16,7 @@ build:
 	scripts/build.sh -b $(type)
 
 integration_tests:
-	go test -tags integration -p 1 ./...
+	go test -timeout 30s -tags integration -p 1 ./...
 
 generate_migration_time:
 	@date +"%Y%m%d%H%M%S"

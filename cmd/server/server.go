@@ -318,12 +318,6 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		return nil, err
 	}
 
-	// CONVOY_DB_DSN
-	dbDsn, err := cmd.Flags().GetString("db-dsn")
-	if err != nil {
-		return nil, err
-	}
-
 	// CONVOY_DB_SCHEME
 	dbScheme, err := cmd.Flags().GetString("db-scheme")
 	if err != nil {
@@ -362,7 +356,6 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	c.Database = config.DatabaseConfiguration{
 		Type:     config.DatabaseProvider(dbType),
-		Dsn:      dbDsn,
 		Scheme:   dbScheme,
 		Host:     dbHost,
 		Username: dbUsername,
@@ -371,89 +364,49 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		Port:     dbPort,
 	}
 
-	// CONVOY_QUEUE_TYPE
-	queueType, err := cmd.Flags().GetString("queue-type")
+	// CONVOY_REDIS_SCHEME
+	redisScheme, err := cmd.Flags().GetString("redis-scheme")
 	if err != nil {
 		return nil, err
 	}
 
-	// CONVOY_QUEUE_DSN
-	queueDsn, err := cmd.Flags().GetString("queue-dsn")
+	// CONVOY_REDIS_HOST
+	redisHost, err := cmd.Flags().GetString("redis-host")
 	if err != nil {
 		return nil, err
 	}
 
-	// CONVOY_QUEUE_SCHEME
-	queueScheme, err := cmd.Flags().GetString("queue-scheme")
+	// CONVOY_REDIS_USERNAME
+	redisUsername, err := cmd.Flags().GetString("redis-username")
 	if err != nil {
 		return nil, err
 	}
 
-	// CONVOY_QUEUE_HOST
-	queueHost, err := cmd.Flags().GetString("queue-host")
+	// CONVOY_REDIS_PASSWORD
+	redisPassword, err := cmd.Flags().GetString("redis-password")
 	if err != nil {
 		return nil, err
 	}
 
-	// CONVOY_QUEUE_USERNAME
-	queueUsername, err := cmd.Flags().GetString("queue-username")
+	// CONVOY_REDIS_DATABASE
+	redisDatabase, err := cmd.Flags().GetString("redis-database")
 	if err != nil {
 		return nil, err
 	}
 
-	// CONVOY_QUEUE_PASSWORD
-	queuePassword, err := cmd.Flags().GetString("queue-password")
+	// CONVOY_REDIS_PORT
+	redisPort, err := cmd.Flags().GetInt("redis-port")
 	if err != nil {
 		return nil, err
 	}
 
-	// CONVOY_QUEUE_DATABASE
-	queueDatabase, err := cmd.Flags().GetString("queue-database")
-	if err != nil {
-		return nil, err
-	}
-
-	// CONVOY_QUEUE_PORT
-	queuePort, err := cmd.Flags().GetInt("queue-port")
-	if err != nil {
-		return nil, err
-	}
-
-	c.Queue = config.QueueConfiguration{
-		Type:     config.QueueProvider(queueType),
-		Dsn:      queueDsn,
-		Scheme:   queueScheme,
-		Host:     queueHost,
-		Username: queueUsername,
-		Password: queuePassword,
-		Database: queueDatabase,
-		Port:     queuePort,
-	}
-
-	// CONVOY_LIMITER_PROVIDER
-	rateLimiter, err := cmd.Flags().GetString("limiter")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(rateLimiter) {
-		c.Limiter.Type = config.LimiterProvider(rateLimiter)
-		if rateLimiter == "redis" {
-			c.Limiter.Redis.Dsn = c.Queue.BuildDsn()
-		}
-	}
-
-	// CONVOY_CACHE_PROVIDER
-	cache, err := cmd.Flags().GetString("cache")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(cache) {
-		c.Cache.Type = config.CacheProvider(cache)
-		if cache == "redis" {
-			c.Cache.Redis.Dsn = c.Queue.BuildDsn()
-		}
+	c.Redis = config.RedisConfiguration{
+		Scheme:   redisScheme,
+		Host:     redisHost,
+		Username: redisUsername,
+		Password: redisPassword,
+		Database: redisDatabase,
+		Port:     redisPort,
 	}
 
 	// CONVOY_LOGGER_LEVEL

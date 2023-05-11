@@ -38,7 +38,6 @@ func main() {
 	c := cli.NewCli(app, db)
 
 	var dbPort int
-	var dbDsn string
 	var dbType string
 	var dbHost string
 	var dbScheme string
@@ -46,38 +45,35 @@ func main() {
 	var dbPassword string
 	var dbDatabase string
 
-	var queuePort int
-	var queueDsn string
-	var queueHost string
-	var queueType string
-	var queueScheme string
-	var queueUsername string
-	var queuePassword string
-	var queueDatabase string
+	var redisPort int
+	var redisHost string
+	var redisType string
+	var redisScheme string
+	var redisUsername string
+	var redisPassword string
+	var redisDatabase string
 
 	var configFile string
 
 	c.Flags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
 
 	// db config
-	c.Flags().StringVar(&dbDsn, "db-dsn", "", "Database dsn")
-	c.Flags().StringVar(&dbHost, "db-host", "localhost", "Database Host")
-	c.Flags().StringVar(&dbType, "db-type", "postgres", "Database provider")
-	c.Flags().StringVar(&dbScheme, "db-scheme", "postgres", "Database Scheme")
-	c.Flags().StringVar(&dbUsername, "db-username", "postgres", "Database Username")
-	c.Flags().StringVar(&dbPassword, "db-password", "postgres", "Database Password")
-	c.Flags().StringVar(&dbDatabase, "db-database", "convoy", "Database database")
-	c.Flags().IntVar(&dbPort, "db-port", 6379, "Database Port")
+	c.Flags().StringVar(&dbHost, "db-host", "", "Database Host")
+	c.Flags().StringVar(&dbType, "db-type", "", "Database provider")
+	c.Flags().StringVar(&dbScheme, "db-scheme", "", "Database Scheme")
+	c.Flags().StringVar(&dbUsername, "db-username", "", "Database Username")
+	c.Flags().StringVar(&dbPassword, "db-password", "", "Database Password")
+	c.Flags().StringVar(&dbDatabase, "db-database", "", "Database database")
+	c.Flags().IntVar(&dbPort, "db-port", 5432, "Database Port")
 
 	// redis config
-	c.Flags().StringVar(&queueDsn, "queue-dsn", "", "Queue dsn")
-	c.Flags().StringVar(&queueHost, "queue-host", "localhost", "Queue Host")
-	c.Flags().StringVar(&queueType, "queue-type", "redis", "Queue provider")
-	c.Flags().StringVar(&queueScheme, "queue-scheme", "redis", "Queue Scheme")
-	c.Flags().StringVar(&queueUsername, "queue-username", "", "Queue Username")
-	c.Flags().StringVar(&queuePassword, "queue-password", "", "Queue Password")
-	c.Flags().StringVar(&queueDatabase, "queue-database", "", "Queue database")
-	c.Flags().IntVar(&queuePort, "queue-port", 5432, "Queue Port")
+	c.Flags().StringVar(&redisHost, "redis-host", "", "Redis Host")
+	c.Flags().StringVar(&redisType, "redis-type", "", "Redis provider")
+	c.Flags().StringVar(&redisScheme, "redis-scheme", "", "Redis Scheme")
+	c.Flags().StringVar(&redisUsername, "redis-username", "", "Redis Username")
+	c.Flags().StringVar(&redisPassword, "redis-password", "", "Redis Password")
+	c.Flags().StringVar(&redisDatabase, "redis-database", "", "Redis database")
+	c.Flags().IntVar(&redisPort, "redis-port", 6379, "Redis Port")
 
 	c.PersistentPreRunE(hooks.PreRun(app, db))
 	c.PersistentPostRunE(hooks.PostRun(app, db))

@@ -217,15 +217,16 @@ func TestRetentionPoliciesIntegrationSuiteTest(t *testing.T) {
 	suite.Run(t, new(RetentionPoliciesIntegrationTestSuite))
 }
 
-func getPostgresDSN() string {
-	return os.Getenv("TEST_POSTGRES_DSN")
-}
-
 func getConfig() config.Configuration {
 	return config.Configuration{
 		Database: config.DatabaseConfiguration{
-			Type: config.PostgresDatabaseProvider,
-			Dsn:  getPostgresDSN(),
+			Type:     config.PostgresDatabaseProvider,
+			Host:     os.Getenv("TEST_DB_HOST"),
+			Scheme:   os.Getenv("TEST_DB_SCHEME"),
+			Username: os.Getenv("TEST_DB_USERNAME"),
+			Password: os.Getenv("TEST_DB_PASSWORD"),
+			Database: os.Getenv("TEST_DB_DATABASE"),
+			Port:     6379,
 		},
 	}
 }
