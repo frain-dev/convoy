@@ -3,6 +3,8 @@ package portalapi
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -29,10 +31,10 @@ func (a *PortalLinkHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *htt
 		return
 	}
 
-	portalLinkService := createPortalLinkService(a)
-	endpoints, err := portalLinkService.GetPortalLinkEndpoints(r.Context(), portalLink, project)
+	endpoints, err := postgres.NewEndpointRepo(a.A.DB).FindEndpointsByID(r.Context(), portalLink.Endpoints, project.UID)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching endpoints")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch portal link endpoints", http.StatusInternalServerError))
 		return
 	}
 

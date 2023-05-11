@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/frain-dev/convoy"
+
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
@@ -52,9 +56,9 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orgService := createOrganisationService(a)
-	org, err := orgService.FindOrganisationByID(r.Context(), project.OrganisationID)
+	org, err := postgres.NewOrgRepo(a.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -87,16 +91,21 @@ func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	sourceService := createSourceService(a)
-	source, err := sourceService.FindSourceByID(r.Context(), project, chi.URLParam(r, "sourceID"))
+
+	source, err := postgres.NewSourceRepo(a.A.DB).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		if err == datastore.ErrSourceNotFound {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+			return
+		}
+
+		_ = render.Render(w, r, util.NewErrorResponse("error retrieving source", http.StatusBadRequest))
 		return
 	}
 
-	orgService := createOrganisationService(a)
-	org, err := orgService.FindOrganisationByID(r.Context(), project.OrganisationID)
+	org, err := postgres.NewOrgRepo(a.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -139,9 +148,15 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sourceService := createSourceService(a)
-	source, err := sourceService.FindSourceByID(r.Context(), project, chi.URLParam(r, "sourceID"))
+
+	source, err := postgres.NewSourceRepo(a.A.DB).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		if err == datastore.ErrSourceNotFound {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+			return
+		}
+
+		_ = render.Render(w, r, util.NewErrorResponse("error retrieving source", http.StatusBadRequest))
 		return
 	}
 
@@ -151,9 +166,9 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orgService := createOrganisationService(a)
-	org, err := orgService.FindOrganisationByID(r.Context(), project.OrganisationID)
+	org, err := postgres.NewOrgRepo(a.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -187,17 +202,32 @@ func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sourceService := createSourceService(a)
-	source, err := sourceService.FindSourceByID(r.Context(), project, chi.URLParam(r, "sourceID"))
+	sourceRepo := postgres.NewSourceRepo(a.A.DB)
+
+	source, err := sourceRepo.FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		if err == datastore.ErrSourceNotFound {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+			return
+		}
+
+		_ = render.Render(w, r, util.NewErrorResponse("error retrieving source", http.StatusBadRequest))
 		return
 	}
 
-	err = sourceService.DeleteSource(r.Context(), project, source)
+	err = sourceRepo.DeleteSourceByID(r.Context(), project.UID, source.UID, source.VerifierID)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse("failed to delete source", http.StatusBadRequest))
 		return
+	}
+
+	if source.Provider == datastore.TwitterSourceProvider {
+		sourceCacheKey := convoy.SourceCacheKey.Get(source.MaskID).String()
+		err = a.A.Cache.Delete(r.Context(), sourceCacheKey)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("failed to delete source cache", http.StatusBadRequest))
+			return
+		}
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Source deleted successfully", nil, http.StatusOK))
@@ -229,10 +259,10 @@ func (a *PublicHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request)
 		Type: r.URL.Query().Get("type"),
 	}
 
-	sourceService := createSourceService(a)
-	sources, paginationData, err := sourceService.LoadSourcesPaged(r.Context(), project, f, pageable)
+	sources, paginationData, err := postgres.NewSourceRepo(a.A.DB).LoadSourcesPaged(r.Context(), project.UID, f, pageable)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		log.WithError(err).Error("an error occurred while fetching sources")
+		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching sources", http.StatusBadRequest))
 		return
 	}
 

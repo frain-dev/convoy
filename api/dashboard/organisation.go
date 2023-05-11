@@ -3,6 +3,8 @@ package dashboard
 import (
 	"net/http"
 
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/services"
@@ -42,11 +44,9 @@ func (a *DashboardHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.
 		return
 	}
 
-	orgService := createOrganisationService(a)
-
-	organisations, paginationData, err := orgService.LoadUserOrganisationsPaged(r.Context(), user, pageable)
+	organisations, paginationData, err := postgres.NewOrgMemberRepo(a.A.DB).LoadUserOrganisationsPaged(r.Context(), user.UID, pageable)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to load organisations")
+		log.FromContext(r.Context()).WithError(err).Error("failed to fetch user organisations")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -120,10 +120,9 @@ func (a *DashboardHandler) DeleteOrganisation(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	orgService := createOrganisationService(a)
-	err = orgService.DeleteOrganisation(r.Context(), org.UID)
+	err = postgres.NewOrgRepo(a.A.DB).DeleteOrganisation(r.Context(), org.UID)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to delete organisation")
+		log.FromContext(r.Context()).WithError(err).Error("failed to delete organisation")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

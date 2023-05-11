@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -31,7 +33,6 @@ func createEventService(a *PortalLinkHandler) (*services.EventService, error) {
 		endpointRepo, eventRepo, eventDeliveryRepo,
 		a.A.Queue, a.A.Cache, subRepo, sourceRepo, deviceRepo,
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -114,12 +115,6 @@ func (a *PortalLinkHandler) CountAffectedEvents(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	eventService, err := createEventService(a)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -138,9 +133,10 @@ func (a *PortalLinkHandler) CountAffectedEvents(w http.ResponseWriter, r *http.R
 		SearchParams: searchParams,
 	}
 
-	count, err := eventService.CountAffectedEvents(r.Context(), f)
+	count, err := postgres.NewEventRepo(a.A.DB).CountEvents(r.Context(), project.UID, f)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event")
+		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event", http.StatusBadRequest))
 		return
 	}
 
@@ -317,15 +313,10 @@ func (a *PortalLinkHandler) CountAffectedEventDeliveries(w http.ResponseWriter, 
 		SearchParams: searchParams,
 	}
 
-	eventService, err := createEventService(a)
+	count, err := postgres.NewEventDeliveryRepo(a.A.DB).CountEventDeliveries(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	count, err := eventService.CountAffectedEventDeliveries(r.Context(), f)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event deliveries")
+		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusBadRequest))
 		return
 	}
 
@@ -419,8 +410,9 @@ func (a *PortalLinkHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	m, paginationData, err := eventService.GetEventsPaged(r.Context(), f)
+	m, paginationData, err := postgres.NewEventRepo(a.A.DB).LoadEventsPaged(r.Context(), project.UID, f)
 	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to fetch events")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 		return
 	}
@@ -466,14 +458,9 @@ func (a *PortalLinkHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *ht
 		SearchParams: searchParams,
 	}
 
-	eventService, err := createEventService(a)
+	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams, f.Pageable)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	ed, paginationData, err := eventService.GetEventDeliveriesPaged(r.Context(), f)
-	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to fetch event deliveries")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
 		return
 	}

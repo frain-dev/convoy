@@ -174,36 +174,6 @@ func checkSignatureVersions(versions []datastore.SignatureVersion) {
 	}
 }
 
-func (ps *ProjectService) GetProjects(ctx context.Context, filter *datastore.ProjectFilter) ([]*datastore.Project, error) {
-	projects, err := ps.projectRepo.LoadProjects(ctx, filter)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to load projects")
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching projects"))
-	}
-
-	return projects, nil
-}
-
-func (ps *ProjectService) FillProjectStatistics(ctx context.Context, project *datastore.Project) error {
-	err := ps.projectRepo.FillProjectsStatistics(ctx, project)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to count project statistics")
-		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to count project statistics"))
-	}
-
-	return nil
-}
-
-func (ps *ProjectService) DeleteProject(ctx context.Context, id string) error {
-	err := ps.projectRepo.DeleteProject(ctx, id)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to delete project")
-		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete project"))
-	}
-
-	return nil
-}
-
 func validateMetaEvent(metaEvent *datastore.MetaEventConfiguration) error {
 	if metaEvent == nil {
 		return nil

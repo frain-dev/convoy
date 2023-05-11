@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/frain-dev/convoy"
@@ -21,9 +22,8 @@ func createConfigService(a *DashboardHandler) *services.ConfigService {
 }
 
 func (a *DashboardHandler) LoadConfiguration(w http.ResponseWriter, r *http.Request) {
-	configService := createConfigService(a)
-	config, err := configService.LoadConfiguration(r.Context())
-	if err != nil {
+	config, err := postgres.NewConfigRepo(a.A.DB).LoadConfiguration(r.Context())
+	if err != nil && !errors.Is(err, datastore.ErrConfigNotFound) {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
