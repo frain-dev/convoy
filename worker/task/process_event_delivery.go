@@ -84,7 +84,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		ec := &EventDeliveryConfig{subscription: subscription, project: p}
 		rlc := ec.rateLimitConfig()
 
-		rateLimiter, err := limiter.NewLimiter(cfg.Limiter)
+		rateLimiter, err := limiter.NewLimiter(cfg.Redis)
 		if err != nil {
 			log.WithError(err).Error("failed to initialise redis rate limiter")
 			return &EndpointError{Err: err, delay: delayDuration}
