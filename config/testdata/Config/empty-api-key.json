@@ -6,11 +6,6 @@
         "password": "postgres",
         "database": "convoy",
         "options": "sslmode=disable",
-        "port": 5432,
-        "username": "postgres",
-        "password": "postgres",
-        "database": "convoy",
-        "options": "sslmode=disable",
         "port": 5432
     },
     "redis": {
