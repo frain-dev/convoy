@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -237,6 +238,9 @@ func getDB() database.Database {
 		panic(fmt.Sprintf("failed to connect to db: %v", err))
 	}
 	_ = os.Setenv("TZ", "") // Use UTC by default :)
+
+	dbHooks := hooks.Init()
+	dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}) {})
 
 	return db
 }

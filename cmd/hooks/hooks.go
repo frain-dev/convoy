@@ -4,7 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	dbhook "github.com/frain-dev/convoy/database/hooks"
+	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
 	"os"
 	"time"
 
@@ -17,15 +21,11 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/apm"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"github.com/frain-dev/convoy/internal/pkg/searcher"
-	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/tracer"
 	"github.com/newrelic/go-agent/v3/newrelic"
-	"github.com/oklog/ulid/v2"
 	"github.com/spf13/cobra"
-	"gopkg.in/guregu/null.v4"
 )
 
 func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
@@ -70,24 +70,24 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		var tr tracer.Tracer
 		var ca cache.Cache
-		var li limiter.RateLimiter
 		var q queue.Queuer
 
 		redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
 		if err != nil {
 			return err
 		}
-		redisNames := map[string]int{
+		queueNames := map[string]int{
 			string(convoy.EventQueue):       3,
 			string(convoy.CreateEventQueue): 3,
 			string(convoy.SearchIndexQueue): 1,
 			string(convoy.ScheduleQueue):    1,
 			string(convoy.DefaultQueue):     1,
 			string(convoy.StreamQueue):      1,
+			string(convoy.MetaEventQueue):   1,
 		}
 
 		opts := queue.QueueOptions{
-			Names:             redisNames,
+			Names:             queueNames,
 			RedisClient:       redis,
 			RedisAddress:      cfg.Redis.BuildDsn(),
 			Type:              string(config.RedisQueueProvider),
@@ -109,22 +109,23 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
-		li, err = limiter.NewLimiter(cfg.Redis)
-		if err != nil {
-			return err
-		}
-
-		se, err := searcher.NewSearchClient(cfg)
-		if err != nil {
-			return err
-		}
-
 		postgresDB, err := postgres.NewDB(cfg)
 		if err != nil {
 			return err
 		}
 
 		*db = *postgresDB
+
+		projectRepo := postgres.NewProjectRepo(postgresDB)
+		metaEventRepo := postgres.NewMetaEventRepo(postgresDB)
+		endpointListener := listener.NewEndpointListener(q, projectRepo, metaEventRepo)
+		eventDeliveryListener := listener.NewEventDeliveryListener(q, projectRepo, metaEventRepo)
+
+		hooks := dbhook.Init()
+		hooks.RegisterHook(datastore.EndpointCreated, endpointListener.AfterCreate)
+		hooks.RegisterHook(datastore.EndpointUpdated, endpointListener.AfterUpdate)
+		hooks.RegisterHook(datastore.EndpointDeleted, endpointListener.AfterDelete)
+		hooks.RegisterHook(datastore.EventDeliveryUpdated, eventDeliveryListener.AfterUpdate)
 
 		if ok := shouldCheckMigration(cmd); ok {
 			err = checkPendingMigrations(db)
@@ -138,8 +139,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		app.Logger = lo
 		app.Tracer = tr
 		app.Cache = ca
-		app.Limiter = li
-		app.Searcher = se
 
 		if ok := shouldBootstrap(cmd); ok {
 			err = ensureDefaultUser(context.Background(), app)

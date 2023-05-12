@@ -260,10 +260,6 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 	}
 
 	query = fmt.Sprintf(baseQueryPagination, baseEventsPaged, filterQuery)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
-
 	query, args, err = sqlx.Named(query, arg)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
@@ -300,9 +296,6 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 
 		cq := baseCountPrevEvents + filterQuery + countPrevEvents
 		countQuery, qargs, err = sqlx.Named(cq, qarg)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}

@@ -12,6 +12,8 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/hooks"
+	"github.com/frain-dev/convoy/datastore"
 
 	"github.com/stretchr/testify/require"
 )
@@ -42,6 +44,10 @@ var (
 func getDB(t *testing.T) (database.Database, func()) {
 	once.Do(func() {
 		var err error
+
+		dbHooks := hooks.Init()
+		dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}) {})
+
 		db, err = NewDB(getConfig())
 		require.NoError(t, err)
 	})

@@ -213,19 +213,6 @@ func (ss *SecurityService) CreateEndpointAPIKey(ctx context.Context, d *models.C
 	return apiKey, key, nil
 }
 
-func (ss *SecurityService) RevokeAPIKey(ctx context.Context, uid string) error {
-	if util.IsStringEmpty(uid) {
-		return util.NewServiceError(http.StatusBadRequest, errors.New("key id is empty"))
-	}
-
-	err := ss.apiKeyRepo.RevokeAPIKeys(ctx, []string{uid})
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to revoke api key")
-		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to revoke api key"))
-	}
-	return nil
-}
-
 func (ss *SecurityService) GetAPIKeyByID(ctx context.Context, uid string) (*datastore.APIKey, error) {
 	if util.IsStringEmpty(uid) {
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("key id is empty"))
@@ -247,9 +234,10 @@ func (ss *SecurityService) RegenerateProjectAPIKey(ctx context.Context, project 
 		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch project api key"))
 	}
 
-	err = ss.RevokeAPIKey(ctx, apiKey.UID)
+	err = ss.apiKeyRepo.RevokeAPIKeys(ctx, []string{apiKey.UID})
 	if err != nil {
-		return nil, "", err
+		log.FromContext(ctx).WithError(err).Error("failed to revoke api key")
+		return nil, "", util.NewServiceError(http.StatusBadRequest, errors.New("failed to revoke api key"))
 	}
 
 	newAPIKey := &models.APIKey{
@@ -298,14 +286,4 @@ func (ss *SecurityService) UpdateAPIKey(ctx context.Context, uid string, role *a
 	}
 
 	return apiKey, nil
-}
-
-func (ss *SecurityService) GetAPIKeys(ctx context.Context, f *datastore.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
-	apiKeys, paginationData, err := ss.apiKeyRepo.LoadAPIKeysPaged(ctx, f, pageable)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to load api keys")
-		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, errors.New("failed to load api keys"))
-	}
-
-	return apiKeys, paginationData, nil
 }

@@ -88,7 +88,7 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 	var data *models.DashboardSummary
 	err = a.A.Cache.Get(r.Context(), qs, &data)
 	if err != nil {
-		a.A.Logger.WithError(err)
+		a.A.Logger.WithError(err).Error("failed to get dashboard summary from cache")
 	}
 
 	if data != nil {
@@ -97,9 +97,9 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	endpointService := createEndpointService(a)
-	apps, err := endpointService.CountProjectEndpoints(r.Context(), project.UID)
+	apps, err := postgres.NewEndpointRepo(a.A.DB).CountProjectEndpoints(r.Context(), project.UID)
 	if err != nil {
+		log.WithError(err).Error("failed to count project endpoints")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
 		return
 	}

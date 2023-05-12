@@ -13,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/oklog/ulid/v2"
 )
@@ -157,57 +156,4 @@ func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Project, 
 	}
 
 	return source, nil
-}
-
-func (s *SourceService) FindSourceByID(ctx context.Context, g *datastore.Project, id string) (*datastore.Source, error) {
-	source, err := s.sourceRepo.FindSourceByID(ctx, g.UID, id)
-	if err != nil {
-		if err == datastore.ErrSourceNotFound {
-			return nil, util.NewServiceError(http.StatusNotFound, err)
-		}
-
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("error retrieving source"))
-	}
-
-	return source, nil
-}
-
-func (s *SourceService) FindSourceByMaskID(ctx context.Context, maskID string) (*datastore.Source, error) {
-	source, err := s.sourceRepo.FindSourceByMaskID(ctx, maskID)
-	if err != nil {
-		if errors.Is(err, datastore.ErrSourceNotFound) {
-			return nil, util.NewServiceError(http.StatusNotFound, err)
-		}
-
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("error retrieving source"))
-	}
-
-	return source, nil
-}
-
-func (s *SourceService) LoadSourcesPaged(ctx context.Context, g *datastore.Project, filter *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
-	sources, paginationData, err := s.sourceRepo.LoadSourcesPaged(ctx, g.UID, filter, pageable)
-	if err != nil {
-		log.WithError(err).Error("an error occurred while fetching sources")
-		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching sources"))
-	}
-
-	return sources, paginationData, nil
-}
-
-func (s *SourceService) DeleteSource(ctx context.Context, g *datastore.Project, source *datastore.Source) error {
-	err := s.sourceRepo.DeleteSourceByID(ctx, g.UID, source.UID, source.VerifierID)
-	if err != nil {
-		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete source"))
-	}
-
-	if source.Provider == datastore.TwitterSourceProvider {
-		sourceCacheKey := convoy.SourceCacheKey.Get(source.MaskID).String()
-		err = s.cache.Delete(ctx, sourceCacheKey)
-		if err != nil {
-			return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete source cache"))
-		}
-	}
-
-	return nil
 }

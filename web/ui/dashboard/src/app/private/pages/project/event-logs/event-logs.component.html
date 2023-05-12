@@ -161,9 +161,9 @@
 							Replay
 						</button>
 					</div>
-					<prism language="json" [code]="getCodeSnippetString('res_data')" title="Event"></prism>
+					<prism language="json" [code]="generalService.getCodeSnippetString('event_data', eventsDetailsItem?.data || eventsDetailsItem?.metadata?.data)" title="Event"></prism>
 					<div class="mb-20px"></div>
-					<prism language="json" [code]="getCodeSnippetString('header')" title="Header"></prism>
+					<prism language="json" [code]="generalService.getCodeSnippetString('req_header', eventsDetailsItem?.headers)" title="Header"></prism>
 				</ng-container>
 
 				<h3 class="text-16 font-bold mb-16px mt-26px" *ngIf="!(!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0))">Deliveries Overview</h3>

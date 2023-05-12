@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
@@ -124,7 +126,7 @@ func (a *DashboardHandler) RegenerateProjectAPIKey(w http.ResponseWriter, r *htt
 
 func (a *DashboardHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-	securityService := createSecurityService(a)
+
 	f := &datastore.ApiKeyFilter{}
 	keyType := datastore.KeyType(r.URL.Query().Get("keyType"))
 	if keyType.IsValid() {
@@ -140,10 +142,10 @@ func (a *DashboardHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apiKeys, paginationData, err := securityService.GetAPIKeys(r.Context(), f, &pageable)
+	apiKeys, paginationData, err := postgres.NewAPIKeyRepo(a.A.DB).LoadAPIKeysPaged(r.Context(), f, &pageable)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to load api keys")
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		log.FromContext(r.Context()).WithError(err).Error("failed to load api keys")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to load api keys", http.StatusBadRequest))
 		return
 	}
 

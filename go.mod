@@ -23,7 +23,7 @@ require (
 	github.com/hibiken/asynq v0.23.0
 	github.com/hibiken/asynq/x v0.0.0-20221219051101-0b8cfad70341
 	github.com/hibiken/asynqmon v0.7.1
-	github.com/jarcoal/httpmock v1.0.8
+	github.com/jarcoal/httpmock v1.3.0
 	github.com/jaswdr/faker v1.10.2
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/kelseyhightower/envconfig v1.4.0

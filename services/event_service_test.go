@@ -9,6 +9,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -17,7 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func provideEventService(ctrl *gomock.Controller) *EventService {
+func provideEventService(ctrl *gomock.Controller) (*EventService, error) {
 	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
@@ -27,7 +28,18 @@ func provideEventService(ctrl *gomock.Controller) *EventService {
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
 	deviceRepo := mocks.NewMockDeviceRepository(ctrl)
-	return NewEventService(endpointRepo, eventRepo, eventDeliveryRepo, queue, cache, searcher, subRepo, sourceRepo, deviceRepo)
+
+	return &EventService{
+		endpointRepo:      endpointRepo,
+		eventRepo:         eventRepo,
+		eventDeliveryRepo: eventDeliveryRepo,
+		subRepo:           subRepo,
+		sourceRepo:        sourceRepo,
+		deviceRepo:        deviceRepo,
+		queue:             queue,
+		cache:             cache,
+		searcher:          searcher,
+	}, nil
 }
 
 func TestEventService_CreateEvent(t *testing.T) {
@@ -315,7 +327,12 @@ func TestEventService_CreateEvent(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
@@ -447,7 +464,12 @@ func TestEventService_CreateFanoutEvent(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			// Arrange Expectations
 			if tc.dbFn != nil {
@@ -476,77 +498,6 @@ func TestEventService_CreateFanoutEvent(t *testing.T) {
 			tc.wantEvent.Endpoints[0], event.Endpoints[0] = "", ""
 			require.Equal(t, tc.wantEvent, event)
 			require.Equal(t, m1, m2)
-		})
-	}
-}
-
-func TestEventService_GetEvent(t *testing.T) {
-	ctx := context.Background()
-	type args struct {
-		ctx       context.Context
-		projectID string
-		id        string
-	}
-	tests := []struct {
-		name        string
-		args        args
-		dbFn        func(es *EventService)
-		wantEvent   *datastore.Event
-		wantErr     bool
-		wantErrCode int
-		wantErrMsg  string
-	}{
-		{
-			name: "should_get_app_event",
-			args: args{
-				ctx:       ctx,
-				projectID: "1234",
-				id:        "123",
-			},
-			dbFn: func(es *EventService) {
-				e, _ := es.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().FindEventByID(gomock.Any(), "1234", "123").
-					Times(1).Return(&datastore.Event{UID: "123"}, nil)
-			},
-			wantEvent: &datastore.Event{UID: "123"},
-		},
-		{
-			name: "should_fail_to_get_app_event",
-			args: args{
-				ctx:       ctx,
-				projectID: "1234",
-				id:        "123",
-			},
-			dbFn: func(es *EventService) {
-				e, _ := es.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().FindEventByID(gomock.Any(), "1234", "123").
-					Times(1).Return(nil, errors.New("failed"))
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to find event by id",
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			es := provideEventService(ctrl)
-
-			if tc.dbFn != nil {
-				tc.dbFn(es)
-			}
-
-			event, err := es.GetEvent(tc.args.ctx, tc.args.projectID, tc.args.id)
-			if tc.wantErr {
-				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
-				return
-			}
-
-			require.Nil(t, err)
-			require.Equal(t, tc.wantEvent, event)
 		})
 	}
 }
@@ -601,13 +552,18 @@ func TestEventService_ReplayAppEvent(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
 			}
 
-			err := es.ReplayEvent(tc.args.ctx, tc.args.event, tc.args.g)
+			err = es.ReplayEvent(tc.args.ctx, tc.args.event, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -616,78 +572,6 @@ func TestEventService_ReplayAppEvent(t *testing.T) {
 			}
 
 			require.Nil(t, err)
-		})
-	}
-}
-
-func TestEventService_GetEventDelivery(t *testing.T) {
-	ctx := context.Background()
-
-	type args struct {
-		ctx       context.Context
-		projectID string
-		id        string
-	}
-	tests := []struct {
-		name              string
-		args              args
-		dbFn              func(es *EventService)
-		wantEventDelivery *datastore.EventDelivery
-		wantErr           bool
-		wantErrCode       int
-		wantErrMsg        string
-	}{
-		{
-			name: "should_get_event_delivery",
-			args: args{
-				ctx:       ctx,
-				projectID: "1234",
-				id:        "123",
-			},
-			dbFn: func(es *EventService) {
-				e, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				e.EXPECT().FindEventDeliveryByID(gomock.Any(), "1234", "123").
-					Times(1).Return(&datastore.EventDelivery{UID: "123"}, nil)
-			},
-			wantEventDelivery: &datastore.EventDelivery{UID: "123"},
-		},
-		{
-			name: "should_fail_to_get_event_delivery",
-			args: args{
-				ctx:       ctx,
-				projectID: "1234",
-				id:        "123",
-			},
-			dbFn: func(es *EventService) {
-				e, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				e.EXPECT().FindEventDeliveryByID(gomock.Any(), "1234", "123").
-					Times(1).Return(nil, errors.New("failed"))
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to find event delivery by id",
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			es := provideEventService(ctrl)
-
-			if tc.dbFn != nil {
-				tc.dbFn(es)
-			}
-
-			eventDelivery, err := es.GetEventDelivery(tc.args.ctx, tc.args.projectID, tc.args.id)
-			if tc.wantErr {
-				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
-				return
-			}
-
-			require.Nil(t, err)
-			require.Equal(t, tc.wantEventDelivery, eventDelivery)
 		})
 	}
 }
@@ -856,7 +740,12 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
@@ -873,108 +762,6 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 			require.Nil(t, err)
 			require.Equal(t, tc.wantSuccesses, successes)
 			require.Equal(t, tc.wantFailures, failures)
-		})
-	}
-}
-
-func TestEventService_CountAffectedEventDeliveries(t *testing.T) {
-	ctx := context.Background()
-	type args struct {
-		ctx    context.Context
-		filter *datastore.Filter
-	}
-	tests := []struct {
-		name        string
-		args        args
-		dbFn        func(es *EventService)
-		wantCount   int64
-		wantErr     bool
-		wantErrCode int
-		wantErrMsg  string
-	}{
-		{
-			name: "should_count_affected_event_deliveries",
-			args: args{
-				ctx: ctx,
-				filter: &datastore.Filter{
-					Project:     &datastore.Project{UID: "123"},
-					EndpointIDs: []string{"abc"},
-					EventID:     "ref",
-					Status:      []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
-					SearchParams: datastore.SearchParams{
-						CreatedAtStart: 13323,
-						CreatedAtEnd:   1213,
-					},
-				},
-			},
-			dbFn: func(es *EventService) {
-				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CountEventDeliveries(
-					gomock.Any(),
-					"123",
-					[]string{"abc"},
-					"ref",
-					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
-					datastore.SearchParams{
-						CreatedAtStart: 13323,
-						CreatedAtEnd:   1213,
-					}).Times(1).Return(int64(1234), nil)
-			},
-			wantCount: 1234,
-		},
-		{
-			name: "should_fail_to_count_affected_event_deliveries",
-			args: args{
-				ctx: ctx,
-				filter: &datastore.Filter{
-					Project:     &datastore.Project{UID: "123"},
-					EndpointIDs: []string{"abc"},
-					EventID:     "ref",
-					Status:      []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
-					SearchParams: datastore.SearchParams{
-						CreatedAtStart: 13323,
-						CreatedAtEnd:   1213,
-					},
-				},
-			},
-			dbFn: func(es *EventService) {
-				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CountEventDeliveries(
-					gomock.Any(),
-					"123",
-					[]string{"abc"},
-					"ref",
-					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
-					datastore.SearchParams{
-						CreatedAtStart: 13323,
-						CreatedAtEnd:   1213,
-					}).Times(1).Return(int64(0), errors.New("failed"))
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusInternalServerError,
-			wantErrMsg:  "an error occurred while fetching event deliveries",
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			es := provideEventService(ctrl)
-
-			if tc.dbFn != nil {
-				tc.dbFn(es)
-			}
-
-			count, err := es.CountAffectedEventDeliveries(tc.args.ctx, tc.args.filter)
-			if tc.wantErr {
-				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
-				return
-			}
-
-			require.Nil(t, err)
-			require.Equal(t, tc.wantCount, count)
 		})
 	}
 }
@@ -1074,7 +861,12 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
@@ -1091,144 +883,6 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 			require.Nil(t, err)
 			require.Equal(t, tc.wantSuccesses, successes)
 			require.Equal(t, tc.wantFailures, failures)
-		})
-	}
-}
-
-func TestEventService_GetEventsPaged(t *testing.T) {
-	ctx := context.Background()
-	type args struct {
-		ctx    context.Context
-		filter *datastore.Filter
-	}
-	tests := []struct {
-		name               string
-		args               args
-		dbFn               func(es *EventService)
-		wantEvents         []datastore.Event
-		wantPaginationData datastore.PaginationData
-		wantErr            bool
-		wantErrCode        int
-		wantErrMsg         string
-	}{
-		{
-			name: "should_get_event_paged",
-			args: args{
-				ctx: ctx,
-				filter: &datastore.Filter{
-					Project:    &datastore.Project{UID: "123"},
-					SourceID:   "bcv",
-					EndpointID: "abc",
-					Pageable: datastore.Pageable{
-						PerPage:    10,
-						Direction:  datastore.Next,
-						NextCursor: datastore.DefaultCursor,
-					},
-					SearchParams: datastore.SearchParams{
-						CreatedAtStart: 13323,
-						CreatedAtEnd:   1213,
-					},
-				},
-			},
-			dbFn: func(es *EventService) {
-				ed, _ := es.eventRepo.(*mocks.MockEventRepository)
-				f := &datastore.Filter{
-					Query:      "",
-					Project:    &datastore.Project{UID: "123"},
-					EndpointID: "abc",
-					EventID:    "",
-					SourceID:   "bcv",
-					Pageable: datastore.Pageable{
-						PerPage:    10,
-						Direction:  datastore.Next,
-						NextCursor: datastore.DefaultCursor,
-					},
-					Status: nil,
-					SearchParams: datastore.SearchParams{
-						CreatedAtStart: 13323,
-						CreatedAtEnd:   1213,
-					},
-				}
-				ed.EXPECT().LoadEventsPaged(gomock.Any(), f.Project.UID, f).
-					Times(1).
-					Return([]datastore.Event{
-						{
-							UID:       "1234",
-							Endpoints: []string{"abc"},
-							EndpointMetadata: []*datastore.Endpoint{{
-								UID:          "abc",
-								Title:        "Title",
-								ProjectID:    "123",
-								SupportEmail: "SupportEmail",
-							}},
-						},
-					}, datastore.PaginationData{
-						PerPage: 2,
-					}, nil)
-			},
-			wantEvents: []datastore.Event{
-				{
-					UID:       "1234",
-					Endpoints: []string{"abc"},
-					EndpointMetadata: []*datastore.Endpoint{{
-						UID:          "abc",
-						Title:        "Title",
-						ProjectID:    "123",
-						SupportEmail: "SupportEmail",
-					}},
-				},
-			},
-			wantPaginationData: datastore.PaginationData{
-				PerPage: 2,
-			},
-		},
-		{
-			name: "should_fail_to_get_events_paged",
-			args: args{
-				ctx: ctx,
-				filter: &datastore.Filter{
-					Project:    &datastore.Project{UID: "123"},
-					EndpointID: "abc",
-					EventID:    "ref",
-					Status:     []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
-					SearchParams: datastore.SearchParams{
-						CreatedAtStart: 13323,
-						CreatedAtEnd:   1213,
-					},
-				},
-			},
-			dbFn: func(es *EventService) {
-				ed, _ := es.eventRepo.(*mocks.MockEventRepository)
-				ed.EXPECT().
-					LoadEventsPaged(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return(nil, datastore.PaginationData{}, errors.New("failed"))
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusInternalServerError,
-			wantErrMsg:  "an error occurred while fetching events",
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			es := provideEventService(ctrl)
-
-			if tc.dbFn != nil {
-				tc.dbFn(es)
-			}
-
-			events, paginationData, err := es.GetEventsPaged(tc.args.ctx, tc.args.filter)
-			if tc.wantErr {
-				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
-				return
-			}
-
-			require.Nil(t, err)
-			require.Equal(t, tc.wantEvents, events)
-			require.Equal(t, tc.wantPaginationData, paginationData)
 		})
 	}
 }
@@ -1317,7 +971,12 @@ func TestEventService_SearchEvents(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
@@ -1333,168 +992,6 @@ func TestEventService_SearchEvents(t *testing.T) {
 
 			require.Nil(t, err)
 			require.Equal(t, tc.wantEvents, events)
-			require.Equal(t, tc.wantPaginationData, paginationData)
-		})
-	}
-}
-
-func TestEventService_GetEventDeliveriesPaged(t *testing.T) {
-	ctx := context.Background()
-	type args struct {
-		ctx    context.Context
-		filter *datastore.Filter
-	}
-	tests := []struct {
-		name                string
-		args                args
-		dbFn                func(es *EventService)
-		wantEventDeliveries []datastore.EventDelivery
-		wantPaginationData  datastore.PaginationData
-		wantErr             bool
-		wantErrCode         int
-		wantErrMsg          string
-	}{
-		{
-			name: "should_get_event_deliveries_paged",
-			args: args{
-				ctx: ctx,
-				filter: &datastore.Filter{
-					Project:     &datastore.Project{UID: "123"},
-					EndpointIDs: []string{"abc"},
-					EventID:     "123",
-					Pageable: datastore.Pageable{
-						PerPage:    10,
-						Direction:  datastore.Next,
-						NextCursor: datastore.DefaultCursor,
-					},
-					Status: []datastore.EventDeliveryStatus{datastore.SuccessEventStatus},
-					SearchParams: datastore.SearchParams{
-						CreatedAtStart: 13323,
-						CreatedAtEnd:   1213,
-					},
-				},
-			},
-			dbFn: func(es *EventService) {
-				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().LoadEventDeliveriesPaged(
-					gomock.Any(),
-					"123",
-					[]string{"abc"},
-					"123",
-					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus},
-					datastore.SearchParams{
-						CreatedAtStart: 13323,
-						CreatedAtEnd:   1213,
-					},
-					datastore.Pageable{
-						PerPage:    10,
-						Direction:  datastore.Next,
-						NextCursor: datastore.DefaultCursor,
-					}).
-					Times(1).
-					Return([]datastore.EventDelivery{{
-						UID:        "1234",
-						EndpointID: "12345",
-						Event: &datastore.Event{
-							UID:       "123",
-							EventType: "incoming",
-						},
-						Endpoint: &datastore.Endpoint{
-							UID:          "1234",
-							Title:        "Title",
-							ProjectID:    "123",
-							SupportEmail: "SupportEmail",
-							TargetURL:    "http://localhost.com",
-							Secrets: []datastore.Secret{
-								{
-									UID:   "abc",
-									Value: "Secret",
-								},
-							},
-							HttpTimeout:       "30s",
-							RateLimit:         10,
-							RateLimitDuration: "1h",
-						},
-					}}, datastore.PaginationData{
-						PerPage: 2,
-					}, nil)
-			},
-			wantEventDeliveries: []datastore.EventDelivery{
-				{
-					UID:        "1234",
-					EndpointID: "12345",
-					Event: &datastore.Event{
-						UID:       "123",
-						EventType: "incoming",
-					},
-					Endpoint: &datastore.Endpoint{
-						UID:          "1234",
-						Title:        "Title",
-						ProjectID:    "123",
-						SupportEmail: "SupportEmail",
-						TargetURL:    "http://localhost.com",
-						Secrets: []datastore.Secret{
-							{
-								UID:   "abc",
-								Value: "Secret",
-							},
-						},
-						HttpTimeout:       "30s",
-						RateLimit:         10,
-						RateLimitDuration: "1h",
-					},
-				},
-			},
-			wantPaginationData: datastore.PaginationData{
-				PerPage: 2,
-			},
-		},
-		{
-			name: "should_fail_to_get_events_deliveries_paged",
-			args: args{
-				ctx: ctx,
-				filter: &datastore.Filter{
-					Project:    &datastore.Project{UID: "123"},
-					EndpointID: "abc",
-					EventID:    "ref",
-					Status:     []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
-					SearchParams: datastore.SearchParams{
-						CreatedAtStart: 13323,
-						CreatedAtEnd:   1213,
-					},
-				},
-			},
-			dbFn: func(es *EventService) {
-				ed, _ := es.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().
-					LoadEventDeliveriesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return(nil, datastore.PaginationData{}, errors.New("failed"))
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusInternalServerError,
-			wantErrMsg:  "an error occurred while fetching event deliveries",
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			es := provideEventService(ctrl)
-
-			if tc.dbFn != nil {
-				tc.dbFn(es)
-			}
-
-			eventDeliveries, paginationData, err := es.GetEventDeliveriesPaged(tc.args.ctx, tc.args.filter)
-			if tc.wantErr {
-				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
-				return
-			}
-
-			require.Nil(t, err)
-			require.Equal(t, tc.wantEventDeliveries, eventDeliveries)
 			require.Equal(t, tc.wantPaginationData, paginationData)
 		})
 	}
@@ -1555,13 +1052,18 @@ func TestEventService_ResendEventDelivery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
 			}
 
-			err := es.ResendEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g)
+			err = es.ResendEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
@@ -1756,13 +1258,18 @@ func TestEventService_RetryEventDelivery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
 			}
 
-			err := es.RetryEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g)
+			err = es.RetryEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrMsg, err.Error())
@@ -1857,13 +1364,18 @@ func TestEventService_forceResendEventDelivery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
 			}
 
-			err := es.forceResendEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g)
+			err = es.forceResendEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrMsg, err.Error())
@@ -1945,13 +1457,18 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
 			}
 
-			err := es.requeueEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g)
+			err = es.requeueEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrMsg, err.Error())
@@ -2028,13 +1545,18 @@ func TestEventService_CreateDynamicEvents(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			es := provideEventService(ctrl)
+
+			err := config.LoadConfig("./testdata/basic-config.json")
+			require.NoError(t, err)
+
+			es, err := provideEventService(ctrl)
+			require.NoError(t, err)
 
 			if tc.dbFn != nil {
 				tc.dbFn(es)
 			}
 
-			err := es.CreateDynamicEvent(tc.args.ctx, tc.args.dynamicEvent, tc.args.g)
+			err = es.CreateDynamicEvent(tc.args.ctx, tc.args.dynamicEvent, tc.args.g)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrMsg, err.Error())

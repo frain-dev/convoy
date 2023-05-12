@@ -10,7 +10,6 @@ import (
 	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/oklog/ulid/v2"
 )
@@ -85,38 +84,6 @@ func (p *PortalLinkService) UpdatePortalLink(ctx context.Context, project *datas
 	return portalLink, nil
 }
 
-func (p *PortalLinkService) FindPortalLinkByID(ctx context.Context, project *datastore.Project, uid string) (*datastore.PortalLink, error) {
-	portalLink, err := p.portalLinkRepo.FindPortalLinkByID(ctx, project.UID, uid)
-	if err != nil {
-		if err == datastore.ErrPortalLinkNotFound {
-			return nil, util.NewServiceError(http.StatusNotFound, err)
-		}
-
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("error retrieving portal link"))
-	}
-
-	return portalLink, nil
-}
-
-func (p *PortalLinkService) LoadPortalLinksPaged(ctx context.Context, project *datastore.Project, f *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
-	portalLinks, paginationData, err := p.portalLinkRepo.LoadPortalLinksPaged(ctx, project.UID, f, pageable)
-	if err != nil {
-		log.WithError(err).Println("an error occurred while fetching portal links")
-		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while fetching portal links"))
-	}
-
-	return portalLinks, paginationData, nil
-}
-
-func (p *PortalLinkService) RevokePortalLink(ctx context.Context, project *datastore.Project, portalLink *datastore.PortalLink) error {
-	err := p.portalLinkRepo.RevokePortalLink(ctx, project.UID, portalLink.UID)
-	if err != nil {
-		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to delete portal link"))
-	}
-
-	return nil
-}
-
 func (p *PortalLinkService) CreateEndpoint(ctx context.Context, project *datastore.Project, data models.Endpoint, portalLink *datastore.PortalLink) (*datastore.Endpoint, error) {
 	endpoint, err := p.endpointService.CreateEndpoint(ctx, data, project.UID)
 	if err != nil {
@@ -130,15 +97,6 @@ func (p *PortalLinkService) CreateEndpoint(ctx context.Context, project *datasto
 	}
 
 	return endpoint, nil
-}
-
-func (p *PortalLinkService) GetPortalLinkEndpoints(ctx context.Context, portal *datastore.PortalLink, project *datastore.Project) ([]datastore.Endpoint, error) {
-	endpoints, err := p.endpointRepo.FindEndpointsByID(ctx, portal.Endpoints, project.UID)
-	if err != nil {
-		return nil, util.NewServiceError(http.StatusInternalServerError, errors.New("an error occurred while fetching endpoints"))
-	}
-
-	return endpoints, err
 }
 
 func (p *PortalLinkService) findEndpoints(ctx context.Context, endpoints []string, project *datastore.Project) error {

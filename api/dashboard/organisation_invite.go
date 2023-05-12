@@ -82,11 +82,9 @@ func (a *DashboardHandler) GetPendingOrganisationInvites(w http.ResponseWriter, 
 	}
 
 	pageable := m.GetPageableFromContext(r.Context())
-	organisationInviteService := CreateOrganisationInviteService(a)
-
-	invites, paginationData, err := organisationInviteService.LoadOrganisationInvitesPaged(r.Context(), org, datastore.InviteStatusPending, pageable)
+	invites, paginationData, err := postgres.NewOrgInviteRepo(a.A.DB).LoadOrganisationsInvitesPaged(r.Context(), org.UID, datastore.InviteStatusPending, pageable)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to create organisation member invite")
+		log.FromContext(r.Context()).WithError(err).Error("failed to load organisation invites")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

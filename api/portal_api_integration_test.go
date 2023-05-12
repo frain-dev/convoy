@@ -524,19 +524,20 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEventsPaged() {
 	_, err = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, ulid.Make().String(), "", vc)
 	require.NoError(s.T(), err)
 
-	e1, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint1, s.DefaultProject.UID, eventID, "*", sourceID, []byte(`{}`))
+	_, err = testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint1, s.DefaultProject.UID, eventID, "*", sourceID, []byte(`{}`))
 	require.NoError(s.T(), err)
 
-	e2, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint1, s.DefaultProject.UID, ulid.Make().String(), "*", sourceID, []byte(`{}`))
+	_, err = testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint1, s.DefaultProject.UID, ulid.Make().String(), "*", sourceID, []byte(`{}`))
 	require.NoError(s.T(), err)
 
 	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint2, s.DefaultProject.UID, ulid.Make().String(), "*", sourceID, []byte(`{}`))
+	e2, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint2, s.DefaultProject.UID, ulid.Make().String(), "*", sourceID, []byte(`{}`))
 	require.NoError(s.T(), err)
 
 	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint2.UID})
+	fmt.Println("endpoint2UID is >>>", endpoint2.UID)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/portal-api/events?endpointId=%s&sourceId=%s&token=%s", endpoint1.UID, sourceID, portalLink.Token)
@@ -553,9 +554,9 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEventsPaged() {
 	var respEvents []datastore.Event
 	resp := pagedResponse{Content: &respEvents}
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), 2, len(respEvents))
+	require.Equal(s.T(), 1, len(respEvents))
 
-	v := []string{e1.UID, e2.UID}
+	v := []string{e2.UID}
 	for i := range respEvents {
 		require.Contains(s.T(), v, respEvents[i].UID)
 	}
@@ -578,10 +579,10 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	event1, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint1, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
 	require.NoError(s.T(), err)
 
-	d1, err := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event1, endpoint1, s.DefaultProject.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
+	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event1, endpoint1, s.DefaultProject.UID, eventDeliveryID, datastore.FailureEventStatus, subscription)
 	require.NoError(s.T(), err)
 
-	d2, err := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event1, endpoint1, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
+	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event1, endpoint1, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
 	require.NoError(s.T(), err)
 
 	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
@@ -590,7 +591,7 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	event2, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint2, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event2, endpoint2, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
+	d2, err := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event2, endpoint2, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
 	require.NoError(s.T(), err)
 
 	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint2.UID})
@@ -610,12 +611,63 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	var respEvents []datastore.EventDelivery
 	resp := pagedResponse{Content: &respEvents}
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), 2, len(respEvents))
+	require.Equal(s.T(), 1, len(respEvents))
 
-	v := []*datastore.EventDelivery{d2, d1}
+	v := []*datastore.EventDelivery{d2}
 	for i, delivery := range v {
 		require.Equal(s.T(), respEvents[i].UID, delivery.UID)
 	}
+}
+
+func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpointSubscriptions() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint2.UID})
+	require.NoError(s.T(), err)
+
+	vc := &datastore.VerifierConfig{
+		Type: datastore.BasicAuthVerifier,
+		BasicAuth: &datastore.BasicAuth{
+			UserName: "Convoy",
+			Password: "Convoy",
+		},
+	}
+
+	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", vc)
+	require.NoError(s.T(), err)
+
+	// seed subscriptions
+	for i := 0; i < 5; i++ {
+		_, err = testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, source, endpoint1, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
+		require.NoError(s.T(), err)
+
+	}
+
+	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, source, endpoint2, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
+	require.NoError(s.T(), err)
+
+	req := createRequest(http.MethodGet, fmt.Sprintf("/portal-api/subscriptions?token=%s", portalLink.Token), "", nil)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	var respSubs []datastore.Subscription
+	resp := &pagedResponse{Content: &respSubs}
+
+	parseResponse(s.T(), w.Result(), &resp)
+	require.Equal(s.T(), 1, len(respSubs))
+	require.Equal(s.T(), sub.UID, respSubs[0].UID)
 }
 
 func TestPortalEventIntegrationTestSuite(t *testing.T) {

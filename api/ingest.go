@@ -34,10 +34,14 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	maskID := chi.URLParam(r, "maskID")
 
 	// 2. Retrieve source using mask ID.
-	sourceService := createSourceService(a)
-	source, err := sourceService.FindSourceByMaskID(r.Context(), maskID)
+	source, err := postgres.NewSourceRepo(a.A.DB).FindSourceByMaskID(r.Context(), maskID)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		if err == datastore.ErrSourceNotFound {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+			return
+		}
+
+		_ = render.Render(w, r, util.NewErrorResponse("error retrieving source", http.StatusBadRequest))
 		return
 	}
 
@@ -181,10 +185,14 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 	}
 
 	if source == nil {
-		sourceService := createSourceService(a)
-		source, err = sourceService.FindSourceByMaskID(r.Context(), maskID)
+		source, err = postgres.NewSourceRepo(a.A.DB).FindSourceByMaskID(r.Context(), maskID)
 		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			if err == datastore.ErrSourceNotFound {
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+				return
+			}
+
+			_ = render.Render(w, r, util.NewErrorResponse("error retrieving source", http.StatusBadRequest))
 			return
 		}
 
