@@ -41,6 +41,7 @@ var DefaultConfiguration = Configuration{
 		Username:              "postgres",
 		Password:              "postgres",
 		Database:              "convoy",
+		Options:               "sslmode=disable",
 		Port:                  5432,
 		SetMaxOpenConnections: 10,
 		SetMaxIdleConnections: 10,
@@ -79,9 +80,10 @@ type DatabaseConfiguration struct {
 
 	Scheme   string `json:"scheme" envconfig:"CONVOY_DB_SCHEME"`
 	Host     string `json:"host" envconfig:"CONVOY_DB_HOST"`
-	Username string `json:"username" envconfig:"CONVOY_DB_USER"`
+	Username string `json:"username" envconfig:"CONVOY_DB_USERNAME"`
 	Password string `json:"password" envconfig:"CONVOY_DB_PASSWORD"`
 	Database string `json:"database" envconfig:"CONVOY_DB_DATABASE"`
+	Options  string `json:"options" envconfig:"CONVOY_DB_OPTIONS"`
 	Port     int    `json:"port" envconfig:"CONVOY_DB_PORT"`
 
 	SetMaxOpenConnections int `json:"max_open_conn" envconfig:"CONVOY_DB_MAX_OPEN_CONN"`
@@ -90,6 +92,10 @@ type DatabaseConfiguration struct {
 }
 
 func (dc DatabaseConfiguration) BuildDsn() string {
+	if dc.Scheme == "" {
+		return ""
+	}
+
 	authPart := ""
 	if dc.Username != "" || dc.Password != "" {
 		authPart = fmt.Sprintf("%s:%s@", dc.Username, dc.Password)
@@ -100,7 +106,12 @@ func (dc DatabaseConfiguration) BuildDsn() string {
 		dbPart = fmt.Sprintf("/%s", dc.Database)
 	}
 
-	return fmt.Sprintf("%s://%s%s:%d%s", dc.Scheme, authPart, dc.Host, dc.Port, dbPart)
+	optPart := ""
+	if dc.Options != "" {
+		optPart = fmt.Sprintf("?%s", dc.Options)
+	}
+
+	return fmt.Sprintf("%s://%s%s:%d%s%s", dc.Scheme, authPart, dc.Host, dc.Port, dbPart, optPart)
 }
 
 type ServerConfiguration struct {
@@ -125,13 +136,17 @@ type PrometheusConfiguration struct {
 type RedisConfiguration struct {
 	Scheme   string `json:"scheme" envconfig:"CONVOY_REDIS_SCHEME"`
 	Host     string `json:"host" envconfig:"CONVOY_REDIS_HOST"`
-	Username string `json:"username" envconfig:"CONVOY_REDIS_USER"`
+	Username string `json:"username" envconfig:"CONVOY_REDIS_USERNAME"`
 	Password string `json:"password" envconfig:"CONVOY_REDIS_PASSWORD"`
 	Database string `json:"database" envconfig:"CONVOY_REDIS_DATABASE"`
 	Port     int    `json:"port" envconfig:"CONVOY_REDIS_PORT"`
 }
 
 func (rc RedisConfiguration) BuildDsn() string {
+	if rc.Scheme == "" {
+		return ""
+	}
+
 	authPart := ""
 	if rc.Username != "" || rc.Password != "" {
 		authPart = fmt.Sprintf("%s:%s@", rc.Username, rc.Password)

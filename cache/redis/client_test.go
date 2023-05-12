@@ -5,6 +5,7 @@ package rcache
 
 import (
 	"context"
+	"github.com/frain-dev/convoy/config"
 	"os"
 	"testing"
 	"time"
@@ -17,7 +18,12 @@ type data struct {
 }
 
 func getDSN() string {
-	return os.Getenv("TEST_REDIS_DSN")
+	c := config.RedisConfiguration{
+		Scheme: "redis",
+		Host:   os.Getenv("TEST_REDIS_HOST"),
+		Port:   6379,
+	}
+	return c.BuildDsn()
 }
 
 const key = "test_key"

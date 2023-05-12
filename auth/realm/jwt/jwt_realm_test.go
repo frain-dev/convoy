@@ -20,11 +20,11 @@ func TestJwtRealm_Authenticate(t *testing.T) {
 	defer ctrl.Finish()
 
 	userRepo := mocks.NewMockUserRepository(ctrl)
-	cache, err := cache.NewCache(config.CacheConfiguration{})
+	newCache, err := cache.NewCache(config.DefaultConfiguration.Redis)
 
 	require.Nil(t, err)
 
-	jr := NewJwtRealm(userRepo, &config.JwtRealmOptions{}, cache)
+	jr := NewJwtRealm(userRepo, &config.JwtRealmOptions{}, newCache)
 
 	user := &datastore.User{UID: "123456"}
 	token, err := jr.jwt.GenerateToken(user)
@@ -114,7 +114,9 @@ func TestJwtRealm_Authenticate(t *testing.T) {
 					Token: token.AccessToken,
 				},
 			},
-			dbFn:       nil,
+			dbFn: func(userRepo *mocks.MockUserRepository) {
+				userRepo.EXPECT().FindUserByID(gomock.Any(), gomock.Any()).Return(nil, ErrInvalidToken)
+			},
 			want:       nil,
 			blacklist:  true,
 			wantErr:    true,

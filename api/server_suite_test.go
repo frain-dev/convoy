@@ -42,7 +42,7 @@ func getConfig() config.Configuration {
 	return config.Configuration{
 		Redis: config.RedisConfiguration{
 			Scheme: "redis",
-			Host:   os.Getenv("TEST_REDIS_DSN"),
+			Host:   os.Getenv("TEST_REDIS_HOST"),
 			Port:   6379,
 		},
 		Database: config.DatabaseConfiguration{

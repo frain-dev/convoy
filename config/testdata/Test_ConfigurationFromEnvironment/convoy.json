@@ -1,46 +1,27 @@
 {
     "database": {
-        "dsn": "postgres://inside-config-file"
+        "scheme": "postgres",
+        "host": "inside-config-file",
+        "username": "postgres",
+        "password": "postgres",
+        "database": "convoy",
+        "options": "sslmode=disable",
+        "port": 5432
     },
     "redis": {
-        "dsn": "redis://localhost:8379"
+        "port": 8379,
+        "scheme": "redis",
+        "host": "localhost"
     },
     "server": {
         "http": {
             "port": 8080
         }
     },
-    "group": {
-        "strategy": {
-            "type": "default",
-            "default": {
-                "intervalSeconds": 125,
-                "retryLimit": 15
-            }
-        },
-        "signature": {
-            "hash": "SHA256",
-            "header": "x-test-signature"
-        },
-        "disable_endpoint": true,
-        "replay_attacks": true
-    },
     "auth": {
         "require_auth": true,
         "native": {
             "enabled": true
-        },
-        "file": {
-            "basic": [
-                {
-                    "username": "admin",
-                    "password": "qwerty",
-                    "role": {
-                        "type": "super_user",
-                        "group": ""
-                    }
-                }
-            ]
         }
     }
 }

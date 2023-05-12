@@ -105,6 +105,11 @@ func TestLoadConfig(t *testing.T) {
 					Type:                  PostgresDatabaseProvider,
 					Scheme:                "postgres",
 					Host:                  "inside-config-file",
+					Username:              "postgres",
+					Password:              "postgres",
+					Database:              "convoy",
+					Options:               "sslmode=disable",
+					Port:                  5432,
 					SetMaxOpenConnections: 10,
 					SetMaxIdleConnections: 10,
 					SetConnMaxLifetime:    3600,
@@ -127,6 +132,10 @@ func TestLoadConfig(t *testing.T) {
 				MaxResponseSize: 40 * 1024,
 				Environment:     OSSEnvironment,
 				Auth: AuthConfiguration{
+					Native: NativeRealmOptions{
+						Enabled: true},
+					Jwt: JwtRealmOptions{
+						Enabled: true},
 					IsSignupEnabled: true,
 				},
 				Analytics: AnalyticsConfiguration{
@@ -153,6 +162,11 @@ func TestLoadConfig(t *testing.T) {
 					Type:                  PostgresDatabaseProvider,
 					Scheme:                "postgres",
 					Host:                  "inside-config-file",
+					Username:              "postgres",
+					Password:              "postgres",
+					Database:              "convoy",
+					Options:               "sslmode=disable",
+					Port:                  5432,
 					SetMaxOpenConnections: 10,
 					SetMaxIdleConnections: 10,
 					SetConnMaxLifetime:    3600,
@@ -175,6 +189,10 @@ func TestLoadConfig(t *testing.T) {
 				MaxResponseSize: MaxResponseSize,
 				Environment:     OSSEnvironment,
 				Auth: AuthConfiguration{
+					Native: NativeRealmOptions{
+						Enabled: true},
+					Jwt: JwtRealmOptions{
+						Enabled: true},
 					IsSignupEnabled: true,
 				},
 				Analytics: AnalyticsConfiguration{
@@ -201,6 +219,11 @@ func TestLoadConfig(t *testing.T) {
 					Type:                  PostgresDatabaseProvider,
 					Scheme:                "postgres",
 					Host:                  "inside-config-file",
+					Username:              "postgres",
+					Password:              "postgres",
+					Database:              "convoy",
+					Options:               "sslmode=disable",
+					Port:                  5432,
 					SetMaxOpenConnections: 10,
 					SetMaxIdleConnections: 10,
 					SetConnMaxLifetime:    3600,
@@ -223,6 +246,10 @@ func TestLoadConfig(t *testing.T) {
 				MaxResponseSize: MaxResponseSize,
 				Environment:     OSSEnvironment,
 				Auth: AuthConfiguration{
+					Native: NativeRealmOptions{
+						Enabled: true},
+					Jwt: JwtRealmOptions{
+						Enabled: true},
 					IsSignupEnabled: true,
 				},
 				Analytics: AnalyticsConfiguration{
@@ -263,14 +290,6 @@ func TestLoadConfig(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: "redis queue dsn is empty",
-		},
-		{
-			name: "should_error_for_unsupported_queue_type",
-			args: args{
-				path: "./testdata/Config/unsupported-queue-type.json",
-			},
-			wantErr:    true,
-			wantErrMsg: "unsupported queue type: abc",
 		},
 	}
 	for _, tt := range tests {

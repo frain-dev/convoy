@@ -63,7 +63,8 @@ func main() {
 	c.Flags().StringVar(&dbScheme, "db-scheme", "", "Database Scheme")
 	c.Flags().StringVar(&dbUsername, "db-username", "", "Database Username")
 	c.Flags().StringVar(&dbPassword, "db-password", "", "Database Password")
-	c.Flags().StringVar(&dbDatabase, "db-database", "", "Database database")
+	c.Flags().StringVar(&dbDatabase, "db-database", "", "Database Database")
+	c.Flags().StringVar(&dbDatabase, "db-options", "", "Database Options")
 	c.Flags().IntVar(&dbPort, "db-port", 5432, "Database Port")
 
 	// redis config

@@ -23,7 +23,13 @@ func getDSN() string {
 func getConfig() config.Configuration {
 	return config.Configuration{
 		Database: config.DatabaseConfiguration{
-			Dsn: getDSN(),
+			Type:     config.PostgresDatabaseProvider,
+			Host:     os.Getenv("TEST_DB_HOST"),
+			Scheme:   os.Getenv("TEST_DB_SCHEME"),
+			Username: os.Getenv("TEST_DB_USERNAME"),
+			Password: os.Getenv("TEST_DB_PASSWORD"),
+			Database: os.Getenv("TEST_DB_DATABASE"),
+			Port:     5432,
 		},
 	}
 }

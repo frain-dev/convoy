@@ -1,28 +1,21 @@
 {
     "database": {
-        "dsn": "postgres://inside-config-file"
+        "scheme": "postgres",
+        "host": "inside-config-file",
+        "username": "postgres",
+        "password": "postgres",
+        "database": "convoy",
+        "options": "sslmode=disable",
+        "port": 5432
     },
-    "queue": {
-        "type": "redis",
-        "redis": {
-            "dsn": "redis://localhost:8379"
-        }
+    "redis": {
+        "port": 8379,
+        "scheme": "redis",
+        "host": "localhost"
     },
     "server": {
         "http": {
             "port": 80
-        }
-    },
-    "group": {
-        "strategy": {
-            "type": "abc",
-            "default": {
-                "intervalSeconds": 125,
-                "retryLimit": 15
-            }
-        },
-        "signature": {
-            "hash": "SHA256"
         }
     }
 }
