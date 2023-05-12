@@ -65,7 +65,7 @@ func main() {
 	c.Flags().StringVar(&dbPassword, "db-password", "", "Database Password")
 	c.Flags().StringVar(&dbDatabase, "db-database", "", "Database Database")
 	c.Flags().StringVar(&dbDatabase, "db-options", "", "Database Options")
-	c.Flags().IntVar(&dbPort, "db-port", 5432, "Database Port")
+	c.Flags().IntVar(&dbPort, "db-port", 0, "Database Port")
 
 	// redis config
 	c.Flags().StringVar(&redisHost, "redis-host", "", "Redis Host")
@@ -74,7 +74,7 @@ func main() {
 	c.Flags().StringVar(&redisUsername, "redis-username", "", "Redis Username")
 	c.Flags().StringVar(&redisPassword, "redis-password", "", "Redis Password")
 	c.Flags().StringVar(&redisDatabase, "redis-database", "", "Redis database")
-	c.Flags().IntVar(&redisPort, "redis-port", 6379, "Redis Port")
+	c.Flags().IntVar(&redisPort, "redis-port", 0, "Redis Port")
 
 	c.PersistentPreRunE(hooks.PreRun(app, db))
 	c.PersistentPostRunE(hooks.PostRun(app, db))

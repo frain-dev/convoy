@@ -25,7 +25,6 @@ type Postgres struct {
 
 func NewDB(cfg config.Configuration) (*Postgres, error) {
 	dbConfig := cfg.Database
-	println(dbConfig.BuildDsn())
 	db, err := sqlx.Connect("postgres", dbConfig.BuildDsn())
 	if err != nil {
 		return nil, fmt.Errorf("[%s]: failed to open database - %v", pkgName, err)
