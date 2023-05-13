@@ -39,7 +39,7 @@ jobs:
             - name: Start Typesense v${{ matrix.typesense-version }}
               uses: jirevwe/typesense-github-action@v1.0.1
               with:
-                  typesense-version: v${{ matrix.typesense-version }}
+                  typesense-version: ${{ matrix.typesense-version }}
                   typesense-api-key: some-api-key
 
             - name: Get the version
