@@ -14,8 +14,9 @@ jobs:
                 os: [ubuntu-latest, macos-latest]
                 postgres-version: ["15.0"]
                 redis-version: ["6.2.6"]
+                typesense-version: ["0.24.0"]
 
-        runs-on: ubuntu-latest
+        runs-on: v${{ matrix.os }}
         services:
             postgres:
                 image: postgres:15
@@ -32,13 +33,13 @@ jobs:
             - name: Start Redis v${{ matrix.redis-version }}
               uses: supercharge/redis-github-action@1.4.0
               with:
-                  redis-version: ${{ matrix.redis-version }}
+                  redis-version: v${{ matrix.redis-version }}
                   redis-port: 6379
 
-            - name: Start Typesense
+            - name: Start Typesense v${{ matrix.typesense-version }}
               uses: jirevwe/typesense-github-action@v1.0.1
               with:
-                  typesense-version: 0.23.1
+                  typesense-version: v${{ matrix.typesense-version }}
                   typesense-api-key: some-api-key
 
             - name: Get the version
@@ -86,16 +87,16 @@ jobs:
             - name: Run integration tests
               run: make integration_tests
               env:
-                  TEST_DB_SCHEME: postgres
-                  TEST_DB_HOST: localhost
-                  TEST_DB_USERNAME: admin
-                  TEST_DB_PASSWORD: password
-                  TEST_DB_DATABASE: convoy
-                  TEST_DB_OPTIONS: sslmode=disable&connect_timeout=30
-                  TEST_DB_PORT: 5432
-                  TEST_REDIS_SCHEME: redis
-                  TEST_REDIS_HOST: localhost
-                  TEST_REDIS_PORT: 6379
-                  TEST_CONVOY_TYPESENSE_HOST: "http://localhost:8108"
-                  TEST_CONVOY_TYPESENSE_API_KEY: "some-api-key"
-                  TEST_CONVOY_SEARCH_TYPE: "typesense"
+                  CONVOY_DB_SCHEME: postgres
+                  CONVOY_DB_HOST: localhost
+                  CONVOY_DB_USERNAME: admin
+                  CONVOY_DB_PASSWORD: password
+                  CONVOY_DB_DATABASE: convoy
+                  CONVOY_DB_OPTIONS: sslmode=disable&connect_timeout=30
+                  CONVOY_DB_PORT: 5432
+                  CONVOY_REDIS_SCHEME: redis
+                  CONVOY_REDIS_HOST: localhost
+                  CONVOY_REDIS_PORT: 6379
+                  CONVOY_TYPESENSE_HOST: http://localhost:8108
+                  CONVOY_TYPESENSE_API_KEY: some-api-key
+                  CONVOY_SEARCH_TYPE: typesense

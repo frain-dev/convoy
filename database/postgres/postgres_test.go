@@ -19,19 +19,19 @@ import (
 )
 
 func getDSN() string {
-	return os.Getenv("TEST_POSTGRES_DSN")
+	return os.Getenv("CONVOY_POSTGRES_DSN")
 }
 
 func getConfig() config.Configuration {
 	return config.Configuration{
 		Database: config.DatabaseConfiguration{
 			Type:     config.PostgresDatabaseProvider,
-			Host:     os.Getenv("TEST_DB_HOST"),
-			Scheme:   os.Getenv("TEST_DB_SCHEME"),
-			Username: os.Getenv("TEST_DB_USERNAME"),
-			Password: os.Getenv("TEST_DB_PASSWORD"),
-			Database: os.Getenv("TEST_DB_DATABASE"),
-			Options:  os.Getenv("TEST_DB_OPTIONS"),
+			Host:     os.Getenv("CONVOY_DB_HOST"),
+			Scheme:   os.Getenv("CONVOY_DB_SCHEME"),
+			Username: os.Getenv("CONVOY_DB_USERNAME"),
+			Password: os.Getenv("CONVOY_DB_PASSWORD"),
+			Database: os.Getenv("CONVOY_DB_DATABASE"),
+			Options:  os.Getenv("CONVOY_DB_OPTIONS"),
 			Port:     5432,
 		},
 	}

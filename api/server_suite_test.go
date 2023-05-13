@@ -41,17 +41,17 @@ func getConfig() config.Configuration {
 	return config.Configuration{
 		Redis: config.RedisConfiguration{
 			Scheme: "redis",
-			Host:   os.Getenv("TEST_REDIS_HOST"),
+			Host:   os.Getenv("CONVOY_REDIS_HOST"),
 			Port:   6379,
 		},
 		Database: config.DatabaseConfiguration{
 			Type:     config.PostgresDatabaseProvider,
-			Host:     os.Getenv("TEST_DB_HOST"),
-			Scheme:   os.Getenv("TEST_DB_SCHEME"),
-			Username: os.Getenv("TEST_DB_USERNAME"),
-			Password: os.Getenv("TEST_DB_PASSWORD"),
-			Database: os.Getenv("TEST_DB_DATABASE"),
-			Options:  os.Getenv("TEST_DB_OPTIONS"),
+			Host:     os.Getenv("CONVOY_DB_HOST"),
+			Scheme:   os.Getenv("CONVOY_DB_SCHEME"),
+			Username: os.Getenv("CONVOY_DB_USERNAME"),
+			Password: os.Getenv("CONVOY_DB_PASSWORD"),
+			Database: os.Getenv("CONVOY_DB_DATABASE"),
+			Options:  os.Getenv("CONVOY_DB_OPTIONS"),
 			Port:     5432,
 		},
 	}

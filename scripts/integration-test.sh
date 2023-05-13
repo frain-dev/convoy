@@ -1,16 +1,16 @@
-export TEST_DB_SCHEME=postgres
-export TEST_DB_HOST=localhost
-export TEST_DB_USERNAME=postgres
-export TEST_DB_PASSWORD=postgres
-export TEST_DB_DATABASE=test
-export TEST_DB_PORT=5432
+export CONVOY_DB_SCHEME=postgres
+export CONVOY_DB_HOST=localhost
+export CONVOY_DB_USERNAME=postgres
+export CONVOY_DB_PASSWORD=postgres
+export CONVOY_DB_DATABASE=test
+export CONVOY_DB_PORT=5432
 
-export TEST_REDIS_SCHEME=redis
-export TEST_REDIS_HOST=localhost
-export TEST_REDIS_PORT=6379
+export CONVOY_REDIS_SCHEME=redis
+export CONVOY_REDIS_HOST=localhost
+export CONVOY_REDIS_PORT=6379
 
-export TEST_CONVOY_TYPESENSE_HOST=http://localhost:8108
-export TEST_CONVOY_TYPESENSE_API_KEY=some-api-key
-export TEST_CONVOY_SEARCH_TYPE=typesense
+export CONVOY_TYPESENSE_HOST=http://localhost:8108
+export CONVOY_TYPESENSE_API_KEY=some-api-key
+export CONVOY_SEARCH_TYPE=typesense
 
 make integration_tests
