@@ -35,17 +35,15 @@ var DefaultConfiguration = Configuration{
 		},
 	},
 	Database: DatabaseConfiguration{
-		Type:                  PostgresDatabaseProvider,
-		Scheme:                "postgres",
-		Host:                  "localhost",
-		Username:              "postgres",
-		Password:              "postgres",
-		Database:              "convoy",
-		Options:               "sslmode=disable&connect_timeout=30",
-		Port:                  5432,
-		SetMaxOpenConnections: 10,
-		SetMaxIdleConnections: 10,
-		SetConnMaxLifetime:    3600,
+		Type:               PostgresDatabaseProvider,
+		Scheme:             "postgres",
+		Host:               "localhost",
+		Username:           "postgres",
+		Password:           "postgres",
+		Database:           "convoy",
+		Options:            "sslmode=disable&connect_timeout=30",
+		Port:               5432,
+		SetConnMaxLifetime: 3600,
 	},
 	Redis: RedisConfiguration{
 		Scheme: "redis",
@@ -253,9 +251,8 @@ type OnPremStorage struct {
 }
 
 const (
-	envPrefix              string = "convoy"
-	DevelopmentEnvironment string = "development"
-	OSSEnvironment         string = "oss"
+	envPrefix      string = "convoy"
+	OSSEnvironment string = "oss"
 )
 
 const (

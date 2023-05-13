@@ -50,6 +50,11 @@ func getConfig() config.Configuration {
 	_ = os.Setenv("CONVOY_DB_OPTIONS", os.Getenv("TEST_DB_OPTIONS"))
 	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
 
+	err := config.LoadConfig("")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	cfg, _ := config.Get()
 
 	return cfg

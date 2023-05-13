@@ -6,6 +6,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/log"
 	"os"
 	"sync"
 	"testing"
@@ -30,6 +31,11 @@ func getConfig() config.Configuration {
 	_ = os.Setenv("CONVOY_DB_DATABASE", os.Getenv("TEST_DB_DATABASE"))
 	_ = os.Setenv("CONVOY_DB_OPTIONS", os.Getenv("TEST_DB_OPTIONS"))
 	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
+
+	err := config.LoadConfig("")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	cfg, _ := config.Get()
 
