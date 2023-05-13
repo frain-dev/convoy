@@ -219,18 +219,21 @@ func TestRetentionPoliciesIntegrationSuiteTest(t *testing.T) {
 }
 
 func getConfig() config.Configuration {
-	return config.Configuration{
-		Database: config.DatabaseConfiguration{
-			Type:     config.PostgresDatabaseProvider,
-			Host:     os.Getenv("CONVOY_DB_HOST"),
-			Scheme:   os.Getenv("CONVOY_DB_SCHEME"),
-			Username: os.Getenv("CONVOY_DB_USERNAME"),
-			Password: os.Getenv("CONVOY_DB_PASSWORD"),
-			Database: os.Getenv("CONVOY_DB_DATABASE"),
-			Options:  os.Getenv("CONVOY_DB_OPTIONS"),
-			Port:     5432,
-		},
-	}
+	_ = os.Setenv("CONVOY_DB_HOST", os.Getenv("TEST_REDIS_HOST"))
+	_ = os.Setenv("CONVOY_REDIS_SCHEME", os.Getenv("TEST_REDIS_SCHEME"))
+	_ = os.Setenv("CONVOY_REDIS_PORT", os.Getenv("TEST_REDIS_PORT"))
+
+	_ = os.Setenv("CONVOY_DB_HOST", os.Getenv("TEST_DB_HOST"))
+	_ = os.Setenv("CONVOY_DB_SCHEME", os.Getenv("TEST_DB_SCHEME"))
+	_ = os.Setenv("CONVOY_DB_USERNAME", os.Getenv("TEST_DB_USERNAME"))
+	_ = os.Setenv("CONVOY_DB_PASSWORD", os.Getenv("TEST_DB_PASSWORD"))
+	_ = os.Setenv("CONVOY_DB_DATABASE", os.Getenv("TEST_DB_DATABASE"))
+	_ = os.Setenv("CONVOY_DB_OPTIONS", os.Getenv("TEST_DB_OPTIONS"))
+	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
+
+	cfg, _ := config.Get()
+
+	return cfg
 }
 
 func getDB() database.Database {

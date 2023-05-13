@@ -18,7 +18,7 @@ import (
 func getDSN() string {
 	c := config.RedisConfiguration{
 		Scheme: "redis",
-		Host:   os.Getenv("CONVOY_REDIS_HOST"),
+		Host:   os.Getenv("TEST_REDIS_HOST"),
 		Port:   6379,
 	}
 	return c.BuildDsn()

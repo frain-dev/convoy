@@ -17,7 +17,7 @@ build:
 
 integration_tests:
 	go run ./cmd migrate up
-	go test -v -p=10 -tags integration -p 1 ./...
+	go test -v -p=10 -tags integration ./...
 
 generate_migration_time:
 	@date +"%Y%m%d%H%M%S"
