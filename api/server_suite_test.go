@@ -51,6 +51,7 @@ func getConfig() config.Configuration {
 			Username: os.Getenv("TEST_DB_USERNAME"),
 			Password: os.Getenv("TEST_DB_PASSWORD"),
 			Database: os.Getenv("TEST_DB_DATABASE"),
+			Options:  os.Getenv("TEST_DB_OPTIONS"),
 			Port:     5432,
 		},
 	}
@@ -69,7 +70,7 @@ func getDB() database.Database {
 	return db
 }
 
-func getQueueOptions(name string) (queue.QueueOptions, error) {
+func getQueueOptions(_ string) (queue.QueueOptions, error) {
 	var opts queue.QueueOptions
 	cfg := getConfig()
 	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())

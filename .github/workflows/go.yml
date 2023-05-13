@@ -12,7 +12,7 @@ jobs:
             matrix:
                 go-version: [1.18.x]
                 os: [ubuntu-latest, macos-latest]
-                postgres-version: ["5.0"]
+                postgres-version: ["15.0"]
                 redis-version: ["6.2.6"]
 
         runs-on: ubuntu-latest
