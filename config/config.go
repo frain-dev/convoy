@@ -41,7 +41,7 @@ var DefaultConfiguration = Configuration{
 		Username:              "postgres",
 		Password:              "postgres",
 		Database:              "convoy",
-		Options:               "sslmode=disable",
+		Options:               "sslmode=disable&connect_timeout=30",
 		Port:                  5432,
 		SetMaxOpenConnections: 10,
 		SetMaxIdleConnections: 10,

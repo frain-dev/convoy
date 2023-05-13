@@ -77,7 +77,7 @@ jobs:
                   CONVOY_DB_USERNAME: admin
                   CONVOY_DB_PASSWORD: password
                   CONVOY_DB_DATABASE: convoy
-                  CONVOY_DB_OPTIONS: sslmode=disable
+                  CONVOY_DB_OPTIONS: sslmode=disable&connect_timeout=30
                   CONVOY_DB_PORT: 5432
                   CONVOY_REDIS_SCHEME: redis
                   CONVOY_REDIS_HOST: localhost
@@ -91,7 +91,7 @@ jobs:
                   TEST_DB_USERNAME: admin
                   TEST_DB_PASSWORD: password
                   TEST_DB_DATABASE: convoy
-                  TEST_DB_OPTIONS: sslmode=disable
+                  TEST_DB_OPTIONS: sslmode=disable&connect_timeout=30
                   TEST_DB_PORT: 5432
                   TEST_REDIS_SCHEME: redis
                   TEST_REDIS_HOST: localhost

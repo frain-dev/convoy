@@ -31,6 +31,7 @@ func getConfig() config.Configuration {
 			Username: os.Getenv("TEST_DB_USERNAME"),
 			Password: os.Getenv("TEST_DB_PASSWORD"),
 			Database: os.Getenv("TEST_DB_DATABASE"),
+			Options:  os.Getenv("TEST_DB_OPTIONS"),
 			Port:     5432,
 		},
 	}

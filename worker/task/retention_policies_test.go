@@ -227,7 +227,8 @@ func getConfig() config.Configuration {
 			Username: os.Getenv("TEST_DB_USERNAME"),
 			Password: os.Getenv("TEST_DB_PASSWORD"),
 			Database: os.Getenv("TEST_DB_DATABASE"),
-			Port:     6379,
+			Options:  os.Getenv("TEST_DB_OPTIONS"),
+			Port:     5432,
 		},
 	}
 }
@@ -348,7 +349,7 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 	defaultStorage := &datastore.DefaultStoragePolicy
 	defaultStorage.OnPrem.Path = null.NewString("/tmp/convoy/export/", true)
 
-	config := &datastore.Configuration{
+	c := &datastore.Configuration{
 		UID:                ulid.Make().String(),
 		IsAnalyticsEnabled: true,
 		StoragePolicy:      defaultStorage,
@@ -356,11 +357,11 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 
 	// Seed Data
 	configRepo := postgres.NewConfigRepo(db)
-	err := configRepo.CreateConfiguration(context.TODO(), config)
+	err := configRepo.CreateConfiguration(context.TODO(), c)
 	if err != nil {
 		return nil, err
 	}
-	return config, nil
+	return c, nil
 }
 
 type SeedFilter struct {
