@@ -91,7 +91,7 @@ jobs:
                   TEST_DB_USERNAME: admin
                   TEST_DB_PASSWORD: password
                   TEST_DB_DATABASE: convoy
-                  CONVOY_DB_OPTIONS: sslmode=disable
+                  TEST_DB_OPTIONS: sslmode=disable
                   TEST_DB_PORT: 5432
                   TEST_REDIS_SCHEME: redis
                   TEST_REDIS_HOST: localhost

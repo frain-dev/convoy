@@ -16,6 +16,7 @@ build:
 	scripts/build.sh -b $(type)
 
 integration_tests:
+	go run ./cmd migrate up
 	go test -tags integration -p 1 ./...
 
 generate_migration_time:
