@@ -72,12 +72,12 @@ jobs:
             - name: Migrate Postgres
               run: go run ./cmd migrate up
               env:
-                  CONVOY_DB_SCHEME: postgres  
+                  CONVOY_DB_SCHEME: postgres
                   CONVOY_DB_HOST: localhost
                   CONVOY_DB_USERNAME: admin
                   CONVOY_DB_PASSWORD: password
                   CONVOY_DB_DATABASE: convoy
-                  CONVOY_DB_DATABASE: sslmode=disable
+                  CONVOY_DB_OPTIONS: sslmode=disable
                   CONVOY_DB_PORT: 5432
                   CONVOY_REDIS_SCHEME: redis
                   CONVOY_REDIS_HOST: localhost
@@ -86,12 +86,12 @@ jobs:
             - name: Run integration tests
               run: make integration_tests
               env:
-                  TEST_DB_SCHEME: postgres  
+                  TEST_DB_SCHEME: postgres
                   TEST_DB_HOST: localhost
                   TEST_DB_USERNAME: admin
                   TEST_DB_PASSWORD: password
                   TEST_DB_DATABASE: convoy
-                  TEST_DB_DATABASE: sslmode=disable
+                  CONVOY_DB_OPTIONS: sslmode=disable
                   TEST_DB_PORT: 5432
                   TEST_REDIS_SCHEME: redis
                   TEST_REDIS_HOST: localhost
