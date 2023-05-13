@@ -33,7 +33,7 @@ jobs:
             - name: Start Redis v${{ matrix.redis-version }}
               uses: supercharge/redis-github-action@1.4.0
               with:
-                  redis-version: v${{ matrix.redis-version }}
+                  redis-version: ${{ matrix.redis-version }}
                   redis-port: 6379
 
             - name: Start Typesense v${{ matrix.typesense-version }}
