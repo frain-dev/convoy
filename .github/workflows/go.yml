@@ -72,14 +72,30 @@ jobs:
             - name: Migrate Postgres
               run: go run ./cmd migrate up
               env:
-                  CONVOY_DB_DSN: "postgres://admin:password@localhost:5432/convoy?sslmode=disable"
-                  CONVOY_REDIS_DSN: "redis://localhost:6379"
+                  CONVOY_DB_SCHEME: postgres  
+                  CONVOY_DB_HOST: localhost
+                  CONVOY_DB_USERNAME: admin
+                  CONVOY_DB_PASSWORD: password
+                  CONVOY_DB_DATABASE: convoy
+                  CONVOY_DB_DATABASE: sslmode=disable
+                  CONVOY_DB_PORT: 5432
+                  CONVOY_REDIS_SCHEME: redis
+                  CONVOY_REDIS_HOST: localhost
+                  CONVOY_REDIS_PORT: 6379
 
             - name: Run integration tests
               run: make integration_tests
               env:
-                  TEST_POSTGRES_DSN: "postgres://admin:password@localhost:5432/convoy?sslmode=disable"
-                  TEST_REDIS_DSN: "redis://localhost:6379"
+                  TEST_DB_SCHEME: postgres  
+                  TEST_DB_HOST: localhost
+                  TEST_DB_USERNAME: admin
+                  TEST_DB_PASSWORD: password
+                  TEST_DB_DATABASE: convoy
+                  TEST_DB_DATABASE: sslmode=disable
+                  TEST_DB_PORT: 5432
+                  TEST_REDIS_SCHEME: redis
+                  TEST_REDIS_HOST: localhost
+                  TEST_REDIS_PORT: 6379
                   TEST_CONVOY_TYPESENSE_HOST: "http://localhost:8108"
                   TEST_CONVOY_TYPESENSE_API_KEY: "some-api-key"
                   TEST_CONVOY_SEARCH_TYPE: "typesense"
