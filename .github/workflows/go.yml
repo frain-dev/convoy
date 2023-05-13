@@ -23,9 +23,9 @@ jobs:
                 ports:
                     - 5432:5432
                 env:
-                    POSTGRES_USER: admin
+                    POSTGRES_USER: postgres
                     POSTGRES_DB: convoy
-                    POSTGRES_PASSWORD: password
+                    POSTGRES_PASSWORD: postgres
                     POSTGRES_MAX_CONNECTIONS: 2000
                     # set up health check for postgres
                 options: --health-cmd pg_isready --health-interval 10ms --health-timeout 500ms --health-retries 15
@@ -75,8 +75,8 @@ jobs:
               env:
                   CONVOY_DB_SCHEME: postgres
                   CONVOY_DB_HOST: localhost
-                  CONVOY_DB_USERNAME: admin
-                  CONVOY_DB_PASSWORD: password
+                  CONVOY_DB_USERNAME: postgres
+                  CONVOY_DB_PASSWORD: postgres
                   CONVOY_DB_DATABASE: convoy
                   CONVOY_DB_OPTIONS: sslmode=disable&connect_timeout=30
                   CONVOY_DB_PORT: 5432
@@ -89,8 +89,8 @@ jobs:
               env:
                   TEST_DB_SCHEME: postgres
                   TEST_DB_HOST: localhost
-                  TEST_DB_USERNAME: admin
-                  TEST_DB_PASSWORD: password
+                  TEST_DB_USERNAME: postgres
+                  TEST_DB_PASSWORD: postgres
                   TEST_DB_DATABASE: convoy
                   TEST_DB_OPTIONS: sslmode=disable&connect_timeout=30
                   TEST_DB_PORT: 5432
