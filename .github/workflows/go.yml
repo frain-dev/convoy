@@ -12,14 +12,14 @@ jobs:
             matrix:
                 go-version: [1.18.x]
                 os: [ubuntu-latest, macos-latest]
-                postgres-version: ["15.0"]
+                postgres-version: ["15"]
                 redis-version: ["6.2.6"]
                 typesense-version: ["0.24.0"]
 
-        runs-on: v${{ matrix.os }}
+        runs-on: ubuntu-latest
         services:
             postgres:
-                image: postgres:15
+                image: postgres:${{ matrix.postgres-version }}
                 ports:
                     - 5432:5432
                 env:
