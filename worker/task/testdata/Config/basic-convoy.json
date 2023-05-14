@@ -47,5 +47,12 @@
         "username": "apikey",
         "password": "<api-key-from-sendgrid>",
         "from": "support@frain.dev"
+    },
+    "search": {
+    	"type": "typesense",
+	"typesense": {
+		"host": "http://localhost:8108",
+		"api_key": "convoy"
+	}
     }
 }

@@ -715,7 +715,7 @@ func TestCompareEdgeCases(t *testing.T) {
 			filter: map[string]interface{}{
 				".$": "bariga",
 			},
-			err:  ErrTrailingDollarOpNotAllowed,
+			err: ErrTrailingDollarOpNotAllowed,
 		},
 		{
 			name: "weird case",
@@ -746,6 +746,22 @@ func TestCompareEdgeCases(t *testing.T) {
 				"$..$": "test",
 			},
 			err: ErrTrailingDollarOpNotAllowed,
+		},
+		{
+			name:    "weird case",
+			payload: map[string]interface{}{},
+			filter: map[string]interface{}{
+				"key": "value",
+			},
+			want: false,
+		},
+		{
+			name:    "weird case",
+			payload: []interface{}{},
+			filter: map[string]interface{}{
+				"key": "value",
+			},
+			want: false,
 		},
 		{
 			name: "weird case",

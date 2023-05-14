@@ -34,11 +34,18 @@ export class ProjectComponent implements OnInit {
 			name: 'Portal Links',
 			icon: 'portal',
 			route: '/portal-links'
-		},
+		}
+	];
+	secondarySideBarItems = [
 		{
 			name: 'Events Log',
 			icon: 'logs',
 			route: '/events-log'
+		},
+		{
+			name: 'Meta Events',
+			icon: 'meta',
+			route: '/meta-events'
 		}
 	];
 	shouldShowFullSideBar = true;
@@ -80,7 +87,7 @@ export class ProjectComponent implements OnInit {
 	}
 
 	isStrokeIcon(icon: string): boolean {
-		const menuIcons = ['subscriptions', 'portal', 'logs'];
+		const menuIcons = ['subscriptions', 'portal', 'logs', 'meta'];
 		const checkForStrokeIcon = menuIcons.some(menuIcon => icon.includes(menuIcon));
 
 		return checkForStrokeIcon;

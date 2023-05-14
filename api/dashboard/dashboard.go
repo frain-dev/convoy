@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -89,7 +88,7 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 	var data *models.DashboardSummary
 	err = a.A.Cache.Get(r.Context(), qs, &data)
 	if err != nil {
-		a.A.Logger.WithError(err)
+		a.A.Logger.WithError(err).Error("failed to get dashboard summary from cache")
 	}
 
 	if data != nil {
@@ -98,9 +97,9 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	endpointService := createEndpointService(a)
-	apps, err := endpointService.CountProjectEndpoints(r.Context(), project.UID)
+	apps, err := postgres.NewEndpointRepo(a.A.DB).CountProjectEndpoints(r.Context(), project.UID)
 	if err != nil {
+		log.WithError(err).Error("failed to count project endpoints")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
 		return
 	}
@@ -199,25 +198,4 @@ func (a *DashboardHandler) retrieveHost() (string, error) {
 	}
 
 	return cfg.Host, nil
-}
-
-var guestRoutes = []string{
-	"/auth/login",
-	"/auth/register",
-	"/auth/token/refresh",
-	"/users/token",
-	"/users/forgot-password",
-	"/users/reset-password",
-	"/users/verify_email",
-	"/organisations/process_invite",
-}
-
-func shouldAuthRoute(r *http.Request) bool {
-	for _, route := range guestRoutes {
-		if strings.HasSuffix(r.URL.Path, route) {
-			return false
-		}
-	}
-
-	return true
 }

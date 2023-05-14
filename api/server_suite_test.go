@@ -19,6 +19,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/util"
@@ -29,8 +30,6 @@ import (
 	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	noopsearcher "github.com/frain-dev/convoy/internal/pkg/searcher/noop"
-	nooplimiter "github.com/frain-dev/convoy/limiter/noop"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -67,6 +66,9 @@ func getDB() database.Database {
 		panic(fmt.Sprintf("failed to connect to db: %v", err))
 	}
 	_ = os.Setenv("TZ", "") // Use UTC by default :)
+
+	dbHooks := hooks.Init()
+	dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}) {})
 
 	return db
 }
@@ -106,19 +108,15 @@ func buildServer() *ApplicationHandler {
 	logger.SetLevel(log.FatalLevel)
 
 	cache := ncache.NewNoopCache()
-	limiter := nooplimiter.NewNoopLimiter()
-	searcher := noopsearcher.NewNoopSearcher()
 	tracer = nil
 
 	ah, _ := NewApplicationHandler(
 		&types.APIOptions{
-			DB:       db,
-			Queue:    queue,
-			Logger:   logger,
-			Tracer:   tracer,
-			Cache:    cache,
-			Limiter:  limiter,
-			Searcher: searcher,
+			DB:     db,
+			Queue:  queue,
+			Logger: logger,
+			Tracer: tracer,
+			Cache:  cache,
 		})
 
 	ah.RegisterPolicy()

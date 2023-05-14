@@ -599,6 +599,34 @@ func SeedPortalLink(db database.Database, g *datastore.Project, endpoints []stri
 	return portalLink, nil
 }
 
+func SeedMetaEvent(db database.Database, project *datastore.Project) (*datastore.MetaEvent, error) {
+	metaEvent := &datastore.MetaEvent{
+		UID:       ulid.Make().String(),
+		Status:    datastore.ScheduledEventStatus,
+		EventType: string(datastore.EndpointCreated),
+		ProjectID: project.UID,
+		Metadata: &datastore.Metadata{
+			Data:            []byte(`{"name": "10x"}`),
+			Raw:             `{"name": "10x"}`,
+			Strategy:        datastore.ExponentialStrategyProvider,
+			NextSendTime:    time.Now().Add(time.Hour),
+			NumTrials:       1,
+			IntervalSeconds: 10,
+			RetryLimit:      20,
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	metaEventRepo := postgres.NewMetaEventRepo(db)
+	err := metaEventRepo.CreateMetaEvent(context.TODO(), metaEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	return metaEvent, nil
+}
+
 // PurgeDB is run after every test run and it's used to truncate the DB to have
 // a clean slate in the next run.
 func PurgeDB(t *testing.T, db database.Database) {

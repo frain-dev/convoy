@@ -16,14 +16,14 @@ import (
 )
 
 var (
-	ErrSubscriptionNotFound            = errors.New("subscription not found")
-	ErrUpateSubscriptionError          = errors.New("failed to update subscription")
-	ErrCreateSubscriptionError         = errors.New("failed to create subscription")
-	ErrDeletedSubscriptionError        = errors.New("failed to delete subscription")
-	ErrValidateSubscriptionError       = errors.New("failed to validate subscription")
-	ErrInvalidSubscriptionFilterFormat = errors.New("invalid subscription filter format")
+	ErrSubscriptionNotFound               = errors.New("subscription not found")
+	ErrUpateSubscriptionError             = errors.New("failed to update subscription")
+	ErrCreateSubscriptionError            = errors.New("failed to create subscription")
+	ErrDeletedSubscriptionError           = errors.New("failed to delete subscription")
+	ErrValidateSubscriptionError          = errors.New("failed to validate subscription")
+	ErrInvalidSubscriptionFilterFormat    = errors.New("invalid subscription filter format")
 	ErrFailedToValidateSubscriptionFilter = errors.New("failed to validate subscription filter")
-	ErrCannotFetchSubcriptionsError    = errors.New("an error occurred while fetching subscriptions")
+	ErrCannotFetchSubcriptionsError       = errors.New("an error occurred while fetching subscriptions")
 )
 
 type SubcriptionService struct {
@@ -241,26 +241,6 @@ func (s *SubcriptionService) UpdateSubscription(ctx context.Context, projectId s
 	return subscription, nil
 }
 
-func (s *SubcriptionService) DeleteSubscription(ctx context.Context, groupId string, subscription *datastore.Subscription) error {
-	err := s.subRepo.DeleteSubscription(ctx, groupId, subscription)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error(ErrDeletedSubscriptionError.Error())
-		return util.NewServiceError(http.StatusBadRequest, ErrDeletedSubscriptionError)
-	}
-
-	return nil
-}
-
-func (s *SubcriptionService) TestSubscriptionFilter(ctx context.Context, testRequest, filter interface{}) (bool, error) {
-	passed, err := s.subRepo.TestSubscriptionFilter(ctx, testRequest, filter)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error(ErrFailedToValidateSubscriptionFilter.Error())
-		return false, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
-	return passed, nil
-}
-
 func (s *SubcriptionService) FindSubscriptionByID(ctx context.Context, project *datastore.Project, subscriptionId string, skipCache bool) (*datastore.Subscription, error) {
 	sub, err := s.subRepo.FindSubscriptionByID(ctx, project.UID, subscriptionId)
 	if err != nil {
@@ -293,20 +273,6 @@ func (s *SubcriptionService) FindSubscriptionByID(ctx context.Context, project *
 	}
 
 	return sub, nil
-}
-
-func (s *SubcriptionService) LoadSubscriptionsPaged(ctx context.Context, filter *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
-	subscriptions, paginatedData, err := s.subRepo.LoadSubscriptionsPaged(ctx, filter.ProjectID, filter, pageable)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error(ErrCannotFetchSubcriptionsError.Error())
-		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusInternalServerError, ErrCannotFetchSubcriptionsError)
-	}
-
-	if subscriptions == nil {
-		subscriptions = make([]datastore.Subscription, 0)
-	}
-
-	return subscriptions, paginatedData, nil
 }
 
 func (s *SubcriptionService) findEndpoint(ctx context.Context, appID, endpointID string, project *datastore.Project) (*datastore.Endpoint, error) {

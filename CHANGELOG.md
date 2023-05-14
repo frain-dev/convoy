@@ -1,3 +1,16 @@
+## 23.05.2
+
+- [Feature] Added support for meta events #1541
+- [Bugfix] Fixed multi-tenancy bug with portal links #1582
+- [Bugfix] Fixed issue with new user with no organisation #1578
+
+## 23.05.1
+
+-   [Feature] Add support for on the fly events #1558
+-   [Enhancement] Add prompt for disabling endpoints #1556
+-   [Enhancement] Extend subscription filter capabilities #1545 #1566
+-   [Enhancement] Improved logging for all workers #1560
+
 ## 0.9.2
 
 -   [Documentation] Fix noun/verb agreement #1504

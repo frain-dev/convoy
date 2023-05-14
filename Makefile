@@ -9,10 +9,8 @@ mockgen:
 
 setup: init-hooks
 
-ui_install: 
-	cd web/ui/dashboard && \
-	npm ci && \
- 	 npm run build
+ui_install:
+	scripts/ui.sh -b $(type)
 
 build:
 	scripts/build.sh -b $(type)

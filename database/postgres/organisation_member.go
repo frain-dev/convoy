@@ -91,23 +91,23 @@ const (
 		u.email as "user_metadata.email"
 	FROM convoy.organisation_members o
 	LEFT JOIN convoy.users u ON o.user_id = u.id
-	WHERE o.organisation_id = :organisation_id 
+	WHERE o.organisation_id = :organisation_id
 	AND (o.user_id = :user_id OR :user_id = '')
 	AND o.deleted_at IS NULL
 	`
 
 	baseFetchOrganisationMembersPagedForward = `
-	%s 
-	AND o.id <= :cursor 
+	%s
+	AND o.id <= :cursor
 	GROUP BY o.id, u.id
-	ORDER BY o.id DESC 
+	ORDER BY o.id DESC
 	LIMIT :limit
 	`
 
 	baseFetchOrganisationMembersPagedBackward = `
-	WITH organisation_members AS (  
-		%s 
-		AND o.id >= :cursor 
+	WITH organisation_members AS (
+		%s
+		AND o.id >= :cursor
 		GROUP BY o.id, u.id
 		ORDER BY o.id ASC
 		LIMIT :limit
@@ -120,7 +120,7 @@ const (
 	SELECT count(distinct(o.id)) as count
 	FROM convoy.organisation_members o
 	LEFT JOIN convoy.users u ON o.user_id = u.id
-	WHERE o.organisation_id = :organisation_id 
+	WHERE o.organisation_id = :organisation_id
 	AND o.deleted_at IS NULL
 	AND o.id > :cursor
 	GROUP BY o.id, u.id
@@ -131,22 +131,22 @@ const (
 	SELECT o.* FROM convoy.organisation_members m
 	JOIN convoy.organisations o ON m.organisation_id = o.id
 	WHERE m.user_id = :user_id
-	AND o.deleted_at IS NULL 
+	AND o.deleted_at IS NULL
 	AND m.deleted_at IS NULL
 	`
 
 	baseFetchUserOrganisationsPagedForward = `
-	%s 
-	AND o.id <= :cursor 
+	%s
+	AND o.id <= :cursor
 	GROUP BY o.id, m.id
-	ORDER BY o.id DESC 
+	ORDER BY o.id DESC
 	LIMIT :limit
 	`
 
 	baseFetchUserOrganisationsPagedBackward = `
-	WITH user_organisations AS (  
-		%s 
-		AND o.id >= :cursor 
+	WITH user_organisations AS (
+		%s
+		AND o.id >= :cursor
 		GROUP BY o.id, m.id
 		ORDER BY o.id ASC
 		LIMIT :limit
@@ -160,7 +160,7 @@ const (
 	FROM convoy.organisation_members m
 	JOIN convoy.organisations o ON m.organisation_id = o.id
 	WHERE m.user_id = :user_id
-	AND o.deleted_at IS NULL 
+	AND o.deleted_at IS NULL
 	AND m.deleted_at IS NULL
 	AND o.id > :cursor
 	GROUP BY o.id, m.id

@@ -203,16 +203,6 @@ func (a *EndpointService) DeleteEndpoint(ctx context.Context, e *datastore.Endpo
 	return nil
 }
 
-func (a *EndpointService) CountProjectEndpoints(ctx context.Context, projectID string) (int64, error) {
-	endpoints, err := a.endpointRepo.CountProjectEndpoints(ctx, projectID)
-	if err != nil {
-		log.WithError(err).Error("failed to count project endpoints")
-		return 0, util.NewServiceError(http.StatusBadRequest, errors.New("failed to count project endpoints"))
-	}
-
-	return endpoints, nil
-}
-
 func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint, project *datastore.Project) (*datastore.Endpoint, error) {
 	endpoint.TargetURL = e.URL
 	endpoint.Description = e.Description

@@ -29,12 +29,12 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
+			projectRepo := postgres.NewProjectRepo(a.DB)
 			endpointRepo := postgres.NewEndpointRepo(a.DB)
 			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 			sourceRepo := postgres.NewSourceRepo(a.DB)
 			subRepo := postgres.NewSubscriptionRepo(a.DB)
 			deviceRepo := postgres.NewDeviceRepo(a.DB)
-			projectRepo := postgres.NewProjectRepo(a.DB)
 			apiKeyRepo := postgres.NewAPIKeyRepo(a.DB)
 			userRepo := postgres.NewUserRepo(a.DB)
 			orgMemberRepo := postgres.NewOrgMemberRepo(a.DB)

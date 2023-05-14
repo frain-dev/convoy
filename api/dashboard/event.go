@@ -7,19 +7,20 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-func createEventService(a *DashboardHandler) *services.EventService {
+func createEventService(a *DashboardHandler) (*services.EventService, error) {
 	sourceRepo := postgres.NewSourceRepo(a.A.DB)
 	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
@@ -27,10 +28,16 @@ func createEventService(a *DashboardHandler) *services.EventService {
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
 	deviceRepo := postgres.NewDeviceRepo(a.A.DB)
 
-	return services.NewEventService(
+	eventService, err := services.NewEventService(
 		endpointRepo, eventRepo, eventDeliveryRepo,
-		a.A.Queue, a.A.Cache, a.A.Searcher, subRepo, sourceRepo, deviceRepo,
+		a.A.Queue, a.A.Cache, subRepo, sourceRepo, deviceRepo,
 	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return eventService, nil
 }
 
 func (a *DashboardHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
@@ -47,32 +54,13 @@ func (a *DashboardHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	event, err := eventService.CreateEvent(r.Context(), &newMessage, project)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", event, http.StatusCreated))
-}
-
-func (a *DashboardHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Request) {
-	var newMessage models.FanoutEvent
-	err := util.ReadJSON(r, &newMessage)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	eventService := createEventService(a)
-	event, err := eventService.CreateFanoutEvent(r.Context(), &newMessage, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -94,7 +82,12 @@ func (a *DashboardHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	err = eventService.ReplayEvent(r.Context(), event, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -111,7 +104,12 @@ func (a *DashboardHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -146,7 +144,6 @@ func (a *DashboardHandler) CountAffectedEvents(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	eventService := createEventService(a)
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -165,8 +162,9 @@ func (a *DashboardHandler) CountAffectedEvents(w http.ResponseWriter, r *http.Re
 		SearchParams: searchParams,
 	}
 
-	count, err := eventService.CountAffectedEvents(r.Context(), f)
+	count, err := postgres.NewEventRepo(a.A.DB).CountEvents(r.Context(), p.UID, f)
 	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -207,7 +205,12 @@ func (a *DashboardHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	err = eventService.ResendEventDelivery(r.Context(), eventDelivery, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -253,7 +256,12 @@ func (a *DashboardHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *htt
 		SearchParams: searchParams,
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	successes, failures, err := eventService.BatchRetryEventDelivery(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -292,9 +300,9 @@ func (a *DashboardHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r
 		SearchParams: searchParams,
 	}
 
-	eventService := createEventService(a)
-	count, err := eventService.CountAffectedEventDeliveries(r.Context(), f)
+	count, err := postgres.NewEventDeliveryRepo(a.A.DB).CountEventDeliveries(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams)
 	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event deliveries")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -317,7 +325,12 @@ func (a *DashboardHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *
 		return
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	successes, failures, err := eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -367,8 +380,13 @@ func (a *DashboardHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request
 		SearchParams: searchParams,
 	}
 
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	if cfg.Search.Type == config.TypesenseSearchProvider && !util.IsStringEmpty(query) {
-		eventService := createEventService(a)
 		m, paginationData, err := eventService.Search(r.Context(), f)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -380,9 +398,9 @@ func (a *DashboardHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	eventService := createEventService(a)
-	m, paginationData, err := eventService.GetEventsPaged(r.Context(), f)
+	m, paginationData, err := postgres.NewEventRepo(a.A.DB).LoadEventsPaged(r.Context(), project.UID, f)
 	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to fetch events")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 		return
 	}
@@ -421,9 +439,9 @@ func (a *DashboardHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *htt
 		SearchParams: searchParams,
 	}
 
-	eventService := createEventService(a)
-	ed, paginationData, err := eventService.GetEventDeliveriesPaged(r.Context(), f)
+	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams, f.Pageable)
 	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to fetch event deliveries")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
 		return
 	}

@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -19,7 +21,7 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-func createEventService(a *PortalLinkHandler) *services.EventService {
+func createEventService(a *PortalLinkHandler) (*services.EventService, error) {
 	sourceRepo := postgres.NewSourceRepo(a.A.DB)
 	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
@@ -27,58 +29,15 @@ func createEventService(a *PortalLinkHandler) *services.EventService {
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
 	deviceRepo := postgres.NewDeviceRepo(a.A.DB)
 
-	return services.NewEventService(
+	eventService, err := services.NewEventService(
 		endpointRepo, eventRepo, eventDeliveryRepo,
-		a.A.Queue, a.A.Cache, a.A.Searcher, subRepo, sourceRepo, deviceRepo,
+		a.A.Queue, a.A.Cache, subRepo, sourceRepo, deviceRepo,
 	)
-}
-
-func (a *PortalLinkHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
-	var newMessage models.Event
-	err := util.ReadJSON(r, &newMessage)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
+		return nil, err
 	}
 
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	eventService := createEventService(a)
-	event, err := eventService.CreateEvent(r.Context(), &newMessage, project)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", event, http.StatusCreated))
-}
-
-func (a *PortalLinkHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Request) {
-	var newMessage models.FanoutEvent
-	err := util.ReadJSON(r, &newMessage)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	eventService := createEventService(a)
-	event, err := eventService.CreateFanoutEvent(r.Context(), &newMessage, project)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", event, http.StatusCreated))
+	return eventService, nil
 }
 
 func (a *PortalLinkHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +53,12 @@ func (a *PortalLinkHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	err = eventService.ReplayEvent(r.Context(), event, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -111,7 +75,12 @@ func (a *PortalLinkHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -146,7 +115,6 @@ func (a *PortalLinkHandler) CountAffectedEvents(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	eventService := createEventService(a)
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -165,9 +133,10 @@ func (a *PortalLinkHandler) CountAffectedEvents(w http.ResponseWriter, r *http.R
 		SearchParams: searchParams,
 	}
 
-	count, err := eventService.CountAffectedEvents(r.Context(), f)
+	count, err := postgres.NewEventRepo(a.A.DB).CountEvents(r.Context(), project.UID, f)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event")
+		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event", http.StatusBadRequest))
 		return
 	}
 
@@ -201,7 +170,12 @@ func (a *PortalLinkHandler) ResendEventDelivery(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -239,7 +213,20 @@ func (a *PortalLinkHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *ht
 		return
 	}
 
+	portalLink, err := a.retrievePortalLink(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	endpointIDs := getEndpointIDs(r)
+	pLinkEndpoints := portalLink.Endpoints
+
+	valid := fetchPortalLinkEndpoints(endpointIDs, pLinkEndpoints)
+	if !valid {
+		_ = render.Render(w, r, util.NewServiceErrResponse(errors.New("unauthorized")))
+		return
+	}
 
 	f := &datastore.Filter{
 		Project:     project,
@@ -254,7 +241,12 @@ func (a *PortalLinkHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *ht
 		SearchParams: searchParams,
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	successes, failures, err := eventService.BatchRetryEventDelivery(r.Context(), f)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -262,6 +254,20 @@ func (a *PortalLinkHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *ht
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("%d successful, %d failed", successes, failures), nil, http.StatusOK))
+}
+
+func fetchPortalLinkEndpoints(endpointIDs []string, pLinkEndpoints []string) bool {
+	for _, id := range endpointIDs {
+		for _, plinkId := range pLinkEndpoints {
+			if id == plinkId {
+				continue
+			}
+
+			return false
+		}
+	}
+
+	return true
 }
 
 func (a *PortalLinkHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
@@ -284,7 +290,20 @@ func (a *PortalLinkHandler) CountAffectedEventDeliveries(w http.ResponseWriter, 
 		return
 	}
 
+	portalLink, err := a.retrievePortalLink(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	endpointIDs := getEndpointIDs(r)
+	pLinkEndpoints := portalLink.Endpoints
+
+	valid := fetchPortalLinkEndpoints(endpointIDs, pLinkEndpoints)
+	if !valid {
+		_ = render.Render(w, r, util.NewServiceErrResponse(errors.New("unauthorized")))
+		return
+	}
 
 	f := &datastore.Filter{
 		Project:      project,
@@ -294,10 +313,10 @@ func (a *PortalLinkHandler) CountAffectedEventDeliveries(w http.ResponseWriter, 
 		SearchParams: searchParams,
 	}
 
-	eventService := createEventService(a)
-	count, err := eventService.CountAffectedEventDeliveries(r.Context(), f)
+	count, err := postgres.NewEventDeliveryRepo(a.A.DB).CountEventDeliveries(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event deliveries")
+		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusBadRequest))
 		return
 	}
 
@@ -319,7 +338,12 @@ func (a *PortalLinkHandler) ForceResendEventDeliveries(w http.ResponseWriter, r 
 		return
 	}
 
-	eventService := createEventService(a)
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	successes, failures, err := eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, project)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -349,8 +373,14 @@ func (a *PortalLinkHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	portalLink, err := a.retrievePortalLink(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	query := r.URL.Query().Get("query")
-	endpointIDs := getEndpointIDs(r)
+	endpointIDs := portalLink.Endpoints
 	sourceID := getSourceIDs(r)[0]
 
 	f := &datastore.Filter{
@@ -362,8 +392,13 @@ func (a *PortalLinkHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reques
 		SearchParams: searchParams,
 	}
 
+	eventService, err := createEventService(a)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	if cfg.Search.Type == config.TypesenseSearchProvider && !util.IsStringEmpty(query) {
-		eventService := createEventService(a)
 		m, paginationData, err := eventService.Search(r.Context(), f)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -375,9 +410,9 @@ func (a *PortalLinkHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	eventService := createEventService(a)
-	m, paginationData, err := eventService.GetEventsPaged(r.Context(), f)
+	m, paginationData, err := postgres.NewEventRepo(a.A.DB).LoadEventsPaged(r.Context(), project.UID, f)
 	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to fetch events")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 		return
 	}
@@ -406,7 +441,13 @@ func (a *PortalLinkHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *ht
 		return
 	}
 
-	endpointIDs := getEndpointIDs(r)
+	portalLink, err := a.retrievePortalLink(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	endpointIDs := portalLink.Endpoints
 
 	f := &datastore.Filter{
 		Project:      project,
@@ -417,9 +458,9 @@ func (a *PortalLinkHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *ht
 		SearchParams: searchParams,
 	}
 
-	eventService := createEventService(a)
-	ed, paginationData, err := eventService.GetEventDeliveriesPaged(r.Context(), f)
+	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams, f.Pageable)
 	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to fetch event deliveries")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
 		return
 	}
