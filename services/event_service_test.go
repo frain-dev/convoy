@@ -576,7 +576,6 @@ func TestEventService_ReplayAppEvent(t *testing.T) {
 	}
 }
 
-
 func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
@@ -887,7 +886,6 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 		})
 	}
 }
-
 
 func TestEventService_SearchEvents(t *testing.T) {
 	ctx := context.Background()

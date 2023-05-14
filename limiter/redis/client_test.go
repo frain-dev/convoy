@@ -6,7 +6,9 @@ package rlimiter
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/config"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -15,7 +17,13 @@ import (
 )
 
 func getDSN() string {
-	return os.Getenv("TEST_REDIS_DSN")
+	port, _ := strconv.Atoi(os.Getenv("TEST_REDIS_PORT"))
+	c := config.RedisConfiguration{
+		Scheme: "redis",
+		Host:   os.Getenv("TEST_REDIS_HOST"),
+		Port:   port,
+	}
+	return c.BuildDsn()
 }
 
 func flushRedis(dsn string) error {

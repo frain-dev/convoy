@@ -1,7 +1,7 @@
 {
     "database": {
-	    "type": "postgres",
-	    "dsn": "postgres://convoy:convoy@postgres/convoy?sslmode=disabled"
+        "type": "postgres",
+        "dsn": "postgres://convoy:convoy@postgres/convoy?sslmode=disable&connect_timeout=30d"
     },
     "queue": {
         "type": "redis",

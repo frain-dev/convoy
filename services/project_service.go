@@ -36,7 +36,7 @@ func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datast
 		return nil, err
 	}
 
-	rlimiter, err := limiter.NewLimiter(cfg.Limiter)
+	rlimiter, err := limiter.NewLimiter(cfg.Redis)
 	if err != nil {
 		return nil, err
 	}

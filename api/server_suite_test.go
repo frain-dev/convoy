@@ -37,27 +37,27 @@ import (
 )
 
 // TEST HELPERS.
-func getPostgresDSN() string {
-	return os.Getenv("TEST_POSTGRES_DSN")
-}
-
-func getRedisDSN() string {
-	return os.Getenv("TEST_REDIS_DSN")
-}
-
 func getConfig() config.Configuration {
-	return config.Configuration{
-		Queue: config.QueueConfiguration{
-			Type: config.RedisQueueProvider,
-			Redis: config.RedisQueueConfiguration{
-				Dsn: getRedisDSN(),
-			},
-		},
-		Database: config.DatabaseConfiguration{
-			Type: config.PostgresDatabaseProvider,
-			Dsn:  getPostgresDSN(),
-		},
+	_ = os.Setenv("CONVOY_DB_HOST", os.Getenv("TEST_REDIS_HOST"))
+	_ = os.Setenv("CONVOY_REDIS_SCHEME", os.Getenv("TEST_REDIS_SCHEME"))
+	_ = os.Setenv("CONVOY_REDIS_PORT", os.Getenv("TEST_REDIS_PORT"))
+
+	_ = os.Setenv("CONVOY_DB_HOST", os.Getenv("TEST_DB_HOST"))
+	_ = os.Setenv("CONVOY_DB_SCHEME", os.Getenv("TEST_DB_SCHEME"))
+	_ = os.Setenv("CONVOY_DB_USERNAME", os.Getenv("TEST_DB_USERNAME"))
+	_ = os.Setenv("CONVOY_DB_PASSWORD", os.Getenv("TEST_DB_PASSWORD"))
+	_ = os.Setenv("CONVOY_DB_DATABASE", os.Getenv("TEST_DB_DATABASE"))
+	_ = os.Setenv("CONVOY_DB_OPTIONS", os.Getenv("TEST_DB_OPTIONS"))
+	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
+
+	err := config.LoadConfig("")
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	cfg, _ := config.Get()
+
+	return cfg
 }
 
 func getDB() database.Database {
@@ -73,10 +73,10 @@ func getDB() database.Database {
 	return db
 }
 
-func getQueueOptions(name string) (queue.QueueOptions, error) {
+func getQueueOptions() (queue.QueueOptions, error) {
 	var opts queue.QueueOptions
 	cfg := getConfig()
-	rdb, err := rdb.NewClient(cfg.Queue.Redis.Dsn)
+	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
 	if err != nil {
 		return opts, err
 	}
@@ -87,8 +87,8 @@ func getQueueOptions(name string) (queue.QueueOptions, error) {
 	}
 	opts = queue.QueueOptions{
 		Names:        queueNames,
-		RedisClient:  rdb,
-		RedisAddress: cfg.Queue.Redis.Dsn,
+		RedisClient:  redis,
+		RedisAddress: cfg.Redis.BuildDsn(),
 		Type:         string(config.RedisQueueProvider),
 	}
 
@@ -96,30 +96,29 @@ func getQueueOptions(name string) (queue.QueueOptions, error) {
 }
 
 func buildServer() *ApplicationHandler {
-	var tracer tracer.Tracer
+	var t tracer.Tracer = nil
 	var logger *log.Logger
 	var qOpts queue.QueueOptions
 
 	db := getDB()
-	qOpts, _ = getQueueOptions("EventQueue")
+	qOpts, _ = getQueueOptions()
 
-	queue := redisqueue.NewQueue(qOpts)
+	newQueue := redisqueue.NewQueue(qOpts)
 	logger = log.NewLogger(os.Stderr)
 	logger.SetLevel(log.FatalLevel)
 
-	cache := ncache.NewNoopCache()
-	tracer = nil
+	noopCache := ncache.NewNoopCache()
 
 	ah, _ := NewApplicationHandler(
 		&types.APIOptions{
 			DB:     db,
-			Queue:  queue,
+			Queue:  newQueue,
 			Logger: logger,
-			Tracer: tracer,
-			Cache:  cache,
+			Tracer: t,
+			Cache:  noopCache,
 		})
 
-	ah.RegisterPolicy()
+	_ = ah.RegisterPolicy()
 
 	return ah
 }
