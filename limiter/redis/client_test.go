@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/frain-dev/convoy/config"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -16,10 +17,11 @@ import (
 )
 
 func getDSN() string {
+	port, _ := strconv.Atoi(os.Getenv("TEST_REDIS_PORT"))
 	c := config.RedisConfiguration{
 		Scheme: "redis",
 		Host:   os.Getenv("TEST_REDIS_HOST"),
-		Port:   6379,
+		Port:   port,
 	}
 	return c.BuildDsn()
 }

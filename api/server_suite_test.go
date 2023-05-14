@@ -73,7 +73,7 @@ func getDB() database.Database {
 	return db
 }
 
-func getQueueOptions(_ string) (queue.QueueOptions, error) {
+func getQueueOptions() (queue.QueueOptions, error) {
 	var opts queue.QueueOptions
 	cfg := getConfig()
 	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
@@ -101,7 +101,7 @@ func buildServer() *ApplicationHandler {
 	var qOpts queue.QueueOptions
 
 	db := getDB()
-	qOpts, _ = getQueueOptions("EventQueue")
+	qOpts, _ = getQueueOptions()
 
 	newQueue := redisqueue.NewQueue(qOpts)
 	logger = log.NewLogger(os.Stderr)
