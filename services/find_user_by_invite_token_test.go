@@ -3,10 +3,8 @@ package services
 import (
 	"context"
 	"errors"
-	"net/http"
 	"testing"
 
-	"github.com/frain-dev/convoy/util"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/mocks"
@@ -33,14 +31,13 @@ func TestFindUserByInviteTokenService_Run(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		args        args
-		dbFn        func(co *FindUserByInviteTokenService)
-		wantUser    *datastore.User
-		wantInvite  *datastore.OrganisationInvite
-		wantErr     bool
-		wantErrCode int
-		wantErrMsg  string
+		name       string
+		args       args
+		dbFn       func(co *FindUserByInviteTokenService)
+		wantUser   *datastore.User
+		wantInvite *datastore.OrganisationInvite
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name: "should_find_user_by_invite_token",
@@ -128,9 +125,8 @@ func TestFindUserByInviteTokenService_Run(t *testing.T) {
 				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
 					Times(1).Return(nil, errors.New("failed"))
 			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to fetch organisation member invite",
+			wantErr:    true,
+			wantErrMsg: "failed to fetch organisation member invite",
 		},
 	}
 	for _, tt := range tests {
@@ -148,8 +144,7 @@ func TestFindUserByInviteTokenService_Run(t *testing.T) {
 			user, iv, err := ri.Run(tt.args.ctx)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
+				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
 				return
 			}
 

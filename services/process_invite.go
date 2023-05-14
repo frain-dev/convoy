@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -32,23 +31,24 @@ func (pis *ProcessInviteService) Run(ctx context.Context) error {
 	iv, err := pis.InviteRepo.FetchOrganisationInviteByToken(ctx, pis.Token)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch organisation member invite by token and email")
-		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation member invite"))
+		return &ServiceError{ErrMsg: "failed to fetch organisation member invite", Err: err}
 	}
 
 	if iv.Status != datastore.InviteStatusPending {
-		return util.NewServiceError(http.StatusBadRequest, fmt.Errorf("organisation member invite already %s", iv.Status.String()))
+		return &ServiceError{ErrMsg: fmt.Sprintf("organisation member invite already %s", iv.Status.String())}
 	}
 
 	if time.Now().After(iv.ExpiresAt) { // if current date has surpassed expiry date
-		return util.NewServiceError(http.StatusBadRequest, errors.New("organisation member invite already expired"))
+		return &ServiceError{ErrMsg: "organisation member invite already expired"}
 	}
 
 	if !pis.Accepted {
 		iv.Status = datastore.InviteStatusDeclined
 		err = pis.InviteRepo.UpdateOrganisationInvite(ctx, iv)
 		if err != nil {
-			log.FromContext(ctx).WithError(err).Error("failed to update declined organisation invite")
-			return util.NewServiceError(http.StatusBadRequest, errors.New("failed to update declined organisation invite"))
+			errMsg := "failed to update declined organisation invite"
+			log.FromContext(ctx).WithError(err).Error(errMsg)
+			return &ServiceError{ErrMsg: errMsg, Err: err}
 		}
 		return nil
 	}
@@ -61,15 +61,17 @@ func (pis *ProcessInviteService) Run(ctx context.Context) error {
 				return err
 			}
 		} else {
-			log.FromContext(ctx).WithError(err).Error("failed to find user by email")
-			return util.NewServiceError(http.StatusBadRequest, errors.New("failed to find user by email"))
+			errMsg := "failed to find user by email"
+			log.FromContext(ctx).WithError(err).Error(errMsg)
+			return &ServiceError{ErrMsg: errMsg, Err: err}
 		}
 	}
 
 	org, err := pis.OrgRepo.FetchOrganisationByID(ctx, iv.OrganisationID)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to fetch organisation by id")
-		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to fetch organisation by id"))
+		errMsg := "failed to fetch organisation by id"
+		log.FromContext(ctx).WithError(err).Error(errMsg)
+		return &ServiceError{ErrMsg: errMsg, Err: err}
 	}
 
 	_, err = NewOrganisationMemberService(pis.OrgMemberRepo).CreateOrganisationMember(ctx, org, user, &iv.Role)
@@ -80,8 +82,9 @@ func (pis *ProcessInviteService) Run(ctx context.Context) error {
 	iv.Status = datastore.InviteStatusAccepted
 	err = pis.InviteRepo.UpdateOrganisationInvite(ctx, iv)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to update accepted organisation invite")
-		return util.NewServiceError(http.StatusBadRequest, errors.New("failed to update accepted organisation invite"))
+		errMsg := "failed to update accepted organisation invite"
+		log.FromContext(ctx).WithError(err).Error(errMsg)
+		return &ServiceError{ErrMsg: errMsg, Err: err}
 	}
 
 	return nil
@@ -89,20 +92,20 @@ func (pis *ProcessInviteService) Run(ctx context.Context) error {
 
 func (pis *ProcessInviteService) createNewUser(ctx context.Context, newUser *models.User, email string) (*datastore.User, error) {
 	if newUser == nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("new user is nil"))
+		return nil, &ServiceError{ErrMsg: "new user is nil", Err: nil}
 	}
 
 	err := util.Validate(newUser)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to validate new user information")
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
+		return nil, &ServiceError{ErrMsg: err.Error(), Err: nil}
 	}
 
 	p := datastore.Password{Plaintext: newUser.Password}
 	err = p.GenerateHash()
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to generate user password hash")
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create organisation member invite"))
+		return nil, &ServiceError{ErrMsg: "failed to create organisation member invite", Err: err}
 	}
 
 	user := &datastore.User{
@@ -117,8 +120,9 @@ func (pis *ProcessInviteService) createNewUser(ctx context.Context, newUser *mod
 
 	err = pis.UserRepo.CreateUser(ctx, user)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to create user")
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create user"))
+		errMsg := "failed to create user"
+		log.FromContext(ctx).WithError(err).Error(errMsg)
+		return nil, &ServiceError{ErrMsg: errMsg, Err: err}
 	}
 
 	return user, nil

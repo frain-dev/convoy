@@ -7,7 +7,6 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 
-	"github.com/frain-dev/convoy/util"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/mocks"
@@ -38,14 +37,13 @@ func TestResendOrgMemberService_Run(t *testing.T) {
 		Organisation *datastore.Organisation
 	}
 	tests := []struct {
-		name        string
-		cfgPath     string
-		args        args
-		dbFn        func(rs *ResendOrgMemberService)
-		want        *datastore.OrganisationInvite
-		wantErr     bool
-		wantErrCode int
-		wantErrMsg  string
+		name       string
+		cfgPath    string
+		args       args
+		dbFn       func(rs *ResendOrgMemberService)
+		want       *datastore.OrganisationInvite
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name:    "should_resend_organisation_member_invite",
@@ -108,8 +106,7 @@ func TestResendOrgMemberService_Run(t *testing.T) {
 			iv, err := ri.Run(tt.args.ctx)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
+				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
 				return
 			}
 

@@ -7,7 +7,6 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 
-	"github.com/frain-dev/convoy/util"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/mocks"
@@ -33,13 +32,12 @@ func TestCancelOrgMemberService_Run(t *testing.T) {
 		ctx      context.Context
 	}
 	tests := []struct {
-		name        string
-		args        args
-		dbFn        func(co *CancelOrgMemberService)
-		want        *datastore.OrganisationInvite
-		wantErr     bool
-		wantErrCode int
-		wantErrMsg  string
+		name       string
+		args       args
+		dbFn       func(co *CancelOrgMemberService)
+		want       *datastore.OrganisationInvite
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name: "should_cancel_organisation_member_invite",
@@ -94,8 +92,7 @@ func TestCancelOrgMemberService_Run(t *testing.T) {
 			iv, err := co.Run(tt.args.ctx)
 			if tt.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tt.wantErrCode, err.(*util.ServiceError).ErrCode())
-				require.Equal(t, tt.wantErrMsg, err.(*util.ServiceError).Error())
+				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
 				return
 			}
 
