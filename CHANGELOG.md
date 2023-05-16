@@ -1,3 +1,8 @@
+## 23.05.3
+
+- [Enhancement] Add support for more Postgres and Redis config options #1579
+- [Bugfix] Fixed an issue where the email verification flow could not be completed #1586
+
 ## 23.05.2
 
 - [Feature] Added support for meta events #1541
