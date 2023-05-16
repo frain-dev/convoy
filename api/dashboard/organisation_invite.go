@@ -18,18 +18,6 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-func CreateOrganisationInviteService(a *DashboardHandler) *services.OrganisationInviteService {
-	userRepo := postgres.NewUserRepo(a.A.DB)
-	orgRepo := postgres.NewOrgRepo(a.A.DB)
-	orgMemberRepo := postgres.NewOrgMemberRepo(a.A.DB)
-	orgInviteRepo := postgres.NewOrgInviteRepo(a.A.DB)
-
-	return services.NewOrganisationInviteService(
-		orgRepo, userRepo, orgMemberRepo,
-		orgInviteRepo, a.A.Queue,
-	)
-}
-
 func (a *DashboardHandler) InviteUserToOrganisation(w http.ResponseWriter, r *http.Request) {
 	var newIV models.OrganisationInvite
 	err := util.ReadJSON(r, &newIV)
@@ -108,9 +96,19 @@ func (a *DashboardHandler) ProcessOrganisationMemberInvite(w http.ResponseWriter
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
-	organisationInviteService := CreateOrganisationInviteService(a)
 
-	err = organisationInviteService.ProcessOrganisationMemberInvite(r.Context(), token, accepted, newUser)
+	prc := services.ProcessInviteService{
+		Queue:         a.A.Queue,
+		InviteRepo:    postgres.NewOrgInviteRepo(a.A.DB),
+		UserRepo:      postgres.NewUserRepo(a.A.DB),
+		OrgRepo:       postgres.NewOrgRepo(a.A.DB),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+		Token:         token,
+		Accepted:      accepted,
+		NewUser:       newUser,
+	}
+
+	err = prc.Run(r.Context())
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to process organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -122,9 +120,16 @@ func (a *DashboardHandler) ProcessOrganisationMemberInvite(w http.ResponseWriter
 
 func (a *DashboardHandler) FindUserByInviteToken(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
-	organisationInviteService := CreateOrganisationInviteService(a)
 
-	user, iv, err := organisationInviteService.FindUserByInviteToken(r.Context(), token)
+	fub := &services.FindUserByInviteTokenService{
+		Queue:      a.A.Queue,
+		InviteRepo: postgres.NewOrgInviteRepo(a.A.DB),
+		OrgRepo:    postgres.NewOrgRepo(a.A.DB),
+		UserRepo:   postgres.NewUserRepo(a.A.DB),
+		Token:      token,
+	}
+
+	user, iv, err := fub.Run(r.Context())
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to find user by invite token")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -137,12 +142,6 @@ func (a *DashboardHandler) FindUserByInviteToken(w http.ResponseWriter, r *http.
 }
 
 func (a *DashboardHandler) ResendOrganizationInvite(w http.ResponseWriter, r *http.Request) {
-	baseUrl, err := a.retrieveHost()
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
 	user, err := a.retrieveUser(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -160,8 +159,15 @@ func (a *DashboardHandler) ResendOrganizationInvite(w http.ResponseWriter, r *ht
 		return
 	}
 
-	organisationInviteService := CreateOrganisationInviteService(a)
-	_, err = organisationInviteService.ResendOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"), org, user, baseUrl)
+	rom := &services.ResendOrgMemberService{
+		Queue:        a.A.Queue,
+		InviteRepo:   postgres.NewOrgInviteRepo(a.A.DB),
+		InviteID:     chi.URLParam(r, "inviteID"),
+		User:         user,
+		Organisation: org,
+	}
+
+	_, err = rom.Run(r.Context())
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to resend organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -172,8 +178,6 @@ func (a *DashboardHandler) ResendOrganizationInvite(w http.ResponseWriter, r *ht
 }
 
 func (a *DashboardHandler) CancelOrganizationInvite(w http.ResponseWriter, r *http.Request) {
-	organisationInviteService := CreateOrganisationInviteService(a)
-
 	org, err := a.retrieveOrganisation(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -185,7 +189,13 @@ func (a *DashboardHandler) CancelOrganizationInvite(w http.ResponseWriter, r *ht
 		return
 	}
 
-	iv, err := organisationInviteService.CancelOrganisationMemberInvite(r.Context(), chi.URLParam(r, "inviteID"))
+	cancelInvite := services.CancelOrgMemberService{
+		Queue:      a.A.Queue,
+		InviteRepo: postgres.NewOrgInviteRepo(a.A.DB),
+		InviteID:   chi.URLParam(r, "inviteID"),
+	}
+
+	iv, err := cancelInvite.Run(r.Context())
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to cancel organisation member invite")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
