@@ -822,7 +822,6 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints() {
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
 	require.Equal(s.T(), totalEndpoints, len(resp.Content.([]interface{})))
-
 }
 
 func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
