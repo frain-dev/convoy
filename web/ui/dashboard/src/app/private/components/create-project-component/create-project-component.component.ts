@@ -161,7 +161,6 @@ export class CreateProjectComponent implements OnInit {
 			}
 
 			this.versions.at(0).patchValue(this.newSignatureForm.value);
-			this.checkProjectConfig();
 		}
 
 		if (!this.enableMoreConfig && this.projectForm.get('name')?.invalid && this.projectForm.get('type')?.invalid) {
@@ -191,6 +190,7 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async updateProject() {
+		this.checkMetaEventsConfig();
 		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
 		if (typeof this.projectForm.value.config.ratelimit.duration === 'string') this.projectForm.value.config.ratelimit.duration = this.getTimeValue(this.projectForm.value.config.ratelimit.duration);
 		if (typeof this.projectForm.value.config.strategy.duration === 'string') this.projectForm.value.config.strategy.duration = this.getTimeValue(this.projectForm.value.config.strategy.duration);
@@ -242,6 +242,18 @@ export class CreateProjectComponent implements OnInit {
 		});
 
 		if (this.projectForm.value.config.is_retention_policy_enabled === null) delete this.projectForm.value.config.is_retention_policy_enabled;
+	}
+
+	checkMetaEventsConfig() {
+		const is_meta_events_enabled = this.projectForm.value.config.meta_event.is_enabled;
+		const metaEventsConfig = Object.keys(this.projectForm.value.config.meta_event).slice(1, -1);
+		if (!is_meta_events_enabled) {
+			metaEventsConfig.forEach(config => {
+				this.projectForm.get(`config.meta_event.${config}`)?.clearValidators();
+				this.projectForm.get(`config.meta_event.${config}`)?.setErrors(null);
+				this.projectForm.updateValueAndValidity();
+			});
+		}
 	}
 
 	getTimeString(timeValue: number) {
