@@ -484,7 +484,13 @@ func (a *PublicHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query().Get("query")
 	endpointIDs := getEndpointIDs(r)
-	sourceID := getSourceIDs(r)[0]
+
+	var sourceID string
+	sourceIDs := getSourceIDs(r)
+
+	if len(sourceIDs) > 0 {
+		sourceID = sourceIDs[0]
+	}
 
 	f := &datastore.Filter{
 		Query:        query,
