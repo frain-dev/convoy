@@ -226,7 +226,7 @@ export class EventLogsComponent implements OnInit {
 		if (requestDetails?.addToURL) this.addFilterToURL();
 
 		if (!pagination) {
-			pagination = { next_page_cursor: String(Number.MAX_SAFE_INTEGER) };
+			pagination = { next_page_cursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF" };
 			delete this.eventsDetailsItem;
 			this.sidebarEventDeliveries = [];
 		}

@@ -9,7 +9,7 @@ export class MetaEventsService {
 	constructor(private http: HttpService) {}
 
 	getMetaEvents(requestDetails?: CURSOR): Promise<HTTP_RESPONSE> {
-		if (!requestDetails) requestDetails = { next_page_cursor: String(Number.MAX_SAFE_INTEGER), direction: 'next' };
+		if (!requestDetails) requestDetails = { next_page_cursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF", direction: 'next' };
 
 		return new Promise(async (resolve, reject) => {
 			try {
