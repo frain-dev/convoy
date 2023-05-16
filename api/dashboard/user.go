@@ -164,7 +164,7 @@ func (a *DashboardHandler) ForgotPassword(w http.ResponseWriter, r *http.Request
 func (a *DashboardHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	userService := createUserService(a)
 
-	err := userService.VerifyEmail(r.Context(), r.URL.Query().Get("token"))
+	err := userService.VerifyEmail(r.Context(), r.URL.Query().Get("verification-token"))
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

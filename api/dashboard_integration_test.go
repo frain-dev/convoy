@@ -822,7 +822,6 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints() {
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
 	require.Equal(s.T(), totalEndpoints, len(resp.Content.([]interface{})))
-
 }
 
 func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
@@ -4643,7 +4642,7 @@ func (u *UserIntegrationTestSuite) Test_VerifyEmail() {
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := fmt.Sprintf("/ui/users/verify_email?token=%s", user.EmailVerificationToken)
+	url := fmt.Sprintf("/ui/users/verify_email?verification-token=%s", user.EmailVerificationToken)
 
 	req := createRequest(http.MethodPost, url, "", nil)
 	w := httptest.NewRecorder()
