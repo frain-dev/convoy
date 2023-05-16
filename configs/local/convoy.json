@@ -1,21 +1,17 @@
 {
-    "database": {
-        "type": "postgres",
-        "dsn": "postgres://convoy:convoy@postgres/convoy?sslmode=disable&connect_timeout=30"
-    },
-    "queue": {
-        "type": "redis",
-        "redis": {
-            "dsn": "redis://redis_server:6379"
-        }
-    },
-    "cache": {
-        "type": "redis",
-        "redis": {
-            "dsn": "redis://redis_server:6379"
-        }
-    },
     "host": "localhost:5005",
+    "database": {
+        "host": "postgres",
+        "username": "convoy",
+        "password": "convoy",
+        "database": "convoy",
+        "options": "sslmode=disable&connect_timeout=30",
+        "port": 5432
+    },
+    "redis": {
+        "port": 6379,
+        "host": "redis_server"
+    },
     "logger": {
         "level": "fatal"
     },
@@ -32,14 +28,6 @@
             "ssl_cert_file": "",
             "ssl_key_file": "",
             "port": 5005
-        }
-    },
-    "auth": {
-        "jwt": {
-            "enabled": true
-        },
-        "native": {
-            "enabled": true
         }
     }
 }
