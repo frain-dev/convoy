@@ -12,7 +12,7 @@ export class PortalLinksService {
 	getPortalLinks(requestDetails: CURSOR & { endpointId?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				if (!requestDetails?.next_page_cursor && !requestDetails?.prev_page_cursor) requestDetails = { next_page_cursor: String(Number.MAX_SAFE_INTEGER), direction: 'next', endpointId: requestDetails?.endpointId };
+				if (!requestDetails?.next_page_cursor && !requestDetails?.prev_page_cursor) requestDetails = { next_page_cursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF", direction: 'next', endpointId: requestDetails?.endpointId };
 
 				const response = await this.http.request({
 					url: `/portal-links`,

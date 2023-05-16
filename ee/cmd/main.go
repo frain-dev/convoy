@@ -34,34 +34,63 @@ func main() {
 	app.Version = convoy.GetVersionFromFS(ee.F)
 	db := &postgres.Postgres{}
 
-	cli := cli.NewCli(app, db)
+	c := cli.NewCli(app, db)
 
-	var redisDsn string
-	var dbDsn string
-	var queue string
+	var dbPort int
+	var dbType string
+	var dbHost string
+	var dbScheme string
+	var dbUsername string
+	var dbPassword string
+	var dbDatabase string
+
+	var redisPort int
+	var redisHost string
+	var redisType string
+	var redisScheme string
+	var redisUsername string
+	var redisPassword string
+	var redisDatabase string
+
 	var configFile string
 
-	cli.Flags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
-	cli.Flags().StringVar(&queue, "queue", "", "Queue provider (\"redis\")")
-	cli.Flags().StringVar(&dbDsn, "db", "", "Postgres database dsn")
-	cli.Flags().StringVar(&redisDsn, "redis", "", "Redis dsn")
+	c.Flags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
 
-	cli.PersistentPreRunE(hooks.PreRun(app, db))
-	cli.PersistentPostRunE(hooks.PostRun(app, db))
+	// db config
+	c.Flags().StringVar(&dbHost, "db-host", "", "Database Host")
+	c.Flags().StringVar(&dbType, "db-type", "", "Database provider")
+	c.Flags().StringVar(&dbScheme, "db-scheme", "", "Database Scheme")
+	c.Flags().StringVar(&dbUsername, "db-username", "", "Database Username")
+	c.Flags().StringVar(&dbPassword, "db-password", "", "Database Password")
+	c.Flags().StringVar(&dbDatabase, "db-database", "", "Database Database")
+	c.Flags().StringVar(&dbDatabase, "db-options", "", "Database Options")
+	c.Flags().IntVar(&dbPort, "db-port", 0, "Database Port")
+
+	// redis config
+	c.Flags().StringVar(&redisHost, "redis-host", "", "Redis Host")
+	c.Flags().StringVar(&redisType, "redis-type", "", "Redis provider")
+	c.Flags().StringVar(&redisScheme, "redis-scheme", "", "Redis Scheme")
+	c.Flags().StringVar(&redisUsername, "redis-username", "", "Redis Username")
+	c.Flags().StringVar(&redisPassword, "redis-password", "", "Redis Password")
+	c.Flags().StringVar(&redisDatabase, "redis-database", "", "Redis database")
+	c.Flags().IntVar(&redisPort, "redis-port", 0, "Redis Port")
+
+	c.PersistentPreRunE(hooks.PreRun(app, db))
+	c.PersistentPostRunE(hooks.PostRun(app, db))
 
 	// Add Sub Commands
-	cli.AddCommand(version.AddVersionCommand())
-	cli.AddCommand(server.AddServerCommand(app))
-	cli.AddCommand(worker.AddWorkerCommand(app))
-	cli.AddCommand(retry.AddRetryCommand(app))
-	cli.AddCommand(scheduler.AddSchedulerCommand(app))
-	cli.AddCommand(migrate.AddMigrateCommand(app))
-	cli.AddCommand(configCmd.AddConfigCommand(app))
-	cli.AddCommand(domain.AddDomainCommand(app))
-	cli.AddCommand(ingest.AddIngestCommand(app))
-	cli.AddCommand(stream.AddStreamCommand(app))
+	c.AddCommand(version.AddVersionCommand())
+	c.AddCommand(server.AddServerCommand(app))
+	c.AddCommand(worker.AddWorkerCommand(app))
+	c.AddCommand(retry.AddRetryCommand(app))
+	c.AddCommand(scheduler.AddSchedulerCommand(app))
+	c.AddCommand(migrate.AddMigrateCommand(app))
+	c.AddCommand(configCmd.AddConfigCommand(app))
+	c.AddCommand(domain.AddDomainCommand(app))
+	c.AddCommand(ingest.AddIngestCommand(app))
+	c.AddCommand(stream.AddStreamCommand(app))
 
-	if err := cli.Execute(); err != nil {
+	if err := c.Execute(); err != nil {
 		slog.Fatal(err)
 	}
 }

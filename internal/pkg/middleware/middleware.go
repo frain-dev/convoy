@@ -29,23 +29,8 @@ import (
 )
 
 const (
-	AuthUserCtx         types.ContextKey = "authUser"
-	projectCtx          types.ContextKey = "project"
-	orgCtx              types.ContextKey = "organisation"
-	orgMemberCtx        types.ContextKey = "organisation_member"
-	endpointCtx         types.ContextKey = "endpoint"
-	endpointsCtx        types.ContextKey = "endpoints"
-	eventCtx            types.ContextKey = "event"
-	eventDeliveryCtx    types.ContextKey = "eventDelivery"
-	authLoginCtx        types.ContextKey = "authLogin"
-	userCtx             types.ContextKey = "user"
-	pageableCtx         types.ContextKey = "pageable"
-	pageDataCtx         types.ContextKey = "pageData"
-	deliveryAttemptsCtx types.ContextKey = "deliveryAttempts"
-	hostCtx             types.ContextKey = "host"
-	endpointIdCtx       types.ContextKey = "endpointId"
-	endpointIdsCtx      types.ContextKey = "endpointIds"
-	portalLinkCtx       types.ContextKey = "portal_link"
+	AuthUserCtx types.ContextKey = "authUser"
+	pageableCtx types.ContextKey = "pageable"
 )
 
 type AuthorizedLogin struct {
@@ -109,16 +94,6 @@ func JsonResponse(next http.Handler) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
 	})
-}
-
-func FilterDeletedEndpoints(endpoints []datastore.Endpoint) []datastore.Endpoint {
-	activeEndpoints := make([]datastore.Endpoint, 0)
-	for _, endpoint := range endpoints {
-		if endpoint.DeletedAt.IsZero() {
-			activeEndpoints = append(activeEndpoints, endpoint)
-		}
-	}
-	return activeEndpoints
 }
 
 func RequireAuth() func(next http.Handler) http.Handler {
@@ -258,8 +233,6 @@ func Pagination(next http.Handler) http.Handler {
 			NextCursor: rawNextCursor,
 			PrevCursor: rawPrevCursor,
 		}
-
-		// fmt.Printf("middleware %+v\n", pageable)
 
 		r = r.WithContext(setPageableInContext(r.Context(), pageable))
 		next.ServeHTTP(w, r)
@@ -410,18 +383,10 @@ func GetPageableFromContext(ctx context.Context) datastore.Pageable {
 	return ctx.Value(pageableCtx).(datastore.Pageable)
 }
 
-func GetPaginationDataFromContext(ctx context.Context) *datastore.PaginationData {
-	return ctx.Value(pageDataCtx).(*datastore.PaginationData)
-}
-
 func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) context.Context {
 	return context.WithValue(ctx, AuthUserCtx, a)
 }
 
 func GetAuthUserFromContext(ctx context.Context) *auth.AuthenticatedUser {
 	return ctx.Value(AuthUserCtx).(*auth.AuthenticatedUser)
-}
-
-func GetAuthLoginFromContext(ctx context.Context) *AuthorizedLogin {
-	return ctx.Value(authLoginCtx).(*AuthorizedLogin)
 }
