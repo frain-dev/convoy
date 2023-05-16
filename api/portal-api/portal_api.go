@@ -129,7 +129,7 @@ func (a *PortalLinkHandler) retrievePortalLink(r *http.Request) (*datastore.Port
 
 	if util.IsStringEmpty(token) {
 		cred, _ := middleware.GetAuthFromRequest(r)
-		token = cred.Token
+		token = cred.Token // TODO(all): this should probably be cred.APIKey, token is used for jwt see  middleware.GetAuthFromRequest(r)
 	}
 
 	portalLinkRepo := postgres.NewPortalLinkRepo(a.A.DB)
