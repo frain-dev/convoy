@@ -1,3 +1,7 @@
+## 23.05.3
+
+- [Enhancement] Add support for more Postgres and Redis config options #1579
+
 ## 23.05.2
 
 - [Feature] Added support for meta events #1541
