@@ -13,7 +13,7 @@ import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 	styleUrls: ['./verify-email.component.scss']
 })
 export class VerifyEmailComponent implements OnInit {
-	token = this.route.snapshot.queryParams.token;
+	token = this.route.snapshot.queryParams['verification-token'];
 	loading = true;
 	showError = false;
 
