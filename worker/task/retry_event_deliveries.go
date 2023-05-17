@@ -123,7 +123,7 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 		}
 
 		// remove these event deliveries queue
-		err := q.DeleteEventDeliveriesfromQueue(convoy.EventQueue, batchIDs)
+		err := q.DeleteEventDeliveriesFromQueue(convoy.EventQueue, batchIDs)
 		if err != nil {
 			log.WithError(err).WithField("ids", batchIDs).Errorf("batch %d: failed to delete event deliveries from zset", batchCount)
 		}

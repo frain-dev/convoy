@@ -219,36 +219,101 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		c.Host = host
 	}
 
-	// CONVOY_REDIS_DSN
-	redis, err := cmd.Flags().GetString("redis")
+	// CONVOY_DB_TYPE
+	dbType, err := cmd.Flags().GetString("db-type")
 	if err != nil {
 		return nil, err
 	}
 
-	// CONVOY_LIMITER_PROVIDER
-	rateLimiter, err := cmd.Flags().GetString("limiter")
+	// CONVOY_DB_SCHEME
+	dbScheme, err := cmd.Flags().GetString("db-scheme")
 	if err != nil {
 		return nil, err
 	}
 
-	if !util.IsStringEmpty(rateLimiter) {
-		c.Limiter.Type = config.LimiterProvider(rateLimiter)
-		if rateLimiter == "redis" && !util.IsStringEmpty(redis) {
-			c.Limiter.Redis.Dsn = redis
-		}
-	}
-
-	// CONVOY_CACHE_PROVIDER
-	cache, err := cmd.Flags().GetString("cache")
+	// CONVOY_DB_HOST
+	dbHost, err := cmd.Flags().GetString("db-host")
 	if err != nil {
 		return nil, err
 	}
 
-	if !util.IsStringEmpty(cache) {
-		c.Cache.Type = config.CacheProvider(cache)
-		if cache == "redis" && !util.IsStringEmpty(redis) {
-			c.Cache.Redis.Dsn = redis
-		}
+	// CONVOY_DB_USERNAME
+	dbUsername, err := cmd.Flags().GetString("db-username")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_DB_PASSWORD
+	dbPassword, err := cmd.Flags().GetString("db-password")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_DB_DATABASE
+	dbDatabase, err := cmd.Flags().GetString("db-database")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_DB_PORT
+	dbPort, err := cmd.Flags().GetInt("db-port")
+	if err != nil {
+		return nil, err
+	}
+
+	c.Database = config.DatabaseConfiguration{
+		Type:     config.DatabaseProvider(dbType),
+		Scheme:   dbScheme,
+		Host:     dbHost,
+		Username: dbUsername,
+		Password: dbPassword,
+		Database: dbDatabase,
+		Port:     dbPort,
+	}
+
+	// CONVOY_REDIS_SCHEME
+	redisScheme, err := cmd.Flags().GetString("redis-scheme")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_REDIS_HOST
+	redisHost, err := cmd.Flags().GetString("redis-host")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_REDIS_USERNAME
+	redisUsername, err := cmd.Flags().GetString("redis-username")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_REDIS_PASSWORD
+	redisPassword, err := cmd.Flags().GetString("redis-password")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_REDIS_DATABASE
+	redisDatabase, err := cmd.Flags().GetString("redis-database")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_REDIS_PORT
+	redisPort, err := cmd.Flags().GetInt("redis-port")
+	if err != nil {
+		return nil, err
+	}
+
+	c.Redis = config.RedisConfiguration{
+		Scheme:   redisScheme,
+		Host:     redisHost,
+		Username: redisUsername,
+		Password: redisPassword,
+		Database: redisDatabase,
+		Port:     redisPort,
 	}
 
 	// CONVOY_LOGGER_LEVEL
@@ -492,13 +557,13 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 	}
 
 	if !util.IsStringEmpty(apiKeyAuthConfig) {
-		config := config.APIKeyAuthConfig{}
-		err = config.Decode(apiKeyAuthConfig)
+		authConfig := config.APIKeyAuthConfig{}
+		err = authConfig.Decode(apiKeyAuthConfig)
 		if err != nil {
 			return nil, err
 		}
 
-		c.Auth.File.APIKey = config
+		c.Auth.File.APIKey = authConfig
 	}
 
 	// CONVOY_BASIC_AUTH_CONFIG
@@ -508,13 +573,13 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 	}
 
 	if !util.IsStringEmpty(basicAuthConfig) {
-		config := config.BasicAuthConfig{}
-		err = config.Decode(basicAuthConfig)
+		authConfig := config.BasicAuthConfig{}
+		err = authConfig.Decode(basicAuthConfig)
 		if err != nil {
 			return nil, err
 		}
 
-		c.Auth.File.Basic = config
+		c.Auth.File.Basic = authConfig
 	}
 
 	return c, nil

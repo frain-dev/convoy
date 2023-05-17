@@ -17,7 +17,6 @@ import (
 const (
 	MaxResponseSizeKb = 50                       // in kilobytes
 	MaxResponseSize   = MaxResponseSizeKb * 1024 // in bytes
-	MaxRequestSize    = MaxResponseSize
 
 	DefaultHost = "localhost:5005"
 )
@@ -37,16 +36,19 @@ var DefaultConfiguration = Configuration{
 	},
 	Database: DatabaseConfiguration{
 		Type:               PostgresDatabaseProvider,
-		Dsn:                "postgres://postgres:postgres@localhost/convoy",
-		SetMaxOpenConns:    10,
-		SetMaxIdleConns:    10,
+		Scheme:             "postgres",
+		Host:               "localhost",
+		Username:           "postgres",
+		Password:           "postgres",
+		Database:           "convoy",
+		Options:            "sslmode=disable&connect_timeout=30",
+		Port:               5432,
 		SetConnMaxLifetime: 3600,
 	},
-	Queue: QueueConfiguration{
-		Type: RedisQueueProvider,
-		Redis: RedisQueueConfiguration{
-			Dsn: "redis://localhost:6378",
-		},
+	Redis: RedisConfiguration{
+		Scheme: "redis",
+		Host:   "localhost",
+		Port:   6379,
 	},
 	Logger: LoggerConfiguration{
 		Level: "error",
@@ -62,15 +64,52 @@ var DefaultConfiguration = Configuration{
 	},
 	Auth: AuthConfiguration{
 		IsSignupEnabled: true,
+		Native: NativeRealmOptions{
+			Enabled: true,
+		},
+		Jwt: JwtRealmOptions{
+			Enabled: true,
+		},
 	},
 }
 
 type DatabaseConfiguration struct {
-	Type               DatabaseProvider `json:"type" envconfig:"CONVOY_DB_TYPE"`
-	Dsn                string           `json:"dsn" envconfig:"CONVOY_DB_DSN"`
-	SetMaxOpenConns    int              `json:"max_open_conn" envconfig:"CONVOY_DB_MAX_OPEN_CONN"`
-	SetMaxIdleConns    int              `json:"max_idle_conn" envconfig:"CONVOY_DB_MAX_IDLE_CONN"`
-	SetConnMaxLifetime int              `json:"conn_max_lifetime" envconfig:"CONVOY_DB_CONN_MAX_LIFETIME"`
+	Type DatabaseProvider `json:"type" envconfig:"CONVOY_DB_TYPE"`
+
+	Scheme   string `json:"scheme" envconfig:"CONVOY_DB_SCHEME"`
+	Host     string `json:"host" envconfig:"CONVOY_DB_HOST"`
+	Username string `json:"username" envconfig:"CONVOY_DB_USERNAME"`
+	Password string `json:"password" envconfig:"CONVOY_DB_PASSWORD"`
+	Database string `json:"database" envconfig:"CONVOY_DB_DATABASE"`
+	Options  string `json:"options" envconfig:"CONVOY_DB_OPTIONS"`
+	Port     int    `json:"port" envconfig:"CONVOY_DB_PORT"`
+
+	SetMaxOpenConnections int `json:"max_open_conn" envconfig:"CONVOY_DB_MAX_OPEN_CONN"`
+	SetMaxIdleConnections int `json:"max_idle_conn" envconfig:"CONVOY_DB_MAX_IDLE_CONN"`
+	SetConnMaxLifetime    int `json:"conn_max_lifetime" envconfig:"CONVOY_DB_CONN_MAX_LIFETIME"`
+}
+
+func (dc DatabaseConfiguration) BuildDsn() string {
+	if dc.Scheme == "" {
+		return ""
+	}
+
+	authPart := ""
+	if dc.Username != "" || dc.Password != "" {
+		authPart = fmt.Sprintf("%s:%s@", dc.Username, dc.Password)
+	}
+
+	dbPart := ""
+	if dc.Database != "" {
+		dbPart = fmt.Sprintf("/%s", dc.Database)
+	}
+
+	optPart := ""
+	if dc.Options != "" {
+		optPart = fmt.Sprintf("?%s", dc.Options)
+	}
+
+	return fmt.Sprintf("%s://%s%s:%d%s%s", dc.Scheme, authPart, dc.Host, dc.Port, dbPart, optPart)
 }
 
 type ServerConfiguration struct {
@@ -88,17 +127,35 @@ type HTTPServerConfiguration struct {
 	HttpProxy   string `json:"proxy" envconfig:"HTTP_PROXY"`
 }
 
-type QueueConfiguration struct {
-	Type  QueueProvider           `json:"type" envconfig:"CONVOY_QUEUE_PROVIDER"`
-	Redis RedisQueueConfiguration `json:"redis"`
-}
-
 type PrometheusConfiguration struct {
 	Dsn string `json:"dsn" envconfig:"CONVOY_PROM_DSN"`
 }
 
-type RedisQueueConfiguration struct {
-	Dsn string `json:"dsn" envconfig:"CONVOY_REDIS_DSN"`
+type RedisConfiguration struct {
+	Scheme   string `json:"scheme" envconfig:"CONVOY_REDIS_SCHEME"`
+	Host     string `json:"host" envconfig:"CONVOY_REDIS_HOST"`
+	Username string `json:"username" envconfig:"CONVOY_REDIS_USERNAME"`
+	Password string `json:"password" envconfig:"CONVOY_REDIS_PASSWORD"`
+	Database string `json:"database" envconfig:"CONVOY_REDIS_DATABASE"`
+	Port     int    `json:"port" envconfig:"CONVOY_REDIS_PORT"`
+}
+
+func (rc RedisConfiguration) BuildDsn() string {
+	if rc.Scheme == "" {
+		return ""
+	}
+
+	authPart := ""
+	if rc.Username != "" || rc.Password != "" {
+		authPart = fmt.Sprintf("%s:%s@", rc.Username, rc.Password)
+	}
+
+	dbPart := ""
+	if rc.Database != "" {
+		dbPart = fmt.Sprintf("/%s", rc.Database)
+	}
+
+	return fmt.Sprintf("%s://%s%s:%d%s", rc.Scheme, authPart, rc.Host, rc.Port, dbPart)
 }
 
 type FileRealmOption struct {
@@ -142,24 +199,6 @@ type LoggerConfiguration struct {
 type TracerConfiguration struct {
 	Type     TracerProvider        `json:"type" envconfig:"CONVOY_TRACER_PROVIDER"`
 	NewRelic NewRelicConfiguration `json:"new_relic"`
-}
-
-type CacheConfiguration struct {
-	Type  CacheProvider           `json:"type"  envconfig:"CONVOY_CACHE_PROVIDER"`
-	Redis RedisCacheConfiguration `json:"redis"`
-}
-
-type RedisCacheConfiguration struct {
-	Dsn string `json:"dsn" envconfig:"CONVOY_REDIS_DSN"`
-}
-
-type LimiterConfiguration struct {
-	Type  LimiterProvider           `json:"type" envconfig:"CONVOY_LIMITER_TYPE"`
-	Redis RedisLimiterConfiguration `json:"redis"`
-}
-
-type RedisLimiterConfiguration struct {
-	Dsn string `json:"dsn" envconfig:"CONVOY_REDIS_DSN"`
 }
 
 type NewRelicConfiguration struct {
@@ -212,31 +251,22 @@ type OnPremStorage struct {
 }
 
 const (
-	envPrefix              string = "convoy"
-	DevelopmentEnvironment string = "development"
-	OSSEnvironment         string = "oss"
+	envPrefix      string = "convoy"
+	OSSEnvironment string = "oss"
 )
 
 const (
-	RedisQueueProvider                 QueueProvider           = "redis"
-	DefaultStrategyProvider            StrategyProvider        = "linear"
-	ExponentialBackoffStrategyProvider StrategyProvider        = "exponential"
-	DefaultSignatureHeader             SignatureHeaderProvider = "X-Convoy-Signature"
-	ConsoleLoggerProvider              LoggerProvider          = "console"
-	NewRelicTracerProvider             TracerProvider          = "new_relic"
-	RedisCacheProvider                 CacheProvider           = "redis"
-	RedisLimiterProvider               LimiterProvider         = "redis"
-	PostgresDatabaseProvider           DatabaseProvider        = "postgres"
-	InMemoryDatabaseProvider           DatabaseProvider        = "in-memory"
-	TypesenseSearchProvider            SearchProvider          = "typesense"
+	RedisQueueProvider       QueueProvider           = "redis"
+	DefaultSignatureHeader   SignatureHeaderProvider = "X-Convoy-Signature"
+	NewRelicTracerProvider   TracerProvider          = "new_relic"
+	PostgresDatabaseProvider DatabaseProvider        = "postgres"
+	TypesenseSearchProvider  SearchProvider          = "typesense"
 )
 
 type (
 	AuthProvider            string
 	QueueProvider           string
-	StrategyProvider        string
 	SignatureHeaderProvider string
-	LoggerProvider          string
 	TracerProvider          string
 	CacheProvider           string
 	LimiterProvider         string
@@ -252,7 +282,7 @@ func (s SignatureHeaderProvider) String() string {
 type Configuration struct {
 	Auth               AuthConfiguration          `json:"auth,omitempty"`
 	Database           DatabaseConfiguration      `json:"database"`
-	Queue              QueueConfiguration         `json:"queue"`
+	Redis              RedisConfiguration         `json:"redis"`
 	Prometheus         PrometheusConfiguration    `json:"prometheus"`
 	Server             ServerConfiguration        `json:"server"`
 	MaxResponseSize    uint64                     `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
@@ -260,8 +290,6 @@ type Configuration struct {
 	Environment        string                     `json:"env" envconfig:"CONVOY_ENV"`
 	Logger             LoggerConfiguration        `json:"logger"`
 	Tracer             TracerConfiguration        `json:"tracer"`
-	Cache              CacheConfiguration         `json:"cache"`
-	Limiter            LimiterConfiguration       `json:"limiter"`
 	Host               string                     `json:"host" envconfig:"CONVOY_HOST"`
 	CustomDomainSuffix string                     `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
 	Search             SearchConfiguration        `json:"search"`
@@ -357,16 +385,11 @@ func ensureSSL(s ServerConfiguration) error {
 	return nil
 }
 
-func ensureQueueConfig(queueCfg QueueConfiguration) error {
-	switch queueCfg.Type {
-	case RedisQueueProvider:
-		if queueCfg.Redis.Dsn == "" {
-			return errors.New("redis queue dsn is empty")
-		}
-
-	default:
-		return fmt.Errorf("unsupported queue type: %s", queueCfg.Type)
+func ensureQueueConfig(queueCfg RedisConfiguration) error {
+	if queueCfg.BuildDsn() == "" {
+		return errors.New("redis queue dsn is empty")
 	}
+
 	return nil
 }
 
@@ -386,7 +409,7 @@ func ensureMaxResponseSize(c *Configuration) {
 func validate(c *Configuration) error {
 	ensureMaxResponseSize(c)
 
-	if err := ensureQueueConfig(c.Queue); err != nil {
+	if err := ensureQueueConfig(c.Redis); err != nil {
 		return err
 	}
 

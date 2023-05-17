@@ -218,17 +218,22 @@ func TestRetentionPoliciesIntegrationSuiteTest(t *testing.T) {
 	suite.Run(t, new(RetentionPoliciesIntegrationTestSuite))
 }
 
-func getPostgresDSN() string {
-	return os.Getenv("TEST_POSTGRES_DSN")
-}
-
 func getConfig() config.Configuration {
-	return config.Configuration{
-		Database: config.DatabaseConfiguration{
-			Type: config.PostgresDatabaseProvider,
-			Dsn:  getPostgresDSN(),
-		},
-	}
+	_ = os.Setenv("CONVOY_DB_HOST", os.Getenv("TEST_REDIS_HOST"))
+	_ = os.Setenv("CONVOY_REDIS_SCHEME", os.Getenv("TEST_REDIS_SCHEME"))
+	_ = os.Setenv("CONVOY_REDIS_PORT", os.Getenv("TEST_REDIS_PORT"))
+
+	_ = os.Setenv("CONVOY_DB_HOST", os.Getenv("TEST_DB_HOST"))
+	_ = os.Setenv("CONVOY_DB_SCHEME", os.Getenv("TEST_DB_SCHEME"))
+	_ = os.Setenv("CONVOY_DB_USERNAME", os.Getenv("TEST_DB_USERNAME"))
+	_ = os.Setenv("CONVOY_DB_PASSWORD", os.Getenv("TEST_DB_PASSWORD"))
+	_ = os.Setenv("CONVOY_DB_DATABASE", os.Getenv("TEST_DB_DATABASE"))
+	_ = os.Setenv("CONVOY_DB_OPTIONS", os.Getenv("TEST_DB_OPTIONS"))
+	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
+
+	cfg, _ := config.Get()
+
+	return cfg
 }
 
 func getDB() database.Database {
@@ -347,7 +352,7 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 	defaultStorage := &datastore.DefaultStoragePolicy
 	defaultStorage.OnPrem.Path = null.NewString("/tmp/convoy/export/", true)
 
-	config := &datastore.Configuration{
+	c := &datastore.Configuration{
 		UID:                ulid.Make().String(),
 		IsAnalyticsEnabled: true,
 		StoragePolicy:      defaultStorage,
@@ -355,11 +360,11 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 
 	// Seed Data
 	configRepo := postgres.NewConfigRepo(db)
-	err := configRepo.CreateConfiguration(context.TODO(), config)
+	err := configRepo.CreateConfiguration(context.TODO(), c)
 	if err != nil {
 		return nil, err
 	}
-	return config, nil
+	return c, nil
 }
 
 type SeedFilter struct {

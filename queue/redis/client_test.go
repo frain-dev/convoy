@@ -59,7 +59,7 @@ func TestWrite(t *testing.T) {
 	}
 }
 
-func initializeQueue(configFile string, name string, t *testing.T) queue.Queuer {
+func initializeQueue(configFile string, _ string, t *testing.T) queue.Queuer {
 	err := config.LoadConfig(configFile)
 	if err != nil {
 		t.Fatalf("Failed to load config file: %v", err)
@@ -71,7 +71,7 @@ func initializeQueue(configFile string, name string, t *testing.T) queue.Queuer 
 
 	var opts queue.QueueOptions
 
-	rdb, err := rdb.NewClient(cfg.Queue.Redis.Dsn)
+	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
 	if err != nil {
 		t.Fatalf("Failed to load new client: %v", err)
 	}
@@ -82,8 +82,8 @@ func initializeQueue(configFile string, name string, t *testing.T) queue.Queuer 
 	}
 	opts = queue.QueueOptions{
 		Names:        queueNames,
-		RedisClient:  rdb,
-		RedisAddress: cfg.Queue.Redis.Dsn,
+		RedisClient:  redis,
+		RedisAddress: cfg.Redis.BuildDsn(),
 		Type:         string(config.RedisQueueProvider),
 	}
 

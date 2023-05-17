@@ -10,11 +10,11 @@ import (
 )
 
 func provideJwt(t *testing.T) *Jwt {
-	cache, err := cache.NewCache(config.CacheConfiguration{})
+	newCache, err := cache.NewCache(config.DefaultConfiguration.Redis)
 
 	require.Nil(t, err)
 
-	jwt := NewJwt(&config.JwtRealmOptions{}, cache)
+	jwt := NewJwt(&config.JwtRealmOptions{}, newCache)
 	return jwt
 }
 

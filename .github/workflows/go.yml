@@ -12,19 +12,20 @@ jobs:
             matrix:
                 go-version: [1.18.x]
                 os: [ubuntu-latest, macos-latest]
-                postgres-version: ["5.0"]
+                postgres-version: ["15"]
                 redis-version: ["6.2.6"]
+                typesense-version: ["0.24.0"]
 
         runs-on: ubuntu-latest
         services:
             postgres:
-                image: postgres:15
+                image: postgres:${{ matrix.postgres-version }}
                 ports:
                     - 5432:5432
                 env:
-                    POSTGRES_USER: admin
+                    POSTGRES_USER: postgres
                     POSTGRES_DB: convoy
-                    POSTGRES_PASSWORD: password
+                    POSTGRES_PASSWORD: postgres
                     POSTGRES_MAX_CONNECTIONS: 2000
                     # set up health check for postgres
                 options: --health-cmd pg_isready --health-interval 10ms --health-timeout 500ms --health-retries 15
@@ -35,10 +36,10 @@ jobs:
                   redis-version: ${{ matrix.redis-version }}
                   redis-port: 6379
 
-            - name: Start Typesense
+            - name: Start Typesense v${{ matrix.typesense-version }}
               uses: jirevwe/typesense-github-action@v1.0.1
               with:
-                  typesense-version: 0.23.1
+                  typesense-version: ${{ matrix.typesense-version }}
                   typesense-api-key: some-api-key
 
             - name: Get the version
@@ -72,14 +73,30 @@ jobs:
             - name: Migrate Postgres
               run: go run ./cmd migrate up
               env:
-                  CONVOY_DB_DSN: "postgres://admin:password@localhost:5432/convoy?sslmode=disable"
-                  CONVOY_REDIS_DSN: "redis://localhost:6379"
+                  CONVOY_DB_SCHEME: postgres
+                  CONVOY_DB_HOST: localhost
+                  CONVOY_DB_USERNAME: postgres
+                  CONVOY_DB_PASSWORD: postgres
+                  CONVOY_DB_DATABASE: convoy
+                  CONVOY_DB_OPTIONS: sslmode=disable&connect_timeout=30
+                  CONVOY_DB_PORT: 5432
+                  CONVOY_REDIS_SCHEME: redis
+                  CONVOY_REDIS_HOST: localhost
+                  CONVOY_REDIS_PORT: 6379
 
             - name: Run integration tests
               run: make integration_tests
               env:
-                  TEST_POSTGRES_DSN: "postgres://admin:password@localhost:5432/convoy?sslmode=disable"
-                  TEST_REDIS_DSN: "redis://localhost:6379"
-                  TEST_CONVOY_TYPESENSE_HOST: "http://localhost:8108"
-                  TEST_CONVOY_TYPESENSE_API_KEY: "some-api-key"
-                  TEST_CONVOY_SEARCH_TYPE: "typesense"
+                  TEST_DB_SCHEME: postgres
+                  TEST_DB_HOST: localhost
+                  TEST_DB_USERNAME: postgres
+                  TEST_DB_PASSWORD: postgres
+                  TEST_DB_DATABASE: convoy
+                  TEST_DB_OPTIONS: sslmode=disable&connect_timeout=30
+                  TEST_DB_PORT: 5432
+                  TEST_REDIS_SCHEME: redis
+                  TEST_REDIS_HOST: localhost
+                  TEST_REDIS_PORT: 6379
+                  TEST_TYPESENSE_HOST: http://localhost:8108
+                  TEST_TYPESENSE_API_KEY: some-api-key
+                  TEST_SEARCH_TYPE: typesense

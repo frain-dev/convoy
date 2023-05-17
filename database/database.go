@@ -8,4 +8,5 @@ import (
 type Database interface {
 	GetDB() *sqlx.DB
 	GetHook() *hooks.Hook
+	Close() error
 }

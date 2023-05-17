@@ -6,6 +6,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/log"
 	"os"
 	"sync"
 	"testing"
@@ -18,16 +19,27 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func getDSN() string {
-	return os.Getenv("TEST_POSTGRES_DSN")
-}
-
 func getConfig() config.Configuration {
-	return config.Configuration{
-		Database: config.DatabaseConfiguration{
-			Dsn: getDSN(),
-		},
+	_ = os.Setenv("CONVOY_DB_HOST", os.Getenv("TEST_REDIS_HOST"))
+	_ = os.Setenv("CONVOY_REDIS_SCHEME", os.Getenv("TEST_REDIS_SCHEME"))
+	_ = os.Setenv("CONVOY_REDIS_PORT", os.Getenv("TEST_REDIS_PORT"))
+
+	_ = os.Setenv("CONVOY_DB_HOST", os.Getenv("TEST_DB_HOST"))
+	_ = os.Setenv("CONVOY_DB_SCHEME", os.Getenv("TEST_DB_SCHEME"))
+	_ = os.Setenv("CONVOY_DB_USERNAME", os.Getenv("TEST_DB_USERNAME"))
+	_ = os.Setenv("CONVOY_DB_PASSWORD", os.Getenv("TEST_DB_PASSWORD"))
+	_ = os.Setenv("CONVOY_DB_DATABASE", os.Getenv("TEST_DB_DATABASE"))
+	_ = os.Setenv("CONVOY_DB_OPTIONS", os.Getenv("TEST_DB_OPTIONS"))
+	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
+
+	err := config.LoadConfig("")
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	cfg, _ := config.Get()
+
+	return cfg
 }
 
 var (

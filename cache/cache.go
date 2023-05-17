@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	mcache "github.com/frain-dev/convoy/cache/memory"
 	rcache "github.com/frain-dev/convoy/cache/redis"
 	"github.com/frain-dev/convoy/config"
 )
@@ -15,15 +14,11 @@ type Cache interface {
 	Delete(ctx context.Context, key string) error
 }
 
-func NewCache(cfg config.CacheConfiguration) (Cache, error) {
-	if cfg.Type == config.RedisCacheProvider {
-		ca, err := rcache.NewRedisCache(cfg.Redis.Dsn)
-		if err != nil {
-			return nil, err
-		}
-
-		return ca, nil
+func NewCache(cfg config.RedisConfiguration) (Cache, error) {
+	ca, err := rcache.NewRedisCache(cfg.BuildDsn())
+	if err != nil {
+		return nil, err
 	}
 
-	return mcache.NewMemoryCache(), nil
+	return ca, nil
 }

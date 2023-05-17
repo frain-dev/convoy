@@ -103,16 +103,19 @@ func TestLoadConfig(t *testing.T) {
 				Host: "localhost:5005",
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
-					Dsn:                "postgres://inside-config-file",
-					SetMaxOpenConns:    10,
-					SetMaxIdleConns:    10,
+					Scheme:             "postgres",
+					Host:               "inside-config-file",
+					Username:           "postgres",
+					Password:           "postgres",
+					Database:           "convoy",
+					Options:            "sslmode=disable&connect_timeout=30",
+					Port:               5432,
 					SetConnMaxLifetime: 3600,
 				},
-				Queue: QueueConfiguration{
-					Type: RedisQueueProvider,
-					Redis: RedisQueueConfiguration{
-						Dsn: "redis://localhost:8379",
-					},
+				Redis: RedisConfiguration{
+					Scheme: "redis",
+					Host:   "localhost",
+					Port:   8379,
 				},
 				Search: DefaultConfiguration.Search,
 				Server: ServerConfiguration{
@@ -127,6 +130,10 @@ func TestLoadConfig(t *testing.T) {
 				MaxResponseSize: 40 * 1024,
 				Environment:     OSSEnvironment,
 				Auth: AuthConfiguration{
+					Native: NativeRealmOptions{
+						Enabled: true},
+					Jwt: JwtRealmOptions{
+						Enabled: true},
 					IsSignupEnabled: true,
 				},
 				Analytics: AnalyticsConfiguration{
@@ -151,16 +158,19 @@ func TestLoadConfig(t *testing.T) {
 				Host: "localhost:5005",
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
-					Dsn:                "postgres://inside-config-file",
-					SetMaxOpenConns:    10,
-					SetMaxIdleConns:    10,
+					Scheme:             "postgres",
+					Host:               "inside-config-file",
+					Username:           "postgres",
+					Password:           "postgres",
+					Database:           "convoy",
+					Options:            "sslmode=disable&connect_timeout=30",
+					Port:               5432,
 					SetConnMaxLifetime: 3600,
 				},
-				Queue: QueueConfiguration{
-					Type: RedisQueueProvider,
-					Redis: RedisQueueConfiguration{
-						Dsn: "redis://localhost:8379",
-					},
+				Redis: RedisConfiguration{
+					Scheme: "redis",
+					Host:   "localhost",
+					Port:   8379,
 				},
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
@@ -175,6 +185,10 @@ func TestLoadConfig(t *testing.T) {
 				MaxResponseSize: MaxResponseSize,
 				Environment:     OSSEnvironment,
 				Auth: AuthConfiguration{
+					Native: NativeRealmOptions{
+						Enabled: true},
+					Jwt: JwtRealmOptions{
+						Enabled: true},
 					IsSignupEnabled: true,
 				},
 				Analytics: AnalyticsConfiguration{
@@ -199,16 +213,19 @@ func TestLoadConfig(t *testing.T) {
 				Host: "localhost:5005",
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
-					Dsn:                "postgres://inside-config-file",
-					SetMaxOpenConns:    10,
-					SetMaxIdleConns:    10,
+					Scheme:             "postgres",
+					Host:               "inside-config-file",
+					Username:           "postgres",
+					Password:           "postgres",
+					Database:           "convoy",
+					Options:            "sslmode=disable&connect_timeout=30",
+					Port:               5432,
 					SetConnMaxLifetime: 3600,
 				},
-				Queue: QueueConfiguration{
-					Type: RedisQueueProvider,
-					Redis: RedisQueueConfiguration{
-						Dsn: "redis://localhost:8379",
-					},
+				Redis: RedisConfiguration{
+					Scheme: "redis",
+					Host:   "localhost",
+					Port:   8379,
 				},
 				Search: DefaultConfiguration.Search,
 				Server: ServerConfiguration{
@@ -223,6 +240,10 @@ func TestLoadConfig(t *testing.T) {
 				MaxResponseSize: MaxResponseSize,
 				Environment:     OSSEnvironment,
 				Auth: AuthConfiguration{
+					Native: NativeRealmOptions{
+						Enabled: true},
+					Jwt: JwtRealmOptions{
+						Enabled: true},
 					IsSignupEnabled: true,
 				},
 				Analytics: AnalyticsConfiguration{
@@ -263,14 +284,6 @@ func TestLoadConfig(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: "redis queue dsn is empty",
-		},
-		{
-			name: "should_error_for_unsupported_queue_type",
-			args: args{
-				path: "./testdata/Config/unsupported-queue-type.json",
-			},
-			wantErr:    true,
-			wantErrMsg: "unsupported queue type: abc",
 		},
 	}
 	for _, tt := range tests {
@@ -322,11 +335,11 @@ func TestOverride(t *testing.T) {
 			},
 			config: &Configuration{
 				Database: DatabaseConfiguration{
-					Type:               PostgresDatabaseProvider,
-					SetMaxOpenConns:    10,
-					SetMaxIdleConns:    10,
-					SetConnMaxLifetime: 3600,
-					Dsn:                "localhost",
+					Type:                  PostgresDatabaseProvider,
+					SetMaxOpenConnections: 10,
+					SetMaxIdleConnections: 10,
+					SetConnMaxLifetime:    3600,
+					Host:                  "localhost",
 				},
 			},
 			configType: "database",
@@ -338,17 +351,15 @@ func TestOverride(t *testing.T) {
 			},
 			config: &Configuration{
 				Database: DatabaseConfiguration{
-					Type:               PostgresDatabaseProvider,
-					SetMaxOpenConns:    10,
-					SetMaxIdleConns:    10,
-					SetConnMaxLifetime: 3600,
-					Dsn:                "localhost",
+					Type:                  PostgresDatabaseProvider,
+					SetMaxOpenConnections: 10,
+					SetMaxIdleConnections: 10,
+					SetConnMaxLifetime:    3600,
+					Host:                  "localhost",
 				},
-				Queue: QueueConfiguration{
-					Type: RedisQueueProvider,
-					Redis: RedisQueueConfiguration{
-						Dsn: "localhost:6379",
-					},
+				Redis: RedisConfiguration{
+					Host: "localhost",
+					Port: 6379,
 				},
 			},
 			configType: "queue",
@@ -374,7 +385,7 @@ func TestOverride(t *testing.T) {
 			case "database":
 				require.Equal(t, c.Database, tc.config.Database)
 			case "queue":
-				require.Equal(t, c.Queue, tc.config.Queue)
+				require.Equal(t, c.Redis, tc.config.Redis)
 			default:
 			}
 		})
