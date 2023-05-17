@@ -1,13 +1,16 @@
 ## 23.05.3
 
-- [Enhancement] Add support for more Postgres and Redis config options #1579
-- [Bugfix] Fixed an issue where the email verification flow could not be completed #1586
+-   [Enhancement] Postgres and Redis config options will now be supplied in parts to allow for fine-grained configuration #1579
+-   [Bugfix] Fixed an issue where the email verification flow could not be completed #1586
+-   [Bugfix] Fixed an issue where the frontend client sent the wrong pagination cursor value #1588
+-   [Bugfix] Fixed an issue where a project could not be saved due to meta-event form valiation #1589
+-   [Bugfix] Fixed an issue where the source id query param was not being used to filter when fetching events #1587
 
 ## 23.05.2
 
-- [Feature] Added support for meta events #1541
-- [Bugfix] Fixed multi-tenancy bug with portal links #1582
-- [Bugfix] Fixed issue with new user with no organisation #1578
+-   [Feature] Added support for meta events #1541
+-   [Bugfix] Fixed multi-tenancy bug with portal links #1582
+-   [Bugfix] Fixed issue with new user with no organisation #1578
 
 ## 23.05.1
 
