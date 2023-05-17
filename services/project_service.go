@@ -59,7 +59,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 
 	projectName := newProject.Name
 
-	config := newProject.Config
+	config := newProject.Config.Convert()
 	if config == nil {
 		config = &datastore.DefaultProjectConfig
 	} else {
@@ -73,7 +73,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),
 		Name:           projectName,
-		Type:           newProject.Type,
+		Type:           datastore.ProjectType(newProject.Type),
 		OrganisationID: org.UID,
 		Config:         config,
 		LogoURL:        newProject.LogoURL,
@@ -134,7 +134,7 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 	}
 
 	if update.Config != nil {
-		project.Config = update.Config
+		project.Config = update.Config.Convert()
 		checkSignatureVersions(project.Config.Signature.Versions)
 		err = validateMetaEvent(project.Config.MetaEvent)
 		if err != nil {

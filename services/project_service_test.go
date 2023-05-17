@@ -51,16 +51,16 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Name:    "test_project",
 					Type:    "outgoing",
 					LogoURL: "https://google.com",
-					Config: &datastore.ProjectConfig{
-						Signature: &datastore.SignatureConfiguration{
+					Config: &models.ProjectConfig{
+						Signature: &models.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
-						Strategy: &datastore.StrategyConfiguration{
+						Strategy: &models.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
 						},
-						RateLimit: &datastore.RateLimitConfiguration{
+						RateLimit: &models.RateLimitConfiguration{
 							Count:    1000,
 							Duration: 60,
 						},
@@ -116,16 +116,16 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Name:    "test_project",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config: &datastore.ProjectConfig{
-						Signature: &datastore.SignatureConfiguration{
+					Config: &models.ProjectConfig{
+						Signature: &models.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
-						Strategy: &datastore.StrategyConfiguration{
+						Strategy: &models.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
 						},
-						RateLimit: &datastore.RateLimitConfiguration{
+						RateLimit: &models.RateLimitConfiguration{
 							Count:    1000,
 							Duration: 60,
 						},
@@ -286,11 +286,11 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Name:    "test_project",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config: &datastore.ProjectConfig{
-						Signature: &datastore.SignatureConfiguration{
+					Config: &models.ProjectConfig{
+						Signature: &models.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
-						Strategy: &datastore.StrategyConfiguration{
+						Strategy: &models.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
@@ -318,12 +318,12 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Name:    "test_project_1",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config: &datastore.ProjectConfig{Signature: &datastore.SignatureConfiguration{
+					Config: &models.ProjectConfig{Signature: &models.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
-						Versions: []datastore.SignatureVersion{
+						Versions: []models.SignatureVersion{
 							{
 								Hash:     "SHA256",
-								Encoding: datastore.HexEncoding,
+								Encoding: string(datastore.HexEncoding),
 							},
 						},
 					}},
@@ -357,11 +357,11 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Name:    "test_project",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config: &datastore.ProjectConfig{
-						Signature: &datastore.SignatureConfiguration{
+					Config: &models.ProjectConfig{
+						Signature: &models.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
-						Strategy: &datastore.StrategyConfiguration{
+						Strategy: &models.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
@@ -469,16 +469,19 @@ func TestProjectService_UpdateProject(t *testing.T) {
 				update: &models.UpdateProject{
 					Name:    "test_project",
 					LogoURL: "https://google.com",
-					Config: &datastore.ProjectConfig{
-						Signature: &datastore.SignatureConfiguration{
+					Config: &models.ProjectConfig{
+						Signature: &models.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
-						Strategy: &datastore.StrategyConfiguration{
+						Strategy: &models.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
 						},
-						RateLimit:     &datastore.DefaultRateLimitConfig,
+						RateLimit: &models.RateLimitConfiguration{
+							Count:    datastore.DefaultRateLimitConfig.Count,
+							Duration: datastore.DefaultRateLimitConfig.Duration,
+						},
 						ReplayAttacks: true,
 					},
 				},
@@ -517,11 +520,11 @@ func TestProjectService_UpdateProject(t *testing.T) {
 				update: &models.UpdateProject{
 					Name:    "",
 					LogoURL: "https://google.com",
-					Config: &datastore.ProjectConfig{
-						Signature: &datastore.SignatureConfiguration{
+					Config: &models.ProjectConfig{
+						Signature: &models.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
-						Strategy: &datastore.StrategyConfiguration{
+						Strategy: &models.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
@@ -542,11 +545,11 @@ func TestProjectService_UpdateProject(t *testing.T) {
 				update: &models.UpdateProject{
 					Name:    "test_project",
 					LogoURL: "https://google.com",
-					Config: &datastore.ProjectConfig{
-						Signature: &datastore.SignatureConfiguration{
+					Config: &models.ProjectConfig{
+						Signature: &models.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
-						Strategy: &datastore.StrategyConfiguration{
+						Strategy: &models.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
