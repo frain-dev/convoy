@@ -34,7 +34,7 @@ type ProjectConfig struct {
 	MetaEvent                *MetaEventConfiguration       `json:"meta_event"`
 }
 
-func (pc *ProjectConfig) Convert() *datastore.ProjectConfig {
+func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 	if pc == nil {
 		return nil
 	}
@@ -44,11 +44,11 @@ func (pc *ProjectConfig) Convert() *datastore.ProjectConfig {
 		ReplayAttacks:            pc.ReplayAttacks,
 		IsRetentionPolicyEnabled: pc.IsRetentionPolicyEnabled,
 		DisableEndpoint:          pc.DisableEndpoint,
-		RetentionPolicy:          pc.RetentionPolicy.convert(),
-		RateLimit:                pc.RateLimit.convert(),
-		Strategy:                 pc.Strategy.convert(),
-		Signature:                pc.Signature.convert(),
-		MetaEvent:                pc.MetaEvent.convert(),
+		RetentionPolicy:          pc.RetentionPolicy.transform(),
+		RateLimit:                pc.RateLimit.transform(),
+		Strategy:                 pc.Strategy.transform(),
+		Signature:                pc.Signature.transform(),
+		MetaEvent:                pc.MetaEvent.transform(),
 	}
 }
 
@@ -56,7 +56,7 @@ type RetentionPolicyConfiguration struct {
 	Policy string `json:"policy" valid:"required~please provide a valid retention policy"`
 }
 
-func (r *RetentionPolicyConfiguration) convert() *datastore.RetentionPolicyConfiguration {
+func (r *RetentionPolicyConfiguration) transform() *datastore.RetentionPolicyConfiguration {
 	if r == nil {
 		return nil
 	}
@@ -69,7 +69,7 @@ type RateLimitConfiguration struct {
 	Duration uint64 `json:"duration"`
 }
 
-func (rc *RateLimitConfiguration) convert() *datastore.RateLimitConfiguration {
+func (rc *RateLimitConfiguration) transform() *datastore.RateLimitConfiguration {
 	if rc == nil {
 		return nil
 	}
@@ -83,7 +83,7 @@ type StrategyConfiguration struct {
 	RetryCount uint64 `json:"retry_count" valid:"optional~please provide a valid retry count,int"`
 }
 
-func (sc *StrategyConfiguration) convert() *datastore.StrategyConfiguration {
+func (sc *StrategyConfiguration) transform() *datastore.StrategyConfiguration {
 	if sc == nil {
 		return nil
 	}
@@ -101,7 +101,7 @@ type SignatureConfiguration struct {
 	Versions []SignatureVersion             `json:"versions"`
 }
 
-func (sc *SignatureConfiguration) convert() *datastore.SignatureConfiguration {
+func (sc *SignatureConfiguration) transform() *datastore.SignatureConfiguration {
 	if sc == nil {
 		return nil
 	}
@@ -134,7 +134,7 @@ type MetaEventConfiguration struct {
 	Secret    string         `json:"secret"`
 }
 
-func (mc *MetaEventConfiguration) convert() *datastore.MetaEventConfiguration {
+func (mc *MetaEventConfiguration) transform() *datastore.MetaEventConfiguration {
 	if mc == nil {
 		return nil
 	}

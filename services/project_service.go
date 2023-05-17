@@ -9,7 +9,6 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
@@ -59,7 +58,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 
 	projectName := newProject.Name
 
-	config := newProject.Config.Convert()
+	config := newProject.Config.Transform()
 	if config == nil {
 		config = &datastore.DefaultProjectConfig
 	} else {
@@ -134,7 +133,7 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 	}
 
 	if update.Config != nil {
-		project.Config = update.Config.Convert()
+		project.Config = update.Config.Transform()
 		checkSignatureVersions(project.Config.Signature.Versions)
 		err = validateMetaEvent(project.Config.MetaEvent)
 		if err != nil {
@@ -189,14 +188,6 @@ func validateMetaEvent(metaEvent *datastore.MetaEventConfiguration) error {
 			return err
 		}
 		metaEvent.URL = url
-	}
-
-	if metaEvent.Type == datastore.PubSubMetaEvent {
-		metaEvent.PubSub.Workers = 1
-		err := pubsub.Validate(metaEvent.PubSub)
-		if err != nil {
-			return err
-		}
 	}
 
 	if util.IsStringEmpty(metaEvent.Secret) {
