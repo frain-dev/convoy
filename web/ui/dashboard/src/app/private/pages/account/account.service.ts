@@ -85,7 +85,7 @@ export class AccountService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/users/${requestDetails.userId}/security/personal_api_keys/${requestDetails.keyId}/revoke`,
+					url: `/users/${requestDetails.userId}/security/${requestDetails.keyId}/revoke`,
 					method: 'put',
 					body: null
 				});
