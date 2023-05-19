@@ -71,7 +71,7 @@ func (ss *CreateAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, stri
 		UID:       ulid.Make().String(),
 		MaskID:    maskID,
 		Name:      ss.NewApiKey.Name,
-		Type:      ss.NewApiKey.Type, // TODO: this should be set to datastore.ProjectKey
+		Type:      ss.NewApiKey.Type,
 		Role:      *role,
 		Hash:      encodedKey,
 		Salt:      salt,
