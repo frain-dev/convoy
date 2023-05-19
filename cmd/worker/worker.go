@@ -164,7 +164,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 	}
 
 	cmd.Flags().Uint32Var(&workerPort, "worker-port", 5006, "Worker port")
-	cmd.Flags().StringVar(&logLevel, "log-level", "error", "scheduler log level")
+	cmd.Flags().StringVar(&logLevel, "log-level", "", "scheduler log level")
 
 	return cmd
 }
