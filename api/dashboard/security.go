@@ -17,13 +17,6 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-func createSecurityService(a *DashboardHandler) *services.SecurityService {
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
-	apiKeyRepo := postgres.NewAPIKeyRepo(a.A.DB)
-
-	return services.NewSecurityService(projectRepo, apiKeyRepo)
-}
-
 func (a *DashboardHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 	var newApiKey models.PersonalAPIKey
 	err := json.NewDecoder(r.Body).Decode(&newApiKey)
@@ -38,8 +31,15 @@ func (a *DashboardHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	securityService := createSecurityService(a)
-	apiKey, keyString, err := securityService.CreatePersonalAPIKey(r.Context(), user, &newApiKey)
+	cpk := &services.CreatePersonalAPIKeyService{
+		ProjectRepo: postgres.NewProjectRepo(a.A.DB),
+		UserRepo:    postgres.NewUserRepo(a.A.DB),
+		APIKeyRepo:  postgres.NewAPIKeyRepo(a.A.DB),
+		User:        user,
+		NewApiKey:   &newApiKey,
+	}
+
+	apiKey, keyString, err := cpk.Run(r.Context())
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to create personal api key")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -72,8 +72,15 @@ func (a *DashboardHandler) RevokePersonalAPIKey(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	securityService := createSecurityService(a)
-	err := securityService.RevokePersonalAPIKey(r.Context(), chi.URLParam(r, "keyID"), user)
+	rvk := &services.RevokePersonalAPIKeyService{
+		ProjectRepo: postgres.NewProjectRepo(a.A.DB),
+		UserRepo:    postgres.NewUserRepo(a.A.DB),
+		APIKeyRepo:  postgres.NewAPIKeyRepo(a.A.DB),
+		UID:         chi.URLParam(r, "keyID"),
+		User:        user,
+	}
+
+	err := rvk.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -100,7 +107,15 @@ func (a *DashboardHandler) RegenerateProjectAPIKey(w http.ResponseWriter, r *htt
 		return
 	}
 
-	apiKey, keyString, err := createSecurityService(a).RegenerateProjectAPIKey(r.Context(), project, member)
+	rgp := &services.RegenerateProjectAPIKeyService{
+		ProjectRepo: postgres.NewProjectRepo(a.A.DB),
+		UserRepo:    postgres.NewUserRepo(a.A.DB),
+		APIKeyRepo:  postgres.NewAPIKeyRepo(a.A.DB),
+		Project:     project,
+		Member:      member,
+	}
+
+	apiKey, keyString, err := rgp.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
