@@ -368,6 +368,10 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier_EmptyRequestB
 	require.Equal(i.T(), float64(2), response["data"].(float64))
 }
 
+func (i *IngestIntegrationTestSuite) Test_IngestEvent_WriteToQueueFailed() {
+	i.T().Skip("Depends on mocking")
+}
+
 func TestIngestIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(IngestIntegrationTestSuite))
 }
