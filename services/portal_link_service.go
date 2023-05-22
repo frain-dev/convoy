@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/cache"
+
 	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
@@ -17,16 +19,18 @@ import (
 var ErrInvalidEndpoints = errors.New("endpoints cannot be empty")
 
 type PortalLinkService struct {
-	portalLinkRepo  datastore.PortalLinkRepository
-	endpointService *EndpointService
-	endpointRepo    datastore.EndpointRepository
+	portalLinkRepo datastore.PortalLinkRepository
+	endpointRepo   datastore.EndpointRepository
+	cache          cache.Cache
+	projectRepo    datastore.ProjectRepository
 }
 
-func NewPortalLinkService(portalLinkRepo datastore.PortalLinkRepository, endpointService *EndpointService) *PortalLinkService {
+func NewPortalLinkService(portalLinkRepo datastore.PortalLinkRepository, endpointRepo datastore.EndpointRepository, cache cache.Cache, projectRepo datastore.ProjectRepository) *PortalLinkService {
 	return &PortalLinkService{
-		portalLinkRepo:  portalLinkRepo,
-		endpointService: endpointService,
-		endpointRepo:    endpointService.endpointRepo,
+		portalLinkRepo: portalLinkRepo,
+		endpointRepo:   endpointRepo,
+		cache:          cache,
+		projectRepo:    projectRepo,
 	}
 }
 
@@ -85,7 +89,15 @@ func (p *PortalLinkService) UpdatePortalLink(ctx context.Context, project *datas
 }
 
 func (p *PortalLinkService) CreateEndpoint(ctx context.Context, project *datastore.Project, data models.Endpoint, portalLink *datastore.PortalLink) (*datastore.Endpoint, error) {
-	endpoint, err := p.endpointService.CreateEndpoint(ctx, data, project.UID)
+	ce := CreateEndpointService{
+		Cache:        p.cache,
+		EndpointRepo: p.endpointRepo,
+		ProjectRepo:  p.projectRepo,
+		E:            data,
+		ProjectID:    project.UID,
+	}
+
+	endpoint, err := ce.Run(ctx)
 	if err != nil {
 		return nil, err
 	}
