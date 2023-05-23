@@ -174,6 +174,7 @@ func (a *PublicHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
 		ProjectRepo:  postgres.NewProjectRepo(a.A.DB),
 		E:            e,
+		Endpoint:     endpoint,
 		Project:      project,
 	}
 
