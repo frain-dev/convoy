@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/config"
+
 	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
@@ -55,24 +57,35 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 		}
 	}
 
+	cfg, err := config.Get()
+	if err != nil {
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to load configuration"))
+	}
+
 	source := &datastore.Source{
-		UID:       ulid.Make().String(),
-		ProjectID: g.UID,
-		MaskID:    uniuri.NewLen(16),
-		Name:      newSource.Name,
-		Type:      newSource.Type,
-		Provider:  newSource.Provider,
-		Verifier:  &newSource.Verifier,
-		PubSub:    &newSource.PubSub,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		UID:            ulid.Make().String(),
+		ProjectID:      g.UID,
+		MaskID:         uniuri.NewLen(16),
+		Name:           newSource.Name,
+		Type:           newSource.Type,
+		Provider:       newSource.Provider,
+		Verifier:       &newSource.Verifier,
+		PubSub:         &newSource.PubSub,
+		CustomResponse: newSource.CustomResponse,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+	}
+
+	buf := uint64(len([]byte(source.CustomResponse)))
+	if buf > cfg.MaxResponseSize {
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("source custom response too large"))
 	}
 
 	if source.Provider == datastore.TwitterSourceProvider {
 		source.ProviderConfig = &datastore.ProviderConfig{Twitter: &datastore.TwitterProviderConfig{}}
 	}
 
-	err := s.sourceRepo.CreateSource(ctx, source)
+	err = s.sourceRepo.CreateSource(ctx, source)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create source"))
 	}
@@ -139,6 +152,10 @@ func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Project, 
 
 	if sourceUpdate.PubSub != nil {
 		source.PubSub = sourceUpdate.PubSub
+	}
+
+	if sourceUpdate.CustomResponse != nil {
+		source.CustomResponse = *sourceUpdate.CustomResponse
 	}
 
 	err := s.sourceRepo.UpdateSource(ctx, g.UID, source)

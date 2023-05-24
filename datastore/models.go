@@ -28,8 +28,10 @@ type Pageable struct {
 
 type PageDirection string
 
-const Next PageDirection = "next"
-const Prev PageDirection = "prev"
+const (
+	Next PageDirection = "next"
+	Prev PageDirection = "prev"
+)
 
 func (p Pageable) Cursor() string {
 	if p.Direction == Next {
@@ -984,6 +986,7 @@ type Source struct {
 	IsDisabled     bool            `json:"is_disabled" db:"is_disabled"`
 	VerifierID     string          `json:"-" db:"source_verifier_id"`
 	Verifier       *VerifierConfig `json:"verifier" db:"verifier"`
+	CustomResponse string          `json:"custom_response" db:"custom_response"`
 	ProviderConfig *ProviderConfig `json:"provider_config" db:"provider_config"`
 	ForwardHeaders pq.StringArray  `json:"forward_headers" db:"forward_headers"`
 	PubSub         *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
