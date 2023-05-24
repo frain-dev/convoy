@@ -39,14 +39,8 @@ func (a *DashboardHandler) LoadConfiguration(w http.ResponseWriter, r *http.Requ
 		}
 
 		c := &models.ConfigurationResponse{
-			UID:                config.UID,
-			IsAnalyticsEnabled: config.IsAnalyticsEnabled,
-			IsSignupEnabled:    config.IsSignupEnabled,
-			StoragePolicy:      config.StoragePolicy,
-			ApiVersion:         convoy.GetVersion(),
-			CreatedAt:          config.CreatedAt,
-			UpdatedAt:          config.UpdatedAt,
-			DeletedAt:          config.DeletedAt,
+			Configuration: config,
+			ApiVersion:    convoy.GetVersion(),
 		}
 
 		configResponse = append(configResponse, c)
@@ -70,14 +64,8 @@ func (a *DashboardHandler) CreateConfiguration(w http.ResponseWriter, r *http.Re
 	}
 
 	c := &models.ConfigurationResponse{
-		UID:                config.UID,
-		IsAnalyticsEnabled: config.IsAnalyticsEnabled,
-		IsSignupEnabled:    config.IsSignupEnabled,
-		StoragePolicy:      config.StoragePolicy,
-		ApiVersion:         convoy.GetVersion(),
-		CreatedAt:          config.CreatedAt,
-		UpdatedAt:          config.UpdatedAt,
-		DeletedAt:          config.DeletedAt,
+		Configuration: config,
+		ApiVersion:    convoy.GetVersion(),
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Configuration created successfully", c, http.StatusCreated))
@@ -98,14 +86,8 @@ func (a *DashboardHandler) UpdateConfiguration(w http.ResponseWriter, r *http.Re
 	}
 
 	c := &models.ConfigurationResponse{
-		UID:                config.UID,
-		IsAnalyticsEnabled: config.IsAnalyticsEnabled,
-		IsSignupEnabled:    config.IsSignupEnabled,
-		StoragePolicy:      config.StoragePolicy,
-		ApiVersion:         convoy.GetVersion(),
-		CreatedAt:          config.CreatedAt,
-		UpdatedAt:          config.UpdatedAt,
-		DeletedAt:          config.DeletedAt,
+		Configuration: config,
+		ApiVersion:    convoy.GetVersion(),
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Configuration updated successfully", c, http.StatusAccepted))

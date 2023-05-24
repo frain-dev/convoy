@@ -14,24 +14,6 @@ type Organisation struct {
 	CustomDomain string `json:"custom_domain" bson:"custom_domain"`
 }
 
-type Configuration struct {
-	IsAnalyticsEnabled *bool                                 `json:"is_analytics_enabled"`
-	IsSignupEnabled    *bool                                 `json:"is_signup_enabled"`
-	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
-}
-
-type ConfigurationResponse struct {
-	UID                string                                `json:"uid"`
-	IsAnalyticsEnabled bool                                  `json:"is_analytics_enabled"`
-	IsSignupEnabled    bool                                  `json:"is_signup_enabled"`
-	ApiVersion         string                                `json:"api_version"`
-	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
-
-	CreatedAt time.Time `json:"created_at,omitempty"`
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
-	DeletedAt null.Time `json:"deleted_at,omitempty"`
-}
-
 type OrganisationInvite struct {
 	InviteeEmail string    `json:"invitee_email" valid:"required~please provide a valid invitee email,email"`
 	Role         auth.Role `json:"role" bson:"role"`

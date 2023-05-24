@@ -41,9 +41,9 @@ func TestConfigService_CreateConfiguration(t *testing.T) {
 			name: "should_create_configuration",
 			args: args{
 				ctx: ctx,
-				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), IsSignupEnabled: boolPtr(true), StoragePolicy: &datastore.StoragePolicyConfiguration{
+				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), IsSignupEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
 					Type: datastore.OnPrem,
-					OnPrem: &datastore.OnPremStorage{
+					OnPrem: &models.OnPremStorage{
 						Path: null.NewString("/tmp/", true),
 					},
 				}},
@@ -59,9 +59,9 @@ func TestConfigService_CreateConfiguration(t *testing.T) {
 			name: "should_fail_create_configuration",
 			args: args{
 				ctx: ctx,
-				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), StoragePolicy: &datastore.StoragePolicyConfiguration{
+				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
 					Type: datastore.S3,
-					S3: &datastore.S3Storage{
+					S3: &models.S3Storage{
 						Bucket: null.NewString("my-bucket", true),
 					},
 				}},
@@ -115,9 +115,9 @@ func TestConfigService_UpdateConfiguration(t *testing.T) {
 			name: "should_update_configuration",
 			args: args{
 				ctx: ctx,
-				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), StoragePolicy: &datastore.StoragePolicyConfiguration{
+				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
 					Type: datastore.OnPrem,
-					OnPrem: &datastore.OnPremStorage{
+					OnPrem: &models.OnPremStorage{
 						Path: null.NewString("/tmp/", true),
 					},
 				}},
