@@ -1702,7 +1702,7 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 		},
 	}
 
-	_, err = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, ulid.Make().String(), "", vc)
+	_, err = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, ulid.Make().String(), "", vc, "")
 	require.NoError(s.T(), err)
 
 	e1, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint1, s.DefaultProject.UID, eventID, "*", sourceID, []byte(`{}`))
@@ -3325,7 +3325,7 @@ func (s *ProjectIntegrationTestSuite) TestGetProjectStats() {
 	expectedStatusCode := http.StatusOK
 
 	for i := 0; i < 2; i++ {
-		source, err := testdb.SeedSource(s.DB, s.DefaultProject, "", "", "", nil)
+		source, err := testdb.SeedSource(s.DB, s.DefaultProject, "", "", "", nil, "")
 		require.NoError(s.T(), err)
 
 		endpoint, err := testdb.SeedEndpoint(s.DB, s.DefaultProject, "", "", "", false, datastore.ActiveEndpointStatus)
@@ -3439,7 +3439,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 	sourceID := "123456789"
 
 	// Just Before
-	_, _ = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, "", "", nil)
+	_, _ = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, "", "", nil, "")
 
 	// Arrange Request
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/sources/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, sourceID)
@@ -3474,7 +3474,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSource_ValidSources() {
 
 	// Just Before
 	for i := 0; i < totalSources; i++ {
-		_, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, "", "", "", nil)
+		_, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, "", "", "", nil, "")
 		require.NoError(s.T(), err)
 	}
 
@@ -3609,7 +3609,7 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 	sourceID := ulid.Make().String()
 
 	// Just Before
-	_, _ = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, "", "", nil)
+	_, _ = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, "", "", nil, "")
 
 	// Arrange Request
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/sources/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, sourceID)
@@ -3658,7 +3658,7 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 	sourceID := ulid.Make().String()
 
 	// Just Before.
-	_, _ = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, "", "", nil)
+	_, _ = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, "", "", nil, "")
 
 	// Arrange Request.
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/sources/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, sourceID)
@@ -3797,7 +3797,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_IncomingProject() {
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
-	source, _ := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", nil)
+	source, _ := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", nil, "")
 	body := serialize(`{
 		"name": "sub-1",
 		"type": "incoming",
@@ -3959,7 +3959,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_OutgoingProje
 	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, project, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(s.T(), err)
 
-	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, project, ulid.Make().String(), "", "", nil)
+	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, project, ulid.Make().String(), "", "", nil, "")
 	require.NoError(s.T(), err)
 
 	_, err = testdb.SeedSubscription(s.ConvoyApp.A.DB, project, subscriptionId, project.Type, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
@@ -4010,7 +4010,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingProje
 	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, project, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(s.T(), err)
 
-	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, project, ulid.Make().String(), "", "", nil)
+	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, project, ulid.Make().String(), "", "", nil, "")
 	require.NoError(s.T(), err)
 
 	_, err = testdb.SeedSubscription(s.ConvoyApp.A.DB, project, subscriptionId, "incoming", source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
@@ -4051,7 +4051,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetSubscriptions_ValidSubscripti
 		// Just Before
 		endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
 		require.NoError(s.T(), err)
-		source, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", nil)
+		source, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", nil, "")
 		require.NoError(s.T(), err)
 
 		_, err = testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
@@ -4086,7 +4086,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_DeleteSubscription() {
 	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(s.T(), err)
 
-	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", nil)
+	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", nil, "")
 	require.NoError(s.T(), err)
 
 	_, err = testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, subscriptionId, datastore.OutgoingProject, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
@@ -4120,7 +4120,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(s.T(), err)
 
-	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", nil)
+	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", nil, "")
 	require.NoError(s.T(), err)
 
 	_, err = testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, subscriptionId, datastore.OutgoingProject, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)

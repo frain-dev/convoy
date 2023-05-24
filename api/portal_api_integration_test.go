@@ -135,6 +135,7 @@ func (s *PortalEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
 	require.Equal(s.T(), endpoint.Title, dbEndpoint.Title)
 }
+
 func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpoints() {
 	// Just Before
 	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
@@ -162,6 +163,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpoints() {
 	parseResponse(s.T(), w.Result(), &resp)
 	require.Equal(s.T(), 2, len(resp))
 }
+
 func (s *PortalEndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
 	s.T().Skip("Depends on #637")
 }
@@ -521,7 +523,7 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEventsPaged() {
 		},
 	}
 
-	_, err = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, ulid.Make().String(), "", vc)
+	_, err = testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, sourceID, ulid.Make().String(), "", vc, "")
 	require.NoError(s.T(), err)
 
 	_, err = testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint1, s.DefaultProject.UID, eventID, "*", sourceID, []byte(`{}`))
@@ -639,7 +641,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpointSubscriptions
 		},
 	}
 
-	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", vc)
+	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", vc, "")
 	require.NoError(s.T(), err)
 
 	// seed subscriptions

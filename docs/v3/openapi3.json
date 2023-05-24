@@ -849,6 +849,9 @@
 					"created_at": {
 						"type": "string"
 					},
+					"custom_response": {
+						"type": "string"
+					},
 					"deleted_at": {
 						"type": "string"
 					},
@@ -1379,6 +1382,9 @@
 			},
 			"models.Source": {
 				"properties": {
+					"custom_response": {
+						"type": "string"
+					},
 					"is_disabled": {
 						"type": "boolean"
 					},

@@ -115,7 +115,7 @@ func Test_UpdateSource(t *testing.T) {
 	name := "Convoy-Dev"
 	source.Name = name
 	source.IsDisabled = true
-
+	source.CustomResponse = "/dover/"
 	require.NoError(t, sourceRepo.UpdateSource(context.Background(), source.ProjectID, source))
 
 	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
@@ -255,11 +255,12 @@ func generateSource(t *testing.T, db database.Database) *datastore.Source {
 	project := seedProject(t, db)
 
 	return &datastore.Source{
-		UID:       ulid.Make().String(),
-		ProjectID: project.UID,
-		Name:      "Convoy-Prod",
-		MaskID:    uniuri.NewLen(16),
-		Type:      datastore.HTTPSource,
+		UID:            ulid.Make().String(),
+		ProjectID:      project.UID,
+		Name:           "Convoy-Prod",
+		MaskID:         uniuri.NewLen(16),
+		CustomResponse: "[accepted]",
+		Type:           datastore.HTTPSource,
 		Verifier: &datastore.VerifierConfig{
 			Type: datastore.HMacVerifier,
 			HMac: &datastore.HMac{
