@@ -1,5 +1,9 @@
 ## 23.05.4
 
+-   [Enhancement] Optimise Migration Queries #1601
+
+## 23.05.4
+
 -   [Bugfix] Return error when persisting to redis fails on the ingest route #1597
 
 ## 23.05.3
