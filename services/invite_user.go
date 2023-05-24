@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/dchest/uniuri"
@@ -44,6 +45,11 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 	if err != nil {
 		errMsg := "failed to invite member"
 		log.FromContext(ctx).WithError(err).Error(errMsg)
+
+		if strings.Contains(err.Error(), "duplicate") && strings.Contains(err.Error(), "organisation_invites_invitee_email") {
+			return nil, &ServiceError{ErrMsg: "an invite for this email already exists", Err: err}
+		}
+
 		return nil, &ServiceError{ErrMsg: errMsg, Err: err}
 	}
 

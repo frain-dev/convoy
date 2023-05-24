@@ -1,3 +1,11 @@
+## 23.05.5
+
+-   [Enhancement] Optimise Migration Queries #1601
+
+## 23.05.4
+
+-   [Bugfix] Return error when persisting to redis fails on the ingest route #1597
+
 ## 23.05.3
 
 -   [Enhancement] Postgres and Redis config options will now be supplied in parts to allow for fine-grained configuration #1579

@@ -165,7 +165,7 @@ func (a *ApplicationHandler) RegisterDashboardRoutes(r *chi.Mux) {
 	r.Method(PUT, "/ui/users/{userID}/password", uiMiddlewares.HandlerFunc(dh.UpdatePassword))
 	r.Method(POST, "/ui/users/{userID}/security/personal_api_keys", uiMiddlewares.HandlerFunc(dh.CreatePersonalAPIKey))
 	r.Method(PUT, "/ui/users/{userID}/security/{keyID}/revoke", uiMiddlewares.HandlerFunc(dh.RevokePersonalAPIKey))
-	r.Method(GET, "/ui/users/{userID}/security/", uiMiddlewaresWithPagination.HandlerFunc(dh.GetAPIKeys))
+	r.Method(GET, "/ui/users/{userID}/security", uiMiddlewaresWithPagination.HandlerFunc(dh.GetAPIKeys))
 
 	r.Method(GET, "/ui/organisations", uiMiddlewaresWithPagination.HandlerFunc(dh.GetOrganisationsPaged))
 	r.Method(POST, "/ui/organisations", uiMiddlewares.HandlerFunc(dh.CreateOrganisation))

@@ -98,7 +98,14 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		},
 	}
 
-	apiKey, keyString, err := NewSecurityService(ps.projectRepo, ps.apiKeyRepo).CreateAPIKey(ctx, member, newAPIKey)
+	cak := CreateAPIKeyService{
+		ProjectRepo: ps.projectRepo,
+		APIKeyRepo:  ps.apiKeyRepo,
+		Member:      member,
+		NewApiKey:   newAPIKey,
+	}
+
+	apiKey, keyString, err := cak.Run(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
