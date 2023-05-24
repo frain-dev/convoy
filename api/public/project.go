@@ -49,7 +49,8 @@ func (a *PublicHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Project fetched successfully", project, http.StatusOK))
+	projectResponse := &models.ProjectResponse{Project: project}
+	_ = render.Render(w, r, util.NewServerResponse("Project fetched successfully", projectResponse, http.StatusOK))
 }
 
 // DeleteProject - this is a duplicate annotation for the api/v1 route of this handler
@@ -111,7 +112,7 @@ func (a *PublicHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var newProject models.Project
+	var newProject models.CreateProject
 	err = util.ReadJSON(r, &newProject)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -132,7 +133,7 @@ func (a *PublicHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 
 	resp := &models.CreateProjectResponse{
 		APIKey:  apiKey,
-		Project: project,
+		Project: &models.ProjectResponse{Project: project},
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Project created successfully", resp, http.StatusCreated))
@@ -176,7 +177,8 @@ func (a *PublicHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Project updated successfully", project, http.StatusAccepted))
+	resp := &models.ProjectResponse{Project: project}
+	_ = render.Render(w, r, util.NewServerResponse("Project updated successfully", resp, http.StatusAccepted))
 }
 
 // GetProjects - this is a duplicate annotation for the api/v1 route of this handler
@@ -207,7 +209,8 @@ func (a *PublicHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Projects fetched successfully", projects, http.StatusOK))
+	resp := models.NewListProjectResponse(projects)
+	_ = render.Render(w, r, util.NewServerResponse("Projects fetched successfully", resp, http.StatusOK))
 }
 
 func (a *PublicHandler) retrieveHeadlessOrganisation(r *http.Request) (*datastore.Organisation, error) {

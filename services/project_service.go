@@ -50,7 +50,7 @@ func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datast
 	}, nil
 }
 
-func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.Project, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Project, *models.APIKeyResponse, error) {
+func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.CreateProject, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Project, *models.APIKeyResponse, error) {
 	err := util.Validate(newProject)
 	if err != nil {
 		return nil, nil, util.NewServiceError(http.StatusBadRequest, err)

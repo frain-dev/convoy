@@ -30,7 +30,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
 		ctx        context.Context
-		newProject *models.Project
+		newProject *models.CreateProject
 		org        *datastore.Organisation
 		member     *datastore.OrganisationMember
 	}
@@ -47,7 +47,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 			name: "should_create_outgoing_project",
 			args: args{
 				ctx: ctx,
-				newProject: &models.Project{
+				newProject: &models.CreateProject{
 					Name:    "test_project",
 					Type:    "outgoing",
 					LogoURL: "https://google.com",
@@ -112,7 +112,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 			name: "should_create_incoming_project",
 			args: args{
 				ctx: ctx,
-				newProject: &models.Project{
+				newProject: &models.CreateProject{
 					Name:    "test_project",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
@@ -177,7 +177,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 			name: "should_create_incoming_project_with_defaults",
 			args: args{
 				ctx: ctx,
-				newProject: &models.Project{
+				newProject: &models.CreateProject{
 					Name:    "test_project_1",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
@@ -229,7 +229,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 			name: "should_create_outgoing_project_with_defaults",
 			args: args{
 				ctx: ctx,
-				newProject: &models.Project{
+				newProject: &models.CreateProject{
 					Name:    "test_project",
 					Type:    "outgoing",
 					LogoURL: "https://google.com",
@@ -282,7 +282,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 			name: "should_fail_to_create_project",
 			args: args{
 				ctx: ctx,
-				newProject: &models.Project{
+				newProject: &models.CreateProject{
 					Name:    "test_project",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
@@ -314,7 +314,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 			name: "should_fail_to_create_default_api_key_for_project",
 			args: args{
 				ctx: ctx,
-				newProject: &models.Project{
+				newProject: &models.CreateProject{
 					Name:    "test_project_1",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
@@ -353,7 +353,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 			name: "should_error_for_duplicate_project_name",
 			args: args{
 				ctx: ctx,
-				newProject: &models.Project{
+				newProject: &models.CreateProject{
 					Name:    "test_project",
 					Type:    "incoming",
 					LogoURL: "https://google.com",

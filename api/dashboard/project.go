@@ -38,7 +38,8 @@ func (a *DashboardHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Project fetched successfully", project, http.StatusOK))
+	resp := &models.ProjectResponse{Project: project}
+	_ = render.Render(w, r, util.NewServerResponse("Project fetched successfully", resp, http.StatusOK))
 }
 
 func (a *DashboardHandler) GetProjectStatistics(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +83,7 @@ func (a *DashboardHandler) DeleteProject(w http.ResponseWriter, r *http.Request)
 }
 
 func (a *DashboardHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
-	var newProject models.Project
+	var newProject models.CreateProject
 	err := util.ReadJSON(r, &newProject)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -120,7 +121,7 @@ func (a *DashboardHandler) CreateProject(w http.ResponseWriter, r *http.Request)
 
 	resp := &models.CreateProjectResponse{
 		APIKey:  apiKey,
-		Project: project,
+		Project: &models.ProjectResponse{Project: project},
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Project created successfully", resp, http.StatusCreated))
@@ -157,7 +158,8 @@ func (a *DashboardHandler) UpdateProject(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Project updated successfully", project, http.StatusAccepted))
+	resp := &models.ProjectResponse{Project: project}
+	_ = render.Render(w, r, util.NewServerResponse("Project updated successfully", resp, http.StatusAccepted))
 }
 
 func (a *DashboardHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
@@ -175,5 +177,6 @@ func (a *DashboardHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Projects fetched successfully", projects, http.StatusOK))
+	resp := models.NewListProjectResponse(projects)
+	_ = render.Render(w, r, util.NewServerResponse("Projects fetched successfully", resp, http.StatusOK))
 }
