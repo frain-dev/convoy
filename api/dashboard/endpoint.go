@@ -20,17 +20,6 @@ import (
 	"github.com/go-chi/render"
 )
 
-func createEndpointService(a *DashboardHandler) *services.EndpointService {
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
-	eventRepo := postgres.NewEventRepo(a.A.DB)
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
-
-	return services.NewEndpointService(
-		projectRepo, endpointRepo, eventRepo, eventDeliveryRepo, a.A.Cache, a.A.Queue,
-	)
-}
-
 type pagedResponse struct {
 	Content    interface{}               `json:"content,omitempty"`
 	Pagination *datastore.PaginationData `json:"pagination,omitempty"`
@@ -52,6 +41,12 @@ func (a *DashboardHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request
 
 	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
+	err = util.Validate(e)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -130,6 +125,12 @@ func (a *DashboardHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request
 
 	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
+	err = util.Validate(e)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 

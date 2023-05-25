@@ -26,10 +26,6 @@ type CreateEndpointService struct {
 }
 
 func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
-	if err := util.Validate(a.E); err != nil {
-		return nil, &ServiceError{ErrMsg: err.Error()}
-	}
-
 	url, err := util.CleanEndpoint(a.E.URL)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}

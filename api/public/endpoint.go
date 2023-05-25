@@ -19,17 +19,6 @@ import (
 	"github.com/go-chi/render"
 )
 
-func createEndpointService(a *PublicHandler) *services.EndpointService {
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
-	eventRepo := postgres.NewEventRepo(a.A.DB)
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
-
-	return services.NewEndpointService(
-		projectRepo, endpointRepo, eventRepo, eventDeliveryRepo, a.A.Cache, a.A.Queue,
-	)
-}
-
 type pagedResponse struct {
 	Content    interface{}               `json:"content,omitempty"`
 	Pagination *datastore.PaginationData `json:"pagination,omitempty"`
@@ -50,6 +39,12 @@ type pagedResponse struct {
 func (a *PublicHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.Endpoint
 	err := util.ReadJSON(r, &e)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	err = util.Validate(e)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -166,6 +161,12 @@ func (a *PublicHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	err = util.Validate(e)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
