@@ -53,12 +53,12 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 		this.isFilterTestPassed = false;
 		this.subscriptionFilterForm.patchValue({
 			request: {
-				header: this.requestHeaderEditor?.getValue() ? this.convertStringToJson(this.requestHeaderEditor.getValue()) : null,
-				body: this.requestEditor?.getValue() ? this.convertStringToJson(this.requestEditor.getValue()) : null
+				header: this.requestHeaderEditor?.getValue() ? this.generalService.convertStringToJson(this.requestHeaderEditor.getValue()) : null,
+				body: this.requestEditor?.getValue() ? this.generalService.convertStringToJson(this.requestEditor.getValue()) : null
 			},
 			schema: {
-				header: this.headerSchemaEditor?.getValue() ? this.convertStringToJson(this.headerSchemaEditor.getValue()) : null,
-				body: this.schemaEditor?.getValue() ? this.convertStringToJson(this.schemaEditor.getValue()) : null
+				header: this.headerSchemaEditor?.getValue() ? this.generalService.convertStringToJson(this.headerSchemaEditor.getValue()) : null,
+				body: this.schemaEditor?.getValue() ? this.generalService.convertStringToJson(this.schemaEditor.getValue()) : null
 			}
 		});
 
@@ -80,20 +80,10 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 			if (this.requestEditor?.getValue()) localStorage.setItem('EVENT_DATA', this.requestEditor.getValue());
 			if (this.requestHeaderEditor?.getValue()) localStorage.setItem('EVENT_HEADERS', this.requestHeaderEditor.getValue());
 			const filter = {
-				bodySchema: this.schemaEditor?.getValue() ? this.convertStringToJson(this.schemaEditor?.getValue()) : null,
-				headerSchema: this.headerSchemaEditor?.getValue() ? this.convertStringToJson(this.headerSchemaEditor?.getValue()) : null
+				bodySchema: this.schemaEditor?.getValue() ? this.generalService.convertStringToJson(this.schemaEditor?.getValue()) : null,
+				headerSchema: this.headerSchemaEditor?.getValue() ? this.generalService.convertStringToJson(this.headerSchemaEditor?.getValue()) : null
 			};
 			this.filterSchema.emit(filter);
-		}
-	}
-
-	convertStringToJson(str: string) {
-		try {
-			const jsonObject = JSON.parse(str);
-			return jsonObject;
-		} catch {
-			this.generalService.showNotification({ message: 'Data is not entered in correct JSON format', style: 'error' });
-			return false;
 		}
 	}
 

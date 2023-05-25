@@ -13,6 +13,7 @@ declare var monaco: typeof import('monaco-editor');
 })
 export class MonacoComponent implements AfterViewInit {
 	public _editor: any;
+	@Input('className') class!: string;
 	@Input('editorValue') editorValue: any;
 	@ViewChild('editorContainer', { static: true }) _editorContainer!: ElementRef;
 
