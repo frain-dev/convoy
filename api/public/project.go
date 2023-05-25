@@ -38,7 +38,7 @@ func createProjectService(a *PublicHandler) (*services.ProjectService, error) {
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Success 200 {object} util.ServerResponse{data=datastore.Project}
+// @Success 200 {object} util.ServerResponse{data=models.ProjectResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID} [get]
@@ -89,8 +89,8 @@ func (a *PublicHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param orgID query string true "Organisation id"
-// @Param project body models.Project true "Project Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Project}
+// @Param project body models.CreateProject true "Project Details"
+// @Success 200 {object} util.ServerResponse{data=models.CreateProjectResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects [post]
@@ -151,8 +151,8 @@ func (a *PublicHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Param project body models.Project true "Project Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Project}
+// @Param project body models.UpdateProject true "Project Details"
+// @Success 200 {object} util.ServerResponse{data=models.ProjectResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID} [put]
@@ -199,7 +199,7 @@ func (a *PublicHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param name query string false "Project name"
 // @Param orgID query string true "organisation id"
-// @Success 200 {object} util.ServerResponse{data=[]datastore.Project}
+// @Success 200 {object} util.ServerResponse{data=[]models.ProjectResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects [get]
