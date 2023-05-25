@@ -56,6 +56,11 @@ func (a *DashboardHandler) CreateConfiguration(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	if err := newConfig.Validate(); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	configService := createConfigService(a)
 	config, err := configService.CreateConfiguration(r.Context(), &newConfig)
 	if err != nil {
@@ -74,6 +79,11 @@ func (a *DashboardHandler) CreateConfiguration(w http.ResponseWriter, r *http.Re
 func (a *DashboardHandler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
 	var newConfig models.Configuration
 	if err := util.ReadJSON(r, &newConfig); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if err := newConfig.Validate(); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}

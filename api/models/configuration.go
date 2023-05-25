@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -9,6 +10,10 @@ type Configuration struct {
 	IsAnalyticsEnabled *bool                       `json:"is_analytics_enabled"`
 	IsSignupEnabled    *bool                       `json:"is_signup_enabled"`
 	StoragePolicy      *StoragePolicyConfiguration `json:"storage_policy"`
+}
+
+func (c *Configuration) Validate() error {
+	return util.Validate(c)
 }
 
 type ConfigurationResponse struct {

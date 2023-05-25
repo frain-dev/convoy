@@ -36,10 +36,6 @@ func (c *ConfigService) LoadConfiguration(ctx context.Context) (*datastore.Confi
 }
 
 func (c *ConfigService) CreateConfiguration(ctx context.Context, newConfig *models.Configuration) (*datastore.Configuration, error) {
-	if err := util.Validate(newConfig); err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
 	storagePolicy := newConfig.StoragePolicy.Transform()
 	if storagePolicy == nil {
 		storagePolicy = &datastore.DefaultStoragePolicy
@@ -66,10 +62,6 @@ func (c *ConfigService) CreateConfiguration(ctx context.Context, newConfig *mode
 }
 
 func (c *ConfigService) UpdateConfiguration(ctx context.Context, config *models.Configuration) (*datastore.Configuration, error) {
-	if err := util.Validate(config); err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
 	cfg, err := c.configRepo.LoadConfiguration(ctx)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to load configuration")
