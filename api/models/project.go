@@ -105,7 +105,6 @@ func (sc *StrategyConfiguration) transform() *datastore.StrategyConfiguration {
 }
 
 type SignatureConfiguration struct {
-	Hash     string                         `json:"-"` // Deprecated
 	Header   config.SignatureHeaderProvider `json:"header,omitempty" valid:"required~please provide a valid signature header"`
 	Versions []SignatureVersion             `json:"versions"`
 }
@@ -115,7 +114,7 @@ func (sc *SignatureConfiguration) transform() *datastore.SignatureConfiguration 
 		return nil
 	}
 
-	s := &datastore.SignatureConfiguration{Header: sc.Header, Hash: sc.Hash}
+	s := &datastore.SignatureConfiguration{Header: sc.Header}
 	for _, version := range sc.Versions {
 		s.Versions = append(s.Versions, datastore.SignatureVersion{
 			UID:       version.UID,
