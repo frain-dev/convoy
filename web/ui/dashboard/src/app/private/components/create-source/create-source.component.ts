@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SOURCE } from 'src/app/models/source.model';
@@ -6,6 +6,7 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
 import { CreateSourceService } from './create-source.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
+import { MonacoComponent } from '../monaco/monaco.component';
 
 @Component({
 	selector: 'convoy-create-source',
@@ -20,6 +21,7 @@ export class CreateSourceComponent implements OnInit {
 		name: ['', Validators.required],
 		is_disabled: [true, Validators.required],
 		type: ['', Validators.required],
+		custom_response: [null],
 		verifier: this.formBuilder.group({
 			api_key: this.formBuilder.group({
 				header_name: ['', Validators.required],
@@ -122,7 +124,11 @@ export class CreateSourceComponent implements OnInit {
 	sourceDetails!: SOURCE;
 	sourceCreated: boolean = false;
 	showSourceUrl = false;
+	showCustomResponseModal = false;
 	sourceData!: SOURCE;
+	customResponse: any;
+	configurations = [{ uid: 'custom_response', name: 'Custom Response', show: false }];
+	@ViewChild('responseEditor') responseEditor!: MonacoComponent;
 	private rbacService = inject(RbacService);
 
 	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
@@ -141,6 +147,8 @@ export class CreateSourceComponent implements OnInit {
 			this.sourceDetails = response.data;
 			const sourceProvider = response.data?.provider;
 			this.sourceForm.patchValue(response.data);
+			this.customResponse = response.data.custom_response ? JSON.parse(response.data.custom_response) : null;
+			console.log(this.customResponse);
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
 			this.isloading = false;
 
@@ -267,9 +275,34 @@ export class CreateSourceComponent implements OnInit {
 		return false;
 	}
 
+	toggleConfigForm(configValue: string, value?: boolean) {
+		this.configurations.forEach(config => {
+			if (config.uid === configValue) config.show = value ? value : !config.show;
+		});
+	}
+
+	showConfig(configValue: string): boolean {
+		return this.configurations.find(config => config.uid === configValue)?.show || false;
+	}
+	setCustomResponse() {
+		const customRes = this.generalService.convertStringToJson(this.responseEditor.getValue());
+		if (customRes) {
+			this.sourceForm.patchValue({
+				custom_response: JSON.stringify(customRes)
+			});
+			this.showCustomResponseModal = false;
+		}
+		console.log(this.sourceForm.value);
+	}
+
 	cancel() {
 		document.getElementById(this.router.url.includes('/configure') ? 'configureProjectForm' : 'sourceForm')?.scroll({ top: 0, behavior: 'smooth' });
 		this.confirmModal = true;
+	}
+
+	showCustomResponse() {
+		document.getElementById('sourceForm')?.scroll({ top: 0, behavior: 'smooth' });
+		this.showCustomResponseModal = true;
 	}
 
 	setRegionValue(value: any) {

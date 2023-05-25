@@ -109,6 +109,47 @@
 					</div>
 				</div>
 			</div>
+
+			<hr class="border-t border-grey-20 mb-24px" />
+
+			<h3 class="font-semibold mb-24px">Set Configurations</h3>
+
+			<ng-container *ngIf="showConfig('custom_response')">
+				<div class="border border-grey-20 rounded-4px p-16px mb-24px">
+					<div class="flex justify-between items-center mb-14px">
+						<h4 class="text-grey-60 font-medium">Custom response</h4>
+						<button convoy-button type="button" size="xs" *ngIf="action !== 'create'" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('custom_response')">
+							<svg width="16" height="16" class="fill-grey-60">
+								<use xlink:href="#delete-icon"></use>
+							</svg>
+						</button>
+					</div>
+
+					<div class="flex justify-between items-center">
+						<a convoy-button size="sm" fill="text" type="button" class="font-medium !justify-start" href="https://getconvoy.io/docs/manual/subscriptions#subscription-filters" target="_blank" referrerpolicy="noreferrer">
+							Learn more about custom responses here
+							<svg width="24" height="24" class="ml-8px" class="fill-primary-100">
+								<use xlink:href="#arrow-right-icon"></use>
+							</svg>
+						</a>
+						<button convoy-button fill="text" size="sm" className="font-medium" type="button" (click)="showCustomResponse()">
+							{{ action === 'update' ? 'Edit' : 'Setup' }} Custom Response
+							<svg width="16" height="16" class="ml-10px" class="fill-primary-100">
+								<use xlink:href="#plus-icon"></use>
+							</svg>
+						</button>
+					</div>
+				</div>
+			</ng-container>
+
+			<div class="flex flex-wrap items-center">
+				<ng-container *ngFor="let config of configurations">
+					<button *ngIf="!config.show" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" class="mr-24px mb-10px" (click)="toggleConfigForm(config.uid)">
+						{{ config.name }}
+						<img src="assets/img/svg/plus-icon.svg" class="ml-24px" alt="plus icon" />
+					</button>
+				</ng-container>
+			</div>
 		</ng-container>
 
 		<div formGroupName="pub_sub" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
@@ -221,6 +262,28 @@
 		<div class="flex items-center">
 			<button convoy-button color="danger" class="mr-12px px-60px" (click)="onAction.emit({ action: 'close' })">Confirm</button>
 			<button convoy-button fill="clear" [color]="confirmModal ? 'primary' : 'danger'" class="font-semibold" (click)="confirmModal = false">Cancel</button>
+		</div>
+	</div>
+</div>
+
+<div convoy-modal position="full" *ngIf="showCustomResponseModal" (closeModal)="showCustomResponseModal = false">
+	<div convoy-modal-header fullscreen="true">
+		<div class="flex items-center">
+			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="showCustomResponseModal = false">
+				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
+			</button>
+
+			<h2 class="font-semibold capitalize ml-2">{{ action === 'update' ? 'Edit Custom Response' : 'Create Custom Response' }}</h2>
+		</div>
+	</div>
+
+	<div class="max-w-[1064px] m-auto pt-40px">
+		<div class="flex items-center justify-end mb-20px pr-20px">
+			<button convoy-button size="sm" type="button" class="min-w-[130px] min-h-[34px]" (click)="setCustomResponse()">Save</button>
+		</div>
+		<div class="bg-[#FCFCFC] rounded-8px pt-20px flex flex-col w-full">
+			<div class="text-14 border-b border-b-grey-20 pl-28px pt-20px pb-20px font-semibold bg-[#FCFCFC] rounded-tl-8px">Custom Response</div>
+			<convoy-monaco className="h-[50vh] w-full" [editorValue]="customResponse" #responseEditor></convoy-monaco>
 		</div>
 	</div>
 </div>
