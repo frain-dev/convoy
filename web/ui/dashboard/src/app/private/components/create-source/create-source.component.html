@@ -114,11 +114,11 @@
 
 			<h3 class="font-semibold mb-24px">Set Configurations</h3>
 
-			<ng-container *ngIf="showConfig('custom_response')">
+			<ng-container *ngIf="showConfig('custom_response') || customResponse">
 				<div class="border border-grey-20 rounded-4px p-16px mb-24px">
 					<div class="flex justify-between items-center mb-14px">
 						<h4 class="text-grey-60 font-medium">Custom response</h4>
-						<button convoy-button type="button" size="xs" *ngIf="action !== 'create'" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('custom_response')">
+						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" [disabled]="customResponse" (click)="toggleConfigForm('custom_response')">
 							<svg width="16" height="16" class="fill-grey-60">
 								<use xlink:href="#delete-icon"></use>
 							</svg>
@@ -126,7 +126,7 @@
 					</div>
 
 					<div class="flex justify-between items-center">
-						<a convoy-button size="sm" fill="text" type="button" class="font-medium !justify-start" href="https://getconvoy.io/docs/manual/subscriptions#subscription-filters" target="_blank" referrerpolicy="noreferrer">
+						<a convoy-button size="sm" fill="text" type="button" class="font-medium !justify-start" href="https://getconvoy.io/docs/manual/sources" target="_blank" referrerpolicy="noreferrer">
 							Learn more about custom responses here
 							<svg width="24" height="24" class="ml-8px" class="fill-primary-100">
 								<use xlink:href="#arrow-right-icon"></use>
@@ -134,9 +134,6 @@
 						</a>
 						<button convoy-button fill="text" size="sm" className="font-medium" type="button" (click)="showCustomResponse()">
 							{{ action === 'update' ? 'Edit' : 'Setup' }} Custom Response
-							<svg width="16" height="16" class="ml-10px" class="fill-primary-100">
-								<use xlink:href="#plus-icon"></use>
-							</svg>
 						</button>
 					</div>
 				</div>
@@ -278,10 +275,11 @@
 	</div>
 
 	<div class="max-w-[1064px] m-auto pt-40px">
-		<div class="flex items-center justify-end mb-20px pr-20px">
+		<div class="flex items-center justify-end mb-20px">
 			<button convoy-button size="sm" type="button" class="min-w-[130px] min-h-[34px]" (click)="setCustomResponse()">Save</button>
 		</div>
-		<div class="bg-[#FCFCFC] rounded-8px pt-20px flex flex-col w-full">
+
+		<div convoy-card class="bg-[#FCFCFC] border border-grey-20 rounded-8px flex flex-col w-full">
 			<div class="text-14 border-b border-b-grey-20 pl-28px pt-20px pb-20px font-semibold bg-[#FCFCFC] rounded-tl-8px">Custom Response</div>
 			<convoy-monaco className="h-[50vh] w-full" [editorValue]="customResponse" #responseEditor></convoy-monaco>
 		</div>

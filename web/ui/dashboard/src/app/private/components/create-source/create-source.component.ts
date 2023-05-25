@@ -148,7 +148,7 @@ export class CreateSourceComponent implements OnInit {
 			const sourceProvider = response.data?.provider;
 			this.sourceForm.patchValue(response.data);
 			this.customResponse = response.data.custom_response ? JSON.parse(response.data.custom_response) : null;
-			console.log(this.customResponse);
+			if (this.customResponse) this.toggleConfigForm('custom_response');
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
 			this.isloading = false;
 
