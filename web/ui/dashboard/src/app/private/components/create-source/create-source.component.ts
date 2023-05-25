@@ -292,7 +292,6 @@ export class CreateSourceComponent implements OnInit {
 			});
 			this.showCustomResponseModal = false;
 		}
-		console.log(this.sourceForm.value);
 	}
 
 	cancel() {
@@ -301,7 +300,7 @@ export class CreateSourceComponent implements OnInit {
 	}
 
 	showCustomResponse() {
-		document.getElementById('sourceForm')?.scroll({ top: 0, behavior: 'smooth' });
+		document.getElementById(this.router.url.includes('/configure') ? 'configureProjectForm' : this.showAction ? 'sourceForm' : 'subscriptionForm')?.scroll({ top: 0, behavior: 'smooth' });
 		this.showCustomResponseModal = true;
 	}
 
