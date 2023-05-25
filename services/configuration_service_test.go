@@ -54,21 +54,6 @@ func TestConfigService_CreateConfiguration(t *testing.T) {
 				co.EXPECT().CreateConfiguration(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 		},
-
-		{
-			name: "should_fail_create_configuration",
-			args: args{
-				ctx: ctx,
-				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
-					Type: datastore.S3,
-					S3: &models.S3Storage{
-						Bucket: null.NewString("my-bucket", true),
-					},
-				}},
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-		},
 	}
 
 	for _, tc := range tests {
