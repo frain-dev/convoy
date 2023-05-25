@@ -73,7 +73,7 @@ const (
 		s.project_id,
 		COALESCE(s.source_verifier_id, '') AS source_verifier_id,
 		s.pub_sub,
-		s.custom_response,
+		COALESCE(s.custom_response, '') as "custom_response",
 		COALESCE(sv.type, '') as "verifier.type",
 		COALESCE(sv.basic_username, '') as "verifier.basic_auth.username",
 		COALESCE(sv.basic_password, '') as "verifier.basic_auth.password",
