@@ -59,7 +59,7 @@ import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.
 })
 export class EventLogsComponent implements OnInit {
 	eventsDateFilterFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
-	eventLogsTableHead: string[] = ['Event ID', 'Source Name', 'Time', ''];
+	eventLogsTableHead: string[] = ['Event ID', 'Source', 'Time', ''];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventsSearchString?: string;
 	eventEndpoint?: string;
@@ -226,7 +226,7 @@ export class EventLogsComponent implements OnInit {
 		if (requestDetails?.addToURL) this.addFilterToURL();
 
 		if (!pagination) {
-			pagination = { next_page_cursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF" };
+			pagination = { next_page_cursor: 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF' };
 			delete this.eventsDetailsItem;
 			this.sidebarEventDeliveries = [];
 		}
@@ -331,16 +331,16 @@ export class EventLogsComponent implements OnInit {
 
 	viewEndpoint(endpointId?: string) {
 		if (!endpointId || this.portalToken) return;
-		this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/endpoints/' + endpointId]);
+		this.router.navigate([`/projects/${this.privateService.activeProjectDetails?.uid}/endpoints/${endpointId}`]);
 	}
 
 	viewSource(sourceId?: string) {
 		if (!sourceId || this.portalToken) return;
-		this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/sources/'], { queryParams: { id: sourceId } });
+		this.router.navigate([`/projects/${this.privateService.activeProjectDetails?.uid}/sources/${sourceId}`]);
 	}
 
 	viewEventDeliveries(eventId: string) {
-		this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/events'], { queryParams: { eventId: eventId } });
+		this.router.navigate([`/projects/${this.privateService.activeProjectDetails?.uid}/events`], { queryParams: { eventId: eventId } });
 	}
 
 	paginateEvents(event: CURSOR) {
