@@ -177,7 +177,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		if !util.IsStringEmpty(source.CustomResponse.ContentType) {
 			w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", source.CustomResponse.ContentType)
-			w.Write([]byte(source.CustomResponse.Body))
+			_, _ = w.Write([]byte(source.CustomResponse.Body))
 			return
 		}
 
