@@ -134,13 +134,15 @@
 
 							<td convoy-table-cell>
 								<div class="flex items-center">
-									<span class="max-w-[146px] overflow-hidden overflow-ellipsis">
-										{{ event?.source_metadata?.name || 'Rest API' }}
-									</span>
+									<ng-container *ngIf="projectService.activeProjectDetails?.type === 'incoming'">
+										<span class="max-w-[146px] overflow-hidden overflow-ellipsis">
+											{{ event?.source_metadata?.name || 'Rest API' }}
+										</span>
 
-									<span class="px-20px font-light">→</span>
+										<span class="px-20px font-light">→</span>
+									</ng-container>
 
-									<span class="max-w-[146px] overflow-hidden overflow-ellipsis">
+									<span [class]="projectService.activeProjectDetails?.type === 'incoming' ? 'max-w-[146px] overflow-hidden overflow-ellipsis' : 'w-166px' + ' overflow-hidden overflow-ellipsis'">
 										{{ event.endpoint_metadata.title }}
 									</span>
 									<!-- show this if CLI is the receiver -->
