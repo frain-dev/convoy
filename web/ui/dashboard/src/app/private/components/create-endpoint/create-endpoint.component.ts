@@ -15,6 +15,7 @@ import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.
 import { EndpointDetailsService } from '../../pages/project/endpoint-details/endpoint-details.service';
 import { PermissionDirective } from '../permission/permission.directive';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
+import { ENDPOINT } from 'src/app/models/endpoint.model';
 
 @Component({
 	selector: 'convoy-create-endpoint',
@@ -53,6 +54,7 @@ export class CreateEndpointComponent implements OnInit {
 	configurations = [
 		{ uid: 'alert-config', name: 'Alert Configuration', show: false },
 		{ uid: 'auth', name: 'Authentication', show: false },
+		{ uid: 'http_timeout', name: 'Endpoint Timeout ', show: false },
 		{ uid: 'signature', name: 'Signature Format', show: false }
 	];
 	endpointCreated: boolean = false;
@@ -99,7 +101,7 @@ export class CreateEndpointComponent implements OnInit {
 
 		try {
 			const response = await this.endpointService.getEndpoint(this.endpointUid);
-			const endpointDetails = response.data;
+			const endpointDetails: ENDPOINT = response.data;
 			this.addNewEndpointForm.patchValue(endpointDetails);
 			this.addNewEndpointForm.patchValue({
 				name: endpointDetails.title,
@@ -107,7 +109,8 @@ export class CreateEndpointComponent implements OnInit {
 			});
 
 			if (endpointDetails.support_email) this.toggleConfigForm('alert-config');
-			if (endpointDetails.authentication) this.toggleConfigForm('auth');
+			if (endpointDetails.authentication.api_key.header_value || endpointDetails.authentication.api_key.header_name) this.toggleConfigForm('auth');
+			if (endpointDetails.http_timeout) this.toggleConfigForm('http_timeout');
 
 			this.isLoadingEndpointDetails = false;
 		} catch {
