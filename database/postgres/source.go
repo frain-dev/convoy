@@ -42,7 +42,7 @@ const (
 	project_id =$8,
 	pub_sub= $9,
 	custom_response_body = $10,
-	custom_response_content_type = 11,
+	custom_response_content_type = $11,
 	updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL ;
 	`
