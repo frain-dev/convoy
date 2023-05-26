@@ -1,13 +1,10 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
 	"time"
-
-	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -175,21 +172,17 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 4. Return 200
-	if !util.IsStringEmpty(source.CustomResponse) {
-		buf := bytes.NewBufferString(source.CustomResponse)
-
-		rdr := io.LimitReader(buf, int64(maxIngestSize))
-		resp, err := io.ReadAll(rdr)
-		if err != nil {
-			log.WithError(err).Error("failed to read custom response")
-			// go with the same response a L195
-			_ = render.Render(w, r, util.NewServerResponse("Event received", len(payload), http.StatusOK))
+	if !util.IsStringEmpty(source.CustomResponse.Body) {
+		// send back custom response
+		if !util.IsStringEmpty(source.CustomResponse.ContentType) {
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", source.CustomResponse.ContentType)
+			w.Write([]byte(source.CustomResponse.Body))
 			return
 		}
 
-		// send back custom response
 		render.Status(r, http.StatusOK)
-		render.PlainText(w, r, string(resp))
+		render.PlainText(w, r, source.CustomResponse.Body)
 		return
 
 	}

@@ -54,6 +54,17 @@
 				},
 				"type": "object"
 			},
+			"datastore.CustomResponse": {
+				"properties": {
+					"body": {
+						"type": "string"
+					},
+					"content_type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.DeliveryAttempt": {
 				"properties": {
 					"api_version": {
@@ -850,7 +861,7 @@
 						"type": "string"
 					},
 					"custom_response": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.CustomResponse"
 					},
 					"deleted_at": {
 						"type": "string"
@@ -1061,6 +1072,17 @@
 						"type": "string"
 					},
 					"type": "array"
+				},
+				"type": "object"
+			},
+			"models.CustomResponse": {
+				"properties": {
+					"body": {
+						"type": "string"
+					},
+					"content_type": {
+						"type": "string"
+					}
 				},
 				"type": "object"
 			},
@@ -1383,7 +1405,7 @@
 			"models.Source": {
 				"properties": {
 					"custom_response": {
-						"type": "string"
+						"$ref": "#/components/schemas/models.CustomResponse"
 					},
 					"is_disabled": {
 						"type": "boolean"

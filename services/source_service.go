@@ -63,20 +63,23 @@ func (s *SourceService) CreateSource(ctx context.Context, newSource *models.Sour
 	}
 
 	source := &datastore.Source{
-		UID:            ulid.Make().String(),
-		ProjectID:      g.UID,
-		MaskID:         uniuri.NewLen(16),
-		Name:           newSource.Name,
-		Type:           newSource.Type,
-		Provider:       newSource.Provider,
-		Verifier:       &newSource.Verifier,
-		PubSub:         &newSource.PubSub,
-		CustomResponse: newSource.CustomResponse,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+		UID:       ulid.Make().String(),
+		ProjectID: g.UID,
+		MaskID:    uniuri.NewLen(16),
+		Name:      newSource.Name,
+		Type:      newSource.Type,
+		Provider:  newSource.Provider,
+		Verifier:  &newSource.Verifier,
+		PubSub:    &newSource.PubSub,
+		CustomResponse: datastore.CustomResponse{
+			Body:        newSource.CustomResponse.Body,
+			ContentType: newSource.CustomResponse.ContentType,
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
-	buf := uint64(len([]byte(source.CustomResponse)))
+	buf := uint64(len([]byte(source.CustomResponse.Body)))
 	if buf > cfg.MaxResponseSize {
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("source custom response too large"))
 	}
@@ -154,8 +157,12 @@ func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Project, 
 		source.PubSub = sourceUpdate.PubSub
 	}
 
-	if sourceUpdate.CustomResponse != nil {
-		source.CustomResponse = *sourceUpdate.CustomResponse
+	if sourceUpdate.CustomResponse.Body != nil {
+		source.CustomResponse.Body = *sourceUpdate.CustomResponse.Body
+	}
+
+	if sourceUpdate.CustomResponse.ContentType != nil {
+		source.CustomResponse.ContentType = *sourceUpdate.CustomResponse.ContentType
 	}
 
 	err := s.sourceRepo.UpdateSource(ctx, g.UID, source)

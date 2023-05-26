@@ -427,7 +427,7 @@ func SeedMultipleOrganisations(db database.Database, ownerID string, num int) ([
 	return orgs, nil
 }
 
-func SeedSource(db database.Database, g *datastore.Project, uid, maskID, ds string, v *datastore.VerifierConfig, customResponse string) (*datastore.Source, error) {
+func SeedSource(db database.Database, g *datastore.Project, uid, maskID, ds string, v *datastore.VerifierConfig, customResponseBody, customResponseContentType string) (*datastore.Source, error) {
 	if util.IsStringEmpty(uid) {
 		uid = ulid.Make().String()
 	}
@@ -452,13 +452,16 @@ func SeedSource(db database.Database, g *datastore.Project, uid, maskID, ds stri
 	}
 
 	source := &datastore.Source{
-		UID:            uid,
-		ProjectID:      g.UID,
-		MaskID:         maskID,
-		Name:           "Convoy-Prod",
-		Type:           datastore.SourceType(ds),
-		CustomResponse: customResponse,
-		Verifier:       v,
+		UID:       uid,
+		ProjectID: g.UID,
+		MaskID:    maskID,
+		Name:      "Convoy-Prod",
+		Type:      datastore.SourceType(ds),
+		CustomResponse: datastore.CustomResponse{
+			Body:        customResponseBody,
+			ContentType: customResponseContentType,
+		},
+		Verifier: v,
 	}
 
 	// Seed Data

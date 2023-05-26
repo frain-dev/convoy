@@ -34,6 +34,13 @@ components:
         source_id:
           type: string
       type: object
+    datastore.CustomResponse:
+      properties:
+        body:
+          type: string
+        content_type:
+          type: string
+      type: object
     datastore.DeliveryAttempt:
       properties:
         api_version:
@@ -572,7 +579,7 @@ components:
         created_at:
           type: string
         custom_response:
-          type: string
+          $ref: '#/components/schemas/datastore.CustomResponse'
         deleted_at:
           type: string
         forward_headers:
@@ -717,6 +724,13 @@ components:
         items:
           type: string
         type: array
+      type: object
+    models.CustomResponse:
+      properties:
+        body:
+          type: string
+        content_type:
+          type: string
       type: object
     models.DynamicEndpoint:
       properties:
@@ -935,7 +949,7 @@ components:
     models.Source:
       properties:
         custom_response:
-          type: string
+          $ref: '#/components/schemas/models.CustomResponse'
         is_disabled:
           type: boolean
         name:

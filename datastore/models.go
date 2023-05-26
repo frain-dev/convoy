@@ -975,6 +975,11 @@ func (s *Subscription) GetRateLimitConfig() RateLimitConfiguration {
 	return RateLimitConfiguration{}
 }
 
+type CustomResponse struct {
+	Body        string `json:"body" db:"body"`
+	ContentType string `json:"content_type" db:"content_type"`
+}
+
 type Source struct {
 	UID            string          `json:"uid" db:"id"`
 	ProjectID      string          `json:"project_id" db:"project_id"`
@@ -986,7 +991,7 @@ type Source struct {
 	IsDisabled     bool            `json:"is_disabled" db:"is_disabled"`
 	VerifierID     string          `json:"-" db:"source_verifier_id"`
 	Verifier       *VerifierConfig `json:"verifier" db:"verifier"`
-	CustomResponse string          `json:"custom_response" db:"custom_response"`
+	CustomResponse CustomResponse  `json:"custom_response" db:"custom_response"`
 	ProviderConfig *ProviderConfig `json:"provider_config" db:"provider_config"`
 	ForwardHeaders pq.StringArray  `json:"forward_headers" db:"forward_headers"`
 	PubSub         *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
