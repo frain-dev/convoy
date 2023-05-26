@@ -479,6 +479,21 @@
 				},
 				"type": "object"
 			},
+			"datastore.KeyType": {
+				"enum": [
+					"project",
+					"app_portal",
+					"cli",
+					"personal_key"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"ProjectKey",
+					"AppPortalKey",
+					"CLIKey",
+					"PersonalKey"
+				]
+			},
 			"datastore.M": {
 				"additionalProperties": true,
 				"type": "object"
@@ -612,44 +627,6 @@
 						"type": "integer"
 					},
 					"prev_page_cursor": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.Project": {
-				"properties": {
-					"config": {
-						"$ref": "#/components/schemas/datastore.ProjectConfig"
-					},
-					"created_at": {
-						"type": "string"
-					},
-					"deleted_at": {
-						"type": "string"
-					},
-					"logo_url": {
-						"type": "string"
-					},
-					"name": {
-						"type": "string"
-					},
-					"organisation_id": {
-						"type": "string"
-					},
-					"retained_events": {
-						"type": "integer"
-					},
-					"statistics": {
-						"$ref": "#/components/schemas/datastore.ProjectStatistics"
-					},
-					"type": {
-						"$ref": "#/components/schemas/datastore.ProjectType"
-					},
-					"uid": {
-						"type": "string"
-					},
-					"updated_at": {
 						"type": "string"
 					}
 				},
@@ -1075,6 +1052,63 @@
 				},
 				"type": "object"
 			},
+			"models.APIKeyResponse": {
+				"properties": {
+					"created_at": {
+						"type": "string"
+					},
+					"expires_at": {
+						"type": "string"
+					},
+					"key": {
+						"type": "string"
+					},
+					"key_type": {
+						"$ref": "#/components/schemas/datastore.KeyType"
+					},
+					"name": {
+						"type": "string"
+					},
+					"role": {
+						"$ref": "#/components/schemas/models.Role"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"user_id": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.CreateProject": {
+				"properties": {
+					"config": {
+						"$ref": "#/components/schemas/models.ProjectConfig"
+					},
+					"logo_url": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.CreateProjectResponse": {
+				"properties": {
+					"api_key": {
+						"$ref": "#/components/schemas/models.APIKeyResponse"
+					},
+					"project": {
+						"$ref": "#/components/schemas/models.ProjectResponse"
+					}
+				},
+				"type": "object"
+			},
 			"models.CustomResponse": {
 				"properties": {
 					"body": {
@@ -1310,6 +1344,29 @@
 				},
 				"type": "object"
 			},
+			"models.MetaEventConfiguration": {
+				"properties": {
+					"event_type": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"is_enabled": {
+						"type": "boolean"
+					},
+					"secret": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string"
+					},
+					"url": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"models.PortalLink": {
 				"properties": {
 					"endpoints": {
@@ -1368,10 +1425,48 @@
 				},
 				"type": "object"
 			},
-			"models.Project": {
+			"models.ProjectConfig": {
+				"properties": {
+					"disable_endpoint": {
+						"type": "boolean"
+					},
+					"max_payload_read_size": {
+						"type": "integer"
+					},
+					"meta_event": {
+						"$ref": "#/components/schemas/models.MetaEventConfiguration"
+					},
+					"ratelimit": {
+						"$ref": "#/components/schemas/models.RateLimitConfiguration"
+					},
+					"replay_attacks_prevention_enabled": {
+						"type": "boolean"
+					},
+					"retention_policy": {
+						"$ref": "#/components/schemas/models.RetentionPolicyConfiguration"
+					},
+					"retention_policy_enabled": {
+						"type": "boolean"
+					},
+					"signature": {
+						"$ref": "#/components/schemas/models.SignatureConfiguration"
+					},
+					"strategy": {
+						"$ref": "#/components/schemas/models.StrategyConfiguration"
+					}
+				},
+				"type": "object"
+			},
+			"models.ProjectResponse": {
 				"properties": {
 					"config": {
 						"$ref": "#/components/schemas/datastore.ProjectConfig"
+					},
+					"created_at": {
+						"type": "string"
+					},
+					"deleted_at": {
+						"type": "string"
 					},
 					"logo_url": {
 						"type": "string"
@@ -1379,8 +1474,42 @@
 					"name": {
 						"type": "string"
 					},
+					"organisation_id": {
+						"type": "string"
+					},
+					"retained_events": {
+						"type": "integer"
+					},
+					"statistics": {
+						"$ref": "#/components/schemas/datastore.ProjectStatistics"
+					},
 					"type": {
 						"$ref": "#/components/schemas/datastore.ProjectType"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.RateLimitConfiguration": {
+				"properties": {
+					"count": {
+						"type": "integer"
+					},
+					"duration": {
+						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
+			"models.RetentionPolicyConfiguration": {
+				"properties": {
+					"policy": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -1398,6 +1527,51 @@
 					},
 					"type": {
 						"$ref": "#/components/schemas/datastore.StrategyProvider"
+					}
+				},
+				"type": "object"
+			},
+			"models.Role": {
+				"properties": {
+					"app": {
+						"type": "string"
+					},
+					"project": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.SignatureConfiguration": {
+				"properties": {
+					"header": {
+						"$ref": "#/components/schemas/config.SignatureHeaderProvider"
+					},
+					"versions": {
+						"items": {
+							"$ref": "#/components/schemas/models.SignatureVersion"
+						},
+						"type": "array"
+					}
+				},
+				"type": "object"
+			},
+			"models.SignatureVersion": {
+				"properties": {
+					"created_at": {
+						"type": "string"
+					},
+					"encoding": {
+						"type": "string"
+					},
+					"hash": {
+						"type": "string"
+					},
+					"uid": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -1424,6 +1598,20 @@
 					},
 					"verifier": {
 						"$ref": "#/components/schemas/datastore.VerifierConfig"
+					}
+				},
+				"type": "object"
+			},
+			"models.StrategyConfiguration": {
+				"properties": {
+					"duration": {
+						"type": "integer"
+					},
+					"retry_count": {
+						"type": "integer"
+					},
+					"type": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -1465,6 +1653,26 @@
 					},
 					"schema": {
 						"$ref": "#/components/schemas/models.FilterSchema"
+					}
+				},
+				"type": "object"
+			},
+			"models.UpdateProject": {
+				"properties": {
+					"config": {
+						"$ref": "#/components/schemas/models.ProjectConfig"
+					},
+					"logo_url": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"rate_limit": {
+						"type": "integer"
+					},
+					"rate_limit_duration": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -1559,7 +1767,7 @@
 											"properties": {
 												"data": {
 													"items": {
-														"$ref": "#/components/schemas/datastore.Project"
+														"$ref": "#/components/schemas/models.ProjectResponse"
 													},
 													"type": "array"
 												}
@@ -1666,7 +1874,7 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.Project"
+								"$ref": "#/components/schemas/models.CreateProject"
 							}
 						}
 					},
@@ -1686,7 +1894,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.Project"
+													"$ref": "#/components/schemas/models.CreateProjectResponse"
 												}
 											},
 											"type": "object"
@@ -1914,7 +2122,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.Project"
+													"$ref": "#/components/schemas/models.ProjectResponse"
 												}
 											},
 											"type": "object"
@@ -2019,7 +2227,7 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.Project"
+								"$ref": "#/components/schemas/models.UpdateProject"
 							}
 						}
 					},
@@ -2039,7 +2247,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.Project"
+													"$ref": "#/components/schemas/models.ProjectResponse"
 												}
 											},
 											"type": "object"
