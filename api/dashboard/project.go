@@ -107,6 +107,11 @@ func (a *DashboardHandler) CreateProject(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	if err := newProject.Validate(); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	projectService, err := createProjectService(a)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -143,6 +148,11 @@ func (a *DashboardHandler) UpdateProject(w http.ResponseWriter, r *http.Request)
 
 	if err = a.A.Authz.Authorize(r.Context(), "project.manage", p); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
+	if err := update.Validate(); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
