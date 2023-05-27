@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/frain-dev/convoy/config"
 
 	"github.com/dchest/uniuri"
@@ -167,6 +169,7 @@ func (s *SourceService) UpdateSource(ctx context.Context, g *datastore.Project, 
 
 	err := s.sourceRepo.UpdateSource(ctx, g.UID, source)
 	if err != nil {
+		log.WithError(err).Error("failed to update source")
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating source"))
 	}
 
