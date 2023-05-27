@@ -129,7 +129,7 @@
 					<div class="p-16px" formGroupName="custom_response">
 						<convoy-input-field>
 							<label for="content_type" required="true" convoy-label>Response Content Type</label>
-							<input type="text" id="content_type" convoy-input autocomplete="content_type" formControlName="content_type" placeholder="application/json" />
+							<input type="text" id="content_type" convoy-input autocomplete="content_type" formControlName="content_type" placeholder="application/json, text/plain" />
 							<convoy-input-error *ngIf="sourceForm.get('custom_response.content_type')?.touched && sourceForm.get('custom_response.content_type')?.invalid">Enter content type</convoy-input-error>
 						</convoy-input-field>
 
