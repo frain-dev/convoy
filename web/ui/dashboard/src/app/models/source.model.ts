@@ -11,6 +11,10 @@ export interface SOURCE {
 	url: string;
 	provider: string;
 	provider_config?: { twitter: { crc_verified_at: Date } };
+	custom_response: {
+		body: string;
+		content_type: string;
+	};
 	verifier: {
 		api_key: {
 			header_name: string;

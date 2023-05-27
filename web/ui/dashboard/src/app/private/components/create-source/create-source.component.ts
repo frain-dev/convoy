@@ -21,7 +21,10 @@ export class CreateSourceComponent implements OnInit {
 		name: ['', Validators.required],
 		is_disabled: [true, Validators.required],
 		type: ['', Validators.required],
-		custom_response: [''],
+		custom_response: this.formBuilder.group({
+			body: [''],
+			content_type: ['']
+		}),
 		verifier: this.formBuilder.group({
 			api_key: this.formBuilder.group({
 				header_name: ['', Validators.required],
@@ -125,7 +128,7 @@ export class CreateSourceComponent implements OnInit {
 	sourceCreated: boolean = false;
 	showSourceUrl = false;
 	sourceData!: SOURCE;
-	customResponse: any;
+	customResponse: string = '';
 	configurations = [{ uid: 'custom_response', name: 'Custom Response', show: false }];
 	@ViewChild('responseEditor') responseEditor!: MonacoComponent;
 	private rbacService = inject(RbacService);
@@ -145,9 +148,13 @@ export class CreateSourceComponent implements OnInit {
 			const response = await this.createSourceService.getSourceDetails(this.sourceId);
 			this.sourceDetails = response.data;
 			const sourceProvider = response.data?.provider;
+
 			this.sourceForm.patchValue(response.data);
-			this.customResponse = response.data.custom_response ? JSON.parse(response.data.custom_response) : '';
-			if (this.customResponse) this.toggleConfigForm('custom_response');
+			if (this.sourceDetails.custom_response.body || this.sourceDetails.custom_response.content_type) {
+				this.customResponse = JSON.parse(this.sourceDetails.custom_response.body);
+				this.toggleConfigForm('custom_response');
+			}
+
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
 			this.isloading = false;
 
@@ -288,7 +295,7 @@ export class CreateSourceComponent implements OnInit {
 
 	setCustomResponse() {
 		this.sourceForm.patchValue({
-			custom_response: this.responseEditor.getValue() || ''
+			custom_response: { body: this.responseEditor.getValue() || '' }
 		});
 
 		this.saveSource();
