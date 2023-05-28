@@ -299,7 +299,7 @@ export class CreateSourceComponent implements OnInit {
 
 	setCustomResponse() {
 		this.sourceForm.patchValue({
-			custom_response: { body: this.responseEditor.getValue() || '' }
+			custom_response: { body: this.responseEditor.getValue().replace(/["]/g, '') || '' }
 		});
 
 		this.saveSource();
