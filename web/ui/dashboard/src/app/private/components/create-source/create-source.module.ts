@@ -12,7 +12,6 @@ import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.
 import { TokenModalComponent } from '../token-modal/token-modal.component';
 import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { PermissionDirective } from '../permission/permission.directive';
-import { MonacoComponent } from '../monaco/monaco.component';
 
 @NgModule({
 	declarations: [CreateSourceComponent],
@@ -30,10 +29,9 @@ import { MonacoComponent } from '../monaco/monaco.component';
 		FileInputComponent,
 		FormLoaderComponent,
 		ModalComponent,
-        ModalHeaderComponent,
+		ModalHeaderComponent,
 		TokenModalComponent,
-		PermissionDirective,
-        MonacoComponent
+		PermissionDirective
 	],
 	exports: [CreateSourceComponent]
 })

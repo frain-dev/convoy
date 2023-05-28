@@ -6,7 +6,6 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
 import { CreateSourceService } from './create-source.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { MonacoComponent } from '../monaco/monaco.component';
 
 @Component({
 	selector: 'convoy-create-source',
@@ -128,9 +127,7 @@ export class CreateSourceComponent implements OnInit {
 	sourceCreated: boolean = false;
 	showSourceUrl = false;
 	sourceData!: SOURCE;
-	customResponse: string = '';
 	configurations = [{ uid: 'custom_response', name: 'Custom Response', show: false }];
-	@ViewChild('responseEditor') responseEditor!: MonacoComponent;
 	private rbacService = inject(RbacService);
 
 	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
@@ -150,14 +147,7 @@ export class CreateSourceComponent implements OnInit {
 			const sourceProvider = response.data?.provider;
 
 			this.sourceForm.patchValue(response.data);
-			if (this.sourceDetails.custom_response.body || this.sourceDetails.custom_response.content_type) {
-				try {
-					this.customResponse = JSON.parse(this.sourceDetails.custom_response.body);
-				} catch (error) {
-					this.customResponse = this.sourceDetails.custom_response.body;
-				}
-				this.toggleConfigForm('custom_response');
-			}
+			if (this.sourceDetails.custom_response.body || this.sourceDetails.custom_response.content_type) this.toggleConfigForm('custom_response');
 
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
 			this.isloading = false;
@@ -295,14 +285,6 @@ export class CreateSourceComponent implements OnInit {
 
 	showConfig(configValue: string): boolean {
 		return this.configurations.find(config => config.uid === configValue)?.show || false;
-	}
-
-	setCustomResponse() {
-		this.sourceForm.patchValue({
-			custom_response: { body: this.responseEditor.getValue().replace(/["]/g, '') || '' }
-		});
-
-		this.saveSource();
 	}
 
 	cancel() {

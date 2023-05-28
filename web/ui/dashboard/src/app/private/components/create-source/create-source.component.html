@@ -1,4 +1,4 @@
-<form class="pb-40px" [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'" [formGroup]="sourceForm" (ngSubmit)="configurations[0].show ? setCustomResponse() : saveSource()">
+<form class="pb-40px" [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'" [formGroup]="sourceForm" (ngSubmit)="saveSource()">
 	<div convoy-card class="p-24px relative">
 		<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
 			<h4 class="font-medium mb-20px">Pre-configured Sources</h4>
@@ -134,7 +134,7 @@
 						</convoy-input-field>
 
 						<label convoy-label>Response Content</label>
-						<convoy-monaco format="string" className="min-h-[20vh] w-full border border-grey-20 rounded-4px py-16px" [editorValue]="customResponse" #responseEditor></convoy-monaco>
+						<textarea formControlName="body" class="min-h-[20vh]" convoy-input name="body" id="body"></textarea>
 					</div>
 				</div>
 			</ng-container>
