@@ -45,13 +45,13 @@ func (a *DashboardHandler) CreatePortalLink(w http.ResponseWriter, r *http.Reque
 	portalLinkService := createPortalLinkService(a)
 	portalLink, err := portalLinkService.CreatePortalLink(r.Context(), &newPortalLink, project)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	baseUrl, err := a.retrieveHost()
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -72,6 +72,7 @@ func (a *DashboardHandler) GetPortalLinkByID(w http.ResponseWriter, r *http.Requ
 			_ = render.Render(w, r, util.NewServerResponse(err.Error(), nil, http.StatusNotFound))
 			return
 		}
+		fmt.Println(err)
 
 		_ = render.Render(w, r, util.NewServerResponse("error retrieving portal link", nil, http.StatusBadRequest))
 		return

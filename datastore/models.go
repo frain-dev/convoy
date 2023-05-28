@@ -1251,12 +1251,14 @@ type OrganisationInvite struct {
 }
 
 type PortalLink struct {
-	UID               string           `json:"uid" db:"id"`
-	Name              string           `json:"name" db:"name"`
-	ProjectID         string           `json:"project_id" db:"project_id"`
-	Token             string           `json:"-" db:"token"`
-	Endpoints         pq.StringArray   `json:"endpoints" db:"endpoints"`
-	EndpointsMetadata EndpointMetadata `json:"endpoints_metadata" db:"endpoints_metadata"`
+	UID                string           `json:"uid" db:"id"`
+	Name               string           `json:"name" db:"name"`
+	ProjectID          string           `json:"project_id" db:"project_id"`
+	Token              string           `json:"-" db:"token"`
+	OwnerID            string           `json:"owner_id" db:"owner_id"`
+	Endpoints          pq.StringArray   `json:"endpoints" db:"endpoints"`
+	EndpointsMetadata  EndpointMetadata `json:"endpoints_metadata" db:"endpoints_metadata"`
+	EndpointManagement bool             `json:"endpoint_management" db:"endpoint_management"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`

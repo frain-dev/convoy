@@ -35,8 +35,8 @@ func (p *PortalLinkService) CreatePortalLink(ctx context.Context, portal *models
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	if len(portal.Endpoints) == 0 {
-		return nil, util.NewServiceError(http.StatusBadRequest, ErrInvalidEndpoints)
+	if err := p.ownerIdAndEndpointsArePresent(portal); err != nil {
+		return nil, &ServiceError{ErrMsg: err.Error(), Err: err}
 	}
 
 	if err := p.findEndpoints(ctx, portal.Endpoints, project); err != nil {
@@ -44,13 +44,15 @@ func (p *PortalLinkService) CreatePortalLink(ctx context.Context, portal *models
 	}
 
 	portalLink := &datastore.PortalLink{
-		UID:       ulid.Make().String(),
-		ProjectID: project.UID,
-		Name:      portal.Name,
-		Token:     uniuri.NewLen(24),
-		Endpoints: portal.Endpoints,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		UID:                ulid.Make().String(),
+		ProjectID:          project.UID,
+		Name:               portal.Name,
+		Token:              uniuri.NewLen(24),
+		OwnerID:            portal.OwnerID,
+		Endpoints:          portal.Endpoints,
+		EndpointManagement: portal.EndpointManagement,
+		CreatedAt:          time.Now(),
+		UpdatedAt:          time.Now(),
 	}
 
 	err := p.portalLinkRepo.CreatePortalLink(ctx, portalLink)
@@ -66,8 +68,8 @@ func (p *PortalLinkService) UpdatePortalLink(ctx context.Context, project *datas
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	if len(update.Endpoints) == 0 {
-		return nil, util.NewServiceError(http.StatusBadRequest, ErrInvalidEndpoints)
+	if err := p.ownerIdAndEndpointsArePresent(update); err != nil {
+		return nil, &ServiceError{ErrMsg: err.Error(), Err: err}
 	}
 
 	if err := p.findEndpoints(ctx, update.Endpoints, project); err != nil {
@@ -75,7 +77,10 @@ func (p *PortalLinkService) UpdatePortalLink(ctx context.Context, project *datas
 	}
 
 	portalLink.Name = update.Name
+	portalLink.OwnerID = update.OwnerID
 	portalLink.Endpoints = update.Endpoints
+	portalLink.EndpointManagement = update.EndpointManagement
+
 	err := p.portalLinkRepo.UpdatePortalLink(ctx, project.UID, portalLink)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating portal link"))
@@ -109,6 +114,14 @@ func (p *PortalLinkService) findEndpoints(ctx context.Context, endpoints []strin
 		if endpoint.ProjectID != project.UID {
 			return util.NewServiceError(http.StatusForbidden, fmt.Errorf("unauthorized access to endpoint with ID: %s", e))
 		}
+	}
+
+	return nil
+}
+
+func (p *PortalLinkService) ownerIdAndEndpointsArePresent(portal *models.PortalLink) error {
+	if !util.IsStringEmpty(portal.OwnerID) && len(portal.Endpoints) > 0 {
+		return errors.New("owner id and endpoints cannot be both present")
 	}
 
 	return nil

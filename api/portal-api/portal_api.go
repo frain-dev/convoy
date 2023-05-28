@@ -33,10 +33,12 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 
 	router.Route("/endpoints", func(endpointRouter chi.Router) {
 		endpointRouter.Get("/", a.GetPortalLinkEndpoints)
-
-		endpointRouter.Route("/{endpointID}", func(endpointSubRouter chi.Router) {
-			endpointSubRouter.Get("/", a.GetEndpoint)
-		})
+		endpointRouter.Post("/", a.CreateEndpoint)
+		endpointRouter.Get("/{endpointID}", a.GetEndpoint)
+		endpointRouter.Put("/{endpointID}", a.UpdateEndpoint)
+		endpointRouter.Delete("/{endpointID}", a.DeleteEndpoint)
+		endpointRouter.Put("/{endpointID}/pause", a.PauseEndpoint)
+		endpointRouter.Put("/{endpointID}/expire_secret", a.ExpireSecret)
 	})
 
 	router.Route("/events", func(eventRouter chi.Router) {

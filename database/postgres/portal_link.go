@@ -20,8 +20,8 @@ var (
 
 const (
 	createPortalLink = `
-	INSERT INTO convoy.portal_links (id, project_id, name, token, endpoints)
-	VALUES ($1, $2, $3, $4, $5);
+	INSERT INTO convoy.portal_links (id, project_id, name, token, endpoints, owner_id, endpoint_management)
+	VALUES ($1, $2, $3, $4, $5, $6, $7);
 	`
 
 	createPortalLinkEndpoints = `
@@ -33,6 +33,8 @@ const (
 	SET
 		name = $2,
 		endpoints = $3,
+		owner_id = $4,
+		endpoint_management = $5,
 		updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -69,6 +71,8 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
+	p.owner_id,
+	p.endpoint_management,
 	p.created_at,
 	p.updated_at,
 	array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url)))  AS endpoints_metadata
@@ -131,6 +135,8 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 		portal.Name,
 		portal.Token,
 		portal.Endpoints,
+		portal.OwnerID,
+		portal.EndpointManagement,
 	)
 	if err != nil {
 		return err
@@ -166,7 +172,13 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 		return err
 	}
 
-	r, err := tx.ExecContext(ctx, updatePortalLink, portal.UID, portal.Name, portal.Endpoints)
+	r, err := tx.ExecContext(ctx, updatePortalLink,
+		portal.UID,
+		portal.Name,
+		portal.Endpoints,
+		portal.OwnerID,
+		portal.EndpointManagement,
+	)
 	if err != nil {
 		return err
 	}
