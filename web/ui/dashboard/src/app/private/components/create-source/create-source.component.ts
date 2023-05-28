@@ -151,7 +151,11 @@ export class CreateSourceComponent implements OnInit {
 
 			this.sourceForm.patchValue(response.data);
 			if (this.sourceDetails.custom_response.body || this.sourceDetails.custom_response.content_type) {
-				this.customResponse = JSON.parse(this.sourceDetails.custom_response.body);
+				try {
+					this.customResponse = JSON.parse(this.sourceDetails.custom_response.body);
+				} catch (error) {
+					this.customResponse = this.sourceDetails.custom_response.body;
+				}
 				this.toggleConfigForm('custom_response');
 			}
 
