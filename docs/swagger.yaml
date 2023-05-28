@@ -34,6 +34,13 @@ definitions:
       source_id:
         type: string
     type: object
+  datastore.CustomResponse:
+    properties:
+      body:
+        type: string
+      content_type:
+        type: string
+    type: object
   datastore.DeliveryAttempt:
     properties:
       api_version:
@@ -558,6 +565,8 @@ definitions:
     properties:
       created_at:
         type: string
+      custom_response:
+        $ref: '#/definitions/datastore.CustomResponse'
       deleted_at:
         type: string
       forward_headers:
@@ -739,6 +748,13 @@ definitions:
         $ref: '#/definitions/models.APIKeyResponse'
       project:
         $ref: '#/definitions/models.ProjectResponse'
+    type: object
+  models.CustomResponse:
+    properties:
+      body:
+        type: string
+      content_type:
+        type: string
     type: object
   models.DynamicEndpoint:
     properties:
@@ -1047,6 +1063,8 @@ definitions:
     type: object
   models.Source:
     properties:
+      custom_response:
+        $ref: '#/definitions/models.CustomResponse'
       is_disabled:
         type: boolean
       name:

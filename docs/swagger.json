@@ -5575,6 +5575,17 @@
                 }
             }
         },
+        "datastore.CustomResponse": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "content_type": {
+                    "type": "string"
+                }
+            }
+        },
         "datastore.DeliveryAttempt": {
             "type": "object",
             "properties": {
@@ -6348,6 +6359,9 @@
                 "created_at": {
                     "type": "string"
                 },
+                "custom_response": {
+                    "$ref": "#/definitions/datastore.CustomResponse"
+                },
                 "deleted_at": {
                     "type": "string"
                 },
@@ -6613,6 +6627,17 @@
                 },
                 "project": {
                     "$ref": "#/definitions/models.ProjectResponse"
+                }
+            }
+        },
+        "models.CustomResponse": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "content_type": {
+                    "type": "string"
                 }
             }
         },
@@ -7075,6 +7100,9 @@
         "models.Source": {
             "type": "object",
             "properties": {
+                "custom_response": {
+                    "$ref": "#/definitions/models.CustomResponse"
+                },
                 "is_disabled": {
                     "type": "boolean"
                 },

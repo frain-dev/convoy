@@ -18,8 +18,8 @@ import (
 
 const (
 	createSource = `
-    INSERT INTO convoy.sources (id, source_verifier_id, name,type,mask_id,provider,is_disabled,forward_headers,project_id, pub_sub)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10);
+    INSERT INTO convoy.sources (id, source_verifier_id, name,type,mask_id,provider,is_disabled,forward_headers,project_id, pub_sub, custom_response_body,custom_response_content_type)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12);
     `
 
 	createSourceVerifier = `
@@ -41,6 +41,8 @@ const (
 	forward_headers=$7,
 	project_id =$8,
 	pub_sub= $9,
+	custom_response_body = $10,
+	custom_response_content_type = $11,
 	updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL ;
 	`
@@ -72,6 +74,8 @@ const (
 		s.project_id,
 		COALESCE(s.source_verifier_id, '') AS source_verifier_id,
 		s.pub_sub,
+		COALESCE(s.custom_response_body, '') as "custom_response.body",
+		COALESCE(s.custom_response_content_type, '') as "custom_response.content_type",
 		COALESCE(sv.type, '') as "verifier.type",
 		COALESCE(sv.basic_username, '') as "verifier.basic_auth.username",
 		COALESCE(sv.basic_password, '') as "verifier.basic_auth.password",
@@ -111,27 +115,27 @@ const (
 	`
 
 	fetchSourcesPagedFilter = `
-	AND (s.type = :type OR :type = '') 
-	AND (s.provider = :provider OR :provider = '') 
-	AND s.project_id = :project_id 
+	AND (s.type = :type OR :type = '')
+	AND (s.provider = :provider OR :provider = '')
+	AND s.project_id = :project_id
 	`
 
 	fetchSourcesPagedForward = `
-	%s 
-	%s 
-	AND s.id <= :cursor 
+	%s
+	%s
+	AND s.id <= :cursor
 	GROUP BY s.id, sv.id
-	ORDER BY s.id DESC 
+	ORDER BY s.id DESC
 	LIMIT :limit
 	`
 
 	fetchSourcesPagedBackward = `
-	WITH sources AS (  
-		%s 
-		%s 
-		AND s.id >= :cursor 
+	WITH sources AS (
+		%s
+		%s
+		AND s.id >= :cursor
 		GROUP BY s.id, sv.id
-		ORDER BY s.id ASC 
+		ORDER BY s.id ASC
 		LIMIT :limit
 	)
 
@@ -211,7 +215,8 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 
 	result1, err := tx.ExecContext(
 		ctx, createSource, source.UID, sourceVerifierID, source.Name, source.Type, source.MaskID,
-		source.Provider, source.IsDisabled, pq.Array(source.ForwardHeaders), source.ProjectID, source.PubSub,
+		source.Provider, source.IsDisabled, pq.Array(source.ForwardHeaders), source.ProjectID,
+		source.PubSub, source.CustomResponse.Body, source.CustomResponse.ContentType,
 	)
 	if err != nil {
 		return err
@@ -237,7 +242,7 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 
 	result, err := tx.ExecContext(
 		ctx, updateSourceById, source.UID, source.Name, source.Type, source.MaskID,
-		source.Provider, source.IsDisabled, source.ForwardHeaders, source.ProjectID, source.PubSub,
+		source.Provider, source.IsDisabled, source.ForwardHeaders, source.ProjectID, source.PubSub, source.CustomResponse.Body, source.CustomResponse.ContentType,
 	)
 	if err != nil {
 		return err

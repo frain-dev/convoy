@@ -54,6 +54,17 @@
 				},
 				"type": "object"
 			},
+			"datastore.CustomResponse": {
+				"properties": {
+					"body": {
+						"type": "string"
+					},
+					"content_type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.DeliveryAttempt": {
 				"properties": {
 					"api_version": {
@@ -826,6 +837,9 @@
 					"created_at": {
 						"type": "string"
 					},
+					"custom_response": {
+						"$ref": "#/components/schemas/datastore.CustomResponse"
+					},
 					"deleted_at": {
 						"type": "string"
 					},
@@ -1091,6 +1105,17 @@
 					},
 					"project": {
 						"$ref": "#/components/schemas/models.ProjectResponse"
+					}
+				},
+				"type": "object"
+			},
+			"models.CustomResponse": {
+				"properties": {
+					"body": {
+						"type": "string"
+					},
+					"content_type": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -1553,6 +1578,9 @@
 			},
 			"models.Source": {
 				"properties": {
+					"custom_response": {
+						"$ref": "#/components/schemas/models.CustomResponse"
+					},
 					"is_disabled": {
 						"type": "boolean"
 					},
