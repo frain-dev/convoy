@@ -20,10 +20,6 @@ export class AppComponent implements OnInit {
 	tableHead = ['Name', 'Endpoint', 'Created At', 'Updated At', 'Status', ''];
 	token: string = this.route.snapshot.queryParams.token;
 	subscriptions!: { content: SUBSCRIPTION[]; pagination: PAGINATION };
-	eventTabs: ['events', 'event deliveries'] = ['events', 'event deliveries'];
-	tabs: string[] = ['subscriptions'];
-	activeEventsTab: EVENT_PAGE_TABS = 'events';
-	activeTab: string = 'subscriptions';
 	events!: { content: EVENT[]; pagination: PAGINATION };
 	eventDeliveries!: { content: EVENT_DELIVERY[]; pagination: PAGINATION };
 	activeSubscription?: SUBSCRIPTION;
@@ -35,14 +31,12 @@ export class AppComponent implements OnInit {
 	subscriptionId = this.route.snapshot.params.id;
 	showCreateSubscription = false;
 	showSubscriptionError = false;
-	showCliError = false;
-	isCliAvailable: boolean = false;
+	showEndpointSecret: boolean = false;
 
 	constructor(private appService: AppService, private route: ActivatedRoute, private router: Router) {}
 
 	ngOnInit(): void {
 		this.getSubscripions();
-		this.checkFlags();
 		if (this.route.snapshot.queryParams?.createSub) localStorage.setItem('CONVOY_APP__SHOW_CREATE_SUB', this.route.snapshot.queryParams?.createSub);
 		const subscribeButtonState = localStorage.getItem('CONVOY_APP__SHOW_CREATE_SUB');
 
@@ -61,11 +55,6 @@ export class AppComponent implements OnInit {
 		}
 	}
 
-	async checkFlags() {
-		this.isCliAvailable = false;
-		if (this.isCliAvailable) this.tabs.push('cli keys', 'devices');
-	}
-
 	async getSubscripions() {
 		this.isloadingSubscriptions = true;
 		try {
@@ -80,17 +69,8 @@ export class AppComponent implements OnInit {
 		}
 	}
 
-	toggleActiveTab(tab: string) {
-		this.activeTab = tab;
-	}
-
-	toggleEventsTab(tab: EVENT_PAGE_TABS) {
-		this.activeEventsTab = tab;
-	}
-
 	getEventDeliveries(eventId: string) {
 		this.eventDeliveryFilteredByEventId = eventId;
-		this.toggleEventsTab('event deliveries');
 	}
 
 	async deleteSubscription() {
