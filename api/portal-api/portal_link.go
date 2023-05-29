@@ -13,9 +13,10 @@ import (
 
 func createPortalLinkService(a *PortalLinkHandler) *services.PortalLinkService {
 	portalRepo := postgres.NewPortalLinkRepo(a.A.DB)
-	endpointService := createEndpointService(a)
+	projectRepo := postgres.NewProjectRepo(a.A.DB)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
 
-	return services.NewPortalLinkService(portalRepo, endpointService)
+	return services.NewPortalLinkService(portalRepo, endpointRepo, a.A.Cache, projectRepo)
 }
 
 func (a *PortalLinkHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *http.Request) {
