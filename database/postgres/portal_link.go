@@ -71,8 +71,8 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
-	p.owner_id,
-	p.endpoint_management,
+	COALESCE(p.endpoint_management, false) as "endpoint_management",
+	COALESCE(p.owner_id, '') as "owner_id",
 	p.created_at,
 	p.updated_at,
 	array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url)))  AS endpoints_metadata
@@ -172,6 +172,7 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 		return err
 	}
 
+	fmt.Printf("update: %+v\n", portal)
 	r, err := tx.ExecContext(ctx, updatePortalLink,
 		portal.UID,
 		portal.Name,

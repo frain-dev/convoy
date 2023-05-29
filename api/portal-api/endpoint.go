@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/go-chi/render"
@@ -49,8 +50,15 @@ func (a *PortalLinkHandler) CreateEndpoint(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	endpointService := createEndpointService(a)
-	endpoint, err := endpointService.CreateEndpoint(r.Context(), e, portalLink.ProjectID)
+	ce := services.CreateEndpointService{
+		Cache:        a.A.Cache,
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		ProjectRepo:  postgres.NewProjectRepo(a.A.DB),
+		E:            e,
+		ProjectID:    portalLink.ProjectID,
+	}
+
+	endpoint, err := ce.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -82,8 +90,16 @@ func (a *PortalLinkHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	endpointService := createEndpointService(a)
-	endpoint, err = endpointService.UpdateEndpoint(r.Context(), e, endpoint, project)
+	ce := services.UpdateEndpointService{
+		Cache:        a.A.Cache,
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		ProjectRepo:  postgres.NewProjectRepo(a.A.DB),
+		E:            e,
+		Endpoint:     endpoint,
+		Project:      project,
+	}
+
+	endpoint, err = ce.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -119,8 +135,7 @@ func (a *PortalLinkHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	endpointService := createEndpointService(a)
-	err = endpointService.DeleteEndpoint(r.Context(), endpoint, project)
+	err = postgres.NewEndpointRepo(a.A.DB).DeleteEndpoint(r.Context(), endpoint, project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -151,8 +166,17 @@ func (a *PortalLinkHandler) ExpireSecret(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	endpointService := createEndpointService(a)
-	endpoint, err = endpointService.ExpireSecret(r.Context(), e, endpoint, project)
+	xs := services.ExpireSecretService{
+		Queuer:       a.A.Queue,
+		Cache:        a.A.Cache,
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		ProjectRepo:  postgres.NewProjectRepo(a.A.DB),
+		S:            e,
+		Endpoint:     endpoint,
+		Project:      project,
+	}
+
+	endpoint, err = xs.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -169,9 +193,12 @@ func (a *PortalLinkHandler) PauseEndpoint(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	endpointID := chi.URLParam(r, "endpointID")
-	endpointService := createEndpointService(a)
-	endpoint, err := endpointService.PauseEndpoint(r.Context(), project.UID, endpointID)
+	ps := services.PauseEndpointService{
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		ProjectID:    project.UID,
+		EndpointId:   chi.URLParam(r, "endpointID"),
+	}
+	endpoint, err := ps.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
