@@ -54,6 +54,17 @@
 				},
 				"type": "object"
 			},
+			"datastore.CustomResponse": {
+				"properties": {
+					"body": {
+						"type": "string"
+					},
+					"content_type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.DeliveryAttempt": {
 				"properties": {
 					"api_version": {
@@ -826,6 +837,9 @@
 					"created_at": {
 						"type": "string"
 					},
+					"custom_response": {
+						"$ref": "#/components/schemas/datastore.CustomResponse"
+					},
 					"deleted_at": {
 						"type": "string"
 					},
@@ -1095,6 +1109,17 @@
 				},
 				"type": "object"
 			},
+			"models.CustomResponse": {
+				"properties": {
+					"body": {
+						"type": "string"
+					},
+					"content_type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"models.DynamicEndpoint": {
 				"properties": {
 					"advanced_signatures": {
@@ -1344,6 +1369,9 @@
 			},
 			"models.PortalLink": {
 				"properties": {
+					"endpoint_management": {
+						"type": "boolean"
+					},
 					"endpoints": {
 						"items": {
 							"type": "string"
@@ -1351,6 +1379,9 @@
 						"type": "array"
 					},
 					"name": {
+						"type": "string"
+					},
+					"owner_id": {
 						"type": "string"
 					}
 				},
@@ -1367,6 +1398,9 @@
 					"endpoint_count": {
 						"type": "integer"
 					},
+					"endpoint_management": {
+						"type": "boolean"
+					},
 					"endpoints": {
 						"items": {
 							"type": "string"
@@ -1380,6 +1414,9 @@
 						"type": "array"
 					},
 					"name": {
+						"type": "string"
+					},
+					"owner_id": {
 						"type": "string"
 					},
 					"project_id": {
@@ -1553,6 +1590,9 @@
 			},
 			"models.Source": {
 				"properties": {
+					"custom_response": {
+						"$ref": "#/components/schemas/models.CustomResponse"
+					},
 					"is_disabled": {
 						"type": "boolean"
 					},

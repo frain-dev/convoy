@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SOURCE } from 'src/app/models/source.model';
@@ -20,6 +20,10 @@ export class CreateSourceComponent implements OnInit {
 		name: ['', Validators.required],
 		is_disabled: [true, Validators.required],
 		type: ['', Validators.required],
+		custom_response: this.formBuilder.group({
+			body: [''],
+			content_type: ['']
+		}),
 		verifier: this.formBuilder.group({
 			api_key: this.formBuilder.group({
 				header_name: ['', Validators.required],
@@ -123,6 +127,7 @@ export class CreateSourceComponent implements OnInit {
 	sourceCreated: boolean = false;
 	showSourceUrl = false;
 	sourceData!: SOURCE;
+	configurations = [{ uid: 'custom_response', name: 'Custom Response', show: false }];
 	private rbacService = inject(RbacService);
 
 	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
@@ -140,7 +145,10 @@ export class CreateSourceComponent implements OnInit {
 			const response = await this.createSourceService.getSourceDetails(this.sourceId);
 			this.sourceDetails = response.data;
 			const sourceProvider = response.data?.provider;
+
 			this.sourceForm.patchValue(response.data);
+			if (this.sourceDetails.custom_response.body || this.sourceDetails.custom_response.content_type) this.toggleConfigForm('custom_response');
+
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
 			this.isloading = false;
 
@@ -212,7 +220,9 @@ export class CreateSourceComponent implements OnInit {
 	async saveSource() {
 		const sourceData = this.checkSourceSetup();
 		if (!this.isSourceFormValid()) return this.sourceForm.markAllAsTouched();
+
 		this.isloading = true;
+
 		try {
 			const response = this.action === 'update' ? await this.createSourceService.updateSource({ data: sourceData, id: this.sourceId }) : await this.createSourceService.createSource({ sourceData });
 			document.getElementById('configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
@@ -265,6 +275,16 @@ export class CreateSourceComponent implements OnInit {
 		}
 
 		return false;
+	}
+
+	toggleConfigForm(configValue: string, value?: boolean) {
+		this.configurations.forEach(config => {
+			if (config.uid === configValue) config.show = value ? value : !config.show;
+		});
+	}
+
+	showConfig(configValue: string): boolean {
+		return this.configurations.find(config => config.uid === configValue)?.show || false;
 	}
 
 	cancel() {

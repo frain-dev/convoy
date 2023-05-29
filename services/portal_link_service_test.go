@@ -16,8 +16,11 @@ import (
 
 func providePortalLinkService(ctrl *gomock.Controller) *PortalLinkService {
 	portalRepo := mocks.NewMockPortalLinkRepository(ctrl)
-	endpointSerivce := provideEndpointService(ctrl)
-	return NewPortalLinkService(portalRepo, endpointSerivce)
+	projectRepo := mocks.NewMockProjectRepository(ctrl)
+	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
+	cache := mocks.NewMockCache(ctrl)
+
+	return NewPortalLinkService(portalRepo, endpointRepo, cache, projectRepo)
 }
 
 func TestPortalLinkService_CreatePortalLinK(t *testing.T) {

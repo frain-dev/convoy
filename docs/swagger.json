@@ -5575,6 +5575,17 @@
                 }
             }
         },
+        "datastore.CustomResponse": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "content_type": {
+                    "type": "string"
+                }
+            }
+        },
         "datastore.DeliveryAttempt": {
             "type": "object",
             "properties": {
@@ -6348,6 +6359,9 @@
                 "created_at": {
                     "type": "string"
                 },
+                "custom_response": {
+                    "$ref": "#/definitions/datastore.CustomResponse"
+                },
                 "deleted_at": {
                     "type": "string"
                 },
@@ -6616,6 +6630,17 @@
                 }
             }
         },
+        "models.CustomResponse": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "content_type": {
+                    "type": "string"
+                }
+            }
+        },
         "models.DynamicEndpoint": {
             "type": "object",
             "properties": {
@@ -6866,6 +6891,9 @@
         "models.PortalLink": {
             "type": "object",
             "properties": {
+                "endpoint_management": {
+                    "type": "boolean"
+                },
                 "endpoints": {
                     "type": "array",
                     "items": {
@@ -6873,6 +6901,9 @@
                     }
                 },
                 "name": {
+                    "type": "string"
+                },
+                "owner_id": {
                     "type": "string"
                 }
             }
@@ -6889,6 +6920,9 @@
                 "endpoint_count": {
                     "type": "integer"
                 },
+                "endpoint_management": {
+                    "type": "boolean"
+                },
                 "endpoints": {
                     "type": "array",
                     "items": {
@@ -6902,6 +6936,9 @@
                     }
                 },
                 "name": {
+                    "type": "string"
+                },
+                "owner_id": {
                     "type": "string"
                 },
                 "project_id": {
@@ -7075,6 +7112,9 @@
         "models.Source": {
             "type": "object",
             "properties": {
+                "custom_response": {
+                    "$ref": "#/definitions/models.CustomResponse"
+                },
                 "is_disabled": {
                     "type": "boolean"
                 },
