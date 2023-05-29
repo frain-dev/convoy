@@ -172,6 +172,20 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 4. Return 200
+	if !util.IsStringEmpty(source.CustomResponse.Body) {
+		// send back custom response
+		if !util.IsStringEmpty(source.CustomResponse.ContentType) {
+			w.Header().Set("Content-Type", source.CustomResponse.ContentType)
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(source.CustomResponse.Body))
+			return
+		}
+
+		render.Status(r, http.StatusOK)
+		render.PlainText(w, r, source.CustomResponse.Body)
+		return
+
+	}
 	_ = render.Render(w, r, util.NewServerResponse("Event received", len(payload), http.StatusOK))
 }
 

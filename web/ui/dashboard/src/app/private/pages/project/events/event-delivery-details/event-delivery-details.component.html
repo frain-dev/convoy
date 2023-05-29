@@ -113,7 +113,7 @@
 		<div *ngIf="eventDelsDetails?.status === 'Success'"></div>
 	</div>
 
-	<h3 class="font-semibold text-18 mb-24px" *ngIf="eventDeliveryAtempts.length">Delivery Attempts</h3>
+	<h3 class="font-semibold text-18 mb-24px" *ngIf="eventDeliveryAtempts?.length">Delivery Attempts</h3>
 	<div *ngFor="let deliveryAttempt of eventDeliveryAtempts; let i = index" class="border-b border-grey-20">
 		<div class="flex justify-between items-center py-12px" (click)="selectedDeliveryAttempt = deliveryAttempt">
 			<div>

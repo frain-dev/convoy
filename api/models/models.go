@@ -9,21 +9,6 @@ import (
 	"gopkg.in/guregu/null.v4"
 )
 
-type Project struct {
-	Name    string                   `json:"name" bson:"name" valid:"required~please provide a valid name"`
-	Type    datastore.ProjectType    `json:"type" bson:"type" valid:"required~please provide a valid type,in(incoming|outgoing)"`
-	LogoURL string                   `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
-	Config  *datastore.ProjectConfig `json:"config"`
-}
-
-type UpdateProject struct {
-	Name              string                   `json:"name" bson:"name" valid:"required~please provide a valid name"`
-	LogoURL           string                   `json:"logo_url" bson:"logo_url" valid:"url~please provide a valid logo url,optional"`
-	RateLimit         int                      `json:"rate_limit" bson:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
-	RateLimitDuration string                   `json:"rate_limit_duration" bson:"rate_limit_duration" valid:"alphanum~please provide a valid rate limit duration,optional"`
-	Config            *datastore.ProjectConfig `json:"config" valid:"optional"`
-}
-
 type Organisation struct {
 	Name         string `json:"name" bson:"name"`
 	CustomDomain string `json:"custom_domain" bson:"custom_domain"`
@@ -90,11 +75,6 @@ type APIKeyResponse struct {
 	UID       string    `json:"uid"`
 	UserID    string    `json:"user_id,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
-}
-
-type CreateProjectResponse struct {
-	APIKey  *APIKeyResponse    `json:"api_key"`
-	Project *datastore.Project `json:"project"`
 }
 
 type PortalAPIKeyResponse struct {
@@ -184,12 +164,18 @@ type UpdateEndpoint struct {
 }
 
 type Source struct {
-	Name       string                   `json:"name" valid:"required~please provide a source name"`
-	Type       datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
-	Provider   datastore.SourceProvider `json:"provider"`
-	IsDisabled bool                     `json:"is_disabled"`
-	Verifier   datastore.VerifierConfig `json:"verifier"`
-	PubSub     datastore.PubSubConfig   `json:"pub_sub"`
+	Name           string                   `json:"name" valid:"required~please provide a source name"`
+	Type           datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+	Provider       datastore.SourceProvider `json:"provider"`
+	IsDisabled     bool                     `json:"is_disabled"`
+	CustomResponse CustomResponse           `json:"custom_response"`
+	Verifier       datastore.VerifierConfig `json:"verifier"`
+	PubSub         datastore.PubSubConfig   `json:"pub_sub"`
+}
+
+type CustomResponse struct {
+	Body        string `json:"body"`
+	ContentType string `json:"content_type"`
 }
 
 type UpdateSource struct {
@@ -197,8 +183,14 @@ type UpdateSource struct {
 	Type           datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
 	IsDisabled     *bool                    `json:"is_disabled"`
 	ForwardHeaders []string                 `json:"forward_headers"`
+	CustomResponse UpdateCustomResponse     `json:"custom_response"`
 	Verifier       datastore.VerifierConfig `json:"verifier"`
 	PubSub         *datastore.PubSubConfig  `json:"pub_sub"`
+}
+
+type UpdateCustomResponse struct {
+	Body        *string `json:"body"`
+	ContentType *string `json:"content_type"`
 }
 
 type DynamicSubscription struct {

@@ -82,12 +82,33 @@
 				</div>
 			</ng-container>
 
+			<ng-container *ngIf="showConfig('http_timeout')">
+				<div class="flex justify-between items-center mb-16px">
+					<p class="flex items-center text-14 font-medium text-grey-60">
+						Endpoint Timeout
+						<convoy-tooltip size="sm" position="right" class="ml-4px">How many seconds should Convoy wait for a response from this endpoint before timing out?</convoy-tooltip>
+					</p>
+					<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('http_timeout')">
+						<svg width="16" height="16" class="fill-grey-60">
+							<use xlink:href="#delete-icon"></use>
+						</svg>
+					</button>
+				</div>
+				<convoy-input-field>
+					<label for="http_timeout" convoy-label>Timeout Value</label>
+					<div class="relative">
+						<input id="http_timeout" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g 60" />
+						<div class="absolute top-[50%] right-14px text-16 text-grey-100 opacity-40 translate-y-[-50%]">sec</div>
+					</div>
+				</convoy-input-field>
+			</ng-container>
+
 			<div class="flex items-center">
 				<ng-container *ngFor="let config of configurations; let i = index">
 					<ng-container *ngIf="!config.show">
 						<button
 							convoy-permission="Endpoints|MANAGE"
-							*ngIf="i < 2 || privateService.activeProjectDetails?.type === 'outgoing'"
+							*ngIf="i < 3 || privateService.activeProjectDetails?.type === 'outgoing'"
 							convoy-button
 							size="sm"
 							fill="outline"

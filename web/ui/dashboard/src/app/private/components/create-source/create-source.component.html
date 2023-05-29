@@ -37,7 +37,7 @@
 						<span *ngIf="isCustomSource(sourceForm.value.verifier.type)">{{ sourceForm.value.verifier.type }} Credentials</span>
 						<span *ngIf="sourceForm.value.verifier.type === 'hmac'">Configure HMAC</span>
 					</h3>
-					<div class="grid grid-cols-2 gap-6">
+					<div class="grid gap-6" style="grid-template-columns: repeat(auto-fit, minmax(360px, 1fr))">
 						<convoy-select
 							*ngIf="sourceForm.value.verifier.type === 'hmac'"
 							label="Encoding"
@@ -49,6 +49,7 @@
 							className="mb-0"
 							(selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ encoding: $event })"
 						></convoy-select>
+
 						<convoy-select
 							*ngIf="sourceForm.value.verifier.type === 'hmac'"
 							label="Hash Algorithm"
@@ -61,13 +62,13 @@
 							(selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ hash: $event })"
 						></convoy-select>
 
-						<convoy-input-field *ngIf="sourceForm.value.verifier.type === 'hmac'">
+						<convoy-input-field *ngIf="sourceForm.value.verifier.type === 'hmac'" class="mb-0">
 							<label for="header" required="true" convoy-label required="true">Header Value</label>
 							<input type="text" id="header" convoy-input autocomplete="header" formControlName="header" placeholder="Key goes here" />
 							<convoy-input-error *ngIf="sourceForm.get('hmac.header')?.touched && sourceForm.get('hmac.header')?.invalid">Enter header key</convoy-input-error>
 						</convoy-input-field>
 
-						<convoy-input-field>
+						<convoy-input-field class="mb-0">
 							<label for="secret" required="true" convoy-label required="true">Webhook signing secret</label>
 							<input type="text" id="secret" convoy-input autocomplete="secret" formControlName="secret" placeholder="Secret goes here" />
 							<convoy-input-error *ngIf="sourceForm.get('hmac.secret')?.touched && sourceForm.get('hmac.secret')?.invalid">Enter webhook signing secret</convoy-input-error>
@@ -108,6 +109,43 @@
 						</convoy-input-field>
 					</div>
 				</div>
+			</div>
+
+			<hr class="border-t border-grey-20 my-24px" />
+
+			<h3 class="font-semibold mb-24px">Set Configurations</h3>
+
+			<ng-container *ngIf="showConfig('custom_response')">
+				<div class="border border-grey-20 rounded-4px mb-24px">
+					<div class="flex justify-between items-center p-16px border-b border-grey-20">
+						<h4 class="text-grey-60 font-medium">Custom response</h4>
+						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="sourceForm.patchValue({ custom_response: { content_type: '', body: '' } }); toggleConfigForm('custom_response')">
+							<svg width="16" height="16" class="fill-grey-60">
+								<use xlink:href="#delete-icon"></use>
+							</svg>
+						</button>
+					</div>
+
+					<div class="p-16px" formGroupName="custom_response">
+						<convoy-input-field>
+							<label for="content_type" required="true" convoy-label>Response Content Type</label>
+							<input type="text" id="content_type" convoy-input autocomplete="content_type" formControlName="content_type" placeholder="application/json, text/plain" />
+							<convoy-input-error *ngIf="sourceForm.get('custom_response.content_type')?.touched && sourceForm.get('custom_response.content_type')?.invalid">Enter content type</convoy-input-error>
+						</convoy-input-field>
+
+						<label convoy-label>Response Content</label>
+						<textarea formControlName="body" class="min-h-[20vh]" convoy-input name="body" id="body"></textarea>
+					</div>
+				</div>
+			</ng-container>
+
+			<div class="flex flex-wrap items-center">
+				<ng-container *ngFor="let config of configurations">
+					<button *ngIf="!config.show" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" class="mr-24px mb-10px" (click)="toggleConfigForm(config.uid)">
+						{{ config.name }}
+						<img src="assets/img/svg/plus-icon.svg" class="ml-24px" alt="plus icon" />
+					</button>
+				</ng-container>
 			</div>
 		</ng-container>
 

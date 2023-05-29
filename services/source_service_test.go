@@ -45,6 +45,10 @@ func TestSourceService_CreateSource(t *testing.T) {
 				newSource: &models.Source{
 					Name: "Convoy-Prod",
 					Type: datastore.HTTPSource,
+					CustomResponse: models.CustomResponse{
+						Body:        "[accepted]",
+						ContentType: "application/json",
+					},
 					Verifier: datastore.VerifierConfig{
 						Type: datastore.HMacVerifier,
 						HMac: &datastore.HMac{
@@ -60,6 +64,10 @@ func TestSourceService_CreateSource(t *testing.T) {
 			wantSource: &datastore.Source{
 				Name: "Convoy-Prod",
 				Type: datastore.HTTPSource,
+				CustomResponse: datastore.CustomResponse{
+					Body:        "[accepted]",
+					ContentType: "application/json",
+				},
 				Verifier: &datastore.VerifierConfig{
 					Type: datastore.HMacVerifier,
 					HMac: &datastore.HMac{
@@ -328,10 +336,20 @@ func TestSourceService_UpdateSource(t *testing.T) {
 		{
 			name: "should_update_source",
 			args: args{
-				ctx:    ctx,
-				source: &datastore.Source{UID: "12345"},
+				ctx: ctx,
+				source: &datastore.Source{
+					UID: "12345",
+					CustomResponse: datastore.CustomResponse{
+						Body:        "triggered",
+						ContentType: "text/plain",
+					},
+				},
 				update: &models.UpdateSource{
 					Name: stringPtr("Convoy-Prod"),
+					CustomResponse: models.UpdateCustomResponse{
+						Body:        stringPtr("[accepted]"),
+						ContentType: stringPtr("application/json"),
+					},
 					Type: datastore.HTTPSource,
 					Verifier: datastore.VerifierConfig{
 						Type: datastore.HMacVerifier,
@@ -348,6 +366,10 @@ func TestSourceService_UpdateSource(t *testing.T) {
 			wantSource: &datastore.Source{
 				Name: "Convoy-Prod",
 				Type: datastore.HTTPSource,
+				CustomResponse: datastore.CustomResponse{
+					Body:        "[accepted]",
+					ContentType: "application/json",
+				},
 				Verifier: &datastore.VerifierConfig{
 					Type: datastore.HMacVerifier,
 					HMac: &datastore.HMac{

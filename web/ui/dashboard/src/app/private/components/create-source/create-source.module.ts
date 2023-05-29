@@ -10,7 +10,7 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { FileInputComponent } from 'src/app/components/file-input/file-input.component';
 import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.component';
 import { TokenModalComponent } from '../token-modal/token-modal.component';
-import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { PermissionDirective } from '../permission/permission.directive';
 
 @NgModule({
@@ -29,6 +29,7 @@ import { PermissionDirective } from '../permission/permission.directive';
 		FileInputComponent,
 		FormLoaderComponent,
 		ModalComponent,
+		ModalHeaderComponent,
 		TokenModalComponent,
 		PermissionDirective
 	],
