@@ -44,12 +44,32 @@ const (
 	`
 
 	fetchPortalLinkById = `
-	SELECT * FROM convoy.portal_links 
+	SELECT
+	p.id,
+	p.project_id,
+	p.name,
+	p.token,
+	p.endpoints,
+	COALESCE(p.endpoint_management, false) as "endpoint_management",
+	COALESCE(p.owner_id, '') as "owner_id",
+	p.created_at,
+	p.updated_at
+	FROM convoy.portal_links p
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	fetchPortalLinkByToken = `
-	SELECT * FROM convoy.portal_links 
+	SELECT
+	p.id,
+	p.project_id,
+	p.name,
+	p.token,
+	p.endpoints,
+	COALESCE(p.endpoint_management, false) as "endpoint_management",
+	COALESCE(p.owner_id, '') as "owner_id",
+	p.created_at,
+	p.updated_at
+	FROM convoy.portal_links p
 	WHERE token = $1 AND deleted_at IS NULL;
 	`
 
