@@ -112,4 +112,8 @@ export class AppComponent implements OnInit {
 	onCreateSubscription() {
 		this.router.navigate(['/portal'], { relativeTo: this.route, queryParams: { token: this.token } });
 	}
+
+	hasFilter(filterObject: { headers: Object; body: Object }): boolean {
+		return Object.keys(filterObject.body).length > 0 || Object.keys(filterObject.headers).length > 0;
+	}
 }
