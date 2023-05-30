@@ -3,6 +3,7 @@ package models
 import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	"github.com/lib/pq"
 	"time"
 )
@@ -14,12 +15,20 @@ type CreateProject struct {
 	Config  *ProjectConfig `json:"config"`
 }
 
+func (cP *CreateProject) Validate() error {
+	return util.Validate(cP)
+}
+
 type UpdateProject struct {
 	Name              string         `json:"name" valid:"required~please provide a valid name"`
 	LogoURL           string         `json:"logo_url" valid:"url~please provide a valid logo url,optional"`
 	RateLimit         int            `json:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
 	RateLimitDuration string         `json:"rate_limit_duration" valid:"alphanum~please provide a valid rate limit duration,optional"`
 	Config            *ProjectConfig `json:"config" valid:"optional"`
+}
+
+func (uP *UpdateProject) Validate() error {
+	return util.Validate(uP)
 }
 
 type ProjectConfig struct {
@@ -96,7 +105,6 @@ func (sc *StrategyConfiguration) transform() *datastore.StrategyConfiguration {
 }
 
 type SignatureConfiguration struct {
-	Hash     string                         `json:"-"` // Deprecated
 	Header   config.SignatureHeaderProvider `json:"header,omitempty" valid:"required~please provide a valid signature header"`
 	Versions []SignatureVersion             `json:"versions"`
 }
@@ -106,7 +114,7 @@ func (sc *SignatureConfiguration) transform() *datastore.SignatureConfiguration 
 		return nil
 	}
 
-	s := &datastore.SignatureConfiguration{Header: sc.Header, Hash: sc.Hash}
+	s := &datastore.SignatureConfiguration{Header: sc.Header}
 	for _, version := range sc.Versions {
 		s.Versions = append(s.Versions, datastore.SignatureVersion{
 			UID:       version.UID,

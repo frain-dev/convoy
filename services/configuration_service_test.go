@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"testing"
+	"time"
 
 	"gopkg.in/guregu/null.v4"
 
@@ -15,6 +16,66 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
+
+func boolPtr(b bool) *bool {
+	return &b
+}
+
+func stringPtr(s string) *string {
+	return &s
+}
+
+func stripVariableFields(t *testing.T, obj string, v interface{}) {
+	switch obj {
+	case "project":
+		g := v.(*datastore.Project)
+		if g.Config != nil {
+			for i := range g.Config.Signature.Versions {
+				v := &g.Config.Signature.Versions[i]
+				v.UID = ""
+				v.CreatedAt = time.Time{}
+			}
+		}
+		g.UID = ""
+		g.CreatedAt, g.UpdatedAt, g.DeletedAt = time.Time{}, time.Time{}, null.Time{}
+	case "endpoint":
+		e := v.(*datastore.Endpoint)
+
+		for i := range e.Secrets {
+			s := &e.Secrets[i]
+			s.UID = ""
+			s.CreatedAt, s.UpdatedAt, s.DeletedAt = time.Time{}, time.Time{}, null.Time{}
+		}
+
+		e.UID, e.AppID = "", ""
+		e.CreatedAt, e.UpdatedAt, e.DeletedAt = time.Time{}, time.Time{}, null.Time{}
+	case "event":
+		e := v.(*datastore.Event)
+		e.UID = ""
+		e.MatchedEndpoints = 0
+		e.CreatedAt, e.UpdatedAt, e.DeletedAt = time.Time{}, time.Time{}, null.Time{}
+	case "apiKey":
+		a := v.(*datastore.APIKey)
+		a.UID, a.MaskID, a.Salt, a.Hash = "", "", "", ""
+		a.CreatedAt, a.UpdatedAt = time.Time{}, time.Time{}
+	case "organisation":
+		a := v.(*datastore.Organisation)
+		a.UID = ""
+		a.CreatedAt, a.UpdatedAt = time.Time{}, time.Time{}
+	case "organisation_member":
+		a := v.(*datastore.OrganisationMember)
+		a.UID = ""
+		a.CreatedAt, a.UpdatedAt = time.Time{}, time.Time{}
+	case "organisation_invite":
+		a := v.(*datastore.OrganisationInvite)
+		a.UID = ""
+		a.Token = ""
+		a.CreatedAt, a.UpdatedAt, a.ExpiresAt, a.DeletedAt = time.Time{}, time.Time{}, time.Time{}, null.Time{}
+	default:
+		t.Errorf("invalid data body - %v of type %T", obj, obj)
+		t.FailNow()
+	}
+}
 
 func provideConfigService(ctrl *gomock.Controller) *ConfigService {
 	configRepo := mocks.NewMockConfigurationRepository(ctrl)

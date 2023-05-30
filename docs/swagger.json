@@ -68,7 +68,7 @@
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/datastore.Project"
+                                                "$ref": "#/definitions/models.ProjectResponse"
                                             }
                                         }
                                     }
@@ -163,7 +163,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Project"
+                            "$ref": "#/definitions/models.CreateProject"
                         }
                     }
                 ],
@@ -179,7 +179,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.Project"
+                                            "$ref": "#/definitions/models.CreateProjectResponse"
                                         }
                                     }
                                 }
@@ -282,7 +282,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.Project"
+                                            "$ref": "#/definitions/models.ProjectResponse"
                                         }
                                     }
                                 }
@@ -376,7 +376,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Project"
+                            "$ref": "#/definitions/models.UpdateProject"
                         }
                     }
                 ],
@@ -392,7 +392,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.Project"
+                                            "$ref": "#/definitions/models.ProjectResponse"
                                         }
                                     }
                                 }
@@ -5575,6 +5575,17 @@
                 }
             }
         },
+        "datastore.CustomResponse": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "content_type": {
+                    "type": "string"
+                }
+            }
+        },
         "datastore.DeliveryAttempt": {
             "type": "object",
             "properties": {
@@ -5989,6 +6000,21 @@
                 "type": "string"
             }
         },
+        "datastore.KeyType": {
+            "type": "string",
+            "enum": [
+                "project",
+                "app_portal",
+                "cli",
+                "personal_key"
+            ],
+            "x-enum-varnames": [
+                "ProjectKey",
+                "AppPortalKey",
+                "CLIKey",
+                "PersonalKey"
+            ]
+        },
         "datastore.M": {
             "type": "object",
             "additionalProperties": true
@@ -6123,44 +6149,6 @@
                     "type": "integer"
                 },
                 "prev_page_cursor": {
-                    "type": "string"
-                }
-            }
-        },
-        "datastore.Project": {
-            "type": "object",
-            "properties": {
-                "config": {
-                    "$ref": "#/definitions/datastore.ProjectConfig"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "logo_url": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "organisation_id": {
-                    "type": "string"
-                },
-                "retained_events": {
-                    "type": "integer"
-                },
-                "statistics": {
-                    "$ref": "#/definitions/datastore.ProjectStatistics"
-                },
-                "type": {
-                    "$ref": "#/definitions/datastore.ProjectType"
-                },
-                "uid": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }
@@ -6371,6 +6359,9 @@
                 "created_at": {
                     "type": "string"
                 },
+                "custom_response": {
+                    "$ref": "#/definitions/datastore.CustomResponse"
+                },
                 "deleted_at": {
                     "type": "string"
                 },
@@ -6578,6 +6569,74 @@
             "additionalProperties": {
                 "type": "array",
                 "items": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.APIKeyResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "key_type": {
+                    "$ref": "#/definitions/datastore.KeyType"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/models.Role"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CreateProject": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "$ref": "#/definitions/models.ProjectConfig"
+                },
+                "logo_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CreateProjectResponse": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "$ref": "#/definitions/models.APIKeyResponse"
+                },
+                "project": {
+                    "$ref": "#/definitions/models.ProjectResponse"
+                }
+            }
+        },
+        "models.CustomResponse": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "content_type": {
                     "type": "string"
                 }
             }
@@ -6806,6 +6865,29 @@
                 "header": {}
             }
         },
+        "models.MetaEventConfiguration": {
+            "type": "object",
+            "properties": {
+                "event_type": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "is_enabled": {
+                    "type": "boolean"
+                },
+                "secret": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
         "models.PortalLink": {
             "type": "object",
             "properties": {
@@ -6864,11 +6946,49 @@
                 }
             }
         },
-        "models.Project": {
+        "models.ProjectConfig": {
+            "type": "object",
+            "properties": {
+                "disable_endpoint": {
+                    "type": "boolean"
+                },
+                "max_payload_read_size": {
+                    "type": "integer"
+                },
+                "meta_event": {
+                    "$ref": "#/definitions/models.MetaEventConfiguration"
+                },
+                "ratelimit": {
+                    "$ref": "#/definitions/models.RateLimitConfiguration"
+                },
+                "replay_attacks_prevention_enabled": {
+                    "type": "boolean"
+                },
+                "retention_policy": {
+                    "$ref": "#/definitions/models.RetentionPolicyConfiguration"
+                },
+                "retention_policy_enabled": {
+                    "type": "boolean"
+                },
+                "signature": {
+                    "$ref": "#/definitions/models.SignatureConfiguration"
+                },
+                "strategy": {
+                    "$ref": "#/definitions/models.StrategyConfiguration"
+                }
+            }
+        },
+        "models.ProjectResponse": {
             "type": "object",
             "properties": {
                 "config": {
                     "$ref": "#/definitions/datastore.ProjectConfig"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
                 },
                 "logo_url": {
                     "type": "string"
@@ -6876,8 +6996,42 @@
                 "name": {
                     "type": "string"
                 },
+                "organisation_id": {
+                    "type": "string"
+                },
+                "retained_events": {
+                    "type": "integer"
+                },
+                "statistics": {
+                    "$ref": "#/definitions/datastore.ProjectStatistics"
+                },
                 "type": {
                     "$ref": "#/definitions/datastore.ProjectType"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RateLimitConfiguration": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "duration": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.RetentionPolicyConfiguration": {
+            "type": "object",
+            "properties": {
+                "policy": {
+                    "type": "string"
                 }
             }
         },
@@ -6898,9 +7052,57 @@
                 }
             }
         },
+        "models.Role": {
+            "type": "object",
+            "properties": {
+                "app": {
+                    "type": "string"
+                },
+                "project": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SignatureConfiguration": {
+            "type": "object",
+            "properties": {
+                "header": {
+                    "$ref": "#/definitions/config.SignatureHeaderProvider"
+                },
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.SignatureVersion"
+                    }
+                }
+            }
+        },
+        "models.SignatureVersion": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "encoding": {
+                    "type": "string"
+                },
+                "hash": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Source": {
             "type": "object",
             "properties": {
+                "custom_response": {
+                    "$ref": "#/definitions/models.CustomResponse"
+                },
                 "is_disabled": {
                     "type": "boolean"
                 },
@@ -6918,6 +7120,20 @@
                 },
                 "verifier": {
                     "$ref": "#/definitions/datastore.VerifierConfig"
+                }
+            }
+        },
+        "models.StrategyConfiguration": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "integer"
+                },
+                "retry_count": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },
@@ -6959,6 +7175,26 @@
                 },
                 "schema": {
                     "$ref": "#/definitions/models.FilterSchema"
+                }
+            }
+        },
+        "models.UpdateProject": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "$ref": "#/definitions/models.ProjectConfig"
+                },
+                "logo_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "rate_limit": {
+                    "type": "integer"
+                },
+                "rate_limit_duration": {
+                    "type": "string"
                 }
             }
         },

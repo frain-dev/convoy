@@ -14,7 +14,9 @@ export interface ENDPOINT {
 	uid: string;
 	title: string;
 	advanced_signatures: boolean;
-	authentication: any;
+	authentication: {
+		api_key: { header_value: string; header_name: string };
+	};
 	created_at: string;
 	description: string;
 	events?: any;

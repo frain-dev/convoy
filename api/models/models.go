@@ -126,12 +126,18 @@ type UpdateEndpoint struct {
 }
 
 type Source struct {
-	Name       string                   `json:"name" valid:"required~please provide a source name"`
-	Type       datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
-	Provider   datastore.SourceProvider `json:"provider"`
-	IsDisabled bool                     `json:"is_disabled"`
-	Verifier   datastore.VerifierConfig `json:"verifier"`
-	PubSub     datastore.PubSubConfig   `json:"pub_sub"`
+	Name           string                   `json:"name" valid:"required~please provide a source name"`
+	Type           datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+	Provider       datastore.SourceProvider `json:"provider"`
+	IsDisabled     bool                     `json:"is_disabled"`
+	CustomResponse CustomResponse           `json:"custom_response"`
+	Verifier       datastore.VerifierConfig `json:"verifier"`
+	PubSub         datastore.PubSubConfig   `json:"pub_sub"`
+}
+
+type CustomResponse struct {
+	Body        string `json:"body"`
+	ContentType string `json:"content_type"`
 }
 
 type UpdateSource struct {
@@ -139,8 +145,14 @@ type UpdateSource struct {
 	Type           datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
 	IsDisabled     *bool                    `json:"is_disabled"`
 	ForwardHeaders []string                 `json:"forward_headers"`
+	CustomResponse UpdateCustomResponse     `json:"custom_response"`
 	Verifier       datastore.VerifierConfig `json:"verifier"`
 	PubSub         *datastore.PubSubConfig  `json:"pub_sub"`
+}
+
+type UpdateCustomResponse struct {
+	Body        *string `json:"body"`
+	ContentType *string `json:"content_type"`
 }
 
 type DynamicSubscription struct {

@@ -7,22 +7,10 @@ import (
 
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/go-chi/render"
 )
-
-func createEndpointService(a *PortalLinkHandler) *services.EndpointService {
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
-	eventRepo := postgres.NewEventRepo(a.A.DB)
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
-
-	return services.NewEndpointService(
-		projectRepo, endpointRepo, eventRepo, eventDeliveryRepo, a.A.Cache, a.A.Queue,
-	)
-}
 
 type pagedResponse struct {
 	Content    interface{}               `json:"content,omitempty"`
