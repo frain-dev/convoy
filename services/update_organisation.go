@@ -38,7 +38,7 @@ func (os *UpdateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 
 		if len(u.Host) == 0 {
 			log.FromContext(ctx).Error("failed to validate hostname - malformatted url")
-			return nil, &ServiceError{ErrMsg: "failed to validate hostname: malformatted url", Err: err}
+			return nil, &ServiceError{ErrMsg: "failed to validate hostname: malformatted url", Err: nil}
 		}
 
 		os.Org.CustomDomain = null.NewString(u.Host, true)
