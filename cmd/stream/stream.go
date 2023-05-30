@@ -1,6 +1,7 @@
 package stream
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/frain-dev/convoy"
@@ -60,9 +61,6 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 				EventDeliveryRepo:   eventDeliveryRepo,
 			}
 
-			h := socket.NewHub()
-			h.Start()
-
 			lo := a.Logger.(*log.Logger)
 			lo.SetPrefix("stream server")
 
@@ -72,7 +70,10 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 			}
 			lo.SetLevel(lvl)
 
-			handler := socket.BuildRoutes(h, r)
+			h := socket.NewHub()
+			h.Start(context.Background())
+
+			handler := socket.BuildRoutes(r)
 
 			consumer := worker.NewConsumer(a.Queue, lo)
 			consumer.RegisterHandlers(convoy.StreamCliEventsProcessor, h.EventDeliveryCLiHandler(r))

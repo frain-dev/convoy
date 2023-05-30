@@ -60,31 +60,32 @@ var ug = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func BuildRoutes(h *Hub, r *Repo) http.Handler {
+func BuildRoutes(r *Repo) http.Handler {
 	router := chi.NewRouter()
 	router.Use(chiMiddleware.Recoverer)
 
 	router.Route("/stream", func(streamRouter chi.Router) {
 		streamRouter.Use(
 			middleware.RequireAuth(),
+			middleware.InstrumentRequests(),
 			middleware.RequirePersonalAccessToken(),
 		)
 
 		// TODO(subomi): Add authz
-		streamRouter.Get("/listen", ListenHandler(h, r))
-		streamRouter.Post("/login", LoginHandler(h, r))
+		streamRouter.Get("/listen", ListenHandler(r))
+		streamRouter.Post("/login", LoginHandler(r))
 	})
 
 	return router
 }
 
-func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
+func ListenHandler(repo *Repo) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		listenRequest := &ListenRequest{}
 		err := json.Unmarshal([]byte(r.Header.Get("Body")), &listenRequest)
 		if err != nil {
 			log.WithError(err).Error("failed to marshal data")
-			respond(w, http.StatusBadRequest, "failed to marshal response: "+err.Error())
+			respond(w, http.StatusBadRequest, fmt.Sprintf("failed to marshal response: %v", err.Error()))
 			return
 		}
 
@@ -108,11 +109,11 @@ func ListenHandler(hub *Hub, repo *Repo) http.HandlerFunc {
 		}
 
 		fmt.Printf("Listener connected for device %s with hostname %s\n", device.UID, device.HostName)
-		NewClient(conn, device, listenRequest.SourceID, repo.DeviceRepo, repo.EventDeliveryRepo)
+		NewClient(r.Context(), conn, device, listenRequest.SourceID, repo.DeviceRepo, repo.EventDeliveryRepo)
 	}
 }
 
-func LoginHandler(hub *Hub, repo *Repo) http.HandlerFunc {
+func LoginHandler(repo *Repo) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		loginRequest := &LoginRequest{}
 		err := util.ReadJSON(r, loginRequest)
