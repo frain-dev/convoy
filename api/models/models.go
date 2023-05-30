@@ -86,47 +86,9 @@ type PortalAPIKeyResponse struct {
 	ProjectID  string    `json:"project_id,omitempty"`
 }
 
-type LoginUser struct {
-	Username string `json:"username" valid:"required~please provide your username"`
-	Password string `json:"password" valid:"required~please provide your password"`
-}
-
-type RegisterUser struct {
-	FirstName        string `json:"first_name" valid:"required~please provide a first name"`
-	LastName         string `json:"last_name" valid:"required~please provide a last name"`
-	Email            string `json:"email" valid:"required~please provide an email,email"`
-	Password         string `json:"password" valid:"required~please provide a password"`
-	OrganisationName string `json:"org_name" valid:"required~please provide an organisation name"`
-}
-
-type LoginUserResponse struct {
-	UID           string `json:"uid"`
-	FirstName     string `json:"first_name"`
-	LastName      string `json:"last_name"`
-	Email         string `json:"email"`
-	Token         Token  `json:"token"`
-	EmailVerified bool   `json:"email_verified"`
-
-	CreatedAt time.Time `json:"created_at,omitempty" bson:"created_at"`
-	UpdatedAt time.Time `json:"updated_at,omitempty" bson:"updated_at"`
-}
-
 type UserInviteTokenResponse struct {
 	Token *datastore.OrganisationInvite `json:"token"`
 	User  *datastore.User               `json:"user"`
-}
-
-type Token struct {
-	AccessToken  string `json:"access_token" valid:"required~please provide an access token"`
-	RefreshToken string `json:"refresh_token" valid:"required~please provide a refresh token"`
-}
-
-type User struct {
-	FirstName string    `json:"first_name" valid:"required~please provide a first name"`
-	LastName  string    `json:"last_name" valid:"required~please provide a last name"`
-	Email     string    `json:"email" valid:"required~please provide an email,email"`
-	Password  string    `json:"password" valid:"required~please provide a password"`
-	Role      auth.Role `json:"role" bson:"role"`
 }
 
 type Endpoint struct {
@@ -307,31 +269,6 @@ type RetryConfiguration struct {
 	Duration        string                     `json:"duration,omitempty" valid:"duration~please provide a valid time duration"`
 	IntervalSeconds uint64                     `json:"interval_seconds" valid:"int~please provide a valid interval seconds"`
 	RetryCount      uint64                     `json:"retry_count" valid:"int~please provide a valid retry count"`
-}
-
-type UpdateUser struct {
-	FirstName string `json:"first_name" valid:"required~please provide a first name"`
-	LastName  string `json:"last_name" valid:"required~please provide a last name"`
-	Email     string `json:"email" valid:"required~please provide an email,email"`
-}
-
-type UpdatePassword struct {
-	CurrentPassword      string `json:"current_password" valid:"required~please provide the current password"`
-	Password             string `json:"password" valid:"required~please provide the password field"`
-	PasswordConfirmation string `json:"password_confirmation" valid:"required~please provide the password confirmation field"`
-}
-
-type UserExists struct {
-	Email string `json:"email" valid:"required~please provide an email,email"`
-}
-
-type ForgotPassword struct {
-	Email string `json:"email" valid:"required~please provide an email,email"`
-}
-
-type ResetPassword struct {
-	Password             string `json:"password" valid:"required~please provide the password field"`
-	PasswordConfirmation string `json:"password_confirmation" valid:"required~please provide the password confirmation field"`
 }
 
 type CreateEndpointApiKey struct {

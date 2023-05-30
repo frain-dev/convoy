@@ -35,10 +35,6 @@ func NewUserService(userRepo datastore.UserRepository, cache cache.Cache, queue 
 }
 
 func (u *UserService) LoginUser(ctx context.Context, data *models.LoginUser) (*datastore.User, *jwt.Token, error) {
-	if err := util.Validate(data); err != nil {
-		return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
 	user, err := u.userRepo.FindUserByEmail(ctx, data.Username)
 	if err != nil {
 		if err == datastore.ErrUserNotFound {
@@ -71,10 +67,6 @@ func (u *UserService) LoginUser(ctx context.Context, data *models.LoginUser) (*d
 }
 
 func (u *UserService) RegisterUser(ctx context.Context, baseURL string, data *models.RegisterUser) (*datastore.User, *jwt.Token, error) {
-	if err := util.Validate(data); err != nil {
-		return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
 	config, err := u.configService.LoadConfiguration(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -166,10 +158,6 @@ func (u *UserService) ResendEmailVerificationToken(ctx context.Context, baseURL 
 }
 
 func (u *UserService) RefreshToken(ctx context.Context, data *models.Token) (*jwt.Token, error) {
-	if err := util.Validate(data); err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
 	jw, err := u.token()
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
@@ -318,10 +306,6 @@ func (u *UserService) UpdateUser(ctx context.Context, data *models.UpdateUser, u
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("email has not been verified"))
 	}
 
-	if err := util.Validate(data); err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
 	user.FirstName = data.FirstName
 	user.LastName = data.LastName
 	user.Email = data.Email
@@ -339,10 +323,6 @@ func (u *UserService) UpdateUser(ctx context.Context, data *models.UpdateUser, u
 }
 
 func (u *UserService) UpdatePassword(ctx context.Context, data *models.UpdatePassword, user *datastore.User) (*datastore.User, error) {
-	if err := util.Validate(data); err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
 	p := datastore.Password{Plaintext: data.CurrentPassword, Hash: []byte(user.Password)}
 	match, err := p.Matches()
 	if err != nil {
@@ -374,10 +354,6 @@ func (u *UserService) UpdatePassword(ctx context.Context, data *models.UpdatePas
 }
 
 func (u *UserService) GeneratePasswordResetToken(ctx context.Context, baseURL string, data *models.ForgotPassword) error {
-	if err := util.Validate(data); err != nil {
-		return util.NewServiceError(http.StatusBadRequest, err)
-	}
-
 	user, err := u.userRepo.FindUserByEmail(ctx, data.Email)
 	if err != nil {
 		if err == datastore.ErrUserNotFound {
