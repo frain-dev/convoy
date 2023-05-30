@@ -23,15 +23,16 @@ import (
 
 type UserService struct {
 	userRepo      datastore.UserRepository
+	orgRepo       datastore.OrganisationRepository
+	orgMemberRepo datastore.OrganisationMemberRepository
 	cache         cache.Cache
 	queue         queue.Queuer
 	jwt           *jwt.Jwt
 	configService *ConfigService
-	orgService    *OrganisationService
 }
 
-func NewUserService(userRepo datastore.UserRepository, cache cache.Cache, queue queue.Queuer, configService *ConfigService, orgService *OrganisationService) *UserService {
-	return &UserService{userRepo: userRepo, cache: cache, queue: queue, configService: configService, orgService: orgService}
+func NewUserService(userRepo datastore.UserRepository, cache cache.Cache, queue queue.Queuer, configService *ConfigService, orgRepo datastore.OrganisationRepository, orgMemberRepo datastore.OrganisationMemberRepository) *UserService {
+	return &UserService{userRepo: userRepo, cache: cache, queue: queue, configService: configService, orgMemberRepo: orgMemberRepo, orgRepo: orgRepo}
 }
 
 func (u *UserService) LoginUser(ctx context.Context, data *models.LoginUser) (*datastore.User, *jwt.Token, error) {
@@ -116,7 +117,14 @@ func (u *UserService) RegisterUser(ctx context.Context, baseURL string, data *mo
 		return nil, nil, util.NewServiceError(statusCode, err)
 	}
 
-	_, err = u.orgService.CreateOrganisation(ctx, &models.Organisation{Name: data.OrganisationName}, user)
+	co := CreateOrganisationService{
+		OrgRepo:       u.orgRepo,
+		OrgMemberRepo: u.orgMemberRepo,
+		NewOrg:        &models.Organisation{Name: data.OrganisationName},
+		User:          user,
+	}
+
+	_, err = co.Run(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
