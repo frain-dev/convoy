@@ -25,7 +25,7 @@ func TestSourceService_CreateSource(t *testing.T) {
 
 	type args struct {
 		ctx       context.Context
-		newSource *models.Source
+		newSource *models.CreateSource
 		project   *datastore.Project
 	}
 
@@ -42,16 +42,16 @@ func TestSourceService_CreateSource(t *testing.T) {
 			name: "should_create_source",
 			args: args{
 				ctx: ctx,
-				newSource: &models.Source{
+				newSource: &models.CreateSource{
 					Name: "Convoy-Prod",
 					Type: datastore.HTTPSource,
 					CustomResponse: models.CustomResponse{
 						Body:        "[accepted]",
 						ContentType: "application/json",
 					},
-					Verifier: datastore.VerifierConfig{
+					Verifier: models.VerifierConfig{
 						Type: datastore.HMacVerifier,
-						HMac: &datastore.HMac{
+						HMac: &models.HMac{
 							Encoding: datastore.Base64Encoding,
 							Header:   "X-Convoy-Header",
 							Hash:     "SHA512",
@@ -86,12 +86,12 @@ func TestSourceService_CreateSource(t *testing.T) {
 			name: "should_create_github_source",
 			args: args{
 				ctx: ctx,
-				newSource: &models.Source{
+				newSource: &models.CreateSource{
 					Name:     "Convoy-Prod",
 					Type:     datastore.HTTPSource,
 					Provider: datastore.GithubSourceProvider,
-					Verifier: datastore.VerifierConfig{
-						HMac: &datastore.HMac{
+					Verifier: models.VerifierConfig{
+						HMac: &models.HMac{
 							Secret: "Convoy-Secret",
 						},
 					},
@@ -113,93 +113,18 @@ func TestSourceService_CreateSource(t *testing.T) {
 				s.EXPECT().CreateSource(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 		},
-		{
-			name: "should_error_for_empty_name",
-			args: args{
-				ctx: ctx,
-				newSource: &models.Source{
-					Name:     "",
-					Type:     datastore.HTTPSource,
-					Provider: datastore.GithubSourceProvider,
-					Verifier: datastore.VerifierConfig{
-						HMac: &datastore.HMac{
-							Secret: "Convoy-Secret",
-						},
-					},
-				},
-				project: &datastore.Project{UID: "12345"},
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "please provide a source name",
-		},
-		{
-			name: "should_error_for_invalid_type",
-			args: args{
-				ctx: ctx,
-				newSource: &models.Source{
-					Name:     "Convoy-Prod",
-					Type:     "abc",
-					Provider: datastore.GithubSourceProvider,
-					Verifier: datastore.VerifierConfig{
-						HMac: &datastore.HMac{
-							Secret: "Convoy-Secret",
-						},
-					},
-				},
-				project: &datastore.Project{UID: "12345"},
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "please provide a valid source type",
-		},
-		{
-			name: "should_error_for_empty_hmac_secret",
-			args: args{
-				ctx: ctx,
-				newSource: &models.Source{
-					Name:     "Convoy-Prod",
-					Type:     datastore.HTTPSource,
-					Provider: datastore.GithubSourceProvider,
-					Verifier: datastore.VerifierConfig{
-						HMac: &datastore.HMac{
-							Secret: "",
-						},
-					},
-				},
-				project: &datastore.Project{UID: "12345"},
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "hmac secret is required for github source",
-		},
-		{
-			name: "should_error_for_nil_hmac",
-			args: args{
-				ctx: ctx,
-				newSource: &models.Source{
-					Name:     "Convoy-Prod",
-					Type:     datastore.HTTPSource,
-					Provider: datastore.GithubSourceProvider,
-					Verifier: datastore.VerifierConfig{HMac: nil},
-				},
-				project: &datastore.Project{UID: "12345"},
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "hmac secret is required for github source",
-		},
+
 		{
 			name: "should_set_default_forward_header_for_shopify_source",
 			args: args{
 				ctx: ctx,
-				newSource: &models.Source{
+				newSource: &models.CreateSource{
 					Name:     "Convoy-Prod",
 					Type:     datastore.HTTPSource,
 					Provider: datastore.ShopifySourceProvider,
-					Verifier: datastore.VerifierConfig{
+					Verifier: models.VerifierConfig{
 						Type: datastore.HMacVerifier,
-						HMac: &datastore.HMac{
+						HMac: &models.HMac{
 							Encoding: datastore.Base64Encoding,
 							Header:   "X-Convoy-Header",
 							Hash:     "SHA512",
@@ -237,12 +162,12 @@ func TestSourceService_CreateSource(t *testing.T) {
 			name: "should_fail_to_create_source",
 			args: args{
 				ctx: ctx,
-				newSource: &models.Source{
+				newSource: &models.CreateSource{
 					Name: "Convoy-Prod",
 					Type: datastore.HTTPSource,
-					Verifier: datastore.VerifierConfig{
+					Verifier: models.VerifierConfig{
 						Type: datastore.HMacVerifier,
-						HMac: &datastore.HMac{
+						HMac: &models.HMac{
 							Encoding: datastore.Base64Encoding,
 							Header:   "X-Convoy-Header",
 							Hash:     "SHA512",
@@ -261,26 +186,6 @@ func TestSourceService_CreateSource(t *testing.T) {
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "failed to create source",
-		},
-		{
-			name: "should_fail_invalid_source_configuration",
-			args: args{
-				ctx: ctx,
-				newSource: &models.Source{
-					Name: "Convoy-Prod",
-					Type: datastore.HTTPSource,
-					Verifier: datastore.VerifierConfig{
-						Type: datastore.HMacVerifier,
-					},
-				},
-				project: &datastore.Project{
-					UID: "12345",
-				},
-			},
-			dbFn:        func(so *SourceService) {},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "Invalid verifier config for hmac",
 		},
 	}
 
@@ -351,9 +256,9 @@ func TestSourceService_UpdateSource(t *testing.T) {
 						ContentType: stringPtr("application/json"),
 					},
 					Type: datastore.HTTPSource,
-					Verifier: datastore.VerifierConfig{
+					Verifier: models.VerifierConfig{
 						Type: datastore.HMacVerifier,
-						HMac: &datastore.HMac{
+						HMac: &models.HMac{
 							Encoding: datastore.Base64Encoding,
 							Header:   "X-Convoy-Header",
 							Hash:     "SHA512",
@@ -394,9 +299,9 @@ func TestSourceService_UpdateSource(t *testing.T) {
 				update: &models.UpdateSource{
 					Name: stringPtr("Convoy-Prod"),
 					Type: datastore.HTTPSource,
-					Verifier: datastore.VerifierConfig{
+					Verifier: models.VerifierConfig{
 						Type: datastore.HMacVerifier,
-						HMac: &datastore.HMac{
+						HMac: &models.HMac{
 							Encoding: datastore.Base64Encoding,
 							Header:   "X-Convoy-Header",
 							Hash:     "SHA512",
