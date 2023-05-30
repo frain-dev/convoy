@@ -273,15 +273,3 @@ func (gc *GooglePubSubConfig) transform() *datastore.GooglePubSubConfig {
 type SourceResponse struct {
 	*datastore.Source
 }
-
-// Generic function for looping over a slice of type M
-// and returning a slice of type T
-func NewListResponse[T, M any](items []M, fn func(item M) T) []T {
-	results := make([]T, 0)
-
-	for _, item := range items {
-		results = append(results, fn(item))
-	}
-
-	return results
-}
