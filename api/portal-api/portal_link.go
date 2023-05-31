@@ -1,8 +1,11 @@
 package portalapi
 
 import (
+	"fmt"
 	"net/http"
 
+	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/database/postgres"
@@ -40,4 +43,38 @@ func (a *PortalLinkHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *htt
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Endpoints fetched successfully", endpoints, http.StatusOK))
+}
+
+func (a *PortalLinkHandler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
+	portalLink, err := a.retrievePortalLink(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServerResponse(err.Error(), nil, http.StatusBadRequest))
+		return
+	}
+
+	baseUrl, err := a.retrieveHost()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServerResponse(err.Error(), nil, http.StatusBadRequest))
+		return
+	}
+
+	pl := portalLinkResponse(portalLink, baseUrl)
+	_ = render.Render(w, r, util.NewServerResponse("Portal Link fetched successfully", pl, http.StatusOK))
+}
+
+func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.PortalLinkResponse {
+	return &models.PortalLinkResponse{
+		UID:                pl.UID,
+		ProjectID:          pl.ProjectID,
+		Name:               pl.Name,
+		URL:                fmt.Sprintf("%s/portal?token=%s", baseUrl, pl.Token),
+		Token:              pl.Token,
+		OwnerID:            pl.OwnerID,
+		Endpoints:          pl.Endpoints,
+		EndpointCount:      len(pl.Endpoints),
+		EndpointManagement: pl.EndpointManagement,
+		EndpointsMetadata:  pl.EndpointsMetadata,
+		CreatedAt:          pl.CreatedAt,
+		UpdatedAt:          pl.UpdatedAt,
+	}
 }

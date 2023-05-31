@@ -31,6 +31,8 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 	router.Use(middleware.JsonResponse)
 	router.Use(middleware.SetupCORS)
 
+	router.Get("/portal_link", a.GetPortalLink)
+
 	router.Route("/endpoints", func(endpointRouter chi.Router) {
 		endpointRouter.Get("/", a.GetPortalLinkEndpoints)
 		endpointRouter.Post("/", a.CreateEndpoint)
