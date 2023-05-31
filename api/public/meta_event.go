@@ -18,6 +18,7 @@ import (
 // @Tags MetaEvents
 // @Accept  json
 // @Produce  json
+// @Param projectID path string true "Project ID"
 // @Param startDate query string false "start date"
 // @Param endDate query string false "end date"
 // @Param perPage query string false "results per page"
