@@ -33,8 +33,8 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 
 	subscription, err := s.SubRepo.FindSubscriptionByID(ctx, s.ProjectId, s.SubscriptionId)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error(ErrSubscriptionNotFound.Error())
-		return nil, &ServiceError{ErrMsg: ErrSubscriptionNotFound.Error(), Err: err}
+		log.FromContext(ctx).WithError(err).Error("failed to find subscription")
+		return nil, &ServiceError{ErrMsg: "failed to find subscription", Err: err}
 	}
 
 	retryConfig, err := getRetryConfig(s.Update.RetryConfig)
