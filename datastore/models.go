@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"context"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
@@ -122,7 +123,7 @@ type (
 	StorageType      string
 	KeyType          string
 	PubSubType       string
-	PubSubHandler    func(*Source, string) error
+	PubSubHandler    func(context.Context, *Source, string) error
 	MetaEventType    string
 	HookEventType    string
 )
