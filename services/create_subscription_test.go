@@ -3,25 +3,27 @@ package services
 import (
 	"context"
 	"errors"
-	"net/http"
 	"testing"
+
+	"github.com/frain-dev/convoy/mocks"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/util"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
 )
 
-func provideSubsctiptionService(ctrl *gomock.Controller) *SubcriptionService {
-	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
-	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
-	sourceRepo := mocks.NewMockSourceRepository(ctrl)
-	return NewSubscriptionService(subRepo, endpointRepo, sourceRepo)
+func provideCreateSubscriptionService(ctrl *gomock.Controller, project *datastore.Project, newSub *models.Subscription) *CreateSubcriptionService {
+	return &CreateSubcriptionService{
+		SubRepo:         mocks.NewMockSubscriptionRepository(ctrl),
+		EndpointRepo:    mocks.NewMockEndpointRepository(ctrl),
+		SourceRepo:      mocks.NewMockSourceRepository(ctrl),
+		Project:         project,
+		NewSubscription: newSub,
+	}
 }
 
-func TestSubscription_CreateSubscription(t *testing.T) {
+func TestCreateSubcriptionService_Run(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
@@ -34,9 +36,8 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 		name             string
 		args             args
 		wantSubscription *datastore.Subscription
-		dbFn             func(so *SubcriptionService)
+		dbFn             func(so *CreateSubcriptionService)
 		wantErr          bool
-		wantErrCode      int
 		wantErrMsg       string
 	}{
 		{
@@ -56,8 +57,8 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
-			dbFn: func(ss *SubcriptionService) {
-				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
+			dbFn: func(ss *CreateSubcriptionService) {
+				s, _ := ss.SubRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CreateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil)
@@ -66,7 +67,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					Times(1).
 					Return(int64(0), nil)
 
-				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
 					&datastore.Endpoint{
@@ -94,13 +95,13 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
-			dbFn: func(ss *SubcriptionService) {
-				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
+			dbFn: func(ss *CreateSubcriptionService) {
+				s, _ := ss.SubRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1").
 					Times(1).
 					Return(int64(0), errors.New("failed"))
 
-				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
 					&datastore.Endpoint{
@@ -110,9 +111,8 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					nil,
 				)
 			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to count endpoint subscriptions",
+			wantErr:    true,
+			wantErrMsg: "failed to count endpoint subscriptions",
 		},
 		{
 			name: "should error for endpoint already has a subscription",
@@ -131,13 +131,13 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
-			dbFn: func(ss *SubcriptionService) {
-				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
+			dbFn: func(ss *CreateSubcriptionService) {
+				s, _ := ss.SubRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1").
 					Times(1).
 					Return(int64(1), nil)
 
-				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
 					&datastore.Endpoint{
@@ -147,9 +147,8 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					nil,
 				)
 			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "a subscription for this endpoint already exists",
+			wantErr:    true,
+			wantErrMsg: "a subscription for this endpoint already exists",
 		},
 		{
 			name: "should create subscription for incoming project",
@@ -168,13 +167,13 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
-			dbFn: func(ss *SubcriptionService) {
-				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
+			dbFn: func(ss *CreateSubcriptionService) {
+				s, _ := ss.SubRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CreateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil)
 
-				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
 					&datastore.Endpoint{
@@ -183,7 +182,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					nil,
 				)
 
-				sr, _ := ss.sourceRepo.(*mocks.MockSourceRepository)
+				sr, _ := ss.SourceRepo.(*mocks.MockSourceRepository)
 				sr.EXPECT().FindSourceByID(gomock.Any(), "12345", "source-id-1").
 					Times(1).Return(
 					&datastore.Source{
@@ -211,8 +210,8 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
-			dbFn: func(ss *SubcriptionService) {
-				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+			dbFn: func(ss *CreateSubcriptionService) {
+				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
 					&datastore.Endpoint{
@@ -221,13 +220,12 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					nil,
 				)
 
-				sr, _ := ss.sourceRepo.(*mocks.MockSourceRepository)
+				sr, _ := ss.SourceRepo.(*mocks.MockSourceRepository)
 				sr.EXPECT().FindSourceByID(gomock.Any(), "12345", "source-id-1").
 					Times(1).Return(nil, errors.New("failed"))
 			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to find source by id",
+			wantErr:    true,
+			wantErrMsg: "failed to find source by id",
 		},
 		{
 			name: "should fail to find endpoint",
@@ -246,14 +244,13 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
-			dbFn: func(ss *SubcriptionService) {
-				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+			dbFn: func(ss *CreateSubcriptionService) {
+				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(nil, errors.New("failed"))
 			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to find endpoint by id",
+			wantErr:    true,
+			wantErrMsg: "failed to find endpoint by id",
 		},
 		{
 			name: "should error for endpoint does not belong to project",
@@ -272,8 +269,8 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
-			dbFn: func(ss *SubcriptionService) {
-				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+			dbFn: func(ss *CreateSubcriptionService) {
+				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
 					&datastore.Endpoint{
@@ -282,9 +279,8 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					nil,
 				)
 			},
-			wantErr:     true,
-			wantErrCode: http.StatusUnauthorized,
-			wantErrMsg:  "endpoint does not belong to project",
+			wantErr:    true,
+			wantErrMsg: "endpoint does not belong to project",
 		},
 		{
 			name: "should error for failed to find endpoint",
@@ -303,14 +299,13 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
-			dbFn: func(ss *SubcriptionService) {
-				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+			dbFn: func(ss *CreateSubcriptionService) {
+				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(nil, errors.New("failed to find endpoint by id"))
 			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to find endpoint by id",
+			wantErr:    true,
+			wantErrMsg: "failed to find endpoint by id",
 		},
 		{
 			name: "should fail to create subscription",
@@ -325,13 +320,13 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					UID: "12345",
 				},
 			},
-			dbFn: func(ss *SubcriptionService) {
-				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
+			dbFn: func(ss *CreateSubcriptionService) {
+				s, _ := ss.SubRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CreateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(errors.New("failed"))
 
-				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
 					&datastore.Endpoint{
@@ -340,9 +335,8 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					nil,
 				)
 			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to create subscription",
+			wantErr:    true,
+			wantErrMsg: "failed to create subscription",
 		},
 		{
 			name: "create subscription for outgoing project - should set default event types array",
@@ -364,8 +358,8 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					EventTypes: []string{"*"},
 				},
 			},
-			dbFn: func(ss *SubcriptionService) {
-				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
+			dbFn: func(ss *CreateSubcriptionService) {
+				s, _ := ss.SubRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CreateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil)
@@ -374,7 +368,7 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 					Times(1).
 					Return(int64(0), nil)
 
-				a, _ := ss.endpointRepo.(*mocks.MockEndpointRepository)
+				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
 					&datastore.Endpoint{
@@ -392,17 +386,16 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			ss := provideSubsctiptionService(ctrl)
+			ss := provideCreateSubscriptionService(ctrl, tc.args.project, tc.args.newSubscription)
 
 			if tc.dbFn != nil {
 				tc.dbFn(ss)
 			}
 
-			subscription, err := ss.CreateSubscription(tc.args.ctx, tc.args.project, tc.args.newSubscription)
+			subscription, err := ss.Run(tc.args.ctx)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
+				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
 				return
 			}
 			require.Nil(t, err)
@@ -415,110 +408,6 @@ func TestSubscription_CreateSubscription(t *testing.T) {
 				require.Equal(t, subscription.FilterConfig.EventTypes,
 					tc.wantSubscription.FilterConfig.EventTypes)
 			}
-		})
-	}
-}
-
-func TestSubscription_UpdateSubscription(t *testing.T) {
-	ctx := context.Background()
-
-	type args struct {
-		ctx            context.Context
-		project        *datastore.Project
-		subscriptionId string
-		update         *models.UpdateSubscription
-	}
-
-	tests := []struct {
-		name             string
-		args             args
-		wantSubscription *datastore.Subscription
-		dbFn             func(so *SubcriptionService)
-		wantErr          bool
-		wantErrCode      int
-		wantErrMsg       string
-	}{
-		{
-			name: "should update subscription",
-			args: args{
-				ctx: ctx,
-				update: &models.UpdateSubscription{
-					Name:       "sub 1",
-					SourceID:   "source-id-1",
-					EndpointID: "endpoint-id-1",
-				},
-				project: &datastore.Project{UID: "12345"},
-			},
-			wantSubscription: &datastore.Subscription{
-				Name:       "sub 1",
-				Type:       datastore.SubscriptionTypeAPI,
-				SourceID:   "source-id-1",
-				EndpointID: "endpoint-id-1",
-			},
-			dbFn: func(ss *SubcriptionService) {
-				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return(&datastore.Subscription{
-					UID:  "sub-uid-1",
-					Type: datastore.SubscriptionTypeAPI,
-				}, nil)
-
-				s.EXPECT().UpdateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(nil)
-			},
-		},
-		{
-			name: "should fail to update subscription",
-			args: args{
-				ctx: ctx,
-				update: &models.UpdateSubscription{
-					Name:       "sub 1",
-					SourceID:   "source-id-1",
-					EndpointID: "endpoint-id-1",
-				},
-				project: &datastore.Project{
-					UID: "12345",
-				},
-			},
-			dbFn: func(ss *SubcriptionService) {
-				s, _ := ss.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return(&datastore.Subscription{}, nil)
-
-				s.EXPECT().UpdateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(errors.New("failed"))
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "failed to update subscription",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			ss := provideSubsctiptionService(ctrl)
-
-			if tc.dbFn != nil {
-				tc.dbFn(ss)
-			}
-
-			subscription, err := ss.UpdateSubscription(tc.args.ctx, tc.args.project.UID, tc.args.subscriptionId, tc.args.update)
-			if tc.wantErr {
-				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
-				return
-			}
-			require.Nil(t, err)
-			require.NotEmpty(t, subscription.UID)
-
-			require.Equal(t, subscription.Name, tc.wantSubscription.Name)
-			require.Equal(t, subscription.Type, tc.wantSubscription.Type)
 		})
 	}
 }

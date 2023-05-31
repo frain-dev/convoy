@@ -18,14 +18,6 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-func createSubscriptionService(a *PortalLinkHandler) *services.SubcriptionService {
-	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
-	sourceRepo := postgres.NewSourceRepo(a.A.DB)
-
-	return services.NewSubscriptionService(subRepo, endpointRepo, sourceRepo)
-}
-
 func (a *PortalLinkHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 	portalLink, err := a.retrievePortalLink(r)
 	if err != nil {
@@ -89,8 +81,13 @@ func (a *PortalLinkHandler) GetSubscription(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	subService := createSubscriptionService(a)
-	subscription, err := subService.FindSubscriptionByID(r.Context(), project, subId, false)
+	fs := services.FindSubscriptionByIDService{
+		Project:        project,
+		SubscriptionId: subId,
+		SkipCache:      false,
+	}
+
+	subscription, err := fs.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -113,8 +110,15 @@ func (a *PortalLinkHandler) CreateSubscription(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	subService := createSubscriptionService(a)
-	subscription, err := subService.CreateSubscription(r.Context(), project, &sub)
+	cs := services.CreateSubcriptionService{
+		SubRepo:         postgres.NewSubscriptionRepo(a.A.DB),
+		EndpointRepo:    postgres.NewEndpointRepo(a.A.DB),
+		SourceRepo:      postgres.NewSourceRepo(a.A.DB),
+		Project:         project,
+		NewSubscription: &sub,
+	}
+
+	subscription, err := cs.Run(r.Context())
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to create subscription")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -130,8 +134,14 @@ func (a *PortalLinkHandler) DeleteSubscription(w http.ResponseWriter, r *http.Re
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	subService := createSubscriptionService(a)
-	sub, err := subService.FindSubscriptionByID(r.Context(), project, chi.URLParam(r, "subscriptionID"), true)
+
+	fs := services.FindSubscriptionByIDService{
+		Project:        project,
+		SubscriptionId: chi.URLParam(r, "subscriptionID"),
+		SkipCache:      true,
+	}
+
+	sub, err := fs.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -162,10 +172,16 @@ func (a *PortalLinkHandler) UpdateSubscription(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	subscription := chi.URLParam(r, "subscriptionID")
+	us := services.UpdateSubscriptionService{
+		SubRepo:        postgres.NewSubscriptionRepo(a.A.DB),
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
+		SourceRepo:     postgres.NewSourceRepo(a.A.DB),
+		ProjectId:      project.UID,
+		SubscriptionId: chi.URLParam(r, "subscriptionID"),
+		Update:         &update,
+	}
 
-	subService := createSubscriptionService(a)
-	sub, err := subService.UpdateSubscription(r.Context(), project.UID, subscription, &update)
+	sub, err := us.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

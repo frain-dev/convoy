@@ -16,12 +16,8 @@ import (
 )
 
 var (
-	ErrSubscriptionNotFound               = errors.New("subscription not found")
 	ErrUpateSubscriptionError             = errors.New("failed to update subscription")
-	ErrCreateSubscriptionError            = errors.New("failed to create subscription")
 	ErrDeletedSubscriptionError           = errors.New("failed to delete subscription")
-	ErrValidateSubscriptionError          = errors.New("failed to validate subscription")
-	ErrInvalidSubscriptionFilterFormat    = errors.New("invalid subscription filter format")
 	ErrFailedToValidateSubscriptionFilter = errors.New("failed to validate subscription filter")
 	ErrCannotFetchSubcriptionsError       = errors.New("an error occurred while fetching subscriptions")
 )
@@ -301,24 +297,4 @@ func (s *SubcriptionService) findEndpoint(ctx context.Context, appID, endpointID
 	}
 
 	return endpoint, nil
-}
-
-func getRetryConfig(cfg *models.RetryConfiguration) (*datastore.RetryConfiguration, error) {
-	if cfg == nil {
-		return nil, nil
-	}
-
-	strategyConfig := &datastore.RetryConfiguration{Type: cfg.Type, RetryCount: cfg.RetryCount}
-	if !util.IsStringEmpty(cfg.Duration) {
-		interval, err := time.ParseDuration(cfg.Duration)
-		if err != nil {
-			return nil, err
-		}
-
-		strategyConfig.Duration = uint64(interval.Seconds())
-		return strategyConfig, nil
-	}
-
-	strategyConfig.Duration = cfg.IntervalSeconds
-	return strategyConfig, nil
 }
