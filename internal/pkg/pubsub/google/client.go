@@ -90,7 +90,7 @@ func (g *Google) Consume() {
 	sub.ReceiveSettings.NumGoroutines = g.workers
 
 	err = sub.Receive(g.ctx, func(ctx context.Context, m *pubsub.Message) {
-		if err := g.handler(g.source, string(m.Data)); err != nil {
+		if err := g.handler(context.Background(), g.source, string(m.Data)); err != nil {
 			g.log.WithError(err).Error("failed to write message to create event queue - google pub sub")
 		} else {
 			m.Ack()
