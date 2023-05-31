@@ -9,11 +9,9 @@ import { STATUS_COLOR } from 'src/app/models/global.model';
 	template: `
 		<ng-content></ng-content>
 	`,
-	styleUrls: ['./tag.component.scss'],
 	host: { class: 'rounded-22px w-fit text-center text-12 justify-between gap-x-4px disabled:opacity-50', '[class]': 'classes' }
 })
 export class TagComponent implements OnInit {
-	@Input('type') type: STATUS_COLOR = 'grey';
 	@Input('className') class!: string;
 
 	@Input('fill') fill: 'outline' | 'soft' | 'solid' | 'soft-outline' = 'soft';
