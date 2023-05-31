@@ -82,22 +82,12 @@ func (a *PortalLinkHandler) GetSubscription(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	fs := services.FindSubscriptionByIDService{
-		SubRepo:        postgres.NewSubscriptionRepo(a.A.DB),
-		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
-		SourceRepo:     postgres.NewSourceRepo(a.A.DB),
-		Project:        project,
-		SubscriptionId: subId,
-		SkipCache:      false,
-	}
-
-	subscription, err := fs.Run(r.Context())
+	subscription, err := postgres.NewSubscriptionRepo(a.A.DB).FindSubscriptionByID(r.Context(), project.UID, subId)
 	if err != nil {
-		if serr, ok := err.(*services.ServiceError); ok {
-			if errors.Is(serr.Unwrap(), datastore.ErrSubscriptionNotFound) {
-				_ = render.Render(w, r, util.NewErrorResponse(datastore.ErrSubscriptionNotFound.Error(), http.StatusNotFound))
-				return
-			}
+		log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
+		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
+			_ = render.Render(w, r, util.NewErrorResponse("failed to find subscription", http.StatusNotFound))
+			return
 		}
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -145,22 +135,12 @@ func (a *PortalLinkHandler) DeleteSubscription(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	fs := services.FindSubscriptionByIDService{
-		SubRepo:        postgres.NewSubscriptionRepo(a.A.DB),
-		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
-		SourceRepo:     postgres.NewSourceRepo(a.A.DB),
-		Project:        project,
-		SubscriptionId: chi.URLParam(r, "subscriptionID"),
-		SkipCache:      true,
-	}
-
-	sub, err := fs.Run(r.Context())
+	sub, err := postgres.NewSubscriptionRepo(a.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 	if err != nil {
-		if serr, ok := err.(*services.ServiceError); ok {
-			if errors.Is(serr.Unwrap(), datastore.ErrSubscriptionNotFound) {
-				_ = render.Render(w, r, util.NewErrorResponse(datastore.ErrSubscriptionNotFound.Error(), http.StatusNotFound))
-				return
-			}
+		log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
+		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
+			_ = render.Render(w, r, util.NewErrorResponse("failed to find subscription", http.StatusNotFound))
+			return
 		}
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
