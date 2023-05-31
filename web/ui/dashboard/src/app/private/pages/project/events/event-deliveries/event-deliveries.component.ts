@@ -88,7 +88,6 @@ export class EventDeliveriesComponent implements OnInit {
 	}
 
 	async getEventDeliveries(requestDetails?: FILTER_QUERY_PARAM): Promise<HTTP_RESPONSE> {
-		console.log('🚀 ~ file: event-deliveries.component.ts:91 ~ EventDeliveriesComponent ~ getEventDeliveries ~ requestDetails:', requestDetails);
 		this.isloadingEventDeliveries = true;
 
 		try {

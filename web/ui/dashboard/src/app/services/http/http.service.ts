@@ -35,13 +35,22 @@ export class HttpService {
 
 		// remove empty data and objects in object
 		const cleanedQuery = Object.fromEntries(Object.entries(query).filter(([_, q]) => q !== '' && q !== undefined && q !== null && typeof q !== 'object'));
+		// convert object to query param
+		let cleanedQueryString: string = '';
+		Object.keys(cleanedQuery).forEach(q => {
+			try {
+				const queryItem = JSON.parse(query[q]);
+				queryItem.forEach((item: any) => (cleanedQueryString += `${q}=${item}&`));
+			} catch (error) {
+				cleanedQueryString += `${q}=${query[q]}&`;
+			}
+		});
 
 		// for query items with arrays, process them into a string
 		let queryString = '';
 		Object.keys(query).forEach((key: any) => (typeof query[key] === 'object' ? query[key]?.forEach((item: any) => (queryString += `&${key}=${item}`)) : false));
 
-		// convert object to query param
-		return new URLSearchParams(cleanedQuery).toString() + queryString;
+		return cleanedQueryString + queryString;
 	}
 
 	getOrganisation() {
