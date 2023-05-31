@@ -1,6 +1,7 @@
 package portalapi
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -92,6 +93,12 @@ func (a *PortalLinkHandler) GetSubscription(w http.ResponseWriter, r *http.Reque
 
 	subscription, err := fs.Run(r.Context())
 	if err != nil {
+		if serr, ok := err.(*services.ServiceError); ok {
+			if errors.Is(serr.Unwrap(), datastore.ErrSubscriptionNotFound) {
+				_ = render.Render(w, r, util.NewErrorResponse(datastore.ErrSubscriptionNotFound.Error(), http.StatusNotFound))
+				return
+			}
+		}
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -149,6 +156,12 @@ func (a *PortalLinkHandler) DeleteSubscription(w http.ResponseWriter, r *http.Re
 
 	sub, err := fs.Run(r.Context())
 	if err != nil {
+		if serr, ok := err.(*services.ServiceError); ok {
+			if errors.Is(serr.Unwrap(), datastore.ErrSubscriptionNotFound) {
+				_ = render.Render(w, r, util.NewErrorResponse(datastore.ErrSubscriptionNotFound.Error(), http.StatusNotFound))
+				return
+			}
+		}
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

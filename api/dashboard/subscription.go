@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/frain-dev/convoy/pkg/log"
@@ -85,6 +86,12 @@ func (a *DashboardHandler) GetSubscription(w http.ResponseWriter, r *http.Reques
 
 	subscription, err := fs.Run(r.Context())
 	if err != nil {
+		if serr, ok := err.(*services.ServiceError); ok {
+			if errors.Is(serr.Unwrap(), datastore.ErrSubscriptionNotFound) {
+				_ = render.Render(w, r, util.NewErrorResponse(datastore.ErrSubscriptionNotFound.Error(), http.StatusNotFound))
+				return
+			}
+		}
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -152,6 +159,12 @@ func (a *DashboardHandler) DeleteSubscription(w http.ResponseWriter, r *http.Req
 
 	sub, err := fs.Run(r.Context())
 	if err != nil {
+		if serr, ok := err.(*services.ServiceError); ok {
+			if errors.Is(serr.Unwrap(), datastore.ErrSubscriptionNotFound) {
+				_ = render.Render(w, r, util.NewErrorResponse(datastore.ErrSubscriptionNotFound.Error(), http.StatusNotFound))
+				return
+			}
+		}
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
