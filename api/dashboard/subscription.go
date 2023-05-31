@@ -75,6 +75,9 @@ func (a *DashboardHandler) GetSubscription(w http.ResponseWriter, r *http.Reques
 	}
 
 	fs := services.FindSubscriptionByIDService{
+		SubRepo:        postgres.NewSubscriptionRepo(a.A.DB),
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
+		SourceRepo:     postgres.NewSourceRepo(a.A.DB),
 		Project:        project,
 		SubscriptionId: subId,
 		SkipCache:      false,
@@ -139,6 +142,9 @@ func (a *DashboardHandler) DeleteSubscription(w http.ResponseWriter, r *http.Req
 	}
 
 	fs := services.FindSubscriptionByIDService{
+		SubRepo:        postgres.NewSubscriptionRepo(a.A.DB),
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
+		SourceRepo:     postgres.NewSourceRepo(a.A.DB),
 		Project:        project,
 		SubscriptionId: chi.URLParam(r, "subscriptionID"),
 		SkipCache:      true,
