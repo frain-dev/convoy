@@ -3,15 +3,31 @@
 		<form [formGroup]="addNewEndpointForm">
 			<convoy-input-field>
 				<label for="name" convoy-label required="true">Endpoint Name</label>
-				<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="e.g paystack-prod" />
+				<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Enter endpoit name here" />
 				<convoy-input-error *ngIf="addNewEndpointForm.get('name')?.touched && addNewEndpointForm.get('name')?.invalid">Please provide a name</convoy-input-error>
 			</convoy-input-field>
 
-			<convoy-input-field>
-				<label for="url" convoy-label required="true">Enter URL</label>
-				<input type="url" id="url" convoy-input autocomplete="url" formControlName="url" placeholder="Enter URL" />
-				<convoy-input-error *ngIf="addNewEndpointForm.get('url')?.touched && addNewEndpointForm.get('url')?.invalid">Endpoint URL is required</convoy-input-error>
-			</convoy-input-field>
+			<div class="grid gap-24px" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
+				<convoy-input-field>
+					<label for="url" convoy-label required="true">Enter URL</label>
+					<input type="url" id="url" convoy-input autocomplete="url" formControlName="url" placeholder="Enter endpoint URL here" />
+					<convoy-input-error *ngIf="addNewEndpointForm.get('url')?.touched && addNewEndpointForm.get('url')?.invalid">Endpoint URL is required</convoy-input-error>
+				</convoy-input-field>
+
+				<convoy-input-field>
+					<label for="owner_id" convoy-label>
+						Owner ID
+						<convoy-tooltip
+							class="ml-4px"
+							size="sm"
+							type="white"
+							tooltipContent="A unique id for identifying a group of endpoints, like a user id. Useful for fanning out an event to multiple endpoints and creating portal link for multiple endpoints."
+							position="right"
+						></convoy-tooltip>
+					</label>
+					<input type="text" id="owner_id" convoy-input autocomplete="owner_id" formControlName="owner_id" placeholder="Enter owner id here" />
+				</convoy-input-field>
+			</div>
 
 			<hr class="border-grey-10 mb-24px" />
 			<h2 class="text-16 font-semibold mb-16px">Set Configurations</h2>
