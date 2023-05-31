@@ -5385,6 +5385,15 @@
 				"description": "This endpoint fetches meta events with pagination",
 				"parameters": [
 					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "start date",
 						"in": "query",
 						"name": "startDate",
