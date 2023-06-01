@@ -5550,7 +5550,7 @@
 				],
 				"summary": "List all meta events",
 				"tags": [
-					"MetaEvents"
+					"Meta Events"
 				]
 			}
 		},
@@ -5686,7 +5686,7 @@
 				],
 				"summary": "Retrieve a meta event",
 				"tags": [
-					"MetaEvents"
+					"Meta Events"
 				]
 			}
 		},
@@ -5822,7 +5822,7 @@
 				],
 				"summary": "Retry meta event",
 				"tags": [
-					"MetaEvents"
+					"Meta Events"
 				]
 			}
 		},

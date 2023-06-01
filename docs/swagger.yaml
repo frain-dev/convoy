@@ -3001,7 +3001,7 @@ paths:
       - ApiKeyAuth: []
       summary: List all meta events
       tags:
-      - MetaEvents
+      - Meta Events
   /v1/projects/{projectID}/meta-events/{metaEventID}:
     get:
       consumes:
@@ -3066,7 +3066,7 @@ paths:
       - ApiKeyAuth: []
       summary: Retrieve a meta event
       tags:
-      - MetaEvents
+      - Meta Events
   /v1/projects/{projectID}/meta-events/{metaEventID}/resend:
     put:
       consumes:
@@ -3131,7 +3131,7 @@ paths:
       - ApiKeyAuth: []
       summary: Retry meta event
       tags:
-      - MetaEvents
+      - Meta Events
   /v1/projects/{projectID}/portal-links:
     get:
       consumes:
