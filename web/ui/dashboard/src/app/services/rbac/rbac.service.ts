@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { PrivateService } from 'src/app/private/private.service';
 
 @Injectable({
@@ -6,12 +7,12 @@ import { PrivateService } from 'src/app/private/private.service';
 })
 export class RbacService {
 	permissions = {
-		MEMBER: ['Event Deliveries|VIEW', 'Event Deliveries|MANAGE', 'Sources|VIEW', 'Subscriptions|VIEW', 'Endpoints|VIEW', 'Portal Links|VIEW', 'Events|VIEW', 'Events|MANAGE', 'Meta Events|VIEW', 'Project Settings|VIEW', 'Projects|VIEW', 'Team|VIEW', 'Organisations: VIEW'],
+		MEMBER: ['Event Deliveries|VIEW', 'Event Deliveries|MANAGE', 'Sources|VIEW', 'Subscriptions|VIEW', 'Endpoints|VIEW', 'Portal Links|VIEW', 'Events|VIEW', 'Events|MANAGE', 'Meta Events|VIEW', 'Project Settings|VIEW', 'Projects|VIEW', 'Team|VIEW', 'Organisations|VIEW'],
 		SUPER_ADMIN: ['Team|MANAGE', 'Organisations: MANAGE'],
 		ADMIN: ['Sources|MANAGE', 'Subscriptions|MANAGE', 'Endpoints|MANAGE', 'Portal Links|MANAGE', 'Meta Events|MANAGE', 'Project Settings|MANAGE', 'Projects|MANAGE']
 	};
 
-	constructor(private privateService: PrivateService) {}
+	constructor(private privateService: PrivateService, private route: ActivatedRoute) {}
 
 	async getUserRole(): Promise<ROLE> {
 		try {
@@ -32,6 +33,8 @@ export class RbacService {
 
 	public async userCanAccess(requestPermission: PERMISSION): Promise<boolean> {
 		const permissions = await this.userPermission();
+		const portalPermissions = ['Subscriptions|MANAGE', 'Endpoints|MANAGE'];
+		if (this.route.snapshot.queryParams['token']) return !!portalPermissions.find(permission => permission == requestPermission);
 		return !!permissions.find(permission => permission == requestPermission);
 	}
 
