@@ -2,13 +2,17 @@ package services
 
 import (
 	"context"
+	"errors"
 	"testing"
+
+	"github.com/frain-dev/convoy"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/queue"
 )
 
 func provideBatchReplayEventService(ctrl *gomock.Controller, f *datastore.Filter) *BatchReplayEventService {
@@ -21,44 +25,118 @@ func provideBatchReplayEventService(ctrl *gomock.Controller, f *datastore.Filter
 }
 
 func TestBatchReplayEventService_Run(t *testing.T) {
-	type fields struct {
-		EndpointRepo datastore.EndpointRepository
-		Queue        queue.Queuer
-		EventRepo    datastore.EventRepository
-		Filter       *datastore.Filter
-	}
+	ctx := context.Background()
+
 	type args struct {
 		ctx context.Context
+		f   *datastore.Filter
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    int
-		want1   int
-		wantErr bool
+		name          string
+		dbFn          func(br *BatchReplayEventService)
+		args          args
+		wantSuccesses int
+		wantFailures  int
+		wantErr       bool
+		wantErrMsg    string
 	}{
-		{},
+		{
+			name: "should_batch_replay_events",
+			dbFn: func(br *BatchReplayEventService) {
+				e, _ := br.EventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
+					[]datastore.Event{
+						{UID: "event1"},
+						{UID: "event2"},
+					},
+					datastore.PaginationData{},
+					nil,
+				)
+
+				q, _ := br.Queue.(*mocks.MockQueuer)
+				q.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(2).Return(nil)
+			},
+			args: args{
+				ctx: ctx,
+				f: &datastore.Filter{
+					Project: &datastore.Project{UID: "1234"},
+				},
+			},
+			wantSuccesses: 2,
+			wantFailures:  0,
+			wantErr:       false,
+			wantErrMsg:    "",
+		},
+		{
+			name: "should_batch_replay_one_event",
+			dbFn: func(br *BatchReplayEventService) {
+				e, _ := br.EventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
+					[]datastore.Event{
+						{UID: "event1"},
+						{UID: "event2"},
+						{UID: "event3"},
+					},
+					datastore.PaginationData{},
+					nil,
+				)
+
+				q, _ := br.Queue.(*mocks.MockQueuer)
+				q.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(2).Return(nil)
+				q.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(1).Return(errors.New("failed"))
+			},
+			args: args{
+				ctx: ctx,
+				f: &datastore.Filter{
+					Project: &datastore.Project{UID: "1234"},
+				},
+			},
+			wantSuccesses: 2,
+			wantFailures:  1,
+			wantErr:       false,
+			wantErrMsg:    "",
+		},
+		{
+			name: "should_fail_to_load_events",
+			dbFn: func(br *BatchReplayEventService) {
+				e, _ := br.EventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
+					[]datastore.Event{},
+					datastore.PaginationData{},
+					errors.New("failed"),
+				)
+			},
+			args: args{
+				ctx: ctx,
+				f: &datastore.Filter{
+					Project: &datastore.Project{UID: "1234"},
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to fetch event deliveries",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := &BatchReplayEventService{
-				EndpointRepo: tt.fields.EndpointRepo,
-				Queue:        tt.fields.Queue,
-				EventRepo:    tt.fields.EventRepo,
-				Filter:       tt.fields.Filter,
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			e := provideBatchReplayEventService(ctrl, tt.args.f)
+
+			if tt.dbFn != nil {
+				tt.dbFn(e)
 			}
-			got, got1, err := e.Run(tt.args.ctx)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("BatchReplayEventService.Run() error = %v, wantErr %v", err, tt.wantErr)
+
+			successes, failures, err := e.Run(tt.args.ctx)
+			if tt.wantErr {
+				require.NotNil(t, err)
+				require.Equal(t, tt.wantErrMsg, err.(*ServiceError).Error())
 				return
 			}
-			if got != tt.want {
-				t.Errorf("BatchReplayEventService.Run() got = %v, want %v", got, tt.want)
-			}
-			if got1 != tt.want1 {
-				t.Errorf("BatchReplayEventService.Run() got1 = %v, want %v", got1, tt.want1)
-			}
+
+			require.Nil(t, err)
+			require.Equal(t, tt.wantSuccesses, successes)
+			require.Equal(t, tt.wantFailures, failures)
 		})
 	}
 }

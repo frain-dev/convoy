@@ -335,7 +335,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 			err = requeueEventDelivery(tc.args.ctx, tc.args.eventDelivery, tc.args.g, tc.args.eventDeliveryRepo, tc.args.queuer)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrMsg, err.Error())
+				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
 				return
 			}
 
