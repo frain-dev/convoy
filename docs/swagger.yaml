@@ -3065,6 +3065,11 @@ paths:
       - application/json
       description: This endpoint fetches meta events with pagination
       parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
       - description: start date
         in: query
         name: startDate

@@ -3272,6 +3272,13 @@
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "Project ID",
+                        "name": "projectID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "start date",
                         "name": "startDate",
                         "in": "query"

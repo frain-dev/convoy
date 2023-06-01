@@ -108,7 +108,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	endpoint.Authentication = auth
 	err = a.EndpointRepo.CreateEndpoint(ctx, endpoint, a.ProjectID)
 	if err != nil {
-		log.WithError(err).Error("failed to create endpoint")
+		log.FromContext(ctx).WithError(err).Error("failed to create endpoint")
 		return nil, &ServiceError{ErrMsg: "an error occurred while adding endpoint", Err: err}
 	}
 

@@ -17,12 +17,6 @@ import (
 	"github.com/go-chi/render"
 )
 
-func createSourceService(a *DashboardHandler) *services.SourceService {
-	sourceRepo := postgres.NewSourceRepo(a.A.DB)
-
-	return services.NewSourceService(sourceRepo, a.A.Cache)
-}
-
 func (a *DashboardHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 	var newSource models.CreateSource
 	if err := util.ReadJSON(r, &newSource); err != nil {
@@ -46,8 +40,14 @@ func (a *DashboardHandler) CreateSource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	sourceService := createSourceService(a)
-	source, err := sourceService.CreateSource(r.Context(), &newSource, project)
+	cs := services.CreateSourceService{
+		SourceRepo: postgres.NewSourceRepo(a.A.DB),
+		Cache:      a.A.Cache,
+		NewSource:  &newSource,
+		Project:    project,
+	}
+
+	source, err := cs.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -133,8 +133,6 @@ func (a *DashboardHandler) UpdateSource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	sourceService := createSourceService(a)
-
 	source, err := postgres.NewSourceRepo(a.A.DB).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		if err == datastore.ErrSourceNotFound {
@@ -146,7 +144,15 @@ func (a *DashboardHandler) UpdateSource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	source, err = sourceService.UpdateSource(r.Context(), project, &sourceUpdate, source)
+	us := services.UpdateSourceService{
+		SourceRepo:   postgres.NewSourceRepo(a.A.DB),
+		Cache:        a.A.Cache,
+		Project:      project,
+		SourceUpdate: &sourceUpdate,
+		Source:       source,
+	}
+
+	source, err = us.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
