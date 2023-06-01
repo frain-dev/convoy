@@ -31,14 +31,8 @@ func (a *DashboardHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := &models.LoginUserResponse{
-		UID:           user.UID,
-		FirstName:     user.FirstName,
-		LastName:      user.LastName,
-		Email:         user.Email,
-		EmailVerified: user.EmailVerified,
-		Token:         models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
-		CreatedAt:     user.CreatedAt,
-		UpdatedAt:     user.UpdatedAt,
+		User:  user,
+		Token: models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Login successful", u, http.StatusOK))
@@ -47,6 +41,11 @@ func (a *DashboardHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 func (a *DashboardHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var refreshToken models.Token
 	if err := util.ReadJSON(r, &refreshToken); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if err := refreshToken.Validate(); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}

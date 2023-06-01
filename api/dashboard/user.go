@@ -31,6 +31,11 @@ func (a *DashboardHandler) RegisterUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if err := newUser.Validate(); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	baseUrl, err := a.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -45,13 +50,8 @@ func (a *DashboardHandler) RegisterUser(w http.ResponseWriter, r *http.Request) 
 	}
 
 	u := &models.LoginUserResponse{
-		UID:       user.UID,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Email:     user.Email,
-		Token:     models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+		User:  user,
+		Token: models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Registration successful", u, http.StatusCreated))
@@ -87,13 +87,19 @@ func (a *DashboardHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("User fetched successfully", user, http.StatusOK))
+	userResponse := &models.UserResponse{User: user}
+	_ = render.Render(w, r, util.NewServerResponse("User fetched successfully", userResponse, http.StatusOK))
 }
 
 func (a *DashboardHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	var userUpdate models.UpdateUser
 	err := util.ReadJSON(r, &userUpdate)
 	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if err := userUpdate.Validate(); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -111,13 +117,19 @@ func (a *DashboardHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("User updated successfully", user, http.StatusOK))
+	userResponse := &models.UserResponse{User: user}
+	_ = render.Render(w, r, util.NewServerResponse("User updated successfully", userResponse, http.StatusOK))
 }
 
 func (a *DashboardHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	var updatePassword models.UpdatePassword
 	err := util.ReadJSON(r, &updatePassword)
 	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if err := updatePassword.Validate(); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -135,7 +147,8 @@ func (a *DashboardHandler) UpdatePassword(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Password updated successfully", user, http.StatusOK))
+	userResponse := &models.UserResponse{User: user}
+	_ = render.Render(w, r, util.NewServerResponse("Password updated successfully", userResponse, http.StatusOK))
 }
 
 func (a *DashboardHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
@@ -148,6 +161,11 @@ func (a *DashboardHandler) ForgotPassword(w http.ResponseWriter, r *http.Request
 
 	err = util.ReadJSON(r, &forgotPassword)
 	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if err := forgotPassword.Validate(); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -182,13 +200,20 @@ func (a *DashboardHandler) ResetPassword(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	if err := resetPassword.Validate(); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	userService := createUserService(a)
 	user, err := userService.ResetPassword(r.Context(), token, &resetPassword)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-	_ = render.Render(w, r, util.NewServerResponse("Password reset successful", user, http.StatusOK))
+
+	userResponse := models.UserResponse{User: user}
+	_ = render.Render(w, r, util.NewServerResponse("Password reset successful", userResponse, http.StatusOK))
 }
 
 func getUser(r *http.Request) (*datastore.User, bool) {
