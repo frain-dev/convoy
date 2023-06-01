@@ -18,6 +18,8 @@ import { RbacService } from 'src/app/services/rbac/rbac.service';
 export class CreateSubscriptionComponent implements OnInit {
 	@Output() onAction = new EventEmitter();
 	@Input('action') action: 'update' | 'create' | 'view' = 'create';
+	@Input('isPortal') isPortal: 'true' | 'false' = 'false';
+	@Input('subscriptionId') subscriptionId = this.route.snapshot.params.id || this.route.snapshot.queryParams.id;
 	@Input('showAction') showAction: 'true' | 'false' = 'false';
 
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
@@ -28,7 +30,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		endpoint_id: [null, Validators.required],
 		retry_config: this.formBuilder.group({
 			type: [],
-			retry_count: [],
+			retry_count: [null, Validators.pattern('^[-+]?[0-9]+$')],
 			duration: []
 		}),
 		filter_config: this.formBuilder.group({
@@ -57,7 +59,6 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	projectType?: 'incoming' | 'outgoing' = this.privateService.activeProjectDetails?.type;
 	isLoadingForm = true;
-	subscriptionId = this.route.snapshot.params.id || this.route.snapshot.queryParams.id;
 	isLoadingPortalProject = false;
 	token: string = this.route.snapshot.queryParams.token;
 	showError = false;
@@ -75,7 +76,8 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
-		await this.getSubscriptionDetails();
+		if (this.isPortal !== 'true') await Promise.all([this.getEndpoints(), this.getSources()]);
+		if (this.action === 'update') await this.getSubscriptionDetails();
 		this.isLoadingForm = false;
 
 		// add required validation on source input for incoming projects
@@ -106,14 +108,14 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async getSubscriptionDetails() {
-		await Promise.all([this.getEndpoints(), this.getSources()]);
-		if (this.action === 'create') return;
-
 		try {
 			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId);
 			this.subscriptionForm.patchValue(response.data);
 			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
-			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
+			if (response.data.filter_config?.event_types) {
+				this.eventTags = response.data.filter_config?.event_types;
+				if (this.eventTags.length > 1 || this.eventTags[0] !== '*') this.toggleConfigForm('events');
+			} else this.eventTags = [];
 			const filterConfig = response.data.filter_config?.filter;
 
 			if (this.action === 'update' && (Object.keys(filterConfig.body).length > 0 || Object.keys(filterConfig.headers).length > 0)) {

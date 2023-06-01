@@ -14,7 +14,7 @@
 					<convoy-input-error *ngIf="addNewEndpointForm.get('url')?.touched && addNewEndpointForm.get('url')?.invalid">Endpoint URL is required</convoy-input-error>
 				</convoy-input-field>
 
-				<convoy-input-field>
+				<convoy-input-field *ngIf="type !== 'portal'">
 					<label for="owner_id" convoy-label>
 						Owner ID
 						<convoy-tooltip
@@ -116,6 +116,7 @@
 						<input id="http_timeout" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g 60" />
 						<div class="absolute top-[50%] right-14px text-16 text-grey-100 opacity-40 translate-y-[-50%]">sec</div>
 					</div>
+					<convoy-input-error *ngIf="addNewEndpointForm.get('http_timeout')?.touched && addNewEndpointForm.get('http_timeout')?.invalid">Timeout value must be a whole number</convoy-input-error>
 				</convoy-input-field>
 			</ng-container>
 
@@ -131,7 +132,7 @@
 							color="grey"
 							texture="light"
 							type="button"
-							class="mr-24px font-normal"
+							[class]="'mr-24px font-normal'"
 							(click)="toggleConfigForm(config.uid)"
 						>
 							{{ config.name }}

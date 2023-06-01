@@ -6,8 +6,10 @@ import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { AppService } from './app.service';
 import { CliKeysComponent } from 'src/app/private/pages/project/endpoint-details/cli-keys/cli-keys.component';
-
-type EVENT_PAGE_TABS = 'events' | 'event deliveries';
+import { EndpointDetailsService } from 'src/app/private/pages/project/endpoint-details/endpoint-details.service';
+import { GeneralService } from 'src/app/services/general/general.service';
+import { ENDPOINT } from 'src/app/models/endpoint.model';
+import { PrivateService } from 'src/app/private/private.service';
 
 @Component({
 	selector: 'app-app',
@@ -15,7 +17,7 @@ type EVENT_PAGE_TABS = 'events' | 'event deliveries';
 	styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
-	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
+	@ViewChild('subscriptionDropdown') dropdownComponent!: DropdownComponent;
 	@ViewChild(CliKeysComponent) cliKeys!: CliKeysComponent;
 	tableHead = ['Name', 'Endpoint', 'Created At', 'Updated At', 'Status', ''];
 	token: string = this.route.snapshot.queryParams.token;
@@ -32,8 +34,10 @@ export class AppComponent implements OnInit {
 	showCreateSubscription = false;
 	showSubscriptionError = false;
 	showEndpointSecret: boolean = false;
+	showCreateEndpoint = false;
+	isTogglingEndpoint = false;
 
-	constructor(private appService: AppService, private route: ActivatedRoute, private router: Router) {}
+	constructor(private appService: AppService, private route: ActivatedRoute, private endpointDetailsService: EndpointDetailsService, private generalService: GeneralService, private endpointService: EndpointDetailsService) {}
 
 	ngOnInit(): void {
 		this.getSubscripions();
@@ -74,26 +78,57 @@ export class AppComponent implements OnInit {
 	}
 
 	async deleteSubscription() {
+		if (!this.activeSubscription) return;
+
 		this.isDeletingSubscription = true;
 		try {
-			await this.appService.deleteSubscription(this.activeSubscription?.uid || '');
+			await this.appService.deleteSubscription(this.activeSubscription.uid);
+			await this.endpointDetailsService.deleteEndpoint(this.activeSubscription.endpoint_metadata?.uid || '');
 			this.getSubscripions();
 			this.isDeletingSubscription = false;
+			this.showDeleteSubscriptionModal = false;
+			delete this.activeSubscription;
 		} catch (error) {
 			this.isDeletingSubscription = false;
 		}
 	}
 
-	closeCreateSubscriptionModal() {
-		this.showCreateSubscriptionModal = false;
-		this.router.navigate(['/portal'], { relativeTo: this.route, queryParams: { token: this.token } });
-	}
-
-	onCreateSubscription() {
-		this.router.navigate(['/portal'], { relativeTo: this.route, queryParams: { token: this.token } });
-	}
-
 	hasFilter(filterObject: { headers: Object; body: Object }): boolean {
 		return Object.keys(filterObject.body).length > 0 || Object.keys(filterObject.headers).length > 0;
+	}
+
+	async sendTestEvent(endpointId?: string) {
+		if (!endpointId) return;
+
+		const testEvent = {
+			data: { data: 'Test event from Convoy', convoy: 'https://github.com/frain-dev/convoy' },
+			endpoint_id: endpointId,
+			event_type: 'test.convoy'
+		};
+
+		try {
+			const response = await this.endpointDetailsService.sendEvent({ body: testEvent });
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+		} catch (error) {
+			console.log(error);
+		}
+	}
+
+	async toggleEndpoint(subscriptionIndex: number, endpointDetails?: ENDPOINT) {
+		if (!endpointDetails?.uid) return;
+		this.isTogglingEndpoint = true;
+
+		try {
+			const response = await this.endpointDetailsService.toggleEndpoint(endpointDetails?.uid);
+			this.subscriptions.content[subscriptionIndex].endpoint_metadata = response.data;
+			this.generalService.showNotification({ message: `${endpointDetails?.title} status updated successfully`, style: 'success' });
+			this.isTogglingEndpoint = false;
+		} catch {
+			this.isTogglingEndpoint = false;
+		}
+	}
+
+	hideSubscriptionDropdown() {
+		this.dropdownComponent.show = false;
 	}
 }

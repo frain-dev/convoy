@@ -38,7 +38,7 @@ export class CreateEndpointComponent implements OnInit {
 		slack_webhook_url: [],
 		url: ['', Validators.required],
 		secret: [null],
-		http_timeout: [null],
+		http_timeout: [null, Validators.pattern('^[-+]?[0-9]+$')],
 		description: [null],
 		owner_id: [null],
 		authentication: this.formBuilder.group({
@@ -51,7 +51,7 @@ export class CreateEndpointComponent implements OnInit {
 		advanced_signatures: [false, Validators.required]
 	});
 	token: string = this.route.snapshot.params.token;
-	endpointUid: string = this.route.snapshot.params.id;
+	@Input('endpointId') endpointUid: string = this.route.snapshot.params.id;
 	enableMoreConfig = false;
 	configurations = [{ uid: 'http_timeout', name: 'Endpoint Timeout ', show: false }];
 	endpointCreated: boolean = false;
@@ -70,7 +70,7 @@ export class CreateEndpointComponent implements OnInit {
 	async ngOnInit() {
 		if (this.type !== 'portal') this.configurations.push({ uid: 'alert-config', name: 'Alert Configuration', show: false }, { uid: 'auth', name: 'Authentication', show: false }, { uid: 'signature', name: 'Signature Format', show: false });
 		if (this.endpointUid && this.editMode) this.getEndpointDetails();
-		if (!(await this.rbacService.userCanAccess('Endpoints|MANAGE')) && this.type !== 'portal') this.addNewEndpointForm.disable();
+		if (!(await this.rbacService.userCanAccess('Endpoints|MANAGE'))) this.addNewEndpointForm.disable();
 	}
 
 	async saveEndpoint() {
