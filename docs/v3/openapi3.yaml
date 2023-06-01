@@ -3202,7 +3202,7 @@ paths:
       - ApiKeyAuth: []
       summary: List all meta events
       tags:
-      - MetaEvents
+      - Meta Events
   /v1/projects/{projectID}/meta-events/{metaEventID}:
     get:
       description: This endpoint retrieves a meta event
@@ -3273,7 +3273,7 @@ paths:
       - ApiKeyAuth: []
       summary: Retrieve a meta event
       tags:
-      - MetaEvents
+      - Meta Events
   /v1/projects/{projectID}/meta-events/{metaEventID}/resend:
     put:
       description: This endpoint retries a meta event
@@ -3344,7 +3344,7 @@ paths:
       - ApiKeyAuth: []
       summary: Retry meta event
       tags:
-      - MetaEvents
+      - Meta Events
   /v1/projects/{projectID}/portal-links:
     get:
       description: This endpoint fetches multiple portal links

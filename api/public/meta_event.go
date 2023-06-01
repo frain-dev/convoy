@@ -15,7 +15,7 @@ import (
 // GetMetaEventsPaged
 // @Summary List all meta events
 // @Description This endpoint fetches meta events with pagination
-// @Tags MetaEvents
+// @Tags Meta Events
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
@@ -55,7 +55,7 @@ func (a *PublicHandler) GetMetaEventsPaged(w http.ResponseWriter, r *http.Reques
 // GetMetaEvent
 // @Summary Retrieve a meta event
 // @Description This endpoint retrieves a meta event
-// @Tags MetaEvents
+// @Tags Meta Events
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
@@ -78,7 +78,7 @@ func (a *PublicHandler) GetMetaEvent(w http.ResponseWriter, r *http.Request) {
 // ResendMetaEvent
 // @Summary Retry meta event
 // @Description This endpoint retries a meta event
-// @Tags MetaEvents
+// @Tags Meta Events
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
