@@ -314,7 +314,7 @@ func TestEventService_requeueEventDelivery(t *testing.T) {
 					Times(1).Return(errors.New("failed"))
 			},
 			wantErr:    true,
-			wantErrMsg: "error occurred re-enqueing old event - 123: failed",
+			wantErrMsg: "error occurred re-enqueing old event - 123",
 		},
 	}
 	for _, tc := range tests {

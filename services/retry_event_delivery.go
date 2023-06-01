@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -27,23 +26,23 @@ type RetryEventDeliveryService struct {
 func (e *RetryEventDeliveryService) Run(ctx context.Context) error {
 	switch e.EventDelivery.Status {
 	case datastore.SuccessEventStatus:
-		return errors.New("event already sent")
+		return &ServiceError{ErrMsg: "event already sent"}
 	case datastore.ScheduledEventStatus,
 		datastore.ProcessingEventStatus,
 		datastore.RetryEventStatus:
-		return errors.New("cannot resend event that did not fail previously")
+		return &ServiceError{ErrMsg: "cannot resend event that did not fail previously"}
 	}
 
 	endpoint, err := e.EndpointRepo.FindEndpointByID(ctx, e.EventDelivery.EndpointID, e.Project.UID)
 	if err != nil {
-		return datastore.ErrEndpointNotFound
+		return &ServiceError{ErrMsg: datastore.ErrEndpointNotFound.Error(), Err: err}
 	}
 
 	switch endpoint.Status {
 	case datastore.PendingEndpointStatus:
-		return errors.New("endpoint is being re-activated")
+		return &ServiceError{ErrMsg: "endpoint is being re-activated"}
 	case datastore.PausedEndpointStatus:
-		return errors.New("endpoint is currently paused")
+		return &ServiceError{ErrMsg: "endpoint is currently paused"}
 	case datastore.InactiveEndpointStatus:
 		err = e.EndpointRepo.UpdateEndpointStatus(context.Background(), e.EventDelivery.ProjectID, e.EventDelivery.EndpointID, datastore.PendingEndpointStatus)
 		if err != nil {

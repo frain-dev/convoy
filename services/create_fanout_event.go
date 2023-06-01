@@ -2,8 +2,6 @@ package services
 
 import (
 	"context"
-	"errors"
-	"net/http"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
@@ -21,20 +19,20 @@ type CreateFanoutEventService struct {
 
 func (e *CreateFanoutEventService) Run(ctx context.Context) (*datastore.Event, error) {
 	if e.Project == nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while creating event - invalid project"))
+		return nil, &ServiceError{ErrMsg: "an error occurred while creating event - invalid project"}
 	}
 
 	if err := util.Validate(e.NewMessage); err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
+		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
 	endpoints, err := e.EndpointRepo.FindEndpointsByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
 	if err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
+		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
 	if len(endpoints) == 0 {
-		return nil, util.NewServiceError(http.StatusBadRequest, ErrNoValidOwnerIDEndpointFound)
+		return nil, &ServiceError{ErrMsg: ErrNoValidOwnerIDEndpointFound.Error()}
 	}
 
 	ev := &newEvent{

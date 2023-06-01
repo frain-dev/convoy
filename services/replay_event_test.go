@@ -8,7 +8,6 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -85,7 +84,7 @@ func TestReplayEventService_Run(t *testing.T) {
 			err = es.Run(tc.args.ctx)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
+				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
 				return
 			}
 

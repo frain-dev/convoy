@@ -3,14 +3,12 @@ package services
 import (
 	"bytes"
 	"context"
-	"net/http"
 	"testing"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/pkg/httpheader"
-	"github.com/frain-dev/convoy/util"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -35,13 +33,12 @@ func TestCreateEventService_Run(t *testing.T) {
 		g          *datastore.Project
 	}
 	tests := []struct {
-		name        string
-		dbFn        func(es *CreateEventService)
-		args        args
-		wantEvent   *datastore.Event
-		wantErr     bool
-		wantErrCode int
-		wantErrMsg  string
+		name       string
+		dbFn       func(es *CreateEventService)
+		args       args
+		wantEvent  *datastore.Event
+		wantErr    bool
+		wantErrMsg string
 	}{
 		{
 			name: "should_create_event",
@@ -252,9 +249,8 @@ func TestCreateEventService_Run(t *testing.T) {
 					Config: &datastore.ProjectConfig{},
 				},
 			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "retry strategy not defined in configuration",
+			wantErr:    true,
+			wantErrMsg: "retry strategy not defined in configuration",
 		},
 		{
 			name: "should_error_for_empty_endpoints",
@@ -267,9 +263,8 @@ func TestCreateEventService_Run(t *testing.T) {
 				},
 				g: &datastore.Project{},
 			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  ErrInvalidEndpointID.Error(),
+			wantErr:    true,
+			wantErrMsg: ErrInvalidEndpointID.Error(),
 		},
 		{
 			name: "should_error_for_endpoint_not_found",
@@ -287,9 +282,8 @@ func TestCreateEventService_Run(t *testing.T) {
 				},
 				g: &datastore.Project{UID: "abc"},
 			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  datastore.ErrEndpointNotFound.Error(),
+			wantErr:    true,
+			wantErrMsg: datastore.ErrEndpointNotFound.Error(),
 		},
 
 		{
@@ -303,9 +297,8 @@ func TestCreateEventService_Run(t *testing.T) {
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
 			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "an error occurred while creating event - invalid project",
+			wantErr:    true,
+			wantErrMsg: "an error occurred while creating event - invalid project",
 		},
 	}
 	for _, tc := range tests {
@@ -326,8 +319,7 @@ func TestCreateEventService_Run(t *testing.T) {
 			event, err := es.Run(tc.args.ctx)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
-				require.Equal(t, tc.wantErrMsg, err.(*util.ServiceError).Error())
+				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
 				return
 			}
 
