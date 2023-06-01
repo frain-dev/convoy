@@ -24,7 +24,7 @@
 			<div>
 				<div class="flex items-center">
 					<p class="text-12 font-medium mr-36px">{{ device.host_name }}</p>
-					<convoy-tag [type]="device.status | statuscolor">{{ device.status }}</convoy-tag>
+					<convoy-tag [color]="device.status | statuscolor">{{ device.status }}</convoy-tag>
 				</div>
 			</div>
 

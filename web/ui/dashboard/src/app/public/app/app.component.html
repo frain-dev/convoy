@@ -1,91 +1,136 @@
 <div convoy-page>
-	<h2 class="font-semibold mb-20px" *ngIf="isCliAvailable">Portal</h2>
+	<div class="flex justify-between items-center mb-12px">
+		<h2 class="font-medium text-14 text-new.gray-400">Endpoints</h2>
 
-	<div convoy-card class="mt-24px rounded-bl-[0] rounded-br-[0]">
-		<div class="flex items-center justify-center">
-			<ul class="flex flex-row m-auto w-full mt-12px">
-				<li *ngFor="let tab of tabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
-					<button class="pb-16px pt-10px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="toggleActiveTab(tab)">
-						<span class="text-14 text-left capitalize text-grey-60 tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
-					</button>
-				</li>
-
-				<div class="ml-auto pr-14px">
-					<button convoy-button size="sm" fill="outline" (click)="showCreateSubscriptionModal = true" [disabled]="showSubscriptionError" *ngIf="activeTab === 'subscriptions' && showCreateSubscription">Create Subscription</button>
-					<button convoy-button size="sm" fill="outline" (click)="cliKeys.generateKeyModal = true" [disabled]="showCliError" *ngIf="activeTab === 'cli keys'">Generate Key</button>
-				</div>
-			</ul>
-		</div>
+		<button convoy-button fill="soft" class="py-4px px-10px rounded-8px text-12">
+			<img src="/assets/img/add-icon.svg" alt="add icon" class="mr-8px w-12px" />
+			Add Endpoint
+		</button>
 	</div>
 
-	<ng-container *ngIf="activeTab === 'subscriptions'">
-		<div convoy-card class="rounded-tl-[0] rounded-tr-[0]">
-			<convoy-table-loader id="endpoints_loader" class="block h-300px" [withDate]="false" [tableHead]="tableHead" *ngIf="isloadingSubscriptions"></convoy-table-loader>
+	<ul convoy-card class="py-24px mb-40px">
+		<ng-container *ngIf="isloadingSubscriptions">
+			<li class="flex justify-between p-16px">
+				<div class="flex max-w-[790px] justify-between w-full">
+					<div class="bg-grey-10 rounded-8px animate-pulse w-150px h-20px"></div>
+					<div class="bg-grey-10 rounded-8px animate-pulse w-320px h-20px"></div>
+					<div class="flex">
+						<div class="bg-grey-10 mr-8px rounded-8px animate-pulse w-52px h-20px"></div>
+						<div class="bg-grey-10 mr-8px rounded-8px animate-pulse w-88px h-20px"></div>
+						<div class="bg-grey-10 rounded-8px animate-pulse w-94px h-20px"></div>
+					</div>
+				</div>
+				<div class="bg-grey-10 rounded-8px animate-pulse w-12px h-20px"></div>
+			</li>
+			<li class="flex justify-between p-16px">
+				<div class="flex max-w-[790px] justify-between w-full">
+					<div class="bg-grey-10 rounded-8px animate-pulse w-150px h-20px"></div>
+					<div class="bg-grey-10 rounded-8px animate-pulse w-320px h-20px"></div>
+					<div class="flex">
+						<div class="bg-grey-10 mr-8px rounded-8px animate-pulse w-52px h-20px"></div>
+						<div class="bg-grey-10 mr-8px rounded-8px animate-pulse w-88px h-20px"></div>
+						<div class="bg-grey-10 rounded-8px animate-pulse w-94px h-20px"></div>
+					</div>
+				</div>
+				<div class="bg-grey-10 rounded-8px animate-pulse w-12px h-20px"></div>
+			</li>
+		</ng-container>
 
-			<table convoy-table class="subscriptions-table" *ngIf="!isloadingSubscriptions && subscriptions?.content?.length">
-				<thead convoy-table-head>
-					<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of tableHead; let i = index">{{ head }}</th>
-				</thead>
+		<li class="flex justify-between p-16px hover:bg-new.primary-25 transition-all duration-300 rounded-8px" *ngFor="let subscription of subscriptions?.content; let i = index">
+			<div class="flex text-14 text-new.gray-600 max-w-[790px] justify-between w-full">
+				<div class="flex">
+					<div class="mr-8px">{{ subscription.endpoint_metadata?.title }}</div>
+					<convoy-tag size="sm" color="success">{{ subscription.endpoint_metadata?.status }}</convoy-tag>
+				</div>
+				<div class="max-w-xs whitespace-nowrap text-ellipsis overflow-hidden">{{ subscription.endpoint_metadata?.target_url }}</div>
+				<div>
+					<convoy-tag [color]="hasFilter(subscription.filter_config.filter) ? 'primary' : 'gray'" class="mr-8px">Filter</convoy-tag>
+					<convoy-tag [color]="subscription?.retry_config ? 'primary' : 'gray'" class="mr-8px">Retry Logic</convoy-tag>
+					<convoy-tag [color]="subscription.filter_config.event_types.length > 0 && subscription.filter_config.event_types[0] != '*' ? 'primary' : 'gray'" color="primary">Event Types</convoy-tag>
+				</div>
+			</div>
+			<div>
+				<div convoy-dropdown position="right" size="md" class="ml-4px">
+					<button dropdownTrigger convoy-button size="sm" fill="clear" class="!p-0">
+						<img src="assets/img/more-icon-vertical.svg" class="h-5" alt="more icon" />
+					</button>
 
-				<tbody>
-					<tr convoy-table-row *ngFor="let subscription of subscriptions?.content; let i = index">
-						<td convoy-table-cell class="pl-20px">
-							<div class="overflow-hidden text-ellipsis whitespace-nowrap">{{ subscription.name }}</div>
-						</td>
-						<td convoy-table-cell>
-							<div class="w-200px overflow-hidden text-ellipsis whitespace-nowrap">{{ subscription.endpoint_metadata?.target_url }}</div>
-						</td>
-						<td convoy-table-cell>
-							{{ subscription.created_at | date }}
-						</td>
-						<td convoy-table-cell>
-							{{ subscription.updated_at | date }}
-						</td>
-						<td convoy-table-cell>
-							<convoy-tag [type]="subscription.status | statuscolor">{{ subscription.status }}</convoy-tag>
-						</td>
-						<td convoy-table-cell class="contents" *ngIf="showCreateSubscription">
-							<div convoy-dropdown>
-								<button dropdownTrigger convoy-button size="sm" fill="clear">
-									<img src="/assets/img/more-icon-vertical.svg" alt="more icon" />
-								</button>
-								<ul dropdownOptions>
-									<li convoy-list-item class="w-full" className="px-14px">
-										<button convoy-button fill="text" (click)="subscription.active_menu = false; dropdownComponent.show = false" [routerLink]="'./subscriptions/' + subscription.uid" [queryParams]="{ token: token }">
-											<svg width="17" height="16" class="mr-8px fill-primary-100">
-												<use xlink:href="#edit-icon"></use>
-											</svg>
-											Edit Subscription
-										</button>
-									</li>
-									<li convoy-list-item>
-										<button convoy-button fill="text" color="danger" (click)="subscription.active_menu = false; activeSubscription = subscription; showDeleteSubscriptionModal = true; dropdownComponent.show = false">
-											<svg width="16" height="16" class="mr-8px fill-danger-100">
-												<use xlink:href="#delete-icon"></use>
-											</svg>
-											Delete Subscription
-										</button>
-									</li>
-								</ul>
-							</div>
-						</td>
-					</tr>
-				</tbody>
-			</table>
+					<ul dropdownOptions class="p-10px">
+						<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px">
+							<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start px-8px py-4px" color="grey" (click)="dropdownComponent.show = false; showEndpointSecret = true">
+								<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-8px">
+									<path
+										d="M6.99344 1.48703L3.66677 2.74036C2.9001 3.02703 2.27344 3.9337 2.27344 4.74703V9.70036C2.27344 10.487 2.79344 11.5204 3.42677 11.9937L6.29344 14.1337C7.23344 14.8404 8.7801 14.8404 9.7201 14.1337L12.5868 11.9937C13.2201 11.5204 13.7401 10.487 13.7401 9.70036V4.74703C13.7401 3.92703 13.1134 3.02036 12.3468 2.7337L9.0201 1.48703C8.45344 1.28036 7.54677 1.28036 6.99344 1.48703Z"
+										stroke="#1D2939"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
+									<path
+										d="M7.99984 8.33464C8.73622 8.33464 9.33317 7.73768 9.33317 7.0013C9.33317 6.26492 8.73622 5.66797 7.99984 5.66797C7.26346 5.66797 6.6665 6.26492 6.6665 7.0013C6.6665 7.73768 7.26346 8.33464 7.99984 8.33464Z"
+										stroke="#1D2939"
+										stroke-miterlimit="10"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
+									<path d="M8 8.33203V10.332" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+								</svg>
+								View Secret
+							</button>
+						</li>
+						<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px">
+							<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start px-8px py-4px" color="grey">
+								<svg width="16" height="17" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-8px">
+									<path d="M7.33317 11.8346L8.6665 10.5013L7.33317 9.16797L8.6665 10.5013H4.6665" fill="#F97066" />
+									<path d="M7.33317 11.8346L8.6665 10.5013L7.33317 9.16797L8.6665 10.5013H4.6665" stroke="#292D32" stroke-linecap="round" stroke-linejoin="round" />
+									<path
+										d="M14.6668 7.16536V10.4987C14.6668 13.832 13.3335 15.1654 10.0002 15.1654H6.00016C2.66683 15.1654 1.3335 13.832 1.3335 10.4987V6.4987C1.3335 3.16536 2.66683 1.83203 6.00016 1.83203H9.3335"
+										stroke="#292D32"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
+									<path d="M14.6668 7.16536H12.0002C10.0002 7.16536 9.3335 6.4987 9.3335 4.4987V1.83203L14.6668 7.16536Z" stroke="#292D32" stroke-linecap="round" stroke-linejoin="round" />
+								</svg>
 
-			<convoy-empty-state class="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" description="No subscription to show here" *ngIf="showSubscriptionError || (!isloadingSubscriptions && subscriptions?.content?.length === 0)"></convoy-empty-state>
-		</div>
-	</ng-container>
+								Send Test Event
+							</button>
+						</li>
+						<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px">
+							<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start px-8px py-4px" color="grey">
+								<svg width="16" height="17" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-8px">
+									<path d="M7.1 13.24V3.76C7.1 2.86 6.72 2.5 5.76 2.5H3.34C2.38 2.5 2 2.86 2 3.76V13.24C2 14.14 2.38 14.5 3.34 14.5H5.76C6.72 14.5 7.1 14.14 7.1 13.24Z" stroke="#292D32" stroke-linecap="round" stroke-linejoin="round" />
+									<path
+										d="M13.9999 13.24V3.76C13.9999 2.86 13.6199 2.5 12.6599 2.5H10.2399C9.28657 2.5 8.8999 2.86 8.8999 3.76V13.24C8.8999 14.14 9.2799 14.5 10.2399 14.5H12.6599C13.6199 14.5 13.9999 14.14 13.9999 13.24Z"
+										stroke="#292D32"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
+								</svg>
+								Pause
+							</button>
+						</li>
+						<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px">
+							<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start px-8px py-4px" color="grey">
+								<svg width="16" height="16" class="mr-8px">
+									<use xlink:href="#edit-icon"></use>
+								</svg>
+								Edit
+							</button>
+						</li>
+						<li class="hover:bg-new.primary-25 transition-all duration-300 rounded-8px">
+							<button convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start px-8px py-4px">
+								<svg width="16" height="16" class="mr-8px fill-danger-100">
+									<use xlink:href="#delete-icon"></use>
+								</svg>
+								Delete
+							</button>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</li>
+	</ul>
 
-	<ng-container *ngIf="activeTab === 'cli keys'">
-		<convoy-cli-keys (cliError)="showCliError = $event"></convoy-cli-keys>
-	</ng-container>
-
-	<ng-container *ngIf="activeTab === 'devices'">
-		<convoy-devices></convoy-devices>
-	</ng-container>
-
-	<div class="mb-24px"></div>
+	<convoy-empty-state class="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" description="No subscription to show here" *ngIf="showSubscriptionError || (!isloadingSubscriptions && subscriptions?.content?.length === 0)"></convoy-empty-state>
 
 	<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event"></app-event-deliveries>
 </div>
@@ -234,3 +279,5 @@
 </svg>
 
 <div id="convoy-app"></div>
+
+<convoy-endpoint-secret *ngIf="showEndpointSecret" [endpointDetails]="activeSubscription?.endpoint_metadata" (closeSecretModal)="showEndpointSecret = false" (expireCurrentSecret)="getSubscripions()"></convoy-endpoint-secret>

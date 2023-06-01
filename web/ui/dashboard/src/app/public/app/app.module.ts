@@ -19,6 +19,7 @@ import { DeleteModalComponent } from 'src/app/private/components/delete-modal/de
 import { CliKeysComponent } from 'src/app/private/pages/project/endpoint-details/cli-keys/cli-keys.component';
 import { DevicesComponent } from 'src/app/private/pages/project/endpoint-details/devices/devices.component';
 import { CreateEndpointComponent } from 'src/app/private/components/create-endpoint/create-endpoint.component';
+import { EndpointSecretComponent } from 'src/app/private/pages/project/endpoint-details/endpoint-secret/endpoint-secret.component';
 
 const routes: Routes = [{ path: '', component: AppComponent }];
 
@@ -34,7 +35,7 @@ const routes: Routes = [{ path: '', component: AppComponent }];
 		CreateEndpointComponent,
 		DeleteModalComponent,
 		ModalComponent,
-        ModalHeaderComponent,
+		ModalHeaderComponent,
 		PageDirective,
 		ButtonComponent,
 		CardComponent,
@@ -48,7 +49,8 @@ const routes: Routes = [{ path: '', component: AppComponent }];
 		TableHeadCellComponent,
 		TableComponent,
 		CliKeysComponent,
-		DevicesComponent
+		DevicesComponent,
+		EndpointSecretComponent
 	]
 })
 export class AppModule {}

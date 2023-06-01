@@ -16,7 +16,7 @@ export interface CHARTDATA {
 	data: number;
 }
 
-export type STATUS_COLOR = 'grey' | 'success' | 'warning' | 'danger';
+export type STATUS_COLOR = 'gray' | 'success' | 'warning' | 'danger';
 
 export type NOTIFICATION_STATUS = 'warning' | 'info' | 'success' | 'error';
 

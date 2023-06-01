@@ -12,7 +12,7 @@
 		<nav>
 			<convoy-skeleton-loader className="w-132px h-22px mb-20px" *ngIf="!projectDetails"></convoy-skeleton-loader>
 
-			<convoy-tag [className]="shouldShowFullSideBar ? 'bg-primary-500 mb-20px w-fit flex items-center' : '!bg-transparent justify-center mb-20px !w-full flex'" *ngIf="projectDetails">
+			<convoy-tag [class]="shouldShowFullSideBar ? 'mb-20px bg-new.primary-25 text-new.gray-500 w-fit flex items-center' : '!bg-transparent justify-center mb-20px !w-full flex'" color="primary" *ngIf="projectDetails">
 				<span *ngIf="shouldShowFullSideBar">{{ projectDetails.type }} project</span>
 				<convoy-tooltip position="right" class="block" [ngClass]="{ 'ml-10px': shouldShowFullSideBar }" size="sm" type="white">
 					{{ projectDetails.type == 'incoming' ? 'This project is for recieving webhook events' : 'This project is for sending out webhook events' }}

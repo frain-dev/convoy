@@ -6,12 +6,12 @@ import { STATUS_COLOR } from '../../models/global.model';
 })
 export class StatusColorPipe implements PipeTransform {
 	transform(value: string): STATUS_COLOR {
-		let type: STATUS_COLOR = 'grey';
+		let type: STATUS_COLOR = 'gray';
 
 		switch (value) {
 			case 'default':
 			case 'offline':
-				type = 'grey';
+				type = 'gray';
 				break;
 			case 'active':
 			case 'Success':
