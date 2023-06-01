@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
@@ -8,8 +8,7 @@ import { AppService } from './app.service';
 import { CliKeysComponent } from 'src/app/private/pages/project/endpoint-details/cli-keys/cli-keys.component';
 import { EndpointDetailsService } from 'src/app/private/pages/project/endpoint-details/endpoint-details.service';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { ENDPOINT } from 'src/app/models/endpoint.model';
-import { PrivateService } from 'src/app/private/private.service';
+import { ENDPOINT, PORTAL_LINK } from 'src/app/models/endpoint.model';
 
 @Component({
 	selector: 'app-app',
@@ -36,11 +35,12 @@ export class AppComponent implements OnInit {
 	showEndpointSecret: boolean = false;
 	showCreateEndpoint = false;
 	isTogglingEndpoint = false;
+	portalDetails!: PORTAL_LINK;
 
-	constructor(private appService: AppService, private route: ActivatedRoute, private endpointDetailsService: EndpointDetailsService, private generalService: GeneralService, private endpointService: EndpointDetailsService) {}
+	constructor(private appService: AppService, private route: ActivatedRoute, private endpointDetailsService: EndpointDetailsService, private generalService: GeneralService) {}
 
 	ngOnInit(): void {
-		this.getSubscripions();
+		Promise.all([this.getSubscripions(), this.getPortalDetails()]);
 		if (this.route.snapshot.queryParams?.createSub) localStorage.setItem('CONVOY_APP__SHOW_CREATE_SUB', this.route.snapshot.queryParams?.createSub);
 		const subscribeButtonState = localStorage.getItem('CONVOY_APP__SHOW_CREATE_SUB');
 
@@ -57,6 +57,13 @@ export class AppComponent implements OnInit {
 				this.showCreateSubscription = false;
 				break;
 		}
+	}
+
+	async getPortalDetails() {
+		try {
+			const portalLinkDetails = await this.appService.getPortalDetail();
+			this.portalDetails = portalLinkDetails.data;
+		} catch (_error) {}
 	}
 
 	async getSubscripions() {
