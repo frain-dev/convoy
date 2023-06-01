@@ -3266,7 +3266,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "MetaEvents"
+                    "Meta Events"
                 ],
                 "summary": "List all meta events",
                 "parameters": [
@@ -3420,7 +3420,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "MetaEvents"
+                    "Meta Events"
                 ],
                 "summary": "Retrieve a meta event",
                 "parameters": [
@@ -3542,7 +3542,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "MetaEvents"
+                    "Meta Events"
                 ],
                 "summary": "Retry meta event",
                 "parameters": [
