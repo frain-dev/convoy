@@ -125,36 +125,6 @@ type UpdateEndpoint struct {
 	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
 }
 
-type Source struct {
-	Name           string                   `json:"name" valid:"required~please provide a source name"`
-	Type           datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
-	Provider       datastore.SourceProvider `json:"provider"`
-	IsDisabled     bool                     `json:"is_disabled"`
-	CustomResponse CustomResponse           `json:"custom_response"`
-	Verifier       datastore.VerifierConfig `json:"verifier"`
-	PubSub         datastore.PubSubConfig   `json:"pub_sub"`
-}
-
-type CustomResponse struct {
-	Body        string `json:"body"`
-	ContentType string `json:"content_type"`
-}
-
-type UpdateSource struct {
-	Name           *string                  `json:"name" valid:"required~please provide a source name"`
-	Type           datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
-	IsDisabled     *bool                    `json:"is_disabled"`
-	ForwardHeaders []string                 `json:"forward_headers"`
-	CustomResponse UpdateCustomResponse     `json:"custom_response"`
-	Verifier       datastore.VerifierConfig `json:"verifier"`
-	PubSub         *datastore.PubSubConfig  `json:"pub_sub"`
-}
-
-type UpdateCustomResponse struct {
-	Body        *string `json:"body"`
-	ContentType *string `json:"content_type"`
-}
-
 type DynamicSubscription struct {
 	Name            string                            `json:"name" bson:"name"`
 	AlertConfig     *datastore.AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
@@ -319,4 +289,16 @@ type TestFilter struct {
 type FilterSchema struct {
 	Headers interface{} `json:"header" bson:"header"`
 	Body    interface{} `json:"body" bson:"body"`
+}
+
+// Generic function for looping over a slice of type M
+// and returning a slice of type T
+func NewListResponse[T, M any](items []M, fn func(item M) T) []T {
+	results := make([]T, 0)
+
+	for _, item := range items {
+		results = append(results, fn(item))
+	}
+
+	return results
 }

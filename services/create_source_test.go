@@ -15,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 )
 
-func provideCreateSourceService(ctrl *gomock.Controller, t *testing.T, newSource *models.Source, project *datastore.Project) *CreateSourceService {
+func provideCreateSourceService(ctrl *gomock.Controller, t *testing.T, newSource *models.CreateSource, project *datastore.Project) *CreateSourceService {
 	err := config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.Nil(t, err)
 
@@ -32,7 +32,7 @@ func TestCreateSourceService_Run(t *testing.T) {
 
 	type args struct {
 		ctx       context.Context
-		newSource *models.Source
+		newSource *models.CreateSource
 		project   *datastore.Project
 	}
 
@@ -48,16 +48,16 @@ func TestCreateSourceService_Run(t *testing.T) {
 			name: "should_create_source",
 			args: args{
 				ctx: ctx,
-				newSource: &models.Source{
+				newSource: &models.CreateSource{
 					Name: "Convoy-Prod",
 					Type: datastore.HTTPSource,
 					CustomResponse: models.CustomResponse{
 						Body:        "[accepted]",
 						ContentType: "application/json",
 					},
-					Verifier: datastore.VerifierConfig{
+					Verifier: models.VerifierConfig{
 						Type: datastore.HMacVerifier,
-						HMac: &datastore.HMac{
+						HMac: &models.HMac{
 							Encoding: datastore.Base64Encoding,
 							Header:   "X-Convoy-Header",
 							Hash:     "SHA512",
@@ -92,12 +92,12 @@ func TestCreateSourceService_Run(t *testing.T) {
 			name: "should_create_github_source",
 			args: args{
 				ctx: ctx,
-				newSource: &models.Source{
+				newSource: &models.CreateSource{
 					Name:     "Convoy-Prod",
 					Type:     datastore.HTTPSource,
 					Provider: datastore.GithubSourceProvider,
-					Verifier: datastore.VerifierConfig{
-						HMac: &datastore.HMac{
+					Verifier: models.VerifierConfig{
+						HMac: &models.HMac{
 							Secret: "Convoy-Secret",
 						},
 					},
@@ -119,89 +119,18 @@ func TestCreateSourceService_Run(t *testing.T) {
 				s.EXPECT().CreateSource(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 		},
-		{
-			name: "should_error_for_empty_name",
-			args: args{
-				ctx: ctx,
-				newSource: &models.Source{
-					Name:     "",
-					Type:     datastore.HTTPSource,
-					Provider: datastore.GithubSourceProvider,
-					Verifier: datastore.VerifierConfig{
-						HMac: &datastore.HMac{
-							Secret: "Convoy-Secret",
-						},
-					},
-				},
-				project: &datastore.Project{UID: "12345"},
-			},
-			wantErr:    true,
-			wantErrMsg: "please provide a source name",
-		},
-		{
-			name: "should_error_for_invalid_type",
-			args: args{
-				ctx: ctx,
-				newSource: &models.Source{
-					Name:     "Convoy-Prod",
-					Type:     "abc",
-					Provider: datastore.GithubSourceProvider,
-					Verifier: datastore.VerifierConfig{
-						HMac: &datastore.HMac{
-							Secret: "Convoy-Secret",
-						},
-					},
-				},
-				project: &datastore.Project{UID: "12345"},
-			},
-			wantErr:    true,
-			wantErrMsg: "please provide a valid source type",
-		},
-		{
-			name: "should_error_for_empty_hmac_secret",
-			args: args{
-				ctx: ctx,
-				newSource: &models.Source{
-					Name:     "Convoy-Prod",
-					Type:     datastore.HTTPSource,
-					Provider: datastore.GithubSourceProvider,
-					Verifier: datastore.VerifierConfig{
-						HMac: &datastore.HMac{
-							Secret: "",
-						},
-					},
-				},
-				project: &datastore.Project{UID: "12345"},
-			},
-			wantErr:    true,
-			wantErrMsg: "hmac secret is required for github source",
-		},
-		{
-			name: "should_error_for_nil_hmac",
-			args: args{
-				ctx: ctx,
-				newSource: &models.Source{
-					Name:     "Convoy-Prod",
-					Type:     datastore.HTTPSource,
-					Provider: datastore.GithubSourceProvider,
-					Verifier: datastore.VerifierConfig{HMac: nil},
-				},
-				project: &datastore.Project{UID: "12345"},
-			},
-			wantErr:    true,
-			wantErrMsg: "hmac secret is required for github source",
-		},
+		
 		{
 			name: "should_set_default_forward_header_for_shopify_source",
 			args: args{
 				ctx: ctx,
-				newSource: &models.Source{
+				newSource: &models.CreateSource{
 					Name:     "Convoy-Prod",
 					Type:     datastore.HTTPSource,
 					Provider: datastore.ShopifySourceProvider,
-					Verifier: datastore.VerifierConfig{
+					Verifier: models.VerifierConfig{
 						Type: datastore.HMacVerifier,
-						HMac: &datastore.HMac{
+						HMac: &models.HMac{
 							Encoding: datastore.Base64Encoding,
 							Header:   "X-Convoy-Header",
 							Hash:     "SHA512",
@@ -239,12 +168,12 @@ func TestCreateSourceService_Run(t *testing.T) {
 			name: "should_fail_to_create_source",
 			args: args{
 				ctx: ctx,
-				newSource: &models.Source{
+				newSource: &models.CreateSource{
 					Name: "Convoy-Prod",
 					Type: datastore.HTTPSource,
-					Verifier: datastore.VerifierConfig{
+					Verifier: models.VerifierConfig{
 						Type: datastore.HMacVerifier,
-						HMac: &datastore.HMac{
+						HMac: &models.HMac{
 							Encoding: datastore.Base64Encoding,
 							Header:   "X-Convoy-Header",
 							Hash:     "SHA512",
@@ -262,25 +191,6 @@ func TestCreateSourceService_Run(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to create source",
-		},
-		{
-			name: "should_fail_invalid_source_configuration",
-			args: args{
-				ctx: ctx,
-				newSource: &models.Source{
-					Name: "Convoy-Prod",
-					Type: datastore.HTTPSource,
-					Verifier: datastore.VerifierConfig{
-						Type: datastore.HMacVerifier,
-					},
-				},
-				project: &datastore.Project{
-					UID: "12345",
-				},
-			},
-			dbFn:       func(so *CreateSourceService) {},
-			wantErr:    true,
-			wantErrMsg: "Invalid verifier config for hmac",
 		},
 	}
 

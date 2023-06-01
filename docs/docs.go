@@ -4265,20 +4265,37 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "results per page",
-                        "name": "perPage",
+                        "example": "01H0JA5MEES38RRK3HTEJC647K",
+                        "description": "A pagination cursor to fetch the next page of a list",
+                        "name": "next_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 20,
+                        "description": "The number of items to return per page",
+                        "name": "per_page",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "page number",
-                        "name": "page",
+                        "example": "01H0JATTVCXZK8FRDX1M1JN3QY",
+                        "description": "A pagination cursor to fetch the previous page of a list",
+                        "name": "prev_page_cursor",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "sort order",
-                        "name": "sort",
+                        "example": "twitter",
+                        "description": "The custom source provider e.g. twitter, shopify",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "http",
+                        "description": "The source type e.g. http, pub_sub",
+                        "name": "type",
                         "in": "query"
                     }
                 ],
@@ -4304,7 +4321,7 @@ const docTemplate = `{
                                                         "content": {
                                                             "type": "array",
                                                             "items": {
-                                                                "$ref": "#/definitions/models.Source"
+                                                                "$ref": "#/definitions/models.SourceResponse"
                                                             }
                                                         }
                                                     }
@@ -4403,7 +4420,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Source"
+                            "$ref": "#/definitions/models.CreateSource"
                         }
                     }
                 ],
@@ -4419,7 +4436,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.Source"
+                                            "$ref": "#/definitions/models.SourceResponse"
                                         }
                                     }
                                 }
@@ -4529,7 +4546,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.Source"
+                                            "$ref": "#/definitions/models.SourceResponse"
                                         }
                                     }
                                 }
@@ -4630,7 +4647,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Source"
+                            "$ref": "#/definitions/models.UpdateSource"
                         }
                     }
                 ],
@@ -4646,7 +4663,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.Source"
+                                            "$ref": "#/definitions/models.SourceResponse"
                                         }
                                     }
                                 }
@@ -6145,6 +6162,17 @@ const docTemplate = `{
                 }
             }
         },
+        "datastore.PageDirection": {
+            "type": "string",
+            "enum": [
+                "next",
+                "prev"
+            ],
+            "x-enum-varnames": [
+                "Next",
+                "Prev"
+            ]
+        },
         "datastore.PaginationData": {
             "type": "object",
             "properties": {
@@ -6614,6 +6642,28 @@ const docTemplate = `{
                 }
             }
         },
+        "models.ApiKey": {
+            "type": "object",
+            "properties": {
+                "header_name": {
+                    "type": "string"
+                },
+                "header_value": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.BasicAuth": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "models.CreateProject": {
             "type": "object",
             "properties": {
@@ -6639,6 +6689,32 @@ const docTemplate = `{
                 },
                 "project": {
                     "$ref": "#/definitions/models.ProjectResponse"
+                }
+            }
+        },
+        "models.CreateSource": {
+            "type": "object",
+            "properties": {
+                "custom_response": {
+                    "$ref": "#/definitions/models.CustomResponse"
+                },
+                "is_disabled": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "provider": {
+                    "$ref": "#/definitions/datastore.SourceProvider"
+                },
+                "pub_sub": {
+                    "$ref": "#/definitions/models.PubSubConfig"
+                },
+                "type": {
+                    "$ref": "#/definitions/datastore.SourceType"
+                },
+                "verifier": {
+                    "$ref": "#/definitions/models.VerifierConfig"
                 }
             }
         },
@@ -6877,6 +6953,40 @@ const docTemplate = `{
                 "header": {}
             }
         },
+        "models.GooglePubSubConfig": {
+            "type": "object",
+            "properties": {
+                "project_id": {
+                    "type": "string"
+                },
+                "service_account": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "subscription_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.HMac": {
+            "type": "object",
+            "properties": {
+                "encoding": {
+                    "$ref": "#/definitions/datastore.EncodingType"
+                },
+                "hash": {
+                    "type": "string"
+                },
+                "header": {
+                    "type": "string"
+                },
+                "secret": {
+                    "type": "string"
+                }
+            }
+        },
         "models.MetaEventConfiguration": {
             "type": "object",
             "properties": {
@@ -7028,6 +7138,23 @@ const docTemplate = `{
                 }
             }
         },
+        "models.PubSubConfig": {
+            "type": "object",
+            "properties": {
+                "google": {
+                    "$ref": "#/definitions/models.GooglePubSubConfig"
+                },
+                "sqs": {
+                    "$ref": "#/definitions/models.SQSPubSubConfig"
+                },
+                "type": {
+                    "$ref": "#/definitions/datastore.PubSubType"
+                },
+                "workers": {
+                    "type": "integer"
+                }
+            }
+        },
         "models.RateLimitConfiguration": {
             "type": "object",
             "properties": {
@@ -7078,6 +7205,23 @@ const docTemplate = `{
                 }
             }
         },
+        "models.SQSPubSubConfig": {
+            "type": "object",
+            "properties": {
+                "access_key_id": {
+                    "type": "string"
+                },
+                "default_region": {
+                    "type": "string"
+                },
+                "queue_name": {
+                    "type": "string"
+                },
+                "secret_key": {
+                    "type": "string"
+                }
+            }
+        },
         "models.SignatureConfiguration": {
             "type": "object",
             "properties": {
@@ -7109,26 +7253,56 @@ const docTemplate = `{
                 }
             }
         },
-        "models.Source": {
+        "models.SourceResponse": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "type": "string"
+                },
                 "custom_response": {
-                    "$ref": "#/definitions/models.CustomResponse"
+                    "$ref": "#/definitions/datastore.CustomResponse"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "forward_headers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "is_disabled": {
                     "type": "boolean"
                 },
+                "mask_id": {
+                    "type": "string"
+                },
                 "name": {
+                    "type": "string"
+                },
+                "project_id": {
                     "type": "string"
                 },
                 "provider": {
                     "$ref": "#/definitions/datastore.SourceProvider"
+                },
+                "provider_config": {
+                    "$ref": "#/definitions/datastore.ProviderConfig"
                 },
                 "pub_sub": {
                     "$ref": "#/definitions/datastore.PubSubConfig"
                 },
                 "type": {
                     "$ref": "#/definitions/datastore.SourceType"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
                 },
                 "verifier": {
                     "$ref": "#/definitions/datastore.VerifierConfig"
@@ -7190,6 +7364,17 @@ const docTemplate = `{
                 }
             }
         },
+        "models.UpdateCustomResponse": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "content_type": {
+                    "type": "string"
+                }
+            }
+        },
         "models.UpdateProject": {
             "type": "object",
             "properties": {
@@ -7207,6 +7392,52 @@ const docTemplate = `{
                 },
                 "rate_limit_duration": {
                     "type": "string"
+                }
+            }
+        },
+        "models.UpdateSource": {
+            "type": "object",
+            "properties": {
+                "custom_response": {
+                    "$ref": "#/definitions/models.UpdateCustomResponse"
+                },
+                "forward_headers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "is_disabled": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "pub_sub": {
+                    "$ref": "#/definitions/models.PubSubConfig"
+                },
+                "type": {
+                    "$ref": "#/definitions/datastore.SourceType"
+                },
+                "verifier": {
+                    "$ref": "#/definitions/models.VerifierConfig"
+                }
+            }
+        },
+        "models.VerifierConfig": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "$ref": "#/definitions/models.ApiKey"
+                },
+                "basic_auth": {
+                    "$ref": "#/definitions/models.BasicAuth"
+                },
+                "hmac": {
+                    "$ref": "#/definitions/models.HMac"
+                },
+                "type": {
+                    "$ref": "#/definitions/datastore.VerifierType"
                 }
             }
         },

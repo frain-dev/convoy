@@ -15,13 +15,16 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 func (a *DashboardHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
-	var newSource models.Source
+	var newSource models.CreateSource
 	if err := util.ReadJSON(r, &newSource); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if err := newSource.Validate(); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -64,7 +67,9 @@ func (a *DashboardHandler) CreateSource(w http.ResponseWriter, r *http.Request) 
 	}
 
 	fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
-	_ = render.Render(w, r, util.NewServerResponse("Source created successfully", source, http.StatusCreated))
+	resp := models.SourceResponse{Source: source}
+
+	_ = render.Render(w, r, util.NewServerResponse("Source created successfully", resp, http.StatusCreated))
 }
 
 func (a *DashboardHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
@@ -99,13 +104,20 @@ func (a *DashboardHandler) GetSourceByID(w http.ResponseWriter, r *http.Request)
 	}
 
 	fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
-	_ = render.Render(w, r, util.NewServerResponse("Source fetched successfully", source, http.StatusOK))
+	resp := models.SourceResponse{Source: source}
+
+	_ = render.Render(w, r, util.NewServerResponse("Source fetched successfully", resp, http.StatusOK))
 }
 
 func (a *DashboardHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 	var sourceUpdate models.UpdateSource
 	err := util.ReadJSON(r, &sourceUpdate)
 	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if err := sourceUpdate.Validate(); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -160,8 +172,9 @@ func (a *DashboardHandler) UpdateSource(w http.ResponseWriter, r *http.Request) 
 	}
 
 	fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
+	resp := models.SourceResponse{Source: source}
 
-	_ = render.Render(w, r, util.NewServerResponse("Source updated successfully", source, http.StatusAccepted))
+	_ = render.Render(w, r, util.NewServerResponse("Source updated successfully", resp, http.StatusAccepted))
 }
 
 func (a *DashboardHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
@@ -208,18 +221,15 @@ func (a *DashboardHandler) DeleteSource(w http.ResponseWriter, r *http.Request) 
 }
 
 func (a *DashboardHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
-	pageable := m.GetPageableFromContext(r.Context())
+	var q *models.QueryListSources
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	f := &datastore.SourceFilter{
-		Type: r.URL.Query().Get("type"),
-	}
-
-	sources, paginationData, err := postgres.NewSourceRepo(a.A.DB).LoadSourcesPaged(r.Context(), project.UID, f, pageable)
+	data := q.Transform(r)
+	sources, paginationData, err := postgres.NewSourceRepo(a.A.DB).LoadSourcesPaged(r.Context(), project.UID, data.SourceFilter, data.Pageable)
 	if err != nil {
 		log.WithError(err).Error("an error occurred while fetching sources")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching sources", http.StatusBadRequest))
@@ -249,7 +259,10 @@ func (a *DashboardHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Reque
 		fillSourceURL(&sources[i], baseUrl, customDomain)
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Sources fetched successfully", pagedResponse{Content: sources, Pagination: &paginationData}, http.StatusOK))
+	resp := models.NewListResponse(sources, func(source datastore.Source) models.SourceResponse {
+		return models.SourceResponse{Source: &source}
+	})
+	_ = render.Render(w, r, util.NewServerResponse("Sources fetched successfully", pagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 func fillSourceURL(s *datastore.Source, baseUrl string, customDomain string) {
