@@ -306,12 +306,12 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 		txn := newrelic.FromContext(r.Context()).GetLinkingMetadata()
 
 		if cfg.Tracer.NewRelic.DistributedTracerEnabled {
-			requestFields["traceID"] = txn.TraceID
-			requestFields["spanID"] = txn.SpanID
+			requestFields["traceId"] = txn.TraceID
+			requestFields["spanId"] = txn.SpanID
 		}
 
-		requestFields["entityGUID"] = txn.EntityGUID
-		requestFields["entityType"] = txn.EntityType
+		requestFields["entity.guid"] = txn.EntityGUID
+		requestFields["entity.name"] = txn.EntityName
 	}
 
 	return requestFields

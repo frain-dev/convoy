@@ -2,9 +2,9 @@ package rlimiter
 
 import (
 	"context"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/go-redis/redis_rate/v9"
 )
 
@@ -13,16 +13,12 @@ type RedisLimiter struct {
 }
 
 func NewRedisLimiter(dsn string) (*RedisLimiter, error) {
-	opts, err := redis.ParseURL(dsn)
-
+	client, err := rdb.NewClient(dsn)
 	if err != nil {
 		return nil, err
 	}
 
-	client := redis.NewClient(opts)
-
-	c := redis_rate.NewLimiter(client)
-
+	c := redis_rate.NewLimiter(client.Client())
 	r := &RedisLimiter{limiter: c}
 
 	return r, nil
