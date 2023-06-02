@@ -25,7 +25,7 @@ export class StatusColorPipe implements PipeTransform {
 			case 'Failed':
 			case 'Failure':
 			case 'disabled':
-				type = 'danger';
+				type = 'error';
 				break;
 
 			default:

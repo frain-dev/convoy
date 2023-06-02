@@ -15,7 +15,7 @@ export class TagComponent implements OnInit {
 	@Input('className') class!: string;
 
 	@Input('fill') fill: 'outline' | 'soft' | 'solid' | 'soft-outline' = 'soft';
-	@Input('color') color: 'primary' | 'danger' | 'warning' | 'gray' | 'success' = 'gray';
+	@Input('color') color: 'primary' | 'error' | 'warning' | 'gray' | 'success' = 'gray';
 	@Input('size') size: 'sm' | 'md' | 'lg' = 'md';
 
 	fontSizes = { sm: 'text-10', md: `text-12`, lg: `text-14` };

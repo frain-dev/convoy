@@ -43,6 +43,7 @@ module.exports = {
 		'bg-new.success-50',
 		'text-new.success-400',
 		'bg-new.primary-50',
+		'bg-new.error-50',
 		'text-new.gray-400'
 	],
 	theme: {

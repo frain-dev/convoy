@@ -121,7 +121,7 @@
 				<div>
 					<p class="text-14 flex items-center">
 						Attempt {{ eventDeliveryAtempts.length - i }}
-						<convoy-tag *ngIf="deliveryAttempt?.http_status" [color]="deliveryAttempt?.status ? 'success' : 'danger'" className="ml-18px">{{ deliveryAttempt?.http_status }}</convoy-tag>
+						<convoy-tag *ngIf="deliveryAttempt?.http_status" [color]="deliveryAttempt?.status ? 'success' : 'error'" className="ml-18px">{{ deliveryAttempt?.http_status }}</convoy-tag>
 					</p>
 					<p class="text-grey-40 text-12 mt-6px">Attempted At: {{ deliveryAttempt.updated_at | date: 'medium' }}</p>
 				</div>
