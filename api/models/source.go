@@ -97,7 +97,7 @@ func (us *UpdateSource) Validate() error {
 	return util.Validate(us)
 }
 
-type QueryListSources struct {
+type QueryListSource struct {
 	// The source type e.g. http, pub_sub
 	Type string `json:"type" example:"http"`
 	// The custom source provider e.g. twitter, shopify
@@ -115,13 +115,13 @@ type Pageable struct {
 	NextCursor string `json:"next_page_cursor" example:"01H0JA5MEES38RRK3HTEJC647K"`
 }
 
-type QueryListResponse struct {
+type QueryListSourceResponse struct {
 	datastore.Pageable
 	*datastore.SourceFilter
 }
 
-func (ls *QueryListSources) Transform(r *http.Request) *QueryListResponse {
-	return &QueryListResponse{
+func (ls *QueryListSource) Transform(r *http.Request) *QueryListSourceResponse {
+	return &QueryListSourceResponse{
 		Pageable: m.GetPageableFromContext(r.Context()),
 		SourceFilter: &datastore.SourceFilter{
 			Type:     r.URL.Query().Get("type"),

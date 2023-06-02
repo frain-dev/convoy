@@ -88,7 +88,7 @@ func (p *PortalLinkService) UpdatePortalLink(ctx context.Context, project *datas
 	return portalLink, nil
 }
 
-func (p *PortalLinkService) CreateEndpoint(ctx context.Context, project *datastore.Project, data models.Endpoint, portalLink *datastore.PortalLink) (*datastore.Endpoint, error) {
+func (p *PortalLinkService) CreateEndpoint(ctx context.Context, project *datastore.Project, data models.CreateEndpoint, portalLink *datastore.PortalLink) (*datastore.Endpoint, error) {
 	ce := CreateEndpointService{
 		Cache:        p.cache,
 		EndpointRepo: p.endpointRepo,

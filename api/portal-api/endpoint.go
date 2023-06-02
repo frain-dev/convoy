@@ -1,6 +1,7 @@
 package portalapi
 
 import (
+	"github.com/frain-dev/convoy/api/models"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -24,7 +25,8 @@ func (a *PortalLinkHandler) GetEndpoint(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint fetched successfully", endpoint, http.StatusOK))
+	resp := models.EndpointResponse{Endpoint: endpoint}
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint fetched successfully", resp, http.StatusOK))
 }
 
 func (a *PortalLinkHandler) retrieveEndpoint(r *http.Request) (*datastore.Endpoint, error) {

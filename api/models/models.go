@@ -91,40 +91,6 @@ type UserInviteTokenResponse struct {
 	User  *datastore.User               `json:"user"`
 }
 
-type Endpoint struct {
-	URL                string `json:"url" bson:"url" valid:"required~please provide a url for your endpoint"`
-	Secret             string `json:"secret" bson:"secret"`
-	OwnerID            string `json:"owner_id" bson:"owner_id"`
-	Description        string `json:"description" bson:"description"`
-	AdvancedSignatures bool   `json:"advanced_signatures" bson:"advanced_signatures"`
-	Name               string `json:"name" bson:"name" valid:"required~please provide your endpointName"`
-	SupportEmail       string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
-	IsDisabled         bool   `json:"is_disabled"`
-	SlackWebhookURL    string `json:"slack_webhook_url" bson:"slack_webhook_url"`
-
-	HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
-	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
-	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
-	AppID             string                            // Deprecated but necessary for backward compatibility
-}
-
-type UpdateEndpoint struct {
-	URL                string  `json:"url" bson:"url" valid:"required~please provide a url for your endpoint"`
-	Secret             string  `json:"secret" bson:"secret"`
-	Description        string  `json:"description" bson:"description"`
-	AdvancedSignatures *bool   `json:"advanced_signatures" bson:"advanced_signatures"`
-	Name               *string `json:"name" bson:"name" valid:"required~please provide your endpointName"`
-	SupportEmail       *string `json:"support_email" bson:"support_email" valid:"email~please provide a valid email"`
-	IsDisabled         *bool   `json:"is_disabled"`
-	SlackWebhookURL    *string `json:"slack_webhook_url" bson:"slack_webhook_url"`
-
-	HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
-	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
-	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
-}
-
 type DynamicSubscription struct {
 	Name            string                            `json:"name" bson:"name"`
 	AlertConfig     *datastore.AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
@@ -137,24 +103,6 @@ type DynamicEvent struct {
 	Endpoint     DynamicEndpoint     `json:"endpoint"`
 	Subscription DynamicSubscription `json:"subscription"`
 	Event        DynamicEventStub    `json:"event"`
-}
-
-type DynamicEndpoint struct {
-	URL                string `json:"url" bson:"url" valid:"required~please provide a url for your endpoint"`
-	Secret             string `json:"secret" bson:"secret"`
-	OwnerID            string `json:"owner_id" bson:"owner_id"`
-	Description        string `json:"description" bson:"description"`
-	AdvancedSignatures bool   `json:"advanced_signatures" bson:"advanced_signatures"`
-	Name               string `json:"name" bson:"name"`
-	SupportEmail       string `json:"support_email" bson:"support_email"`
-	IsDisabled         bool   `json:"is_disabled"`
-	SlackWebhookURL    string `json:"slack_webhook_url" bson:"slack_webhook_url"`
-
-	HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
-	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
-	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
-	AppID             string                            // Deprecated but necessary for backward compatibility
 }
 
 type DynamicEventStub struct {
