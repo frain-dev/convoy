@@ -10,7 +10,6 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
-import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 import { CreateEndpointComponent } from 'src/app/private/components/create-endpoint/create-endpoint.component';
 import { EndpointSecretComponent } from 'src/app/private/pages/project/endpoint-details/endpoint-secret/endpoint-secret.component';
 import { CreatePortalEndpointComponent } from '../create-endpoint/create-endpoint.component';
@@ -25,7 +24,6 @@ const routes: Routes = [{ path: '', component: AppComponent }];
 		EventDeliveriesModule,
 		CreateSubscriptionModule,
 		CreateEndpointComponent,
-		DeleteModalComponent,
 		PageDirective,
 		ButtonComponent,
 		CardComponent,

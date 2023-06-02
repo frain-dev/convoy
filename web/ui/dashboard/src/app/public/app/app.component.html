@@ -135,7 +135,7 @@
 			</li>
 		</ul>
 
-		<convoy-empty-state class="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" description="No subscription to show here" *ngIf="showSubscriptionError || (!isloadingSubscriptions && subscriptions?.content?.length === 0)"></convoy-empty-state>
+		<convoy-empty-state class="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" description="No subscription to show here" *ngIf="!isloadingSubscriptions && subscriptions?.content?.length === 0"></convoy-empty-state>
 
 		<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event"></app-event-deliveries>
 	</div>

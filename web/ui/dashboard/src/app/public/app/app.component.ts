@@ -1,11 +1,10 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
+import { EVENT_DELIVERY } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { AppService } from './app.service';
-import { CliKeysComponent } from 'src/app/private/pages/project/endpoint-details/cli-keys/cli-keys.component';
 import { EndpointDetailsService } from 'src/app/private/pages/project/endpoint-details/endpoint-details.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ENDPOINT, PORTAL_LINK } from 'src/app/models/endpoint.model';
@@ -17,20 +16,12 @@ import { ENDPOINT, PORTAL_LINK } from 'src/app/models/endpoint.model';
 })
 export class AppComponent implements OnInit {
 	@ViewChild('subscriptionDropdown') dropdownComponent!: DropdownComponent;
-	@ViewChild(CliKeysComponent) cliKeys!: CliKeysComponent;
-	tableHead = ['Name', 'Endpoint', 'Created At', 'Updated At', 'Status', ''];
 	token: string = this.route.snapshot.queryParams.token;
 	subscriptions!: { content: SUBSCRIPTION[]; pagination: PAGINATION };
-	events!: { content: EVENT[]; pagination: PAGINATION };
 	eventDeliveries!: { content: EVENT_DELIVERY[]; pagination: PAGINATION };
 	activeSubscription?: SUBSCRIPTION;
 	eventDeliveryFilteredByEventId!: string;
 	isloadingSubscriptions = false;
-	showCreateSubscriptionModal = false;
-	showDeleteSubscriptionModal = false;
-	subscriptionId = this.route.snapshot.params.id;
-	showCreateSubscription = false;
-	showSubscriptionError = false;
 	showEndpointSecret: boolean = false;
 	showCreateEndpoint = false;
 	isTogglingEndpoint = false;
@@ -40,22 +31,6 @@ export class AppComponent implements OnInit {
 
 	ngOnInit(): void {
 		Promise.all([this.getSubscripions(), this.getPortalDetails()]);
-		if (this.route.snapshot.queryParams?.createSub) localStorage.setItem('CONVOY_APP__SHOW_CREATE_SUB', this.route.snapshot.queryParams?.createSub);
-		const subscribeButtonState = localStorage.getItem('CONVOY_APP__SHOW_CREATE_SUB');
-
-		switch (subscribeButtonState) {
-			case 'true':
-				this.showCreateSubscription = true;
-				this.tableHead.pop();
-				break;
-			case 'false':
-				this.showCreateSubscription = false;
-				break;
-
-			default:
-				this.showCreateSubscription = false;
-				break;
-		}
 	}
 
 	async getPortalDetails() {
@@ -71,10 +46,7 @@ export class AppComponent implements OnInit {
 			const subscriptions = await this.appService.getSubscriptions();
 			this.subscriptions = subscriptions.data;
 			this.isloadingSubscriptions = false;
-			this.showCreateSubscriptionModal = false;
-			this.showSubscriptionError = false;
 		} catch (_error) {
-			this.showSubscriptionError = true;
 			this.isloadingSubscriptions = false;
 		}
 	}
