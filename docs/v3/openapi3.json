@@ -8188,7 +8188,7 @@
 	},
 	"servers": [
 		{
-			"url": "https://dashboard.getconvoy.io/"
+			"url": "https://dashboard.getconvoy.io/api"
 		}
 	],
 	"tags": [

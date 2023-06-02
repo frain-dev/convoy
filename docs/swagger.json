@@ -19,7 +19,7 @@
         "version": "0.9.0"
     },
     "host": "dashboard.getconvoy.io",
-    "basePath": "/",
+    "basePath": "/api",
     "paths": {
         "/v1/projects": {
             "get": {
