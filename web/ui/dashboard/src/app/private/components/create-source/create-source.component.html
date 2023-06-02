@@ -113,29 +113,25 @@
 
 			<hr class="border-t border-grey-20 my-24px" />
 
-			<h3 class="font-semibold mb-24px">Set Configurations</h3>
-
 			<ng-container *ngIf="showConfig('custom_response')">
-				<div class="border border-grey-20 rounded-4px mb-24px">
-					<div class="flex justify-between items-center p-16px border-b border-grey-20">
-						<h4 class="text-grey-60 font-medium">Custom response</h4>
-						<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="sourceForm.patchValue({ custom_response: { content_type: '', body: '' } }); toggleConfigForm('custom_response')">
-							<svg width="16" height="16" class="fill-grey-60">
-								<use xlink:href="#delete-icon"></use>
-							</svg>
-						</button>
-					</div>
+				<div class="flex justify-between items-center mb-16px">
+					<h4 class="text-12 text-new.gray-500 font-medium">Custom response</h4>
+					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="sourceForm.patchValue({ custom_response: { content_type: '', body: '' } }); toggleConfigForm('custom_response')">
+						<svg width="14" height="14" class="fill-transparent">
+							<use xlink:href="#delete-icon"></use>
+						</svg>
+					</button>
+				</div>
 
-					<div class="p-16px" formGroupName="custom_response">
-						<convoy-input-field>
-							<label for="content_type" required="true" convoy-label>Response Content Type</label>
-							<input type="text" id="content_type" convoy-input autocomplete="content_type" formControlName="content_type" placeholder="application/json, text/plain" />
-							<convoy-input-error *ngIf="sourceForm.get('custom_response.content_type')?.touched && sourceForm.get('custom_response.content_type')?.invalid">Enter content type</convoy-input-error>
-						</convoy-input-field>
+				<div class="" formGroupName="custom_response">
+					<convoy-input-field>
+						<label for="content_type" required="true" convoy-label>Response Content Type</label>
+						<input type="text" id="content_type" convoy-input autocomplete="content_type" formControlName="content_type" placeholder="application/json, text/plain" />
+						<convoy-input-error *ngIf="sourceForm.get('custom_response.content_type')?.touched && sourceForm.get('custom_response.content_type')?.invalid">Enter content type</convoy-input-error>
+					</convoy-input-field>
 
-						<label convoy-label>Response Content</label>
-						<textarea formControlName="body" class="min-h-[20vh]" convoy-input name="body" id="body"></textarea>
-					</div>
+					<label convoy-label>Response Content</label>
+					<textarea formControlName="body" class="min-h-[20vh]" convoy-input name="body" id="body"></textarea>
 				</div>
 			</ng-container>
 

@@ -141,4 +141,8 @@ export class CreateEndpointComponent implements OnInit {
 	cancel() {
 		this.onAction.emit({ action: 'close' });
 	}
+
+	get shouldShowBorder(): number {
+		return this.configurations.filter(config => config.show).length;
+	}
 }

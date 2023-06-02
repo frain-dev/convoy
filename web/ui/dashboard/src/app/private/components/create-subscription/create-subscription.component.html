@@ -1,7 +1,7 @@
 <form class="relative" [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()">
 	<convoy-loader *ngIf="isLoadingForm"></convoy-loader>
 
-	<div convoy-card class="px-24px py-24px relative" [ngClass]="{ 'mb-70px': action !== 'view' }">
+	<div convoy-card class="px-24px pt-24px relative" [ngClass]="{ 'mb-70px': action !== 'view' }">
 		<ng-container *ngIf="isPortal !== 'true'">
 			<convoy-input-field>
 				<label for="subscription-name" required="true" convoy-label>Subscription name</label>
@@ -10,14 +10,12 @@
 			</convoy-input-field>
 
 			<hr class="border-t border-grey-20 mb-24px" />
-
-			<h3 class="font-semibold mb-24px">Set Configurations</h3>
 		</ng-container>
 
 		<ng-container *ngIf="showConfig('events')">
-			<div *ngIf="projectType === 'outgoing' || token" class="mb-24px">
-				<div class="flex justify-between items-center mb-16px">
-					<p class="text-14 font-medium text-grey-60 flex items-center">
+			<div *ngIf="projectType === 'outgoing' || token" class="mb-30px">
+				<div class="flex justify-between items-end mb-8px">
+					<p class="text-12 font-medium text-new.gray-500 flex items-center">
 						Event Types
 						<convoy-tooltip size="sm" position="right" class="ml-4px">
 							These are the specifications for the retry mechanism for your endpoints under this subscription. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time
@@ -25,12 +23,12 @@
 						</convoy-tooltip>
 					</p>
 					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" *ngIf="action !== 'view'" (click)="toggleConfigForm('events')">
-						<svg width="16" height="16" class="fill-grey-60">
+						<svg width="14" height="14" class="fill-transparent">
 							<use xlink:href="#delete-icon"></use>
 						</svg>
 					</button>
 				</div>
-				<label class="w-full text-12 text-grey-40" for="tagInput">Event Types</label>
+
 				<div (click)="focusInput()" class="w-full font-medium text-14 text-grey-100 border border-primary-500 outline-none rounded-4px bg-[#F7F9FC] pt-12px pb-8px px-12px mt-8px relative flex flex-row flex-wrap items-center">
 					<div *ngFor="let tag of eventTags" class="border border-grey-10 bg-grey-10 px-4px font-medium text-12 mr-1 mb-1 rounded-4px flex items-center">
 						{{ tag === '*' ? 'All Events' : tag }}
@@ -38,13 +36,13 @@
 					</div>
 					<input type="text" id="tagInput" (input)="addTag()" required class="text-12 bg-[#F7F9FC] focus:outline-none focus:border-none" [readonly]="action === 'view'" autocomplete="off" />
 				</div>
-				<span class="text-grey-40 italic text-12 mb-24px">Separate event types with comma (,) or space</span>
+				<span class="text-new.gray-400 font-normal italic text-10 mb-24px">Separate event types with comma (,) or space</span>
 			</div>
 		</ng-container>
 
 		<ng-container *ngIf="showConfig('retry_config')">
 			<div class="flex justify-between items-center mb-16px">
-				<p class="text-14 font-medium text-grey-60 flex items-center">
+				<p class="text-12 text-new.gray-500 font-medium flex items-center">
 					Retry Logic
 					<convoy-tooltip size="sm" position="right" class="ml-4px">
 						These are the specifications for the retry mechanism for your endpoints under this subscription. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time before
@@ -52,13 +50,13 @@
 					</convoy-tooltip>
 				</p>
 				<button convoy-button type="button" size="xs" fill="outline" color="grey" *ngIf="action !== 'view'" texture="light" (click)="toggleConfigForm('retry_config')">
-					<svg width="16" height="16" class="fill-grey-60">
+					<svg width="14" height="14" class="fill-transparent">
 						<use xlink:href="#delete-icon"></use>
 					</svg>
 				</button>
 			</div>
 
-			<div class="grid grid-cols-2 gap-x-6" formGroupName="retry_config">
+			<div class="grid grid-cols-2 gap-x-6 mb-6px" formGroupName="retry_config">
 				<convoy-input-field>
 					<convoy-select
 						[options]="retryLogicTypes"
@@ -90,34 +88,25 @@
 		</ng-container>
 
 		<ng-container *ngIf="showConfig('filter_config')">
-			<div class="border border-grey-20 rounded-4px p-16px mb-24px">
-				<div class="flex justify-between items-center mb-14px">
-					<h4 class="text-grey-60 font-medium">Events Filter</h4>
-					<button convoy-button type="button" size="xs" *ngIf="action !== 'view'" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('filter_config')">
-						<svg width="16" height="16" class="fill-grey-60">
-							<use xlink:href="#delete-icon"></use>
-						</svg>
-					</button>
-				</div>
+			<div class="flex justify-between items-center mb-30px">
+				<h4 class="text-new.gray-500 font-medium text-14">Events Filter</h4>
+				<div class="flex items-center">
+					<button convoy-button fill="outline" color="grey" class="text-new.gray-500 border-new.gray-200" size="xs" type="button" (click)="setupFilter()">Open Editor</button>
 
-				<div class="flex justify-between items-center">
-					<a convoy-button size="sm" fill="text" type="button" class="font-medium !justify-start" href="https://getconvoy.io/docs/manual/subscriptions#subscription-filters" target="_blank" referrerpolicy="noreferrer">
-						Learn more about filters here
-						<svg width="24" height="24" class="ml-8px" class="fill-primary-100">
-							<use xlink:href="#arrow-right-icon"></use>
-						</svg>
-					</a>
-					<button convoy-button fill="text" size="sm" className="font-medium" type="button" (click)="setupFilter()">
-						{{ action === 'update' ? 'Edit' : 'Setup' }} Filter
-						<svg width="16" height="16" class="ml-10px" class="fill-primary-100">
-							<use xlink:href="#plus-icon"></use>
+					<div class="mx-10px h-16px w-[1px] bg-new.gray-200"></div>
+
+					<button convoy-button type="button" size="xs" *ngIf="action !== 'view'" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('filter_config')">
+						<svg width="14" height="14" class="fill-transparent">
+							<use xlink:href="#delete-icon"></use>
 						</svg>
 					</button>
 				</div>
 			</div>
 		</ng-container>
 
-		<div class="flex flex-wrap items-center">
+		<hr class="border-t border-grey-20 mb-24px -mt-6px" *ngIf="shouldShowBorder !== 0 && shouldShowBorder < configurations.length" />
+
+		<div class="flex flex-wrap items-center mb-24px" *ngIf="shouldShowBorder < configurations.length">
 			<ng-container *ngFor="let config of configurations">
 				<button *ngIf="!config.show" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" class="mr-24px" (click)="toggleConfig(config.uid)">
 					{{ config.name }}
@@ -145,21 +134,11 @@
 					(selectedOption)="subscriptionForm.patchValue({ source_id: $event })"
 				></convoy-select>
 
-				<button convoy-button convoy-permission="Subscriptions|MANAGE" fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateSourceForm = true; subscriptionForm.patchValue({ source_id: null })">
-					<svg width="20" height="20" class="mr-8px" fill="currentColor">
-						<use xlink:href="#plus-icon"></use>
-					</svg>
-					Create New Source
-				</button>
+				<button convoy-button convoy-permission="Subscriptions|MANAGE" fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateSourceForm = true; subscriptionForm.patchValue({ source_id: null })">Create New Source</button>
 			</div>
 
 			<convoy-create-source *ngIf="showCreateSourceForm" (onAction)="$event?.action === 'close' ? (showCreateSourceForm = false) : onCreateSource($event.data)">
-				<button convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateSourceForm = false; subscriptionForm.patchValue({ source_id: null })">
-					<svg width="20" height="20" class="mr-8px" fill="currentColor">
-						<use xlink:href="#plus-icon"></use>
-					</svg>
-					Use Existing Source
-				</button>
+				<button convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateSourceForm = false; subscriptionForm.patchValue({ source_id: null })">Use Existing Source</button>
 			</convoy-create-source>
 		</ng-container>
 
@@ -178,21 +157,11 @@
 				[required]="true"
 			></convoy-select>
 
-			<button convoy-button convoy-permission="Subscriptions|MANAGE" fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateEndpointForm = true; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">
-				<svg width="20" height="20" class="mr-8px" fill="currentColor">
-					<use xlink:href="#plus-icon"></use>
-				</svg>
-				Create New Endpoint
-			</button>
+			<button convoy-button convoy-permission="Subscriptions|MANAGE" fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateEndpointForm = true; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">Create New Endpoint</button>
 		</div>
 
 		<convoy-create-endpoint *ngIf="showCreateEndpointForm" (onAction)="$event.action === 'close' ? (showCreateEndpointForm = false) : onCreateEndpoint($event.data)">
-			<button convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateEndpointForm = false; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">
-				<svg width="20" height="20" class="mr-8px" fill="currentColor">
-					<use xlink:href="#plus-icon"></use>
-				</svg>
-				Use Existing Endpoint
-			</button>
+			<button convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateEndpointForm = false; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">Use Existing Endpoint</button>
 		</convoy-create-endpoint>
 	</ng-container>
 
@@ -213,19 +182,7 @@
 </div>
 
 <div convoy-modal position="full" *ngIf="showFilterForm" (closeModal)="showFilterForm = false">
-	<div convoy-modal-header fullscreen="true">
-		<div class="flex items-center">
-			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="showFilterForm = false">
-				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
-			</button>
-
-			<h2 class="font-semibold capitalize ml-2">{{ action === 'update' ? 'Edit Subscription Filter' : 'Create Subscription Filter' }}</h2>
-		</div>
-	</div>
-
-	<div class="max-w-[1312px] m-auto">
-		<convoy-create-subscription-filter [schema]="subscriptionForm.get('filter_config.filter')?.value" [action]="action" (filterSchema)="getFilterSchema($event)"></convoy-create-subscription-filter>
-	</div>
+	<convoy-create-subscription-filter (close)="showFilterForm = false" [schema]="subscriptionForm.get('filter_config.filter')?.value" [action]="action" (filterSchema)="getFilterSchema($event)"></convoy-create-subscription-filter>
 </div>
 
 <div convoy-modal position="center" size="sm" *ngIf="confirmModal" (closeModal)="confirmModal = false">

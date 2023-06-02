@@ -7,11 +7,12 @@ import { CreateSubscriptionService } from '../create-subscription/create-subscri
 import { GeneralService } from 'src/app/services/general/general.service';
 import { MonacoComponent } from '../monaco/monaco.component';
 import { ActivatedRoute } from '@angular/router';
+import { ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 
 @Component({
 	selector: 'convoy-create-subscription-filter',
 	standalone: true,
-	imports: [CommonModule, CardComponent, ReactiveFormsModule, ButtonComponent, MonacoComponent],
+	imports: [CommonModule, CardComponent, ReactiveFormsModule, ButtonComponent, MonacoComponent, ModalHeaderComponent],
 	templateUrl: './create-subscription-filter.component.html',
 	styleUrls: ['./create-subscription-filter.component.scss']
 })
@@ -23,6 +24,8 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 	@Input('action') action: 'update' | 'create' | 'view' | 'portal' = 'create';
 	@Input('schema') schema?: any;
 	@Output('filterSchema') filterSchema: EventEmitter<any> = new EventEmitter();
+	@Output('close') close: EventEmitter<any> = new EventEmitter();
+
 	tabs: ['body', 'header'] = ['body', 'header'];
 	activeTab: 'body' | 'header' = 'body';
 	subscriptionFilterForm: FormGroup = this.formBuilder.group({

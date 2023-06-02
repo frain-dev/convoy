@@ -283,4 +283,8 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		this.showFilterForm = false;
 	}
+
+	get shouldShowBorder(): number {
+		return this.configurations.filter(config => config.show).length;
+	}
 }
