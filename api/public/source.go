@@ -261,7 +261,7 @@ func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Param request query models.QueryListSources false "Query Params"
+// @Param request query models.QueryListSource false "Query Params"
 // @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.SourceResponse}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth

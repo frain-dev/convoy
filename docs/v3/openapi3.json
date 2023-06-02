@@ -1114,6 +1114,54 @@
 				},
 				"type": "object"
 			},
+			"models.CreateEndpoint": {
+				"properties": {
+					"advanced_signatures": {
+						"type": "boolean"
+					},
+					"appID": {
+						"description": "Deprecated but necessary for backward compatibility",
+						"type": "string"
+					},
+					"authentication": {
+						"$ref": "#/components/schemas/models.EndpointAuthentication"
+					},
+					"description": {
+						"type": "string"
+					},
+					"http_timeout": {
+						"type": "string"
+					},
+					"is_disabled": {
+						"type": "boolean"
+					},
+					"name": {
+						"type": "string"
+					},
+					"owner_id": {
+						"type": "string"
+					},
+					"rate_limit": {
+						"type": "integer"
+					},
+					"rate_limit_duration": {
+						"type": "string"
+					},
+					"secret": {
+						"type": "string"
+					},
+					"slack_webhook_url": {
+						"type": "string"
+					},
+					"support_email": {
+						"type": "string"
+					},
+					"url": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"models.CreateProject": {
 				"properties": {
 					"config": {
@@ -1189,7 +1237,7 @@
 						"type": "string"
 					},
 					"authentication": {
-						"$ref": "#/components/schemas/datastore.EndpointAuthentication"
+						"$ref": "#/components/schemas/models.EndpointAuthentication"
 					},
 					"description": {
 						"type": "string"
@@ -1285,31 +1333,44 @@
 				},
 				"type": "object"
 			},
-			"models.Endpoint": {
+			"models.EndpointAuthentication": {
+				"properties": {
+					"api_key": {
+						"$ref": "#/components/schemas/models.ApiKey"
+					},
+					"type": {
+						"$ref": "#/components/schemas/datastore.EndpointAuthenticationType"
+					}
+				},
+				"type": "object"
+			},
+			"models.EndpointResponse": {
 				"properties": {
 					"advanced_signatures": {
 						"type": "boolean"
 					},
-					"appID": {
-						"description": "Deprecated but necessary for backward compatibility",
-						"type": "string"
-					},
 					"authentication": {
 						"$ref": "#/components/schemas/datastore.EndpointAuthentication"
+					},
+					"created_at": {
+						"type": "string"
+					},
+					"deleted_at": {
+						"type": "string"
 					},
 					"description": {
 						"type": "string"
 					},
+					"events": {
+						"type": "integer"
+					},
 					"http_timeout": {
 						"type": "string"
 					},
-					"is_disabled": {
-						"type": "boolean"
-					},
-					"name": {
+					"owner_id": {
 						"type": "string"
 					},
-					"owner_id": {
+					"project_id": {
 						"type": "string"
 					},
 					"rate_limit": {
@@ -1318,16 +1379,31 @@
 					"rate_limit_duration": {
 						"type": "string"
 					},
-					"secret": {
-						"type": "string"
+					"secrets": {
+						"items": {
+							"$ref": "#/components/schemas/datastore.Secret"
+						},
+						"type": "array"
 					},
 					"slack_webhook_url": {
 						"type": "string"
 					},
+					"status": {
+						"$ref": "#/components/schemas/datastore.EndpointStatus"
+					},
 					"support_email": {
 						"type": "string"
 					},
-					"url": {
+					"target_url": {
+						"type": "string"
+					},
+					"title": {
+						"type": "string"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
 						"type": "string"
 					}
 				},
@@ -1820,6 +1896,47 @@
 						"type": "string"
 					},
 					"content_type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.UpdateEndpoint": {
+				"properties": {
+					"advanced_signatures": {
+						"type": "boolean"
+					},
+					"authentication": {
+						"$ref": "#/components/schemas/models.EndpointAuthentication"
+					},
+					"description": {
+						"type": "string"
+					},
+					"http_timeout": {
+						"type": "string"
+					},
+					"is_disabled": {
+						"type": "boolean"
+					},
+					"name": {
+						"type": "string"
+					},
+					"rate_limit": {
+						"type": "integer"
+					},
+					"rate_limit_duration": {
+						"type": "string"
+					},
+					"secret": {
+						"type": "string"
+					},
+					"slack_webhook_url": {
+						"type": "string"
+					},
+					"support_email": {
+						"type": "string"
+					},
+					"url": {
 						"type": "string"
 					}
 				},
@@ -2562,6 +2679,46 @@
 						"schema": {
 							"type": "string"
 						}
+					},
+					{
+						"description": "A pagination cursor to fetch the next page of a list",
+						"in": "query",
+						"name": "next_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "The owner ID of the endpoint",
+						"in": "query",
+						"name": "owner_id",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "The number of items to return per page",
+						"in": "query",
+						"name": "per_page",
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"description": "A pagination cursor to fetch the previous page of a list",
+						"in": "query",
+						"name": "prev_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "The name of the endpoint",
+						"in": "query",
+						"name": "q",
+						"schema": {
+							"type": "string"
+						}
 					}
 				],
 				"responses": {
@@ -2576,10 +2733,22 @@
 										{
 											"properties": {
 												"data": {
-													"items": {
-														"$ref": "#/components/schemas/datastore.Endpoint"
-													},
-													"type": "array"
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/public.pagedResponse"
+														},
+														{
+															"properties": {
+																"content": {
+																	"items": {
+																		"$ref": "#/components/schemas/models.EndpointResponse"
+																	},
+																	"type": "array"
+																}
+															},
+															"type": "object"
+														}
+													]
 												}
 											},
 											"type": "object"
@@ -2684,7 +2853,7 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.Endpoint"
+								"$ref": "#/components/schemas/models.CreateEndpoint"
 							}
 						}
 					},
@@ -2704,7 +2873,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.Endpoint"
+													"$ref": "#/components/schemas/models.EndpointResponse"
 												}
 											},
 											"type": "object"
@@ -2950,7 +3119,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.Endpoint"
+													"$ref": "#/components/schemas/models.EndpointResponse"
 												}
 											},
 											"type": "object"
@@ -3064,7 +3233,7 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.Endpoint"
+								"$ref": "#/components/schemas/models.UpdateEndpoint"
 							}
 						}
 					},
@@ -3084,7 +3253,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.Endpoint"
+													"$ref": "#/components/schemas/models.EndpointResponse"
 												}
 											},
 											"type": "object"
@@ -3220,7 +3389,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.Endpoint"
+													"$ref": "#/components/schemas/models.EndpointResponse"
 												}
 											},
 											"type": "object"
@@ -3344,7 +3513,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.Endpoint"
+													"$ref": "#/components/schemas/models.EndpointResponse"
 												}
 											},
 											"type": "object"
@@ -3468,7 +3637,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.Endpoint"
+													"$ref": "#/components/schemas/models.EndpointResponse"
 												}
 											},
 											"type": "object"
