@@ -28,7 +28,6 @@ export class AppComponent implements OnInit {
 	isloadingSubscriptions = false;
 	showCreateSubscriptionModal = false;
 	showDeleteSubscriptionModal = false;
-	isDeletingSubscription = false;
 	subscriptionId = this.route.snapshot.params.id;
 	showCreateSubscription = false;
 	showSubscriptionError = false;
@@ -82,22 +81,6 @@ export class AppComponent implements OnInit {
 
 	getEventDeliveries(eventId: string) {
 		this.eventDeliveryFilteredByEventId = eventId;
-	}
-
-	async deleteSubscription() {
-		if (!this.activeSubscription) return;
-
-		this.isDeletingSubscription = true;
-		try {
-			await this.appService.deleteSubscription(this.activeSubscription.uid);
-			await this.endpointDetailsService.deleteEndpoint(this.activeSubscription.endpoint_metadata?.uid || '');
-			this.getSubscripions();
-			this.isDeletingSubscription = false;
-			this.showDeleteSubscriptionModal = false;
-			delete this.activeSubscription;
-		} catch (error) {
-			this.isDeletingSubscription = false;
-		}
 	}
 
 	hasFilter(filterObject: { headers: Object; body: Object }): boolean {

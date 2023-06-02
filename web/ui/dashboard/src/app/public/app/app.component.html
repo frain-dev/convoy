@@ -129,14 +129,6 @@
 									Edit
 								</button>
 							</li>
-							<li class="hover:bg-new.primary-25 transition-all duration-300 rounded-8px" *ngIf="portalDetails?.endpoint_management">
-								<button convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start px-8px py-4px" (click)="showDeleteSubscriptionModal = true; activeSubscription = subscription">
-									<svg width="16" height="16" class="mr-8px fill-danger-100">
-										<use xlink:href="#delete-icon"></use>
-									</svg>
-									Delete
-								</button>
-							</li>
 						</ul>
 					</div>
 				</div>
@@ -147,14 +139,6 @@
 
 		<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event"></app-event-deliveries>
 	</div>
-
-	<app-delete-modal
-		*ngIf="showDeleteSubscriptionModal"
-		[isLoading]="isDeletingSubscription"
-		[deleteText]="'delete “' + activeSubscription?.name + '”'"
-		(closeModal)="activeSubscription = undefined; showDeleteSubscriptionModal = false"
-		(deleteData)="deleteSubscription()"
-	></app-delete-modal>
 
 	<svg display="none" class="hidden">
 		<symbol id="empty-state" width="124" height="108" viewBox="0 0 124 108" fill="none" xmlns="http://www.w3.org/2000/svg">
