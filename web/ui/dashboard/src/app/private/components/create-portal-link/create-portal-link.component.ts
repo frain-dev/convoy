@@ -88,7 +88,8 @@ export class CreatePortalLinkComponent implements OnInit {
 			this.portalLinkForm.patchValue({
 				name: linkDetails.name,
 				endpoints: linkDetails.endpoints,
-				type: linkDetails.endpoints ? 'endpoint' : 'owner_id'
+				type: linkDetails.endpoints ? 'endpoint' : 'owner_id',
+				endpoint_management: linkDetails.endpoint_management
 			});
 			this.fetchingLinkDetails = false;
 		} catch {

@@ -54,7 +54,7 @@
 					></convoy-select>
 				</div>
 
-				<convoy-input-field *ngIf="portalLinkForm.value.type === 'owner_id'">
+				<convoy-input-field *ngIf="portalLinkForm.value.type === 'owner_id'" class="mb-6px">
 					<label for="owner_id_value" convoy-label required="true">Owner ID</label>
 					<input id="owner_id_value" convoy-input autocomplete="name" formControlName="owner_id" placeholder="Enter owner id" />
 				</convoy-input-field>
@@ -62,7 +62,7 @@
 				<div class="flex justify-between items-start">
 					<div class="max-w-[500px]">
 						<label class="text-14 font-semibold">Allow Endpoint Management</label>
-						<p class="text-12 text-grey-40 mt-10px">Endpoint management enables portal link user to update and create (if set up with owner id) endpoints.</p>
+						<p class="text-12 font-normal text-grey-40 mt-10px">Endpoint management enables portal link user to update and create (if set up with owner id) endpoints.</p>
 					</div>
 					<convoy-toggle [class]="portalLink ? 'disabled' : ''" formControlName="endpoint_management"></convoy-toggle>
 				</div>
@@ -81,7 +81,7 @@
 			<div class="flex justify-end items-center my-60px">
 				<button convoy-button [disabled]="portalLinkForm.disabled" class="mr-16px text-14 transition-all duration-300 hover:text-danger-100 hover:border-danger-100" fill="outline" type="button" *ngIf="!portalLink" (click)="goBack()">Cancel</button>
 				<button convoy-button [disabled]="isCreatingPortalLink || portalLink || portalLinkForm.disabled">
-					{{ portalLink ? 'Save Portal Link' : 'Create Portal Link' }}
+					{{ linkUid ? 'Update Portal Link' : 'Create Portal Link' }}
 				</button>
 				<button convoy-button class="ml-16px text-14" type="button" fill="outline" *ngIf="portalLink" (click)="goBack()">Done</button>
 			</div>
