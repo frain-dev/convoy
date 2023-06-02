@@ -16,7 +16,7 @@ package public
 
 // @schemes https
 // @host dashboard.getconvoy.io
-// @BasePath /
+// @BasePath /api
 
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
