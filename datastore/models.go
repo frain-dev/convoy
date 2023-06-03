@@ -591,6 +591,7 @@ func (o *Project) IsDeleted() bool { return o.DeletedAt.Valid }
 func (o *Project) IsOwner(e *Endpoint) bool { return o.UID == e.ProjectID }
 
 var (
+	ErrSignupDisabled                = errors.New("user registration is disabled")
 	ErrUserNotFound                  = errors.New("user not found")
 	ErrSourceNotFound                = errors.New("source not found")
 	ErrEventNotFound                 = errors.New("event not found")

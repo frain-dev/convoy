@@ -40,7 +40,7 @@ func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.To
 	if config != nil {
 		if !config.IsSignupEnabled {
 			// registration is not allowed
-			return nil, nil, &ServiceError{ErrMsg: "user registration is disabled"}
+			return nil, nil, &ServiceError{ErrMsg: datastore.ErrSignupDisabled.Error(), Err: datastore.ErrSignupDisabled}
 		}
 	}
 

@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/frain-dev/convoy/auth/realm/jwt"
@@ -53,6 +54,10 @@ func (a *DashboardHandler) RegisterUser(w http.ResponseWriter, r *http.Request) 
 
 	user, token, err := rs.Run(r.Context())
 	if err != nil {
+		if errors.Is(err, datastore.ErrSignupDisabled) {
+			_ = render.Render(w, r, util.NewErrorResponse(datastore.ErrSignupDisabled.Error(), http.StatusForbidden))
+			return
+		}
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
