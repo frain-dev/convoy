@@ -7686,7 +7686,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "0.9.0",
 	Host:             "dashboard.getconvoy.io",
-	BasePath:         "/",
+	BasePath:         "/api",
 	Schemes:          []string{"https"},
 	Title:            "Convoy API Reference",
 	Description:      "Convoy is a fast and secure webhooks proxy. This document contains datastore.s API specification.",
