@@ -16,18 +16,6 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-func createUserService(a *DashboardHandler) *services.UserService {
-	userRepo := postgres.NewUserRepo(a.A.DB)
-	configService := createConfigService(a)
-	orgRepo := postgres.NewOrgRepo(a.A.DB)
-	orgMemberRepo := postgres.NewOrgMemberRepo(a.A.DB)
-
-	return services.NewUserService(
-		userRepo, a.A.Cache, a.A.Queue,
-		configService, orgRepo, orgMemberRepo,
-	)
-}
-
 func (a *DashboardHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var newUser models.RegisterUser
 	if err := util.ReadJSON(r, &newUser); err != nil {
