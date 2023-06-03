@@ -64,9 +64,9 @@ func TestUpdateSourceService_Run(t *testing.T) {
 						ContentType: stringPtr("application/json"),
 					},
 					Type: datastore.HTTPSource,
-					Verifier: datastore.VerifierConfig{
+					Verifier: models.VerifierConfig{
 						Type: datastore.HMacVerifier,
-						HMac: &datastore.HMac{
+						HMac: &models.HMac{
 							Encoding: datastore.Base64Encoding,
 							Header:   "X-Convoy-Header",
 							Hash:     "SHA512",
@@ -107,9 +107,9 @@ func TestUpdateSourceService_Run(t *testing.T) {
 				update: &models.UpdateSource{
 					Name: stringPtr("Convoy-Prod"),
 					Type: datastore.HTTPSource,
-					Verifier: datastore.VerifierConfig{
+					Verifier: models.VerifierConfig{
 						Type: datastore.HMacVerifier,
-						HMac: &datastore.HMac{
+						HMac: &models.HMac{
 							Encoding: datastore.Base64Encoding,
 							Header:   "X-Convoy-Header",
 							Hash:     "SHA512",

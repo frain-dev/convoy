@@ -11,7 +11,6 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
-	"github.com/frain-dev/convoy/util"
 )
 
 type UpdateSourceService struct {
@@ -23,12 +22,8 @@ type UpdateSourceService struct {
 }
 
 func (s *UpdateSourceService) Run(ctx context.Context) (*datastore.Source, error) {
-	if err := util.Validate(s.SourceUpdate); err != nil {
-		return nil, &ServiceError{ErrMsg: err.Error()}
-	}
-
 	s.Source.Name = *s.SourceUpdate.Name
-	s.Source.Verifier = &s.SourceUpdate.Verifier
+	s.Source.Verifier = s.SourceUpdate.Verifier.Transform()
 	s.Source.Type = s.SourceUpdate.Type
 
 	if s.SourceUpdate.IsDisabled != nil {
@@ -48,7 +43,7 @@ func (s *UpdateSourceService) Run(ctx context.Context) (*datastore.Source, error
 	}
 
 	if s.SourceUpdate.Type == datastore.PubSubSource {
-		if err := pubsub.Validate(s.SourceUpdate.PubSub); err != nil {
+		if err := pubsub.Validate(s.SourceUpdate.PubSub.Transform()); err != nil {
 			return nil, &ServiceError{ErrMsg: err.Error()}
 		}
 	}
@@ -58,7 +53,7 @@ func (s *UpdateSourceService) Run(ctx context.Context) (*datastore.Source, error
 	}
 
 	if s.SourceUpdate.PubSub != nil {
-		s.Source.PubSub = s.SourceUpdate.PubSub
+		s.Source.PubSub = s.SourceUpdate.PubSub.Transform()
 	}
 
 	if s.SourceUpdate.CustomResponse.Body != nil {

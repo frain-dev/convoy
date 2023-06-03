@@ -612,6 +612,17 @@
 				},
 				"type": "object"
 			},
+			"datastore.PageDirection": {
+				"enum": [
+					"next",
+					"prev"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"Next",
+					"Prev"
+				]
+			},
 			"datastore.PaginationData": {
 				"properties": {
 					"has_next_page": {
@@ -1081,6 +1092,28 @@
 				},
 				"type": "object"
 			},
+			"models.ApiKey": {
+				"properties": {
+					"header_name": {
+						"type": "string"
+					},
+					"header_value": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.BasicAuth": {
+				"properties": {
+					"password": {
+						"type": "string"
+					},
+					"username": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"models.CreateProject": {
 				"properties": {
 					"config": {
@@ -1105,6 +1138,32 @@
 					},
 					"project": {
 						"$ref": "#/components/schemas/models.ProjectResponse"
+					}
+				},
+				"type": "object"
+			},
+			"models.CreateSource": {
+				"properties": {
+					"custom_response": {
+						"$ref": "#/components/schemas/models.CustomResponse"
+					},
+					"is_disabled": {
+						"type": "boolean"
+					},
+					"name": {
+						"type": "string"
+					},
+					"provider": {
+						"$ref": "#/components/schemas/datastore.SourceProvider"
+					},
+					"pub_sub": {
+						"$ref": "#/components/schemas/models.PubSubConfig"
+					},
+					"type": {
+						"$ref": "#/components/schemas/datastore.SourceType"
+					},
+					"verifier": {
+						"$ref": "#/components/schemas/models.VerifierConfig"
 					}
 				},
 				"type": "object"
@@ -1344,6 +1403,40 @@
 				},
 				"type": "object"
 			},
+			"models.GooglePubSubConfig": {
+				"properties": {
+					"project_id": {
+						"type": "string"
+					},
+					"service_account": {
+						"items": {
+							"type": "integer"
+						},
+						"type": "array"
+					},
+					"subscription_id": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.HMac": {
+				"properties": {
+					"encoding": {
+						"$ref": "#/components/schemas/datastore.EncodingType"
+					},
+					"hash": {
+						"type": "string"
+					},
+					"header": {
+						"type": "string"
+					},
+					"secret": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"models.MetaEventConfiguration": {
 				"properties": {
 					"event_type": {
@@ -1495,6 +1588,23 @@
 				},
 				"type": "object"
 			},
+			"models.PubSubConfig": {
+				"properties": {
+					"google": {
+						"$ref": "#/components/schemas/models.GooglePubSubConfig"
+					},
+					"sqs": {
+						"$ref": "#/components/schemas/models.SQSPubSubConfig"
+					},
+					"type": {
+						"$ref": "#/components/schemas/datastore.PubSubType"
+					},
+					"workers": {
+						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
 			"models.RateLimitConfiguration": {
 				"properties": {
 					"count": {
@@ -1545,6 +1655,23 @@
 				},
 				"type": "object"
 			},
+			"models.SQSPubSubConfig": {
+				"properties": {
+					"access_key_id": {
+						"type": "string"
+					},
+					"default_region": {
+						"type": "string"
+					},
+					"queue_name": {
+						"type": "string"
+					},
+					"secret_key": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"models.SignatureConfiguration": {
 				"properties": {
 					"header": {
@@ -1576,25 +1703,55 @@
 				},
 				"type": "object"
 			},
-			"models.Source": {
+			"models.SourceResponse": {
 				"properties": {
+					"created_at": {
+						"type": "string"
+					},
 					"custom_response": {
-						"$ref": "#/components/schemas/models.CustomResponse"
+						"$ref": "#/components/schemas/datastore.CustomResponse"
+					},
+					"deleted_at": {
+						"type": "string"
+					},
+					"forward_headers": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
 					},
 					"is_disabled": {
 						"type": "boolean"
 					},
+					"mask_id": {
+						"type": "string"
+					},
 					"name": {
+						"type": "string"
+					},
+					"project_id": {
 						"type": "string"
 					},
 					"provider": {
 						"$ref": "#/components/schemas/datastore.SourceProvider"
+					},
+					"provider_config": {
+						"$ref": "#/components/schemas/datastore.ProviderConfig"
 					},
 					"pub_sub": {
 						"$ref": "#/components/schemas/datastore.PubSubConfig"
 					},
 					"type": {
 						"$ref": "#/components/schemas/datastore.SourceType"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
+						"type": "string"
+					},
+					"url": {
+						"type": "string"
 					},
 					"verifier": {
 						"$ref": "#/components/schemas/datastore.VerifierConfig"
@@ -1657,6 +1814,17 @@
 				},
 				"type": "object"
 			},
+			"models.UpdateCustomResponse": {
+				"properties": {
+					"body": {
+						"type": "string"
+					},
+					"content_type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"models.UpdateProject": {
 				"properties": {
 					"config": {
@@ -1673,6 +1841,52 @@
 					},
 					"rate_limit_duration": {
 						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.UpdateSource": {
+				"properties": {
+					"custom_response": {
+						"$ref": "#/components/schemas/models.UpdateCustomResponse"
+					},
+					"forward_headers": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"is_disabled": {
+						"type": "boolean"
+					},
+					"name": {
+						"type": "string"
+					},
+					"pub_sub": {
+						"$ref": "#/components/schemas/models.PubSubConfig"
+					},
+					"type": {
+						"$ref": "#/components/schemas/datastore.SourceType"
+					},
+					"verifier": {
+						"$ref": "#/components/schemas/models.VerifierConfig"
+					}
+				},
+				"type": "object"
+			},
+			"models.VerifierConfig": {
+				"properties": {
+					"api_key": {
+						"$ref": "#/components/schemas/models.ApiKey"
+					},
+					"basic_auth": {
+						"$ref": "#/components/schemas/models.BasicAuth"
+					},
+					"hmac": {
+						"$ref": "#/components/schemas/models.HMac"
+					},
+					"type": {
+						"$ref": "#/components/schemas/datastore.VerifierType"
 					}
 				},
 				"type": "object"
@@ -6501,25 +6715,41 @@
 						}
 					},
 					{
-						"description": "results per page",
+						"description": "A pagination cursor to fetch the next page of a list",
 						"in": "query",
-						"name": "perPage",
+						"name": "next_page_cursor",
 						"schema": {
 							"type": "string"
 						}
 					},
 					{
-						"description": "page number",
+						"description": "The number of items to return per page",
 						"in": "query",
-						"name": "page",
+						"name": "per_page",
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"description": "A pagination cursor to fetch the previous page of a list",
+						"in": "query",
+						"name": "prev_page_cursor",
 						"schema": {
 							"type": "string"
 						}
 					},
 					{
-						"description": "sort order",
+						"description": "The custom source provider e.g. twitter, shopify",
 						"in": "query",
-						"name": "sort",
+						"name": "provider",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "The source type e.g. http, pub_sub",
+						"in": "query",
+						"name": "type",
 						"schema": {
 							"type": "string"
 						}
@@ -6545,7 +6775,7 @@
 															"properties": {
 																"content": {
 																	"items": {
-																		"$ref": "#/components/schemas/models.Source"
+																		"$ref": "#/components/schemas/models.SourceResponse"
 																	},
 																	"type": "array"
 																}
@@ -6657,7 +6887,7 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.Source"
+								"$ref": "#/components/schemas/models.CreateSource"
 							}
 						}
 					},
@@ -6677,7 +6907,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/models.Source"
+													"$ref": "#/components/schemas/models.SourceResponse"
 												}
 											},
 											"type": "object"
@@ -6923,7 +7153,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/models.Source"
+													"$ref": "#/components/schemas/models.SourceResponse"
 												}
 											},
 											"type": "object"
@@ -7037,7 +7267,7 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.Source"
+								"$ref": "#/components/schemas/models.UpdateSource"
 							}
 						}
 					},
@@ -7057,7 +7287,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/models.Source"
+													"$ref": "#/components/schemas/models.SourceResponse"
 												}
 											},
 											"type": "object"
@@ -7958,7 +8188,7 @@
 	},
 	"servers": [
 		{
-			"url": "https://dashboard.getconvoy.io/"
+			"url": "https://dashboard.getconvoy.io/api"
 		}
 	],
 	"tags": [

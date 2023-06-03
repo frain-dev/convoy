@@ -2,8 +2,6 @@ package services
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/log"
@@ -15,42 +13,19 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
-	"github.com/frain-dev/convoy/util"
 	"github.com/oklog/ulid/v2"
 )
 
 type CreateSourceService struct {
 	SourceRepo datastore.SourceRepository
 	Cache      cache.Cache
-	NewSource  *models.Source
+	NewSource  *models.CreateSource
 	Project    *datastore.Project
 }
 
 func (s *CreateSourceService) Run(ctx context.Context) (*datastore.Source, error) {
-	if s.NewSource.Provider.IsValid() {
-		if err := validateSourceForProvider(s.NewSource); err != nil {
-			return nil, &ServiceError{ErrMsg: err.Error()}
-		}
-	} else {
-		if err := util.Validate(s.NewSource); err != nil {
-			return nil, &ServiceError{ErrMsg: err.Error()}
-		}
-	}
-
-	if s.NewSource.Verifier.Type == datastore.HMacVerifier && s.NewSource.Verifier.HMac == nil {
-		return nil, &ServiceError{ErrMsg: "Invalid verifier config for hmac"}
-	}
-
-	if s.NewSource.Verifier.Type == datastore.APIKeyVerifier && s.NewSource.Verifier.ApiKey == nil {
-		return nil, &ServiceError{ErrMsg: "Invalid verifier config for api key"}
-	}
-
-	if s.NewSource.Verifier.Type == datastore.BasicAuthVerifier && s.NewSource.Verifier.BasicAuth == nil {
-		return nil, &ServiceError{ErrMsg: "Invalid verifier config for basic auth"}
-	}
-
 	if s.NewSource.Type == datastore.PubSubSource {
-		if err := pubsub.Validate(&s.NewSource.PubSub); err != nil {
+		if err := pubsub.Validate(s.NewSource.PubSub.Transform()); err != nil {
 			return nil, &ServiceError{ErrMsg: err.Error()}
 		}
 	}
@@ -67,8 +42,8 @@ func (s *CreateSourceService) Run(ctx context.Context) (*datastore.Source, error
 		Name:      s.NewSource.Name,
 		Type:      s.NewSource.Type,
 		Provider:  s.NewSource.Provider,
-		Verifier:  &s.NewSource.Verifier,
-		PubSub:    &s.NewSource.PubSub,
+		Verifier:  s.NewSource.Verifier.Transform(),
+		PubSub:    s.NewSource.PubSub.Transform(),
 		CustomResponse: datastore.CustomResponse{
 			Body:        s.NewSource.CustomResponse.Body,
 			ContentType: s.NewSource.CustomResponse.ContentType,
@@ -93,26 +68,4 @@ func (s *CreateSourceService) Run(ctx context.Context) (*datastore.Source, error
 	}
 
 	return source, nil
-}
-
-func validateSourceForProvider(newSource *models.Source) error {
-	if util.IsStringEmpty(newSource.Name) {
-		return errors.New("please provide a source name")
-	}
-
-	if !newSource.Type.IsValid() {
-		return errors.New("please provide a valid source type")
-	}
-
-	switch newSource.Provider {
-	case datastore.GithubSourceProvider,
-		datastore.ShopifySourceProvider,
-		datastore.TwitterSourceProvider:
-		verifierConfig := newSource.Verifier
-		if verifierConfig.HMac == nil || verifierConfig.HMac.Secret == "" {
-			return fmt.Errorf("hmac secret is required for %s source", newSource.Provider)
-		}
-	}
-
-	return nil
 }
