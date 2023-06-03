@@ -4,6 +4,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/auth/realm/jwt"
+	"github.com/frain-dev/convoy/config"
+
+	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/services"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
@@ -23,8 +29,20 @@ func (a *DashboardHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userService := createUserService(a)
-	user, token, err := userService.LoginUser(r.Context(), &newUser)
+	config, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	lu := services.LoginUserService{
+		UserRepo: postgres.NewUserRepo(a.A.DB),
+		Cache:    a.A.Cache,
+		JWT:      jwt.NewJwt(&config.Auth.Jwt, a.A.Cache),
+		Data:     &newUser,
+	}
+
+	user, token, err := lu.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -50,8 +68,19 @@ func (a *DashboardHandler) RefreshToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	userService := createUserService(a)
-	token, err := userService.RefreshToken(r.Context(), &refreshToken)
+	config, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	rf := services.RefreshTokenService{
+		UserRepo: postgres.NewUserRepo(a.A.DB),
+		JWT:      jwt.NewJwt(&config.Auth.Jwt, a.A.Cache),
+		Data:     &refreshToken,
+	}
+
+	token, err := rf.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -67,8 +96,19 @@ func (a *DashboardHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userService := createUserService(a)
-	err = userService.LogoutUser(auth.Token)
+	config, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	lg := services.LogoutUserService{
+		UserRepo: postgres.NewUserRepo(a.A.DB),
+		JWT:      jwt.NewJwt(&config.Auth.Jwt, a.A.Cache),
+		Token:    auth.Token,
+	}
+
+	err = lg.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
