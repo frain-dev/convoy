@@ -17,14 +17,6 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-func createPortalLinkService(a *DashboardHandler) *services.PortalLinkService {
-	portalRepo := postgres.NewPortalLinkRepo(a.A.DB)
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
-
-	return services.NewPortalLinkService(portalRepo, endpointRepo, a.A.Cache, projectRepo)
-}
-
 func (a *DashboardHandler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 	var newPortalLink models.PortalLink
 	if err := util.ReadJSON(r, &newPortalLink); err != nil {
@@ -43,8 +35,14 @@ func (a *DashboardHandler) CreatePortalLink(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	portalLinkService := createPortalLinkService(a)
-	portalLink, err := portalLinkService.CreatePortalLink(r.Context(), &newPortalLink, project)
+	cp := services.CreatePortalLinkService{
+		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB),
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
+		Portal:         &newPortalLink,
+		Project:        project,
+	}
+
+	portalLink, err := cp.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -107,7 +105,6 @@ func (a *DashboardHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	portalLinkService := createPortalLinkService(a)
 	portalLink, err := postgres.NewPortalLinkRepo(a.A.DB).FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
 		if err == datastore.ErrPortalLinkNotFound {
@@ -119,7 +116,15 @@ func (a *DashboardHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	portalLink, err = portalLinkService.UpdatePortalLink(r.Context(), project, &updatePortalLink, portalLink)
+	upl := services.UpdatePortalLinkService{
+		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB),
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
+		Project:        project,
+		Update:         &updatePortalLink,
+		PortalLink:     portalLink,
+	}
+
+	portalLink, err = upl.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
