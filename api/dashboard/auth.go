@@ -44,7 +44,7 @@ func (a *DashboardHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	user, token, err := lu.Run(r.Context())
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
 		return
 	}
 
@@ -82,7 +82,7 @@ func (a *DashboardHandler) RefreshToken(w http.ResponseWriter, r *http.Request) 
 
 	token, err := rf.Run(r.Context())
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
 		return
 	}
 

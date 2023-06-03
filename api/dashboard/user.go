@@ -46,6 +46,7 @@ func (a *DashboardHandler) RegisterUser(w http.ResponseWriter, r *http.Request) 
 		OrgMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
 		Queue:         a.A.Queue,
 		JWT:           jwt.NewJwt(&config.Auth.Jwt, a.A.Cache),
+		ConfigService: services.NewConfigService(postgres.NewConfigRepo(a.A.DB)),
 		BaseURL:       baseUrl,
 		Data:          &newUser,
 	}
