@@ -125,14 +125,6 @@ type UpdateEndpoint struct {
 	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
 }
 
-type DynamicSubscription struct {
-	Name            string                            `json:"name" bson:"name"`
-	AlertConfig     *datastore.AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
-	RetryConfig     *RetryConfiguration               `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
-	FilterConfig    *datastore.FilterConfiguration    `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
-	RateLimitConfig *datastore.RateLimitConfiguration `json:"rate_limit_config,omitempty" bson:"rate_limit_config,omitempty"`
-}
-
 type DynamicEvent struct {
 	Endpoint     DynamicEndpoint     `json:"endpoint"`
 	Subscription DynamicSubscription `json:"subscription"`
@@ -222,37 +214,6 @@ type WebhookRequest struct {
 	Data  json.RawMessage `json:"data" bson:"data"`
 }
 
-type Subscription struct {
-	Name       string `json:"name" bson:"name" valid:"required~please provide a valid subscription name"`
-	SourceID   string `json:"source_id" bson:"source_id"`
-	AppID      string `json:"app_id"` // Deprecated but necessary for backward compatibility
-	EndpointID string `json:"endpoint_id" bson:"endpoint_id" valid:"required~please provide a valid endpoint id"`
-
-	AlertConfig     *datastore.AlertConfiguration     `json:"alert_config,omitempty" bson:"alert_config,omitempty"`
-	RetryConfig     *RetryConfiguration               `json:"retry_config,omitempty" bson:"retry_config,omitempty"`
-	FilterConfig    *datastore.FilterConfiguration    `json:"filter_config,omitempty" bson:"filter_config,omitempty"`
-	RateLimitConfig *datastore.RateLimitConfiguration `json:"rate_limit_config,omitempty" bson:"rate_limit_config,omitempty"`
-}
-
-type UpdateSubscription struct {
-	Name       string `json:"name,omitempty"`
-	AppID      string `json:"app_id,omitempty"`
-	SourceID   string `json:"source_id,omitempty"`
-	EndpointID string `json:"endpoint_id,omitempty"`
-
-	AlertConfig     *datastore.AlertConfiguration     `json:"alert_config,omitempty"`
-	RetryConfig     *RetryConfiguration               `json:"retry_config,omitempty"`
-	FilterConfig    *datastore.FilterConfiguration    `json:"filter_config,omitempty"`
-	RateLimitConfig *datastore.RateLimitConfiguration `json:"rate_limit_config,omitempty"`
-}
-
-type RetryConfiguration struct {
-	Type            datastore.StrategyProvider `json:"type,omitempty" valid:"supported_retry_strategy~please provide a valid retry strategy type"`
-	Duration        string                     `json:"duration,omitempty" valid:"duration~please provide a valid time duration"`
-	IntervalSeconds uint64                     `json:"interval_seconds" valid:"int~please provide a valid interval seconds"`
-	RetryCount      uint64                     `json:"retry_count" valid:"int~please provide a valid retry count"`
-}
-
 type CreateEndpointApiKey struct {
 	Project    *datastore.Project
 	Endpoint   *datastore.Endpoint
@@ -279,16 +240,6 @@ type PortalLinkResponse struct {
 	CreatedAt         time.Time                  `json:"created_at,omitempty"`
 	UpdatedAt         time.Time                  `json:"updated_at,omitempty"`
 	DeletedAt         null.Time                  `json:"deleted_at,omitempty"`
-}
-
-type TestFilter struct {
-	Request FilterSchema `json:"request"`
-	Schema  FilterSchema `json:"schema"`
-}
-
-type FilterSchema struct {
-	Headers interface{} `json:"header" bson:"header"`
-	Body    interface{} `json:"body" bson:"body"`
 }
 
 // Generic function for looping over a slice of type M

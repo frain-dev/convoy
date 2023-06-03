@@ -38,13 +38,19 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				},
 				Subscription: models.DynamicSubscription{
 					Name:        "test_sub",
-					AlertConfig: &datastore.DefaultAlertConfig,
+					AlertConfig: &models.AlertConfiguration{
+                        Count: 4,
+                        Threshold: "1h",
+                    },
 					RetryConfig: &models.RetryConfiguration{
 						Type:       datastore.DefaultRetryConfig.Type,
 						Duration:   "1m",
 						RetryCount: datastore.DefaultRetryConfig.RetryCount,
 					},
-					RateLimitConfig: &datastore.DefaultRateLimitConfig,
+					RateLimitConfig: &models.RateLimitConfiguration{
+                        Count: 1000,
+                        Duration: 60,
+                    },
 				},
 				Event: models.DynamicEventStub{
 					ProjectID: "project-id-1",
@@ -140,13 +146,19 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				},
 				Subscription: models.DynamicSubscription{
 					Name:        "test_sub",
-					AlertConfig: &datastore.DefaultAlertConfig,
+					AlertConfig: &models.AlertConfiguration{
+                    Count: 4,
+                    Threshold: "1h",
+                },
 					RetryConfig: &models.RetryConfiguration{
 						Type:       datastore.DefaultRetryConfig.Type,
 						Duration:   "1m",
 						RetryCount: datastore.DefaultRetryConfig.RetryCount,
 					},
-					RateLimitConfig: &datastore.DefaultRateLimitConfig,
+                    RateLimitConfig: &models.RateLimitConfiguration{
+                        Count: 1000,
+                        Duration: 60,
+                    },
 				},
 				Event: models.DynamicEventStub{
 					ProjectID: "project-id-1",

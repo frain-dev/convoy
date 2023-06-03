@@ -13,7 +13,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 )
 
-func provideCreateSubscriptionService(ctrl *gomock.Controller, project *datastore.Project, newSub *models.Subscription) *CreateSubcriptionService {
+func provideCreateSubscriptionService(ctrl *gomock.Controller, project *datastore.Project, newSub *models.CreateSubscription) *CreateSubcriptionService {
 	return &CreateSubcriptionService{
 		SubRepo:         mocks.NewMockSubscriptionRepository(ctrl),
 		EndpointRepo:    mocks.NewMockEndpointRepository(ctrl),
@@ -29,7 +29,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 	type args struct {
 		ctx             context.Context
 		project         *datastore.Project
-		newSubscription *models.Subscription
+		newSubscription *models.CreateSubscription
 	}
 
 	tests := []struct {
@@ -44,7 +44,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 			name: "should create subscription for outgoing project",
 			args: args{
 				ctx: ctx,
-				newSubscription: &models.Subscription{
+				newSubscription: &models.CreateSubscription{
 					Name:       "sub 1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
@@ -82,7 +82,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 			name: "should fail to count endpoint subscriptions for outgoing project",
 			args: args{
 				ctx: ctx,
-				newSubscription: &models.Subscription{
+				newSubscription: &models.CreateSubscription{
 					Name:       "sub 1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
@@ -118,7 +118,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 			name: "should error for endpoint already has a subscription",
 			args: args{
 				ctx: ctx,
-				newSubscription: &models.Subscription{
+				newSubscription: &models.CreateSubscription{
 					Name:       "sub 1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
@@ -154,7 +154,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 			name: "should create subscription for incoming project",
 			args: args{
 				ctx: ctx,
-				newSubscription: &models.Subscription{
+				newSubscription: &models.CreateSubscription{
 					Name:       "sub 1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
@@ -197,7 +197,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 			name: "should fail to find source",
 			args: args{
 				ctx: ctx,
-				newSubscription: &models.Subscription{
+				newSubscription: &models.CreateSubscription{
 					Name:       "sub 1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
@@ -231,7 +231,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 			name: "should fail to find endpoint",
 			args: args{
 				ctx: ctx,
-				newSubscription: &models.Subscription{
+				newSubscription: &models.CreateSubscription{
 					Name:       "sub 1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
@@ -256,7 +256,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 			name: "should error for endpoint does not belong to project",
 			args: args{
 				ctx: ctx,
-				newSubscription: &models.Subscription{
+				newSubscription: &models.CreateSubscription{
 					Name:       "sub 1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
@@ -286,7 +286,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 			name: "should error for failed to find endpoint",
 			args: args{
 				ctx: ctx,
-				newSubscription: &models.Subscription{
+				newSubscription: &models.CreateSubscription{
 					Name:       "sub 1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
@@ -311,7 +311,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 			name: "should fail to create subscription",
 			args: args{
 				ctx: ctx,
-				newSubscription: &models.Subscription{
+				newSubscription: &models.CreateSubscription{
 					Name:       "sub 1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
@@ -342,7 +342,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 			name: "create subscription for outgoing project - should set default event types array",
 			args: args{
 				ctx: ctx,
-				newSubscription: &models.Subscription{
+				newSubscription: &models.CreateSubscription{
 					Name:       "sub 1",
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",

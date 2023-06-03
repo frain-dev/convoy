@@ -54,7 +54,7 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 		IsRetentionPolicyEnabled: pc.IsRetentionPolicyEnabled,
 		DisableEndpoint:          pc.DisableEndpoint,
 		RetentionPolicy:          pc.RetentionPolicy.transform(),
-		RateLimit:                pc.RateLimit.transform(),
+		RateLimit:                pc.RateLimit.Transform(),
 		Strategy:                 pc.Strategy.transform(),
 		Signature:                pc.Signature.transform(),
 		MetaEvent:                pc.MetaEvent.transform(),
@@ -78,7 +78,7 @@ type RateLimitConfiguration struct {
 	Duration uint64 `json:"duration"`
 }
 
-func (rc *RateLimitConfiguration) transform() *datastore.RateLimitConfiguration {
+func (rc *RateLimitConfiguration) Transform() *datastore.RateLimitConfiguration {
 	if rc == nil {
 		return nil
 	}
