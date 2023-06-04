@@ -73,7 +73,6 @@ func (a *DashboardHandler) GetPortalLinkByID(w http.ResponseWriter, r *http.Requ
 			_ = render.Render(w, r, util.NewServerResponse(err.Error(), nil, http.StatusNotFound))
 			return
 		}
-		fmt.Println(err)
 
 		_ = render.Render(w, r, util.NewServerResponse("error retrieving portal link", nil, http.StatusBadRequest))
 		return
