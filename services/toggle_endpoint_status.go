@@ -17,7 +17,7 @@ type ToggleEndpointStatusService struct {
 func (s *ToggleEndpointStatusService) Run(ctx context.Context) (*datastore.Endpoint, error) {
 	endpoint, err := s.EndpointRepo.FindEndpointByID(ctx, s.EndpointId, s.ProjectID)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error(ErrSubscriptionNotFound.Error())
+		log.FromContext(ctx).WithError(err).Error("failed to find endpoint")
 		return nil, &ServiceError{ErrMsg: "failed to find endpoint", Err: err}
 	}
 

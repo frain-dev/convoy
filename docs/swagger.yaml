@@ -1,4 +1,4 @@
-basePath: /
+basePath: /api
 definitions:
   config.SignatureHeaderProvider:
     enum:
@@ -417,6 +417,14 @@ definitions:
       strategy:
         $ref: '#/definitions/datastore.StrategyProvider'
     type: object
+  datastore.PageDirection:
+    enum:
+    - next
+    - prev
+    type: string
+    x-enum-varnames:
+    - Next
+    - Prev
   datastore.PaginationData:
     properties:
       has_next_page:
@@ -731,6 +739,20 @@ definitions:
       user_id:
         type: string
     type: object
+  models.ApiKey:
+    properties:
+      header_name:
+        type: string
+      header_value:
+        type: string
+    type: object
+  models.BasicAuth:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
   models.CreateProject:
     properties:
       config:
@@ -748,6 +770,23 @@ definitions:
         $ref: '#/definitions/models.APIKeyResponse'
       project:
         $ref: '#/definitions/models.ProjectResponse'
+    type: object
+  models.CreateSource:
+    properties:
+      custom_response:
+        $ref: '#/definitions/models.CustomResponse'
+      is_disabled:
+        type: boolean
+      name:
+        type: string
+      provider:
+        $ref: '#/definitions/datastore.SourceProvider'
+      pub_sub:
+        $ref: '#/definitions/models.PubSubConfig'
+      type:
+        $ref: '#/definitions/datastore.SourceType'
+      verifier:
+        $ref: '#/definitions/models.VerifierConfig'
     type: object
   models.CustomResponse:
     properties:
@@ -910,6 +949,28 @@ definitions:
       body: {}
       header: {}
     type: object
+  models.GooglePubSubConfig:
+    properties:
+      project_id:
+        type: string
+      service_account:
+        items:
+          type: integer
+        type: array
+      subscription_id:
+        type: string
+    type: object
+  models.HMac:
+    properties:
+      encoding:
+        $ref: '#/definitions/datastore.EncodingType'
+      hash:
+        type: string
+      header:
+        type: string
+      secret:
+        type: string
+    type: object
   models.MetaEventConfiguration:
     properties:
       event_type:
@@ -1017,6 +1078,17 @@ definitions:
       updated_at:
         type: string
     type: object
+  models.PubSubConfig:
+    properties:
+      google:
+        $ref: '#/definitions/models.GooglePubSubConfig'
+      sqs:
+        $ref: '#/definitions/models.SQSPubSubConfig'
+      type:
+        $ref: '#/definitions/datastore.PubSubType'
+      workers:
+        type: integer
+    type: object
   models.RateLimitConfiguration:
     properties:
       count:
@@ -1049,6 +1121,17 @@ definitions:
       type:
         type: string
     type: object
+  models.SQSPubSubConfig:
+    properties:
+      access_key_id:
+        type: string
+      default_region:
+        type: string
+      queue_name:
+        type: string
+      secret_key:
+        type: string
+    type: object
   models.SignatureConfiguration:
     properties:
       header:
@@ -1069,20 +1152,40 @@ definitions:
       uid:
         type: string
     type: object
-  models.Source:
+  models.SourceResponse:
     properties:
+      created_at:
+        type: string
       custom_response:
-        $ref: '#/definitions/models.CustomResponse'
+        $ref: '#/definitions/datastore.CustomResponse'
+      deleted_at:
+        type: string
+      forward_headers:
+        items:
+          type: string
+        type: array
       is_disabled:
         type: boolean
+      mask_id:
+        type: string
       name:
+        type: string
+      project_id:
         type: string
       provider:
         $ref: '#/definitions/datastore.SourceProvider'
+      provider_config:
+        $ref: '#/definitions/datastore.ProviderConfig'
       pub_sub:
         $ref: '#/definitions/datastore.PubSubConfig'
       type:
         $ref: '#/definitions/datastore.SourceType'
+      uid:
+        type: string
+      updated_at:
+        type: string
+      url:
+        type: string
       verifier:
         $ref: '#/definitions/datastore.VerifierConfig'
     type: object
@@ -1122,6 +1225,13 @@ definitions:
       schema:
         $ref: '#/definitions/models.FilterSchema'
     type: object
+  models.UpdateCustomResponse:
+    properties:
+      body:
+        type: string
+      content_type:
+        type: string
+    type: object
   models.UpdateProject:
     properties:
       config:
@@ -1134,6 +1244,36 @@ definitions:
         type: integer
       rate_limit_duration:
         type: string
+    type: object
+  models.UpdateSource:
+    properties:
+      custom_response:
+        $ref: '#/definitions/models.UpdateCustomResponse'
+      forward_headers:
+        items:
+          type: string
+        type: array
+      is_disabled:
+        type: boolean
+      name:
+        type: string
+      pub_sub:
+        $ref: '#/definitions/models.PubSubConfig'
+      type:
+        $ref: '#/definitions/datastore.SourceType'
+      verifier:
+        $ref: '#/definitions/models.VerifierConfig'
+    type: object
+  models.VerifierConfig:
+    properties:
+      api_key:
+        $ref: '#/definitions/models.ApiKey'
+      basic_auth:
+        $ref: '#/definitions/models.BasicAuth'
+      hmac:
+        $ref: '#/definitions/models.HMac'
+      type:
+        $ref: '#/definitions/datastore.VerifierType'
     type: object
   public.Stub:
     type: object
@@ -2933,6 +3073,11 @@ paths:
       - application/json
       description: This endpoint fetches meta events with pagination
       parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
       - description: start date
         in: query
         name: startDate
@@ -3004,7 +3149,7 @@ paths:
       - ApiKeyAuth: []
       summary: List all meta events
       tags:
-      - MetaEvents
+      - Meta Events
   /v1/projects/{projectID}/meta-events/{metaEventID}:
     get:
       consumes:
@@ -3069,7 +3214,7 @@ paths:
       - ApiKeyAuth: []
       summary: Retrieve a meta event
       tags:
-      - MetaEvents
+      - Meta Events
   /v1/projects/{projectID}/meta-events/{metaEventID}/resend:
     put:
       consumes:
@@ -3134,7 +3279,7 @@ paths:
       - ApiKeyAuth: []
       summary: Retry meta event
       tags:
-      - MetaEvents
+      - Meta Events
   /v1/projects/{projectID}/portal-links:
     get:
       consumes:
@@ -3465,17 +3610,30 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: results per page
+      - description: A pagination cursor to fetch the next page of a list
+        example: 01H0JA5MEES38RRK3HTEJC647K
         in: query
-        name: perPage
+        name: next_page_cursor
         type: string
-      - description: page number
+      - description: The number of items to return per page
+        example: 20
         in: query
-        name: page
+        name: per_page
+        type: integer
+      - description: A pagination cursor to fetch the previous page of a list
+        example: 01H0JATTVCXZK8FRDX1M1JN3QY
+        in: query
+        name: prev_page_cursor
         type: string
-      - description: sort order
+      - description: The custom source provider e.g. twitter, shopify
+        example: twitter
         in: query
-        name: sort
+        name: provider
+        type: string
+      - description: The source type e.g. http, pub_sub
+        example: http
+        in: query
+        name: type
         type: string
       produces:
       - application/json
@@ -3492,7 +3650,7 @@ paths:
                   - properties:
                       content:
                         items:
-                          $ref: '#/definitions/models.Source'
+                          $ref: '#/definitions/models.SourceResponse'
                         type: array
                     type: object
               type: object
@@ -3543,7 +3701,7 @@ paths:
         name: source
         required: true
         schema:
-          $ref: '#/definitions/models.Source'
+          $ref: '#/definitions/models.CreateSource'
       produces:
       - application/json
       responses:
@@ -3554,7 +3712,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.Source'
+                  $ref: '#/definitions/models.SourceResponse'
               type: object
         "400":
           description: Bad Request
@@ -3673,7 +3831,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.Source'
+                  $ref: '#/definitions/models.SourceResponse'
               type: object
         "400":
           description: Bad Request
@@ -3727,7 +3885,7 @@ paths:
         name: source
         required: true
         schema:
-          $ref: '#/definitions/models.Source'
+          $ref: '#/definitions/models.UpdateSource'
       produces:
       - application/json
       responses:
@@ -3738,7 +3896,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.Source'
+                  $ref: '#/definitions/models.SourceResponse'
               type: object
         "400":
           description: Bad Request
