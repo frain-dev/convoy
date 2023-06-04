@@ -2,12 +2,10 @@ package services
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/util"
 )
 
 type UpdateConfigService struct {
@@ -19,7 +17,7 @@ func (c *UpdateConfigService) Run(ctx context.Context) (*datastore.Configuration
 	cfg, err := c.ConfigRepo.LoadConfiguration(ctx)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to load configuration")
-		return nil, util.NewServiceError(http.StatusInternalServerError, err)
+		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
 	if c.Config.IsAnalyticsEnabled != nil {
@@ -37,7 +35,7 @@ func (c *UpdateConfigService) Run(ctx context.Context) (*datastore.Configuration
 	err = c.ConfigRepo.UpdateConfiguration(ctx, cfg)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to update configuration")
-		return nil, util.NewServiceError(http.StatusInternalServerError, err)
+		return nil, &ServiceError{ErrMsg: "failed to update configuration"}
 	}
 
 	return cfg, nil

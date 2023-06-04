@@ -75,7 +75,7 @@ func TestUpdateConfigService_Run(t *testing.T) {
 				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(nil, datastore.ErrConfigNotFound)
 			},
 			wantErr:    true,
-			wantErrMsg: "",
+			wantErrMsg: "config not found",
 		},
 	}
 
