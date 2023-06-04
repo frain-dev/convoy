@@ -54,33 +54,15 @@ func (a *PortalLinkHandler) CreateEndpoint(w http.ResponseWriter, r *http.Reques
 	e.OwnerID = portalLink.OwnerID
 
 	ce := services.CreateEndpointService{
-		Cache:        a.A.Cache,
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
-		ProjectRepo:  postgres.NewProjectRepo(a.A.DB),
-		E:            e,
-		ProjectID:    portalLink.ProjectID,
+		Cache:          a.A.Cache,
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
+		ProjectRepo:    postgres.NewProjectRepo(a.A.DB),
+		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB),
+		E:              e,
+		ProjectID:      portalLink.ProjectID,
 	}
 
 	endpoint, err := ce.Run(r.Context())
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	portalLinkService := createPortalLinkService(a)
-	update := models.PortalLink{
-		Name:               portalLink.Name,
-		Endpoints:          portalLink.Endpoints,
-		OwnerID:            portalLink.OwnerID,
-		EndpointManagement: portalLink.EndpointManagement,
-	}
-	_, err = portalLinkService.UpdatePortalLink(r.Context(), project, &update, portalLink)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

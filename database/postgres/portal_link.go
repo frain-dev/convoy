@@ -40,7 +40,8 @@ const (
 	`
 
 	deletePortalLinkEndpoints = `
-	DELETE from convoy.portal_links_endpoints WHERE portal_link_id = $1
+	DELETE from convoy.portal_links_endpoints 
+	WHERE portal_link_id = $1 OR endpoint_id = $2
 	`
 
 	fetchPortalLinkById = `
@@ -61,6 +62,27 @@ const (
 	LEFT JOIN convoy.endpoints e 
 		ON e.id = pe.endpoint_id
 	WHERE p.id = $1 AND p.project_id = $2 AND p.deleted_at IS NULL
+	GROUP BY p.id;
+	`
+
+	fetchPortalLinkByOwnerID = `
+	SELECT
+	p.id,
+	p.project_id,
+	p.name,
+	p.token,
+	p.endpoints,
+	COALESCE(p.endpoint_management, false) as "endpoint_management",
+	COALESCE(p.owner_id, '') as "owner_id",
+	p.created_at,
+	p.updated_at,
+	array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url)))  AS endpoints_metadata
+	FROM convoy.portal_links p
+	LEFT JOIN convoy.portal_links_endpoints pe 
+		ON p.id = pe.portal_link_id
+	LEFT JOIN convoy.endpoints e 
+		ON e.id = pe.endpoint_id
+	WHERE p.owner_id = $1 AND p.project_id = $2 AND p.deleted_at IS NULL
 	GROUP BY p.id;
 	`
 
@@ -228,6 +250,19 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID string, id string) (*datastore.PortalLink, error) {
 	portalLink := &datastore.PortalLink{}
 	err := p.db.QueryRowxContext(ctx, fetchPortalLinkById, id, projectID).StructScan(portalLink)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrPortalLinkNotFound
+		}
+		return nil, err
+	}
+
+	return portalLink, nil
+}
+
+func (p *portalLinkRepo) FindPortalLinkByOwnerID(ctx context.Context, projectID string, ownerID string) (*datastore.PortalLink, error) {
+	portalLink := &datastore.PortalLink{}
+	err := p.db.QueryRowxContext(ctx, fetchPortalLinkByOwnerID, ownerID, projectID).StructScan(portalLink)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrPortalLinkNotFound
@@ -408,7 +443,7 @@ func (p *portalLinkRepo) upsertPortalLinkEndpoint(ctx context.Context, tx *sqlx.
 		return errors.New("owner_id or endpoints must be present")
 	}
 
-	_, err := tx.ExecContext(ctx, deletePortalLinkEndpoints, portal.UID)
+	_, err := tx.ExecContext(ctx, deletePortalLinkEndpoints, portal.UID, nil)
 	if err != nil {
 		return err
 	}
