@@ -53,9 +53,15 @@ const (
 	COALESCE(p.endpoint_management, false) as "endpoint_management",
 	COALESCE(p.owner_id, '') as "owner_id",
 	p.created_at,
-	p.updated_at
+	p.updated_at,
+	array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url)))  AS endpoints_metadata
 	FROM convoy.portal_links p
-	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
+	LEFT JOIN convoy.portal_links_endpoints pe 
+		ON p.id = pe.portal_link_id
+	LEFT JOIN convoy.endpoints e 
+		ON e.id = pe.endpoint_id
+	WHERE p.id = $1 AND p.project_id = $2 AND p.deleted_at IS NULL
+	GROUP BY p.id;
 	`
 
 	fetchPortalLinkByToken = `
@@ -68,9 +74,15 @@ const (
 	COALESCE(p.endpoint_management, false) as "endpoint_management",
 	COALESCE(p.owner_id, '') as "owner_id",
 	p.created_at,
-	p.updated_at
+	p.updated_at,
+	array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url, 'secrets', e.secrets)))  AS endpoints_metadata
 	FROM convoy.portal_links p
-	WHERE token = $1 AND deleted_at IS NULL;
+	LEFT JOIN convoy.portal_links_endpoints pe 
+		ON p.id = pe.portal_link_id
+	LEFT JOIN convoy.endpoints e 
+		ON e.id = pe.endpoint_id
+	WHERE p.token = $1 AND p.deleted_at IS NULL
+	GROUP BY p.id;
 	`
 
 	countPrevPortalLinks = `
@@ -100,7 +112,7 @@ const (
 	LEFT JOIN convoy.portal_links_endpoints pe 
 		ON p.id = pe.portal_link_id
 	LEFT JOIN convoy.endpoints e 
-		ON e.id = pe.endpoint_id 
+		ON e.id = pe.endpoint_id
 	WHERE p.deleted_at IS NULL`
 
 	baseFetchPortalLinksPagedForward = `
@@ -171,16 +183,9 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 		return ErrPortalLinkNotCreated
 	}
 
-	var ids []interface{}
-	if len(portal.Endpoints) > 0 {
-		for _, endpointID := range portal.Endpoints {
-			ids = append(ids, &PortalLinkEndpoint{PortalLinkID: portal.UID, EndpointID: endpointID})
-		}
-
-		_, err = tx.NamedExecContext(ctx, createPortalLinkEndpoints, ids)
-		if err != nil {
-			return err
-		}
+	err = p.upsertPortalLinkEndpoint(ctx, tx, portal)
+	if err != nil {
+		return err
 	}
 
 	return tx.Commit()
@@ -192,7 +197,6 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 		return err
 	}
 
-	fmt.Printf("update: %+v\n", portal)
 	r, err := tx.ExecContext(ctx, updatePortalLink,
 		portal.UID,
 		portal.Name,
@@ -213,21 +217,9 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 		return ErrPortalLinkNotUpdated
 	}
 
-	var ids []interface{}
-	if len(portal.Endpoints) > 0 {
-		for _, endpointID := range portal.Endpoints {
-			ids = append(ids, &PortalLinkEndpoint{PortalLinkID: portal.UID, EndpointID: endpointID})
-		}
-
-		_, err = tx.ExecContext(ctx, deletePortalLinkEndpoints, portal.UID)
-		if err != nil {
-			return err
-		}
-
-		_, err = tx.NamedExecContext(ctx, createPortalLinkEndpoints, ids)
-		if err != nil {
-			return err
-		}
+	err = p.upsertPortalLinkEndpoint(ctx, tx, portal)
+	if err != nil {
+		return err
 	}
 
 	return tx.Commit()
@@ -381,6 +373,49 @@ func (p *portalLinkRepo) RevokePortalLink(ctx context.Context, projectID string,
 
 	if rowsAffected < 1 {
 		return ErrPortalLinkNotDeleted
+	}
+
+	return nil
+}
+
+func (p *portalLinkRepo) upsertPortalLinkEndpoint(ctx context.Context, tx *sqlx.Tx, portal *datastore.PortalLink) error {
+	var ids []interface{}
+
+	if len(portal.Endpoints) > 0 {
+		for _, endpointID := range portal.Endpoints {
+			ids = append(ids, &PortalLinkEndpoint{PortalLinkID: portal.UID, EndpointID: endpointID})
+		}
+	} else if !util.IsStringEmpty(portal.OwnerID) {
+		rows, err := p.db.QueryxContext(ctx, fetchEndpointsByOwnerId, portal.ProjectID, portal.OwnerID)
+		if err != nil {
+			return err
+		}
+
+		for rows.Next() {
+			var endpoint datastore.Endpoint
+			err := rows.StructScan(&endpoint)
+			if err != nil {
+				return err
+			}
+
+			ids = append(ids, &PortalLinkEndpoint{PortalLinkID: portal.UID, EndpointID: endpoint.UID})
+		}
+
+		if len(ids) == 0 {
+			return errors.New("owner_id is not linked to any endpoint")
+		}
+	} else {
+		return errors.New("owner_id or endpoints must be present")
+	}
+
+	_, err := tx.ExecContext(ctx, deletePortalLinkEndpoints, portal.UID)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.NamedExecContext(ctx, createPortalLinkEndpoints, ids)
+	if err != nil {
+		return err
 	}
 
 	return nil

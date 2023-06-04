@@ -216,7 +216,7 @@ func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.Portal
 		Token:              pl.Token,
 		OwnerID:            pl.OwnerID,
 		Endpoints:          pl.Endpoints,
-		EndpointCount:      len(pl.Endpoints),
+		EndpointCount:      len(pl.EndpointsMetadata),
 		EndpointManagement: pl.EndpointManagement,
 		EndpointsMetadata:  pl.EndpointsMetadata,
 		CreatedAt:          pl.CreatedAt,
