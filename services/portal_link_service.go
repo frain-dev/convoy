@@ -40,7 +40,7 @@ func (p *PortalLinkService) CreatePortalLink(ctx context.Context, portal *models
 	}
 
 	if err := p.ownerIdAndEndpointsArePresent(portal); err != nil {
-		return nil, &ServiceError{ErrMsg: err.Error(), Err: err}
+		return nil, util.NewServiceError(http.StatusBadRequest, ErrInvalidEndpoints)
 	}
 
 	if err := p.findEndpoints(ctx, portal.Endpoints, project); err != nil {
@@ -134,6 +134,10 @@ func (p *PortalLinkService) findEndpoints(ctx context.Context, endpoints []strin
 func (p *PortalLinkService) ownerIdAndEndpointsArePresent(portal *models.PortalLink) error {
 	if !util.IsStringEmpty(portal.OwnerID) && len(portal.Endpoints) > 0 {
 		return errors.New("owner id and endpoints cannot be both present")
+	}
+
+	if util.IsStringEmpty(portal.OwnerID) && len(portal.Endpoints) == 0 {
+		return errors.New("owner id and endpoints cannot be both absent")
 	}
 
 	return nil

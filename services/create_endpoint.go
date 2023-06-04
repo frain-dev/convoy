@@ -109,7 +109,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	endpoint.Authentication = auth
 	err = a.EndpointRepo.CreateEndpoint(ctx, endpoint, a.ProjectID)
 	if err != nil {
-		log.WithError(err).Error("failed to create endpoint")
+		log.FromContext(ctx).WithError(err).Error("failed to create endpoint")
 		return nil, &ServiceError{ErrMsg: "an error occurred while adding endpoint", Err: err}
 	}
 
@@ -120,7 +120,8 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 				return endpoint, nil
 			}
 
-			return nil, &ServiceError{ErrMsg: "an error occurred retrieving portal link", Err: err}
+			log.FromContext(ctx).WithError(err).Error("Failed to retrieve portal link for endpoint")
+			return endpoint, nil
 		}
 
 		portalLinkService := NewPortalLinkService(a.PortalLinkRepo, a.EndpointRepo, a.Cache, a.ProjectRepo)
@@ -132,7 +133,8 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		}
 		_, err = portalLinkService.UpdatePortalLink(ctx, project, &update, portalLink)
 		if err != nil {
-			return nil, &ServiceError{ErrMsg: "failed to update endpoint portal link", Err: err}
+			log.FromContext(ctx).WithError(err).Error("Failed to update portal link endpoints")
+			return endpoint, nil
 		}
 	}
 

@@ -73,7 +73,7 @@ func TestPortalLinkService_CreatePortalLinK(t *testing.T) {
 		},
 
 		{
-			name: "should_error_for_emtpy_endpoints",
+			name: "should_error_for_emtpy_endpoints_and_ownerID",
 			args: args{
 				ctx: ctx,
 				newPortalLink: &models.PortalLink{
