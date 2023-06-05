@@ -3,7 +3,7 @@
 		<div class="flex justify-between items-center mb-12px">
 			<h2 class="font-medium text-14 text-new.gray-400">Endpoints</h2>
 
-			<button convoy-button fill="soft" class="py-4px px-10px rounded-8px text-12" (click)="showCreateEndpoint = true" *ngIf="portalDetails?.endpoint_management && portalDetails?.owner_id">
+			<button convoy-button fill="soft" class="py-4px px-10px rounded-8px text-12" (click)="showCreateEndpoint = true" *ngIf="portalDetails?.can_manage_endpoint && portalDetails?.owner_id">
 				<img src="/assets/img/add-icon.svg" alt="add icon" class="mr-8px w-12px" />
 				Add Endpoint
 			</button>
@@ -57,7 +57,7 @@
 						</button>
 
 						<ul dropdownOptions class="p-10px">
-							<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px" *ngIf="portalDetails?.endpoint_management">
+							<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px" *ngIf="portalDetails?.can_manage_endpoint">
 								<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start px-8px py-4px" color="grey" (click)="showEndpointSecret = true; activeSubscription = subscription">
 									<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-8px">
 										<path
@@ -95,7 +95,7 @@
 									Send Test Event
 								</button>
 							</li>
-							<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px" *ngIf="portalDetails?.endpoint_management">
+							<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px" *ngIf="portalDetails?.can_manage_endpoint">
 								<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start px-8px py-4px" color="grey" (click)="toggleEndpoint(i, subscription.endpoint_metadata)">
 									<svg width="16" height="17" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-8px" *ngIf="subscription.endpoint_metadata?.status === 'active'; else playIcon">
 										<path d="M7.1 13.24V3.76C7.1 2.86 6.72 2.5 5.76 2.5H3.34C2.38 2.5 2 2.86 2 3.76V13.24C2 14.14 2.38 14.5 3.34 14.5H5.76C6.72 14.5 7.1 14.14 7.1 13.24Z" stroke="#292D32" stroke-linecap="round" stroke-linejoin="round" />
@@ -121,7 +121,7 @@
 									<div>{{ subscription.endpoint_metadata?.status === 'active' ? 'Paus' : 'Unpaus' }}{{ isTogglingEndpoint ? 'ing endpoint...' : 'e Endpoint' }}</div>
 								</button>
 							</li>
-							<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px" *ngIf="portalDetails?.endpoint_management">
+							<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px" *ngIf="portalDetails?.can_manage_endpoint">
 								<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start px-8px py-4px" color="grey" (click)="activeSubscription = subscription; showCreateEndpoint = true">
 									<svg width="16" height="16" class="mr-8px">
 										<use xlink:href="#edit-icon"></use>

@@ -64,7 +64,7 @@
 						<label class="text-14 font-semibold">Allow Endpoint Management</label>
 						<p class="text-12 font-normal text-grey-40 mt-10px">Endpoint management enables portal link user to update and create (if set up with owner id) endpoints.</p>
 					</div>
-					<convoy-toggle [class]="portalLink ? 'disabled' : ''" formControlName="endpoint_management"></convoy-toggle>
+					<convoy-toggle [class]="portalLink ? 'disabled' : ''" formControlName="can_manage_endpoint"></convoy-toggle>
 				</div>
 
 				<hr class="my-24px border border-new.primary-25" *ngIf="portalLink" />

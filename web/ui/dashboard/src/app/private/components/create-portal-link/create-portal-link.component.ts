@@ -28,7 +28,7 @@ export class CreatePortalLinkComponent implements OnInit {
 		name: [null, Validators.required],
 		endpoints: [null, Validators.required],
 		owner_id: [null, Validators.required],
-		endpoint_management: [false, Validators.required],
+		can_manage_endpoint: [false, Validators.required],
 		type: [null, Validators.required]
 	});
 	endpoints!: ENDPOINT[];
@@ -85,12 +85,7 @@ export class CreatePortalLinkComponent implements OnInit {
 		try {
 			const response = await this.createPortalLinkService.getPortalLink(this.linkUid);
 			const linkDetails = response.data;
-			this.portalLinkForm.patchValue({
-				name: linkDetails.name,
-				endpoints: linkDetails.endpoints,
-				type: linkDetails.endpoints ? 'endpoint' : 'owner_id',
-				endpoint_management: linkDetails.endpoint_management
-			});
+			this.portalLinkForm.patchValue({ ...linkDetails, type: linkDetails.endpoints ? 'endpoint' : 'owner_id' });
 			this.fetchingLinkDetails = false;
 		} catch {
 			this.fetchingLinkDetails = false;
