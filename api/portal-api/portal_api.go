@@ -36,16 +36,11 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 	router.Route("/endpoints", func(endpointRouter chi.Router) {
 		endpointRouter.Get("/", a.GetPortalLinkEndpoints)
 		endpointRouter.Post("/", a.CreateEndpoint)
-
-		endpointRouter.Route("/{endpointID}", func(endpointSubRouter chi.Router) {
-			endpointSubRouter.Use(canManageEndpoint(a))
-
-			endpointSubRouter.Get("/", a.GetEndpoint)
-			endpointSubRouter.Put("/", a.UpdateEndpoint)
-			endpointSubRouter.Delete("/", a.DeleteEndpoint)
-			endpointSubRouter.Put("/pause", a.PauseEndpoint)
-			endpointSubRouter.Put("/expire_secret", a.ExpireSecret)
-		})
+		endpointRouter.Get("/{endpointID}", a.GetEndpoint)
+		endpointRouter.With(canManageEndpoint(a)).Put("/{endpointID}", a.UpdateEndpoint)
+		endpointRouter.With(canManageEndpoint(a)).Delete("/{endpointID}", a.DeleteEndpoint)
+		endpointRouter.With(canManageEndpoint(a)).Put("/{endpointID}/pause", a.PauseEndpoint)
+		endpointRouter.With(canManageEndpoint(a)).Put("/{endpointID}/expire_secret", a.ExpireSecret)
 	})
 
 	router.Route("/events", func(eventRouter chi.Router) {
