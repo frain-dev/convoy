@@ -38,17 +38,17 @@ import (
 
 // TEST HELPERS.
 func getConfig() config.Configuration {
-	_ = os.Setenv("CONVOY_DB_HOST", os.Getenv("TEST_REDIS_HOST"))
-	_ = os.Setenv("CONVOY_REDIS_SCHEME", os.Getenv("TEST_REDIS_SCHEME"))
-	_ = os.Setenv("CONVOY_REDIS_PORT", os.Getenv("TEST_REDIS_PORT"))
+	_ = os.Setenv("CONVOY_DB_HOST", "0.0.0.0")
+	_ = os.Setenv("CONVOY_REDIS_SCHEME", "redis")
+	_ = os.Setenv("CONVOY_REDIS_PORT", "6379")
 
-	_ = os.Setenv("CONVOY_DB_HOST", os.Getenv("TEST_DB_HOST"))
-	_ = os.Setenv("CONVOY_DB_SCHEME", os.Getenv("TEST_DB_SCHEME"))
-	_ = os.Setenv("CONVOY_DB_USERNAME", os.Getenv("TEST_DB_USERNAME"))
-	_ = os.Setenv("CONVOY_DB_PASSWORD", os.Getenv("TEST_DB_PASSWORD"))
-	_ = os.Setenv("CONVOY_DB_DATABASE", os.Getenv("TEST_DB_DATABASE"))
-	_ = os.Setenv("CONVOY_DB_OPTIONS", os.Getenv("TEST_DB_OPTIONS"))
-	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
+	_ = os.Setenv("CONVOY_DB_HOST", "localhost")
+	_ = os.Setenv("CONVOY_DB_SCHEME", "postgres")
+	_ = os.Setenv("CONVOY_DB_USERNAME", "admin")
+	_ = os.Setenv("CONVOY_DB_PASSWORD", "password")
+	_ = os.Setenv("CONVOY_DB_DATABASE", "convoy")
+	_ = os.Setenv("CONVOY_DB_OPTIONS", "&sslmode=disable")
+	_ = os.Setenv("CONVOY_DB_PORT", "5432")
 
 	err := config.LoadConfig("")
 	if err != nil {

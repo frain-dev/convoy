@@ -16,7 +16,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 )
 
-func provideCreateEventService(ctrl *gomock.Controller, event *models.Event, project *datastore.Project) *CreateEventService {
+func provideCreateEventService(ctrl *gomock.Controller, event *models.CreateEvent, project *datastore.Project) *CreateEventService {
 	return &CreateEventService{
 		EndpointRepo: mocks.NewMockEndpointRepository(ctrl),
 		Queue:        mocks.NewMockQueuer(ctrl),
@@ -29,7 +29,7 @@ func TestCreateEventService_Run(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
 		ctx        context.Context
-		newMessage *models.Event
+		newMessage *models.CreateEvent
 		g          *datastore.Project
 	}
 	tests := []struct {
@@ -57,7 +57,7 @@ func TestCreateEventService_Run(t *testing.T) {
 			},
 			args: args{
 				ctx: ctx,
-				newMessage: &models.Event{
+				newMessage: &models.CreateEvent{
 					EndpointID: "123",
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
@@ -104,7 +104,7 @@ func TestCreateEventService_Run(t *testing.T) {
 			},
 			args: args{
 				ctx: ctx,
-				newMessage: &models.Event{
+				newMessage: &models.CreateEvent{
 					EndpointID: "123",
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
@@ -148,7 +148,7 @@ func TestCreateEventService_Run(t *testing.T) {
 			},
 			args: args{
 				ctx: ctx,
-				newMessage: &models.Event{
+				newMessage: &models.CreateEvent{
 					EndpointID: "123",
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
@@ -194,7 +194,7 @@ func TestCreateEventService_Run(t *testing.T) {
 			},
 			args: args{
 				ctx: ctx,
-				newMessage: &models.Event{
+				newMessage: &models.CreateEvent{
 					EndpointID:    "123",
 					EventType:     "payment.created",
 					Data:          bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
@@ -238,7 +238,7 @@ func TestCreateEventService_Run(t *testing.T) {
 			},
 			args: args{
 				ctx: ctx,
-				newMessage: &models.Event{
+				newMessage: &models.CreateEvent{
 					EndpointID: "123",
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
@@ -256,7 +256,7 @@ func TestCreateEventService_Run(t *testing.T) {
 			name: "should_error_for_empty_endpoints",
 			args: args{
 				ctx: ctx,
-				newMessage: &models.Event{
+				newMessage: &models.CreateEvent{
 					EndpointID: "",
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
@@ -275,7 +275,7 @@ func TestCreateEventService_Run(t *testing.T) {
 			},
 			args: args{
 				ctx: ctx,
-				newMessage: &models.Event{
+				newMessage: &models.CreateEvent{
 					EndpointID: "123",
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
@@ -291,7 +291,7 @@ func TestCreateEventService_Run(t *testing.T) {
 			dbFn: func(es *CreateEventService) {},
 			args: args{
 				ctx: ctx,
-				newMessage: &models.Event{
+				newMessage: &models.CreateEvent{
 					EndpointID: "123",
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),

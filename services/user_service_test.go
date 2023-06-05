@@ -29,9 +29,8 @@ func provideUserService(ctrl *gomock.Controller, t *testing.T) *UserService {
 	require.Nil(t, err)
 
 	configService := NewConfigService(configRepo)
-	orgService := NewOrganisationService(orgRepo, orgMemberRepo)
 
-	userService := NewUserService(userRepo, cache, queue, configService, orgService)
+	userService := NewUserService(userRepo, cache, queue, configService, orgRepo, orgMemberRepo)
 	return userService
 }
 
@@ -204,8 +203,8 @@ func TestService_RegisterUser(t *testing.T) {
 			dbFn: func(u *UserService) {
 				us, _ := u.userRepo.(*mocks.MockUserRepository)
 				configRepo, _ := u.configService.configRepo.(*mocks.MockConfigurationRepository)
-				orgRepo, _ := u.orgService.orgRepo.(*mocks.MockOrganisationRepository)
-				orgMemberRepo, _ := u.orgService.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				orgRepo, _ := u.orgRepo.(*mocks.MockOrganisationRepository)
+				orgMemberRepo, _ := u.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				queue, _ := u.queue.(*mocks.MockQueuer)
 				configRepo.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{
 					UID:             "12345",

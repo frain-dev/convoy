@@ -26,10 +26,6 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) error {
 		return &ServiceError{ErrMsg: "an error occurred while creating event - invalid project"}
 	}
 
-	if err := util.Validate(e.DynamicEvent); err != nil {
-		return &ServiceError{ErrMsg: err.Error()}
-	}
-
 	e.DynamicEvent.Event.ProjectID = e.Project.UID
 
 	taskName := convoy.CreateDynamicEventProcessor

@@ -36,18 +36,14 @@ func (c *ConfigService) LoadConfiguration(ctx context.Context) (*datastore.Confi
 }
 
 func (c *ConfigService) CreateConfiguration(ctx context.Context, newConfig *models.Configuration) (*datastore.Configuration, error) {
-	if err := util.Validate(newConfig); err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
-	storagePolicy := newConfig.StoragePolicy
+	storagePolicy := newConfig.StoragePolicy.Transform()
 	if storagePolicy == nil {
-		newConfig.StoragePolicy = &datastore.DefaultStoragePolicy
+		storagePolicy = &datastore.DefaultStoragePolicy
 	}
 
 	config := &datastore.Configuration{
 		UID:                ulid.Make().String(),
-		StoragePolicy:      newConfig.StoragePolicy,
+		StoragePolicy:      storagePolicy,
 		IsAnalyticsEnabled: true,
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
@@ -66,10 +62,6 @@ func (c *ConfigService) CreateConfiguration(ctx context.Context, newConfig *mode
 }
 
 func (c *ConfigService) UpdateConfiguration(ctx context.Context, config *models.Configuration) (*datastore.Configuration, error) {
-	if err := util.Validate(config); err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
 	cfg, err := c.configRepo.LoadConfiguration(ctx)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to load configuration")
@@ -85,7 +77,7 @@ func (c *ConfigService) UpdateConfiguration(ctx context.Context, config *models.
 	}
 
 	if config.StoragePolicy != nil {
-		cfg.StoragePolicy = config.StoragePolicy
+		cfg.StoragePolicy = config.StoragePolicy.Transform()
 	}
 
 	err = c.configRepo.UpdateConfiguration(ctx, cfg)

@@ -28,7 +28,7 @@ type CreateEventService struct {
 	EndpointRepo datastore.EndpointRepository
 	Queue        queue.Queuer
 
-	NewMessage *models.Event
+	NewMessage *models.CreateEvent
 	G          *datastore.Project
 }
 
@@ -43,10 +43,6 @@ type newEvent struct {
 func (c *CreateEventService) Run(ctx context.Context) (*datastore.Event, error) {
 	if c.G == nil {
 		return nil, &ServiceError{ErrMsg: "an error occurred while creating event - invalid project"}
-	}
-
-	if err := util.Validate(c.NewMessage); err != nil {
-		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
 	if util.IsStringEmpty(c.NewMessage.AppID) && util.IsStringEmpty(c.NewMessage.EndpointID) {
@@ -144,7 +140,7 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 	return event, nil
 }
 
-func (c *CreateEventService) FindEndpoints(ctx context.Context, newMessage *models.Event, project *datastore.Project) ([]datastore.Endpoint, error) {
+func (c *CreateEventService) FindEndpoints(ctx context.Context, newMessage *models.CreateEvent, project *datastore.Project) ([]datastore.Endpoint, error) {
 	var endpoints []datastore.Endpoint
 
 	if !util.IsStringEmpty(newMessage.EndpointID) {
