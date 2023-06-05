@@ -12,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/oklog/ulid/v2"
 )
@@ -131,7 +130,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 			OwnerID:           portalLink.OwnerID,
 			CanManageEndpoint: portalLink.CanManageEndpoint,
 		}
-		upl := services.UpdatePortalLinkService{
+		upl := UpdatePortalLinkService{
 			PortalLinkRepo: a.PortalLinkRepo,
 			EndpointRepo:   a.EndpointRepo,
 			Project:        project,
