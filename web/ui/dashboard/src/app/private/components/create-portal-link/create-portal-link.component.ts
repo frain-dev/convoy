@@ -13,18 +13,23 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { CreatePortalLinkService } from './create-portal-link.service';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
+import { RadioComponent } from 'src/app/components/radio/radio.component';
+import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 
 @Component({
 	selector: 'convoy-create-portal-link',
 	standalone: true,
-	imports: [CommonModule, ModalComponent, ModalHeaderComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, SelectComponent, CardComponent, ButtonComponent, ReactiveFormsModule, CopyButtonComponent],
+	imports: [CommonModule, ModalComponent, ModalHeaderComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, SelectComponent, CardComponent, ButtonComponent, ReactiveFormsModule, CopyButtonComponent, RadioComponent, ToggleComponent],
 	templateUrl: './create-portal-link.component.html',
 	styleUrls: ['./create-portal-link.component.scss']
 })
 export class CreatePortalLinkComponent implements OnInit {
 	portalLinkForm: FormGroup = this.formBuilder.group({
 		name: [null, Validators.required],
-		endpoints: [null, Validators.required]
+		endpoints: [null, Validators.required],
+		owner_id: [null, Validators.required],
+		can_manage_endpoint: [false, Validators.required],
+		type: [null, Validators.required]
 	});
 	endpoints!: ENDPOINT[];
 	isCreatingPortalLink = false;
@@ -43,11 +48,19 @@ export class CreatePortalLinkComponent implements OnInit {
 
 	async savePortalLink() {
 		this.isCreatingPortalLink = true;
+
 		try {
-			const response = this.linkUid ? await this.createPortalLinkService.updatePortalLink({ linkId: this.linkUid, data: this.portalLinkForm.value }) : await this.createPortalLinkService.createPortalLink({ data: this.portalLinkForm.value });
+			this.portalLinkForm.patchValue(this.portalLinkForm.value.type == 'endpoint' ? { owner_id: null } : { endpoints: null });
+			const portalDetails = structuredClone(this.portalLinkForm.value);
+			delete portalDetails.type;
+
+			const response = this.linkUid ? await this.createPortalLinkService.updatePortalLink({ linkId: this.linkUid, data: portalDetails }) : await this.createPortalLinkService.createPortalLink({ data: portalDetails });
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			if (!this.linkUid) this.portalLink = response.data.url;
+			if (!this.linkUid) {
+				this.portalLink = response.data.url;
+				this.portalLinkForm.disable();
+			}
 			if (this.linkUid) this.goBack();
 			this.isCreatingPortalLink = false;
 		} catch {
@@ -72,10 +85,7 @@ export class CreatePortalLinkComponent implements OnInit {
 		try {
 			const response = await this.createPortalLinkService.getPortalLink(this.linkUid);
 			const linkDetails = response.data;
-			this.portalLinkForm.patchValue({
-				name: linkDetails.name,
-				endpoints: linkDetails.endpoints
-			});
+			this.portalLinkForm.patchValue({ ...linkDetails, type: linkDetails.endpoints ? 'endpoint' : 'owner_id' });
 			this.fetchingLinkDetails = false;
 		} catch {
 			this.fetchingLinkDetails = false;

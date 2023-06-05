@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
 })
 export class ButtonComponent implements OnInit {
 	@Input('buttonText') buttonText!: string;
-	@Input('fill') fill: 'default' | 'outline' | 'clear' | 'text' | 'link' = 'default';
+	@Input('fill') fill: 'default' | 'outline' | 'clear' | 'text' | 'link' | 'soft' = 'default';
 	@Input('size') size: 'xs' | 'sm' | 'md' | 'lg' = 'md';
 	@Input('color') color: 'primary' | 'success' | 'warning' | 'danger' | 'grey' | 'transparent' = 'primary';
 	@Input('texture') texture: 'deep' | 'light' = 'deep';
@@ -27,6 +27,7 @@ export class ButtonComponent implements OnInit {
 		const colorLevel = this.texture == 'deep' ? '100' : this.color == 'grey' ? '20' : '500';
 		const buttonTypes = {
 			default: `bg-${this.color}-${colorLevel} text-${this.texture == 'deep' ? 'white' : this.color}-100 border-none rounded-8px`,
+			soft: `bg-new.${this.color}-25 text-new.${this.color}-400 border-none border border-new.${this.color}-25`,
 			outline: `border rounded-[10px] border-${this.color}-${colorLevel} text-${this.color}-100`,
 			clear: `border-none text-${this.color}-100`,
 			text: `border-0 text-${this.color}-${colorLevel} ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,

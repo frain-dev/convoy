@@ -5,21 +5,40 @@
 				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
 			</button>
 
-			<h2 class="font-semibold capitalize ml-2">{{ linkUid ? 'Update Portal Link' : 'Create Portal Link' }}</h2>
+			<h2 class="font-semibold capitalize ml-2">Portal Link</h2>
 		</div>
 	</div>
-	<div class="max-w-[834px] m-auto">
-		<form [formGroup]="portalLinkForm" (ngSubmit)="savePortalLink()">
-			<div convoy-card class="p-24px mt-40px">
-				<h2 class="font-semibold mb-8px">{{ linkUid ? 'Update' : 'Create' }} Portal Link</h2>
-				<p class="text-grey-60 text-14 mb-20px max-w-[577px]">Portal link is a mini Convoy dashboard for your for your receiving endpoint owners to easily review and debug their webhook events from you.</p>
+	<div class="max-w-[770px] m-auto">
+		<h2 class="font-semibold mb-8px mt-30px">{{ linkUid ? 'Update' : 'Create' }} Portal Link</h2>
+		<p class="text-new.gray-600 font-normal text-14 max-w-[577px]">Portal link is a mini Convoy dashboard for your for your receiving endpoint owners to easily review and debug their webhook events from you.</p>
 
+		<form [formGroup]="portalLinkForm" (ngSubmit)="savePortalLink()">
+			<div convoy-card class="p-24px mt-24px">
 				<convoy-input-field>
 					<label for="link-name" convoy-label required="true">Link Name</label>
 					<input id="link-name" convoy-input autocomplete="name" formControlName="name" placeholder="Link name" [readonly]="portalLink" />
 				</convoy-input-field>
 
-				<div [ngClass]="{ 'pointer-events-none': portalLink }">
+				<div class="grid grid-cols-2 gap-24px mb-24px">
+					<convoy-radio
+						formControlName="type"
+						description="Create a portal link for handpicked endpoints. You’ll be restricted to viewing these endpoints and their events on the portal link."
+						label="Endpoints"
+						_name="type"
+						value="endpoint"
+						_id="incoming"
+					></convoy-radio>
+					<convoy-radio
+						formControlName="type"
+						description="Create a portal link for every endpoint with a provided owner_id. With this, every endpoint with the provided owner ID will reflect on portal link automatically."
+						label="Owner ID"
+						_name="type"
+						value="owner_id"
+						_id="owner_id"
+					></convoy-radio>
+				</div>
+
+				<div [ngClass]="{ 'pointer-events-none': portalLink }" class="mb-24px" *ngIf="portalLinkForm.value.type === 'endpoint'">
 					<convoy-select
 						label="Endpoints"
 						name="endpoints"
@@ -35,21 +54,34 @@
 					></convoy-select>
 				</div>
 
+				<convoy-input-field *ngIf="portalLinkForm.value.type === 'owner_id'" class="mb-6px">
+					<label for="owner_id_value" convoy-label required="true">Owner ID</label>
+					<input id="owner_id_value" convoy-input autocomplete="name" formControlName="owner_id" placeholder="Enter owner id" />
+				</convoy-input-field>
+
+				<div class="flex justify-between items-start">
+					<div class="max-w-[500px]">
+						<label class="text-14 font-semibold">Allow Endpoint Management</label>
+						<p class="text-12 font-normal text-grey-40 mt-10px">Endpoint management enables portal link user to update and create (if set up with owner id) endpoints.</p>
+					</div>
+					<convoy-toggle [class]="portalLink ? 'disabled' : ''" formControlName="can_manage_endpoint"></convoy-toggle>
+				</div>
+
+				<hr class="my-24px border border-new.primary-25" *ngIf="portalLink" />
+
 				<ng-container *ngIf="portalLink">
-					<p class="text-grey-40 text-12 mt-20px">URL</p>
+					<p class="text-grey-40 text-12 mt-20px">Portal Link</p>
 					<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px mb-12px last-of-type:mb-8px">
 						<span class="text-14 font-normal whitespace-nowrap w-450px overflow-hidden text-ellipsis">{{ portalLink || '' }}</span>
 						<convoy-copy-button [text]="portalLink || ''" notificationText="URL has been copied to clipboard!"></convoy-copy-button>
 					</div>
 				</ng-container>
 			</div>
+
 			<div class="flex justify-end items-center my-60px">
 				<button convoy-button [disabled]="portalLinkForm.disabled" class="mr-16px text-14 transition-all duration-300 hover:text-danger-100 hover:border-danger-100" fill="outline" type="button" *ngIf="!portalLink" (click)="goBack()">Cancel</button>
 				<button convoy-button [disabled]="isCreatingPortalLink || portalLink || portalLinkForm.disabled">
-					Save Portal Link
-					<svg width="24" height="24" class="ml-8px" class="fill-white-100">
-						<use xlink:href="#arrow-right-icon"></use>
-					</svg>
+					{{ linkUid ? 'Update Portal Link' : 'Create Portal Link' }}
 				</button>
 				<button convoy-button class="ml-16px text-14" type="button" fill="outline" *ngIf="portalLink" (click)="goBack()">Done</button>
 			</div>

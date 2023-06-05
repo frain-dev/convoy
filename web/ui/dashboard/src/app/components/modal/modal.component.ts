@@ -10,7 +10,7 @@ import { OverlayDirective } from '../overlay/overlay.directive';
 	standalone: true,
 	template: `
 		<div class="px-20px pt-20px pb-16px border-y border-y-grey-10 bg-white-100 rounded-tr-16px rounded-tl-16px w-full ">
-			<div class="flex justify-between items-center max-w-[834px] m-auto">
+			<div class="flex justify-between items-center max-w-[770px] m-auto">
 				<ng-content></ng-content>
 
 				<a *ngIf="fullscreen === 'true'" convoy-button fill="text" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">

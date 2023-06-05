@@ -1462,6 +1462,9 @@
 			},
 			"models.PortalLink": {
 				"properties": {
+					"can_manage_endpoint": {
+						"type": "boolean"
+					},
 					"endpoints": {
 						"items": {
 							"type": "string"
@@ -1470,12 +1473,18 @@
 					},
 					"name": {
 						"type": "string"
+					},
+					"owner_id": {
+						"type": "string"
 					}
 				},
 				"type": "object"
 			},
 			"models.PortalLinkResponse": {
 				"properties": {
+					"can_manage_endpoint": {
+						"type": "boolean"
+					},
 					"created_at": {
 						"type": "string"
 					},
@@ -1498,6 +1507,9 @@
 						"type": "array"
 					},
 					"name": {
+						"type": "string"
+					},
+					"owner_id": {
 						"type": "string"
 					},
 					"project_id": {

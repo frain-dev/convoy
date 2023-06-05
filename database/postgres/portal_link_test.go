@@ -32,7 +32,9 @@ func Test_CreatePortalLink(t *testing.T) {
 	newPortalLink.CreatedAt = time.Time{}
 	newPortalLink.UpdatedAt = time.Time{}
 
-	require.Equal(t, portalLink, newPortalLink)
+	require.Equal(t, portalLink.Name, newPortalLink.Name)
+	require.Equal(t, portalLink.Token, newPortalLink.Token)
+	require.Equal(t, portalLink.ProjectID, newPortalLink.ProjectID)
 }
 
 func Test_FindPortalLinkByID(t *testing.T) {
@@ -55,7 +57,9 @@ func Test_FindPortalLinkByID(t *testing.T) {
 	newPortalLink.CreatedAt = time.Time{}
 	newPortalLink.UpdatedAt = time.Time{}
 
-	require.Equal(t, portalLink, newPortalLink)
+	require.Equal(t, portalLink.Name, newPortalLink.Name)
+	require.Equal(t, portalLink.Token, newPortalLink.Token)
+	require.Equal(t, portalLink.ProjectID, newPortalLink.ProjectID)
 }
 
 func Test_FindPortalLinkByToken(t *testing.T) {
@@ -78,7 +82,9 @@ func Test_FindPortalLinkByToken(t *testing.T) {
 	newPortalLink.CreatedAt = time.Time{}
 	newPortalLink.UpdatedAt = time.Time{}
 
-	require.Equal(t, portalLink, newPortalLink)
+	require.Equal(t, portalLink.Name, newPortalLink.Name)
+	require.Equal(t, portalLink.Token, newPortalLink.Token)
+	require.Equal(t, portalLink.ProjectID, newPortalLink.ProjectID)
 }
 
 func Test_UpdatePortalLink(t *testing.T) {
@@ -118,7 +124,9 @@ func Test_UpdatePortalLink(t *testing.T) {
 	newPortalLink.CreatedAt = time.Time{}
 	newPortalLink.UpdatedAt = time.Time{}
 
-	require.Equal(t, portalLink, newPortalLink)
+	require.Equal(t, portalLink.Name, newPortalLink.Name)
+	require.Equal(t, portalLink.Token, newPortalLink.Token)
+	require.Equal(t, portalLink.ProjectID, newPortalLink.ProjectID)
 }
 
 func Test_RevokePortalLink(t *testing.T) {

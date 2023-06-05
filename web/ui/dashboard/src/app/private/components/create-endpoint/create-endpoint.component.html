@@ -3,107 +3,133 @@
 		<form [formGroup]="addNewEndpointForm">
 			<convoy-input-field>
 				<label for="name" convoy-label required="true">Endpoint Name</label>
-				<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="e.g paystack-prod" />
+				<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Enter endpoit name here" />
 				<convoy-input-error *ngIf="addNewEndpointForm.get('name')?.touched && addNewEndpointForm.get('name')?.invalid">Please provide a name</convoy-input-error>
 			</convoy-input-field>
 
-			<convoy-input-field>
-				<label for="url" convoy-label required="true">Enter URL</label>
-				<input type="url" id="url" convoy-input autocomplete="url" formControlName="url" placeholder="Enter URL" />
-				<convoy-input-error *ngIf="addNewEndpointForm.get('url')?.touched && addNewEndpointForm.get('url')?.invalid">Endpoint URL is required</convoy-input-error>
-			</convoy-input-field>
+			<div class="grid gap-24px" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
+				<convoy-input-field>
+					<label for="url" convoy-label required="true">Enter URL</label>
+					<input type="url" id="url" convoy-input autocomplete="url" formControlName="url" placeholder="Enter endpoint URL here" />
+					<convoy-input-error *ngIf="addNewEndpointForm.get('url')?.touched && addNewEndpointForm.get('url')?.invalid">Endpoint URL is required</convoy-input-error>
+				</convoy-input-field>
+
+				<convoy-input-field *ngIf="type !== 'portal'">
+					<label for="owner_id" convoy-label>
+						Owner ID
+						<convoy-tooltip
+							class="ml-4px"
+							size="sm"
+							type="white"
+							tooltipContent="A unique id for identifying a group of endpoints, like a user id. Useful for fanning out an event to multiple endpoints and creating portal link for multiple endpoints."
+							position="right"
+						></convoy-tooltip>
+					</label>
+					<input type="text" id="owner_id" convoy-input autocomplete="owner_id" formControlName="owner_id" placeholder="Enter owner id here" />
+				</convoy-input-field>
+			</div>
 
 			<hr class="border-grey-10 mb-24px" />
-			<h2 class="text-16 font-semibold mb-16px">Set Configurations</h2>
 
 			<ng-container *ngIf="showConfig('alert-config')">
-				<div class="flex justify-between items-center mb-16px">
-					<p class="text-14 font-medium text-grey-60 flex items-center">Alert Configuration</p>
-					<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('alert-config')">
-						<svg width="16" height="16" class="fill-grey-60">
-							<use xlink:href="#delete-icon"></use>
-						</svg>
-					</button>
-				</div>
-				<div class="grid grid-cols-2 gap-24px">
-					<convoy-input-field>
-						<label for="support-email" convoy-label tooltip="We use this to send an email notifcation for when a failure happens">Support Email</label>
-						<input id="support-email" convoy-input autocomplete="suport-email" formControlName="support_email" placeholder="Enter support email" />
-					</convoy-input-field>
+				<div class="mb-6px">
+					<div class="flex justify-between items-center mb-16px">
+						<p class="text-12 text-new.gray-500 font-medium flex items-center">Alert Configuration</p>
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('alert-config')">
+							<svg width="14" height="14" class="fill-transparent">
+								<use xlink:href="#delete-icon2"></use>
+							</svg>
+						</button>
+					</div>
+					<div class="grid grid-cols-2 gap-24px">
+						<convoy-input-field>
+							<label for="support-email" convoy-label tooltip="We use this to send an email notifcation for when a failure happens">Support Email</label>
+							<input id="support-email" convoy-input autocomplete="suport-email" formControlName="support_email" placeholder="Enter support email" />
+						</convoy-input-field>
 
-					<convoy-input-field>
-						<label for="slack-url" convoy-label tooltip="We use this to send notifications to your slack channel when a failure happens">Slack webhook url</label>
-						<input id="slack-url" convoy-input autocomplete="slack-url" formControlName="slack_webhook_url" placeholder="Enter slack webhook URL" />
-					</convoy-input-field>
+						<convoy-input-field>
+							<label for="slack-url" convoy-label tooltip="We use this to send notifications to your slack channel when a failure happens">Slack webhook url</label>
+							<input id="slack-url" convoy-input autocomplete="slack-url" formControlName="slack_webhook_url" placeholder="Enter slack webhook URL" />
+						</convoy-input-field>
+					</div>
 				</div>
 			</ng-container>
 
 			<ng-container *ngIf="showConfig('auth')">
-				<div class="flex justify-between items-center mb-16px">
-					<p class="flex items-center text-14 font-medium text-grey-60">
-						Endpoint Authentication
-						<convoy-tooltip size="sm" position="right" class="ml-4px">You can set your provided endpoint authentication is any is required</convoy-tooltip>
-					</p>
-					<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('auth')">
-						<svg width="16" height="16" class="fill-grey-60">
-							<use xlink:href="#delete-icon"></use>
-						</svg>
-					</button>
-				</div>
-				<ng-container formGroupName="authentication">
-					<div class="grid grid-cols-2 gap-24px" formGroupName="api_key">
-						<convoy-input-field>
-							<label for="header_name" convoy-label>API Key Name</label>
-							<input id="header_name" convoy-input autocomplete="header_name" formControlName="header_name" placeholder="Name" />
-						</convoy-input-field>
-						<convoy-input-field>
-							<label for="header_value" convoy-label>API Key Value</label>
-							<input id="header_value" convoy-input autocomplete="header_value" formControlName="header_value" placeholder="Value" />
-						</convoy-input-field>
+				<div class="mb-6px">
+					<div class="flex justify-between items-center mb-16px">
+						<p class="flex items-center text-12 font-medium text-new.gray-500">
+							Endpoint Authentication
+							<convoy-tooltip size="sm" position="right" class="ml-4px">You can set your provided endpoint authentication is any is required</convoy-tooltip>
+						</p>
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('auth')">
+							<svg width="14" height="14" class="fill-transparent">
+								<use xlink:href="#delete-icon2"></use>
+							</svg>
+						</button>
 					</div>
-				</ng-container>
+					<ng-container formGroupName="authentication">
+						<div class="grid grid-cols-2 gap-24px" formGroupName="api_key">
+							<convoy-input-field>
+								<label for="header_name" convoy-label>API Key Name</label>
+								<input id="header_name" convoy-input autocomplete="header_name" formControlName="header_name" placeholder="Name" />
+							</convoy-input-field>
+							<convoy-input-field>
+								<label for="header_value" convoy-label>API Key Value</label>
+								<input id="header_value" convoy-input autocomplete="header_value" formControlName="header_value" placeholder="Value" />
+							</convoy-input-field>
+						</div>
+					</ng-container>
+				</div>
 			</ng-container>
 
 			<ng-container *ngIf="showConfig('signature')">
-				<div class="flex justify-between items-center mb-16px">
-					<p class="text-14 font-medium text-grey-60 flex items-center">
-						Signature Details
-						<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your signature format for your project.</convoy-tooltip>
-					</p>
-					<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
-						<svg width="16" height="16" class="fill-grey-60">
-							<use xlink:href="#delete-icon"></use>
-						</svg>
-					</button>
-				</div>
-				<div class="grid grid-cols-2 gap-6 mb-50px">
-					<convoy-radio formControlName="advanced_signatures" label="Simple" _name="signature" [value]="false" _id="simple"></convoy-radio>
-					<convoy-radio formControlName="advanced_signatures" label="Advanced" _name="signature" [value]="true" _id="advanced"></convoy-radio>
+				<div class="mb-6px">
+					<div class="flex justify-between items-center mb-16px">
+						<p class="text-12 font-medium text-new.gray-500 flex items-center">
+							Signature Details
+							<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your signature format for your project.</convoy-tooltip>
+						</p>
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
+							<svg width="14" height="14" class="fill-transparent">
+								<use xlink:href="#delete-icon2"></use>
+							</svg>
+						</button>
+					</div>
+					<div class="grid grid-cols-2 gap-6 mb-50px">
+						<convoy-radio formControlName="advanced_signatures" label="Simple" _name="signature" [value]="false" _id="simple"></convoy-radio>
+						<convoy-radio formControlName="advanced_signatures" label="Advanced" _name="signature" [value]="true" _id="advanced"></convoy-radio>
+					</div>
 				</div>
 			</ng-container>
 
 			<ng-container *ngIf="showConfig('http_timeout')">
-				<div class="flex justify-between items-center mb-16px">
-					<p class="flex items-center text-14 font-medium text-grey-60">
-						Endpoint Timeout
-						<convoy-tooltip size="sm" position="right" class="ml-4px">How many seconds should Convoy wait for a response from this endpoint before timing out?</convoy-tooltip>
-					</p>
-					<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('http_timeout')">
-						<svg width="16" height="16" class="fill-grey-60">
-							<use xlink:href="#delete-icon"></use>
-						</svg>
-					</button>
-				</div>
-				<convoy-input-field>
-					<label for="http_timeout" convoy-label>Timeout Value</label>
-					<div class="relative">
-						<input id="http_timeout" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g 60" />
-						<div class="absolute top-[50%] right-14px text-16 text-grey-100 opacity-40 translate-y-[-50%]">sec</div>
+				<div class="mb-6px">
+					<div class="flex justify-between items-center mb-16px">
+						<p class="flex items-center text-12 font-medium text-new.gray-500">
+							Endpoint Timeout
+							<convoy-tooltip size="sm" position="right" class="ml-4px">How many seconds should Convoy wait for a response from this endpoint before timing out?</convoy-tooltip>
+						</p>
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('http_timeout')">
+							<svg width="14" height="14" class="fill-transparent">
+								<use xlink:href="#delete-icon2"></use>
+							</svg>
+						</button>
 					</div>
-				</convoy-input-field>
+					<convoy-input-field>
+						<label for="http_timeout" convoy-label>Timeout Value</label>
+						<div class="relative">
+							<input id="http_timeout" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g 60" />
+							<div class="absolute top-[50%] right-14px text-16 text-grey-100 opacity-40 translate-y-[-50%]">sec</div>
+						</div>
+						<convoy-input-error *ngIf="addNewEndpointForm.get('http_timeout')?.touched && addNewEndpointForm.get('http_timeout')?.invalid">Timeout value must be a whole number</convoy-input-error>
+					</convoy-input-field>
+				</div>
 			</ng-container>
 
-			<div class="flex items-center">
+			<hr class="border-t border-grey-20 mt-6px mb-24px" *ngIf="shouldShowBorder !== 0 && shouldShowBorder < configurations.length" />
+
+			<div class="flex items-center" *ngIf="shouldShowBorder < configurations.length">
 				<ng-container *ngFor="let config of configurations; let i = index">
 					<ng-container *ngIf="!config.show">
 						<button
@@ -115,11 +141,11 @@
 							color="grey"
 							texture="light"
 							type="button"
-							class="mr-24px font-normal"
+							[class]="'mr-24px font-normal'"
 							(click)="toggleConfigForm(config.uid)"
 						>
 							{{ config.name }}
-							<img src="assets/img/svg/plus-icon.svg" class="ml-24px" alt="plus icon" />
+							<img src="assets/img/svg/plus-icon.svg" class="ml-16px" alt="plus icon" />
 						</button>
 					</ng-container>
 				</ng-container>

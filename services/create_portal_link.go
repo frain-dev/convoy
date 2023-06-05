@@ -30,7 +30,7 @@ func (p *CreatePortalLinkService) Run(ctx context.Context) (*datastore.PortalLin
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
-	if len(p.Portal.Endpoints) == 0 {
+	if err := validateOwnerIdAndEndpoints(p.Portal); err != nil {
 		return nil, &ServiceError{ErrMsg: ErrInvalidEndpoints.Error()}
 	}
 
@@ -39,13 +39,15 @@ func (p *CreatePortalLinkService) Run(ctx context.Context) (*datastore.PortalLin
 	}
 
 	portalLink := &datastore.PortalLink{
-		UID:       ulid.Make().String(),
-		ProjectID: p.Project.UID,
-		Name:      p.Portal.Name,
-		Token:     uniuri.NewLen(24),
-		Endpoints: p.Portal.Endpoints,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		UID:               ulid.Make().String(),
+		ProjectID:         p.Project.UID,
+		Name:              p.Portal.Name,
+		Token:             uniuri.NewLen(24),
+		OwnerID:           p.Portal.OwnerID,
+		Endpoints:         p.Portal.Endpoints,
+		CanManageEndpoint: p.Portal.CanManageEndpoint,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
 	}
 
 	err := p.PortalLinkRepo.CreatePortalLink(ctx, portalLink)
@@ -68,6 +70,18 @@ func findEndpoints(ctx context.Context, endpoints []string, project *datastore.P
 		if endpoint.ProjectID != project.UID {
 			return &ServiceError{ErrMsg: fmt.Sprintf("unauthorized access to endpoint with ID: %s", e)}
 		}
+	}
+
+	return nil
+}
+
+func validateOwnerIdAndEndpoints(portal *models.PortalLink) error {
+	if !util.IsStringEmpty(portal.OwnerID) && len(portal.Endpoints) > 0 {
+		return errors.New("owner id and endpoints cannot be both present")
+	}
+
+	if util.IsStringEmpty(portal.OwnerID) && len(portal.Endpoints) == 0 {
+		return errors.New("owner id and endpoints cannot be both absent")
 	}
 
 	return nil

@@ -44,13 +44,13 @@ func (a *DashboardHandler) CreatePortalLink(w http.ResponseWriter, r *http.Reque
 
 	portalLink, err := cp.Run(r.Context())
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	baseUrl, err := a.retrieveHost()
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -218,8 +218,10 @@ func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.Portal
 		Name:              pl.Name,
 		URL:               fmt.Sprintf("%s/portal?token=%s", baseUrl, pl.Token),
 		Token:             pl.Token,
+		OwnerID:           pl.OwnerID,
 		Endpoints:         pl.Endpoints,
-		EndpointCount:     len(pl.Endpoints),
+		EndpointCount:     len(pl.EndpointsMetadata),
+		CanManageEndpoint: pl.CanManageEndpoint,
 		EndpointsMetadata: pl.EndpointsMetadata,
 		CreatedAt:         pl.CreatedAt,
 		UpdatedAt:         pl.UpdatedAt,
