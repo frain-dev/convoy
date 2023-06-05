@@ -48,15 +48,15 @@ func (p *PortalLinkService) CreatePortalLink(ctx context.Context, portal *models
 	}
 
 	portalLink := &datastore.PortalLink{
-		UID:                ulid.Make().String(),
-		ProjectID:          project.UID,
-		Name:               portal.Name,
-		Token:              uniuri.NewLen(24),
-		OwnerID:            portal.OwnerID,
-		Endpoints:          portal.Endpoints,
-		EndpointManagement: portal.EndpointManagement,
-		CreatedAt:          time.Now(),
-		UpdatedAt:          time.Now(),
+		UID:               ulid.Make().String(),
+		ProjectID:         project.UID,
+		Name:              portal.Name,
+		Token:             uniuri.NewLen(24),
+		OwnerID:           portal.OwnerID,
+		Endpoints:         portal.Endpoints,
+		CanManageEndpoint: portal.CanManageEndpoint,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
 	}
 
 	err := p.portalLinkRepo.CreatePortalLink(ctx, portalLink)
@@ -83,7 +83,7 @@ func (p *PortalLinkService) UpdatePortalLink(ctx context.Context, project *datas
 	portalLink.Name = update.Name
 	portalLink.OwnerID = update.OwnerID
 	portalLink.Endpoints = update.Endpoints
-	portalLink.EndpointManagement = update.EndpointManagement
+	portalLink.CanManageEndpoint = update.CanManageEndpoint
 
 	err := p.portalLinkRepo.UpdatePortalLink(ctx, project.UID, portalLink)
 	if err != nil {

@@ -7008,7 +7008,7 @@
         "models.PortalLink": {
             "type": "object",
             "properties": {
-                "endpoint_management": {
+                "can_manage_endpoint": {
                     "type": "boolean"
                 },
                 "endpoints": {
@@ -7028,6 +7028,9 @@
         "models.PortalLinkResponse": {
             "type": "object",
             "properties": {
+                "can_manage_endpoint": {
+                    "type": "boolean"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -7036,9 +7039,6 @@
                 },
                 "endpoint_count": {
                     "type": "integer"
-                },
-                "endpoint_management": {
-                    "type": "boolean"
                 },
                 "endpoints": {
                     "type": "array",

@@ -208,17 +208,17 @@ func (a *DashboardHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.R
 
 func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.PortalLinkResponse {
 	return &models.PortalLinkResponse{
-		UID:                pl.UID,
-		ProjectID:          pl.ProjectID,
-		Name:               pl.Name,
-		URL:                fmt.Sprintf("%s/portal?token=%s", baseUrl, pl.Token),
-		Token:              pl.Token,
-		OwnerID:            pl.OwnerID,
-		Endpoints:          pl.Endpoints,
-		EndpointCount:      len(pl.EndpointsMetadata),
-		EndpointManagement: pl.EndpointManagement,
-		EndpointsMetadata:  pl.EndpointsMetadata,
-		CreatedAt:          pl.CreatedAt,
-		UpdatedAt:          pl.UpdatedAt,
+		UID:               pl.UID,
+		ProjectID:         pl.ProjectID,
+		Name:              pl.Name,
+		URL:               fmt.Sprintf("%s/portal?token=%s", baseUrl, pl.Token),
+		Token:             pl.Token,
+		OwnerID:           pl.OwnerID,
+		Endpoints:         pl.Endpoints,
+		EndpointCount:     len(pl.EndpointsMetadata),
+		CanManageEndpoint: pl.CanManageEndpoint,
+		EndpointsMetadata: pl.EndpointsMetadata,
+		CreatedAt:         pl.CreatedAt,
+		UpdatedAt:         pl.UpdatedAt,
 	}
 }

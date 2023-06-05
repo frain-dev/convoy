@@ -20,7 +20,7 @@ var (
 
 const (
 	createPortalLink = `
-	INSERT INTO convoy.portal_links (id, project_id, name, token, endpoints, owner_id, endpoint_management)
+	INSERT INTO convoy.portal_links (id, project_id, name, token, endpoints, owner_id, can_manage_endpoint)
 	VALUES ($1, $2, $3, $4, $5, $6, $7);
 	`
 
@@ -34,13 +34,13 @@ const (
 		name = $2,
 		endpoints = $3,
 		owner_id = $4,
-		endpoint_management = $5,
+		can_manage_endpoint = $5,
 		updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	deletePortalLinkEndpoints = `
-	DELETE from convoy.portal_links_endpoints 
+	DELETE from convoy.portal_links_endpoints
 	WHERE portal_link_id = $1 OR endpoint_id = $2
 	`
 
@@ -51,15 +51,15 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
-	COALESCE(p.endpoint_management, false) as "endpoint_management",
+	COALESCE(p.can_manage_endpoint, false) as "can_manage_endpoint",
 	COALESCE(p.owner_id, '') as "owner_id",
 	p.created_at,
 	p.updated_at,
 	array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url)))  AS endpoints_metadata
 	FROM convoy.portal_links p
-	LEFT JOIN convoy.portal_links_endpoints pe 
+	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
-	LEFT JOIN convoy.endpoints e 
+	LEFT JOIN convoy.endpoints e
 		ON e.id = pe.endpoint_id
 	WHERE p.id = $1 AND p.project_id = $2 AND p.deleted_at IS NULL
 	GROUP BY p.id;
@@ -72,15 +72,15 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
-	COALESCE(p.endpoint_management, false) as "endpoint_management",
+	COALESCE(p.can_manage_endpoint, false) as "can_manage_endpoint",
 	COALESCE(p.owner_id, '') as "owner_id",
 	p.created_at,
 	p.updated_at,
 	array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url)))  AS endpoints_metadata
 	FROM convoy.portal_links p
-	LEFT JOIN convoy.portal_links_endpoints pe 
+	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
-	LEFT JOIN convoy.endpoints e 
+	LEFT JOIN convoy.endpoints e
 		ON e.id = pe.endpoint_id
 	WHERE p.owner_id = $1 AND p.project_id = $2 AND p.deleted_at IS NULL
 	GROUP BY p.id;
@@ -93,15 +93,15 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
-	COALESCE(p.endpoint_management, false) as "endpoint_management",
+	COALESCE(p.can_manage_endpoint, false) as "can_manage_endpoint",
 	COALESCE(p.owner_id, '') as "owner_id",
 	p.created_at,
 	p.updated_at,
 	array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url, 'secrets', e.secrets)))  AS endpoints_metadata
 	FROM convoy.portal_links p
-	LEFT JOIN convoy.portal_links_endpoints pe 
+	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
-	LEFT JOIN convoy.endpoints e 
+	LEFT JOIN convoy.endpoints e
 		ON e.id = pe.endpoint_id
 	WHERE p.token = $1 AND p.deleted_at IS NULL
 	GROUP BY p.id;
@@ -110,10 +110,10 @@ const (
 	countPrevPortalLinks = `
 	SELECT count(distinct(p.id)) as count
 	FROM convoy.portal_links p
-	LEFT JOIN convoy.portal_links_endpoints pe 
+	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
-	LEFT JOIN convoy.endpoints e 
-		ON e.id = pe.endpoint_id 
+	LEFT JOIN convoy.endpoints e
+		ON e.id = pe.endpoint_id
 	WHERE p.deleted_at IS NULL
 	%s
 	AND p.id > :cursor GROUP BY p.id ORDER BY p.id DESC LIMIT 1`
@@ -125,34 +125,34 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
-	COALESCE(p.endpoint_management, false) as "endpoint_management",
+	COALESCE(p.can_manage_endpoint, false) as "can_manage_endpoint",
 	COALESCE(p.owner_id, '') as "owner_id",
 	p.created_at,
 	p.updated_at,
 	array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url)))  AS endpoints_metadata
 	FROM convoy.portal_links p
-	LEFT JOIN convoy.portal_links_endpoints pe 
+	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
-	LEFT JOIN convoy.endpoints e 
+	LEFT JOIN convoy.endpoints e
 		ON e.id = pe.endpoint_id
 	WHERE p.deleted_at IS NULL`
 
 	baseFetchPortalLinksPagedForward = `
-	%s 
-	%s 
-	AND p.id <= :cursor 
+	%s
+	%s
+	AND p.id <= :cursor
 	GROUP BY p.id
-	ORDER BY p.id DESC 
+	ORDER BY p.id DESC
 	LIMIT :limit
 	`
 
 	baseFetchPortalLinksPagedBackward = `
 	WITH portal_links AS (
-		%s 
-		%s 
-		AND p.id >= :cursor 
+		%s
+		%s
+		AND p.id >= :cursor
 		GROUP BY p.id
-		ORDER BY p.id ASC 
+		ORDER BY p.id ASC
 		LIMIT :limit
 	)
 
@@ -163,7 +163,7 @@ const (
 	AND (p.project_id = :project_id OR :project_id = '')`
 
 	deletePortalLink = `
-	UPDATE convoy.portal_links SET 
+	UPDATE convoy.portal_links SET
 	deleted_at = now()
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
@@ -190,7 +190,7 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 		portal.Token,
 		portal.Endpoints,
 		portal.OwnerID,
-		portal.EndpointManagement,
+		portal.CanManageEndpoint,
 	)
 	if err != nil {
 		return err
@@ -224,7 +224,7 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 		portal.Name,
 		portal.Endpoints,
 		portal.OwnerID,
-		portal.EndpointManagement,
+		portal.CanManageEndpoint,
 	)
 	if err != nil {
 		return err

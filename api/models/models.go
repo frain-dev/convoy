@@ -249,7 +249,7 @@ type PortalLink struct {
 	Name               string   `json:"name" valid:"required~please provide the name field"`
 	Endpoints          []string `json:"endpoints"`
 	OwnerID            string   `json:"owner_id"`
-	EndpointManagement bool     `json:"endpoint_management"`
+	CanManageEndpoint bool     `json:"can_manage_endpoint"`
 }
 
 type PortalLinkResponse struct {
@@ -259,7 +259,7 @@ type PortalLinkResponse struct {
 	OwnerID            string                     `json:"owner_id"`
 	Endpoints          []string                   `json:"endpoints"`
 	EndpointCount      int                        `json:"endpoint_count"`
-	EndpointManagement bool                       `json:"endpoint_management"`
+	CanManageEndpoint bool                       `json:"can_manage_endpoint"`
 	Token              string                     `json:"token"`
 	EndpointsMetadata  datastore.EndpointMetadata `json:"endpoints_metadata"`
 	URL                string                     `json:"url"`

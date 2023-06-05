@@ -126,10 +126,10 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 
 		portalLinkService := NewPortalLinkService(a.PortalLinkRepo, a.EndpointRepo, a.Cache, a.ProjectRepo)
 		update := models.PortalLink{
-			Name:               portalLink.Name,
-			Endpoints:          portalLink.Endpoints,
-			OwnerID:            portalLink.OwnerID,
-			EndpointManagement: portalLink.EndpointManagement,
+			Name:              portalLink.Name,
+			Endpoints:         portalLink.Endpoints,
+			OwnerID:           portalLink.OwnerID,
+			CanManageEndpoint: portalLink.CanManageEndpoint,
 		}
 		_, err = portalLinkService.UpdatePortalLink(ctx, project, &update, portalLink)
 		if err != nil {

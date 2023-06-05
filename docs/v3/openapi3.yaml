@@ -988,7 +988,7 @@ components:
       type: object
     models.PortalLink:
       properties:
-        endpoint_management:
+        can_manage_endpoint:
           type: boolean
         endpoints:
           items:
@@ -1001,14 +1001,14 @@ components:
       type: object
     models.PortalLinkResponse:
       properties:
+        can_manage_endpoint:
+          type: boolean
         created_at:
           type: string
         deleted_at:
           type: string
         endpoint_count:
           type: integer
-        endpoint_management:
-          type: boolean
         endpoints:
           items:
             type: string
