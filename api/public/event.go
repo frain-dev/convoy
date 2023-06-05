@@ -297,7 +297,7 @@ func (a *PublicHandler) GetEndpointEvent(w http.ResponseWriter, r *http.Request)
 // @Produce json
 // @Param projectID path string true "Project ID"
 // @Param eventDeliveryID path string true "event delivery id"
-// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
+// @Success 200 {object} util.ServerResponse{data=models.EventDeliveryResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID} [get]
@@ -308,8 +308,9 @@ func (a *PublicHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	resp := &models.EventDeliveryResponse{EventDelivery: eventDelivery}
 	_ = render.Render(w, r, util.NewServerResponse("Event Delivery fetched successfully",
-		eventDelivery, http.StatusOK))
+		resp, http.StatusOK))
 }
 
 // ResendEventDelivery
@@ -446,7 +447,7 @@ func (a *PublicHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *htt
 // @Produce  json
 // @Param projectID path string true "Project ID"
 // @Param request query models.QueryListEvent false "Query Params"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.EventResponse}}}
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.EventResponse}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/events [get]
