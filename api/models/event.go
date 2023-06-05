@@ -46,10 +46,10 @@ type QueryListEvent struct {
 	// Any arbitary value to filter the events payload
 	Query    string `json:"query"`
 	SourceID string `json:"sourceId"`
+	SearchParams
 	// A list of endpoint ids to filter by
 	EndpointIDs []string `json:"endpointId"`
 	Pageable
-	SearchParams
 }
 
 type QueryListEventResponse struct {
