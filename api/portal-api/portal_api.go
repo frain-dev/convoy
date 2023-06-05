@@ -40,11 +40,11 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 		endpointRouter.Route("/{endpointID}", func(endpointSubRouter chi.Router) {
 			endpointSubRouter.Use(canManageEndpoint(a))
 
-			endpointRouter.Get("/", a.GetEndpoint)
-			endpointRouter.Put("/", a.UpdateEndpoint)
-			endpointRouter.Delete("/", a.DeleteEndpoint)
-			endpointRouter.Put("/pause", a.PauseEndpoint)
-			endpointRouter.Put("/expire_secret", a.ExpireSecret)
+			endpointSubRouter.Get("/", a.GetEndpoint)
+			endpointSubRouter.Put("/", a.UpdateEndpoint)
+			endpointSubRouter.Delete("/", a.DeleteEndpoint)
+			endpointSubRouter.Put("/pause", a.PauseEndpoint)
+			endpointSubRouter.Put("/expire_secret", a.ExpireSecret)
 		})
 	})
 
