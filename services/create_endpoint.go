@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/oklog/ulid/v2"
 )
@@ -124,14 +125,21 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 			return endpoint, nil
 		}
 
-		portalLinkService := NewPortalLinkService(a.PortalLinkRepo, a.EndpointRepo, a.Cache, a.ProjectRepo)
 		update := models.PortalLink{
 			Name:              portalLink.Name,
 			Endpoints:         portalLink.Endpoints,
 			OwnerID:           portalLink.OwnerID,
 			CanManageEndpoint: portalLink.CanManageEndpoint,
 		}
-		_, err = portalLinkService.UpdatePortalLink(ctx, project, &update, portalLink)
+		upl := services.UpdatePortalLinkService{
+			PortalLinkRepo: a.PortalLinkRepo,
+			EndpointRepo:   a.EndpointRepo,
+			Project:        project,
+			Update:         &update,
+			PortalLink:     portalLink,
+		}
+
+		_, err = upl.Run(ctx)
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error("Failed to update portal link endpoints")
 			return endpoint, nil
