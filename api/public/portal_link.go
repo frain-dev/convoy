@@ -17,14 +17,6 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-func createPortalLinkService(a *PublicHandler) *services.PortalLinkService {
-	portalRepo := postgres.NewPortalLinkRepo(a.A.DB)
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
-
-	return services.NewPortalLinkService(portalRepo, endpointRepo, a.A.Cache, projectRepo)
-}
-
 // CreatePortalLink
 // @Summary Create a portal link
 // @Description This endpoint creates a portal link
@@ -50,8 +42,14 @@ func (a *PublicHandler) CreatePortalLink(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	portalLinkService := createPortalLinkService(a)
-	portalLink, err := portalLinkService.CreatePortalLink(r.Context(), &newPortalLink, project)
+	cp := services.CreatePortalLinkService{
+		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB),
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
+		Portal:         &newPortalLink,
+		Project:        project,
+	}
+
+	portalLink, err := cp.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -145,8 +143,15 @@ func (a *PublicHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	portalLinkService := createPortalLinkService(a)
-	portalLink, err = portalLinkService.UpdatePortalLink(r.Context(), project, &updatePortalLink, portalLink)
+	upl := services.UpdatePortalLinkService{
+		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB),
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
+		Project:        project,
+		Update:         &updatePortalLink,
+		PortalLink:     portalLink,
+	}
+
+	portalLink, err = upl.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
