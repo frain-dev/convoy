@@ -41,8 +41,14 @@ func createEventService(a *DashboardHandler) (*services.EventService, error) {
 }
 
 func (a *DashboardHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
-	var newMessage models.Event
+	var newMessage models.CreateEvent
 	err := util.ReadJSON(r, &newMessage)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	err = newMessage.Validate()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -66,7 +72,8 @@ func (a *DashboardHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", event, http.StatusCreated))
+	resp := &models.EventResponse{Event: event}
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", resp, http.StatusCreated))
 }
 
 func (a *DashboardHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
@@ -94,10 +101,12 @@ func (a *DashboardHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint event replayed successfully", event, http.StatusOK))
+	resp := &models.EventResponse{Event: event}
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint event replayed successfully", resp, http.StatusOK))
 }
 
 func (a *DashboardHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
+	var q *models.QueryBatchReplayEvent
 	p, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -110,25 +119,13 @@ func (a *DashboardHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	searchParams, err := getSearchParams(r)
+	data, err := q.Transform(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	f := &datastore.Filter{
-		Project: p,
-		Pageable: datastore.Pageable{
-			Direction:  datastore.Next,
-			PerPage:    1000000000000, // large number so we get everything in most cases
-			NextCursor: datastore.DefaultCursor,
-		},
-		SourceID:     r.URL.Query().Get("sourceId"),
-		EndpointID:   r.URL.Query().Get("endpointId"),
-		SearchParams: searchParams,
-	}
-
-	successes, failures, err := eventService.BatchReplayEvents(r.Context(), f)
+	successes, failures, err := eventService.BatchReplayEvents(r.Context(), p, data.Filter)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -138,31 +135,20 @@ func (a *DashboardHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Requ
 }
 
 func (a *DashboardHandler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
+	var q *models.QueryCountAffectedEvents
 	p, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	searchParams, err := getSearchParams(r)
+	data, err := q.Transform(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	f := &datastore.Filter{
-		Project: p,
-		Pageable: datastore.Pageable{
-			Direction:  datastore.Next,
-			PerPage:    1000000000000, // large number so we get everything in most cases
-			NextCursor: datastore.DefaultCursor,
-		},
-		SourceID:     r.URL.Query().Get("sourceId"),
-		EndpointID:   r.URL.Query().Get("endpointId"),
-		SearchParams: searchParams,
-	}
-
-	count, err := postgres.NewEventRepo(a.A.DB).CountEvents(r.Context(), p.UID, f)
+	count, err := postgres.NewEventRepo(a.A.DB).CountEvents(r.Context(), p.UID, data.Filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -179,7 +165,8 @@ func (a *DashboardHandler) GetEndpointEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint event fetched successfully", event, http.StatusOK))
+	resp := &models.EventResponse{Event: event}
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint event fetched successfully", resp, http.StatusOK))
 }
 
 func (a *DashboardHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
@@ -189,7 +176,8 @@ func (a *DashboardHandler) GetEventDelivery(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Event Delivery fetched successfully", eventDelivery, http.StatusOK))
+	resp := &models.EventDeliveryResponse{EventDelivery: eventDelivery}
+	_ = render.Render(w, r, util.NewServerResponse("Event Delivery fetched successfully", resp, http.StatusOK))
 }
 
 func (a *DashboardHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
@@ -217,43 +205,24 @@ func (a *DashboardHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	resp := &models.EventDeliveryResponse{EventDelivery: eventDelivery}
 	_ = render.Render(w, r, util.NewServerResponse("App event processed for retry successfully",
-		eventDelivery, http.StatusOK))
+		resp, http.StatusOK))
 }
 
 func (a *DashboardHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
-	status := make([]datastore.EventDeliveryStatus, 0)
+	var q *models.QueryBatchRetryEventDelivery
 
-	for _, s := range r.URL.Query()["status"] {
-		if !util.IsStringEmpty(s) {
-			status = append(status, datastore.EventDeliveryStatus(s))
-		}
-	}
-
-	searchParams, err := getSearchParams(r)
+	data, err := q.Transform(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	endpointIDs := getEndpointIDs(r)
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
-	}
-
-	f := &datastore.Filter{
-		Project:     project,
-		EndpointIDs: endpointIDs,
-		EventID:     r.URL.Query().Get("eventId"),
-		Status:      status,
-		Pageable: datastore.Pageable{
-			Direction:  datastore.Next,
-			PerPage:    1000000000000, // large number so we get everything in most cases
-			NextCursor: datastore.DefaultCursor,
-		},
-		SearchParams: searchParams,
 	}
 
 	eventService, err := createEventService(a)
@@ -262,7 +231,7 @@ func (a *DashboardHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *htt
 		return
 	}
 
-	successes, failures, err := eventService.BatchRetryEventDelivery(r.Context(), f)
+	successes, failures, err := eventService.BatchRetryEventDelivery(r.Context(), project, data.Filter)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -272,34 +241,21 @@ func (a *DashboardHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *htt
 }
 
 func (a *DashboardHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
-	status := make([]datastore.EventDeliveryStatus, 0)
-	for _, s := range r.URL.Query()["status"] {
-		if !util.IsStringEmpty(s) {
-			status = append(status, datastore.EventDeliveryStatus(s))
-		}
-	}
+	var q *models.QueryListEventDelivery
 
-	searchParams, err := getSearchParams(r)
+	data, err := q.Transform(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	endpointIDs := getEndpointIDs(r)
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	f := &datastore.Filter{
-		Project:      project,
-		EndpointIDs:  endpointIDs,
-		EventID:      r.URL.Query().Get("eventId"),
-		Status:       status,
-		SearchParams: searchParams,
-	}
-
+	f := data.Filter
 	count, err := postgres.NewEventDeliveryRepo(a.A.DB).CountEventDeliveries(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event deliveries")
@@ -341,43 +297,23 @@ func (a *DashboardHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *
 }
 
 func (a *DashboardHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
+	var q *models.QueryListEvent
 	cfg, err := config.Get()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	searchParams, err := getSearchParams(r)
+	data, err := q.Transform(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	pageable := m.GetPageableFromContext(r.Context())
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
-	}
-
-	query := r.URL.Query().Get("query")
-	endpointIDs := getEndpointIDs(r)
-
-	// TODO(subomi): Support multiple
-	var sourceID string
-	sourceIDs := getSourceIDs(r)
-
-	if len(sourceIDs) > 0 {
-		sourceID = sourceIDs[0]
-	}
-
-	f := &datastore.Filter{
-		Query:        query,
-		Project:      project,
-		EndpointIDs:  endpointIDs,
-		SourceID:     sourceID,
-		Pageable:     pageable,
-		SearchParams: searchParams,
 	}
 
 	eventService, err := createEventService(a)
@@ -386,59 +322,52 @@ func (a *DashboardHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if cfg.Search.Type == config.TypesenseSearchProvider && !util.IsStringEmpty(query) {
-		m, paginationData, err := eventService.Search(r.Context(), f)
+	if cfg.Search.Type == config.TypesenseSearchProvider && !util.IsStringEmpty(data.Filter.Query) {
+		m, paginationData, err := eventService.Search(r.Context(), project, data.Filter)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
 		}
+
+		resp := models.NewListResponse(m, func(event datastore.Event) models.EventResponse {
+			return models.EventResponse{Event: &event}
+		})
 		_ = render.Render(w, r, util.NewServerResponse("Endpoint events fetched successfully",
-			pagedResponse{Content: &m, Pagination: &paginationData}, http.StatusOK))
+			pagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 
 		return
 	}
 
-	m, paginationData, err := postgres.NewEventRepo(a.A.DB).LoadEventsPaged(r.Context(), project.UID, f)
+	m, paginationData, err := postgres.NewEventRepo(a.A.DB).LoadEventsPaged(r.Context(), project.UID, data.Filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch events")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 		return
 	}
 
+	resp := models.NewListResponse(m, func(event datastore.Event) models.EventResponse {
+		return models.EventResponse{Event: &event}
+	})
 	_ = render.Render(w, r, util.NewServerResponse("App events fetched successfully",
-		pagedResponse{Content: &m, Pagination: &paginationData}, http.StatusOK))
+		pagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 func (a *DashboardHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
-	status := make([]datastore.EventDeliveryStatus, 0)
-	for _, s := range r.URL.Query()["status"] {
-		if !util.IsStringEmpty(s) {
-			status = append(status, datastore.EventDeliveryStatus(s))
-		}
-	}
+	var q *models.QueryListEventDelivery
 
-	searchParams, err := getSearchParams(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	endpointIDs := getEndpointIDs(r)
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	f := &datastore.Filter{
-		Project:      project,
-		EventID:      r.URL.Query().Get("eventId"),
-		EndpointIDs:  endpointIDs,
-		Status:       status,
-		Pageable:     m.GetPageableFromContext(r.Context()),
-		SearchParams: searchParams,
+	data, err := q.Transform(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
 	}
 
+	f := data.Filter
 	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams, f.Pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch event deliveries")
@@ -446,8 +375,11 @@ func (a *DashboardHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *htt
 		return
 	}
 
+	resp := models.NewListResponse(ed, func(ed datastore.EventDelivery) models.EventDeliveryResponse {
+		return models.EventDeliveryResponse{EventDelivery: &ed}
+	})
 	_ = render.Render(w, r, util.NewServerResponse("Event deliveries fetched successfully",
-		pagedResponse{Content: &ed, Pagination: &paginationData}, http.StatusOK))
+		pagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 func (a *DashboardHandler) retrieveEvent(r *http.Request) (*datastore.Event, error) {
@@ -522,16 +454,4 @@ func getEndpointIDs(r *http.Request) []string {
 	}
 
 	return endpoints
-}
-
-func getSourceIDs(r *http.Request) []string {
-	var sourceIDs []string
-
-	for _, id := range r.URL.Query()["sourceId"] {
-		if !util.IsStringEmpty(id) {
-			sourceIDs = append(sourceIDs, id)
-		}
-	}
-
-	return sourceIDs
 }

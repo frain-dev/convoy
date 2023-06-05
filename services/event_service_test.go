@@ -46,7 +46,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
 		ctx        context.Context
-		newMessage *models.Event
+		newMessage *models.CreateEvent
 		g          *datastore.Project
 	}
 	tests := []struct {
@@ -75,7 +75,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			},
 			args: args{
 				ctx: ctx,
-				newMessage: &models.Event{
+				newMessage: &models.CreateEvent{
 					EndpointID: "123",
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
@@ -122,7 +122,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			},
 			args: args{
 				ctx: ctx,
-				newMessage: &models.Event{
+				newMessage: &models.CreateEvent{
 					EndpointID: "123",
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
@@ -166,7 +166,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			},
 			args: args{
 				ctx: ctx,
-				newMessage: &models.Event{
+				newMessage: &models.CreateEvent{
 					EndpointID: "123",
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
@@ -212,7 +212,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			},
 			args: args{
 				ctx: ctx,
-				newMessage: &models.Event{
+				newMessage: &models.CreateEvent{
 					EndpointID:    "123",
 					EventType:     "payment.created",
 					Data:          bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
@@ -256,7 +256,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			},
 			args: args{
 				ctx: ctx,
-				newMessage: &models.Event{
+				newMessage: &models.CreateEvent{
 					EndpointID: "123",
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
@@ -275,7 +275,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			name: "should_error_for_empty_endpoints",
 			args: args{
 				ctx: ctx,
-				newMessage: &models.Event{
+				newMessage: &models.CreateEvent{
 					EndpointID: "",
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
@@ -295,7 +295,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			},
 			args: args{
 				ctx: ctx,
-				newMessage: &models.Event{
+				newMessage: &models.CreateEvent{
 					EndpointID: "123",
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
@@ -312,7 +312,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 			dbFn: func(es *EventService) {},
 			args: args{
 				ctx: ctx,
-				newMessage: &models.Event{
+				newMessage: &models.CreateEvent{
 					EndpointID: "123",
 					EventType:  "payment.created",
 					Data:       bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
@@ -579,8 +579,9 @@ func TestEventService_ReplayAppEvent(t *testing.T) {
 func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
-		ctx    context.Context
-		filter *datastore.Filter
+		ctx     context.Context
+		project *datastore.Project
+		filter  *datastore.Filter
 	}
 	tests := []struct {
 		name          string
@@ -595,9 +596,9 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 		{
 			name: "should_batch_retry_event_deliveries",
 			args: args{
-				ctx: ctx,
+				ctx:     ctx,
+				project: &datastore.Project{UID: "123"},
 				filter: &datastore.Filter{
-					Project:     &datastore.Project{UID: "123"},
 					EndpointIDs: []string{"abc"},
 					EventID:     "13429",
 					Pageable: datastore.Pageable{
@@ -666,9 +667,9 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 		{
 			name: "should_batch_retry_event_deliveries_with_one_failure",
 			args: args{
-				ctx: ctx,
+				ctx:     ctx,
+				project: &datastore.Project{UID: "123"},
 				filter: &datastore.Filter{
-					Project:     &datastore.Project{UID: "123"},
 					EndpointIDs: []string{"abc"},
 					EventID:     "13429",
 					Pageable: datastore.Pageable{
@@ -751,7 +752,7 @@ func TestEventService_BatchRetryEventDelivery(t *testing.T) {
 				tc.dbFn(es)
 			}
 
-			successes, failures, err := es.BatchRetryEventDelivery(tc.args.ctx, tc.args.filter)
+			successes, failures, err := es.BatchRetryEventDelivery(tc.args.ctx, tc.args.project, tc.args.filter)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())
@@ -890,8 +891,9 @@ func TestEventService_ForceResendEventDeliveries(t *testing.T) {
 func TestEventService_SearchEvents(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
-		ctx    context.Context
-		filter *datastore.Filter
+		ctx     context.Context
+		project *datastore.Project
+		filter  *datastore.Filter
 	}
 	tests := []struct {
 		name               string
@@ -906,9 +908,9 @@ func TestEventService_SearchEvents(t *testing.T) {
 		{
 			name: "should_get_event_paged",
 			args: args{
-				ctx: ctx,
+				ctx:     ctx,
+				project: &datastore.Project{UID: "123"},
 				filter: &datastore.Filter{
-					Project:    &datastore.Project{UID: "123"},
 					EndpointID: "abc",
 					Pageable: datastore.Pageable{
 						PerPage:    10,
@@ -944,9 +946,9 @@ func TestEventService_SearchEvents(t *testing.T) {
 		{
 			name: "should_fail_to_get_events_paged",
 			args: args{
-				ctx: ctx,
+				ctx:     ctx,
+				project: &datastore.Project{UID: "123"},
 				filter: &datastore.Filter{
-					Project:    &datastore.Project{UID: "123"},
 					EndpointID: "abc",
 					EventID:    "ref",
 					Status:     []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.ScheduledEventStatus},
@@ -982,7 +984,7 @@ func TestEventService_SearchEvents(t *testing.T) {
 				tc.dbFn(es)
 			}
 
-			events, paginationData, err := es.Search(tc.args.ctx, tc.args.filter)
+			events, paginationData, err := es.Search(tc.args.ctx, tc.args.project, tc.args.filter)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrCode, err.(*util.ServiceError).ErrCode())

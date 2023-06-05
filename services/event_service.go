@@ -68,13 +68,9 @@ func NewEventService(
 	return &EventService{endpointRepo: endpointRepo, eventRepo: eventRepo, eventDeliveryRepo: eventDeliveryRepo, queue: queue, cache: cache, searcher: searchBackend, subRepo: subRepo, sourceRepo: sourceRepo, deviceRepo: deviceRepo}, nil
 }
 
-func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.Event, g *datastore.Project) (*datastore.Event, error) {
+func (e *EventService) CreateEvent(ctx context.Context, newMessage *models.CreateEvent, g *datastore.Project) (*datastore.Event, error) {
 	if g == nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while creating event - invalid project"))
-	}
-
-	if err := util.Validate(newMessage); err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	if util.IsStringEmpty(newMessage.AppID) && util.IsStringEmpty(newMessage.EndpointID) {
@@ -111,10 +107,6 @@ func (e *EventService) CreateFanoutEvent(ctx context.Context, newMessage *models
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while creating event - invalid project"))
 	}
 
-	if err := util.Validate(newMessage); err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
 	endpoints, err := e.endpointRepo.FindEndpointsByOwnerID(ctx, g.UID, newMessage.OwnerID)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
@@ -142,10 +134,6 @@ func (e *EventService) CreateFanoutEvent(ctx context.Context, newMessage *models
 func (e *EventService) CreateDynamicEvent(ctx context.Context, de *models.DynamicEvent, p *datastore.Project) error {
 	if p == nil {
 		return util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while creating event - invalid project"))
-	}
-
-	if err := util.Validate(de); err != nil {
-		return util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	de.Event.ProjectID = p.UID
@@ -201,8 +189,8 @@ func (e *EventService) ReplayEvent(ctx context.Context, event *datastore.Event, 
 	return nil
 }
 
-func (e *EventService) BatchReplayEvents(ctx context.Context, filter *datastore.Filter) (int, int, error) {
-	events, _, err := e.eventRepo.LoadEventsPaged(ctx, filter.Project.UID, filter)
+func (e *EventService) BatchReplayEvents(ctx context.Context, project *datastore.Project, filter *datastore.Filter) (int, int, error) {
+	events, _, err := e.eventRepo.LoadEventsPaged(ctx, project.UID, filter)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch events")
 		return 0, 0, util.NewServiceError(http.StatusInternalServerError, errors.New("failed to fetch event deliveries"))
@@ -210,7 +198,7 @@ func (e *EventService) BatchReplayEvents(ctx context.Context, filter *datastore.
 
 	failures := 0
 	for _, ev := range events {
-		err := e.ReplayEvent(ctx, &ev, filter.Project)
+		err := e.ReplayEvent(ctx, &ev, project)
 		if err != nil {
 			failures++
 			log.FromContext(ctx).WithError(err).Error("an item in the batch replay failed")
@@ -221,14 +209,14 @@ func (e *EventService) BatchReplayEvents(ctx context.Context, filter *datastore.
 	return successes, failures, nil
 }
 
-func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
+func (e *EventService) Search(ctx context.Context, project *datastore.Project, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
 	var events []datastore.Event
-	ids, paginationData, err := e.searcher.Search(filter.Project.UID, &datastore.SearchFilter{
+	ids, paginationData, err := e.searcher.Search(project.UID, &datastore.SearchFilter{
 		Query: filter.Query,
 		FilterBy: datastore.FilterBy{
 			EndpointID:   filter.EndpointID,
 			SourceID:     filter.SourceID,
-			ProjectID:    filter.Project.UID,
+			ProjectID:    project.UID,
 			SearchParams: filter.SearchParams,
 		},
 		Pageable: filter.Pageable,
@@ -242,7 +230,7 @@ func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]
 		return events, paginationData, nil
 	}
 
-	events, err = e.eventRepo.FindEventsByIDs(ctx, filter.Project.UID, ids)
+	events, err = e.eventRepo.FindEventsByIDs(ctx, project.UID, ids)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch events from event ids")
 		return nil, datastore.PaginationData{}, util.NewServiceError(http.StatusBadRequest, err)
@@ -251,8 +239,8 @@ func (e *EventService) Search(ctx context.Context, filter *datastore.Filter) ([]
 	return events, paginationData, err
 }
 
-func (e *EventService) BatchRetryEventDelivery(ctx context.Context, filter *datastore.Filter) (int, int, error) {
-	deliveries, _, err := e.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, filter.Project.UID, filter.EndpointIDs, filter.EventID, filter.Status, filter.SearchParams, filter.Pageable)
+func (e *EventService) BatchRetryEventDelivery(ctx context.Context, project *datastore.Project, filter *datastore.Filter) (int, int, error) {
+	deliveries, _, err := e.eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, project.UID, filter.EndpointIDs, filter.EventID, filter.Status, filter.SearchParams, filter.Pageable)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch event deliveries by ids")
 		return 0, 0, util.NewServiceError(http.StatusInternalServerError, errors.New("failed to fetch event deliveries"))
@@ -260,7 +248,7 @@ func (e *EventService) BatchRetryEventDelivery(ctx context.Context, filter *data
 
 	failures := 0
 	for _, delivery := range deliveries {
-		err := e.RetryEventDelivery(ctx, &delivery, filter.Project)
+		err := e.RetryEventDelivery(ctx, &delivery, project)
 		if err != nil {
 			failures++
 			log.FromContext(ctx).WithError(err).Error("an item in the batch retry failed")
@@ -459,7 +447,7 @@ func (e *EventService) createEvent(ctx context.Context, endpoints []datastore.En
 	return event, nil
 }
 
-func (e *EventService) FindEndpoints(ctx context.Context, newMessage *models.Event, project *datastore.Project) ([]datastore.Endpoint, error) {
+func (e *EventService) FindEndpoints(ctx context.Context, newMessage *models.CreateEvent, project *datastore.Project) ([]datastore.Endpoint, error) {
 	var endpoints []datastore.Endpoint
 
 	if !util.IsStringEmpty(newMessage.EndpointID) {
