@@ -9,18 +9,9 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/database/postgres"
-	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 )
-
-func createPortalLinkService(a *PortalLinkHandler) *services.PortalLinkService {
-	portalRepo := postgres.NewPortalLinkRepo(a.A.DB)
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
-
-	return services.NewPortalLinkService(portalRepo, endpointRepo, a.A.Cache, projectRepo)
-}
 
 func (a *PortalLinkHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *http.Request) {
 	portalLink, err := a.retrievePortalLink(r)

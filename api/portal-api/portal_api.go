@@ -36,11 +36,16 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 	router.Route("/endpoints", func(endpointRouter chi.Router) {
 		endpointRouter.Get("/", a.GetPortalLinkEndpoints)
 		endpointRouter.Post("/", a.CreateEndpoint)
-		endpointRouter.Get("/{endpointID}", a.GetEndpoint)
-		endpointRouter.Put("/{endpointID}", a.UpdateEndpoint)
-		endpointRouter.Delete("/{endpointID}", a.DeleteEndpoint)
-		endpointRouter.Put("/{endpointID}/pause", a.PauseEndpoint)
-		endpointRouter.Put("/{endpointID}/expire_secret", a.ExpireSecret)
+
+		endpointRouter.Route("/{endpointID}", func(endpointSubRouter chi.Router) {
+			endpointSubRouter.Use(canManageEndpoint(a))
+
+			endpointRouter.Get("/", a.GetEndpoint)
+			endpointRouter.Put("/", a.UpdateEndpoint)
+			endpointRouter.Delete("/", a.DeleteEndpoint)
+			endpointRouter.Put("/pause", a.PauseEndpoint)
+			endpointRouter.Put("/expire_secret", a.ExpireSecret)
+		})
 	})
 
 	router.Route("/events", func(eventRouter chi.Router) {
@@ -167,6 +172,23 @@ func RequirePortalAccess(a *PortalLinkHandler) func(next http.Handler) http.Hand
 			}
 
 			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func canManageEndpoint(a *PortalLinkHandler) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			portalLink, err := a.retrievePortalLink(r)
+			if err != nil {
+				_ = render.Render(w, r, util.NewServiceErrResponse(err))
+				return
+			}
+
+			if !portalLink.CanManageEndpoint {
+				_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+				return
+			}
 		})
 	}
 }

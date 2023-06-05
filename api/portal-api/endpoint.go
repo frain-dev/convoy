@@ -43,6 +43,11 @@ func (a *PortalLinkHandler) CreateEndpoint(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	if !portalLink.CanManageEndpoint {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
 	var e models.Endpoint
 	err = util.ReadJSON(r, &e)
 	if err != nil {
