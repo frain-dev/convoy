@@ -226,7 +226,7 @@ func fetchPortalLinkEndpoints(endpointIDs []string, pLinkEndpoints []string) boo
 }
 
 func (a *PortalLinkHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
-	var q *models.QueryListEventDelivery
+	var q *models.QueryCountAffectedEventDeliveries
 
 	data, err := q.Transform(r)
 	if err != nil {

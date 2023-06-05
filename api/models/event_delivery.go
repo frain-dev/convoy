@@ -20,7 +20,11 @@ var (
 )
 
 type QueryBatchRetryEventDelivery struct {
-	QueryListEventDelivery
+	// A list of endpoint IDs to filter by
+	EndpointIDs []string `json:"endpointId"`
+	EventID     string   `json:"eventId"`
+	// A list of event delivery statuses to filter by
+	Status []string `json:"status"`
 }
 
 type QueryBatchRetryEventDeliveryResponse struct {
@@ -55,6 +59,7 @@ type QueryListEventDelivery struct {
 	// A list of event delivery statuses to filter by
 	Status []string `json:"status"`
 	SearchParams
+	Pageable
 }
 
 type QueryListEventDeliveryResponse struct {
@@ -73,6 +78,35 @@ func (ql *QueryListEventDelivery) Transform(r *http.Request) (*QueryListEventDel
 			EventID:      r.URL.Query().Get("eventId"),
 			Status:       getEventDeliveryStatus(r),
 			Pageable:     m.GetPageableFromContext(r.Context()),
+			SearchParams: searchParams,
+		},
+	}, nil
+}
+
+type QueryCountAffectedEventDeliveries struct {
+	// A list of endpoint IDs to filter by
+	EndpointIDs []string `json:"endpointId"`
+	EventID     string   `json:"eventId"`
+	// A list of event delivery statuses to filter by
+	Status []string `json:"status"`
+	SearchParams
+}
+
+type QueryCountAffectedEventDeliveriesResponse struct {
+	*datastore.Filter
+}
+
+func (qc *QueryCountAffectedEventDeliveries) Transform(r *http.Request) (*QueryCountAffectedEventDeliveriesResponse, error) {
+	searchParams, err := getSearchParams(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return &QueryCountAffectedEventDeliveriesResponse{
+		Filter: &datastore.Filter{
+			EndpointIDs:  getEndpointIDs(r),
+			EventID:      r.URL.Query().Get("eventId"),
+			Status:       getEventDeliveryStatus(r),
 			SearchParams: searchParams,
 		},
 	}, nil

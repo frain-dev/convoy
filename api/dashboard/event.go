@@ -241,7 +241,7 @@ func (a *DashboardHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *htt
 }
 
 func (a *DashboardHandler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
-	var q *models.QueryListEventDelivery
+	var q *models.QueryCountAffectedEventDeliveries
 
 	data, err := q.Transform(r)
 	if err != nil {
