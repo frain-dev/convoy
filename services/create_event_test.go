@@ -21,7 +21,7 @@ func provideCreateEventService(ctrl *gomock.Controller, event *models.CreateEven
 		EndpointRepo: mocks.NewMockEndpointRepository(ctrl),
 		Queue:        mocks.NewMockQueuer(ctrl),
 		NewMessage:   event,
-		G:            project,
+		Project:      project,
 	}
 }
 

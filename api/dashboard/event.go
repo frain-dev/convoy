@@ -46,7 +46,7 @@ func (a *DashboardHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Re
 		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
 		Queue:        a.A.Queue,
 		NewMessage:   &newMessage,
-		G:            project,
+		Project:      project,
 	}
 
 	event, err := ce.Run(r.Context())

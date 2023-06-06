@@ -29,7 +29,7 @@ type CreateEventService struct {
 	Queue        queue.Queuer
 
 	NewMessage *models.CreateEvent
-	G          *datastore.Project
+	Project    *datastore.Project
 }
 
 type newEvent struct {
@@ -41,7 +41,7 @@ type newEvent struct {
 }
 
 func (c *CreateEventService) Run(ctx context.Context) (*datastore.Event, error) {
-	if c.G == nil {
+	if c.Project == nil {
 		return nil, &ServiceError{ErrMsg: "an error occurred while creating event - invalid project"}
 	}
 
@@ -49,7 +49,7 @@ func (c *CreateEventService) Run(ctx context.Context) (*datastore.Event, error) 
 		return nil, &ServiceError{ErrMsg: ErrInvalidEndpointID.Error()}
 	}
 
-	endpoints, err := c.FindEndpoints(ctx, c.NewMessage, c.G)
+	endpoints, err := c.FindEndpoints(ctx, c.NewMessage, c.Project)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to find endpoints")
 		return nil, &ServiceError{ErrMsg: err.Error()}
@@ -67,7 +67,7 @@ func (c *CreateEventService) Run(ctx context.Context) (*datastore.Event, error) 
 		CustomHeaders: c.NewMessage.CustomHeaders,
 	}
 
-	event, err := createEvent(ctx, endpoints, newEvent, c.G, c.Queue)
+	event, err := createEvent(ctx, endpoints, newEvent, c.Project, c.Queue)
 	if err != nil {
 		return nil, err
 	}
