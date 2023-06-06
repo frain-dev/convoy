@@ -20,7 +20,7 @@
 			<div>
 				<h3 class="font-semibold capitalize flex items-center">
 					{{ endpointDetails.title }}
-					<span convoy-tag [type]="endpointDetails.status === 'active' ? 'success' : 'grey'" class="ml-8px text-10">{{ endpointDetails.status }}</span>
+					<span convoy-tag [color]="endpointDetails.status === 'active' ? 'success' : 'gray'" class="ml-8px text-10">{{ endpointDetails.status }}</span>
 				</h3>
 				<p class="text-12 text-grey-60 mt-6px">{{ endpointDetails.target_url }}</p>
 			</div>

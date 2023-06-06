@@ -1,10 +1,11 @@
 package models
 
 import (
+	"net/http"
+
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
-	"net/http"
 )
 
 type EventDeliveryResponse struct {

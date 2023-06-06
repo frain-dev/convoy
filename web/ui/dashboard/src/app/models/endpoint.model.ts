@@ -48,7 +48,9 @@ export interface PORTAL_LINK {
 	endpoint_count: number;
 	endpoint: string[];
 	endpoints_metadata: ENDPOINT[];
+	can_manage_endpoint: boolean;
 	name: string;
+	owner_id: string;
 	url: string;
 	created_at: string;
 	updated_at: string;

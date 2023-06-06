@@ -1,7 +1,5 @@
-<p class="text-14 text-grey-60 mb-24px max-w-[500px]">A project represents the top level namespace for grouping event sources, applications, endpoints and events.</p>
-
 <form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()" disabled>
-	<div convoy-card class="p-24px mt-24px min-h-[468px]">
+	<div convoy-card class="p-24px mt-24px">
 		<ng-container *ngIf="action === 'update'">
 			<ul class="flex flex-row w-full border-b-[.5px] border-grey-20 mb-30px">
 				<li *ngFor="let tab of tabs" class="mr-24px !list-none last-of-type:mr-0">
@@ -11,6 +9,7 @@
 				</li>
 			</ul>
 		</ng-container>
+
 		<ng-container *ngIf="activeTab === 'project config'">
 			<convoy-input-field>
 				<label for="project-name" required="true" convoy-label>Project name</label>
@@ -46,18 +45,16 @@
 			</div>
 
 			<div class="border-t border-grey-20 pt-24px mt-24px">
-				<h3 class="font-semibold mb-24px">Set Configurations</h3>
-
 				<div formGroupName="config">
 					<ng-container *ngIf="showConfig('signature')">
 						<div class="flex justify-between items-center mb-24px">
-							<p class="text-14 font-medium text-grey-60 flex items-center">
+							<p class="text-12 font-medium text-new.gray-500 flex items-center">
 								Signature Details
 								<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 							</p>
 							<button convoy-permission="Project Settings|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
-								<svg width="16" height="16" class="fill-grey-60">
-									<use xlink:href="#delete-icon"></use>
+								<svg width="14" height="14" class="fill-transparent">
+									<use xlink:href="#delete-icon222"></use>
 								</svg>
 							</button>
 						</div>
@@ -86,7 +83,7 @@
 
 					<ng-container *ngIf="showConfig('retry-config')">
 						<div class="flex justify-between items-center mb-24px">
-							<p class="flex items-center text-14 font-medium text-grey-60">
+							<p class="flex items-center text-12 font-medium text-new.gray-500">
 								Retry Logic
 								<convoy-tooltip size="sm" position="right" class="ml-4px">
 									These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time before the next
@@ -94,8 +91,8 @@
 								</convoy-tooltip>
 							</p>
 							<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('retry-config')">
-								<svg width="16" height="16" class="fill-grey-60">
-									<use xlink:href="#delete-icon"></use>
+								<svg width="14" height="14" class="fill-transparent">
+									<use xlink:href="#delete-icon2"></use>
 								</svg>
 							</button>
 						</div>
@@ -119,13 +116,13 @@
 
 					<ng-container *ngIf="showConfig('rate-limit')">
 						<div class="flex justify-between items-center mb-24px">
-							<p class="flex items-center text-14 font-medium text-grey-60">
+							<p class="flex items-center text-12 font-medium text-new.gray-500">
 								Rate Limit Parameters
 								<convoy-tooltip size="sm" position="right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
 							</p>
 							<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('rate-limit')">
-								<svg width="16" height="16" class="fill-grey-60">
-									<use xlink:href="#delete-icon"></use>
+								<svg width="14" height="14" class="fill-transparent">
+									<use xlink:href="#delete-icon2"></use>
 								</svg>
 							</button>
 						</div>
@@ -149,10 +146,10 @@
 
 					<ng-container *ngIf="showConfig('retention')">
 						<div class="flex justify-between items-center mb-24px">
-							<p class="text-14 font-medium text-grey-60">Retention Policy</p>
+							<p class="text-12 font-medium text-new.gray-500">Retention Policy</p>
 							<button convoy-button type="button" size="xs" fill="outline" convoy-permission="Project Settings|MANAGE" color="grey" texture="light" (click)="toggleConfigForm('retention')">
-								<svg width="16" height="16" class="fill-grey-60">
-									<use xlink:href="#delete-icon"></use>
+								<svg width="14" height="14" class="fill-transparent">
+									<use xlink:href="#delete-icon2"></use>
 								</svg>
 							</button>
 						</div>
@@ -168,7 +165,9 @@
 					</ng-container>
 				</div>
 
-				<div class="flex items-center">
+				<hr class="border-t border-grey-20 mb-24px -mt-6px" *ngIf="shouldShowBorder !== 0 && shouldShowBorder < configurations.length - 1" />
+
+				<div class="flex items-center" *ngIf="shouldShowBorder < configurations.length">
 					<ng-container *ngFor="let config of configurations; let i = index">
 						<ng-container *ngIf="!config.show">
 							<button

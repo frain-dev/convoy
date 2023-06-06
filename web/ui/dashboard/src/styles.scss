@@ -69,8 +69,4 @@
 	.disabled {
 		@apply opacity-50 pointer-events-none;
 	}
-
-	* {
-		@apply font-medium;
-	}
 }

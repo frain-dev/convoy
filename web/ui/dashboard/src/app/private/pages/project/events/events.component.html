@@ -39,7 +39,7 @@
 						</div>
 						<div class="flex text-left text-14 p-10px cursor-pointer hover:bg-grey-10" *ngFor="let event of lastestEventDeliveries" [routerLink]="['./event-deliveries/' + event.uid]">
 							<div class="w-1/5">
-								<div convoy-tag [type]="event.status | statuscolor">{{ event?.status }}</div>
+								<div convoy-tag [color]="event.status | statuscolor">{{ event?.status }}</div>
 							</div>
 							<div class="w-1/3 ml-2px max-w-[159px] whitespace-nowrap overflow-hidden text-ellipsis">{{ event?.endpoint_metadata?.title }}</div>
 							<div class="w-1/5 ml-2px">{{ event.created_at | date: 'mediumTime' }}</div>

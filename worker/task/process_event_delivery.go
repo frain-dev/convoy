@@ -53,24 +53,24 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		}
 
 		// Load message from DB and switch state to prevent concurrent processing.
-		ed, err := eventDeliveryRepo.FindEventDeliveryByID(context.Background(), data.ProjectID, data.EventDeliveryID)
+		ed, err := eventDeliveryRepo.FindEventDeliveryByID(ctx, data.ProjectID, data.EventDeliveryID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		endpoint, err := endpointRepo.FindEndpointByID(context.Background(), ed.EndpointID, ed.ProjectID)
+		endpoint, err := endpointRepo.FindEndpointByID(ctx, ed.EndpointID, ed.ProjectID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
-		subscription, err := subRepo.FindSubscriptionByID(context.Background(), ed.ProjectID, ed.SubscriptionID)
+		subscription, err := subRepo.FindSubscriptionByID(ctx, ed.ProjectID, ed.SubscriptionID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*ed.Metadata).NextDuration(ed.Metadata.NumTrials)
 
-		p, err := projectRepo.FetchProjectByID(context.Background(), endpoint.ProjectID)
+		p, err := projectRepo.FetchProjectByID(ctx, endpoint.ProjectID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
@@ -90,7 +90,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		res, err := rateLimiter.ShouldAllow(context.Background(), endpoint.TargetURL, rlc.Count, int(rlc.Duration))
+		res, err := rateLimiter.ShouldAllow(ctx, endpoint.TargetURL, rlc.Count, int(rlc.Duration))
 		if err != nil {
 			return nil
 		}
@@ -103,12 +103,12 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &RateLimitError{Err: ErrRateLimit, delay: delayDuration}
 		}
 
-		_, err = rateLimiter.Allow(context.Background(), endpoint.TargetURL, rlc.Count, int(rlc.Duration))
+		_, err = rateLimiter.Allow(ctx, endpoint.TargetURL, rlc.Count, int(rlc.Duration))
 		if err != nil {
 			return nil
 		}
 
-		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), p.UID, *ed, datastore.ProcessingEventStatus)
+		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, p.UID, *ed, datastore.ProcessingEventStatus)
 		if err != nil {
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
@@ -143,7 +143,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		}
 
 		if e.Status == datastore.InactiveEndpointStatus {
-			err = eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), p.UID, *ed, datastore.DiscardedEventStatus)
+			err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, p.UID, *ed, datastore.DiscardedEventStatus)
 			if err != nil {
 				return &EndpointError{Err: err, delay: delayDuration}
 			}
@@ -207,13 +207,13 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		if done && e.Status == datastore.PendingEndpointStatus && p.Config.DisableEndpoint {
 			endpointStatus := datastore.ActiveEndpointStatus
-			err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
+			err := endpointRepo.UpdateEndpointStatus(ctx, p.UID, e.UID, endpointStatus)
 			if err != nil {
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
 
 			// send endpoint reactivation notification
-			err = notifications.SendEndpointNotification(context.Background(), endpoint, p, endpointStatus, notificationQueue, false, resp.Error, string(resp.Body), resp.StatusCode)
+			err = notifications.SendEndpointNotification(ctx, endpoint, p, endpointStatus, notificationQueue, false, resp.Error, string(resp.Body), resp.StatusCode)
 			if err != nil {
 				log.WithError(err).Error("failed to send notification")
 			}
@@ -221,7 +221,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		if !done && e.Status == datastore.PendingEndpointStatus && p.Config.DisableEndpoint {
 			endpointStatus := datastore.InactiveEndpointStatus
-			err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
+			err := endpointRepo.UpdateEndpointStatus(ctx, p.UID, e.UID, endpointStatus)
 			if err != nil {
 				log.FromContext(ctx).Info("Failed to reactivate endpoint after successful retry")
 			}
@@ -247,20 +247,20 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			if e.Status != datastore.PendingEndpointStatus && p.Config.DisableEndpoint {
 				endpointStatus := datastore.InactiveEndpointStatus
 
-				err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
+				err := endpointRepo.UpdateEndpointStatus(ctx, p.UID, e.UID, endpointStatus)
 				if err != nil {
 					log.WithError(err).Error("failed to deactivate endpoint after failed retry")
 				}
 
 				// send endpoint deactivation notification
-				err = notifications.SendEndpointNotification(context.Background(), endpoint, p, endpointStatus, notificationQueue, true, resp.Error, string(resp.Body), resp.StatusCode)
+				err = notifications.SendEndpointNotification(ctx, endpoint, p, endpointStatus, notificationQueue, true, resp.Error, string(resp.Body), resp.StatusCode)
 				if err != nil {
 					log.WithError(err).Error("failed to send notification")
 				}
 			}
 		}
 
-		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(context.Background(), p.UID, *ed, attempt)
+		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(ctx, p.UID, *ed, attempt)
 		if err != nil {
 			log.WithError(err).Error("failed to update message ", ed.UID)
 		}

@@ -94,6 +94,7 @@ type Endpoint struct {
 type UpdateEndpoint struct {
 	URL                string  `json:"url" bson:"url" valid:"required~please provide a url for your endpoint"`
 	Secret             string  `json:"secret" bson:"secret"`
+	OwnerID            string  `json:"owner_id" bson:"owner_id"`
 	Description        string  `json:"description" bson:"description"`
 	AdvancedSignatures *bool   `json:"advanced_signatures" bson:"advanced_signatures"`
 	Name               *string `json:"name" bson:"name" valid:"required~please provide your endpointName"`
@@ -206,22 +207,26 @@ type CreateEndpointApiKey struct {
 }
 
 type PortalLink struct {
-	Name      string   `json:"name" valid:"required~please provide the name field"`
-	Endpoints []string `json:"endpoints"`
+	Name               string   `json:"name" valid:"required~please provide the name field"`
+	Endpoints          []string `json:"endpoints"`
+	OwnerID            string   `json:"owner_id"`
+	CanManageEndpoint bool     `json:"can_manage_endpoint"`
 }
 
 type PortalLinkResponse struct {
-	UID               string                     `json:"uid"`
-	Name              string                     `json:"name"`
-	ProjectID         string                     `json:"project_id"`
-	Endpoints         []string                   `json:"endpoints"`
-	EndpointCount     int                        `json:"endpoint_count"`
-	Token             string                     `json:"token"`
-	EndpointsMetadata datastore.EndpointMetadata `json:"endpoints_metadata"`
-	URL               string                     `json:"url"`
-	CreatedAt         time.Time                  `json:"created_at,omitempty"`
-	UpdatedAt         time.Time                  `json:"updated_at,omitempty"`
-	DeletedAt         null.Time                  `json:"deleted_at,omitempty"`
+	UID                string                     `json:"uid"`
+	Name               string                     `json:"name"`
+	ProjectID          string                     `json:"project_id"`
+	OwnerID            string                     `json:"owner_id"`
+	Endpoints          []string                   `json:"endpoints"`
+	EndpointCount      int                        `json:"endpoint_count"`
+	CanManageEndpoint bool                       `json:"can_manage_endpoint"`
+	Token              string                     `json:"token"`
+	EndpointsMetadata  datastore.EndpointMetadata `json:"endpoints_metadata"`
+	URL                string                     `json:"url"`
+	CreatedAt          time.Time                  `json:"created_at,omitempty"`
+	UpdatedAt          time.Time                  `json:"updated_at,omitempty"`
+	DeletedAt          null.Time                  `json:"deleted_at,omitempty"`
 }
 
 type TestFilter struct {

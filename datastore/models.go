@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"context"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
@@ -124,7 +125,7 @@ type (
 	StorageType      string
 	KeyType          string
 	PubSubType       string
-	PubSubHandler    func(*Source, string) error
+	PubSubHandler    func(context.Context, *Source, string) error
 	MetaEventType    string
 	HookEventType    string
 )
@@ -591,6 +592,7 @@ func (o *Project) IsDeleted() bool { return o.DeletedAt.Valid }
 func (o *Project) IsOwner(e *Endpoint) bool { return o.UID == e.ProjectID }
 
 var (
+	ErrSignupDisabled                = errors.New("user registration is disabled")
 	ErrUserNotFound                  = errors.New("user not found")
 	ErrSourceNotFound                = errors.New("source not found")
 	ErrEventNotFound                 = errors.New("event not found")
@@ -1263,8 +1265,10 @@ type PortalLink struct {
 	Name              string           `json:"name" db:"name"`
 	ProjectID         string           `json:"project_id" db:"project_id"`
 	Token             string           `json:"-" db:"token"`
+	OwnerID           string           `json:"owner_id" db:"owner_id"`
 	Endpoints         pq.StringArray   `json:"endpoints" db:"endpoints"`
 	EndpointsMetadata EndpointMetadata `json:"endpoints_metadata" db:"endpoints_metadata"`
+	CanManageEndpoint bool             `json:"can_manage_endpoint" db:"can_manage_endpoint"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`

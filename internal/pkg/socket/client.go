@@ -39,7 +39,7 @@ type Client struct {
 	lock sync.RWMutex // protect Device from data race
 }
 
-func NewClient(conn WebSocketConnection, device *datastore.Device, sourceID string, deviceRepo datastore.DeviceRepository, eventDeliveryRepo datastore.EventDeliveryRepository) {
+func NewClient(ctx context.Context, conn WebSocketConnection, device *datastore.Device, sourceID string, deviceRepo datastore.DeviceRepository, eventDeliveryRepo datastore.EventDeliveryRepository) {
 	client := &Client{
 		conn:              conn,
 		Device:            device,
@@ -50,7 +50,7 @@ func NewClient(conn WebSocketConnection, device *datastore.Device, sourceID stri
 	}
 
 	register <- client
-	go client.readPump(unregister)
+	go client.readPump(ctx, unregister)
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -58,32 +58,30 @@ func NewClient(conn WebSocketConnection, device *datastore.Device, sourceID stri
 // The application runs readPump in a per-connection goroutine. The application
 // ensures that there is at most one reader on a connection by executing all
 // reads from this goroutine.
-func (c *Client) readPump(unregister chan *Client) {
+func (c *Client) readPump(ctx context.Context, unregister chan *Client) {
 	defer c.Close(unregister)
 
 	c.conn.SetReadLimit(maxMessageSize)
-	c.conn.SetPingHandler(c.pingHandler)
+	c.conn.SetPingHandler(c.pingHandler(ctx))
 
 	for {
 		messageType, message, err := c.conn.ReadMessage()
-		c.processMessage(messageType, message, err, unregister)
-
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.WithError(err).WithField("device_id", c.deviceID).Error("unexpected close error")
 			}
 			return
 		}
+
+		c.processMessage(ctx, messageType, message, unregister)
 	}
 }
 
-func (c *Client) processMessage(messageType int, message []byte, err error, unregister chan *Client) {
-	// fmt.Printf("type: %+v \nmess: %+v \nerr: %+v\n", messageType, message, err)
-
-	// messageType -1 means an error occured
+func (c *Client) processMessage(ctx context.Context, messageType int, message []byte, unregister chan *Client) {
+	// messageType -1 means an error occurred
 	// set the device of this client to offline
 	if messageType == -1 {
-		c.GoOffline()
+		c.GoOffline(ctx)
 	}
 
 	if messageType == websocket.CloseMessage {
@@ -93,7 +91,7 @@ func (c *Client) processMessage(messageType int, message []byte, err error, unre
 	if messageType == websocket.TextMessage {
 		// this is triggered when a SIGINT signal (Ctrl + C) is sent by the client
 		if string(message) == "disconnect" {
-			c.GoOffline()
+			c.GoOffline(ctx)
 			return
 		}
 
@@ -106,7 +104,7 @@ func (c *Client) processMessage(messageType int, message []byte, err error, unre
 				log.Error(err)
 			}
 
-			go c.ResendEventDeliveries(since, events)
+			go c.ResendEventDeliveries(ctx, since, events)
 			return
 		}
 
@@ -116,29 +114,31 @@ func (c *Client) processMessage(messageType int, message []byte, err error, unre
 			log.WithError(err).Error("failed to unmarshal text message")
 			return
 		}
-		go c.UpdateEventDeliveryStatus(ed.UID, c.Device.ProjectID)
+		go c.UpdateEventDeliveryStatus(ctx, ed.UID, c.Device.ProjectID)
 	}
 }
 
-func (c *Client) pingHandler(appData string) error {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+func (c *Client) pingHandler(ctx context.Context) func(appData string) error {
+	return func(appData string) error {
+		c.lock.Lock()
+		defer c.lock.Unlock()
 
-	err := c.deviceRepo.UpdateDeviceLastSeen(context.Background(), c.Device, c.Device.EndpointID, c.Device.ProjectID, datastore.DeviceStatusOnline)
-	if err != nil {
-		log.WithError(err).Error(ErrFailedToUpdateDevice.Error())
-		return ErrFailedToUpdateDevice
+		err := c.deviceRepo.UpdateDeviceLastSeen(ctx, c.Device, c.Device.EndpointID, c.Device.ProjectID, datastore.DeviceStatusOnline)
+		if err != nil {
+			log.WithError(err).Error(ErrFailedToUpdateDevice.Error())
+			return ErrFailedToUpdateDevice
+		}
+
+		c.Device.LastSeenAt = time.Now()
+
+		err = c.conn.WriteMessage(websocket.PongMessage, []byte("ok"))
+		if err != nil {
+			log.WithError(err).Error(ErrFailedToSendPongMessage.Error())
+			return ErrFailedToSendPongMessage
+		}
+
+		return nil
 	}
-
-	c.Device.LastSeenAt = time.Now()
-
-	err = c.conn.WriteMessage(websocket.PongMessage, []byte("ok"))
-	if err != nil {
-		log.WithError(err).Error(ErrFailedToSendPongMessage.Error())
-		return ErrFailedToSendPongMessage
-	}
-
-	return nil
 }
 
 func (c *Client) Close(unregister chan *Client) {
@@ -149,13 +149,13 @@ func (c *Client) Close(unregister chan *Client) {
 	unregister <- c
 }
 
-func (c *Client) GoOffline() {
+func (c *Client) GoOffline(ctx context.Context) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
 	c.Device.Status = datastore.DeviceStatusOffline
 
-	err := c.deviceRepo.UpdateDevice(context.Background(), c.Device, c.Device.EndpointID, c.Device.ProjectID)
+	err := c.deviceRepo.UpdateDevice(ctx, c.Device, c.Device.EndpointID, c.Device.ProjectID)
 	if err != nil {
 		log.WithError(err).Error("failed to update device status to offline")
 	}
@@ -171,7 +171,7 @@ func (c *Client) IsOnline() bool {
 }
 
 func (c *Client) parseTime(message string) (time.Time, error) {
-	var since time.Time = time.Now()
+	var since = time.Now()
 	var err error
 
 	timeType := strings.Split(message, "|")[1]
@@ -200,20 +200,20 @@ func (c *Client) parseTime(message string) (time.Time, error) {
 	return since, nil
 }
 
-func (c *Client) UpdateEventDeliveryStatus(id, project_id string) {
-	ed, err := c.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), project_id, id)
+func (c *Client) UpdateEventDeliveryStatus(ctx context.Context, id, projectId string) {
+	ed, err := c.eventDeliveryRepo.FindEventDeliveryByID(ctx, projectId, id)
 	if err != nil {
 		log.WithError(err).WithField("event_delivery_id", id).Error("failed to find event delivery")
 	}
 
-	err = c.eventDeliveryRepo.UpdateStatusOfEventDelivery(context.Background(), c.Device.ProjectID, *ed, datastore.SuccessEventStatus)
+	err = c.eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, c.Device.ProjectID, *ed, datastore.SuccessEventStatus)
 	if err != nil {
 		log.WithError(err).WithField("event_delivery_id", id).Error("failed to update event delivery status")
 	}
 }
 
-func (c *Client) ResendEventDeliveries(since time.Time, events chan *CLIEvent) {
-	eds, err := c.eventDeliveryRepo.FindDiscardedEventDeliveries(context.Background(), c.Device.ProjectID, c.Device.UID,
+func (c *Client) ResendEventDeliveries(ctx context.Context, since time.Time, events chan *CLIEvent) {
+	eds, err := c.eventDeliveryRepo.FindDiscardedEventDeliveries(ctx, c.Device.ProjectID, c.Device.UID,
 		datastore.SearchParams{CreatedAtStart: since.Unix(), CreatedAtEnd: time.Now().Unix()})
 	if err != nil {
 		log.WithError(err).Error("failed to find discarded event deliveries")

@@ -7087,6 +7087,9 @@ const docTemplate = `{
         "models.PortalLink": {
             "type": "object",
             "properties": {
+                "can_manage_endpoint": {
+                    "type": "boolean"
+                },
                 "endpoints": {
                     "type": "array",
                     "items": {
@@ -7095,12 +7098,18 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "owner_id": {
+                    "type": "string"
                 }
             }
         },
         "models.PortalLinkResponse": {
             "type": "object",
             "properties": {
+                "can_manage_endpoint": {
+                    "type": "boolean"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -7123,6 +7132,9 @@ const docTemplate = `{
                     }
                 },
                 "name": {
+                    "type": "string"
+                },
+                "owner_id": {
                     "type": "string"
                 },
                 "project_id": {

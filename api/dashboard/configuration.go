@@ -61,8 +61,12 @@ func (a *DashboardHandler) CreateConfiguration(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	configService := createConfigService(a)
-	config, err := configService.CreateConfiguration(r.Context(), &newConfig)
+	cc := services.CreateConfigService{
+		ConfigRepo: postgres.NewConfigRepo(a.A.DB),
+		NewConfig:  &newConfig,
+	}
+
+	config, err := cc.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -88,8 +92,12 @@ func (a *DashboardHandler) UpdateConfiguration(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	configService := createConfigService(a)
-	config, err := configService.UpdateConfiguration(r.Context(), &newConfig)
+	uc := services.UpdateConfigService{
+		ConfigRepo: postgres.NewConfigRepo(a.A.DB),
+		Config:     &newConfig,
+	}
+
+	config, err := uc.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
