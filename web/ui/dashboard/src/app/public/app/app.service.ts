@@ -20,6 +20,17 @@ export class AppService {
 		});
 	}
 
+	getPortalDetail(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({ url: `/portal_link`, method: 'get' });
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
 	deleteSubscription(subscriptionId: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {

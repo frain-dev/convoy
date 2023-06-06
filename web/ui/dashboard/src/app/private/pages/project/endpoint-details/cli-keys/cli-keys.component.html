@@ -24,8 +24,8 @@
 			<div>
 				<div class="flex items-center mb-8px">
 					<p class="text-12 font-medium mr-36px">{{ key.name }}</p>
-					<convoy-tag type="grey" className="mr-16px">{{ key.role.type }}</convoy-tag>
-					<convoy-tag [type]="getKeyStatus(key.expires_at) | statuscolor">{{ getKeyStatus(key.expires_at) }}</convoy-tag>
+					<convoy-tag color="gray" className="mr-16px">{{ key.role.type }}</convoy-tag>
+					<convoy-tag [color]="getKeyStatus(key.expires_at) | statuscolor">{{ getKeyStatus(key.expires_at) }}</convoy-tag>
 				</div>
 				<p class="text-grey-40 text-12 mt-8px">Expires At: {{ key.expires_at | date: 'medium' }}</p>
 			</div>
@@ -45,7 +45,7 @@
 		</button>
 	</div>
 
-    <form class="p-20px" [formGroup]="generateKeyForm" (ngSubmit)="generateNewKey()">
+	<form class="p-20px" [formGroup]="generateKeyForm" (ngSubmit)="generateNewKey()">
 		<ng-container *ngIf="token">
 			<convoy-select label="Endpoint" name="endpoint_id" formControlName="endpoint_id" [options]="endpoints" [value]="endpointId" [required]="true" errorMessage="Endpoint Id is required" (selectedOption)="setEndpointId($event)"></convoy-select>
 		</ng-container>

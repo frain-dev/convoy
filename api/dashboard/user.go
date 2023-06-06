@@ -16,11 +16,12 @@ import (
 func createUserService(a *DashboardHandler) *services.UserService {
 	userRepo := postgres.NewUserRepo(a.A.DB)
 	configService := createConfigService(a)
-	orgService := createOrganisationService(a)
+	orgRepo := postgres.NewOrgRepo(a.A.DB)
+	orgMemberRepo := postgres.NewOrgMemberRepo(a.A.DB)
 
 	return services.NewUserService(
 		userRepo, a.A.Cache, a.A.Queue,
-		configService, orgService,
+		configService, orgRepo, orgMemberRepo,
 	)
 }
 

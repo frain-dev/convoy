@@ -71,7 +71,7 @@ export class InputErrorComponent implements OnInit {
 	standalone: true,
 	imports: [CommonModule, TooltipComponent],
 	host: {
-		class: 'w-full font-medium text-12 text-grey-40 mb-8px flex items-center justify-between'
+		class: 'w-full font-normal text-12 text-new.gray-400 mb-8px flex items-center justify-between'
 	},
 	template: `
 		<div class="flex items-center">

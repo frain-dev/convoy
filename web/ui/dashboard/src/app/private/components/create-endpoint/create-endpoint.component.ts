@@ -27,6 +27,7 @@ import { ENDPOINT } from 'src/app/models/endpoint.model';
 export class CreateEndpointComponent implements OnInit {
 	@Input('editMode') editMode = false;
 	@Input('showAction') showAction: 'true' | 'false' = 'false';
+	@Input('type') type: 'in-app' | 'portal' = 'in-app';
 	@Output() onAction = new EventEmitter<any>();
 	savingEndpoint = false;
 	isLoadingEndpointDetails = false;
@@ -37,8 +38,9 @@ export class CreateEndpointComponent implements OnInit {
 		slack_webhook_url: [],
 		url: ['', Validators.required],
 		secret: [null],
-		http_timeout: [null],
+		http_timeout: [null, Validators.pattern('^[-+]?[0-9]+$')],
 		description: [null],
+		owner_id: [null],
 		authentication: this.formBuilder.group({
 			type: ['api_key'],
 			api_key: this.formBuilder.group({
@@ -49,14 +51,9 @@ export class CreateEndpointComponent implements OnInit {
 		advanced_signatures: [false, Validators.required]
 	});
 	token: string = this.route.snapshot.params.token;
-	endpointUid: string = this.route.snapshot.params.id;
+	@Input('endpointId') endpointUid: string = this.route.snapshot.params.id;
 	enableMoreConfig = false;
-	configurations = [
-		{ uid: 'alert-config', name: 'Alert Configuration', show: false },
-		{ uid: 'auth', name: 'Authentication', show: false },
-		{ uid: 'http_timeout', name: 'Endpoint Timeout ', show: false },
-		{ uid: 'signature', name: 'Signature Format', show: false }
-	];
+	configurations = [{ uid: 'http_timeout', name: 'Endpoint Timeout ', show: false }];
 	endpointCreated: boolean = false;
 	private rbacService = inject(RbacService);
 
@@ -71,6 +68,7 @@ export class CreateEndpointComponent implements OnInit {
 	) {}
 
 	async ngOnInit() {
+		if (this.type !== 'portal') this.configurations.push({ uid: 'alert-config', name: 'Alert Configuration', show: false }, { uid: 'auth', name: 'Authentication', show: false }, { uid: 'signature', name: 'Signature Format', show: false });
 		if (this.endpointUid && this.editMode) this.getEndpointDetails();
 		if (!(await this.rbacService.userCanAccess('Endpoints|MANAGE'))) this.addNewEndpointForm.disable();
 	}
@@ -142,5 +140,9 @@ export class CreateEndpointComponent implements OnInit {
 
 	cancel() {
 		this.onAction.emit({ action: 'close' });
+	}
+
+	get shouldShowBorder(): number {
+		return this.configurations.filter(config => config.show).length;
 	}
 }

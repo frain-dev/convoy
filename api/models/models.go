@@ -14,24 +14,6 @@ type Organisation struct {
 	CustomDomain string `json:"custom_domain" bson:"custom_domain"`
 }
 
-type Configuration struct {
-	IsAnalyticsEnabled *bool                                 `json:"is_analytics_enabled"`
-	IsSignupEnabled    *bool                                 `json:"is_signup_enabled"`
-	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
-}
-
-type ConfigurationResponse struct {
-	UID                string                                `json:"uid"`
-	IsAnalyticsEnabled bool                                  `json:"is_analytics_enabled"`
-	IsSignupEnabled    bool                                  `json:"is_signup_enabled"`
-	ApiVersion         string                                `json:"api_version"`
-	StoragePolicy      *datastore.StoragePolicyConfiguration `json:"storage_policy"`
-
-	CreatedAt time.Time `json:"created_at,omitempty"`
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
-	DeletedAt null.Time `json:"deleted_at,omitempty"`
-}
-
 type OrganisationInvite struct {
 	InviteeEmail string    `json:"invitee_email" valid:"required~please provide a valid invitee email,email"`
 	Role         auth.Role `json:"role" bson:"role"`
@@ -112,6 +94,7 @@ type Endpoint struct {
 type UpdateEndpoint struct {
 	URL                string  `json:"url" bson:"url" valid:"required~please provide a url for your endpoint"`
 	Secret             string  `json:"secret" bson:"secret"`
+	OwnerID            string  `json:"owner_id" bson:"owner_id"`
 	Description        string  `json:"description" bson:"description"`
 	AdvancedSignatures *bool   `json:"advanced_signatures" bson:"advanced_signatures"`
 	Name               *string `json:"name" bson:"name" valid:"required~please provide your endpointName"`
@@ -124,64 +107,6 @@ type UpdateEndpoint struct {
 	RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
 	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
 }
-
-type DynamicEvent struct {
-	Endpoint     DynamicEndpoint     `json:"endpoint"`
-	Subscription DynamicSubscription `json:"subscription"`
-	Event        DynamicEventStub    `json:"event"`
-}
-
-type DynamicEndpoint struct {
-	URL                string `json:"url" bson:"url" valid:"required~please provide a url for your endpoint"`
-	Secret             string `json:"secret" bson:"secret"`
-	OwnerID            string `json:"owner_id" bson:"owner_id"`
-	Description        string `json:"description" bson:"description"`
-	AdvancedSignatures bool   `json:"advanced_signatures" bson:"advanced_signatures"`
-	Name               string `json:"name" bson:"name"`
-	SupportEmail       string `json:"support_email" bson:"support_email"`
-	IsDisabled         bool   `json:"is_disabled"`
-	SlackWebhookURL    string `json:"slack_webhook_url" bson:"slack_webhook_url"`
-
-	HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
-	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
-	RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
-	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
-	AppID             string                            // Deprecated but necessary for backward compatibility
-}
-
-type DynamicEventStub struct {
-	ProjectID string `json:"project_id"`
-	EventType string `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
-	// Data is an arbitrary JSON value that gets sent as the body of the webhook to the endpoints
-	Data          json.RawMessage   `json:"data" bson:"data" valid:"required~please provide your data"`
-	CustomHeaders map[string]string `json:"custom_headers"`
-}
-
-type Event struct {
-	EndpointID string `json:"endpoint_id"`
-	AppID      string `json:"app_id" bson:"app_id"` // Deprecated but necessary for backward compatibility
-	EventType  string `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
-
-	// Data is an arbitrary JSON value that gets sent as the body of the
-	// webhook to the endpoints
-	Data          json.RawMessage   `json:"data" bson:"data" valid:"required~please provide your data"`
-	CustomHeaders map[string]string `json:"custom_headers"`
-}
-
-type FanoutEvent struct {
-	OwnerID   string `json:"owner_id" valid:"required~please provide an owner id"`
-	EventType string `json:"event_type" valid:"required~please provide an event type"`
-
-	// Data is an arbitrary JSON value that gets sent as the body of the
-	// webhook to the endpoints
-	Data          json.RawMessage   `json:"data" bson:"data" valid:"required~please provide your data"`
-	CustomHeaders map[string]string `json:"custom_headers"`
-}
-
-type IDs struct {
-	IDs []string `json:"ids"`
-}
-
 type DeliveryAttempt struct {
 	MessageID  string `json:"msg_id" bson:"msg_id"`
 	APIVersion string `json:"api_version" bson:"api_version"`
@@ -224,22 +149,26 @@ type CreateEndpointApiKey struct {
 }
 
 type PortalLink struct {
-	Name      string   `json:"name" valid:"required~please provide the name field"`
-	Endpoints []string `json:"endpoints"`
+	Name               string   `json:"name" valid:"required~please provide the name field"`
+	Endpoints          []string `json:"endpoints"`
+	OwnerID            string   `json:"owner_id"`
+	CanManageEndpoint bool     `json:"can_manage_endpoint"`
 }
 
 type PortalLinkResponse struct {
-	UID               string                     `json:"uid"`
-	Name              string                     `json:"name"`
-	ProjectID         string                     `json:"project_id"`
-	Endpoints         []string                   `json:"endpoints"`
-	EndpointCount     int                        `json:"endpoint_count"`
-	Token             string                     `json:"token"`
-	EndpointsMetadata datastore.EndpointMetadata `json:"endpoints_metadata"`
-	URL               string                     `json:"url"`
-	CreatedAt         time.Time                  `json:"created_at,omitempty"`
-	UpdatedAt         time.Time                  `json:"updated_at,omitempty"`
-	DeletedAt         null.Time                  `json:"deleted_at,omitempty"`
+	UID                string                     `json:"uid"`
+	Name               string                     `json:"name"`
+	ProjectID          string                     `json:"project_id"`
+	OwnerID            string                     `json:"owner_id"`
+	Endpoints          []string                   `json:"endpoints"`
+	EndpointCount      int                        `json:"endpoint_count"`
+	CanManageEndpoint bool                       `json:"can_manage_endpoint"`
+	Token              string                     `json:"token"`
+	EndpointsMetadata  datastore.EndpointMetadata `json:"endpoints_metadata"`
+	URL                string                     `json:"url"`
+	CreatedAt          time.Time                  `json:"created_at,omitempty"`
+	UpdatedAt          time.Time                  `json:"updated_at,omitempty"`
+	DeletedAt          null.Time                  `json:"deleted_at,omitempty"`
 }
 
 // Generic function for looping over a slice of type M

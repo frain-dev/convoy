@@ -290,4 +290,8 @@ export class CreateProjectComponent implements OnInit {
 		queryParams.activePage = this.activeTab;
 		this.router.navigate([], { queryParams: Object.assign({}, queryParams) });
 	}
+
+	get shouldShowBorder(): number {
+		return this.configurations.filter(config => config.show).length;
+	}
 }

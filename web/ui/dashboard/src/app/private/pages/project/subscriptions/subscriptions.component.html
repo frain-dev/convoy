@@ -57,7 +57,7 @@
 			<div class="w-full text-12 text-grey-60 font-medium px-24px border-b border-b-grey-10 pb-10px">{{ subscription.name }}</div>
 			<div class="flex items-center justify-between pt-24px px-24px">
 				<div class="w-114px mb-24px">
-					<div class="text-grey-40 text-10 mb-4px">{{ subscription.source_metadata.provider || (subscription.source_metadata.verifier.type | sourceValue : 'verifier') }} Source</div>
+					<div class="text-grey-40 text-10 mb-4px">{{ subscription.source_metadata.provider || (subscription.source_metadata.verifier.type | sourceValue: 'verifier') }} Source</div>
 					<div class="text-14 font-medium text-grey-60 overflow-hidden" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical">{{ subscription.source_metadata.name }}</div>
 				</div>
 				<div class="flex items-center justify-center mb-24px">
@@ -141,11 +141,11 @@
 				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
 			</button>
 
-			<h2 class="font-semibold capitalize ml-2">{{ showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription' }}</h2>
+			<h2 class="font-semibold text-16 capitalize ml-16px">{{ showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription' }}</h2>
 		</div>
 	</div>
 
-	<div class="max-w-[834px] m-auto">
+	<div class="max-w-[770px] m-auto">
 		<convoy-create-subscription showAction="true" (onAction)="createSubscription($event.action)" [action]="showUpdateSubscriptionModal ? 'update' : 'create'"></convoy-create-subscription>
 	</div>
 </div>
@@ -160,12 +160,13 @@
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</button>
 	</div>
+
 	<div class="p-20px">
 		<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
 			<h2 class="font-medium mb-10px text-14 text-grey-40">Source</h2>
 			<div convoy-card hover="true" class="w-full cursor-pointer py-20px mb-24px">
 				<div class="px-24px pb-12px border-b border-b-grey-10" [routerLink]="['/projects/' + privateService.activeProjectDetails?.uid + '/sources']" [queryParams]="{ id: activeSubscription?.source_metadata?.uid }">
-					<div class="text-grey-40 text-10 mb-4px">{{ activeSubscription?.source_metadata?.provider || (activeSubscription?.source_metadata?.verifier?.type || '' | sourceValue : 'verifier') }}</div>
+					<div class="text-grey-40 text-10 mb-4px">{{ activeSubscription?.source_metadata?.provider || (activeSubscription?.source_metadata?.verifier?.type || '' | sourceValue: 'verifier') }}</div>
 					<div class="flex justify-between items-center">
 						<div class="text-14 font-medium">{{ activeSubscription?.source_metadata?.name }}</div>
 						<svg width="18" height="18" class="fill-grey-60">
@@ -206,7 +207,7 @@
 				<div class="px-24px">
 					<div class="text-14 font-medium flex items-center">
 						<span class="max-w-[200px] overflow-ellipsis overflow-hidden whitespace-nowrap block">{{ activeSubscription?.device_metadata?.host_name }}</span>
-						<span convoy-tag [type]="activeSubscription?.device_metadata?.status == 'online' ? 'success' : 'grey'" class="ml-8px">{{ activeSubscription?.device_metadata?.status }}</span>
+						<span convoy-tag [color]="activeSubscription?.device_metadata?.status == 'online' ? 'success' : 'gray'" class="ml-8px">{{ activeSubscription?.device_metadata?.status }}</span>
 					</div>
 				</div>
 			</div>

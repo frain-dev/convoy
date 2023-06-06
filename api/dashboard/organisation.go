@@ -14,13 +14,6 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-func createOrganisationService(a *DashboardHandler) *services.OrganisationService {
-	orgRepo := postgres.NewOrgRepo(a.A.DB)
-	orgMemberRepo := postgres.NewOrgMemberRepo(a.A.DB)
-
-	return services.NewOrganisationService(orgRepo, orgMemberRepo)
-}
-
 func (a *DashboardHandler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
 	org, err := a.retrieveOrganisation(r)
 	if err != nil {
@@ -69,8 +62,14 @@ func (a *DashboardHandler) CreateOrganisation(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	orgService := createOrganisationService(a)
-	organisation, err := orgService.CreateOrganisation(r.Context(), &newOrg, user)
+	co := services.CreateOrganisationService{
+		OrgRepo:       postgres.NewOrgRepo(a.A.DB),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+		NewOrg:        &newOrg,
+		User:          user,
+	}
+
+	organisation, err := co.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -86,7 +85,6 @@ func (a *DashboardHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Req
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
-	orgService := createOrganisationService(a)
 
 	org, err := a.retrieveOrganisation(r)
 	if err != nil {
@@ -99,7 +97,14 @@ func (a *DashboardHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	org, err = orgService.UpdateOrganisation(r.Context(), org, &orgUpdate)
+	us := services.UpdateOrganisationService{
+		OrgRepo:       postgres.NewOrgRepo(a.A.DB),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+		Org:           org,
+		Update:        &orgUpdate,
+	}
+
+	org, err = us.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
