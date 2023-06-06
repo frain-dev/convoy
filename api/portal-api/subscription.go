@@ -70,8 +70,11 @@ func (a *PortalLinkHandler) GetSubscriptions(w http.ResponseWriter, r *http.Requ
 		fillSourceURL(subscriptions[i].Source, baseUrl, customDomain)
 	}
 
+	resp := models.NewListResponse(subscriptions, func(subscription datastore.Subscription) models.SubscriptionResponse {
+		return models.SubscriptionResponse{Subscription: &subscription}
+	})
 	_ = render.Render(w, r, util.NewServerResponse("Subscriptions fetched successfully",
-		pagedResponse{Content: &subscriptions, Pagination: &paginationData}, http.StatusOK))
+		pagedResponse{Content: &resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 func (a *PortalLinkHandler) GetSubscription(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +96,8 @@ func (a *PortalLinkHandler) GetSubscription(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Subscription fetched successfully", subscription, http.StatusOK))
+	resp := &models.SubscriptionResponse{Subscription: subscription}
+	_ = render.Render(w, r, util.NewServerResponse("Subscription fetched successfully", resp, http.StatusOK))
 }
 
 func (a *PortalLinkHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
@@ -103,8 +107,14 @@ func (a *PortalLinkHandler) CreateSubscription(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	var sub models.Subscription
+	var sub models.CreateSubscription
 	err = util.ReadJSON(r, &sub)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	err = sub.Validate()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -125,7 +135,8 @@ func (a *PortalLinkHandler) CreateSubscription(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Subscription created successfully", subscription, http.StatusCreated))
+	resp := models.SubscriptionResponse{Subscription: subscription}
+	_ = render.Render(w, r, util.NewServerResponse("Subscription created successfully", resp, http.StatusCreated))
 }
 
 func (a *PortalLinkHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
@@ -165,6 +176,12 @@ func (a *PortalLinkHandler) UpdateSubscription(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	err = update.Validate()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -186,7 +203,8 @@ func (a *PortalLinkHandler) UpdateSubscription(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Subscription updated successfully", sub, http.StatusAccepted))
+	resp := models.SubscriptionResponse{Subscription: sub}
+	_ = render.Render(w, r, util.NewServerResponse("Subscription updated successfully", resp, http.StatusAccepted))
 }
 
 func (a *PortalLinkHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request) {
