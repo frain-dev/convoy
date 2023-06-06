@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/url"
 
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/signature"
@@ -161,7 +162,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		targetURL := e.TargetURL
 		if !util.IsStringEmpty(ed.URLQueryParams) {
-			targetURL, err = concatQueryParams(e.TargetURL, ed.URLQueryParams)
+			targetURL, err = url.ConcatQueryParams(e.TargetURL, ed.URLQueryParams)
 			if err != nil {
 				log.WithError(err).Error("failed to concat url query params")
 				return &EndpointError{Err: err, delay: delayDuration}
@@ -373,28 +374,4 @@ func (ec *EventDeliveryConfig) rateLimitConfig() *RateLimitConfig {
 	}
 
 	return rlc
-}
-
-func concatQueryParams(targetURL, query string) (string, error) {
-	u, err := url.Parse(targetURL)
-	if err != nil {
-		return "", err
-	}
-
-	parsedValues, err := url.ParseQuery(query)
-	if err != nil {
-		return "", err
-	}
-
-	q := u.Query()
-
-	for k, v := range parsedValues {
-		for _, s := range v {
-			q.Add(k, s)
-		}
-	}
-
-	u.RawQuery = q.Encode()
-
-	return u.String(), nil
 }
