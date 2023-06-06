@@ -13,7 +13,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 )
 
-func provideCreateEndpointService(ctrl *gomock.Controller, e models.Endpoint, projectID string) *CreateEndpointService {
+func provideCreateEndpointService(ctrl *gomock.Controller, e models.CreateEndpoint, projectID string) *CreateEndpointService {
 	return &CreateEndpointService{
 		Cache:        mocks.NewMockCache(ctrl),
 		EndpointRepo: mocks.NewMockEndpointRepository(ctrl),
@@ -30,7 +30,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
 		ctx context.Context
-		e   models.Endpoint
+		e   models.CreateEndpoint
 		g   *datastore.Project
 	}
 	tests := []struct {
@@ -45,7 +45,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			name: "should_create_endpoint",
 			args: args{
 				ctx: ctx,
-				e: models.Endpoint{
+				e: models.CreateEndpoint{
 					Name:            "endpoint",
 					SupportEmail:    "endpoint@test.com",
 					IsDisabled:      false,
@@ -88,16 +88,16 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			name: "should_create_endpoint_with_custom_authentication",
 			args: args{
 				ctx: ctx,
-				e: models.Endpoint{
+				e: models.CreateEndpoint{
 					Name:              "endpoint",
 					Secret:            "1234",
 					RateLimit:         100,
 					RateLimitDuration: "1m",
 					URL:               "https://google.com",
 					Description:       "test_endpoint",
-					Authentication: &datastore.EndpointAuthentication{
+					Authentication: &models.EndpointAuthentication{
 						Type: datastore.APIKeyAuthentication,
-						ApiKey: &datastore.ApiKey{
+						ApiKey: &models.ApiKey{
 							HeaderName:  "x-api-key",
 							HeaderValue: "x-api-key",
 						},
@@ -142,7 +142,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			name: "should_error_for_invalid_rate_limit_duration",
 			args: args{
 				ctx: ctx,
-				e: models.Endpoint{
+				e: models.CreateEndpoint{
 					Name:              "test_endpoint",
 					Secret:            "1234",
 					RateLimit:         100,
@@ -159,7 +159,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			name: "should_fail_to_create_endpoint",
 			args: args{
 				ctx: ctx,
-				e: models.Endpoint{
+				e: models.CreateEndpoint{
 					Name:              "test_endpoint",
 					Secret:            "1234",
 					RateLimit:         100,

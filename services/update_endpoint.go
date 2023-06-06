@@ -101,7 +101,7 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint, proje
 		endpoint.OwnerID = e.OwnerID
 	}
 
-	auth, err := ValidateEndpointAuthentication(e.Authentication)
+	auth, err := ValidateEndpointAuthentication(e.Authentication.Transform())
 	if err != nil {
 		return nil, err
 	}

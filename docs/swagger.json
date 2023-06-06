@@ -582,6 +582,41 @@
                         "name": "projectID",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "01H0JA5MEES38RRK3HTEJC647K",
+                        "description": "A pagination cursor to fetch the next page of a list",
+                        "name": "next_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "01H0JA5MEES38RRK3HTEJC647K",
+                        "description": "The owner ID of the endpoint",
+                        "name": "owner_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 20,
+                        "description": "The number of items to return per page",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "01H0JATTVCXZK8FRDX1M1JN3QY",
+                        "description": "A pagination cursor to fetch the previous page of a list",
+                        "name": "prev_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "endpoint-1",
+                        "description": "The name of the endpoint",
+                        "name": "q",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -596,10 +631,22 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/datastore.Endpoint"
-                                            }
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/public.pagedResponse"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "content": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "$ref": "#/definitions/models.EndpointResponse"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
                                         }
                                     }
                                 }
@@ -693,7 +740,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Endpoint"
+                            "$ref": "#/definitions/models.CreateEndpoint"
                         }
                     }
                 ],
@@ -709,7 +756,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.Endpoint"
+                                            "$ref": "#/definitions/models.EndpointResponse"
                                         }
                                     }
                                 }
@@ -819,7 +866,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.Endpoint"
+                                            "$ref": "#/definitions/models.EndpointResponse"
                                         }
                                     }
                                 }
@@ -920,7 +967,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Endpoint"
+                            "$ref": "#/definitions/models.UpdateEndpoint"
                         }
                     }
                 ],
@@ -936,7 +983,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.Endpoint"
+                                            "$ref": "#/definitions/models.EndpointResponse"
                                         }
                                     }
                                 }
@@ -1163,7 +1210,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.Endpoint"
+                                            "$ref": "#/definitions/models.EndpointResponse"
                                         }
                                     }
                                 }
@@ -1273,7 +1320,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.Endpoint"
+                                            "$ref": "#/definitions/models.EndpointResponse"
                                         }
                                     }
                                 }
@@ -1383,7 +1430,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.Endpoint"
+                                            "$ref": "#/definitions/models.EndpointResponse"
                                         }
                                     }
                                 }
@@ -6554,6 +6601,54 @@
                 }
             }
         },
+        "models.CreateEndpoint": {
+            "type": "object",
+            "properties": {
+                "advanced_signatures": {
+                    "type": "boolean"
+                },
+                "appID": {
+                    "description": "Deprecated but necessary for backward compatibility",
+                    "type": "string"
+                },
+                "authentication": {
+                    "$ref": "#/definitions/models.EndpointAuthentication"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "http_timeout": {
+                    "type": "string"
+                },
+                "is_disabled": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner_id": {
+                    "type": "string"
+                },
+                "rate_limit": {
+                    "type": "integer"
+                },
+                "rate_limit_duration": {
+                    "type": "string"
+                },
+                "secret": {
+                    "type": "string"
+                },
+                "slack_webhook_url": {
+                    "type": "string"
+                },
+                "support_email": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
         "models.CreateEvent": {
             "type": "object",
             "properties": {
@@ -6688,7 +6783,7 @@
                     "type": "string"
                 },
                 "authentication": {
-                    "$ref": "#/definitions/datastore.EndpointAuthentication"
+                    "$ref": "#/definitions/models.EndpointAuthentication"
                 },
                 "description": {
                     "type": "string"
@@ -6783,32 +6878,45 @@
                 }
             }
         },
-        "models.Endpoint": {
+        "models.EndpointAuthentication": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "$ref": "#/definitions/models.ApiKey"
+                },
+                "type": {
+                    "$ref": "#/definitions/datastore.EndpointAuthenticationType"
+                }
+            }
+        },
+        "models.EndpointResponse": {
             "type": "object",
             "properties": {
                 "advanced_signatures": {
                     "type": "boolean"
                 },
-                "appID": {
-                    "description": "Deprecated but necessary for backward compatibility",
-                    "type": "string"
-                },
                 "authentication": {
                     "$ref": "#/definitions/datastore.EndpointAuthentication"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
                 },
                 "description": {
                     "type": "string"
                 },
+                "events": {
+                    "type": "integer"
+                },
                 "http_timeout": {
                     "type": "string"
                 },
-                "is_disabled": {
-                    "type": "boolean"
-                },
-                "name": {
+                "owner_id": {
                     "type": "string"
                 },
-                "owner_id": {
+                "project_id": {
                     "type": "string"
                 },
                 "rate_limit": {
@@ -6817,16 +6925,31 @@
                 "rate_limit_duration": {
                     "type": "string"
                 },
-                "secret": {
-                    "type": "string"
+                "secrets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/datastore.Secret"
+                    }
                 },
                 "slack_webhook_url": {
                     "type": "string"
                 },
+                "status": {
+                    "$ref": "#/definitions/datastore.EndpointStatus"
+                },
                 "support_email": {
                     "type": "string"
                 },
-                "url": {
+                "target_url": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -7479,6 +7602,50 @@
                     "type": "string"
                 },
                 "content_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.UpdateEndpoint": {
+            "type": "object",
+            "properties": {
+                "advanced_signatures": {
+                    "type": "boolean"
+                },
+                "authentication": {
+                    "$ref": "#/definitions/models.EndpointAuthentication"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "http_timeout": {
+                    "type": "string"
+                },
+                "is_disabled": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner_id": {
+                    "type": "string"
+                },
+                "rate_limit": {
+                    "type": "integer"
+                },
+                "rate_limit_duration": {
+                    "type": "string"
+                },
+                "secret": {
+                    "type": "string"
+                },
+                "slack_webhook_url": {
+                    "type": "string"
+                },
+                "support_email": {
+                    "type": "string"
+                },
+                "url": {
                     "type": "string"
                 }
             }

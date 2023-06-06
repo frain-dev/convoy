@@ -733,6 +733,38 @@ definitions:
       username:
         type: string
     type: object
+  models.CreateEndpoint:
+    properties:
+      advanced_signatures:
+        type: boolean
+      appID:
+        description: Deprecated but necessary for backward compatibility
+        type: string
+      authentication:
+        $ref: '#/definitions/models.EndpointAuthentication'
+      description:
+        type: string
+      http_timeout:
+        type: string
+      is_disabled:
+        type: boolean
+      name:
+        type: string
+      owner_id:
+        type: string
+      rate_limit:
+        type: integer
+      rate_limit_duration:
+        type: string
+      secret:
+        type: string
+      slack_webhook_url:
+        type: string
+      support_email:
+        type: string
+      url:
+        type: string
+    type: object
   models.CreateEvent:
     properties:
       app_id:
@@ -824,7 +856,7 @@ definitions:
         description: Deprecated but necessary for backward compatibility
         type: string
       authentication:
-        $ref: '#/definitions/datastore.EndpointAuthentication'
+        $ref: '#/definitions/models.EndpointAuthentication'
       description:
         type: string
       http_timeout:
@@ -887,36 +919,54 @@ definitions:
       retry_config:
         $ref: '#/definitions/models.RetryConfiguration'
     type: object
-  models.Endpoint:
+  models.EndpointAuthentication:
+    properties:
+      api_key:
+        $ref: '#/definitions/models.ApiKey'
+      type:
+        $ref: '#/definitions/datastore.EndpointAuthenticationType'
+    type: object
+  models.EndpointResponse:
     properties:
       advanced_signatures:
         type: boolean
-      appID:
-        description: Deprecated but necessary for backward compatibility
-        type: string
       authentication:
         $ref: '#/definitions/datastore.EndpointAuthentication'
+      created_at:
+        type: string
+      deleted_at:
+        type: string
       description:
         type: string
+      events:
+        type: integer
       http_timeout:
         type: string
-      is_disabled:
-        type: boolean
-      name:
-        type: string
       owner_id:
+        type: string
+      project_id:
         type: string
       rate_limit:
         type: integer
       rate_limit_duration:
         type: string
-      secret:
-        type: string
+      secrets:
+        items:
+          $ref: '#/definitions/datastore.Secret'
+        type: array
       slack_webhook_url:
         type: string
+      status:
+        $ref: '#/definitions/datastore.EndpointStatus'
       support_email:
         type: string
-      url:
+      target_url:
+        type: string
+      title:
+        type: string
+      uid:
+        type: string
+      updated_at:
         type: string
     type: object
   models.EventDeliveryResponse:
@@ -1349,6 +1399,35 @@ definitions:
       content_type:
         type: string
     type: object
+  models.UpdateEndpoint:
+    properties:
+      advanced_signatures:
+        type: boolean
+      authentication:
+        $ref: '#/definitions/models.EndpointAuthentication'
+      description:
+        type: string
+      http_timeout:
+        type: string
+      is_disabled:
+        type: boolean
+      name:
+        type: string
+      owner_id:
+        type: string
+      rate_limit:
+        type: integer
+      rate_limit_duration:
+        type: string
+      secret:
+        type: string
+      slack_webhook_url:
+        type: string
+      support_email:
+        type: string
+      url:
+        type: string
+    type: object
   models.UpdateProject:
     properties:
       config:
@@ -1746,6 +1825,31 @@ paths:
         name: projectID
         required: true
         type: string
+      - description: A pagination cursor to fetch the next page of a list
+        example: 01H0JA5MEES38RRK3HTEJC647K
+        in: query
+        name: next_page_cursor
+        type: string
+      - description: The owner ID of the endpoint
+        example: 01H0JA5MEES38RRK3HTEJC647K
+        in: query
+        name: owner_id
+        type: string
+      - description: The number of items to return per page
+        example: 20
+        in: query
+        name: per_page
+        type: integer
+      - description: A pagination cursor to fetch the previous page of a list
+        example: 01H0JATTVCXZK8FRDX1M1JN3QY
+        in: query
+        name: prev_page_cursor
+        type: string
+      - description: The name of the endpoint
+        example: endpoint-1
+        in: query
+        name: q
+        type: string
       produces:
       - application/json
       responses:
@@ -1756,9 +1860,14 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  items:
-                    $ref: '#/definitions/datastore.Endpoint'
-                  type: array
+                  allOf:
+                  - $ref: '#/definitions/public.pagedResponse'
+                  - properties:
+                      content:
+                        items:
+                          $ref: '#/definitions/models.EndpointResponse'
+                        type: array
+                    type: object
               type: object
         "400":
           description: Bad Request
@@ -1807,7 +1916,7 @@ paths:
         name: endpoint
         required: true
         schema:
-          $ref: '#/definitions/models.Endpoint'
+          $ref: '#/definitions/models.CreateEndpoint'
       produces:
       - application/json
       responses:
@@ -1818,7 +1927,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/datastore.Endpoint'
+                  $ref: '#/definitions/models.EndpointResponse'
               type: object
         "400":
           description: Bad Request
@@ -1937,7 +2046,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/datastore.Endpoint'
+                  $ref: '#/definitions/models.EndpointResponse'
               type: object
         "400":
           description: Bad Request
@@ -1991,7 +2100,7 @@ paths:
         name: endpoint
         required: true
         schema:
-          $ref: '#/definitions/models.Endpoint'
+          $ref: '#/definitions/models.UpdateEndpoint'
       produces:
       - application/json
       responses:
@@ -2002,7 +2111,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/datastore.Endpoint'
+                  $ref: '#/definitions/models.EndpointResponse'
               type: object
         "400":
           description: Bad Request
@@ -2068,7 +2177,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/datastore.Endpoint'
+                  $ref: '#/definitions/models.EndpointResponse'
               type: object
         "400":
           description: Bad Request
@@ -2129,7 +2238,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/datastore.Endpoint'
+                  $ref: '#/definitions/models.EndpointResponse'
               type: object
         "400":
           description: Bad Request
@@ -2190,7 +2299,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/datastore.Endpoint'
+                  $ref: '#/definitions/models.EndpointResponse'
               type: object
         "400":
           description: Bad Request

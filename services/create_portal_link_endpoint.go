@@ -19,7 +19,7 @@ type CreateEndpointPortalLinkService struct {
 	ProjectRepo    datastore.ProjectRepository
 
 	Project    *datastore.Project
-	Data       models.Endpoint
+	Data       models.CreateEndpoint
 	PortalLink *datastore.PortalLink
 }
 

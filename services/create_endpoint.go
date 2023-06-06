@@ -22,8 +22,8 @@ type CreateEndpointService struct {
 	EndpointRepo   datastore.EndpointRepository
 	ProjectRepo    datastore.ProjectRepository
 
-	E         models.Endpoint
-	ProjectID string
+	E         models.CreateEndpoint
+    ProjectID string
 }
 
 func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
@@ -101,7 +101,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		})
 	}
 
-	auth, err := ValidateEndpointAuthentication(a.E.Authentication)
+    auth, err := ValidateEndpointAuthentication(a.E.Authentication.Transform())
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}

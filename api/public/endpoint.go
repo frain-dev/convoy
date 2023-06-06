@@ -14,14 +14,12 @@ import (
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
-
 	"github.com/go-chi/render"
 )
 
 type pagedResponse struct {
 	Content    interface{}               `json:"content,omitempty"`
-	Pagination *datastore.PaginationData `json:"pagination,omitempty"`
+    Pagination *datastore.PaginationData `json:"pagination,omitempty"`
 }
 
 // CreateEndpoint
@@ -31,30 +29,30 @@ type pagedResponse struct {
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Param endpoint body models.Endpoint true "Endpoint Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
+// @Param endpoint body models.CreateEndpoint true "Endpoint Details"
+// @Success 200 {object} util.ServerResponse{data=models.EndpointResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/endpoints [post]
 func (a *PublicHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
-	var e models.Endpoint
-	err := util.ReadJSON(r, &e)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
+    var e models.CreateEndpoint
+    err := util.ReadJSON(r, &e)
+    if err != nil {
+        _ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+        return
+    }
 
-	err = util.Validate(e)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
+    err = e.Validate()
+    if err != nil {
+        _ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+        return
+    }
 
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
+    project, err := a.retrieveProject(r)
+    if err != nil {
+        _ = render.Render(w, r, util.NewServiceErrResponse(err))
+        return
+    }
 
 	ce := services.CreateEndpointService{
 		Cache:          a.A.Cache,
@@ -65,13 +63,14 @@ func (a *PublicHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 		ProjectID:      project.UID,
 	}
 
-	endpoint, err := ce.Run(r.Context())
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
+    endpoint, err := ce.Run(r.Context())
+    if err != nil {
+        _ = render.Render(w, r, util.NewServiceErrResponse(err))
+        return
+    }
 
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint created successfully", endpoint, http.StatusCreated))
+    resp := &models.EndpointResponse{Endpoint: endpoint}
+    _ = render.Render(w, r, util.NewServerResponse("Endpoint created successfully", resp, http.StatusCreated))
 }
 
 // GetEndpoint
@@ -82,7 +81,7 @@ func (a *PublicHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param projectID path string true "Project ID"
 // @Param endpointID path string true "Endpoint ID"
-// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
+// @Success 200 {object} util.ServerResponse{data=models.EndpointResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/endpoints/{endpointID} [get]
@@ -93,7 +92,8 @@ func (a *PublicHandler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint fetched successfully", endpoint, http.StatusOK))
+	resp := &models.EndpointResponse{Endpoint: endpoint}
+    _ = render.Render(w, r, util.NewServerResponse("Endpoint fetched successfully", resp, http.StatusOK))
 }
 
 // GetEndpoints
@@ -103,32 +103,32 @@ func (a *PublicHandler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Success 200 {object} util.ServerResponse{data=[]datastore.Endpoint}
+// @Param request query models.QueryListEndpoint false "Query Params"
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.EndpointResponse}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/endpoints [get]
 func (a *PublicHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
+    var q *models.QueryListEndpoint
+    project, err := a.retrieveProject(r)
+    if err != nil {
+        _ = render.Render(w, r, util.NewServiceErrResponse(err))
+        return
+    }
 
-	filter := &datastore.Filter{
-		Query:   r.URL.Query().Get("q"),
-		OwnerID: r.URL.Query().Get("ownerId"),
-	}
+    data := q.Transform(r)
+    endpoints, paginationData, err := postgres.NewEndpointRepo(a.A.DB).LoadEndpointsPaged(r.Context(), project.UID, data.Filter, data.Pageable)
+    if err != nil {
+        a.A.Logger.WithError(err).Error("failed to load endpoints")
+        _ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+        return
+    }
 
-	pageable := m.GetPageableFromContext(r.Context())
-	endpoints, paginationData, err := postgres.NewEndpointRepo(a.A.DB).LoadEndpointsPaged(r.Context(), project.UID, filter, pageable)
-	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to load endpoints")
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Endpoints fetched successfully",
-		pagedResponse{Content: &endpoints, Pagination: &paginationData}, http.StatusOK))
+    resp := models.NewListResponse(endpoints, func(endpoint datastore.Endpoint) models.EndpointResponse {
+        return models.EndpointResponse{Endpoint: &endpoint}
+    })
+    _ = render.Render(w, r, util.NewServerResponse("Endpoints fetched successfully",
+        pagedResponse{Content: &resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 // UpdateEndpoint
@@ -139,18 +139,18 @@ func (a *PublicHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param projectID path string true "Project ID"
 // @Param endpointID path string true "Endpoint ID"
-// @Param endpoint body models.Endpoint true "Endpoint Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
+// @Param endpoint body models.UpdateEndpoint true "Endpoint Details"
+// @Success 200 {object} util.ServerResponse{data=models.EndpointResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/endpoints/{endpointID} [put]
 func (a *PublicHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
-	var e models.UpdateEndpoint
+    var e models.UpdateEndpoint
 
-	err := util.ReadJSON(r, &e)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
+    err := util.ReadJSON(r, &e)
+    if err != nil {
+        _ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+        return
 	}
 
 	endpoint, err := a.retrieveEndpoint(r)
@@ -165,7 +165,7 @@ func (a *PublicHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = util.Validate(e)
+	err = e.Validate()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -186,7 +186,8 @@ func (a *PublicHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint updated successfully", endpoint, http.StatusAccepted))
+	resp := &models.EndpointResponse{Endpoint: endpoint}
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint updated successfully", resp, http.StatusAccepted))
 }
 
 // DeleteEndpoint
@@ -239,7 +240,7 @@ func (a *PublicHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 // @Param projectID path string true "Project ID"
 // @Param endpointID path string true "Endpoint ID"
 // @Param endpoint body models.ExpireSecret true "Expire Secret Body Parameters"
-// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
+// @Success 200 {object} util.ServerResponse{data=models.EndpointResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/endpoints/{endpointID}/expire_secret [put]
@@ -279,8 +280,9 @@ func (a *PublicHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	resp := &models.EndpointResponse{Endpoint: endpoint}
 	_ = render.Render(w, r, util.NewServerResponse("endpoint secret expired successfully",
-		endpoint, http.StatusOK))
+		resp, http.StatusOK))
 }
 
 // ToggleEndpointStatus
@@ -291,7 +293,7 @@ func (a *PublicHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param projectID path string true "Project ID"
 // @Param endpointID path string true "Endpoint ID"
-// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
+// @Success 200 {object} util.ServerResponse{data=models.EndpointResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/endpoints/{endpointID}/toggle_status [put]
@@ -314,7 +316,8 @@ func (a *PublicHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("endpoint status updated successfully", endpoint, http.StatusAccepted))
+	resp := &models.EndpointResponse{Endpoint: endpoint}
+	_ = render.Render(w, r, util.NewServerResponse("endpoint status updated successfully", resp, http.StatusAccepted))
 }
 
 // PauseEndpoint
@@ -325,7 +328,7 @@ func (a *PublicHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.Requ
 // @Produce json
 // @Param projectID path string true "Project ID"
 // @Param endpointID path string true "Endpoint ID"
-// @Success 200 {object} util.ServerResponse{data=datastore.Endpoint}
+// @Success 200 {object} util.ServerResponse{data=models.EndpointResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/endpoints/{endpointID}/pause [put]
@@ -348,7 +351,8 @@ func (a *PublicHandler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("endpoint status updated successfully", endpoint, http.StatusAccepted))
+	resp := &models.EndpointResponse{Endpoint: endpoint}
+	_ = render.Render(w, r, util.NewServerResponse("endpoint status updated successfully", resp, http.StatusAccepted))
 }
 
 func (a *PublicHandler) retrieveEndpoint(r *http.Request) (*datastore.Endpoint, error) {

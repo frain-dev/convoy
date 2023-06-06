@@ -239,7 +239,7 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 			endpoint.HttpTimeout = newEndpoint.HttpTimeout
 		}
 
-		auth, err := ValidateEndpointAuthentication(newEndpoint.Authentication)
+		auth, err := ValidateEndpointAuthentication(newEndpoint.Authentication.Transform())
 		if err != nil {
 			return nil, err
 		}

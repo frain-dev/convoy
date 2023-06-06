@@ -27,7 +27,8 @@ func (a *PortalLinkHandler) GetEndpoint(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint fetched successfully", endpoint, http.StatusOK))
+	resp := models.EndpointResponse{Endpoint: endpoint}
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint fetched successfully", resp, http.StatusOK))
 }
 
 func (a *PortalLinkHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -48,7 +49,7 @@ func (a *PortalLinkHandler) CreateEndpoint(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var e models.Endpoint
+	var e models.CreateEndpoint
 	err = util.ReadJSON(r, &e)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))

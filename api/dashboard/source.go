@@ -221,7 +221,7 @@ func (a *DashboardHandler) DeleteSource(w http.ResponseWriter, r *http.Request) 
 }
 
 func (a *DashboardHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
-	var q *models.QueryListSources
+	var q *models.QueryListSource
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
