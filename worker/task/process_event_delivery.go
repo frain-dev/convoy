@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/frain-dev/convoy/limiter"
@@ -158,10 +159,19 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
+		targetURL := e.TargetURL
+		if !util.IsStringEmpty(ed.URLQueryParams) {
+			targetURL, err = concatQueryParams(e.TargetURL, ed.URLQueryParams)
+			if err != nil {
+				log.WithError(err).Error("failed to concat url query params")
+				return &EndpointError{Err: err, delay: delayDuration}
+			}
+		}
+
 		attemptStatus := false
 		start := time.Now()
 
-		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), sig.Payload, p.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), ed.Headers)
+		resp, err := dispatch.SendRequest(targetURL, string(convoy.HttpPost), sig.Payload, p.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), ed.Headers)
 		status := "-"
 		statusCode := 0
 		if resp != nil {
@@ -173,7 +183,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		// log request details
 		requestLogger := log.WithFields(log.Fields{
 			"status":   status,
-			"uri":      e.TargetURL,
+			"uri":      targetURL,
 			"method":   convoy.HttpPost,
 			"duration": duration,
 		})
@@ -363,4 +373,28 @@ func (ec *EventDeliveryConfig) rateLimitConfig() *RateLimitConfig {
 	}
 
 	return rlc
+}
+
+func concatQueryParams(targetURL, query string) (string, error) {
+	u, err := url.Parse(targetURL)
+	if err != nil {
+		return "", err
+	}
+
+	parsedValues, err := url.ParseQuery(query)
+	if err != nil {
+		return "", err
+	}
+
+	q := u.Query()
+
+	for k, v := range parsedValues {
+		for _, s := range v {
+			q.Add(k, s)
+		}
+	}
+
+	u.RawQuery = q.Encode()
+
+	return u.String(), nil
 }

@@ -430,6 +430,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID: "123",
+						TargetURL: "https://google.com?source=giphy",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
 						},
@@ -443,7 +444,8 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
-						Status: datastore.ScheduledEventStatus,
+						Status:         datastore.ScheduledEventStatus,
+						URLQueryParams: "name=ref&category=food",
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
 							Raw:             `{"event": "invoice.completed"}`,
@@ -493,7 +495,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			nFn: func() func() {
 				httpmock.Activate()
 
-				httpmock.RegisterResponder("POST", "https://google.com",
+				httpmock.RegisterResponder("POST", "https://google.com?category=food&name=ref&source=giphy",
 					httpmock.NewStringResponder(200, ``))
 
 				return func() {
@@ -911,6 +913,47 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 
 				assert.Equal(t, tc.wantRateLimitConfig.Count, rlc.Count)
 				assert.Equal(t, tc.wantRateLimitConfig.Duration, rlc.Duration)
+			}
+		})
+	}
+}
+
+func TestConcatQueryParams(t *testing.T) {
+	tests := []struct {
+		name      string
+		targetURL string
+		query     string
+		expected  string
+	}{
+		{
+			name:      "No Query Parameters",
+			targetURL: "https://example.com",
+			query:     "",
+			expected:  "https://example.com",
+		},
+		{
+			name:      "Single Query Parameter",
+			targetURL: "https://example.com",
+			query:     "param1=value1",
+			expected:  "https://example.com?param1=value1",
+		},
+		{
+			name:      "Multiple Query Parameters",
+			targetURL: "https://example.com?source=facebook",
+			query:     "param1=value1&param2=value2",
+			expected:  "https://example.com?param1=value1&param2=value2&source=facebook",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := concatQueryParams(test.targetURL, test.query)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+			}
+
+			if result != test.expected {
+				t.Errorf("Expected result: %s, got: %s", test.expected, result)
 			}
 		})
 	}
