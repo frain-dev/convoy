@@ -13,14 +13,6 @@ import (
 	"github.com/go-chi/render"
 )
 
-func createConfigService(a *DashboardHandler) *services.ConfigService {
-	configRepo := postgres.NewConfigRepo(a.A.DB)
-
-	return services.NewConfigService(
-		configRepo,
-	)
-}
-
 func (a *DashboardHandler) LoadConfiguration(w http.ResponseWriter, r *http.Request) {
 	config, err := postgres.NewConfigRepo(a.A.DB).LoadConfiguration(r.Context())
 	if err != nil && !errors.Is(err, datastore.ErrConfigNotFound) {

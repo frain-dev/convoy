@@ -25,16 +25,16 @@ type RegisterUserService struct {
 	OrgMemberRepo datastore.OrganisationMemberRepository
 	Queue         queue.Queuer
 	JWT           *jwt.Jwt
-	ConfigService *ConfigService
+	ConfigRepo    datastore.ConfigurationRepository
 
 	BaseURL string
 	Data    *models.RegisterUser
 }
 
 func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token, error) {
-	config, err := u.ConfigService.LoadConfiguration(ctx)
-	if err != nil {
-		return nil, nil, err
+	config, err := u.ConfigRepo.LoadConfiguration(ctx)
+	if err != nil && !errors.Is(err, datastore.ErrConfigNotFound) {
+		return nil, nil, &ServiceError{ErrMsg: "failed to load configuration", Err: err}
 	}
 
 	if config != nil {
