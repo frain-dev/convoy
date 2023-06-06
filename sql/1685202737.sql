@@ -10,7 +10,6 @@ CREATE INDEX IF NOT EXISTS idx_portal_links_owner_id_key ON convoy.portal_links 
 
 -- +migrate Down
 ALTER TABLE convoy.portal_links
-    ALTER COLUMN endpoints SET NOT NULL,
     DROP COLUMN IF EXISTS owner_id,
     DROP COLUMN IF EXISTS can_manage_endpoint;
 

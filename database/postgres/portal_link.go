@@ -437,7 +437,7 @@ func (p *portalLinkRepo) upsertPortalLinkEndpoint(ctx context.Context, tx *sqlx.
 		}
 
 		if len(ids) == 0 {
-			return errors.New("owner_id is not linked to any endpoint")
+			return nil
 		}
 	} else {
 		return errors.New("owner_id or endpoints must be present")
