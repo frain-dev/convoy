@@ -439,38 +439,6 @@
 				"additionalProperties": true,
 				"type": "object"
 			},
-			"datastore.MetaEvent": {
-				"properties": {
-					"attempt": {
-						"$ref": "#/components/schemas/datastore.MetaEventAttempt"
-					},
-					"created_at": {
-						"type": "string"
-					},
-					"deleted_at": {
-						"type": "string"
-					},
-					"event_type": {
-						"type": "string"
-					},
-					"metadata": {
-						"$ref": "#/components/schemas/datastore.Metadata"
-					},
-					"project_id": {
-						"type": "string"
-					},
-					"status": {
-						"$ref": "#/components/schemas/datastore.EventDeliveryStatus"
-					},
-					"uid": {
-						"type": "string"
-					},
-					"updated_at": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"datastore.MetaEventAttempt": {
 				"properties": {
 					"request_http_header": {
@@ -1687,6 +1655,38 @@
 						"type": "string"
 					},
 					"url": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.MetaEventResponse": {
+				"properties": {
+					"attempt": {
+						"$ref": "#/components/schemas/datastore.MetaEventAttempt"
+					},
+					"created_at": {
+						"type": "string"
+					},
+					"deleted_at": {
+						"type": "string"
+					},
+					"event_type": {
+						"type": "string"
+					},
+					"metadata": {
+						"$ref": "#/components/schemas/datastore.Metadata"
+					},
+					"project_id": {
+						"type": "string"
+					},
+					"status": {
+						"$ref": "#/components/schemas/datastore.EventDeliveryStatus"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
 						"type": "string"
 					}
 				},
@@ -5932,15 +5932,7 @@
 						}
 					},
 					{
-						"description": "start date",
-						"in": "query",
-						"name": "startDate",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "end date",
+						"description": "The end date",
 						"in": "query",
 						"name": "endDate",
 						"schema": {
@@ -5948,17 +5940,33 @@
 						}
 					},
 					{
-						"description": "results per page",
+						"description": "A pagination cursor to fetch the next page of a list",
 						"in": "query",
-						"name": "perPage",
+						"name": "next_page_cursor",
 						"schema": {
 							"type": "string"
 						}
 					},
 					{
-						"description": "page number",
+						"description": "The number of items to return per page",
 						"in": "query",
-						"name": "page",
+						"name": "per_page",
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"description": "A pagination cursor to fetch the previous page of a list",
+						"in": "query",
+						"name": "prev_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "The start date",
+						"in": "query",
+						"name": "startDate",
 						"schema": {
 							"type": "string"
 						}
@@ -5984,19 +5992,7 @@
 															"properties": {
 																"content": {
 																	"items": {
-																		"allOf": [
-																			{
-																				"$ref": "#/components/schemas/datastore.MetaEvent"
-																			},
-																			{
-																				"properties": {
-																					"data": {
-																						"$ref": "#/components/schemas/public.Stub"
-																					}
-																				},
-																				"type": "object"
-																			}
-																		]
+																		"$ref": "#/components/schemas/models.MetaEventResponse"
 																	},
 																	"type": "array"
 																}
@@ -6127,19 +6123,7 @@
 										{
 											"properties": {
 												"data": {
-													"allOf": [
-														{
-															"$ref": "#/components/schemas/datastore.MetaEvent"
-														},
-														{
-															"properties": {
-																"data": {
-																	"$ref": "#/components/schemas/public.Stub"
-																}
-															},
-															"type": "object"
-														}
-													]
+													"$ref": "#/components/schemas/models.MetaEventResponse"
 												}
 											},
 											"type": "object"
@@ -6263,19 +6247,7 @@
 										{
 											"properties": {
 												"data": {
-													"allOf": [
-														{
-															"$ref": "#/components/schemas/datastore.MetaEvent"
-														},
-														{
-															"properties": {
-																"data": {
-																	"$ref": "#/components/schemas/public.Stub"
-																}
-															},
-															"type": "object"
-														}
-													]
+													"$ref": "#/components/schemas/models.MetaEventResponse"
 												}
 											},
 											"type": "object"
