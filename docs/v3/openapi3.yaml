@@ -227,45 +227,6 @@ components:
         updated_at:
           type: string
       type: object
-    datastore.EventDelivery:
-      properties:
-        cli_metadata:
-          $ref: '#/components/schemas/datastore.CLIMetadata'
-        created_at:
-          type: string
-        deleted_at:
-          type: string
-        description:
-          type: string
-        device_id:
-          type: string
-        device_metadata:
-          $ref: '#/components/schemas/datastore.Device'
-        endpoint_id:
-          type: string
-        endpoint_metadata:
-          $ref: '#/components/schemas/datastore.Endpoint'
-        event_id:
-          type: string
-        event_metadata:
-          $ref: '#/components/schemas/datastore.Event'
-        headers:
-          $ref: '#/components/schemas/httpheader.HTTPHeader'
-        metadata:
-          $ref: '#/components/schemas/datastore.Metadata'
-        project_id:
-          type: string
-        source_metadata:
-          $ref: '#/components/schemas/datastore.Source'
-        status:
-          $ref: '#/components/schemas/datastore.EventDeliveryStatus'
-        subscription_id:
-          type: string
-        uid:
-          type: string
-        updated_at:
-          type: string
-      type: object
     datastore.EventDeliveryStatus:
       enum:
       - Scheduled
@@ -425,6 +386,17 @@ components:
       x-enum-varnames:
       - Next
       - Prev
+    datastore.Pageable:
+      properties:
+        direction:
+          $ref: '#/components/schemas/datastore.PageDirection'
+        next_page_cursor:
+          type: string
+        per_page:
+          type: integer
+        prev_page_cursor:
+          type: string
+      type: object
     datastore.PaginationData:
       properties:
         has_next_page:
@@ -436,6 +408,31 @@ components:
         per_page:
           type: integer
         prev_page_cursor:
+          type: string
+      type: object
+    datastore.Project:
+      properties:
+        config:
+          $ref: '#/components/schemas/datastore.ProjectConfig'
+        created_at:
+          type: string
+        deleted_at:
+          type: string
+        logo_url:
+          type: string
+        name:
+          type: string
+        organisation_id:
+          type: string
+        retained_events:
+          type: integer
+        statistics:
+          $ref: '#/components/schemas/datastore.ProjectStatistics'
+        type:
+          $ref: '#/components/schemas/datastore.ProjectType'
+        uid:
+          type: string
+        updated_at:
           type: string
       type: object
     datastore.ProjectConfig:
@@ -533,6 +530,13 @@ components:
           type: string
         secret_key:
           type: string
+      type: object
+    datastore.SearchParams:
+      properties:
+        created_at_end:
+          type: integer
+        created_at_start:
+          type: integer
       type: object
     datastore.Secret:
       properties:
@@ -729,6 +733,27 @@ components:
         username:
           type: string
       type: object
+    models.CreateEvent:
+      properties:
+        app_id:
+          description: Deprecated but necessary for backward compatibility
+          type: string
+        custom_headers:
+          additionalProperties:
+            type: string
+          type: object
+        data:
+          description: |-
+            Data is an arbitrary JSON value that gets sent as the body of the
+            webhook to the endpoints
+          items:
+            type: integer
+          type: array
+        endpoint_id:
+          type: string
+        event_type:
+          type: string
+      type: object
     models.CreateProject:
       properties:
         config:
@@ -894,15 +919,52 @@ components:
         url:
           type: string
       type: object
-    models.Event:
+    models.EventDeliveryResponse:
+      properties:
+        cli_metadata:
+          $ref: '#/components/schemas/datastore.CLIMetadata'
+        created_at:
+          type: string
+        deleted_at:
+          type: string
+        description:
+          type: string
+        device_id:
+          type: string
+        device_metadata:
+          $ref: '#/components/schemas/datastore.Device'
+        endpoint_id:
+          type: string
+        endpoint_metadata:
+          $ref: '#/components/schemas/datastore.Endpoint'
+        event_id:
+          type: string
+        event_metadata:
+          $ref: '#/components/schemas/datastore.Event'
+        headers:
+          $ref: '#/components/schemas/httpheader.HTTPHeader'
+        metadata:
+          $ref: '#/components/schemas/datastore.Metadata'
+        project_id:
+          type: string
+        source_metadata:
+          $ref: '#/components/schemas/datastore.Source'
+        status:
+          $ref: '#/components/schemas/datastore.EventDeliveryStatus'
+        subscription_id:
+          type: string
+        uid:
+          type: string
+        updated_at:
+          type: string
+      type: object
+    models.EventResponse:
       properties:
         app_id:
-          description: Deprecated but necessary for backward compatibility
+          description: Deprecated
           type: string
-        custom_headers:
-          additionalProperties:
-            type: string
-          type: object
+        created_at:
+          type: string
         data:
           description: |-
             Data is an arbitrary JSON value that gets sent as the body of the
@@ -910,9 +972,34 @@ components:
           items:
             type: integer
           type: array
-        endpoint_id:
+        deleted_at:
           type: string
+        endpoint_metadata:
+          items:
+            $ref: '#/components/schemas/datastore.Endpoint'
+          type: array
+        endpoints:
+          items:
+            type: string
+          type: array
         event_type:
+          type: string
+        headers:
+          $ref: '#/components/schemas/httpheader.HTTPHeader'
+        matched_endpoints:
+          description: TODO(all) remove this field
+          type: integer
+        project_id:
+          type: string
+        raw:
+          type: string
+        source_id:
+          type: string
+        source_metadata:
+          $ref: '#/components/schemas/datastore.Source'
+        uid:
+          type: string
+        updated_at:
           type: string
       type: object
     models.ExpireSecret:
@@ -982,6 +1069,13 @@ components:
           type: string
         secret:
           type: string
+      type: object
+    models.IDs:
+      properties:
+        ids:
+          items:
+            type: string
+          type: array
       type: object
     models.MetaEventConfiguration:
       properties:
@@ -2221,48 +2315,49 @@ paths:
     get:
       description: This endpoint retrieves all event deliveries paginated.
       parameters:
-      - description: application id
-        in: query
-        name: appId
-        schema:
-          type: string
       - description: Project ID
         in: path
         name: projectID
         required: true
         schema:
           type: string
-      - description: event id
-        in: query
-        name: eventId
-        schema:
-          type: string
-      - description: start date
-        in: query
-        name: startDate
-        schema:
-          type: string
-      - description: end date
+      - description: The end date
         in: query
         name: endDate
         schema:
           type: string
-      - description: results per page
+      - description: A list of endpoint IDs to filter by
         in: query
-        name: perPage
+        name: endpointId
+        schema:
+          items:
+            type: string
+          type: array
+      - in: query
+        name: eventId
         schema:
           type: string
-      - description: page number
+      - description: A pagination cursor to fetch the next page of a list
         in: query
-        name: page
+        name: next_page_cursor
         schema:
           type: string
-      - description: sort order
+      - description: The number of items to return per page
         in: query
-        name: sort
+        name: per_page
+        schema:
+          type: integer
+      - description: A pagination cursor to fetch the previous page of a list
+        in: query
+        name: prev_page_cursor
         schema:
           type: string
-      - description: status
+      - description: The start date
+        in: query
+        name: startDate
+        schema:
+          type: string
+      - description: A list of event delivery statuses to filter by
         in: query
         name: status
         schema:
@@ -2283,12 +2378,7 @@ paths:
                       - properties:
                           content:
                             items:
-                              allOf:
-                              - $ref: '#/components/schemas/datastore.EventDelivery'
-                              - properties:
-                                  data:
-                                    $ref: '#/components/schemas/public.Stub'
-                                type: object
+                              $ref: '#/components/schemas/models.EventDeliveryResponse'
                             type: array
                         type: object
                   type: object
@@ -2356,12 +2446,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      allOf:
-                      - $ref: '#/components/schemas/datastore.Event'
-                      - properties:
-                          data:
-                            $ref: '#/components/schemas/public.Stub'
-                        type: object
+                      $ref: '#/components/schemas/models.EventDeliveryResponse'
                   type: object
           description: OK
         "400":
@@ -2567,12 +2652,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      allOf:
-                      - $ref: '#/components/schemas/datastore.Event'
-                      - properties:
-                          data:
-                            $ref: '#/components/schemas/public.Stub'
-                        type: object
+                      $ref: '#/components/schemas/models.EventDeliveryResponse'
                   type: object
           description: OK
         "400":
@@ -2623,21 +2703,24 @@ paths:
         required: true
         schema:
           type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              allOf:
-              - $ref: '#/components/schemas/public.Stub'
-              - properties:
-                  ids:
-                    items:
-                      type: string
-                    type: array
-                type: object
-        description: event delivery ids
-        required: true
-        x-originalParamName: deliveryIds
+      - description: A list of endpoint IDs to filter by
+        in: query
+        name: endpointId
+        schema:
+          items:
+            type: string
+          type: array
+      - in: query
+        name: eventId
+        schema:
+          type: string
+      - description: A list of event delivery statuses to filter by
+        in: query
+        name: status
+        schema:
+          items:
+            type: string
+          type: array
       responses:
         "200":
           content:
@@ -2706,9 +2789,7 @@ paths:
               - $ref: '#/components/schemas/public.Stub'
               - properties:
                   ids:
-                    items:
-                      type: string
-                    type: array
+                    $ref: '#/components/schemas/models.IDs'
                 type: object
         description: event delivery ids
         required: true
@@ -2767,45 +2848,51 @@ paths:
     get:
       description: This endpoint fetches app events with pagination
       parameters:
-      - description: application id
-        in: query
-        name: appId
-        schema:
-          type: string
       - description: Project ID
         in: path
         name: projectID
         required: true
         schema:
           type: string
-      - description: source id
-        in: query
-        name: sourceId
-        schema:
-          type: string
-      - description: start date
-        in: query
-        name: startDate
-        schema:
-          type: string
-      - description: end date
+      - description: The end date
         in: query
         name: endDate
         schema:
           type: string
-      - description: results per page
+      - description: A list of endpoint ids to filter by
         in: query
-        name: perPage
+        name: endpointId
+        schema:
+          items:
+            type: string
+          type: array
+      - description: A pagination cursor to fetch the next page of a list
+        in: query
+        name: next_page_cursor
         schema:
           type: string
-      - description: page number
+      - description: The number of items to return per page
         in: query
-        name: page
+        name: per_page
+        schema:
+          type: integer
+      - description: A pagination cursor to fetch the previous page of a list
+        in: query
+        name: prev_page_cursor
         schema:
           type: string
-      - description: sort order
+      - description: Any arbitary value to filter the events payload
         in: query
-        name: sort
+        name: query
+        schema:
+          type: string
+      - in: query
+        name: sourceId
+        schema:
+          type: string
+      - description: The start date
+        in: query
+        name: startDate
         schema:
           type: string
       responses:
@@ -2822,12 +2909,7 @@ paths:
                       - properties:
                           content:
                             items:
-                              allOf:
-                              - $ref: '#/components/schemas/datastore.Event'
-                              - properties:
-                                  data:
-                                    $ref: '#/components/schemas/public.Stub'
-                                type: object
+                              $ref: '#/components/schemas/models.EventResponse'
                             type: array
                         type: object
                   type: object
@@ -2883,7 +2965,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/models.Event'
+              $ref: '#/components/schemas/models.CreateEvent'
         description: Event Details
         required: true
         x-originalParamName: event
@@ -2896,12 +2978,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      allOf:
-                      - $ref: '#/components/schemas/datastore.Event'
-                      - properties:
-                          data:
-                            $ref: '#/components/schemas/public.Stub'
-                        type: object
+                      $ref: '#/components/schemas/models.EventResponse'
                   type: object
           description: OK
         "400":
@@ -2967,12 +3044,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      allOf:
-                      - $ref: '#/components/schemas/datastore.Event'
-                      - properties:
-                          data:
-                            $ref: '#/components/schemas/public.Stub'
-                        type: object
+                      $ref: '#/components/schemas/models.EventResponse'
                   type: object
           description: OK
         "400":
@@ -3038,12 +3110,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      allOf:
-                      - $ref: '#/components/schemas/datastore.Event'
-                      - properties:
-                          data:
-                            $ref: '#/components/schemas/public.Stub'
-                        type: object
+                      $ref: '#/components/schemas/models.EventResponse'
                   type: object
           description: OK
         "400":
@@ -3094,19 +3161,30 @@ paths:
         required: true
         schema:
           type: string
-      - description: start date
-        in: query
-        name: startDate
+      - in: query
+        name: endpointID
         schema:
           type: string
-      - description: end date
-        in: query
-        name: endDate
+      - in: query
+        name: endpointIDs
+        schema:
+          items:
+            type: string
+          type: array
+      - in: query
+        name: eventID
         schema:
           type: string
-      - description: Source ID
-        in: query
-        name: source
+      - in: query
+        name: ownerID
+        schema:
+          type: string
+      - in: query
+        name: query
+        schema:
+          type: string
+      - in: query
+        name: sourceID
         schema:
           type: string
       responses:
@@ -3166,7 +3244,9 @@ paths:
       - Events
   /v1/projects/{projectID}/events/dynamic:
     post:
-      description: This endpoint Creates an event with supplied endpoint and subscription
+      description: This endpoint does not require creating endpoint and subscriptions
+        ahead of time. Instead, you supply the endpoint and the payload, and Convoy
+        delivers the events
       parameters:
       - description: Project ID
         in: path
@@ -3224,7 +3304,7 @@ paths:
           description: Not Found
       security:
       - ApiKeyAuth: []
-      summary: Creates an event with supplied endpoint and subscription
+      summary: Dynamic Events
       tags:
       - Events
   /v1/projects/{projectID}/events/fanout:
@@ -3255,12 +3335,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      allOf:
-                      - $ref: '#/components/schemas/datastore.Event'
-                      - properties:
-                          data:
-                            $ref: '#/components/schemas/public.Stub'
-                        type: object
+                      $ref: '#/components/schemas/models.EventResponse'
                   type: object
           description: OK
         "400":
