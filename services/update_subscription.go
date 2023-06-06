@@ -26,18 +26,13 @@ type UpdateSubscriptionService struct {
 }
 
 func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscription, error) {
-	if err := util.Validate(s.Update); err != nil {
-		log.FromContext(ctx).WithError(err).Error(ErrValidateSubscriptionError.Error())
-		return nil, &ServiceError{ErrMsg: err.Error()}
-	}
-
 	subscription, err := s.SubRepo.FindSubscriptionByID(ctx, s.ProjectId, s.SubscriptionId)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to find subscription")
 		return nil, &ServiceError{ErrMsg: "failed to find subscription", Err: err}
 	}
 
-	retryConfig, err := getRetryConfig(s.Update.RetryConfig)
+	retryConfig, err := s.Update.RetryConfig.Transform()
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -114,7 +109,7 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 				log.FromContext(ctx).WithError(err).Error(ErrInvalidSubscriptionFilterFormat.Error())
 				return nil, &ServiceError{ErrMsg: ErrInvalidSubscriptionFilterFormat.Error(), Err: err}
 			}
-			subscription.FilterConfig.Filter = s.Update.FilterConfig.Filter
+			subscription.FilterConfig.Filter = s.Update.FilterConfig.Filter.Transform()
 		}
 	}
 

@@ -37,8 +37,8 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	var smtpPassword string
 	var smtpReplyTo string
 	var smtpFrom string
-	var newReplicApp string
-	var newReplicKey string
+	var newRelicApp string
+	var newRelicKey string
 	var typesenseApiKey string
 	var promaddr string
 
@@ -49,10 +49,9 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	var ssl bool
 	var disableEndpoint bool
 	var replayAttacks bool
-	var multipleTenants bool
 	var nativeRealmEnabled bool
-	var newReplicTracerEnabled bool
-	var newReplicConfigEnabled bool
+	var newRelicTracerEnabled bool
+	var newRelicConfigEnabled bool
 
 	var port uint32
 	var smtpPort uint32
@@ -107,8 +106,8 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&smtpPassword, "smtp-password", "", "SMTP authentication password")
 	cmd.Flags().StringVar(&smtpFrom, "smtp-from", "", "Sender email address")
 	cmd.Flags().StringVar(&smtpReplyTo, "smtp-reply-to", "", "Email address to reply to")
-	cmd.Flags().StringVar(&newReplicApp, "new-relic-app", "", "NewRelic application name")
-	cmd.Flags().StringVar(&newReplicKey, "new-relic-key", "", "NewRelic application license key")
+	cmd.Flags().StringVar(&newRelicApp, "new-relic-app", "", "NewRelic application name")
+	cmd.Flags().StringVar(&newRelicKey, "new-relic-key", "", "NewRelic application license key")
 	cmd.Flags().StringVar(&searcher, "searcher", "", "Searcher")
 	cmd.Flags().StringVar(&typesenseHost, "typesense-host", "", "Typesense Host")
 	cmd.Flags().StringVar(&typesenseApiKey, "typesense-api-key", "", "Typesense Api Key")
@@ -118,9 +117,8 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().BoolVar(&nativeRealmEnabled, "native", false, "Enable native-realm authentication")
 	cmd.Flags().BoolVar(&disableEndpoint, "disable-endpoint", false, "Disable all application endpoints")
 	cmd.Flags().BoolVar(&replayAttacks, "replay-attacks", false, "Enable feature to prevent replay attacks")
-	cmd.Flags().BoolVar(&newReplicConfigEnabled, "new-relic-config-enabled", false, "Enable new-relic config")
-	cmd.Flags().BoolVar(&multipleTenants, "multi-tenant", false, "Start convoy in single- or multi-tenant mode")
-	cmd.Flags().BoolVar(&newReplicTracerEnabled, "new-relic-tracer-enabled", false, "Enable new-relic distributed tracer")
+	cmd.Flags().BoolVar(&newRelicConfigEnabled, "new-relic-config-enabled", false, "Enable new-relic config")
+	cmd.Flags().BoolVar(&newRelicTracerEnabled, "new-relic-tracer-enabled", false, "Enable new-relic distributed tracer")
 
 	cmd.Flags().Uint32Var(&port, "port", 0, "Server port")
 	cmd.Flags().Uint32Var(&smtpPort, "smtp-port", 0, "Server port")

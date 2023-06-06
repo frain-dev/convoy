@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"context"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
@@ -124,7 +125,7 @@ type (
 	StorageType      string
 	KeyType          string
 	PubSubType       string
-	PubSubHandler    func(*Source, string) error
+	PubSubHandler    func(context.Context, *Source, string) error
 	MetaEventType    string
 	HookEventType    string
 )
@@ -591,6 +592,7 @@ func (o *Project) IsDeleted() bool { return o.DeletedAt.Valid }
 func (o *Project) IsOwner(e *Endpoint) bool { return o.UID == e.ProjectID }
 
 var (
+	ErrSignupDisabled                = errors.New("user registration is disabled")
 	ErrUserNotFound                  = errors.New("user not found")
 	ErrSourceNotFound                = errors.New("source not found")
 	ErrEventNotFound                 = errors.New("event not found")

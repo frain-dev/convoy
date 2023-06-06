@@ -51,6 +51,8 @@ require (
 	gopkg.in/guregu/null.v4 v4.0.0
 )
 
+require github.com/newrelic/go-agent/v3/integrations/nrpq v1.1.1 // indirect
+
 require (
 	cloud.google.com/go v0.105.0 // indirect
 	cloud.google.com/go/compute v1.12.1 // indirect

@@ -25,15 +25,10 @@ type CreateSubcriptionService struct {
 	EndpointRepo    datastore.EndpointRepository
 	SourceRepo      datastore.SourceRepository
 	Project         *datastore.Project
-	NewSubscription *models.Subscription
+	NewSubscription *models.CreateSubscription
 }
 
 func (s *CreateSubcriptionService) Run(ctx context.Context) (*datastore.Subscription, error) {
-	if err := util.Validate(s.NewSubscription); err != nil {
-		log.FromContext(ctx).WithError(err).Error(ErrValidateSubscriptionError.Error())
-		return nil, &ServiceError{ErrMsg: err.Error()}
-	}
-
 	endpoint, err := s.findEndpoint(ctx, s.NewSubscription.AppID, s.NewSubscription.EndpointID)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to find endpoint by id")
@@ -64,7 +59,7 @@ func (s *CreateSubcriptionService) Run(ctx context.Context) (*datastore.Subscrip
 		}
 	}
 
-	retryConfig, err := getRetryConfig(s.NewSubscription.RetryConfig)
+	retryConfig, err := s.NewSubscription.RetryConfig.Transform()
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
@@ -78,9 +73,9 @@ func (s *CreateSubcriptionService) Run(ctx context.Context) (*datastore.Subscrip
 		EndpointID: s.NewSubscription.EndpointID,
 
 		RetryConfig:     retryConfig,
-		AlertConfig:     s.NewSubscription.AlertConfig,
-		FilterConfig:    s.NewSubscription.FilterConfig,
-		RateLimitConfig: s.NewSubscription.RateLimitConfig,
+		AlertConfig:     s.NewSubscription.AlertConfig.Transform(),
+		FilterConfig:    s.NewSubscription.FilterConfig.Transform(),
+		RateLimitConfig: s.NewSubscription.RateLimitConfig.Transform(),
 
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -143,24 +138,4 @@ func (s *CreateSubcriptionService) findEndpoint(ctx context.Context, appID, endp
 	}
 
 	return endpoint, nil
-}
-
-func getRetryConfig(cfg *models.RetryConfiguration) (*datastore.RetryConfiguration, error) {
-	if cfg == nil {
-		return nil, nil
-	}
-
-	strategyConfig := &datastore.RetryConfiguration{Type: cfg.Type, RetryCount: cfg.RetryCount}
-	if !util.IsStringEmpty(cfg.Duration) {
-		interval, err := time.ParseDuration(cfg.Duration)
-		if err != nil {
-			return nil, err
-		}
-
-		strategyConfig.Duration = uint64(interval.Seconds())
-		return strategyConfig, nil
-	}
-
-	strategyConfig.Duration = cfg.IntervalSeconds
-	return strategyConfig, nil
 }

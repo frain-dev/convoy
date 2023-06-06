@@ -4905,34 +4905,40 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "results per page",
-                        "name": "perPage",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "sort order",
-                        "name": "sort",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "subscription title",
-                        "name": "q",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
                         "description": "Project ID",
                         "name": "projectID",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "A list of endpointIDs to filter by",
+                        "name": "endpointId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "01H0JA5MEES38RRK3HTEJC647K",
+                        "description": "A pagination cursor to fetch the next page of a list",
+                        "name": "next_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 20,
+                        "description": "The number of items to return per page",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "01H0JATTVCXZK8FRDX1M1JN3QY",
+                        "description": "A pagination cursor to fetch the previous page of a list",
+                        "name": "prev_page_cursor",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4957,7 +4963,7 @@ const docTemplate = `{
                                                         "content": {
                                                             "type": "array",
                                                             "items": {
-                                                                "$ref": "#/definitions/datastore.Subscription"
+                                                                "$ref": "#/definitions/models.SubscriptionResponse"
                                                             }
                                                         }
                                                     }
@@ -5056,7 +5062,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Subscription"
+                            "$ref": "#/definitions/models.CreateSubscription"
                         }
                     }
                 ],
@@ -5072,22 +5078,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "allOf": [
-                                                {
-                                                    "$ref": "#/definitions/public.pagedResponse"
-                                                },
-                                                {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "content": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "$ref": "#/definitions/datastore.Subscription"
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            ]
+                                            "$ref": "#/definitions/models.SubscriptionResponse"
                                         }
                                     }
                                 }
@@ -5309,7 +5300,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.Subscription"
+                                            "$ref": "#/definitions/models.SubscriptionResponse"
                                         }
                                     }
                                 }
@@ -5410,7 +5401,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Subscription"
+                            "$ref": "#/definitions/models.UpdateSubscription"
                         }
                     }
                 ],
@@ -5426,7 +5417,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/datastore.Subscription"
+                                            "$ref": "#/definitions/models.SubscriptionResponse"
                                         }
                                     }
                                 }
@@ -6553,55 +6544,6 @@ const docTemplate = `{
                 "ExponentialStrategyProvider"
             ]
         },
-        "datastore.Subscription": {
-            "type": "object",
-            "properties": {
-                "alert_config": {
-                    "description": "subscription config",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/datastore.AlertConfiguration"
-                        }
-                    ]
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "device_metadata": {
-                    "$ref": "#/definitions/datastore.Device"
-                },
-                "endpoint_metadata": {
-                    "$ref": "#/definitions/datastore.Endpoint"
-                },
-                "filter_config": {
-                    "$ref": "#/definitions/datastore.FilterConfiguration"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "rate_limit_config": {
-                    "$ref": "#/definitions/datastore.RateLimitConfiguration"
-                },
-                "retry_config": {
-                    "$ref": "#/definitions/datastore.RetryConfiguration"
-                },
-                "source_metadata": {
-                    "$ref": "#/definitions/datastore.Source"
-                },
-                "type": {
-                    "$ref": "#/definitions/datastore.SubscriptionType"
-                },
-                "uid": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
         "datastore.SubscriptionType": {
             "type": "string",
             "enum": [
@@ -6687,6 +6629,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.AlertConfiguration": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "threshold": {
                     "type": "string"
                 }
             }
@@ -6815,6 +6768,36 @@ const docTemplate = `{
                 }
             }
         },
+        "models.CreateSubscription": {
+            "type": "object",
+            "properties": {
+                "alert_config": {
+                    "$ref": "#/definitions/models.AlertConfiguration"
+                },
+                "app_id": {
+                    "description": "Deprecated but necessary for backward compatibility",
+                    "type": "string"
+                },
+                "endpoint_id": {
+                    "type": "string"
+                },
+                "filter_config": {
+                    "$ref": "#/definitions/models.FilterConfiguration"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "rate_limit_config": {
+                    "$ref": "#/definitions/models.RateLimitConfiguration"
+                },
+                "retry_config": {
+                    "$ref": "#/definitions/models.RetryConfiguration"
+                },
+                "source_id": {
+                    "type": "string"
+                }
+            }
+        },
         "models.CustomResponse": {
             "type": "object",
             "properties": {
@@ -6916,16 +6899,16 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "alert_config": {
-                    "$ref": "#/definitions/datastore.AlertConfiguration"
+                    "$ref": "#/definitions/models.AlertConfiguration"
                 },
                 "filter_config": {
-                    "$ref": "#/definitions/datastore.FilterConfiguration"
+                    "$ref": "#/definitions/models.FilterConfiguration"
                 },
                 "name": {
                     "type": "string"
                 },
                 "rate_limit_config": {
-                    "$ref": "#/definitions/datastore.RateLimitConfiguration"
+                    "$ref": "#/definitions/models.RateLimitConfiguration"
                 },
                 "retry_config": {
                     "$ref": "#/definitions/models.RetryConfiguration"
@@ -7047,6 +7030,17 @@ const docTemplate = `{
                 }
             }
         },
+        "models.FS": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "$ref": "#/definitions/datastore.M"
+                },
+                "headers": {
+                    "$ref": "#/definitions/datastore.M"
+                }
+            }
+        },
         "models.FanoutEvent": {
             "type": "object",
             "properties": {
@@ -7068,6 +7062,20 @@ const docTemplate = `{
                 },
                 "owner_id": {
                     "type": "string"
+                }
+            }
+        },
+        "models.FilterConfiguration": {
+            "type": "object",
+            "properties": {
+                "event_types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "filter": {
+                    "$ref": "#/definitions/models.FS"
                 }
             }
         },
@@ -7460,18 +7468,28 @@ const docTemplate = `{
                 }
             }
         },
-        "models.Subscription": {
+        "models.SubscriptionResponse": {
             "type": "object",
             "properties": {
                 "alert_config": {
-                    "$ref": "#/definitions/datastore.AlertConfiguration"
+                    "description": "subscription config",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/datastore.AlertConfiguration"
+                        }
+                    ]
                 },
-                "app_id": {
-                    "description": "Deprecated but necessary for backward compatibility",
+                "created_at": {
                     "type": "string"
                 },
-                "endpoint_id": {
+                "deleted_at": {
                     "type": "string"
+                },
+                "device_metadata": {
+                    "$ref": "#/definitions/datastore.Device"
+                },
+                "endpoint_metadata": {
+                    "$ref": "#/definitions/datastore.Endpoint"
                 },
                 "filter_config": {
                     "$ref": "#/definitions/datastore.FilterConfiguration"
@@ -7483,9 +7501,18 @@ const docTemplate = `{
                     "$ref": "#/definitions/datastore.RateLimitConfiguration"
                 },
                 "retry_config": {
-                    "$ref": "#/definitions/models.RetryConfiguration"
+                    "$ref": "#/definitions/datastore.RetryConfiguration"
                 },
-                "source_id": {
+                "source_metadata": {
+                    "$ref": "#/definitions/datastore.Source"
+                },
+                "type": {
+                    "$ref": "#/definitions/datastore.SubscriptionType"
+                },
+                "uid": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -7599,6 +7626,35 @@ const docTemplate = `{
                 },
                 "verifier": {
                     "$ref": "#/definitions/models.VerifierConfig"
+                }
+            }
+        },
+        "models.UpdateSubscription": {
+            "type": "object",
+            "properties": {
+                "alert_config": {
+                    "$ref": "#/definitions/models.AlertConfiguration"
+                },
+                "app_id": {
+                    "type": "string"
+                },
+                "endpoint_id": {
+                    "type": "string"
+                },
+                "filter_config": {
+                    "$ref": "#/definitions/models.FilterConfiguration"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "rate_limit_config": {
+                    "$ref": "#/definitions/models.RateLimitConfiguration"
+                },
+                "retry_config": {
+                    "$ref": "#/definitions/models.RetryConfiguration"
+                },
+                "source_id": {
+                    "type": "string"
                 }
             }
         },

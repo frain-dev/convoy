@@ -954,55 +954,6 @@
 					"ExponentialStrategyProvider"
 				]
 			},
-			"datastore.Subscription": {
-				"properties": {
-					"alert_config": {
-						"allOf": [
-							{
-								"$ref": "#/components/schemas/datastore.AlertConfiguration"
-							}
-						],
-						"description": "subscription config"
-					},
-					"created_at": {
-						"type": "string"
-					},
-					"deleted_at": {
-						"type": "string"
-					},
-					"device_metadata": {
-						"$ref": "#/components/schemas/datastore.Device"
-					},
-					"endpoint_metadata": {
-						"$ref": "#/components/schemas/datastore.Endpoint"
-					},
-					"filter_config": {
-						"$ref": "#/components/schemas/datastore.FilterConfiguration"
-					},
-					"name": {
-						"type": "string"
-					},
-					"rate_limit_config": {
-						"$ref": "#/components/schemas/datastore.RateLimitConfiguration"
-					},
-					"retry_config": {
-						"$ref": "#/components/schemas/datastore.RetryConfiguration"
-					},
-					"source_metadata": {
-						"$ref": "#/components/schemas/datastore.Source"
-					},
-					"type": {
-						"$ref": "#/components/schemas/datastore.SubscriptionType"
-					},
-					"uid": {
-						"type": "string"
-					},
-					"updated_at": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"datastore.SubscriptionType": {
 				"enum": [
 					"cli",
@@ -1087,6 +1038,17 @@
 						"type": "string"
 					},
 					"user_id": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.AlertConfiguration": {
+				"properties": {
+					"count": {
+						"type": "integer"
+					},
+					"threshold": {
 						"type": "string"
 					}
 				},
@@ -1216,6 +1178,36 @@
 				},
 				"type": "object"
 			},
+			"models.CreateSubscription": {
+				"properties": {
+					"alert_config": {
+						"$ref": "#/components/schemas/models.AlertConfiguration"
+					},
+					"app_id": {
+						"description": "Deprecated but necessary for backward compatibility",
+						"type": "string"
+					},
+					"endpoint_id": {
+						"type": "string"
+					},
+					"filter_config": {
+						"$ref": "#/components/schemas/models.FilterConfiguration"
+					},
+					"name": {
+						"type": "string"
+					},
+					"rate_limit_config": {
+						"$ref": "#/components/schemas/models.RateLimitConfiguration"
+					},
+					"retry_config": {
+						"$ref": "#/components/schemas/models.RetryConfiguration"
+					},
+					"source_id": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"models.CustomResponse": {
 				"properties": {
 					"body": {
@@ -1316,16 +1308,16 @@
 			"models.DynamicSubscription": {
 				"properties": {
 					"alert_config": {
-						"$ref": "#/components/schemas/datastore.AlertConfiguration"
+						"$ref": "#/components/schemas/models.AlertConfiguration"
 					},
 					"filter_config": {
-						"$ref": "#/components/schemas/datastore.FilterConfiguration"
+						"$ref": "#/components/schemas/models.FilterConfiguration"
 					},
 					"name": {
 						"type": "string"
 					},
 					"rate_limit_config": {
-						"$ref": "#/components/schemas/datastore.RateLimitConfiguration"
+						"$ref": "#/components/schemas/models.RateLimitConfiguration"
 					},
 					"retry_config": {
 						"$ref": "#/components/schemas/models.RetryConfiguration"
@@ -1448,6 +1440,17 @@
 				},
 				"type": "object"
 			},
+			"models.FS": {
+				"properties": {
+					"body": {
+						"$ref": "#/components/schemas/datastore.M"
+					},
+					"headers": {
+						"$ref": "#/components/schemas/datastore.M"
+					}
+				},
+				"type": "object"
+			},
 			"models.FanoutEvent": {
 				"properties": {
 					"custom_headers": {
@@ -1468,6 +1471,20 @@
 					},
 					"owner_id": {
 						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.FilterConfiguration": {
+				"properties": {
+					"event_types": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"filter": {
+						"$ref": "#/components/schemas/models.FS"
 					}
 				},
 				"type": "object"
@@ -1861,17 +1878,27 @@
 				},
 				"type": "object"
 			},
-			"models.Subscription": {
+			"models.SubscriptionResponse": {
 				"properties": {
 					"alert_config": {
-						"$ref": "#/components/schemas/datastore.AlertConfiguration"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.AlertConfiguration"
+							}
+						],
+						"description": "subscription config"
 					},
-					"app_id": {
-						"description": "Deprecated but necessary for backward compatibility",
+					"created_at": {
 						"type": "string"
 					},
-					"endpoint_id": {
+					"deleted_at": {
 						"type": "string"
+					},
+					"device_metadata": {
+						"$ref": "#/components/schemas/datastore.Device"
+					},
+					"endpoint_metadata": {
+						"$ref": "#/components/schemas/datastore.Endpoint"
 					},
 					"filter_config": {
 						"$ref": "#/components/schemas/datastore.FilterConfiguration"
@@ -1883,9 +1910,18 @@
 						"$ref": "#/components/schemas/datastore.RateLimitConfiguration"
 					},
 					"retry_config": {
-						"$ref": "#/components/schemas/models.RetryConfiguration"
+						"$ref": "#/components/schemas/datastore.RetryConfiguration"
 					},
-					"source_id": {
+					"source_metadata": {
+						"$ref": "#/components/schemas/datastore.Source"
+					},
+					"type": {
+						"$ref": "#/components/schemas/datastore.SubscriptionType"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
 						"type": "string"
 					}
 				},
@@ -1999,6 +2035,35 @@
 					},
 					"verifier": {
 						"$ref": "#/components/schemas/models.VerifierConfig"
+					}
+				},
+				"type": "object"
+			},
+			"models.UpdateSubscription": {
+				"properties": {
+					"alert_config": {
+						"$ref": "#/components/schemas/models.AlertConfiguration"
+					},
+					"app_id": {
+						"type": "string"
+					},
+					"endpoint_id": {
+						"type": "string"
+					},
+					"filter_config": {
+						"$ref": "#/components/schemas/models.FilterConfiguration"
+					},
+					"name": {
+						"type": "string"
+					},
+					"rate_limit_config": {
+						"$ref": "#/components/schemas/models.RateLimitConfiguration"
+					},
+					"retry_config": {
+						"$ref": "#/components/schemas/models.RetryConfiguration"
+					},
+					"source_id": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -7562,42 +7627,45 @@
 				"description": "This endpoint fetches all the subscriptions",
 				"parameters": [
 					{
-						"description": "results per page",
-						"in": "query",
-						"name": "perPage",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "page number",
-						"in": "query",
-						"name": "page",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "sort order",
-						"in": "query",
-						"name": "sort",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "subscription title",
-						"in": "query",
-						"name": "q",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
 						"description": "Project ID",
 						"in": "path",
 						"name": "projectID",
 						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "A list of endpointIDs to filter by",
+						"in": "query",
+						"name": "endpointId",
+						"schema": {
+							"items": {
+								"type": "string"
+							},
+							"type": "array"
+						}
+					},
+					{
+						"description": "A pagination cursor to fetch the next page of a list",
+						"in": "query",
+						"name": "next_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "The number of items to return per page",
+						"in": "query",
+						"name": "per_page",
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"description": "A pagination cursor to fetch the previous page of a list",
+						"in": "query",
+						"name": "prev_page_cursor",
 						"schema": {
 							"type": "string"
 						}
@@ -7623,7 +7691,7 @@
 															"properties": {
 																"content": {
 																	"items": {
-																		"$ref": "#/components/schemas/datastore.Subscription"
+																		"$ref": "#/components/schemas/models.SubscriptionResponse"
 																	},
 																	"type": "array"
 																}
@@ -7735,7 +7803,7 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.Subscription"
+								"$ref": "#/components/schemas/models.CreateSubscription"
 							}
 						}
 					},
@@ -7755,22 +7823,7 @@
 										{
 											"properties": {
 												"data": {
-													"allOf": [
-														{
-															"$ref": "#/components/schemas/public.pagedResponse"
-														},
-														{
-															"properties": {
-																"content": {
-																	"items": {
-																		"$ref": "#/components/schemas/datastore.Subscription"
-																	},
-																	"type": "array"
-																}
-															},
-															"type": "object"
-														}
-													]
+													"$ref": "#/components/schemas/models.SubscriptionResponse"
 												}
 											},
 											"type": "object"
@@ -8143,7 +8196,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.Subscription"
+													"$ref": "#/components/schemas/models.SubscriptionResponse"
 												}
 											},
 											"type": "object"
@@ -8257,7 +8310,7 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.Subscription"
+								"$ref": "#/components/schemas/models.UpdateSubscription"
 							}
 						}
 					},
@@ -8277,7 +8330,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/datastore.Subscription"
+													"$ref": "#/components/schemas/models.SubscriptionResponse"
 												}
 											},
 											"type": "object"

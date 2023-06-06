@@ -440,8 +440,8 @@ func findDynamicSubscription(ctx context.Context, newSubscription *models.Dynami
 			EndpointID: endpoint.UID,
 
 			RetryConfig:     retryConfig,
-			AlertConfig:     newSubscription.AlertConfig,
-			RateLimitConfig: newSubscription.RateLimitConfig,
+			AlertConfig:     newSubscription.AlertConfig.Transform(),
+			RateLimitConfig: newSubscription.RateLimitConfig.Transform(),
 
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
