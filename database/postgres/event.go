@@ -61,7 +61,7 @@ const (
 	baseEventsPaged = `
 	SELECT ev.id, ev.project_id, ev.id as event_type,
 	COALESCE(ev.source_id, '') AS source_id,
-	ev.headers, ev.raw, ev.data, ev.created_at,
+	ev.headers, ev.raw, ev.data, ev.created_at,ev.url_query_params,
 	ev.updated_at, ev.deleted_at,
 	COALESCE(s.id, '') AS "source_metadata.id",
 	COALESCE(s.name, '') AS "source_metadata.name"

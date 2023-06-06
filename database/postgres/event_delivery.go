@@ -38,7 +38,7 @@ const (
 	baseFetchEventDelivery = `
     SELECT
         ed.id,ed.project_id,ed.event_id,ed.subscription_id,
-        ed.headers,ed.attempts,ed.status,ed.metadata,ed.cli_metadata,
+        ed.headers,ed.attempts,ed.status,ed.metadata,ed.cli_metadata,ed.url_query_params,
         ed.description,ed.created_at,ed.updated_at,
         COALESCE(ed.device_id,'') as "device_id",
         COALESCE(ed.endpoint_id,'') as "endpoint_id",
@@ -123,7 +123,7 @@ const (
 	fetchEventDeliveries = `
     SELECT
         id,project_id,event_id,subscription_id,
-        headers,attempts,status,metadata,cli_metadata,
+        headers,attempts,status,metadata,cli_metadata,url_query_params,
         description,created_at,updated_at,
         COALESCE(device_id,'') as "device_id",
         COALESCE(endpoint_id,'') as "endpoint_id"
@@ -133,7 +133,7 @@ const (
 	fetchDiscardedEventDeliveries = `
     SELECT
         id,project_id,event_id,subscription_id,
-        headers,attempts,status,metadata,cli_metadata,
+        headers,attempts,status,metadata,cli_metadata,url_query_params,
         description,created_at,updated_at,
         COALESCE(device_id,'') as "device_id"
     FROM convoy.event_deliveries
