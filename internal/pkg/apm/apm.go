@@ -19,8 +19,8 @@ func NoticeError(ctx context.Context, err error) {
 	std.NoticeError(ctx, err)
 }
 
-func StartTransaction(name string) *Transaction {
-	return std.StartTransaction(name)
+func StartTransaction(ctx context.Context, name string) (*Transaction, context.Context) {
+	return std.StartTransaction(ctx, name)
 }
 
 func StartWebTransaction(name string, r *http.Request, w http.ResponseWriter) (*Transaction, *http.Request, http.ResponseWriter) {
@@ -44,9 +44,11 @@ func (a *APM) NoticeError(ctx context.Context, err error) {
 	txn.NoticeError(err)
 }
 
-func (a *APM) StartTransaction(name string) *Transaction {
+func (a *APM) StartTransaction(ctx context.Context, name string) (*Transaction, context.Context) {
 	inner := a.createTransaction(name)
-	return NewTransaction(inner)
+	c := newrelic.NewContext(ctx, inner)
+
+	return NewTransaction(inner), c
 }
 
 func (a *APM) StartWebTransaction(name string, r *http.Request, w http.ResponseWriter) (*Transaction, *http.Request, http.ResponseWriter) {
