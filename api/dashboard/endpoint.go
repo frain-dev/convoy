@@ -47,11 +47,12 @@ func (a *DashboardHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request
 	}
 
 	ce := services.CreateEndpointService{
-		Cache:        a.A.Cache,
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
-		ProjectRepo:  postgres.NewProjectRepo(a.A.DB),
-		E:            e,
-		ProjectID:    project.UID,
+		Cache:          a.A.Cache,
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
+		ProjectRepo:    postgres.NewProjectRepo(a.A.DB),
+		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB),
+		E:              e,
+		ProjectID:      project.UID,
 	}
 
 	endpoint, err := ce.Run(r.Context())

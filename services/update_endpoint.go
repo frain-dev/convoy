@@ -97,6 +97,10 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint, proje
 		endpoint.HttpTimeout = e.HttpTimeout
 	}
 
+	if !util.IsStringEmpty(e.OwnerID) {
+		endpoint.OwnerID = e.OwnerID
+	}
+
 	auth, err := ValidateEndpointAuthentication(e.Authentication.Transform())
 	if err != nil {
 		return nil, err

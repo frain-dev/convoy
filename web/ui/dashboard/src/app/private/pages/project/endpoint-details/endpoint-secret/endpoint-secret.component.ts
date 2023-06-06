@@ -17,7 +17,7 @@ import { ENDPOINT, SECRET } from 'src/app/models/endpoint.model';
 	styleUrls: ['./endpoint-secret.component.scss']
 })
 export class EndpointSecretComponent implements OnInit {
-	@Input('endpointDetails') endpointDetails!: ENDPOINT;
+	@Input('endpointDetails') endpointDetails?: ENDPOINT;
 	@Output() expireCurrentSecret = new EventEmitter<any>();
 	@Output() closeSecretModal = new EventEmitter<any>();
 	expireSecretForm: FormGroup = this.formBuilder.group({

@@ -34,6 +34,7 @@ func (cE *CreateEndpoint) Validate() error {
 type UpdateEndpoint struct {
 	URL                string  `json:"url" valid:"required~please provide a url for your endpoint"`
 	Secret             string  `json:"secret"`
+	OwnerID            string  `json:"owner_id"`
 	Description        string  `json:"description"`
 	AdvancedSignatures *bool   `json:"advanced_signatures"`
 	Name               *string `json:"name" valid:"required~please provide your endpointName"`

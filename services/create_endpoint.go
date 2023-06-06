@@ -17,9 +17,10 @@ import (
 )
 
 type CreateEndpointService struct {
-	Cache        cache.Cache
-	EndpointRepo datastore.EndpointRepository
-	ProjectRepo  datastore.ProjectRepository
+	Cache          cache.Cache
+	PortalLinkRepo datastore.PortalLinkRepository
+	EndpointRepo   datastore.EndpointRepository
+	ProjectRepo    datastore.ProjectRepository
 
 	E         models.CreateEndpoint
     ProjectID string
@@ -110,6 +111,38 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create endpoint")
 		return nil, &ServiceError{ErrMsg: "an error occurred while adding endpoint", Err: err}
+	}
+
+	if !util.IsStringEmpty(endpoint.OwnerID) {
+		portalLink, err := a.PortalLinkRepo.FindPortalLinkByOwnerID(ctx, a.ProjectID, endpoint.OwnerID)
+		if err != nil {
+			if errors.Is(err, datastore.ErrPortalLinkNotFound) {
+				return endpoint, nil
+			}
+
+			log.FromContext(ctx).WithError(err).Error("Failed to retrieve portal link for endpoint")
+			return endpoint, nil
+		}
+
+		update := models.PortalLink{
+			Name:              portalLink.Name,
+			Endpoints:         portalLink.Endpoints,
+			OwnerID:           portalLink.OwnerID,
+			CanManageEndpoint: portalLink.CanManageEndpoint,
+		}
+		upl := UpdatePortalLinkService{
+			PortalLinkRepo: a.PortalLinkRepo,
+			EndpointRepo:   a.EndpointRepo,
+			Project:        project,
+			Update:         &update,
+			PortalLink:     portalLink,
+		}
+
+		_, err = upl.Run(ctx)
+		if err != nil {
+			log.FromContext(ctx).WithError(err).Error("Failed to update portal link endpoints")
+			return endpoint, nil
+		}
 	}
 
 	endpointCacheKey := convoy.EndpointsCacheKey.Get(endpoint.UID).String()

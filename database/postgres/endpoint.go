@@ -300,6 +300,11 @@ func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 
+	_, err = tx.ExecContext(ctx, deletePortalLinkEndpoints, nil, endpoint.UID)
+	if err != nil {
+		return err
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		return err

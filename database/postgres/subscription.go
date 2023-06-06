@@ -69,11 +69,13 @@ const (
 	s.rate_limit_config_count as "rate_limit_config.count",
 	s.rate_limit_config_duration as "rate_limit_config.duration",
 
+	em.secrets as "endpoint_metadata.secrets",
 	COALESCE(em.id,'') as "endpoint_metadata.id",
 	COALESCE(em.title,'') as "endpoint_metadata.title",
 	COALESCE(em.project_id,'') as "endpoint_metadata.project_id",
 	COALESCE(em.support_email,'') as "endpoint_metadata.support_email",
 	COALESCE(em.target_url,'') as "endpoint_metadata.target_url",
+	COALESCE(em.status, '') as "endpoint_metadata.status",
 
 	COALESCE(d.id,'') as "device_metadata.id",
 	COALESCE(d.status,'') as "device_metadata.status",
@@ -439,7 +441,6 @@ func (s *subscriptionRepo) CountEndpointSubscriptions(ctx context.Context, proje
 
 	return count, nil
 }
-
 
 func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload, filter interface{}) (bool, error) {
 	p, err := flatten.Flatten(payload)

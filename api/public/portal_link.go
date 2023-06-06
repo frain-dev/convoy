@@ -262,9 +262,11 @@ func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.Portal
 		Name:              pl.Name,
 		URL:               fmt.Sprintf("%s/portal?token=%s", baseUrl, pl.Token),
 		Token:             pl.Token,
+		OwnerID:           pl.OwnerID,
 		Endpoints:         pl.Endpoints,
-		EndpointCount:     len(pl.Endpoints),
+		EndpointCount:     len(pl.EndpointsMetadata),
 		EndpointsMetadata: pl.EndpointsMetadata,
+		CanManageEndpoint: pl.CanManageEndpoint,
 		CreatedAt:         pl.CreatedAt,
 		UpdatedAt:         pl.UpdatedAt,
 	}
