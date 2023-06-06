@@ -81,45 +81,6 @@ type DynamicSubscription struct {
 	RateLimitConfig *datastore.RateLimitConfiguration `json:"rate_limit_config,omitempty" bson:"rate_limit_config,omitempty"`
 }
 
-type DynamicEvent struct {
-	Endpoint     DynamicEndpoint     `json:"endpoint"`
-	Subscription DynamicSubscription `json:"subscription"`
-	Event        DynamicEventStub    `json:"event"`
-}
-
-type DynamicEventStub struct {
-	ProjectID string `json:"project_id"`
-	EventType string `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
-	// Data is an arbitrary JSON value that gets sent as the body of the webhook to the endpoints
-	Data          json.RawMessage   `json:"data" bson:"data" valid:"required~please provide your data"`
-	CustomHeaders map[string]string `json:"custom_headers"`
-}
-
-type Event struct {
-	EndpointID string `json:"endpoint_id"`
-	AppID      string `json:"app_id" bson:"app_id"` // Deprecated but necessary for backward compatibility
-	EventType  string `json:"event_type" bson:"event_type" valid:"required~please provide an event type"`
-
-	// Data is an arbitrary JSON value that gets sent as the body of the
-	// webhook to the endpoints
-	Data          json.RawMessage   `json:"data" bson:"data" valid:"required~please provide your data"`
-	CustomHeaders map[string]string `json:"custom_headers"`
-}
-
-type FanoutEvent struct {
-	OwnerID   string `json:"owner_id" valid:"required~please provide an owner id"`
-	EventType string `json:"event_type" valid:"required~please provide an event type"`
-
-	// Data is an arbitrary JSON value that gets sent as the body of the
-	// webhook to the endpoints
-	Data          json.RawMessage   `json:"data" bson:"data" valid:"required~please provide your data"`
-	CustomHeaders map[string]string `json:"custom_headers"`
-}
-
-type IDs struct {
-	IDs []string `json:"ids"`
-}
-
 type DeliveryAttempt struct {
 	MessageID  string `json:"msg_id" bson:"msg_id"`
 	APIVersion string `json:"api_version" bson:"api_version"`
