@@ -107,6 +107,26 @@ type UpdateEndpoint struct {
 	RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
 	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
 }
+
+type DynamicEndpoint struct {
+	URL                string `json:"url" bson:"url" valid:"required~please provide a url for your endpoint"`
+	Secret             string `json:"secret" bson:"secret"`
+	OwnerID            string `json:"owner_id" bson:"owner_id"`
+	Description        string `json:"description" bson:"description"`
+	AdvancedSignatures bool   `json:"advanced_signatures" bson:"advanced_signatures"`
+	Name               string `json:"name" bson:"name"`
+	SupportEmail       string `json:"support_email" bson:"support_email"`
+	IsDisabled         bool   `json:"is_disabled"`
+	SlackWebhookURL    string `json:"slack_webhook_url" bson:"slack_webhook_url"`
+
+	HttpTimeout       string                            `json:"http_timeout" bson:"http_timeout"`
+	RateLimit         int                               `json:"rate_limit" bson:"rate_limit"`
+	RateLimitDuration string                            `json:"rate_limit_duration" bson:"rate_limit_duration"`
+	Authentication    *datastore.EndpointAuthentication `json:"authentication"`
+	// Deprecated but necessary for backward compatibility
+	AppID string
+}
+
 type DeliveryAttempt struct {
 	MessageID  string `json:"msg_id" bson:"msg_id"`
 	APIVersion string `json:"api_version" bson:"api_version"`
@@ -149,26 +169,26 @@ type CreateEndpointApiKey struct {
 }
 
 type PortalLink struct {
-	Name               string   `json:"name" valid:"required~please provide the name field"`
-	Endpoints          []string `json:"endpoints"`
-	OwnerID            string   `json:"owner_id"`
+	Name              string   `json:"name" valid:"required~please provide the name field"`
+	Endpoints         []string `json:"endpoints"`
+	OwnerID           string   `json:"owner_id"`
 	CanManageEndpoint bool     `json:"can_manage_endpoint"`
 }
 
 type PortalLinkResponse struct {
-	UID                string                     `json:"uid"`
-	Name               string                     `json:"name"`
-	ProjectID          string                     `json:"project_id"`
-	OwnerID            string                     `json:"owner_id"`
-	Endpoints          []string                   `json:"endpoints"`
-	EndpointCount      int                        `json:"endpoint_count"`
+	UID               string                     `json:"uid"`
+	Name              string                     `json:"name"`
+	ProjectID         string                     `json:"project_id"`
+	OwnerID           string                     `json:"owner_id"`
+	Endpoints         []string                   `json:"endpoints"`
+	EndpointCount     int                        `json:"endpoint_count"`
 	CanManageEndpoint bool                       `json:"can_manage_endpoint"`
-	Token              string                     `json:"token"`
-	EndpointsMetadata  datastore.EndpointMetadata `json:"endpoints_metadata"`
-	URL                string                     `json:"url"`
-	CreatedAt          time.Time                  `json:"created_at,omitempty"`
-	UpdatedAt          time.Time                  `json:"updated_at,omitempty"`
-	DeletedAt          null.Time                  `json:"deleted_at,omitempty"`
+	Token             string                     `json:"token"`
+	EndpointsMetadata datastore.EndpointMetadata `json:"endpoints_metadata"`
+	URL               string                     `json:"url"`
+	CreatedAt         time.Time                  `json:"created_at,omitempty"`
+	UpdatedAt         time.Time                  `json:"updated_at,omitempty"`
+	DeletedAt         null.Time                  `json:"deleted_at,omitempty"`
 }
 
 // Generic function for looping over a slice of type M
