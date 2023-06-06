@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -142,8 +141,6 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
-
-	fmt.Println("URLQueryParams", event.URLQueryParams)
 
 	createEvent := task.CreateEvent{
 		Event: *event,
