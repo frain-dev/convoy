@@ -3031,8 +3031,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: This endpoint creates or updates endpoints and subscriptions on
-        the fly and publishes events to it
+      description: This endpoint does not require creating endpoint and subscriptions
+        ahead of time. Instead, you supply the endpoint and the payload, and Convoy
+        delivers the events
       parameters:
       - description: Project ID
         in: path

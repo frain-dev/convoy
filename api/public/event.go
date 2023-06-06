@@ -122,7 +122,7 @@ func (a *PublicHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http
 
 // CreateDynamicEvent
 // @Summary Dynamic Events
-// @Description This endpoint creates or updates endpoints and subscriptions on the fly and publishes events to it
+// @Description This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events
 // @Tags Events
 // @Accept json
 // @Produce json
