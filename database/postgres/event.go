@@ -27,13 +27,13 @@ const (
 
 	fetchEventById = `
 	SELECT id, event_type, endpoints, project_id,
-	COALESCE(source_id, '') AS source_id, headers, raw, data
+	COALESCE(source_id, '') AS source_id, headers, url_query_params, raw, data
 	FROM convoy.events WHERE id = $1 AND project_id = $2 AND deleted_at is NULL;
 	`
 
 	fetchEventsByIds = `
 	SELECT ev.id, ev.project_id, ev.id as event_type,
-	COALESCE(ev.source_id, '') AS source_id,
+	COALESCE(ev.source_id, '') AS source_id, ev.url_query_params,
 	ev.headers, ev.raw, ev.data, ev.created_at,
 	ev.updated_at, ev.deleted_at,
 	COALESCE(s.id, '') AS "source_metadata.id",
