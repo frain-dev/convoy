@@ -121,8 +121,8 @@ func (a *PublicHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http
 }
 
 // CreateDynamicEvent
-// @Summary Creates an event with supplied endpoint and subscription
-// @Description This endpoint Creates an event with supplied endpoint and subscription
+// @Summary Dynamic Events
+// @Description This endpoint creates or updates endpoints and subscriptions on the fly and publishes events to it
 // @Tags Events
 // @Accept json
 // @Produce json

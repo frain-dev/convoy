@@ -3031,7 +3031,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: This endpoint Creates an event with supplied endpoint and subscription
+      description: This endpoint creates or updates endpoints and subscriptions on
+        the fly and publishes events to it
       parameters:
       - description: Project ID
         in: path
@@ -3080,7 +3081,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Creates an event with supplied endpoint and subscription
+      summary: Dynamic Events
       tags:
       - Events
   /v1/projects/{projectID}/events/fanout:

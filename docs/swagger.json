@@ -2761,7 +2761,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint Creates an event with supplied endpoint and subscription",
+                "description": "This endpoint creates or updates endpoints and subscriptions on the fly and publishes events to it",
                 "consumes": [
                     "application/json"
                 ],
@@ -2771,7 +2771,7 @@
                 "tags": [
                     "Events"
                 ],
-                "summary": "Creates an event with supplied endpoint and subscription",
+                "summary": "Dynamic Events",
                 "parameters": [
                     {
                         "type": "string",
