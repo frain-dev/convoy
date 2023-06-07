@@ -2,6 +2,7 @@ package migrate
 
 import (
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/extract"
 	"os"
 	"time"
 
@@ -22,6 +23,7 @@ func AddMigrateCommand(a *cli.App) *cobra.Command {
 	cmd.AddCommand(addUpCommand())
 	cmd.AddCommand(addDownCommand())
 	cmd.AddCommand(addCreateCommand())
+	cmd.AddCommand(addRunCommand())
 
 	return cmd
 }
@@ -120,6 +122,27 @@ func addCreateCommand() *cobra.Command {
 					log.Fatal(err)
 				}
 			}
+		},
+	}
+
+	return cmd
+}
+
+func addRunCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "run",
+		Short: "creates a new migration file",
+		Annotations: map[string]string{
+			"CheckMigration":  "false",
+			"ShouldBootstrap": "false",
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			extract.Header()
+			extract.RequestBody()
+			extract.RequestBodyFormData()
+			extract.RequestBodyFormDataNested()
+			extract.QueryParam()
+			extract.RequestBodyUrlEncoded()
 		},
 	}
 

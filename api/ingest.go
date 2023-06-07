@@ -21,6 +21,17 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
+//
+// Github: `request.Header.X-GitHub-Delivery`
+// Adyen: `request.Body.eventCode` && `request.body.pspReference`
+// Stripe: `request.Body.id`
+//
+// request.Header / request.Body / request.QueryParam
+//
+// all_idempotent_keys = prefix + ...keys
+// idempotency = hash(all_idempotent_keys)
+//
+
 func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
 	// s.AppService.CountProjectApplications()
 	// 1. Retrieve mask ID
