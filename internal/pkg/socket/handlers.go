@@ -109,7 +109,7 @@ func ListenHandler(repo *Repo) http.HandlerFunc {
 		}
 
 		fmt.Printf("Listener connected for device %s with hostname %s\n", device.UID, device.HostName)
-		NewClient(context.Background(), conn, device, listenRequest.SourceID, repo.DeviceRepo, repo.EventDeliveryRepo)
+		NewClient(r.Context(), conn, device, listenRequest.SourceID, repo.DeviceRepo, repo.EventDeliveryRepo)
 	}
 }
 
