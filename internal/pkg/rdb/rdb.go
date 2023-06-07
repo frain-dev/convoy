@@ -4,8 +4,8 @@ import (
 	"errors"
 
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-redis/redis/v8"
-	"github.com/newrelic/go-agent/v3/integrations/nrredis-v8"
+	"github.com/newrelic/go-agent/v3/integrations/nrredis-v9"
+	"github.com/redis/go-redis/v9"
 )
 
 // Redis is our wrapper logic to instrument redis calls
@@ -22,7 +22,6 @@ func NewClient(dsn string) (*Redis, error) {
 	}
 
 	opts, err := redis.ParseURL(dsn)
-
 	if err != nil {
 		return nil, err
 	}
