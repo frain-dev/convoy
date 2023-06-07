@@ -124,6 +124,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 				EndpointID:     s.EndpointID,
 				DeviceID:       s.DeviceID,
 				Headers:        headers,
+				URLQueryParams: event.URLQueryParams,
 
 				Status:           getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},

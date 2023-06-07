@@ -67,14 +67,15 @@ func TestProcessEventCreated(t *testing.T) {
 			name: "should_process_event_for_outgoing_project",
 			event: &CreateEvent{
 				Event: datastore.Event{
-					UID:       ulid.Make().String(),
-					EventType: "*",
-					SourceID:  "source-id-1",
-					ProjectID: "project-id-1",
-					Endpoints: []string{"endpoint-id-1"},
-					Data:      []byte(`{}`),
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					UID:            ulid.Make().String(),
+					EventType:      "*",
+					SourceID:       "source-id-1",
+					ProjectID:      "project-id-1",
+					Endpoints:      []string{"endpoint-id-1"},
+					Data:           []byte(`{}`),
+					URLQueryParams: "name=ref&category=food",
+					CreatedAt:      time.Now(),
+					UpdatedAt:      time.Now(),
 				},
 			},
 			dbFn: func(args *args) {

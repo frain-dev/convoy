@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/url"
+
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/signature"
 	"github.com/oklog/ulid/v2"
@@ -158,10 +160,19 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
+		targetURL := e.TargetURL
+		if !util.IsStringEmpty(ed.URLQueryParams) {
+			targetURL, err = url.ConcatQueryParams(e.TargetURL, ed.URLQueryParams)
+			if err != nil {
+				log.WithError(err).Error("failed to concat url query params")
+				return &EndpointError{Err: err, delay: delayDuration}
+			}
+		}
+
 		attemptStatus := false
 		start := time.Now()
 
-		resp, err := dispatch.SendRequest(e.TargetURL, string(convoy.HttpPost), sig.Payload, p.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), ed.Headers)
+		resp, err := dispatch.SendRequest(targetURL, string(convoy.HttpPost), sig.Payload, p.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), ed.Headers)
 		status := "-"
 		statusCode := 0
 		if resp != nil {
@@ -173,7 +184,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		// log request details
 		requestLogger := log.WithFields(log.Fields{
 			"status":   status,
-			"uri":      e.TargetURL,
+			"uri":      targetURL,
 			"method":   convoy.HttpPost,
 			"duration": duration,
 		})

@@ -17,8 +17,8 @@ var ErrEventNotCreated = errors.New("event could not be created")
 
 const (
 	createEvent = `
-	INSERT INTO convoy.events (id, event_type, endpoints, project_id, source_id, headers, raw, data,created_at,updated_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	INSERT INTO convoy.events (id, event_type, endpoints, project_id, source_id, headers, raw, data, url_query_params,created_at,updated_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	`
 
 	createEventEndpoints = `
@@ -27,14 +27,14 @@ const (
 
 	fetchEventById = `
 	SELECT id, event_type, endpoints, project_id,
-	COALESCE(source_id, '') AS source_id, headers, raw, data
+	COALESCE(source_id, '') AS source_id, headers, url_query_params, raw, data
 	FROM convoy.events WHERE id = $1 AND project_id = $2 AND deleted_at is NULL;
 	`
 
 	fetchEventsByIds = `
 	SELECT ev.id, ev.project_id, ev.id as event_type,
-	COALESCE(ev.source_id, '') AS source_id,
-	ev.headers, ev.raw, ev.data, ev.created_at, 
+	COALESCE(ev.source_id, '') AS source_id, ev.url_query_params,
+	ev.headers, ev.raw, ev.data, ev.created_at,
 	ev.updated_at, ev.deleted_at,
 	COALESCE(s.id, '') AS "source_metadata.id",
 	COALESCE(s.name, '') AS "source_metadata.name"
@@ -43,7 +43,7 @@ const (
 	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
 	WHERE ev.deleted_at IS NULL
-	AND ev.id IN (?) 
+	AND ev.id IN (?)
 	AND ev.project_id = ?
 	`
 
@@ -61,7 +61,7 @@ const (
 	baseEventsPaged = `
 	SELECT ev.id, ev.project_id, ev.id as event_type,
 	COALESCE(ev.source_id, '') AS source_id,
-	ev.headers, ev.raw, ev.data, ev.created_at, 
+	ev.headers, ev.raw, ev.data, ev.created_at,ev.url_query_params,
 	ev.updated_at, ev.deleted_at,
 	COALESCE(s.id, '') AS "source_metadata.id",
 	COALESCE(s.name, '') AS "source_metadata.name"
@@ -72,25 +72,25 @@ const (
     WHERE ev.deleted_at IS NULL`
 
 	baseEventsPagedForward = `%s %s AND ev.id <= :cursor
-	GROUP BY ev.id, s.id 
-	ORDER BY ev.id DESC 
+	GROUP BY ev.id, s.id
+	ORDER BY ev.id DESC
 	LIMIT :limit
 	`
 
 	baseEventsPagedBackward = `
-	WITH events AS (  
-		%s %s AND ev.id >= :cursor 
-		GROUP BY ev.id, s.id 
-		ORDER BY ev.id ASC 
+	WITH events AS (
+		%s %s AND ev.id >= :cursor
+		GROUP BY ev.id, s.id
+		ORDER BY ev.id ASC
 		LIMIT :limit
 	)
 
 	SELECT * FROM events ORDER BY id DESC
 	`
 
-	baseEventFilter = ` AND ev.project_id = :project_id 
-	AND (ev.source_id = :source_id OR :source_id = '') 
-	AND ev.created_at >= :start_date 
+	baseEventFilter = ` AND ev.project_id = :project_id
+	AND (ev.source_id = :source_id OR :source_id = '')
+	AND ev.created_at >= :start_date
 	AND ev.created_at <= :end_date`
 
 	endpointFilter = ` AND ee.endpoint_id IN (:endpoint_ids) `
@@ -143,6 +143,7 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		event.Headers,
 		event.Raw,
 		event.Data,
+		event.URLQueryParams,
 		event.CreatedAt, event.UpdatedAt,
 	)
 	if err != nil {

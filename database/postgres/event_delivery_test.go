@@ -63,7 +63,8 @@ func generateEventDelivery(project *datastore.Project, endpoint *datastore.Endpo
 		DeliveryAttempts: []datastore.DeliveryAttempt{
 			{UID: ulid.Make().String()},
 		},
-		Status: datastore.SuccessEventStatus,
+		URLQueryParams: "name=ref&category=food",
+		Status:         datastore.SuccessEventStatus,
 		Metadata: &datastore.Metadata{
 			Data:            []byte(`{"name": "10x"}`),
 			Raw:             `{"name": "10x"}`,

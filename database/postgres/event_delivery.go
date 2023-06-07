@@ -31,14 +31,14 @@ var (
 
 const (
 	createEventDelivery = `
-    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,created_at,updated_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14);
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,created_at,updated_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15);
     `
 
 	baseFetchEventDelivery = `
     SELECT
         ed.id,ed.project_id,ed.event_id,ed.subscription_id,
-        ed.headers,ed.attempts,ed.status,ed.metadata,ed.cli_metadata,
+        ed.headers,ed.attempts,ed.status,ed.metadata,ed.cli_metadata,ed.url_query_params,
         ed.description,ed.created_at,ed.updated_at,
         COALESCE(ed.device_id,'') as "device_id",
         COALESCE(ed.endpoint_id,'') as "endpoint_id",
@@ -123,7 +123,7 @@ const (
 	fetchEventDeliveries = `
     SELECT
         id,project_id,event_id,subscription_id,
-        headers,attempts,status,metadata,cli_metadata,
+        headers,attempts,status,metadata,cli_metadata,url_query_params,
         description,created_at,updated_at,
         COALESCE(device_id,'') as "device_id",
         COALESCE(endpoint_id,'') as "endpoint_id"
@@ -133,7 +133,7 @@ const (
 	fetchDiscardedEventDeliveries = `
     SELECT
         id,project_id,event_id,subscription_id,
-        headers,attempts,status,metadata,cli_metadata,
+        headers,attempts,status,metadata,cli_metadata,url_query_params,
         description,created_at,updated_at,
         COALESCE(device_id,'') as "device_id"
     FROM convoy.event_deliveries
@@ -187,7 +187,7 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 		ctx, createEventDelivery, delivery.UID, delivery.ProjectID,
 		delivery.EventID, endpointID, deviceID,
 		delivery.SubscriptionID, delivery.Headers, delivery.DeliveryAttempts, delivery.Status,
-		delivery.Metadata, delivery.CLIMetadata, delivery.Description, delivery.CreatedAt, delivery.UpdatedAt,
+		delivery.Metadata, delivery.CLIMetadata, delivery.Description, delivery.URLQueryParams, delivery.CreatedAt, delivery.UpdatedAt,
 	)
 	if err != nil {
 		return err
@@ -533,6 +533,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 			DeviceID:       ev.DeviceID,
 			SubscriptionID: ev.SubscriptionID,
 			Headers:        ev.Headers,
+			URLQueryParams: ev.URLQueryParams,
 			Endpoint: &datastore.Endpoint{
 				UID:          ev.Endpoint.UID.ValueOrZero(),
 				ProjectID:    ev.Endpoint.ProjectID.ValueOrZero(),
@@ -769,6 +770,7 @@ type EventDeliveryPaginated struct {
 	DeviceID       string                `json:"device_id" db:"device_id"`
 	SubscriptionID string                `json:"subscription_id,omitempty" db:"subscription_id"`
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
+	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
 
 	Endpoint *EndpointMetadata `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *EventMetadata    `json:"event_metadata,omitempty" db:"event_metadata"`

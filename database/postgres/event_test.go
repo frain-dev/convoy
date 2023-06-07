@@ -406,15 +406,16 @@ func generateEvent(t *testing.T, db database.Database) *datastore.Event {
 	}`))
 
 	return &datastore.Event{
-		UID:       ulid.Make().String(),
-		EventType: "test-event",
-		Endpoints: []string{endpoint.UID},
-		ProjectID: project.UID,
-		Headers:   httpheader.HTTPHeader{},
-		Raw:       string(data),
-		Data:      data,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		UID:            ulid.Make().String(),
+		EventType:      "test-event",
+		Endpoints:      []string{endpoint.UID},
+		URLQueryParams: "name=ref&category=food",
+		ProjectID:      project.UID,
+		Headers:        httpheader.HTTPHeader{},
+		Raw:            string(data),
+		Data:           data,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 }
 
