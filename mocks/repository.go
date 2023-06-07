@@ -297,18 +297,18 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) FindEventDeliveryByID(ctx, pr
 }
 
 // LoadEventDeliveriesIntervals mocks base method.
-func (m *MockEventDeliveryRepository) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, interval int) ([]datastore.EventInterval, error) {
+func (m *MockEventDeliveryRepository) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period) ([]datastore.EventInterval, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadEventDeliveriesIntervals", ctx, projectID, params, period, interval)
+	ret := m.ctrl.Call(m, "LoadEventDeliveriesIntervals", ctx, projectID, params, period)
 	ret0, _ := ret[0].([]datastore.EventInterval)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // LoadEventDeliveriesIntervals indicates an expected call of LoadEventDeliveriesIntervals.
-func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesIntervals(ctx, projectID, params, period, interval interface{}) *gomock.Call {
+func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesIntervals(ctx, projectID, params, period interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesIntervals", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesIntervals), ctx, projectID, params, period, interval)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesIntervals", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesIntervals), ctx, projectID, params, period)
 }
 
 // LoadEventDeliveriesPaged mocks base method.
@@ -1065,18 +1065,18 @@ func (mr *MockEndpointRepositoryMockRecorder) DeleteSecret(ctx, endpoint, secret
 }
 
 // FindEndpointByID mocks base method.
-func (m *MockEndpointRepository) FindEndpointByID(çtx context.Context, id, projectID string) (*datastore.Endpoint, error) {
+func (m *MockEndpointRepository) FindEndpointByID(ctx context.Context, id, projectID string) (*datastore.Endpoint, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindEndpointByID", çtx, id, projectID)
+	ret := m.ctrl.Call(m, "FindEndpointByID", ctx, id, projectID)
 	ret0, _ := ret[0].(*datastore.Endpoint)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindEndpointByID indicates an expected call of FindEndpointByID.
-func (mr *MockEndpointRepositoryMockRecorder) FindEndpointByID(çtx, id, projectID interface{}) *gomock.Call {
+func (mr *MockEndpointRepositoryMockRecorder) FindEndpointByID(ctx, id, projectID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointByID", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointByID), çtx, id, projectID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEndpointByID", reflect.TypeOf((*MockEndpointRepository)(nil).FindEndpointByID), ctx, id, projectID)
 }
 
 // FindEndpointByTargetURL mocks base method.
