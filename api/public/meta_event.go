@@ -1,11 +1,11 @@
 package public
 
 import (
+	"github.com/frain-dev/convoy/api/models"
 	"net/http"
 
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
@@ -19,37 +19,36 @@ import (
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Param startDate query string false "start date"
-// @Param endDate query string false "end date"
-// @Param perPage query string false "results per page"
-// @Param page query string false "page number"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.MetaEvent{data=Stub}}}
+// @Param request query models.QueryListMetaEvent false "Query Params"
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.MetaEventResponse}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/meta-events [get]
 func (a *PublicHandler) GetMetaEventsPaged(w http.ResponseWriter, r *http.Request) {
-	searchParams, err := getSearchParams(r)
+	var q *models.QueryListMetaEvent
+	data, err := q.Transform(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	pageable := m.GetPageableFromContext(r.Context())
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	f := &datastore.Filter{SearchParams: searchParams, Pageable: pageable}
-	metaEvents, paginationData, err := postgres.NewMetaEventRepo(a.A.DB).LoadMetaEventsPaged(r.Context(), project.UID, f)
+	metaEvents, paginationData, err := postgres.NewMetaEventRepo(a.A.DB).LoadMetaEventsPaged(r.Context(), project.UID, data.Filter)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching meta events", http.StatusInternalServerError))
 		return
 	}
 
+	resp := models.NewListResponse(metaEvents, func(metaEvent datastore.MetaEvent) models.MetaEventResponse {
+		return models.MetaEventResponse{MetaEvent: &metaEvent}
+	})
 	_ = render.Render(w, r, util.NewServerResponse("Meta events fetched successfully",
-		pagedResponse{Content: metaEvents, Pagination: &paginationData}, http.StatusOK))
+		pagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 // GetMetaEvent
@@ -60,19 +59,20 @@ func (a *PublicHandler) GetMetaEventsPaged(w http.ResponseWriter, r *http.Reques
 // @Produce  json
 // @Param projectID path string true "Project ID"
 // @Param metaEventID path string true "meta event id"
-// @Success 200 {object} util.ServerResponse{data=datastore.MetaEvent{data=Stub}}
+// @Success 200 {object} util.ServerResponse{data=models.MetaEventResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/meta-events/{metaEventID} [get]
 func (a *PublicHandler) GetMetaEvent(w http.ResponseWriter, r *http.Request) {
-	metEvent, err := a.retrieveMetaEvent(r)
+	metaEvent, err := a.retrieveMetaEvent(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 		return
 	}
 
+	resp := &models.MetaEventResponse{MetaEvent: metaEvent}
 	_ = render.Render(w, r, util.NewServerResponse("Meta event fetched successfully",
-		metEvent, http.StatusOK))
+		resp, http.StatusOK))
 }
 
 // ResendMetaEvent
@@ -83,7 +83,7 @@ func (a *PublicHandler) GetMetaEvent(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param projectID path string true "Project ID"
 // @Param metaEventID path string true "meta event id"
-// @Success 200 {object} util.ServerResponse{data=datastore.MetaEvent{data=Stub}}
+// @Success 200 {object} util.ServerResponse{data=models.MetaEventResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/meta-events/{metaEventID}/resend [put]
@@ -102,7 +102,8 @@ func (a *PublicHandler) ResendMetaEvent(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Meta event processed for retry successfully", metaEvent, http.StatusOK))
+	resp := &models.MetaEventResponse{MetaEvent: metaEvent}
+	_ = render.Render(w, r, util.NewServerResponse("Meta event processed for retry successfully", resp, http.StatusOK))
 }
 
 func (a *PublicHandler) retrieveMetaEvent(r *http.Request) (*datastore.MetaEvent, error) {
