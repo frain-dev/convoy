@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { EventsService } from './events.service';
 import { EVENT_DELIVERY } from 'src/app/models/event.model';
@@ -129,10 +129,10 @@ export class EventsComponent implements OnInit, OnDestroy {
 		}
 	}
 
-	getSelectedDateRange(dateRange?: { startDate: Date; endDate: Date }) {
+	getSelectedDateRange(dateRange?: { startDate: string; endDate: string }) {
 		this.statsDateRange.patchValue({
-			startDate: dateRange?.startDate || new Date(new Date().setDate(new Date().getDate() - 30)),
-			endDate: dateRange?.endDate || new Date()
+			startDate: dateRange?.startDate ? parseISO(dateRange?.startDate) : new Date(new Date().setDate(new Date().getDate() - 30)),
+			endDate: dateRange?.startDate ? parseISO(dateRange?.endDate) : new Date()
 		});
 		this.fetchDashboardData();
 	}

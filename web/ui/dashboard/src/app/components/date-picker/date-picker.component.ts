@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { format, isAfter, isBefore, isFuture, isWithinInterval } from 'date-fns';
 import { DropdownContainerComponent } from '../dropdown-container/dropdown-container.component';
 import { OverlayDirective } from '../overlay/overlay.directive';
+import { InputDirective, InputFieldDirective, LabelComponent } from '../input/input.component';
 
 interface CALENDAR_DAY {
 	date: number;
@@ -17,7 +18,7 @@ interface CALENDAR_DAY {
 @Component({
 	selector: 'convoy-date-picker',
 	standalone: true,
-	imports: [CommonModule, ButtonComponent, FormsModule, DropdownContainerComponent, OverlayDirective],
+	imports: [CommonModule, ButtonComponent, FormsModule, DropdownContainerComponent, OverlayDirective, InputFieldDirective, InputDirective, LabelComponent],
 	templateUrl: './date-picker.component.html',
 	styleUrls: ['./date-picker.component.scss']
 })
@@ -25,7 +26,7 @@ export class DatePickerComponent implements OnInit {
 	@Output() selectedDateRange = new EventEmitter<any>();
 	@Output() selectedDate = new EventEmitter<any>();
 	@Output() clearDates = new EventEmitter<any>();
-	@Input('formType') formType: 'input' | 'filter' = 'filter';
+	@Input('formType') formType: 'filter' = 'filter';
 	@Input('dateRangeValue') dateRangeValue?: {
 		startDate: string | Date;
 		endDate: string | Date;
@@ -35,9 +36,13 @@ export class DatePickerComponent implements OnInit {
 	oneDay = 60 * 60 * 24 * 1000;
 	todayTimestamp = Date.now() - (Date.now() % this.oneDay) + new Date().getTimezoneOffset() * 1000 * 60;
 	selectedStartDay? = this.todayTimestamp;
+	selectedStartTime? = '00:00:00';
 	selectedEndDay? = this.todayTimestamp;
+	selectedEndTime? = '23:59:59';
 	month!: number;
 	year!: number;
+	monthRight!: number;
+	yearRight!: number;
 	startDate = { day: '', month: '', year: '' };
 	endDate = { day: '', month: '', year: '' };
 	daysMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -47,6 +52,8 @@ export class DatePickerComponent implements OnInit {
 		endDate: string | Date;
 	};
 	showPicker = false;
+	datesForLeftCalendar: CALENDAR_DAY[] = [];
+	datesForRightCalendar: CALENDAR_DAY[] = [];
 
 	constructor() {}
 
@@ -68,10 +75,12 @@ export class DatePickerComponent implements OnInit {
 		let date = new Date();
 		this.year = date.getFullYear();
 		this.month = date.getMonth();
-		this.getMonthDetails(this.year, this.month);
 
-		this.setInputStartDate();
-		if (this.formType === 'filter') this.setInputEndDate();
+		this.yearRight = date.getFullYear();
+		this.monthRight = date.getMonth() + 1;
+
+		this.datesForLeftCalendar = this.getMonthDetails(this.year, this.month);
+		this.datesForRightCalendar = this.getMonthDetails(this.yearRight, this.monthRight);
 	}
 
 	clearDate(event?: any) {
@@ -84,51 +93,12 @@ export class DatePickerComponent implements OnInit {
 	}
 
 	applyDate() {
-		this.selectedDates = { startDate: new Date(this.selectedStartDay!), endDate: new Date(this.selectedEndDay!) };
-		this.formType === 'filter' ? this.selectedDateRange.emit(this.selectedDates) : this.selectedDate.emit(this.selectedDates.startDate);
 		this.showPicker = false;
-	}
+		if (!this.selectedStartDay && !this.selectedEndDay) return;
 
-	get getCalculatedClass() {
-		return `${this.selectedDates?.startDate && this.selectedDates?.endDate ? 'text-primary-100 !bg-primary-500 ' : ''}`;
-	}
+		this.selectedDates = { startDate: `${format(new Date(this.selectedStartDay!), 'yyyy-MM-dd')}T${this.selectedStartTime}`, endDate: `${format(new Date(this.selectedEndDay!), 'yyyy-MM-dd')}T${this.selectedEndTime}` };
 
-	setInputStartDate() {
-		if (this.selectedStartDay) {
-			const date = new Date(this.selectedStartDay);
-			this.startDate = { day: date.getDate() < 9 ? '0' + date.getDate() : String(date.getDate()), month: date.getMonth() + 1 < 9 ? '0' + (date.getMonth() + 1) : String(date.getMonth() + 1), year: String(date.getFullYear()) };
-		}
-	}
-
-	setInputEndDate() {
-		if (this.selectedEndDay) {
-			const date = new Date(this.selectedEndDay);
-			this.endDate = { day: date.getDate() < 9 ? '0' + date.getDate() : String(date.getDate()), month: date.getMonth() + 1 < 9 ? '0' + (date.getMonth() + 1) : String(date.getMonth() + 1), year: String(date.getFullYear()) };
-		}
-	}
-
-	onInputStartDate() {
-		const timestamp = new Date(parseInt(this.startDate.year), parseInt(this.startDate.month) - 1, parseInt(this.startDate.day)).getTime();
-		const date = new Date(timestamp);
-		if (this.selectedEndDay) if (isAfter(date, new Date(this.selectedEndDay))) return;
-		if (!this.isInFuture(timestamp)) this.selectedStartDay = timestamp;
-		else return;
-
-		this.year = date.getFullYear();
-		this.month = date.getMonth();
-		this.getMonthDetails(this.year, this.month);
-	}
-
-	onInputEndDate() {
-		const timestamp = new Date(parseInt(this.endDate.year), parseInt(this.endDate.month) - 1, parseInt(this.endDate.day)).getTime();
-		const date = new Date(timestamp);
-		if (this.selectedStartDay) if (isBefore(date, new Date(this.selectedStartDay))) return;
-		if (!this.isInFuture(timestamp)) this.selectedEndDay = timestamp;
-		else return;
-
-		this.year = date.getFullYear();
-		this.month = date.getMonth();
-		this.getMonthDetails(this.year, this.month);
+		this.formType === 'filter' ? this.selectedDateRange.emit(this.selectedDates) : this.selectedDate.emit(this.selectedDates.startDate);
 	}
 
 	onselectDay(timestamp: number) {
@@ -143,34 +113,34 @@ export class DatePickerComponent implements OnInit {
 			this.selectedStartDay = timestamp;
 			delete this.selectedEndDay;
 		}
-		this.setInputStartDate();
-		if (this.formType === 'filter') this.setInputEndDate();
-	}
-
-	setYear(offset: number) {
-		let year = this.year + offset;
-		let month = this.month;
-
-		this.year = year;
-		this.month = month;
-		this.getMonthDetails(year, month);
 	}
 
 	setMonth(offset: number) {
 		let year = this.year;
 		let month = this.month + offset;
 
-		if (month === -1) {
-			month = 11;
+		let yearRight = this.yearRight;
+		let monthRight = this.monthRight + offset;
+
+		if (month <= -1) {
+			month = 12 + month;
 			year--;
-		} else if (month === 12) {
-			month = 0;
+			monthRight = 12 + monthRight;
+			yearRight--;
+		} else if (month >= 12) {
+			month = month - 12;
 			year++;
+			monthRight = monthRight - 12;
+			yearRight++;
 		}
 
 		this.year = year;
 		this.month = month;
-		this.getMonthDetails(year, month);
+		this.yearRight = yearRight;
+		this.monthRight = monthRight;
+
+		this.datesForLeftCalendar = this.getMonthDetails(year, month);
+		this.datesForRightCalendar = this.getMonthDetails(yearRight, monthRight);
 	}
 
 	getDayDetails(args: { index: any; numberOfDays: any; firstDay: any; year: any; month: any }) {
@@ -199,7 +169,7 @@ export class DatePickerComponent implements OnInit {
 		return 40 - new Date(year, month, 40).getDate();
 	}
 
-	getMonthDetails(year: number, month: number) {
+	getMonthDetails(year: number, month: number): CALENDAR_DAY[] {
 		let firstDay = new Date(year, month).getDay();
 		let numberOfDays = this.getNumberOfDays(year, month);
 		let monthArray = [];
@@ -210,18 +180,12 @@ export class DatePickerComponent implements OnInit {
 
 		for (let row = 0; row < rows; row++) {
 			for (let col = 0; col < cols; col++) {
-				currentDay = this.getDayDetails({
-					index,
-					numberOfDays,
-					firstDay,
-					year,
-					month
-				});
+				currentDay = this.getDayDetails({ index, numberOfDays, firstDay, year, month });
 				monthArray.push(currentDay);
 				index++;
 			}
 		}
-		this.calendarDate = monthArray;
+		return monthArray;
 	}
 
 	isCurrentDay(timestamp: number): boolean {
@@ -251,8 +215,17 @@ export class DatePickerComponent implements OnInit {
 
 	getDayClassNames(day: CALENDAR_DAY): string {
 		const classNames = `w-full h-40px justify-center items-center transition-all duration-300 ease-in-out ${this.isCurrentDay(day.timestamp) && !this.isStartDay(day.timestamp) && !this.isEndDay(day.timestamp) ? '!bg-transparent !font-extrabold !text-primary-100' : ''} ${
-			day.month > 0 ? 'hidden' : ''
-		} ${this.isDayWithinStartAndEndDates(day.timestamp) ? 'bg-primary-400 font-medium' : ''} ${this.isInFuture(day.timestamp) && this.formType === 'filter' ? 'opacity-30 pointer-events-none' : ''} ${
+			this.isDayWithinStartAndEndDates(day.timestamp) ? 'bg-primary-400 font-medium' : ''
+		} ${(this.isInFuture(day.timestamp) && this.formType === 'filter') || day.month !== 0 ? 'opacity-30 pointer-events-none' : ''} ${day.month !== 0 ? '!opacity-0 pointer-events-none' : ''} ${
+			this.isSelectedDay(day.timestamp) && day.month == 0 ? '!bg-primary-200 !text-white-100 font-medium' : ''
+		} ${this.isStartDay(day.timestamp) ? 'rounded-bl-8px rounded-tl-8px' : ''} ${this.isEndDay(day.timestamp) ? 'rounded-br-8px rounded-tr-8px' : ''}`;
+		return classNames;
+	}
+
+	getDayClassNamesRightCalendar(day: CALENDAR_DAY): string {
+		const classNames = `w-full h-40px justify-center items-center transition-all duration-300 ease-in-out ${this.isCurrentDay(day.timestamp) && !this.isStartDay(day.timestamp) && !this.isEndDay(day.timestamp) ? '!bg-transparent !font-extrabold !text-primary-100' : ''} ${
+			this.isDayWithinStartAndEndDates(day.timestamp) ? 'bg-primary-400 font-medium' : ''
+		} ${day.month !== 0 ? '!opacity-0 pointer-events-none' : ''} ${this.isInFuture(day.timestamp) && this.formType === 'filter' ? 'opacity-30 pointer-events-none' : ''} ${
 			this.isSelectedDay(day.timestamp) && day.month == 0 ? '!bg-primary-200 !text-white-100 font-medium' : ''
 		} ${this.isStartDay(day.timestamp) ? 'rounded-bl-8px rounded-tl-8px' : ''} ${this.isEndDay(day.timestamp) ? 'rounded-br-8px rounded-tr-8px' : ''}`;
 		return classNames;

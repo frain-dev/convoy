@@ -8,10 +8,9 @@
 		(click)="showPicker = !showPicker"
 	>
 		<img src="/assets/img/calendar-icon.svg" class="w-14px mr-10px" *ngIf="formType === 'filter'" />
-		<span class="text-grey-40 mr-4px">{{ formType === 'input' && selectedDates?.startDate ? formatDate(selectedStartDay) : 'Date' }}</span>
+		<span class="text-grey-40 mr-4px">Date</span>
 
-		<span class="flex ml-auto items-center order-3" [class]="formType === 'input' ? 'order-2 ml-auto' : 'order-1'">
-			<img src="/assets/img/calendar-icon.svg" class="w-14px" *ngIf="!selectedDates?.startDate && formType === 'input'" />
+		<span class="flex ml-auto items-center order-3" class="order-1">
 			<img src="/assets/img/angle-arrow-down.svg" class="ml-16px mr-0px w-14px" alt="arrow down icon" *ngIf="!selectedDates?.startDate && !selectedDates?.endDate && formType === 'filter'" />
 			<button type="button" *ngIf="selectedDates?.startDate && selectedDates?.endDate" (click)="clearDate($event); clearDates.emit()">
 				<svg width="10" height="10" class="fill-primary-100">
@@ -21,60 +20,26 @@
 		</span>
 	</button>
 
-	<div convoy-dropdown-container position="left" size="xl" class="p-10px" [show]="showPicker">
+	<div convoy-dropdown-container position="left" class="!w-fit !max-h-[none]" [show]="showPicker">
 		<div class="w-full">
-			<div class="date-picker">
-				<div class="inputs flex items-center w-full justify-between bg-white-100 py-10px mb-10px">
-					<div class="start-date flex items-center py-4px px-10px bg-white-100 border border-primary-400 focus-within:border-primary-200 transition-all duration-300 ease-in-out rounded-8px" [ngClass]="{ 'w-full': formType === 'input' }">
-						<span *ngIf="formType === 'filter'" class="text-14 text-grey-40 font-medium">Start:</span>
-						<input placeholder="dd" pattern="[0-9]*" maxlength="2" max="31" class="w-24px outline-none rounded-tl-8px rounded-bl-8px text-center text-14 text-grey-40 font-medium" [(ngModel)]="startDate.day" (change)="onInputStartDate()" />
-						<span class="text-10 text-grey-40">/</span>
-						<input placeholder="mm" pattern="[0-9]*" maxlength="2" max="12" class="w-32px outline-none text-center text-14 text-grey-40 font-medium" [(ngModel)]="startDate.month" (change)="onInputStartDate()" />
-						<span class="text-10 text-grey-40">/</span>
-						<input placeholder="yyyy" pattern="[0-9]*" maxlength="4" class="w-44px outline-none rounded-tr-8px rounded-br-8px text-center text-14 text-grey-40 font-medium" [(ngModel)]="startDate.year" (change)="onInputStartDate()" />
-					</div>
-					<div *ngIf="formType === 'filter'" class="start-date flex items-center py-4px px-10px bg-white-100 border border-primary-400 focus-within:border-primary-200 transition-all duration-300 ease-in-out rounded-8px">
-						<span class="text-14 text-grey-40 font-medium">End:</span>
-						<input placeholder="dd" pattern="[0-9]*" maxlength="2" max="31" class="w-24px outline-none rounded-tl-8px rounded-bl-8px text-center text-14 text-grey-40 font-medium" [(ngModel)]="endDate.day" (change)="onInputEndDate()" />
-						<span class="text-10 text-grey-40">/</span>
-						<input placeholder="mm" pattern="[0-9]*" maxlength="2" max="12" class="w-32px outline-none text-center text-14 text-grey-40 font-medium" [(ngModel)]="endDate.month" (change)="onInputEndDate()" />
-						<span class="text-10 text-grey-40">/</span>
-						<input placeholder="yyyy" pattern="[0-9]*" maxlength="4" class="w-36px outline-none rounded-tr-8px rounded-br-8px text-center text-14 text-grey-40 font-medium" [(ngModel)]="endDate.year" (change)="onInputEndDate()" />
-					</div>
-				</div>
+			<div class="flex gap-40px px-16px pt-16px">
 
 				<div class="calendar">
 					<div class="calendar-nav flex items-center justify-between">
 						<div class="flex items-center">
-							<button type="button" (click)="setYear(-1)">
-								<svg width="24" height="24" class="fill-grey-40">
-									<use xlink:href="#double-arrow-left-icon"></use>
-								</svg>
-							</button>
-							<button type="button" (click)="setMonth(-1)">
+							<button type="button" (click)="setMonth(-2)">
 								<svg width="24" height="24" class="fill-grey-40">
 									<use xlink:href="#arrow-left-icon"></use>
 								</svg>
 							</button>
 						</div>
 
-						<div class="text-center py-4px px-10px text-14 font-semibold bg-primary-500 text-[#494E50] rounded-4px">{{ monthMap[month] }} {{ year }}</div>
+						<div class="text-center text-h4 text-new.gray-900 font-semibold">{{ monthMap[month] }} {{ year }}</div>
 
-						<div class="flex items-center">
-							<button type="button" (click)="setMonth(1)">
-								<svg width="24" height="24" class="fill-grey-40">
-									<use xlink:href="#arrow-right-icon"></use>
-								</svg>
-							</button>
-							<button type="button" (click)="setYear(1)">
-								<svg width="24" height="24" class="fill-grey-40">
-									<use xlink:href="#double-arrow-right-icon"></use>
-								</svg>
-							</button>
-						</div>
+						<div class="flex items-center"></div>
 					</div>
 
-					<div class="week bg-[#F5F7FA] grid grid-cols-7 py-8px capitalize items-center text-center mt-20px">
+					<div class="grid grid-cols-7 py-10px capitalize items-center text-center mt-20px font-semibold text-new.gray-900">
 						<div class="text-14">S</div>
 						<div class="text-14">M</div>
 						<div class="text-14">T</div>
@@ -84,15 +49,59 @@
 						<div class="text-14">S</div>
 					</div>
 
-					<div class="days grid grid-cols-7 text-center mt-10px">
-						<button size="sm" fill="text" type="button" color="grey" class="!text-14" [class]="getDayClassNames(date)" *ngFor="let date of calendarDate" (click)="onselectDay(date.timestamp)">
+					<div class="days grid text-center mt-10px" style="grid-template-columns: repeat(7, 40px)">
+						<button type="button" class="text-12 text-new.gray-600" [class]="getDayClassNames(date)" *ngFor="let date of datesForLeftCalendar" (click)="onselectDay(date.timestamp)">
 							{{ date.date }}
 						</button>
 					</div>
+
+					<convoy-input-field class="mt-24px mb-16px">
+						<label for="start_time" convoy-label>Start Time</label>
+						<input id="start_time" type="time" convoy-input autocomplete="start_time" [(ngModel)]="selectedStartTime" step="1" placeholder="11:00:00" class="py-6px px-16px" />
+					</convoy-input-field>
+				</div>
+
+				<div class="calendar">
+					<div class="calendar-nav flex items-center justify-between">
+						<div class="flex items-center"></div>
+
+						<div class="text-center text-h4 text-new.gray-900 font-semibold">{{ monthMap[monthRight] }} {{ yearRight }}</div>
+
+						<div class="flex items-center">
+							<button type="button" (click)="setMonth(2)">
+								<svg width="24" height="24" class="fill-grey-40">
+									<use xlink:href="#arrow-right-icon"></use>
+								</svg>
+							</button>
+						</div>
+					</div>
+
+					<div class="grid grid-cols-7 py-10px capitalize items-center text-center mt-20px font-semibold text-new.gray-900">
+						<div class="text-14">S</div>
+						<div class="text-14">M</div>
+						<div class="text-14">T</div>
+						<div class="text-14">W</div>
+						<div class="text-14">T</div>
+						<div class="text-14">F</div>
+						<div class="text-14">S</div>
+					</div>
+
+					<div class="days grid text-center mt-10px" style="grid-template-columns: repeat(7, 40px)">
+						<ng-container>
+							<button type="button" class="text-14 text-new.gray-600" *ngFor="let date of datesForRightCalendar; let i = index" [class]="getDayClassNamesRightCalendar(date)" (click)="onselectDay(date.timestamp)">
+								{{ date.date }}
+							</button>
+						</ng-container>
+					</div>
+
+					<convoy-input-field class="mt-24px mb-16px">
+						<label for="end_time" convoy-label>End Time</label>
+						<input id="end_time" type="time" convoy-input [(ngModel)]="selectedEndTime" step="1" placeholder="11:00:00" class="py-6px px-16px" />
+					</convoy-input-field>
 				</div>
 			</div>
 
-			<div class="flex items-center justify-end p-10px">
+			<div class="flex items-center justify-end px-16px py-10px border-t border-t-new.primary-25">
 				<button convoy-button size="sm" type="button" fill="outline" color="danger" class="mr-14px" *ngIf="selectedDates?.startDate && selectedDates?.endDate" (click)="clearDate(); clearDates.emit()">Clear</button>
 				<button convoy-button size="sm" type="button" (click)="applyDate()">Apply</button>
 			</div>
