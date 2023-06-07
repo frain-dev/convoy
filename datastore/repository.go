@@ -31,7 +31,7 @@ type EventDeliveryRepository interface {
 	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
 	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error
 	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable) ([]EventDelivery, PaginationData, error)
-	LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params SearchParams, period Period, interval int) ([]EventInterval, error)
+	LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params SearchParams, period Period) ([]EventInterval, error)
 }
 
 type EventRepository interface {
@@ -85,7 +85,7 @@ type OrganisationMemberRepository interface {
 
 type EndpointRepository interface {
 	CreateEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
-	FindEndpointByID(çtx context.Context, id string, projectID string) (*Endpoint, error)
+	FindEndpointByID(ctx context.Context, id string, projectID string) (*Endpoint, error)
 	FindEndpointsByID(ctx context.Context, ids []string, projectID string) ([]Endpoint, error)
 	FindEndpointsByAppID(ctx context.Context, appID string, projectID string) ([]Endpoint, error)
 	FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]Endpoint, error)

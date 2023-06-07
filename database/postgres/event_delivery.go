@@ -38,7 +38,8 @@ const (
 	baseFetchEventDelivery = `
     SELECT
         ed.id,ed.project_id,ed.event_id,ed.subscription_id,
-        ed.headers,ed.attempts,ed.status,ed.metadata,ed.cli_metadata,ed.url_query_params,
+        ed.headers,ed.attempts,ed.status,ed.metadata,ed.cli_metadata,
+        COALESCE(ed.url_query_params, '') AS url_query_params,
         ed.description,ed.created_at,ed.updated_at,
         COALESCE(ed.device_id,'') as "device_id",
         COALESCE(ed.endpoint_id,'') as "endpoint_id",
@@ -115,15 +116,16 @@ const (
         created_at >= $2 AND
         created_at <= $3
     GROUP BY
-        "data.group_only", "data.index"
+        "data.group_only", "data.index", created_at
     ORDER BY
-        "data.total_time" ASC;
+        "data.total_time";
     `
 
 	fetchEventDeliveries = `
     SELECT
         id,project_id,event_id,subscription_id,
-        headers,attempts,status,metadata,cli_metadata,url_query_params,
+        headers,attempts,status,metadata,cli_metadata,
+        COALESCE(url_query_params, '') AS url_query_params,
         description,created_at,updated_at,
         COALESCE(device_id,'') as "device_id",
         COALESCE(endpoint_id,'') as "endpoint_id"
@@ -133,7 +135,8 @@ const (
 	fetchDiscardedEventDeliveries = `
     SELECT
         id,project_id,event_id,subscription_id,
-        headers,attempts,status,metadata,cli_metadata,url_query_params,
+        headers,attempts,status,metadata,cli_metadata,
+        COALESCE(url_query_params, '') AS url_query_params,
         description,created_at,updated_at,
         COALESCE(device_id,'') as "device_id"
     FROM convoy.event_deliveries
@@ -232,7 +235,6 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, projec
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var ed datastore.EventDelivery
@@ -244,7 +246,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, projec
 		eventDeliveries = append(eventDeliveries, ed)
 	}
 
-	return eventDeliveries, nil
+	return eventDeliveries, rows.Close()
 }
 
 func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, projectID string, eventID string) ([]datastore.EventDelivery, error) {
@@ -255,7 +257,6 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, pr
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var ed datastore.EventDelivery
@@ -267,7 +268,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, pr
 		eventDeliveries = append(eventDeliveries, ed)
 	}
 
-	return eventDeliveries, nil
+	return eventDeliveries, rows.Close()
 }
 
 func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, projectID string, status datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
@@ -345,7 +346,6 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, pr
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var ed datastore.EventDelivery
@@ -357,7 +357,7 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, pr
 		eventDeliveries = append(eventDeliveries, ed)
 	}
 
-	return eventDeliveries, nil
+	return eventDeliveries, rows.Close()
 }
 
 func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, delivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
@@ -594,7 +594,10 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		rows.Close()
+		err = rows.Close()
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
 	}
 
 	ids := make([]string, len(eventDeliveries))
@@ -619,7 +622,7 @@ const (
 	yearlyIntervalFormat  = "yyyy"              // 1 month
 )
 
-func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, t int) ([]datastore.EventInterval, error) {
+func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period) ([]datastore.EventInterval, error) {
 	intervals := make([]datastore.EventInterval, 0)
 
 	start := time.Unix(params.CreatedAtStart, 0)

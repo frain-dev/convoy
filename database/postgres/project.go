@@ -18,7 +18,6 @@ var (
 	ErrProjectConfigNotUpdated = errors.New("project config could not be updated")
 	ErrProjectNotCreated       = errors.New("project could not be created")
 	ErrProjectNotUpdated       = errors.New("project could not be updated")
-	ErrProjectNotDeleted       = errors.New("project could not be deleted")
 )
 
 const (
@@ -174,7 +173,7 @@ const (
 	`
 
 	projectStatistics = `
-	SELECT 
+	SELECT
 	(SELECT count(*) FROM convoy.subscriptions WHERE project_id = $1 AND deleted_at IS NULL) AS total_subscriptions,
 	(SELECT count(*) FROM convoy.endpoints WHERE project_id = $1 AND deleted_at IS NULL) AS total_endpoints,
 	(SELECT count(*) FROM convoy.sources WHERE project_id = $1 AND deleted_at IS NULL) AS total_sources,
@@ -269,7 +268,6 @@ func (p *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFilt
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	projects := make([]*datastore.Project, 0)
 	for rows.Next() {
@@ -374,7 +372,7 @@ func (p *projectRepo) FetchProjectByID(ctx context.Context, id string) (*datasto
 
 func (p *projectRepo) FillProjectsStatistics(ctx context.Context, project *datastore.Project) error {
 	var stats datastore.ProjectStatistics
-	err := p.db.Get(&stats, projectStatistics, project.UID)
+	err := p.db.GetContext(ctx, &stats, projectStatistics, project.UID)
 	if err != nil {
 		return err
 	}
