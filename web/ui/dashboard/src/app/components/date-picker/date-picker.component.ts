@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonComponent } from '../button/button.component';
 import { FormsModule } from '@angular/forms';
-import { format, isAfter, isBefore, isFuture, isWithinInterval } from 'date-fns';
+import { format, isAfter, isBefore, isFuture, isWithinInterval, parseISO } from 'date-fns';
 import { DropdownContainerComponent } from '../dropdown-container/dropdown-container.component';
 import { OverlayDirective } from '../overlay/overlay.directive';
 import { InputDirective, InputFieldDirective, LabelComponent } from '../input/input.component';
@@ -58,12 +58,18 @@ export class DatePickerComponent implements OnInit {
 	constructor() {}
 
 	ngOnInit(): void {
-		if (this.dateRangeValue) {
-			this.selectedStartDay = new Date(this.dateRangeValue.startDate).getTime();
+		if (this.dateRangeValue?.startDate && this.dateRangeValue?.endDate) {
+			const startDate = new Date(this.dateRangeValue?.startDate);
+			this.selectedStartDay = startDate.getTime();
+			this.selectedStartTime = `${startDate.getHours() <= 9 ? '0' + startDate.getHours() : startDate.getHours()}:${startDate.getMinutes() <= 9 ? '0' + startDate.getMinutes() : startDate.getMinutes()}:${
+				startDate.getSeconds() <= 9 ? '0' + startDate.getSeconds() : startDate.getSeconds()
+			}`;
+
 			const endDate = new Date(this.dateRangeValue.endDate);
 			this.selectedEndDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()).getTime();
+			this.selectedEndTime = `${endDate.getHours() <= 9 ? '0' + endDate.getHours() : endDate.getHours()}:${endDate.getMinutes() <= 9 ? '0' + endDate.getMinutes() : endDate.getMinutes()}:${endDate.getSeconds() <= 9 ? '0' + endDate.getSeconds() : endDate.getSeconds()}`;
 
-			if (this.dateRangeValue.startDate && this.dateRangeValue.endDate) this.selectedDates = { startDate: new Date(this.selectedStartDay!), endDate: new Date(this.selectedEndDay!) };
+			this.selectedDates = { startDate: new Date(this.selectedStartDay!), endDate: new Date(this.selectedEndDay!) };
 		}
 
 		if (this.dateValue) this.selectedStartDay = new Date(this.dateValue).getTime();
