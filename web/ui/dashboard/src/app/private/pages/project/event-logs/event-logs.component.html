@@ -31,27 +31,35 @@
 
 		<convoy-date-picker class="ml-14px" (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="eventsDateFilterFromURL" (clearDates)="clearEventFilters('eventsDate')" #datePicker></convoy-date-picker>
 
-		<convoy-time-picker class="ml-14px" (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #timeFilter></convoy-time-picker>
-
-		<div convoy-dropdown size="lg" position="left" #sourcesDropdown [hidden]="portalToken">
+		<div convoy-dropdown size="md" position="left" #sourcesDropdown [hidden]="portalToken">
 			<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 ml-16px min-w-[130px] whitespace-nowrap justify-between h-36px" [ngClass]="{ 'text-primary-100 !bg-primary-500': !!eventSource }">
 				<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
 				<span class="text-grey-40 w-full">All Sources</span>
 				<img class="ml-10px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 			</button>
 
-			<ng-container dropdownOptions>
+			<div dropdownOptions class="!max-h-[324px]">
 				<ul class="min-h-[100px] py-10px">
-					<li class="py-4px px-20px flex items-center justify-between border-b border-grey-10" *ngFor="let source of filterSources" convoy-list-item convoy-dropdown-option>
-						<label class="text-12 block w-full" [for]="source.uid">{{ source.name }}</label>
-						<input type="checkbox" name="source" [value]="source.uid" [id]="source.uid" [checked]="source.uid === eventSource" (change)="updateSourceFilter(source.uid, $event)" />
+					<li class="!py-0 pr-20px relative" *ngFor="let source of filterSources" convoy-list-item>
+						<label class="py-10px pl-20px text-12 block w-full" [for]="source.uid">{{ source.name }}</label>
+						<input
+							type="checkbox"
+							class="peer w-20px h-18px border border-new.primary-50 rounded-4px checked:border-new.primary-400 checked:bg-new.primary-25 focus:bottom-2 focus:border-new.primary-400 checked:bg bg-white-100"
+							name="source"
+							[value]="source.uid"
+							[id]="source.uid"
+							[checked]="source.uid === eventSource"
+							(change)="eventSource = source.uid"
+						/>
+						<img src="assets/img/check-icon-primary.svg" class="w-12px hidden peer-checked:block absolute top-[50%] translate-y-[-50%] right-[23px]" alt="check icon" />
 					</li>
 				</ul>
 
-				<div *ngIf="!!eventSource" class="p-10px pb-20px">
-					<button convoy-dropdown-option convoy-button size="sm" (click)="clearEventFilters('eventsSource')">Clear</button>
+				<div *ngIf="!!eventSource" class="p-10px pb-20px flex items-center justify-end">
+					<button convoy-dropdown-option convoy-button size="sm" fill="outline" color="danger" (click)="clearEventFilters('eventsSource')">Clear</button>
+					<button convoy-dropdown-option convoy-button size="sm" class="ml-14px" (click)="eventSource ? updateSourceFilter() : false">Apply</button>
 				</div>
-			</ng-container>
+			</div>
 		</div>
 
 		<button
@@ -200,7 +208,7 @@
 								<use xlink:href="#cli-icon"></use>
 							</svg>
 						</div>
-						<div class="text-14 whitespace-nowrap overflow-ellipsis max-w-[300px] overflow-hidden text-grey-40">
+						<div class="text-14 whitespace-nowrap overflow-ellipsis max-w-[300px] overflow-hidden text-grey-40 ml-10px">
 							{{ delivery?.device_id ? delivery?.device_metadata?.host_name : delivery?.endpoint_metadata?.target_url }}
 						</div>
 					</li>
