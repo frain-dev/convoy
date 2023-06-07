@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/frain-dev/convoy/auth/realm/jwt"
@@ -25,11 +26,9 @@ func provideRegisterUserService(ctrl *gomock.Controller, t *testing.T, baseUrl s
 		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 		Queue:         mocks.NewMockQueuer(ctrl),
 		JWT:           jwt.NewJwt(&config.Auth.Jwt, c),
-		ConfigService: &ConfigService{
-			configRepo: mocks.NewMockConfigurationRepository(ctrl),
-		},
-		BaseURL: baseUrl,
-		Data:    loginUser,
+		ConfigRepo:    mocks.NewMockConfigurationRepository(ctrl),
+		BaseURL:       baseUrl,
+		Data:          loginUser,
 	}
 }
 
@@ -71,7 +70,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 			},
 			dbFn: func(u *RegisterUserService) {
 				us, _ := u.UserRepo.(*mocks.MockUserRepository)
-				configRepo, _ := u.ConfigService.configRepo.(*mocks.MockConfigurationRepository)
+				configRepo, _ := u.ConfigRepo.(*mocks.MockConfigurationRepository)
 				orgRepo, _ := u.OrgRepo.(*mocks.MockOrganisationRepository)
 				orgMemberRepo, _ := u.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				queue, _ := u.Queue.(*mocks.MockQueuer)
@@ -89,7 +88,62 @@ func TestRegisterUserService_Run(t *testing.T) {
 				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 		},
+		{
+			name:       "should_fail_to_load_config",
+			wantConfig: true,
+			args: args{
+				ctx: ctx,
+				user: &models.RegisterUser{
+					FirstName:        "test",
+					LastName:         "test",
+					Email:            "test@test.com",
+					Password:         "123456",
+					OrganisationName: "test",
+				},
+			},
+			dbFn: func(u *RegisterUserService) {
+				configRepo, _ := u.ConfigRepo.(*mocks.MockConfigurationRepository)
+				configRepo.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(nil, errors.New("failed"))
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to load configuration",
+		},
+		{
+			name:       "should_proceed_with_config_not_found",
+			wantConfig: true,
+			args: args{
+				ctx: ctx,
+				user: &models.RegisterUser{
+					FirstName:        "test",
+					LastName:         "test",
+					Email:            "test@test.com",
+					Password:         "123456",
+					OrganisationName: "test",
+				},
+			},
+			wantUser: &datastore.User{
+				UID:       "12345",
+				FirstName: "test",
+				LastName:  "test",
+				Email:     "test@test.com",
+			},
+			dbFn: func(u *RegisterUserService) {
+				us, _ := u.UserRepo.(*mocks.MockUserRepository)
+				configRepo, _ := u.ConfigRepo.(*mocks.MockConfigurationRepository)
+				orgRepo, _ := u.OrgRepo.(*mocks.MockOrganisationRepository)
+				orgMemberRepo, _ := u.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				queue, _ := u.Queue.(*mocks.MockQueuer)
 
+				configRepo.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(nil, datastore.ErrConfigNotFound)
+
+				us.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				orgRepo.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				orgMemberRepo.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
+			},
+		},
 		{
 			name:       "should_not_register_user_when_registration_is_not_allowed",
 			wantConfig: true,
@@ -104,7 +158,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 				},
 			},
 			dbFn: func(u *RegisterUserService) {
-				configRepo, _ := u.ConfigService.configRepo.(*mocks.MockConfigurationRepository)
+				configRepo, _ := u.ConfigRepo.(*mocks.MockConfigurationRepository)
 				configRepo.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{
 					UID:             "12345",
 					IsSignupEnabled: false,
