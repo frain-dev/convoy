@@ -622,7 +622,7 @@ const (
 	yearlyIntervalFormat  = "yyyy"              // 1 month
 )
 
-func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period) ([]datastore.EventInterval, error) {
+func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, t int) ([]datastore.EventInterval, error) {
 	intervals := make([]datastore.EventInterval, 0)
 
 	start := time.Unix(params.CreatedAtStart, 0)

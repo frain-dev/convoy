@@ -297,18 +297,18 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) FindEventDeliveryByID(ctx, pr
 }
 
 // LoadEventDeliveriesIntervals mocks base method.
-func (m *MockEventDeliveryRepository) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period) ([]datastore.EventInterval, error) {
+func (m *MockEventDeliveryRepository) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, interval int) ([]datastore.EventInterval, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadEventDeliveriesIntervals", ctx, projectID, params, period)
+	ret := m.ctrl.Call(m, "LoadEventDeliveriesIntervals", ctx, projectID, params, period, interval)
 	ret0, _ := ret[0].([]datastore.EventInterval)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // LoadEventDeliveriesIntervals indicates an expected call of LoadEventDeliveriesIntervals.
-func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesIntervals(ctx, projectID, params, period interface{}) *gomock.Call {
+func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesIntervals(ctx, projectID, params, period, interval interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesIntervals", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesIntervals), ctx, projectID, params, period)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesIntervals", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesIntervals), ctx, projectID, params, period, interval)
 }
 
 // LoadEventDeliveriesPaged mocks base method.

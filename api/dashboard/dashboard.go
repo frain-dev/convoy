@@ -131,7 +131,7 @@ func (a *DashboardHandler) computeDashboardMessages(ctx context.Context, project
 	var messagesSent uint64
 
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
-	messages, err := eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, projectID, searchParams, period)
+	messages, err := eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, projectID, searchParams, period, 1)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to load message intervals - ")
 		return 0, nil, err
