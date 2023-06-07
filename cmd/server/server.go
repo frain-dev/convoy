@@ -206,15 +206,6 @@ func StartConvoyServer(a *cli.App) error {
 	return nil
 }
 
-func triggerAnalytics() {
-	t := time.NewTicker(time.Hour * 24)
-	for {
-		select {
-		case <-t.C:
-		}
-	}
-}
-
 func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	c := &config.Configuration{}
 
