@@ -1,3 +1,20 @@
+## 23.06.1
+
+-   [Feature] Add custom response to incoming project sources #1605
+-   [Feature] Enabled endpoint management on portal links #1616
+-   [Feature] Support ingest query parameters to incoming sources #1640
+-   [Enhancement] Improved New Relic Integration #1621
+-   [Enhancement] Enabled auto API docs syncing #1625
+-   [Enhancement] Add endpoint timeout config option to the dashboard #1614
+-   [Enhancement] Improved portal page responsiveness #1648
+-   [Enhancement] Improved request and response annotations #1608 #1619 #1627 #1622 #1630 #1611 #1636 #1632 #1637 #1631 #1641
+-   [Bugfix] Fixed FindSubscriptionByDeviceID query bug #1647
+-   [Bugfix] Coalesce url query parameters #1642
+-   [Bugfix] Fixed event delivery filtering by status #1626
+-   [Bugfix] Fixed index on organisations invite index #1603 #1607
+-   [Bugfix] Link ownerID to portal links without endpoints #1638
+ 
+
 ## 23.05.5
 
 -   [Enhancement] Optimise Migration Queries #1601
