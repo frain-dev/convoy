@@ -95,7 +95,7 @@ func ListenHandler(repo *Repo) http.HandlerFunc {
 			return
 		}
 
-		device, err := listen(r.Context(), listenRequest, repo)
+		device, err := listen(context.Background(), listenRequest, repo)
 		if err != nil {
 			respond(w, err.(*util.ServiceError).ErrCode(), err.Error())
 			return
