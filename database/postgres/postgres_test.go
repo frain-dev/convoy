@@ -6,10 +6,11 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/log"
 	"os"
 	"sync"
 	"testing"
+
+	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
