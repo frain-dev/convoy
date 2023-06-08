@@ -69,7 +69,7 @@ const (
 	s.rate_limit_config_count as "rate_limit_config.count",
 	s.rate_limit_config_duration as "rate_limit_config.duration",
 
-	em.secrets as "endpoint_metadata.secrets",
+	COALESCE(em.secrets,'[]') as "endpoint_metadata.secrets",
 	COALESCE(em.id,'') as "endpoint_metadata.id",
 	COALESCE(em.title,'') as "endpoint_metadata.title",
 	COALESCE(em.project_id,'') as "endpoint_metadata.project_id",
