@@ -112,9 +112,12 @@ export class DatePickerComponent implements OnInit {
 			if (this.selectedStartDay && this.selectedEndDay) {
 				this.selectedStartDay = timestamp;
 				delete this.selectedEndDay;
-			} else if (this.selectedStartDay && isBefore(new Date(timestamp), new Date(this.selectedStartDay))) this.selectedStartDay = timestamp;
-			else if (this.selectedStartDay && isAfter(new Date(timestamp), new Date(this.selectedStartDay)) && !this.selectedEndDay) this.selectedEndDay = timestamp;
+			} else if (this.selectedStartDay && isBefore(new Date(timestamp), new Date(this.selectedStartDay))) {
+				this.selectedEndDay = this.selectedStartDay;
+				this.selectedStartDay = timestamp;
+			} else if (this.selectedStartDay && isAfter(new Date(timestamp), new Date(this.selectedStartDay)) && !this.selectedEndDay) this.selectedEndDay = timestamp;
 			else if (!this.selectedStartDay) this.selectedStartDay = timestamp;
+			else if (this.selectedStartDay) this.selectedEndDay = timestamp;
 		} else {
 			this.selectedStartDay = timestamp;
 			delete this.selectedEndDay;

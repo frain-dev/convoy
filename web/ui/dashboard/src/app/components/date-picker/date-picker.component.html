@@ -23,7 +23,6 @@
 	<div convoy-dropdown-container position="left" class="!w-fit !max-h-[none]" [show]="showPicker">
 		<div class="w-full">
 			<div class="flex gap-40px px-16px pt-16px">
-
 				<div class="calendar">
 					<div class="calendar-nav flex items-center justify-between">
 						<div class="flex items-center">
@@ -49,14 +48,14 @@
 						<div class="text-14">S</div>
 					</div>
 
-					<div class="days grid text-center mt-10px" style="grid-template-columns: repeat(7, 40px)">
+					<div class="days grid text-center mt-10px grid-cols-[repeat(7,_40px)] grid-rows-[repeat(6,_40px)]">
 						<button type="button" class="text-12 text-new.gray-600" [class]="getDayClassNames(date)" *ngFor="let date of datesForLeftCalendar" (click)="onselectDay(date.timestamp)">
 							{{ date.date }}
 						</button>
 					</div>
 
 					<convoy-input-field class="mt-24px mb-16px">
-						<label for="start_time" convoy-label>Start Time</label>
+						<label for="start_time" convoy-label>Start Day Time</label>
 						<input id="start_time" type="time" convoy-input autocomplete="start_time" [(ngModel)]="selectedStartTime" step="1" placeholder="11:00:00" class="py-6px px-16px" />
 					</convoy-input-field>
 				</div>
@@ -86,16 +85,14 @@
 						<div class="text-14">S</div>
 					</div>
 
-					<div class="days grid text-center mt-10px" style="grid-template-columns: repeat(7, 40px)">
-						<ng-container>
-							<button type="button" class="text-14 text-new.gray-600" *ngFor="let date of datesForRightCalendar; let i = index" [class]="getDayClassNamesRightCalendar(date)" (click)="onselectDay(date.timestamp)">
-								{{ date.date }}
-							</button>
-						</ng-container>
+					<div class="days grid text-center mt-10px grid-cols-[repeat(7,_40px)] grid-rows-[repeat(6,_40px)]">
+						<button type="button" class="text-12 text-new.gray-600" *ngFor="let date of datesForRightCalendar; let i = index" [class]="getDayClassNamesRightCalendar(date)" (click)="onselectDay(date.timestamp)">
+							{{ date.date }}
+						</button>
 					</div>
 
 					<convoy-input-field class="mt-24px mb-16px">
-						<label for="end_time" convoy-label>End Time</label>
+						<label for="end_time" convoy-label>End Day Time</label>
 						<input id="end_time" type="time" convoy-input [(ngModel)]="selectedEndTime" step="1" placeholder="11:00:00" class="py-6px px-16px" />
 					</convoy-input-field>
 				</div>
