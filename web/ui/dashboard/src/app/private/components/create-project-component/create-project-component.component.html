@@ -164,8 +164,8 @@
 						<ng-container *ngIf="projectForm.get('config.is_retention_policy_enabled')?.value">
 							<div formGroupName="retention_policy">
 								<convoy-input-field>
-									<label for="policy" convoy-label tooltip="This is the interval at which events would be reviewed and retained for this project.">Retention Period</label>
-									<input id="policy" convoy-input autocomplete="policy" formControlName="policy" placeholder="e.g. 72h" />
+									<label for="policy" convoy-label tooltip="This is the interval at which events would be reviewed and retained for this project. E.g 720h, 20m, 30s">Retention Period</label>
+									<input id="policy" convoy-input autocomplete="policy" formControlName="policy" placeholder="e.g. 720h, 20m, 30s" />
 									<convoy-input-error *ngIf="projectForm.get('config.retention_policy.policy')?.touched && projectForm.get('config.retention_policy.policy')?.invalid">Enter retention policy value</convoy-input-error>
 								</convoy-input-field>
 							</div>
