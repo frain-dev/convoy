@@ -1,72 +1,92 @@
 package dedup
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"hash/crc32"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Idempotency interface {
-	Set(input []string, ttl int) (interface{}, error)
-	Check(input []string) (bool, error)
+	Set(source string, input []string, ttl time.Duration) error
+	Get(source string, input []string) (interface{}, error)
 }
 
 type DeDuper struct {
+	ctx     context.Context
 	redis   *rdb.Redis
 	request *http.Request
 }
 
-func NewDeDuper(dsn string, request *http.Request) (*DeDuper, error) {
+func NewDeDuper(ctx context.Context, dsn string, request *http.Request) (*DeDuper, error) {
 	redis, err := rdb.NewClient(dsn)
 	if err != nil {
 		return nil, err
 	}
 
-	i := &DeDuper{redis, request}
+	i := &DeDuper{ctx, redis, request}
 
 	return i, nil
 }
 
-func (d *DeDuper) Set(input []string, ttl int) (interface{}, error) {
-	// todo(raymond): remove interface{} return value
+// Set generates a checksum using the provided request input fields, creates a checksum
+// and writes it to redis with a ttl.
+func (d *DeDuper) Set(source string, input []string, ttl time.Duration) error {
 	parts, err := d.extractDataFromRequest(input)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// build the checksum from the input parts
+	var builder strings.Builder
+	builder.WriteString(source)
+	for i := range parts {
+		builder.WriteString(fmt.Sprintf("%v", parts[i]))
+	}
 
-	// write the checksum to redis with the request details (serialize the request?)
+	checksum, err := calculateChecksum(builder.String())
 
-	// return an error or nil
+	c := d.redis.Client().Set(d.ctx, fmt.Sprintf("dedup:%v", checksum), builder.String(), ttl)
+	if c.Err() != nil {
+		return c.Err()
+	}
 
-	return parts, err
+	return err
 }
 
-func (d *DeDuper) Check(input []string) (bool, error) {
+func (d *DeDuper) Get(source string, input []string) (interface{}, error) {
 	// extract data from the request
-	_, err := d.extractDataFromRequest(input)
+	parts, err := d.extractDataFromRequest(input)
 	if err != nil {
 		return false, err
 	}
 
 	// build the checksum from the input parts
+	var builder strings.Builder
+	builder.WriteString(source)
+	for i := range parts {
+		builder.WriteString(fmt.Sprintf("%v", parts[i]))
+	}
 
-	// check redis to see if the key exists
+	checksum, err := calculateChecksum(builder.String())
 
-	// return an error if it does and return false
+	// write the checksum to redis with the request details (serialize the request?)
+	c := d.redis.Client().Get(d.ctx, fmt.Sprintf("dedup:%v", checksum))
+	if c.Err() != nil {
+		return false, c.Err()
+	}
 
-	// return true if it doesn't exist
-
-	return false, nil
+	return c.String(), nil
 }
 
-func (d *DeDuper) extractDataFromRequest(input []string) (interface{}, error) {
+func (d *DeDuper) extractDataFromRequest(input []string) ([]interface{}, error) {
 	var data []interface{}
 
 	for _, s := range input {
@@ -94,9 +114,9 @@ func (d *DeDuper) extractFromRequest(parts []string) (interface{}, error) {
 	}
 
 	switch parts[0] {
-	case "Header":
+	case "Header", "header":
 		return d.extractFromHeader(d.request, parts[1:])
-	case "Body":
+	case "Body", "body":
 		contentType := d.request.Header.Get("Content-Type")
 		switch {
 		case strings.HasPrefix(contentType, "application/json"):
@@ -108,7 +128,7 @@ func (d *DeDuper) extractFromRequest(parts []string) (interface{}, error) {
 		default:
 			return nil, fmt.Errorf("unsupported request body format: %s", contentType)
 		}
-	case "QueryParam":
+	case "QueryParam", "query":
 		return d.extractFromQuery(parts[1:])
 	default:
 		return nil, fmt.Errorf("unsupported input format")
@@ -279,4 +299,20 @@ func (d *DeDuper) extractFromBodyURLEncoded(parts []string) (interface{}, error)
 	formData := d.request.PostForm
 
 	return d.extractFromFormValue(formData, parts)
+}
+
+// calculateChecksum generates a checksum using CRC32
+func calculateChecksum(s string) (uint32, error) {
+	// Create a new CRC32 hash object
+	crc32Hash := crc32.NewIEEE()
+
+	// Convert the string to bytes and calculate the checksum
+	_, err := crc32Hash.Write([]byte(s))
+	if err != nil {
+		return 0, err
+	}
+
+	checksum := crc32Hash.Sum32()
+
+	return checksum, nil
 }

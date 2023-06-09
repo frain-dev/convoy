@@ -2,6 +2,7 @@ package migrate
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/frain-dev/convoy/pkg/dedup"
@@ -168,15 +169,21 @@ func queryParam() {
 		return
 	}
 
-	duper, err := dedup.NewDeDuper("redis://localhost:6379", request)
+	duper, err := dedup.NewDeDuper(context.Background(), "redis://localhost:6379", request)
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
 	}
 
-	result, err := duper.Set([]string{"request.QueryParam.name"}, 1)
+	err = duper.Set("", []string{"request.QueryParam.name"}, time.Minute)
 	if err != nil {
-		fmt.Println("Error extracting data:", err)
+		fmt.Println("Error setting data:", err)
+		return
+	}
+
+	result, err := duper.Get("", []string{"request.QueryParam.name"})
+	if err != nil {
+		fmt.Println("Error fetching data:", err)
 		return
 	}
 
@@ -200,15 +207,21 @@ func header() {
 	}
 	request.Header = requestHeader
 
-	duper, err := dedup.NewDeDuper("redis://localhost:6379", request)
+	duper, err := dedup.NewDeDuper(context.Background(), "redis://localhost:6379", request)
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
 	}
 
-	result, err := duper.Set([]string{"request.Header.Authorization"}, 1)
+	err = duper.Set("noop", []string{"request.Header.Authorization"}, time.Minute)
 	if err != nil {
-		fmt.Println("Error extracting data:", err)
+		fmt.Println("Error setting data:", err)
+		return
+	}
+
+	result, err := duper.Get("noop", []string{"request.Header.Authorization"})
+	if err != nil {
+		fmt.Println("Error fecthing data:", err)
 		return
 	}
 
@@ -223,32 +236,45 @@ func requestBody() {
 	////////////////////////////////////////////////////////////////////////////
 
 	// Example for extracting data from the request body
-	person := struct {
-		Age int `json:"age"`
-	}{
-		Age: 25,
+	makeRequest := func() *http.Request {
+		person := struct {
+			Age int `json:"age"`
+		}{
+			Age: 25,
+		}
+		body, err := json.Marshal(person)
+		if err != nil {
+			fmt.Println("Error marshaling JSON:", err)
+		}
+		request, err := http.NewRequest("POST", "https://example.com", strings.NewReader(string(body)))
+		if err != nil {
+			fmt.Println("Error creating request:", err)
+		}
+		request.Header.Set("Content-Type", "application/json")
+		return request
 	}
-	body, err := json.Marshal(person)
-	if err != nil {
-		fmt.Println("Error marshaling JSON:", err)
-		return
-	}
-	request, err := http.NewRequest("POST", "https://example.com", strings.NewReader(string(body)))
+
+	duper, err := dedup.NewDeDuper(context.Background(), "redis://localhost:6379", makeRequest())
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
 	}
-	request.Header.Set("Content-Type", "application/json")
 
-	duper, err := dedup.NewDeDuper("redis://localhost:6379", request)
+	err = duper.Set("", []string{"request.Body.age"}, time.Minute*60)
+	if err != nil {
+		fmt.Println("Error setting data:", err)
+		return
+	}
+
+	d, err := dedup.NewDeDuper(context.Background(), "redis://localhost:6379", makeRequest())
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
 	}
 
-	result, err := duper.Set([]string{"request.Body.age"}, 1)
+	result, err := d.Get("", []string{"request.Body.age"})
 	if err != nil {
-		fmt.Println("Error extracting data:", err)
+		fmt.Println("Error fetching data:", err)
 		return
 	}
 
@@ -263,33 +289,45 @@ func requestBodyFormData() {
 	////////////////////////////////////////////////////////////////////////////
 
 	// Example for extracting data from a form-data request body
-	b := &bytes.Buffer{}
-	writer := multipart.NewWriter(b)
-	err := writer.WriteField("name", "John")
-	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
+	makeRequest := func() *http.Request {
+		b := &bytes.Buffer{}
+		writer := multipart.NewWriter(b)
+		err := writer.WriteField("name", "John")
+		if err != nil {
+			fmt.Println("Error creating request:", err)
+		}
+		err = writer.Close()
+		if err != nil {
+			fmt.Println("Error creating request:", err)
+		}
+
+		request, err := http.NewRequest("POST", "https://example.com", b)
+		if err != nil {
+			fmt.Println("Error creating request:", err)
+		}
+		request.Header.Set("Content-Type", writer.FormDataContentType())
+		return request
 	}
-	err = writer.Close()
+
+	duper, err := dedup.NewDeDuper(context.Background(), "redis://localhost:6379", makeRequest())
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
 	}
 
-	request, err := http.NewRequest("POST", "https://example.com", b)
+	err = duper.Set("", []string{"request.body.name"}, time.Minute)
+	if err != nil {
+		fmt.Println("Error extracting data:", err)
+		return
+	}
+
+	d, err := dedup.NewDeDuper(context.Background(), "redis://localhost:6379", makeRequest())
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
 	}
-	request.Header.Set("Content-Type", writer.FormDataContentType())
 
-	duper, err := dedup.NewDeDuper("redis://localhost:6379", request)
-	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
-	}
-
-	result, err := duper.Set([]string{"request.Body.name"}, 1)
+	result, err := d.Get("", []string{"request.body.name"})
 	if err != nil {
 		fmt.Println("Error extracting data:", err)
 		return
@@ -313,15 +351,21 @@ func requestBodyUrlEncoded() {
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	duper, err := dedup.NewDeDuper("redis://localhost:6379", request)
+	duper, err := dedup.NewDeDuper(context.Background(), "redis://localhost:6379", request)
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
 	}
 
-	result, err := duper.Set([]string{"request.Body.age"}, 1)
+	err = duper.Set("", []string{"request.Body.age"}, time.Minute)
 	if err != nil {
-		fmt.Println("Error extracting data:", err)
+		fmt.Println("Error setting data:", err)
+		return
+	}
+
+	result, err := duper.Get("", []string{"request.Body.age"})
+	if err != nil {
+		fmt.Println("Error fetching data:", err)
 		return
 	}
 
@@ -400,14 +444,20 @@ func requestBodyFormDataNested() {
 	}
 	request.Header.Set("Content-Type", contentType)
 
-	duper, err := dedup.NewDeDuper("redis://localhost:6379", request)
+	duper, err := dedup.NewDeDuper(context.Background(), "redis://localhost:6379", request)
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
 	}
 
 	// Extract data from the request
-	result, err := duper.Set([]string{"request.Body.address[zip]", "request.Body.address[city]"}, 10)
+	err = duper.Set("", []string{"request.Body.address[zip]", "request.Body.address[city]"}, time.Minute)
+	if err != nil {
+		fmt.Println("Error extracting data:", err)
+		return
+	}
+
+	result, err := duper.Get("", []string{"request.Body.address[zip]", "request.Body.address[city]"})
 	if err != nil {
 		fmt.Println("Error extracting data:", err)
 		return
