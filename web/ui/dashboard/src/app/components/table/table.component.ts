@@ -19,7 +19,7 @@ export class TableComponent implements OnInit {
 	imports: [CommonModule],
 	host: { class: 'p-0 ' },
 	template: `
-		<div [class]="forDate ? 'pt-16px pl-16px pb-8px text-grey-40' : 'pt-12px pb-12px whitespace-nowrap'" class="flex flex-row items-center text-12">
+		<div [class]="forDate ? 'pt-16px pl-16px pb-8px ' : 'pt-12px pb-12px whitespace-nowrap'" class="flex flex-row items-center text-12 text-new.gray-900 font-normal">
 			<ng-content></ng-content>
 		</div>
 	`

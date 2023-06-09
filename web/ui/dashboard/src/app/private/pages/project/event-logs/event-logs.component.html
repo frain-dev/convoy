@@ -163,7 +163,7 @@
 
 				<ng-container *ngIf="displayedEvents && displayedEvents.length > 0">
 					<div class="flex items-center justify-between mb-16px">
-						<h3 class="text-16 font-bold">Details</h3>
+						<h3 class="text-14 font-semibold text-new.gray-600">Details</h3>
 						<button convoy-button size="xs" texture="light" (click)="retryEvent({ eventId: eventsDetailsItem.uid })">
 							<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
 							Replay
@@ -174,7 +174,7 @@
 					<prism language="json" [code]="generalService.getCodeSnippetString('req_header', eventsDetailsItem?.headers)" title="Header"></prism>
 				</ng-container>
 
-				<h3 class="text-16 font-bold mb-16px mt-26px" *ngIf="!(!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0))">Deliveries Overview</h3>
+				<h3 class="text-14 font-semibold text-new.gray-600 mb-16px mt-50px" *ngIf="!(!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0))">Deliveries Overview</h3>
 
 				<div *ngIf="isLoadingSidebarDeliveries">
 					<div class="flex mb-20px">
