@@ -43,8 +43,7 @@ export class CreateProjectComponent implements OnInit {
 				secret: [null]
 			})
 		}),
-		type: [null, Validators.required],
-		disable_endpoint: [false, Validators.required]
+		type: [null, Validators.required]
 	});
 	newSignatureForm: FormGroup = this.formBuilder.group({
 		encoding: [null],
@@ -120,6 +119,7 @@ export class CreateProjectComponent implements OnInit {
 
 	async getProjectDetails(requestDetails?: { refresh: boolean }) {
 		this.enableMoreConfig = true;
+
 		try {
 			const response = await this.privateService.getProjectDetails({ ...requestDetails });
 			this.projectDetails = response.data;
@@ -200,7 +200,10 @@ export class CreateProjectComponent implements OnInit {
 
 		try {
 			const response = await this.createProjectService.updateProject(this.projectForm.value);
-			this.getProjectDetails({ refresh: true });
+
+			// update project details at service state
+			this.privateService.getProjectDetails({ refresh: true });
+
 			this.generalService.showNotification({ message: 'Project updated successfully!', style: 'success' });
 			this.onAction.emit(response.data);
 			this.isCreatingProject = false;

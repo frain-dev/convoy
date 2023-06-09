@@ -1,10 +1,10 @@
 <form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()" disabled>
 	<div convoy-card class="p-24px mt-24px">
 		<ng-container *ngIf="action === 'update'">
-			<ul class="flex flex-row w-full border-b-[.5px] border-grey-20 mb-30px">
-				<li *ngFor="let tab of tabs" class="mr-24px !list-none last-of-type:mr-0">
-					<button class="pb-16px pt-10px flex items-center" [class]="activeTab === tab ? 'active' : ''" type="button" (click)="switchTab(tab)">
-						<span class="text-14 text-left capitalize text-grey-60 tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
+			<ul class="flex gap-32px flex-row w-full border-b-[.5px] border-grey-20 mb-24px">
+				<li *ngFor="let tab of tabs" class="!list-none last-of-type:mr-0">
+					<button class="pb-16px pt-0px flex items-center" [class]="activeTab === tab ? 'active' : ''" type="button" (click)="switchTab(tab)">
+						<span class="text-14 text-left capitalize text-new.gray-600 tracking-[0.02em] mobile:min-w-[80px] !font-medium">{{ tab }}</span>
 					</button>
 				</li>
 			</ul>
@@ -34,15 +34,17 @@
 				</div>
 			</ng-container>
 
-			<h3 class="mt-24px mb-16px font-semibold">Project type</h3>
-			<div class="project-types grid grid-cols-2 gap-24px">
-				<convoy-radio formControlName="type" description="Create an incoming webhooks project to proxy events from third-party providers to your endpoints" label="Incoming webhooks" _name="type" value="incoming" _id="incoming"></convoy-radio>
-				<convoy-radio formControlName="type" description="Create an outgoing webhooks project to publish events to your customer-provided endpoints" label="Outgoing webhooks" _name="type" value="outgoing" _id="outgoing"></convoy-radio>
-			</div>
-			<div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="projectForm.controls['type'].touched && projectForm.controls['type'].invalid">
-				<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
-				<span>Please select a project type</span>
-			</div>
+			<ng-container *ngIf="action !== 'update'">
+				<h3 class="mt-24px mb-16px font-semibold">Project type</h3>
+				<div class="project-types grid grid-cols-2 gap-24px">
+					<convoy-radio formControlName="type" description="Create an incoming webhooks project to proxy events from third-party providers to your endpoints" label="Incoming webhooks" _name="type" value="incoming" _id="incoming"></convoy-radio>
+					<convoy-radio formControlName="type" description="Create an outgoing webhooks project to publish events to your customer-provided endpoints" label="Outgoing webhooks" _name="type" value="outgoing" _id="outgoing"></convoy-radio>
+				</div>
+				<div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="projectForm.controls['type'].touched && projectForm.controls['type'].invalid">
+					<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
+					<span>Please select a project type</span>
+				</div>
+			</ng-container>
 
 			<div class="border-t border-grey-20 pt-24px mt-24px">
 				<div formGroupName="config">
@@ -79,6 +81,8 @@
 								<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" [required]="true" (selectedOption)="newSignatureForm.patchValue({ hash: $event })"></convoy-select>
 							</ng-container>
 						</div>
+
+						<hr class="border-new.gray-200 mt-40px mb-40px" *ngIf="action === 'update'" />
 					</ng-container>
 
 					<ng-container *ngIf="showConfig('retry-config')">
@@ -112,6 +116,8 @@
 								<convoy-input-error *ngIf="projectForm.get('config.strategy.retry_count')?.touched && projectForm.get('config.strategy.retry_count')?.invalid">Please enter a retry limit</convoy-input-error>
 							</convoy-input-field>
 						</div>
+
+						<hr class="border-new.gray-200 mt-20px mb-40px" *ngIf="action === 'update'" />
 					</ng-container>
 
 					<ng-container *ngIf="showConfig('rate-limit')">
@@ -142,6 +148,8 @@
 								<convoy-input-error *ngIf="projectForm.get('config.ratelimit.count')?.touched && projectForm.get('config.ratelimit.count')?.invalid">Please enter a rate limit</convoy-input-error>
 							</convoy-input-field>
 						</div>
+
+						<hr class="border-new.gray-200 mt-20px mb-40px" *ngIf="action === 'update'" />
 					</ng-container>
 
 					<ng-container *ngIf="showConfig('retention')">
@@ -204,9 +212,9 @@
 		</ng-container>
 
 		<ng-container *ngIf="action === 'update' && projectDetails?.type === 'outgoing' && activeTab === 'signature history'">
-			<div class="flex items-center justify-between mt-52px mb-20px">
-				<h5 class="font-medium flex items-center">
-					Signature Format
+			<div class="flex items-center justify-between mb-20px">
+				<h5 class="font-medium text-14 flex items-center text-new.gray-600">
+					Signature Formats
 					<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 				</h5>
 				<button convoy-permission="Project Settings|MANAGE" convoy-button size="sm" fill="outline" type="button" (click)="versions.push(newVersion()); showNewSignatureModal = true">
@@ -248,14 +256,16 @@
 
 		<ng-container *ngIf="activeTab === 'meta events'" formGroupName="config">
 			<div formGroupName="meta_event">
-				<div class="flex justify-between items-start pb-40px mb-40px border-b border-grey-20">
+				<div class="flex justify-between items-start pb-40px">
 					<div class="max-w-[500px]">
 						<h3 class="font-semibold mb-8px">Enable Meta Events</h3>
 						<p class="text-12 text-grey-40 mt-10px">Meta events allows you to receive webhook events based on events happening in your projects including webhook event activities.</p>
 					</div>
 					<convoy-toggle formControlName="is_enabled" (onChange)="confirmToggleAction($event, 'metaEvents')"></convoy-toggle>
 				</div>
+
 				<ng-container *ngIf="projectForm.get('config.meta_event.is_enabled')?.value">
+					<hr class="border-new.gray-200 mb-40px" />
 					<div class="grid grid-cols-2 gap-24px">
 						<convoy-input-field>
 							<label for="url" convoy-label required="true">Webhook URL</label>
@@ -268,6 +278,7 @@
 							<input type="text" id="secret" convoy-input autocomplete="secret" formControlName="secret" placeholder="Secret" />
 						</convoy-input-field>
 					</div>
+
 					<convoy-select
 						label="Select Events to listen to"
 						name="event_type"
@@ -284,58 +295,15 @@
 		</ng-container>
 	</div>
 
-	<div class="flex justify-end mt-48px">
+	<div class="flex justify-end mt-48px" *ngIf="activeTab !== 'signature history' && activeTab !== 'endpoints config'">
 		<button [disabled]="projectForm.disabled" convoy-button fill="outline" *ngIf="action !== 'update'" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" type="button" (click)="cancel()">Cancel</button>
 		<button convoy-button [disabled]="isCreatingProject || projectForm.disabled">
 			{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
-			<svg width="24" height="24" class="ml-8px fill-white-100">
+			<svg width="24" height="24" class="ml-8px fill-white-100" *ngIf="action !== 'update'">
 				<use xlink:href="#arrow-right-icon"></use>
 			</svg>
 		</button>
 	</div>
-
-	<ng-container *ngIf="action === 'update' && projectDetails?.type === 'outgoing'">
-		<div class="flex items-center justify-between mt-52px mb-20px">
-			<h5 class="font-medium flex items-center">
-				Signature Format
-				<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
-			</h5>
-			<button convoy-permission="Project Settings|MANAGE" convoy-button size="sm" fill="outline" type="button" (click)="versions.push(newVersion()); showNewSignatureModal = true">
-				<svg width="18" height="18" class="mr-2 fill-primary-100">
-					<use xlink:href="#plus-icon"></use>
-				</svg>
-				Create new signature
-			</button>
-		</div>
-
-		<div convoy-card>
-			<table convoy-table>
-				<thead convoy-table-head>
-					<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of signatureTableHead; let i = index">{{ head }}</th>
-				</thead>
-				<tbody>
-					<ng-container *ngFor="let version of signatureVersions; let i = index">
-						<tr convoy-table-row [forDate]="true">
-							<td convoy-table-cell [forDate]="true">{{ version.date }}</td>
-							<td convoy-table-cell [forDate]="true"></td>
-							<td convoy-table-cell [forDate]="true"></td>
-							<td convoy-table-cell [forDate]="true"></td>
-						</tr>
-						<tr convoy-table-row *ngFor="let signatureVersion of version.content; let index = index" [id]="'app' + i">
-							<td convoy-table-cell class="pl-16px">
-								<div class="flex items-center">
-									{{ projectDetails?.config?.signature?.header }}
-								</div>
-							</td>
-							<td convoy-table-cell>v{{ index + 1 }}</td>
-							<td convoy-table-cell>{{ signatureVersion.hash }}</td>
-							<td convoy-table-cell>{{ signatureVersion.encoding }}</td>
-						</tr>
-					</ng-container>
-				</tbody>
-			</table>
-		</div>
-	</ng-container>
 </form>
 
 <div convoy-modal *ngIf="showNewSignatureModal" (closeModal)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">
