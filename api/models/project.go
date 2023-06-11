@@ -62,7 +62,7 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 }
 
 type RetentionPolicyConfiguration struct {
-	Policy string `json:"policy" valid:"required~please provide a valid retention policy"`
+	Policy string `json:"policy" valid:"duration~please provide a valid retention policy time duration"`
 }
 
 func (r *RetentionPolicyConfiguration) transform() *datastore.RetentionPolicyConfiguration {

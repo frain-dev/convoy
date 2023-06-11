@@ -12,7 +12,7 @@ import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellCom
 import { EventLogsService } from './event-logs.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { HTTP_RESPONSE } from 'src/app/models/global.model';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { SOURCE } from 'src/app/models/source.model';
 import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
 import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.component';
@@ -21,11 +21,12 @@ import { StatusColorModule } from 'src/app/pipes/status-color/status-color.modul
 import { PrismModule } from 'src/app/private/components/prism/prism.module';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { FormsModule } from '@angular/forms';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
+import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { EventsService } from '../events/events.service';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
+import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 
 @Component({
 	selector: 'convoy-event-logs',
@@ -52,13 +53,15 @@ import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.
 		DropdownComponent,
 		ModalComponent,
 		PaginationComponent,
-		CopyButtonComponent
+		CopyButtonComponent,
+		ListItemComponent,
+		DropdownOptionDirective
 	],
 	templateUrl: './event-logs.component.html',
 	styleUrls: ['./event-logs.component.scss']
 })
 export class EventLogsComponent implements OnInit {
-	eventsDateFilterFromURL: { startDate: string | Date; endDate: string | Date } = { startDate: '', endDate: '' };
+	eventsDateFilterFromURL: { startDate: string; endDate: string } = { startDate: '', endDate: '' };
 	eventLogsTableHead: string[] = ['Event ID', 'Source', 'Time', ''];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventsSearchString?: string;
@@ -78,7 +81,6 @@ export class EventLogsComponent implements OnInit {
 	eventsDetailsItem: any;
 	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
 	eventsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
-	@ViewChild('timeFilter', { static: true }) timeFilter!: TimePickerComponent;
 	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
 	portalToken = this.route.snapshot.params?.token;
 	filterSources: SOURCE[] = [];
@@ -100,10 +102,6 @@ export class EventLogsComponent implements OnInit {
 		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
 		let filterItems: string[] = [];
 		this.datePicker.clearDate();
-		this.timeFilter.filterStartHour = 0;
-		this.timeFilter.filterStartMinute = 0;
-		this.timeFilter.filterEndHour = 23;
-		this.timeFilter.filterEndMinute = 59;
 
 		switch (filterType) {
 			case 'eventsEndpoint':
@@ -128,10 +126,10 @@ export class EventLogsComponent implements OnInit {
 		this.eventEndpoint = undefined;
 		this.eventSource = undefined;
 		this.eventsSearchString = undefined;
-		this.timeFilter.clearFilter();
 
 		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
 		this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
+		this.getEvents();
 	}
 
 	async getSourcesForFilter() {
@@ -146,13 +144,12 @@ export class EventLogsComponent implements OnInit {
 		this.getEvents({ addToURL: true });
 	}
 
-	updateSourceFilter(sourceId: string, isChecked: any) {
-		isChecked.target.checked ? (this.eventSource = sourceId) : (this.eventSource = undefined);
+	updateSourceFilter() {
 		this.getEvents({ addToURL: true });
 	}
 
-	getSelectedDateRange(dateRange: { startDate: Date; endDate: Date }) {
-		this.eventsDateFilterFromURL = { ...dateRange };
+	getSelectedDateRange(dateRange: { startDate: string; endDate: string }) {
+		this.eventsDateFilterFromURL = dateRange;
 		this.getEvents({ addToURL: true });
 	}
 
@@ -163,51 +160,23 @@ export class EventLogsComponent implements OnInit {
 		return { startDate, endDate };
 	}
 
-	setTimeFilterData(dates: { startDate: string; endDate: string }): { startTime: string; endTime: string } {
-		const response = { startTime: '', endTime: '' };
-		if (dates.startDate) {
-			const hour = new Date(dates.startDate).getHours();
-			const minute = new Date(dates.startDate).getMinutes();
-			this.timeFilter.filterStartHour = hour;
-			this.timeFilter.filterStartMinute = minute;
-			response.startTime = `T${hour < 10 ? '0' + hour : hour}:${minute < 10 ? '0' + minute : minute}:00`;
-		} else {
-			response.startTime = 'T00:00:00';
-		}
-
-		if (dates.endDate) {
-			const hour = new Date(dates.endDate).getHours();
-			const minute = new Date(dates.endDate).getMinutes();
-			this.timeFilter.filterEndHour = hour;
-			this.timeFilter.filterEndMinute = minute;
-			response.endTime = `T${hour < 10 ? '0' + hour : hour}:${minute < 10 ? '0' + minute : minute}:59`;
-		} else {
-			response.endTime = 'T23:59:59';
-		}
-
-		return response;
-	}
-
 	// fetch filters from url
 	getFiltersFromURL() {
 		const filters = this.route.snapshot.queryParams;
 		if (Object.keys(filters).length == 0) return;
 
-		this.eventsDateFilterFromURL = { startDate: filters.eventsStartDate ? new Date(filters.eventsStartDate) : '', endDate: filters.eventsEndDate ? new Date(filters.eventsEndDate) : '' };
+		this.eventsDateFilterFromURL = { startDate: filters.eventsStartDate || '', endDate: filters.eventsEndDate || '' };
 		if (!this.portalToken) this.eventEndpoint = filters.eventsEndpoint ?? undefined;
 		this.eventsSearchString = filters.eventsSearch ?? undefined;
-		const eventsTimeFilter = this.setTimeFilterData({ startDate: filters?.eventsStartDate, endDate: filters?.eventsEndDate });
-		this.eventsTimeFilterData = { ...eventsTimeFilter };
+		this.eventSource = filters.eventSource;
 	}
 
 	addFilterToURL(params?: any) {
 		const currentURLfilters = this.route.snapshot.queryParams;
 		const queryParams: any = {};
 
-		const { startDate, endDate } = this.setDateForFilter({ ...this.eventsDateFilterFromURL, ...this.eventsTimeFilterData });
-
-		if (startDate) queryParams.eventsStartDate = startDate;
-		if (endDate) queryParams.eventsEndDate = endDate;
+		if (this.eventsDateFilterFromURL.startDate) queryParams.eventsStartDate = this.eventsDateFilterFromURL.startDate;
+		if (this.eventsDateFilterFromURL.endDate) queryParams.eventsEndDate = this.eventsDateFilterFromURL.endDate;
 		if (this.eventEndpoint) queryParams.eventsEndpoint = this.eventEndpoint;
 
 		queryParams.eventsSource = this.eventSource;
@@ -232,12 +201,11 @@ export class EventLogsComponent implements OnInit {
 		}
 
 		if (this.eventsSearchString) this.displayedEvents = [];
-		const { startDate, endDate } = this.setDateForFilter({ ...this.eventsDateFilterFromURL, ...this.eventsTimeFilterData });
 
 		try {
 			const eventsResponse = await this.eventsService.getEvents({
-				startDate,
-				endDate,
+				startDate: this.eventsDateFilterFromURL.startDate,
+				endDate: this.eventsDateFilterFromURL.endDate,
 				endpointId: this.eventEndpoint || '',
 				sourceId: this.eventSource || '',
 				query: this.eventsSearchString || '',
