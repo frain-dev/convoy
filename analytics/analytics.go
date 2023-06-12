@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"time"
 
 	"github.com/dukex/mixpanel"
 	"github.com/frain-dev/convoy/config"
@@ -15,8 +14,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/go-redsync/redsync/v4"
-	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
 )
@@ -101,25 +98,9 @@ func TrackDailyAnalytics(db database.Database, cfg config.Configuration, rd *rdb
 		UserRepo:    postgres.NewUserRepo(db),
 	}
 
-	// Create a pool with go-redis
-	pool := goredis.NewPool(rd.Client())
-	rs := redsync.New(pool)
-
 	// Do your work that requires the lock.
 
 	return func(ctx context.Context, t *asynq.Task) error {
-		// Obtain a new mutex by using the same name for all instances wanting the
-		// same lock.
-		const mutexName = "convoy.analytics.mutex"
-		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Second*2))
-
-		// Obtain a lock for our given mutex. After this is successful, no one else
-		// can obtain the same lock (the same mutex name) until we unlock it.
-		err := mutex.Lock()
-		if err != nil {
-			return fmt.Errorf("failed to obtain lock: %v", err)
-		}
-
 		a, err := newAnalytics(repo, cfg)
 		if err != nil {
 			log.WithError(err).Error("Failed to initialize analytics")
@@ -129,14 +110,6 @@ func TrackDailyAnalytics(db database.Database, cfg config.Configuration, rd *rdb
 		if a != nil {
 			a.trackDailyAnalytics()
 		}
-
-		// Release the lock so other processes or threads can obtain a lock.
-		ok, err := mutex.Unlock()
-		if !ok || err != nil {
-			log.WithError(err).Error("failed to release lock")
-			return fmt.Errorf("failed to release lock: %v", err)
-		}
-
 		return nil
 	}
 }
