@@ -283,7 +283,6 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 		"endpoint_ids": filter.EndpointIDs,
 		"limit":        pageable.Limit(),
 		"cursor":       pageable.Cursor(),
-		"owner_id":     filter.OwnerID,
 	}
 
 	var query, filterQuery string
