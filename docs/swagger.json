@@ -594,14 +594,14 @@
                         "type": "string",
                         "example": "01H0JA5MEES38RRK3HTEJC647K",
                         "description": "The owner ID of the endpoint",
-                        "name": "owner_id",
+                        "name": "ownerId",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "example": 20,
                         "description": "The number of items to return per page",
-                        "name": "per_page",
+                        "name": "perPage",
                         "in": "query"
                     },
                     {
@@ -1552,7 +1552,7 @@
                         "type": "integer",
                         "example": 20,
                         "description": "The number of items to return per page",
-                        "name": "per_page",
+                        "name": "perPage",
                         "in": "query"
                     },
                     {
@@ -2423,7 +2423,7 @@
                         "type": "integer",
                         "example": 20,
                         "description": "The number of items to return per page",
-                        "name": "per_page",
+                        "name": "perPage",
                         "in": "query"
                     },
                     {
@@ -3277,7 +3277,7 @@
                         "type": "integer",
                         "example": 20,
                         "description": "The number of items to return per page",
-                        "name": "per_page",
+                        "name": "perPage",
                         "in": "query"
                     },
                     {
@@ -4226,7 +4226,7 @@
                         "type": "integer",
                         "example": 20,
                         "description": "The number of items to return per page",
-                        "name": "per_page",
+                        "name": "perPage",
                         "in": "query"
                     },
                     {
@@ -4833,7 +4833,7 @@
                         "type": "integer",
                         "example": 20,
                         "description": "The number of items to return per page",
-                        "name": "per_page",
+                        "name": "perPage",
                         "in": "query"
                     },
                     {
@@ -5825,6 +5825,9 @@
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                },
+                "url_query_params": {
                     "type": "string"
                 }
             }
@@ -6953,6 +6956,9 @@
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "url_query_params": {
+                    "type": "string"
                 }
             }
         },
@@ -7014,6 +7020,9 @@
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                },
+                "url_query_params": {
                     "type": "string"
                 }
             }

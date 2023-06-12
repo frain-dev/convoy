@@ -107,7 +107,7 @@ type QueryListSource struct {
 
 type Pageable struct {
 	// The number of items to return per page
-	PerPage   int                     `json:"per_page" example:"20"`
+	PerPage   int                     `json:"perPage" example:"20"`
 	Direction datastore.PageDirection `json:"direction"`
 	// A pagination cursor to fetch the previous page of a list
 	PrevCursor string `json:"prev_page_cursor" example:"01H0JATTVCXZK8FRDX1M1JN3QY"`

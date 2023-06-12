@@ -79,7 +79,7 @@ type QueryListEndpoint struct {
 	// The name of the endpoint
 	Name string `json:"q" example:"endpoint-1"`
 	// The owner ID of the endpoint
-	OwnerID string `json:"owner_id" example:"01H0JA5MEES38RRK3HTEJC647K"`
+	OwnerID string `json:"ownerId" example:"01H0JA5MEES38RRK3HTEJC647K"`
 	Pageable
 }
 
