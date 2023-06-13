@@ -24,6 +24,10 @@ export class CreateSourceComponent implements OnInit {
 			body: [''],
 			content_type: ['']
 		}),
+		idempotency: this.formBuilder.group({
+			keys: [''],
+			ttl: ['']
+		}),
 		verifier: this.formBuilder.group({
 			api_key: this.formBuilder.group({
 				header_name: ['', Validators.required],
@@ -127,7 +131,21 @@ export class CreateSourceComponent implements OnInit {
 	sourceCreated: boolean = false;
 	showSourceUrl = false;
 	sourceData!: SOURCE;
-	configurations = [{ uid: 'custom_response', name: 'Custom Response', show: false }];
+	configurations = [
+		{ uid: 'custom_response', name: 'Custom Response', show: false },
+		{ uid: 'idempotency', name: 'Idempotency', show: false }
+	];
+	idempotencyKeys: string[] = [];
+	ttlTimes = [
+		{ name: '6 hours', uid: 6 },
+		{ name: '12 hours', uid: 12 },
+		{ name: '18 hours', uid: 18 },
+		{ name: '24 hours', uid: 24 },
+		{ name: '30 hours', uid: 30 },
+		{ name: '36 hours', uid: 36 },
+		{ name: '42 hours', uid: 42 },
+		{ name: '48 hours', uid: 48 }
+	];
 	private rbacService = inject(RbacService);
 
 	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
@@ -294,5 +312,36 @@ export class CreateSourceComponent implements OnInit {
 
 	setRegionValue(value: any) {
 		this.sourceForm.get('pub_sub.sqs')?.patchValue({ default_region: value });
+	}
+
+	focusInput() {
+		document.getElementById('keyInput')?.focus();
+	}
+
+	removeIdempotencyKey(key: string) {
+		this.idempotencyKeys = this.idempotencyKeys.filter(e => e !== key);
+	}
+
+	addKey() {
+		const addKeyInput = document.getElementById('keyInput');
+		const addKeyInputValue = document.getElementById('keyInput') as HTMLInputElement;
+		addKeyInput?.addEventListener('keydown', e => {
+			const key = e.keyCode || e.charCode;
+			if (key == 8) {
+				e.stopImmediatePropagation();
+				if (this.idempotencyKeys.length > 0 && !addKeyInputValue?.value) this.idempotencyKeys.splice(-1);
+			}
+			if (e.which === 188 || e.key == ' ') {
+				if (this.idempotencyKeys.includes(addKeyInputValue?.value)) {
+					addKeyInputValue.value = '';
+					this.idempotencyKeys = this.idempotencyKeys.filter(e => String(e).trim());
+				} else {
+					this.idempotencyKeys.push(addKeyInputValue?.value);
+					addKeyInputValue.value = '';
+					this.idempotencyKeys = this.idempotencyKeys.filter(e => String(e).trim());
+				}
+				e.preventDefault();
+			}
+		});
 	}
 }
