@@ -108,7 +108,6 @@ func TrackDailyAnalytics(db database.Database, cfg config.Configuration, rd *rdb
 	// Do your work that requires the lock.
 
 	return func(ctx context.Context, t *asynq.Task) error {
-		fmt.Println("111111111")
 		// Obtain a new mutex by using the same name for all instances wanting the
 		// same lock.
 		const mutexName = "convoy:analytics:mutex"
