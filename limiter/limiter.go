@@ -5,7 +5,7 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	rlimiter "github.com/frain-dev/convoy/limiter/redis"
-	"github.com/go-redis/redis_rate/v9"
+	"github.com/go-redis/redis_rate/v10"
 )
 
 type RateLimiter interface {

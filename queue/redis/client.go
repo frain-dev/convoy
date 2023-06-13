@@ -1,12 +1,14 @@
 package redis
 
 import (
+	"time"
+
+	"github.com/danvixent/asynqmon"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/hibiken/asynq"
-	"github.com/hibiken/asynqmon"
 	"github.com/oklog/ulid/v2"
-	"time"
+	"github.com/redis/go-redis/v9"
 )
 
 type RedisQueue struct {
@@ -16,6 +18,8 @@ type RedisQueue struct {
 }
 
 func NewQueue(opts queue.QueueOptions) queue.Queuer {
+	var _ redis.UniversalClient = opts.RedisClient.MakeRedisClient().(redis.UniversalClient)
+
 	client := asynq.NewClient(opts.RedisClient)
 	inspector := asynq.NewInspector(opts.RedisClient)
 	return &RedisQueue{
