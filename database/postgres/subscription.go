@@ -76,6 +76,7 @@ const (
 	COALESCE(em.support_email,'') as "endpoint_metadata.support_email",
 	COALESCE(em.target_url,'') as "endpoint_metadata.target_url",
 	COALESCE(em.status, '') as "endpoint_metadata.status",
+	COALESCE(em.owner_id, '') as "endpoint_metadata.owner_id",
 
 	COALESCE(d.id,'') as "device_metadata.id",
 	COALESCE(d.status,'') as "device_metadata.status",

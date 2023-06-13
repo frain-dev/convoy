@@ -226,6 +226,8 @@ definitions:
         type: string
       updated_at:
         type: string
+      url_query_params:
+        type: string
     type: object
   datastore.EventDeliveryStatus:
     enum:
@@ -986,6 +988,8 @@ definitions:
         type: string
       updated_at:
         type: string
+      url_query_params:
+        type: string
     type: object
   models.EventResponse:
     properties:
@@ -1029,6 +1033,8 @@ definitions:
       uid:
         type: string
       updated_at:
+        type: string
+      url_query_params:
         type: string
     type: object
   models.ExpireSecret:
@@ -1833,12 +1839,12 @@ paths:
       - description: The owner ID of the endpoint
         example: 01H0JA5MEES38RRK3HTEJC647K
         in: query
-        name: owner_id
+        name: ownerId
         type: string
       - description: The number of items to return per page
         example: 20
         in: query
-        name: per_page
+        name: perPage
         type: integer
       - description: A pagination cursor to fetch the previous page of a list
         example: 01H0JATTVCXZK8FRDX1M1JN3QY
@@ -2366,7 +2372,7 @@ paths:
       - description: The number of items to return per page
         example: 20
         in: query
-        name: per_page
+        name: perPage
         type: integer
       - description: A pagination cursor to fetch the previous page of a list
         example: 01H0JATTVCXZK8FRDX1M1JN3QY
@@ -2848,7 +2854,7 @@ paths:
       - description: The number of items to return per page
         example: 20
         in: query
-        name: per_page
+        name: perPage
         type: integer
       - description: A pagination cursor to fetch the previous page of a list
         example: 01H0JATTVCXZK8FRDX1M1JN3QY
@@ -3322,7 +3328,7 @@ paths:
       - description: The number of items to return per page
         example: 20
         in: query
-        name: per_page
+        name: perPage
         type: integer
       - description: A pagination cursor to fetch the previous page of a list
         example: 01H0JATTVCXZK8FRDX1M1JN3QY
@@ -3843,7 +3849,7 @@ paths:
       - description: The number of items to return per page
         example: 20
         in: query
-        name: per_page
+        name: perPage
         type: integer
       - description: A pagination cursor to fetch the previous page of a list
         example: 01H0JATTVCXZK8FRDX1M1JN3QY
@@ -4180,7 +4186,7 @@ paths:
       - description: The number of items to return per page
         example: 20
         in: query
-        name: per_page
+        name: perPage
         type: integer
       - description: A pagination cursor to fetch the previous page of a list
         example: 01H0JATTVCXZK8FRDX1M1JN3QY
