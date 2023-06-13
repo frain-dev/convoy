@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
@@ -54,7 +55,8 @@ func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis) func(context.Context, *a
 		var q *redis.RedisQueue
 		q, ok := r.(*redis.RedisQueue)
 		if !ok {
-			log.Errorf("invalid queue type: %T", r)
+			log.FromContext(ctx).WithError(err).Errorf("invalid queue type: %T", r)
+			return errors.New("invalid queue type")
 		}
 
 		for _, queue := range queues {
