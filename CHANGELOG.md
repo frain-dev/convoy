@@ -1,3 +1,11 @@
+## 23.06.2
+
+-   [Enhancement] Improved logging to include response body #1655
+-   [Enhancement] Improved Datetime filtering UX #1644
+-   [Bugfix] Fixed update project settings while switching tabs bug #1653
+-   [Bugfix] Fixed default retention policy #1652
+-   [Bugfix] Fix multi-tenancy issue on portal links with ownerID. #1654
+
 ## 23.06.1
 
 -   [Feature] Add custom response to incoming project sources #1605
