@@ -10,13 +10,14 @@ import (
 )
 
 type CreateSource struct {
-	Name           string                   `json:"name" valid:"required~please provide a source name"`
-	Type           datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
-	Provider       datastore.SourceProvider `json:"provider"`
-	IsDisabled     bool                     `json:"is_disabled"`
-	CustomResponse CustomResponse           `json:"custom_response"`
-	Verifier       VerifierConfig           `json:"verifier"`
-	PubSub         PubSubConfig             `json:"pub_sub"`
+	Name            string                   `json:"name" valid:"required~please provide a source name"`
+	Type            datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+	Provider        datastore.SourceProvider `json:"provider"`
+	IsDisabled      bool                     `json:"is_disabled"`
+	CustomResponse  CustomResponse           `json:"custom_response"`
+	Verifier        VerifierConfig           `json:"verifier"`
+	PubSub          PubSubConfig             `json:"pub_sub"`
+	IdempotencyKeys []string                 `json:"idempotency_keys"`
 }
 
 func (cs *CreateSource) Validate() error {
@@ -39,15 +40,15 @@ func (cs *CreateSource) Validate() error {
 
 func validateSourceVerifier(cfg VerifierConfig) error {
 	if cfg.Type == datastore.HMacVerifier && cfg.HMac == nil {
-		return errors.New("Invalid verifier config for hmac")
+		return errors.New("invalid verifier config for hmac")
 	}
 
 	if cfg.Type == datastore.APIKeyVerifier && cfg.ApiKey == nil {
-		return errors.New("Invalid verifier config for api key")
+		return errors.New("invalid verifier config for api key")
 	}
 
 	if cfg.Type == datastore.BasicAuthVerifier && cfg.BasicAuth == nil {
-		return errors.New("Invalid verifier config for basic auth")
+		return errors.New("invalid verifier config for basic auth")
 	}
 
 	return nil
@@ -76,13 +77,14 @@ func validateSourceForProvider(newSource *CreateSource) error {
 }
 
 type UpdateSource struct {
-	Name           *string              `json:"name" valid:"required~please provide a source name"`
-	Type           datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
-	IsDisabled     *bool                `json:"is_disabled"`
-	ForwardHeaders []string             `json:"forward_headers"`
-	CustomResponse UpdateCustomResponse `json:"custom_response"`
-	Verifier       VerifierConfig       `json:"verifier"`
-	PubSub         *PubSubConfig        `json:"pub_sub"`
+	Name            *string              `json:"name" valid:"required~please provide a source name"`
+	Type            datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+	IsDisabled      *bool                `json:"is_disabled"`
+	ForwardHeaders  []string             `json:"forward_headers"`
+	CustomResponse  UpdateCustomResponse `json:"custom_response"`
+	Verifier        VerifierConfig       `json:"verifier"`
+	PubSub          *PubSubConfig        `json:"pub_sub"`
+	IdempotencyKeys []string             `json:"idempotency_keys"`
 }
 
 func (us *UpdateSource) Validate() error {

@@ -2,10 +2,12 @@ package dedup
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"hash/crc32"
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/cache"
 	"io"
 	"net/http"
 	"net/url"
@@ -21,19 +23,12 @@ type Idempotency interface {
 
 type DeDuper struct {
 	ctx     context.Context
-	redis   *rdb.Redis
-	request *http.Request
+	cache   cache.Cache
+	request http.Request
 }
 
-func NewDeDuper(ctx context.Context, dsn string, request *http.Request) (*DeDuper, error) {
-	redis, err := rdb.NewClient(dsn)
-	if err != nil {
-		return nil, err
-	}
-
-	i := &DeDuper{ctx, redis, request}
-
-	return i, nil
+func NewDeDuper(ctx context.Context, cache cache.Cache, request http.Request) *DeDuper {
+	return &DeDuper{ctx, cache, request}
 }
 
 // Set generates a checksum using the provided request input fields, creates a checksum
@@ -51,21 +46,24 @@ func (d *DeDuper) Set(source string, input []string, ttl time.Duration) error {
 		builder.WriteString(fmt.Sprintf("%v", parts[i]))
 	}
 
-	checksum, err := calculateChecksum(builder.String())
+	checksum := calculateChecksum(builder.String())
 
-	c := d.redis.Client().Set(d.ctx, fmt.Sprintf("dedup:%v", checksum), builder.String(), ttl)
-	if c.Err() != nil {
-		return c.Err()
+	key := convoy.IdempotencyCacheKey.Get(checksum).String()
+	fmt.Println("key:", key)
+
+	err = d.cache.Set(d.ctx, key, builder.String(), ttl)
+	if err != nil {
+		return err
 	}
 
-	return err
+	return nil
 }
 
 func (d *DeDuper) Get(source string, input []string) (interface{}, error) {
 	// extract data from the request
 	parts, err := d.extractDataFromRequest(input)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	// build the checksum from the input parts
@@ -75,15 +73,19 @@ func (d *DeDuper) Get(source string, input []string) (interface{}, error) {
 		builder.WriteString(fmt.Sprintf("%v", parts[i]))
 	}
 
-	checksum, err := calculateChecksum(builder.String())
+	checksum := calculateChecksum(builder.String())
 
-	// write the checksum to redis with the request details (serialize the request?)
-	c := d.redis.Client().Get(d.ctx, fmt.Sprintf("dedup:%v", checksum))
-	if c.Err() != nil {
-		return false, c.Err()
+	key := convoy.IdempotencyCacheKey.Get(checksum).String()
+	fmt.Println("key:", key)
+
+	var data interface{}
+	err = d.cache.Get(d.ctx, key, &data)
+	fmt.Printf("err: %v", err)
+	if err != nil {
+		return nil, err
 	}
 
-	return c.String(), nil
+	return data, nil
 }
 
 func (d *DeDuper) extractDataFromRequest(input []string) ([]interface{}, error) {
@@ -101,7 +103,7 @@ func (d *DeDuper) extractDataFromRequest(input []string) ([]interface{}, error) 
 
 			data = append(data, d)
 		default:
-			return nil, fmt.Errorf("unsupported input format")
+			return nil, fmt.Errorf("unsupported input format for idempotency key")
 		}
 	}
 
@@ -110,7 +112,7 @@ func (d *DeDuper) extractDataFromRequest(input []string) ([]interface{}, error) 
 
 func (d *DeDuper) extractFromRequest(parts []string) (interface{}, error) {
 	if len(parts) < 2 {
-		return nil, fmt.Errorf("invalid input format")
+		return nil, fmt.Errorf("not enough parts")
 	}
 
 	switch parts[0] {
@@ -135,17 +137,17 @@ func (d *DeDuper) extractFromRequest(parts []string) (interface{}, error) {
 	}
 }
 
-func (d *DeDuper) extractFromHeader(request *http.Request, parts []string) (interface{}, error) {
+func (d *DeDuper) extractFromHeader(request http.Request, parts []string) (interface{}, error) {
 	if len(parts) != 1 {
-		return nil, fmt.Errorf("invalid input format")
+		return nil, fmt.Errorf("unsupported input format for idempotency key")
 	}
 
 	return request.Header.Get(parts[0]), nil
 }
 
-func (d *DeDuper) extractFromBodyJSON(request *http.Request, parts []string) (interface{}, error) {
+func (d *DeDuper) extractFromBodyJSON(request http.Request, parts []string) (interface{}, error) {
 	if len(parts) < 1 {
-		return nil, fmt.Errorf("invalid input format")
+		return nil, fmt.Errorf("unsupported input format for idempotency key")
 	}
 
 	body, err := io.ReadAll(request.Body)
@@ -163,7 +165,7 @@ func (d *DeDuper) extractFromBodyJSON(request *http.Request, parts []string) (in
 
 func (d *DeDuper) extractFromJSON(jsonData map[string]interface{}, parts []string) (interface{}, error) {
 	if len(parts) < 1 {
-		return nil, fmt.Errorf("invalid input format")
+		return nil, fmt.Errorf("unsupported input format for idempotency key")
 	}
 
 	value, ok := jsonData[parts[0]]
@@ -185,7 +187,7 @@ func (d *DeDuper) extractFromJSON(jsonData map[string]interface{}, parts []strin
 
 func (d *DeDuper) extractFromQuery(parts []string) (interface{}, error) {
 	if len(parts) != 1 {
-		return nil, fmt.Errorf("invalid input format")
+		return nil, fmt.Errorf("unsupported input format for idempotency key")
 	}
 
 	values, ok := d.request.URL.Query()[parts[0]]
@@ -202,7 +204,7 @@ func (d *DeDuper) extractFromQuery(parts []string) (interface{}, error) {
 
 func (d *DeDuper) extractFromBodyFormData(parts []string) (interface{}, error) {
 	if len(parts) < 1 {
-		return nil, fmt.Errorf("invalid input format")
+		return nil, fmt.Errorf("unsupported input format for idempotency key")
 	}
 
 	err := d.request.ParseMultipartForm(32 << 20) // 32 MB
@@ -217,7 +219,7 @@ func (d *DeDuper) extractFromBodyFormData(parts []string) (interface{}, error) {
 
 func (d *DeDuper) extractFromFormValue(form url.Values, parts []string) (interface{}, error) {
 	if len(parts) < 1 {
-		return nil, fmt.Errorf("invalid input format")
+		return nil, fmt.Errorf("unsupported input format for idempotency key")
 	}
 
 	// Perform a depth-first search to find the nested field
@@ -288,7 +290,7 @@ func (d *DeDuper) parsePartIndex(part string) (string, int) {
 
 func (d *DeDuper) extractFromBodyURLEncoded(parts []string) (interface{}, error) {
 	if len(parts) < 1 {
-		return nil, fmt.Errorf("invalid input format")
+		return nil, fmt.Errorf("unsupported input format for idempotency key")
 	}
 
 	err := d.request.ParseForm()
@@ -302,17 +304,16 @@ func (d *DeDuper) extractFromBodyURLEncoded(parts []string) (interface{}, error)
 }
 
 // calculateChecksum generates a checksum using CRC32
-func calculateChecksum(s string) (uint32, error) {
-	// Create a new CRC32 hash object
-	crc32Hash := crc32.NewIEEE()
+func calculateChecksum(s string) string {
+	// Create a new SHA256 hash object
+	sha256Hash := sha256.New()
 
-	// Convert the string to bytes and calculate the checksum
-	_, err := crc32Hash.Write([]byte(s))
-	if err != nil {
-		return 0, err
-	}
+	// Convert the string to bytes and calculate the hash
+	sha256Hash.Write([]byte(s))
+	hashBytes := sha256Hash.Sum(nil)
 
-	checksum := crc32Hash.Sum32()
+	// Convert the hash bytes to a hexadecimal string
+	hashString := hex.EncodeToString(hashBytes)
 
-	return checksum, nil
+	return hashString
 }

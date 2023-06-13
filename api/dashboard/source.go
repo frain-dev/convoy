@@ -2,9 +2,8 @@ package dashboard
 
 import (
 	"fmt"
-	"net/http"
-
 	"github.com/frain-dev/convoy"
+	"net/http"
 
 	"github.com/frain-dev/convoy/pkg/log"
 

@@ -2,6 +2,8 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/frain-dev/convoy/pkg/dedup"
 	"io"
 	"net/http"
 	"time"
@@ -20,17 +22,6 @@ import (
 	"github.com/go-chi/render"
 	"github.com/oklog/ulid/v2"
 )
-
-//
-// Github: `request.Header.X-GitHub-Delivery`
-// Adyen: `request.Body.eventCode` && `request.body.pspReference`
-// Stripe: `request.Body.id`
-//
-// request.Header / request.Body / request.QueryParam
-//
-// all_idempotent_keys = prefix + ...keys
-// idempotency = hash(all_idempotent_keys)
-//
 
 func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
 	// s.AppService.CountProjectApplications()
@@ -117,6 +108,26 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		}
 
 		maxIngestSize = cfg.MaxResponseSize
+	}
+
+	duper := dedup.NewDeDuper(r.Context(), a.A.Cache, *r)
+	val, err := duper.Get(source.Name, source.IdempotencyKeys)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	fmt.Printf("\nval: %v\n", val)
+
+	if val != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("duplicate event will not be ingested", http.StatusBadRequest))
+		return
+	}
+
+	err = duper.Set(source.Name, source.IdempotencyKeys, time.Hour)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
 	}
 
 	// 3.1 On Failure

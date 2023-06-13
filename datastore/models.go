@@ -603,7 +603,6 @@ var (
 	ErrEventDeliveryNotFound         = errors.New("event delivery not found")
 	ErrEventDeliveryAttemptNotFound  = errors.New("event delivery attempt not found")
 	ErrPortalLinkNotFound            = errors.New("portal link not found")
-	ErrDuplicateEndpointName         = errors.New("an endpoint with this name exists")
 	ErrNotAuthorisedToAccessDocument = errors.New("your credentials cannot access or modify this resource")
 	ErrConfigNotFound                = errors.New("config not found")
 	ErrDuplicateProjectName          = errors.New("a project with this name already exists")
@@ -985,20 +984,21 @@ type CustomResponse struct {
 }
 
 type Source struct {
-	UID            string          `json:"uid" db:"id"`
-	ProjectID      string          `json:"project_id" db:"project_id"`
-	MaskID         string          `json:"mask_id" db:"mask_id"`
-	Name           string          `json:"name" db:"name"`
-	URL            string          `json:"url" db:"-"`
-	Type           SourceType      `json:"type" db:"type"`
-	Provider       SourceProvider  `json:"provider" db:"provider"`
-	IsDisabled     bool            `json:"is_disabled" db:"is_disabled"`
-	VerifierID     string          `json:"-" db:"source_verifier_id"`
-	Verifier       *VerifierConfig `json:"verifier" db:"verifier"`
-	CustomResponse CustomResponse  `json:"custom_response" db:"custom_response"`
-	ProviderConfig *ProviderConfig `json:"provider_config" db:"provider_config"`
-	ForwardHeaders pq.StringArray  `json:"forward_headers" db:"forward_headers"`
-	PubSub         *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
+	UID             string          `json:"uid" db:"id"`
+	ProjectID       string          `json:"project_id" db:"project_id"`
+	MaskID          string          `json:"mask_id" db:"mask_id"`
+	Name            string          `json:"name" db:"name"`
+	URL             string          `json:"url" db:"-"`
+	Type            SourceType      `json:"type" db:"type"`
+	Provider        SourceProvider  `json:"provider" db:"provider"`
+	IsDisabled      bool            `json:"is_disabled" db:"is_disabled"`
+	VerifierID      string          `json:"-" db:"source_verifier_id"`
+	Verifier        *VerifierConfig `json:"verifier" db:"verifier"`
+	CustomResponse  CustomResponse  `json:"custom_response" db:"custom_response"`
+	ProviderConfig  *ProviderConfig `json:"provider_config" db:"provider_config"`
+	ForwardHeaders  pq.StringArray  `json:"forward_headers" db:"forward_headers"`
+	PubSub          *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
+	IdempotencyKeys pq.StringArray  `json:"idempotency_keys" db:"idempotency_keys"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
