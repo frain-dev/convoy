@@ -69,13 +69,14 @@ const (
 	s.rate_limit_config_count as "rate_limit_config.count",
 	s.rate_limit_config_duration as "rate_limit_config.duration",
 
-	em.secrets as "endpoint_metadata.secrets",
+	COALESCE(em.secrets,'[]') as "endpoint_metadata.secrets",
 	COALESCE(em.id,'') as "endpoint_metadata.id",
 	COALESCE(em.title,'') as "endpoint_metadata.title",
 	COALESCE(em.project_id,'') as "endpoint_metadata.project_id",
 	COALESCE(em.support_email,'') as "endpoint_metadata.support_email",
 	COALESCE(em.target_url,'') as "endpoint_metadata.target_url",
 	COALESCE(em.status, '') as "endpoint_metadata.status",
+	COALESCE(em.owner_id, '') as "endpoint_metadata.owner_id",
 
 	COALESCE(d.id,'') as "device_metadata.id",
 	COALESCE(d.status,'') as "device_metadata.status",
@@ -142,7 +143,34 @@ const (
 
 	fetchSubscriptionByID = baseFetchSubscription + ` AND %s = $1 AND %s = $2;`
 
-	fetchSubscriptionByDeviceID = baseFetchSubscription + ` AND %s = $1 AND %s = $2 AND %s = $3`
+	fetchSubscriptionByDeviceID = `
+    SELECT
+    s.id,s.name,s.type,
+	s.project_id,
+	s.created_at, s.updated_at,
+
+	COALESCE(s.endpoint_id,'') as "endpoint_id",
+	COALESCE(s.device_id,'') as "device_id",
+	COALESCE(s.source_id,'') as "source_id",
+
+	s.alert_config_count as "alert_config.count",
+	s.alert_config_threshold as "alert_config.threshold",
+	s.retry_config_type as "retry_config.type",
+	s.retry_config_duration as "retry_config.duration",
+	s.retry_config_retry_count as "retry_config.retry_count",
+	s.filter_config_event_types as "filter_config.event_types",
+	s.filter_config_filter_headers as "filter_config.filter.headers",
+	s.filter_config_filter_body as "filter_config.filter.body",
+	s.rate_limit_config_count as "rate_limit_config.count",
+	s.rate_limit_config_duration as "rate_limit_config.duration",
+
+	COALESCE(d.id,'') as "device_metadata.id",
+	COALESCE(d.status,'') as "device_metadata.status",
+	COALESCE(d.host_name,'') as "device_metadata.host_name"
+
+	FROM convoy.subscriptions s
+	LEFT JOIN convoy.devices d ON s.device_id = d.id
+    WHERE s.device_id = $1 AND s.project_id = $2 AND s.type = $3`
 
 	fetchCLISubscriptions = baseFetchSubscription + `AND %s = $1 AND %s = $2`
 
@@ -409,7 +437,7 @@ func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, pr
 
 func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string, subscriptionType datastore.SubscriptionType) (*datastore.Subscription, error) {
 	subscription := &datastore.Subscription{}
-	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSubscriptionByDeviceID, "s.device_id", "s.project_id", "s.type"), deviceID, projectId, subscriptionType).StructScan(subscription)
+	err := s.db.QueryRowxContext(ctx, fetchSubscriptionByDeviceID, deviceID, projectId, subscriptionType).StructScan(subscription)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrSubscriptionNotFound

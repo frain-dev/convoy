@@ -332,6 +332,9 @@
 					},
 					"updated_at": {
 						"type": "string"
+					},
+					"url_query_params": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -1459,6 +1462,9 @@
 					},
 					"updated_at": {
 						"type": "string"
+					},
+					"url_query_params": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -1520,6 +1526,9 @@
 						"type": "string"
 					},
 					"updated_at": {
+						"type": "string"
+					},
+					"url_query_params": {
 						"type": "string"
 					}
 				},
@@ -2910,7 +2919,7 @@
 					{
 						"description": "The owner ID of the endpoint",
 						"in": "query",
-						"name": "owner_id",
+						"name": "ownerId",
 						"schema": {
 							"type": "string"
 						}
@@ -2918,7 +2927,7 @@
 					{
 						"description": "The number of items to return per page",
 						"in": "query",
-						"name": "per_page",
+						"name": "perPage",
 						"schema": {
 							"type": "integer"
 						}
@@ -3995,7 +4004,7 @@
 					{
 						"description": "The number of items to return per page",
 						"in": "query",
-						"name": "per_page",
+						"name": "perPage",
 						"schema": {
 							"type": "integer"
 						}
@@ -4978,7 +4987,7 @@
 					{
 						"description": "The number of items to return per page",
 						"in": "query",
-						"name": "per_page",
+						"name": "perPage",
 						"schema": {
 							"type": "integer"
 						}
@@ -5950,7 +5959,7 @@
 					{
 						"description": "The number of items to return per page",
 						"in": "query",
-						"name": "per_page",
+						"name": "perPage",
 						"schema": {
 							"type": "integer"
 						}
@@ -7021,7 +7030,7 @@
 					{
 						"description": "The number of items to return per page",
 						"in": "query",
-						"name": "per_page",
+						"name": "perPage",
 						"schema": {
 							"type": "integer"
 						}
@@ -7707,7 +7716,7 @@
 					{
 						"description": "The number of items to return per page",
 						"in": "query",
-						"name": "per_page",
+						"name": "perPage",
 						"schema": {
 							"type": "integer"
 						}

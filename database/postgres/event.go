@@ -13,8 +13,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-var ErrEventNotCreated = errors.New("event could not be created")
-
 const (
 	createEvent = `
 	INSERT INTO convoy.events (id, event_type, endpoints, project_id, source_id, headers, raw, data, url_query_params,created_at,updated_at)
@@ -27,13 +25,16 @@ const (
 
 	fetchEventById = `
 	SELECT id, event_type, endpoints, project_id,
-	COALESCE(source_id, '') AS source_id, headers, url_query_params, raw, data
+	COALESCE(source_id, '') AS source_id, headers,
+	COALESCE(url_query_params, '') AS url_query_params,
+	raw, data
 	FROM convoy.events WHERE id = $1 AND project_id = $2 AND deleted_at is NULL;
 	`
 
 	fetchEventsByIds = `
 	SELECT ev.id, ev.project_id, ev.id as event_type,
-	COALESCE(ev.source_id, '') AS source_id, ev.url_query_params,
+	COALESCE(ev.source_id, '') AS source_id,
+	COALESCE(ev.url_query_params, '') AS url_query_params,
 	ev.headers, ev.raw, ev.data, ev.created_at,
 	ev.updated_at, ev.deleted_at,
 	COALESCE(s.id, '') AS "source_metadata.id",
@@ -61,7 +62,8 @@ const (
 	baseEventsPaged = `
 	SELECT ev.id, ev.project_id, ev.id as event_type,
 	COALESCE(ev.source_id, '') AS source_id,
-	ev.headers, ev.raw, ev.data, ev.created_at,ev.url_query_params,
+	ev.headers, ev.raw, ev.data, ev.created_at,
+	COALESCE(url_query_params, '') AS url_query_params,
 	ev.updated_at, ev.deleted_at,
 	COALESCE(s.id, '') AS "source_metadata.id",
 	COALESCE(s.name, '') AS "source_metadata.name"
@@ -318,7 +320,10 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		rows.Close()
+		err = rows.Close()
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
 	}
 
 	ids := make([]string, len(events))

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/config"
@@ -36,7 +38,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 		Use:   "worker",
 		Short: "Start worker instance",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			//override config with cli Flags
+			// override config with cli Flags
 			cliConfig, err := buildWorkerCliConfiguration(cmd)
 			if err != nil {
 				return err
@@ -84,6 +86,11 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				a.Logger.Debug("Failed to initialise search backend")
 			}
 
+			rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
+			if err != nil {
+				return err
+			}
+
 			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 				endpointRepo,
 				eventDeliveryRepo,
@@ -127,7 +134,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(
 				endpointRepo))
 
-			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, cfg))
+			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, cfg, rd))
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 
 			indexDocument, err := task.NewIndexDocument(cfg)

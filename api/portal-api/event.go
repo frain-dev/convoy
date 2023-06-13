@@ -308,8 +308,19 @@ func (a *PortalLinkHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	data.Filter.EndpointIDs = portalLink.Endpoints
+	endpointIDs, err := a.getEndpoints(r, portalLink)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	if len(endpointIDs) == 0 {
+		_ = render.Render(w, r, util.NewServerResponse("App events fetched successfully",
+			pagedResponse{Content: endpointIDs, Pagination: &datastore.PaginationData{PerPage: int64(data.Filter.Pageable.PerPage)}}, http.StatusOK))
+		return
+	}
+
+	data.Filter.EndpointIDs = endpointIDs
 	if cfg.Search.Type == config.TypesenseSearchProvider && !util.IsStringEmpty(data.Filter.Query) {
 		searchBackend, err := searcher.NewSearchClient(cfg)
 		if err != nil {
@@ -374,8 +385,19 @@ func (a *PortalLinkHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *ht
 		return
 	}
 
-	data.Filter.EndpointIDs = portalLink.Endpoints
+	endpointIDs, err := a.getEndpoints(r, portalLink)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
+	if len(endpointIDs) == 0 {
+		_ = render.Render(w, r, util.NewServerResponse("Event deliveries fetched successfully",
+			pagedResponse{Content: endpointIDs, Pagination: &datastore.PaginationData{PerPage: int64(data.Filter.Pageable.PerPage)}}, http.StatusOK))
+		return
+	}
+
+	data.Filter.EndpointIDs = endpointIDs
 	f := data.Filter
 	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams, f.Pageable)
 	if err != nil {
