@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/frain-dev/convoy/pkg/dedup"
 	"io"
 	"net/http"
@@ -111,15 +110,13 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	duper := dedup.NewDeDuper(r.Context(), a.A.Cache, *r)
-	val, err := duper.Get(source.Name, source.IdempotencyKeys)
+	exists, err := duper.Get(source.Name, source.IdempotencyKeys)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	fmt.Printf("\nval: %v\n", val)
-
-	if val != nil {
+	if exists {
 		_ = render.Render(w, r, util.NewErrorResponse("duplicate event will not be ingested", http.StatusBadRequest))
 		return
 	}

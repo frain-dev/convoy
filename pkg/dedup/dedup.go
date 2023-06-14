@@ -18,7 +18,7 @@ import (
 
 type Idempotency interface {
 	Set(source string, input []string, ttl time.Duration) error
-	Get(source string, input []string) (interface{}, error)
+	Get(source string, input []string) (bool, error)
 }
 
 type DeDuper struct {
@@ -49,9 +49,7 @@ func (d *DeDuper) Set(source string, input []string, ttl time.Duration) error {
 	checksum := calculateChecksum(builder.String())
 
 	key := convoy.IdempotencyCacheKey.Get(checksum).String()
-	fmt.Println("key:", key)
-
-	err = d.cache.Set(d.ctx, key, builder.String(), ttl)
+	err = d.cache.Set(d.ctx, key, true, ttl)
 	if err != nil {
 		return err
 	}
@@ -59,11 +57,11 @@ func (d *DeDuper) Set(source string, input []string, ttl time.Duration) error {
 	return nil
 }
 
-func (d *DeDuper) Get(source string, input []string) (interface{}, error) {
+func (d *DeDuper) Get(source string, input []string) (bool, error) {
 	// extract data from the request
 	parts, err := d.extractDataFromRequest(input)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	// build the checksum from the input parts
@@ -76,13 +74,11 @@ func (d *DeDuper) Get(source string, input []string) (interface{}, error) {
 	checksum := calculateChecksum(builder.String())
 
 	key := convoy.IdempotencyCacheKey.Get(checksum).String()
-	fmt.Println("key:", key)
+	var data bool
 
-	var data interface{}
 	err = d.cache.Get(d.ctx, key, &data)
-	fmt.Printf("err: %v", err)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	return data, nil
