@@ -137,7 +137,7 @@
 				</div>
 			</div>
 
-			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" formGroupName="idempotency" *ngIf="showConfig('idempotency')">
+			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('idempotency')">
 				<div class="flex justify-between items-end mb-24px">
 					<p class="text-14 font-medium text-new.gray-600 flex items-center">Idempotency Config</p>
 					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('idempotency')">

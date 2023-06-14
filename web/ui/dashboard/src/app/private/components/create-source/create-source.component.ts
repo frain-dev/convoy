@@ -24,10 +24,8 @@ export class CreateSourceComponent implements OnInit {
 			body: [''],
 			content_type: ['']
 		}),
-		idempotency: this.formBuilder.group({
-			keys: [''],
-			ttl: ['']
-		}),
+		idempotency_keys: [null],
+		ttl: [null],
 		verifier: this.formBuilder.group({
 			api_key: this.formBuilder.group({
 				header_name: ['', Validators.required],
@@ -192,7 +190,8 @@ export class CreateSourceComponent implements OnInit {
 				verifier: {
 					type: verifier,
 					[verifier]: { ...this.sourceForm.get('verifier.' + verifier)?.value }
-				}
+				},
+				idempotency_keys: this.idempotencyKeys
 			};
 		} else {
 			delete this.sourceForm.value.verifier;
