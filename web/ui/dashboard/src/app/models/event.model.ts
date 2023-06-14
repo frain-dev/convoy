@@ -42,6 +42,7 @@ export interface EVENT_DELIVERY {
 		strategy: string;
 		data: any;
 	};
+    source_metadata: SOURCE;
 	endpoint_metadata: ENDPOINT;
 	app_metadata: APP;
 	event_metadata: EVENT;
