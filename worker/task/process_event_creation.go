@@ -116,16 +116,16 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			}
 
 			eventDelivery := &datastore.EventDelivery{
-				UID:            ulid.Make().String(),
-				SubscriptionID: s.UID,
-				Metadata:       metadata,
-				ProjectID:      project.UID,
-				EventID:        event.UID,
-				EndpointID:     s.EndpointID,
-				DeviceID:       s.DeviceID,
-				Headers:        headers,
-				URLQueryParams: event.URLQueryParams,
-
+				UID:              ulid.Make().String(),
+				SubscriptionID:   s.UID,
+				Metadata:         metadata,
+				ProjectID:        project.UID,
+				EventID:          event.UID,
+				EndpointID:       s.EndpointID,
+				DeviceID:         s.DeviceID,
+				Headers:          headers,
+				IdempotencyKey:   event.IdempotencyKey,
+				URLQueryParams:   event.URLQueryParams,
 				Status:           getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},
 				CreatedAt:        time.Now(),

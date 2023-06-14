@@ -31,8 +31,8 @@ var (
 
 const (
 	createEventDelivery = `
-    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,created_at,updated_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15);
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,idempotency_key,created_at,updated_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16);
     `
 
 	baseFetchEventDelivery = `
@@ -40,6 +40,7 @@ const (
         ed.id,ed.project_id,ed.event_id,ed.subscription_id,
         ed.headers,ed.attempts,ed.status,ed.metadata,ed.cli_metadata,
         COALESCE(ed.url_query_params, '') AS url_query_params,
+        COALESCE(ed.idempotency_key, '') AS idempotency_key,
         ed.description,ed.created_at,ed.updated_at,
         COALESCE(ed.device_id,'') as "device_id",
         COALESCE(ed.endpoint_id,'') as "endpoint_id",
@@ -125,6 +126,7 @@ const (
     SELECT
         id,project_id,event_id,subscription_id,
         headers,attempts,status,metadata,cli_metadata,
+        COALESCE(ed.idempotency_key, '') AS idempotency_key,
         COALESCE(url_query_params, '') AS url_query_params,
         description,created_at,updated_at,
         COALESCE(device_id,'') as "device_id",
@@ -136,6 +138,7 @@ const (
     SELECT
         id,project_id,event_id,subscription_id,
         headers,attempts,status,metadata,cli_metadata,
+        COALESCE(idempotency_key, '') AS idempotency_key,
         COALESCE(url_query_params, '') AS url_query_params,
         description,created_at,updated_at,
         COALESCE(device_id,'') as "device_id"

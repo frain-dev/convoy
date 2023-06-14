@@ -654,6 +654,7 @@ type Event struct {
 	EndpointMetadata EndpointMetadata      `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Source           *Source               `json:"source_metadata,omitempty" db:"source_metadata"`
 	URLQueryParams   string                `json:"url_query_params" db:"url_query_params"`
+	IdempotencyKey   string                `json:"idempotency_key" db:"idempotency_key"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
@@ -848,6 +849,7 @@ type EventDelivery struct {
 	SubscriptionID string                `json:"subscription_id,omitempty" db:"subscription_id"`
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
+	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
 
 	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`
