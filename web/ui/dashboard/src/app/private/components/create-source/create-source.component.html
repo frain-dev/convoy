@@ -146,7 +146,7 @@
 						</svg>
 					</button>
 				</div>
-				<convoy-select label="TTL (Time to live)" name="ttl" formControlName="ttl" [options]="ttlTimes" [required]="true" errorMessage="Please select a time" [required]="true" (selectedOption)="sourceForm.patchValue({ ttl: $event })"></convoy-select>
+				<convoy-select label="TTL (Time to live)" name="idempotency_ttl" formControlName="idempotency_ttl" [options]="ttlTimes" [required]="true" errorMessage="Please select a time" [required]="true" (selectedOption)="sourceForm.patchValue({ idempotency_ttl: $event })"></convoy-select>
 
 				<p class="text-12 text-new.gray-400 mt-24px flex items-center">
 					Key locations

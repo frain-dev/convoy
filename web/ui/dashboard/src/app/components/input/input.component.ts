@@ -7,7 +7,7 @@ import { TooltipComponent } from '../tooltip/tooltip.component';
 	selector: '[convoy-input]',
 	standalone: true,
 	host: {
-		class: 'transition-all duration-[.3s] w-full font-normal text-14 placeholder:text-grey-40 text-grey-100 border border-primary-500 valid:border-primary-500 disabled:text-grey-40 disabled:border-primary-500 disabled:bg-[#F7F9FC] hover:bg-primary-500 hover:border-grey-20 focus:border-primary-100 focus:bg-white-100 outline-none rounded-4px placeholder:opacity-[.48] bg-[#F7F9FC] py-12px px-16px appearance-none',
+		class: 'transition-all duration-[.3s] w-full font-normal text-14 placeholder:text-grey-40 text-grey-100 border border-primary-500 valid:border-primary-500 disabled:text-grey-40 disabled:border-primary-500 disabled:bg-[#F7F9FC] hover:bg-primary-500 hover:border-grey-20 focus:border-primary-100 focus:bg-white-100 outline-none rounded-4px placeholder:opacity-[.48] bg-white-100 py-12px px-16px appearance-none',
 		'[ngClass]': "{ 'pointer-events-none': readonly, 'appearance-none': type !== 'password' }"
 	}
 })

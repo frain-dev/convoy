@@ -25,7 +25,7 @@ export class CreateSourceComponent implements OnInit {
 			content_type: ['']
 		}),
 		idempotency_keys: [null],
-		ttl: [null],
+		idempotency_ttl: [null],
 		verifier: this.formBuilder.group({
 			api_key: this.formBuilder.group({
 				header_name: ['', Validators.required],
@@ -135,14 +135,14 @@ export class CreateSourceComponent implements OnInit {
 	];
 	idempotencyKeys: string[] = [];
 	ttlTimes = [
-		{ name: '6 hours', uid: 6 },
-		{ name: '12 hours', uid: 12 },
-		{ name: '18 hours', uid: 18 },
-		{ name: '24 hours', uid: 24 },
-		{ name: '30 hours', uid: 30 },
-		{ name: '36 hours', uid: 36 },
-		{ name: '42 hours', uid: 42 },
-		{ name: '48 hours', uid: 48 }
+		{ name: '6 hours', uid: '6' },
+		{ name: '12 hours', uid: '12' },
+		{ name: '18 hours', uid: '18' },
+		{ name: '24 hours', uid: '24' },
+		{ name: '30 hours', uid: '30' },
+		{ name: '36 hours', uid: '36' },
+		{ name: '42 hours', uid: '42' },
+		{ name: '48 hours', uid: '48' }
 	];
 	private rbacService = inject(RbacService);
 
@@ -166,6 +166,8 @@ export class CreateSourceComponent implements OnInit {
 			if (this.sourceDetails.custom_response.body || this.sourceDetails.custom_response.content_type) this.toggleConfigForm('custom_response');
 
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
+
+            this.idempotencyKeys = response.data.idempotency_keys
 			this.isloading = false;
 
 			return;

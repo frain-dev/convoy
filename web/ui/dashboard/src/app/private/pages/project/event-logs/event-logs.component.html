@@ -210,7 +210,7 @@
 					[title]="delivery?.endpoint_metadata?.target_url || ''"
 					[routerLink]="['../events/event-deliveries/' + delivery.uid]"
 					[relativeTo]="route"
-					class="cursor-pointer flex !justify-start mb-10px hover:bg-primary-500 py-10px rounded-4px transition-colors"
+					class="cursor-pointer border-none flex !justify-start mb-10px hover:bg-primary-500 py-10px rounded-4px transition-colors"
 				>
 					<div class="flex items-center w-1/5">
 						<div convoy-tag [color]="delivery.status | statuscolor" className="mr-20px">{{ delivery.status }}</div>
