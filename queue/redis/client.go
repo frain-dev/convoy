@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/danvixent/asynqmon"
@@ -30,11 +31,29 @@ func NewQueue(opts queue.QueueOptions) queue.Queuer {
 }
 
 func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
+	queue := string(queueName)
 	if job.ID == "" {
 		job.ID = ulid.Make().String()
 	}
-	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(string(queueName)), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
-	_, err := q.client.Enqueue(t, asynq.Retention(24*time.Hour))
+	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(queue), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
+
+	_, err := q.inspector.GetTaskInfo(queue, job.ID)
+	if err != nil {
+		taskNotFound := fmt.Errorf("asynq: %w", asynq.ErrTaskNotFound)
+		if taskNotFound.Error() == err.Error() {
+			_, err := q.client.Enqueue(t, asynq.Retention(24*time.Hour))
+			return err
+		}
+
+		return err
+	}
+
+	err = q.inspector.DeleteTask(queue, job.ID)
+	if err != nil {
+		return err
+	}
+
+	_, err = q.client.Enqueue(t, asynq.Retention(24*time.Hour))
 	return err
 }
 
