@@ -6,7 +6,7 @@ pre[class*='language-'] {
 	word-spacing: normal;
 	word-break: normal;
 	word-wrap: normal;
-	font-weight: 500;
+	font-weight: 400;
 	font-size: 12px;
 	line-height: 22px;
 	-moz-tab-size: 4;
@@ -16,6 +16,7 @@ pre[class*='language-'] {
 	-moz-hyphens: none;
 	-ms-hyphens: none;
 	hyphens: none;
+	overflow: auto;
 }
 
 pre[class*='language-'] {
@@ -26,7 +27,7 @@ pre[class*='language-'] {
 
 :not(pre) > code[class*='language-'],
 pre[class*='language-'] {
-	background: rgb(220, 220, 220, 0.1);
+	background: transparent;
 }
 
 :not(pre) > code[class*='language-'] {
@@ -69,7 +70,7 @@ pre[class*='language-'] {
 .token.inserted,
 .token.selector,
 .token.string {
-	color: #4c6fff;
+	color: #4661CE;
 }
 
 .language-css .token.string,

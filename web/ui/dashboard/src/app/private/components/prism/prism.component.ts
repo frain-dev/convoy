@@ -15,18 +15,40 @@ export class PrismComponent implements AfterViewInit, OnChanges {
 	@Input() code?: string;
 	@Input() language?: string;
 	@Input('title') title?: string;
+	@Input('type') type?: 'default' | 'headers';
 	showPayload = false;
 
 	constructor() {}
 
 	ngAfterViewInit() {
-		Prism.highlightElement(this.codeEle?.nativeElement);
+		if (this.type !== 'headers') Prism.highlightElement(this.codeEle?.nativeElement);
 	}
 
 	ngOnChanges(): void {
-		if (this.codeEle?.nativeElement) {
+		if (this.codeEle?.nativeElement && this.type !== 'headers') {
 			this.codeEle.nativeElement.textContent = this.code;
 			Prism.highlightElement(this.codeEle.nativeElement);
 		}
+	}
+
+	getHeaders() {
+		if (this.type !== 'headers') return;
+		let headers: any = [];
+		const selectedHeaders = this.code;
+
+		if (selectedHeaders)
+			Object.entries(selectedHeaders).forEach(([key, value]) => {
+				headers.push({
+					header: key,
+					value: Array.isArray(value) ? value[0] : value
+				});
+			});
+
+		const header = {
+			headersLength: headers.length,
+			headers: this.showPayload ? headers : headers.slice(0, 3)
+		};
+
+		return header;
 	}
 }

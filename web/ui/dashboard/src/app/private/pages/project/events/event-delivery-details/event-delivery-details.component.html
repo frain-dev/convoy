@@ -159,23 +159,23 @@
 					<div class="grid border-t border-grey-10" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
 						<div class="py-32px w-full" [ngClass]="{ 'pr-32px border-r border-r-grey-10': !shouldRenderSmallSize }">
 							<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>
-							<prism *ngIf="!isloadingDeliveryAttempts" language="json" title="Request Header" [code]="generalService.getCodeSnippetString('req_header', selectedDeliveryAttempt?.request_http_header)"></prism>
+							<prism *ngIf="!isloadingDeliveryAttempts" title="Event" language="json" [code]="generalService.getCodeSnippetString('event_data', eventDelsDetails?.metadata?.data)"></prism>
 						</div>
 						<div class="py-32px w-full" [ngClass]="{ 'pl-32px': !shouldRenderSmallSize, 'border-t border-grey-10': shouldRenderSmallSize }">
 							<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>
-							<prism *ngIf="!isloadingDeliveryAttempts" title="Event Payload" language="json" [code]="generalService.getCodeSnippetString('event_data', eventDelsDetails?.metadata?.data)"></prism>
+							<prism *ngIf="!isloadingDeliveryAttempts" language="json" title="Request Headers" type="headers" [code]="selectedDeliveryAttempt?.request_http_header"></prism>
 						</div>
 					</div>
 
 					<div class="grid border-t border-grey-10" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
 						<div class="py-32px w-full" [ngClass]="{ 'pr-32px border-r border-r-grey-10': !shouldRenderSmallSize }">
 							<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>
-							<prism *ngIf="!isloadingDeliveryAttempts" language="json" title="Response Header" [code]="generalService.getCodeSnippetString('res_header', selectedDeliveryAttempt?.response_http_header)"></prism>
+							<prism *ngIf="selectedDeliveryAttempt?.error && !isloadingDeliveryAttempts" language="json" title="Error" [code]="generalService.getCodeSnippetString('error', selectedDeliveryAttempt?.error)"></prism>
+							<prism *ngIf="!selectedDeliveryAttempt?.error && !isloadingDeliveryAttempts" language="json" title="Response Body" [code]="generalService.getCodeSnippetString('res_body', selectedDeliveryAttempt?.response_data)"></prism>
 						</div>
 						<div class="py-32px w-full" [ngClass]="{ 'pl-32px': !shouldRenderSmallSize, 'border-t border-grey-10': shouldRenderSmallSize }">
 							<div class="skeleton-loader code mt-16px" *ngIf="isloadingDeliveryAttempts"></div>
-							<prism *ngIf="selectedDeliveryAttempt?.error && !isloadingDeliveryAttempts" language="json" title="Error" [code]="generalService.getCodeSnippetString('error', selectedDeliveryAttempt?.error)"></prism>
-							<prism *ngIf="!selectedDeliveryAttempt?.error && !isloadingDeliveryAttempts" language="json" title="Response Body" [code]="generalService.getCodeSnippetString('res_body', selectedDeliveryAttempt?.response_data)"></prism>
+							<prism *ngIf="!isloadingDeliveryAttempts" language="json" title="Response Headers" type="headers" [code]="selectedDeliveryAttempt?.response_http_header"></prism>
 						</div>
 					</div>
 				</div>
