@@ -169,7 +169,7 @@ func queryParam() {
 		return
 	}
 
-	duper, err := dedup.NewDeDuper(context.Background(), "redis://localhost:6379", request)
+	duper := dedup.NewDeDuper(context.Background(), nil, *request)
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
@@ -207,7 +207,7 @@ func header() {
 	}
 	request.Header = requestHeader
 
-	duper, err := dedup.NewDeDuper(context.Background(), "redis://localhost:6379", request)
+	duper := dedup.NewDeDuper(context.Background(), nil, *request)
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
@@ -254,19 +254,14 @@ func requestBody() {
 		return request
 	}
 
-	duper, err := dedup.NewDeDuper(context.Background(), "redis://localhost:6379", makeRequest())
-	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
-	}
-
-	err = duper.Set("", []string{"request.Body.age"}, time.Minute*60)
+	duper := dedup.NewDeDuper(context.Background(), nil, *makeRequest())
+	err := duper.Set("", []string{"request.Body.age"}, time.Minute*60)
 	if err != nil {
 		fmt.Println("Error setting data:", err)
 		return
 	}
 
-	d, err := dedup.NewDeDuper(context.Background(), "redis://localhost:6379", makeRequest())
+	d := dedup.NewDeDuper(context.Background(), nil, *makeRequest())
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
@@ -309,19 +304,14 @@ func requestBodyFormData() {
 		return request
 	}
 
-	duper, err := dedup.NewDeDuper(context.Background(), "redis://localhost:6379", makeRequest())
-	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
-	}
-
-	err = duper.Set("", []string{"request.body.name"}, time.Minute)
+	duper := dedup.NewDeDuper(context.Background(), nil, *makeRequest())
+	err := duper.Set("", []string{"request.body.name"}, time.Minute)
 	if err != nil {
 		fmt.Println("Error extracting data:", err)
 		return
 	}
 
-	d, err := dedup.NewDeDuper(context.Background(), "redis://localhost:6379", makeRequest())
+	d := dedup.NewDeDuper(context.Background(), nil, *makeRequest())
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
@@ -351,12 +341,7 @@ func requestBodyUrlEncoded() {
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	duper, err := dedup.NewDeDuper(context.Background(), "redis://localhost:6379", request)
-	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
-	}
-
+	duper := dedup.NewDeDuper(context.Background(), nil, *request)
 	err = duper.Set("", []string{"request.Body.age"}, time.Minute)
 	if err != nil {
 		fmt.Println("Error setting data:", err)
@@ -444,11 +429,7 @@ func requestBodyFormDataNested() {
 	}
 	request.Header.Set("Content-Type", contentType)
 
-	duper, err := dedup.NewDeDuper(context.Background(), "redis://localhost:6379", request)
-	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
-	}
+	duper := dedup.NewDeDuper(context.Background(), nil, *request)
 
 	// Extract data from the request
 	err = duper.Set("", []string{"request.Body.address[zip]", "request.Body.address[city]"}, time.Minute)

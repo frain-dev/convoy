@@ -52,6 +52,10 @@ func (s *UpdateSourceService) Run(ctx context.Context) (*datastore.Source, error
 		s.Source.ForwardHeaders = s.SourceUpdate.ForwardHeaders
 	}
 
+	if s.SourceUpdate.IdempotencyKeys != nil {
+		s.Source.IdempotencyKeys = s.SourceUpdate.IdempotencyKeys
+	}
+
 	if s.SourceUpdate.PubSub != nil {
 		s.Source.PubSub = s.SourceUpdate.PubSub.Transform()
 	}

@@ -18,8 +18,8 @@ import (
 
 const (
 	createSource = `
-    INSERT INTO convoy.sources (id, source_verifier_id, name,type,mask_id,provider,is_disabled,forward_headers,project_id, pub_sub, custom_response_body,custom_response_content_type)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12);
+    INSERT INTO convoy.sources (id, source_verifier_id, name,type,mask_id,provider,is_disabled,forward_headers,project_id, pub_sub, custom_response_body,custom_response_content_type,idempotency_keys)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13);
     `
 
 	createSourceVerifier = `
@@ -43,6 +43,7 @@ const (
 	pub_sub= $9,
 	custom_response_body = $10,
 	custom_response_content_type = $11,
+	idempotency_keys = $12,
 	updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL ;
 	`
@@ -71,6 +72,7 @@ const (
 		s.provider,
 		s.is_disabled,
 		s.forward_headers,
+		s.idempotency_keys,
 		s.project_id,
 		COALESCE(s.source_verifier_id, '') AS source_verifier_id,
 		s.pub_sub,

@@ -44,7 +44,7 @@
 				<ul class="min-h-[100px] py-10px">
 					<li class="py-4px px-20px flex items-center justify-between border-b border-grey-10" *ngFor="let source of filterSources" convoy-list-item convoy-dropdown-option>
 						<label class="text-12 block w-full" [for]="source.uid">{{ source.name }}</label>
-						<input type="checkbox" name="source" [value]="source.uid" [id]="source.uid" [checked]="source.uid === eventSource" (change)="updateSourceFilter(source.uid, $event)" />
+						<input type="checkbox" name="source" [value]="source.uid" [id]="source.uid" [checked]="source.uid === eventSource" (change)="eventSource ? updateSourceFilter() : false" />
 					</li>
 				</ul>
 
@@ -255,7 +255,7 @@
 			<!-- event payload and headers  -->
 			<ng-container *ngIf="displayedEvents && displayedEvents.length > 0">
 				<prism title="Event" language="json" [code]="generalService.getCodeSnippetString('event_data', eventsDetailsItem?.data || eventsDetailsItem?.metadata?.data)"></prism>
-				<prism title="Header" language="json" type="headers" [code]="eventsDetailsItem?.headers"></prism>
+				<prism *ngIf="eventsDetailsItem?.headers" title="Headers" language="json" type="headers" [code]="eventsDetailsItem?.headers"></prism>
 			</ng-container>
 
 			<!-- event empty state  -->

@@ -226,6 +226,8 @@ components:
           type: string
         updated_at:
           type: string
+        url_query_params:
+          type: string
       type: object
     datastore.EventDeliveryStatus:
       enum:
@@ -986,6 +988,8 @@ components:
           type: string
         updated_at:
           type: string
+        url_query_params:
+          type: string
       type: object
     models.EventResponse:
       properties:
@@ -1029,6 +1033,8 @@ components:
         uid:
           type: string
         updated_at:
+          type: string
+        url_query_params:
           type: string
       type: object
     models.ExpireSecret:
@@ -1866,12 +1872,12 @@ paths:
           type: string
       - description: The owner ID of the endpoint
         in: query
-        name: owner_id
+        name: ownerId
         schema:
           type: string
       - description: The number of items to return per page
         in: query
-        name: per_page
+        name: perPage
         schema:
           type: integer
       - description: A pagination cursor to fetch the previous page of a list
@@ -2453,7 +2459,7 @@ paths:
           type: string
       - description: The number of items to return per page
         in: query
-        name: per_page
+        name: perPage
         schema:
           type: integer
       - description: A pagination cursor to fetch the previous page of a list
@@ -2982,7 +2988,7 @@ paths:
           type: string
       - description: The number of items to return per page
         in: query
-        name: per_page
+        name: perPage
         schema:
           type: integer
       - description: A pagination cursor to fetch the previous page of a list
@@ -3507,7 +3513,7 @@ paths:
           type: string
       - description: The number of items to return per page
         in: query
-        name: per_page
+        name: perPage
         schema:
           type: integer
       - description: A pagination cursor to fetch the previous page of a list
@@ -4080,7 +4086,7 @@ paths:
           type: string
       - description: The number of items to return per page
         in: query
-        name: per_page
+        name: perPage
         schema:
           type: integer
       - description: A pagination cursor to fetch the previous page of a list
@@ -4450,7 +4456,7 @@ paths:
           type: string
       - description: The number of items to return per page
         in: query
-        name: per_page
+        name: perPage
         schema:
           type: integer
       - description: A pagination cursor to fetch the previous page of a list

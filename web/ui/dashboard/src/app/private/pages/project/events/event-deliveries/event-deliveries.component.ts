@@ -50,7 +50,6 @@ export class EventDeliveriesComponent implements OnInit {
 	eventsDelEndpointFilter$!: Observable<ENDPOINT[]>;
 	@ViewChild('eventDelsEndpointFilter', { static: true }) eventDelsEndpointFilter!: ElementRef;
 	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
-	@ViewChild('eventDeliveryTimerFilter', { static: true }) eventDeliveryTimerFilter!: TimePickerComponent;
 	portalToken = this.route.snapshot.queryParams?.token;
 	filterSources: SOURCE[] = [];
 	queryParams?: FILTER_QUERY_PARAM;
@@ -83,6 +82,8 @@ export class EventDeliveriesComponent implements OnInit {
 
 		// set filter status if any exists in URL
 		this.eventDeliveryFilteredByStatus = this.queryParams.status ? JSON.parse(this.queryParams.status) : [];
+
+		this.eventDeliveriesSource = this.queryParams?.sourceId;
 
 		return this.queryParams;
 	}
@@ -152,13 +153,6 @@ export class EventDeliveriesComponent implements OnInit {
 		return this.queryParams;
 	}
 
-	setDateForFilter(requestDetails: { startDate: any; endDate: any; startTime?: string; endTime?: string }) {
-		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
-		const startDate = requestDetails.startDate ? `${format(typeof requestDetails.startDate == 'string' ? parseISO(requestDetails.startDate) : requestDetails.startDate, 'yyyy-MM-dd')}${requestDetails?.startTime || 'T00:00:00'}` : '';
-		const endDate = requestDetails.endDate ? `${format(typeof requestDetails.endDate == 'string' ? parseISO(requestDetails.endDate) : requestDetails.endDate, 'yyyy-MM-dd')}${requestDetails?.endTime || 'T23:59:59'}` : '';
-		return { startDate, endDate };
-	}
-
 	checkIfEventDeliveryStatusFilterOptionIsSelected(status: string): boolean {
 		return this.eventDeliveryFilteredByStatus?.length > 0 ? this.eventDeliveryFilteredByStatus.includes(status) : false;
 	}
@@ -172,15 +166,9 @@ export class EventDeliveriesComponent implements OnInit {
 		}
 	}
 
-	getSelectedDateRange(dateRange: { startDate: Date; endDate: Date }) {
-		const dates = this.setDateForFilter(dateRange);
-		const data = this.addFilterToURL(dates);
-		this.getEventDeliveries(data);
-	}
-
-	getSelectedTimeRange(timeRange: { startTime: any; endTime: any }) {
-		const dates = this.setDateForFilter({ startDate: this.queryParams?.startDate, endDate: this.queryParams?.endDate, ...timeRange });
-		const data = this.addFilterToURL(dates);
+	getSelectedDateRange(dateRange: { startDate: string; endDate: string }) {
+		console.log('🚀 ~ file: event-deliveries.component.ts:170 ~ EventDeliveriesComponent ~ getSelectedDateRange ~ dateRange:', dateRange);
+		const data = this.addFilterToURL(dateRange);
 		this.getEventDeliveries(data);
 	}
 
@@ -203,7 +191,6 @@ export class EventDeliveriesComponent implements OnInit {
 			this._location.go(`${location.pathname}?${queryParams}`);
 		} else {
 			this.datePicker.clearDate();
-			this.eventDeliveryTimerFilter.clearFilter();
 			this.queryParams = {};
 			this._location.go(`${location.pathname}`);
 		}

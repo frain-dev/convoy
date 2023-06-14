@@ -37,19 +37,20 @@
 				</li>
 			</ng-container>
 
-			<li class="flex justify-between p-16px hover:bg-new.primary-25 transition-all duration-300 rounded-8px mb-12px last-of-type:mb-0" *ngFor="let subscription of subscriptions?.content; let i = index">
-				<div class="flex text-14 text-new.gray-600 max-w-[790px] justify-between w-full">
-					<div class="flex">
-						<div class="mr-8px">{{ subscription.endpoint_metadata?.title }}</div>
-						<convoy-tag size="sm" color="success">{{ subscription.endpoint_metadata?.status }}</convoy-tag>
+			<li class="@container/endpoint flex justify-between p-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px mb-12px last-of-type:mb-0" *ngFor="let subscription of subscriptions?.content; let i = index">
+				<div class="flex text-14 text-new.gray-600 max-w-[790px] w-full gap-24px items-center min-h-[28px]">
+					<div class="flex items-center max-w-[150px] w-full">
+						<div class="mr-8px truncate">{{ subscription.endpoint_metadata?.title }}</div>
+						<div convoy-tag size="sm" color="success">{{ subscription.endpoint_metadata?.status }}</div>
 					</div>
 					<div class="max-w-xs whitespace-nowrap text-ellipsis overflow-hidden">{{ subscription.endpoint_metadata?.target_url }}</div>
-					<div>
-						<convoy-tag [color]="hasFilter(subscription.filter_config.filter) ? 'primary' : 'gray'" class="mr-8px">Filter</convoy-tag>
-						<convoy-tag [color]="subscription?.retry_config ? 'primary' : 'gray'" class="mr-8px">Retry Logic</convoy-tag>
-						<convoy-tag [color]="subscription.filter_config.event_types.length > 1 || subscription.filter_config.event_types[0] != '*' ? 'primary' : 'gray'" color="primary">Event Types</convoy-tag>
+					<div class="@[820px]/endpoint:flex hidden whitespace-nowrap">
+						<div convoy-tag [color]="hasFilter(subscription.filter_config.filter) ? 'primary' : 'gray'" class="mr-8px">Filter</div>
+						<div convoy-tag [color]="subscription?.retry_config ? 'primary' : 'gray'" class="mr-8px">Retry Logic</div>
+						<div convoy-tag [color]="subscription.filter_config.event_types.length > 1 || subscription.filter_config.event_types[0] != '*' ? 'primary' : 'gray'" color="primary">Event Types</div>
 					</div>
 				</div>
+
 				<div>
 					<div convoy-dropdown #subscriptionDropdown position="right" size="md" class="ml-4px">
 						<button dropdownTrigger convoy-button size="sm" fill="clear" class="!p-0">

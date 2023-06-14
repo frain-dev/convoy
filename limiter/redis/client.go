@@ -2,10 +2,11 @@ package rlimiter
 
 import (
 	"context"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"time"
 
-	"github.com/go-redis/redis_rate/v9"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
+
+	"github.com/go-redis/redis_rate/v10"
 )
 
 type RedisLimiter struct {

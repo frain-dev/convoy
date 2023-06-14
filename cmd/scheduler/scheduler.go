@@ -42,12 +42,11 @@ func AddSchedulerCommand(a *cli.App) *cobra.Command {
 
 			ctx := context.Background()
 
-			//initialize scheduler
+			// initialize scheduler
 			s := worker.NewScheduler(a.Queue, lo)
 
-			//register tasks
+			// register tasks
 			s.RegisterTask("30 * * * *", convoy.ScheduleQueue, convoy.MonitorTwitterSources)
-			s.RegisterTask("55 23 * * *", convoy.ScheduleQueue, convoy.DailyAnalytics)
 			s.RegisterTask(exportCronSpec, convoy.ScheduleQueue, convoy.RetentionPolicies)
 
 			// Start scheduler

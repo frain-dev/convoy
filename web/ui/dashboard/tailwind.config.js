@@ -54,7 +54,11 @@ module.exports = {
 				default: '0px 2px 4px rgba(12, 26, 75, 0.04), 0px 4px 20px -2px rgba(50, 50, 71, 0.08)',
 				lg: '0px 4px 8px rgba(12, 26, 75, 0.1), 0px 10px 16px rgba(20, 37, 63, 0.06)',
 				xl: '0px 8px 16px rgba(12, 26, 75, 0.1), 0px 20px 24px rgba(20, 37, 63, 0.06)',
-				'2xl': '0px 16px 16px rgba(12, 26, 75, 0.05), 0px 30px 40px rgba(20, 37, 63, 0.08)'
+				'2xl': '0px 16px 16px rgba(12, 26, 75, 0.05), 0px 30px 40px rgba(20, 37, 63, 0.08)',
+				'focus--primary': '0px 0px 0px 4px #FFFBFA',
+				'focus--success': '0px 0px 0px 4px #F6FEF9',
+				'focus--warning': '0px 0px 0px 4px #FFFCF5',
+				'focus--error': '0px 0px 0px 4px #FFFBFA'
 			},
 			fontFamily: {
 				sans: ['Inter', ...defaultTheme.fontFamily.sans],
@@ -221,5 +225,5 @@ module.exports = {
 			'spin-slow': 'spin 3s linear infinite'
 		}
 	},
-	plugins: []
+	plugins: [require('@tailwindcss/container-queries')]
 };
