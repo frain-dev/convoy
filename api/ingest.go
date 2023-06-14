@@ -2,7 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/frain-dev/convoy/pkg/dedup"
+	"github.com/frain-dev/convoy/internal/pkg/dedup"
 	"io"
 	"net/http"
 	"time"

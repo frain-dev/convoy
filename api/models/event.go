@@ -17,8 +17,10 @@ type CreateEvent struct {
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data          json.RawMessage   `json:"data" valid:"required~please provide your data"`
-	CustomHeaders map[string]string `json:"custom_headers"`
+	Data           json.RawMessage   `json:"data" valid:"required~please provide your data"`
+	CustomHeaders  map[string]string `json:"custom_headers"`
+	IdempotencyKey string            `json:"idempotency_key"`
+	IdempotencyTTL string            `json:"idempotency_ttl"`
 }
 
 func (e *CreateEvent) Validate() error {

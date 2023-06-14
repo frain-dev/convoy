@@ -243,7 +243,6 @@ func (d *DeDuper) performDFS(form url.Values, parts []string) (interface{}, bool
 
 	// Check if the current part has an index specified
 	part, index := d.parsePartIndex(currentPart)
-	fmt.Printf("\nindex: %v, values: %v\n", index, currentPart)
 
 	// Check if the part exists in the form
 	values, found := form[part]
@@ -299,7 +298,7 @@ func (d *DeDuper) extractFromBodyURLEncoded(parts []string) (interface{}, error)
 	return d.extractFromFormValue(formData, parts)
 }
 
-// calculateChecksum generates a checksum using CRC32
+// calculateChecksum generates a checksum using SHA256
 func calculateChecksum(s string) string {
 	// Create a new SHA256 hash object
 	sha256Hash := sha256.New()
