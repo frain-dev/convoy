@@ -6332,6 +6332,15 @@
                         "type": "string"
                     }
                 },
+                "idempotency_keys": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "idempotency_ttl": {
+                    "type": "string"
+                },
                 "is_disabled": {
                     "type": "boolean"
                 },
@@ -6620,6 +6629,12 @@
                 },
                 "event_type": {
                     "type": "string"
+                },
+                "idempotency_key": {
+                    "type": "string"
+                },
+                "idempotency_ttl": {
+                    "type": "string"
                 }
             }
         },
@@ -6656,6 +6671,15 @@
             "properties": {
                 "custom_response": {
                     "$ref": "#/definitions/models.CustomResponse"
+                },
+                "idempotency_keys": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "idempotency_ttl": {
+                    "type": "string"
                 },
                 "is_disabled": {
                     "type": "boolean"
@@ -7467,6 +7491,15 @@
                         "type": "string"
                     }
                 },
+                "idempotency_keys": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "idempotency_ttl": {
+                    "type": "string"
+                },
                 "is_disabled": {
                     "type": "boolean"
                 },
@@ -7665,6 +7698,15 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "idempotency_keys": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "idempotency_ttl": {
+                    "type": "string"
                 },
                 "is_disabled": {
                     "type": "boolean"

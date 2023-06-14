@@ -838,6 +838,15 @@
 						},
 						"type": "array"
 					},
+					"idempotency_keys": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"idempotency_ttl": {
+						"type": "string"
+					},
 					"is_disabled": {
 						"type": "boolean"
 					},
@@ -1126,6 +1135,12 @@
 					},
 					"event_type": {
 						"type": "string"
+					},
+					"idempotency_key": {
+						"type": "string"
+					},
+					"idempotency_ttl": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -1162,6 +1177,15 @@
 				"properties": {
 					"custom_response": {
 						"$ref": "#/components/schemas/models.CustomResponse"
+					},
+					"idempotency_keys": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"idempotency_ttl": {
+						"type": "string"
 					},
 					"is_disabled": {
 						"type": "boolean"
@@ -1973,6 +1997,15 @@
 						},
 						"type": "array"
 					},
+					"idempotency_keys": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"idempotency_ttl": {
+						"type": "string"
+					},
 					"is_disabled": {
 						"type": "boolean"
 					},
@@ -2171,6 +2204,15 @@
 							"type": "string"
 						},
 						"type": "array"
+					},
+					"idempotency_keys": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"idempotency_ttl": {
+						"type": "string"
 					},
 					"is_disabled": {
 						"type": "boolean"

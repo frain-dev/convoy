@@ -566,6 +566,12 @@ components:
           items:
             type: string
           type: array
+        idempotency_keys:
+          items:
+            type: string
+          type: array
+        idempotency_ttl:
+          type: string
         is_disabled:
           type: boolean
         mask_id:
@@ -766,6 +772,10 @@ components:
           type: string
         event_type:
           type: string
+        idempotency_key:
+          type: string
+        idempotency_ttl:
+          type: string
       type: object
     models.CreateProject:
       properties:
@@ -789,6 +799,12 @@ components:
       properties:
         custom_response:
           $ref: '#/components/schemas/models.CustomResponse'
+        idempotency_keys:
+          items:
+            type: string
+          type: array
+        idempotency_ttl:
+          type: string
         is_disabled:
           type: boolean
         name:
@@ -1326,6 +1342,12 @@ components:
           items:
             type: string
           type: array
+        idempotency_keys:
+          items:
+            type: string
+          type: array
+        idempotency_ttl:
+          type: string
         is_disabled:
           type: boolean
         mask_id:
@@ -1455,6 +1477,12 @@ components:
           items:
             type: string
           type: array
+        idempotency_keys:
+          items:
+            type: string
+          type: array
+        idempotency_ttl:
+          type: string
         is_disabled:
           type: boolean
         name:

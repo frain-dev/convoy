@@ -18,6 +18,7 @@ type CreateSource struct {
 	Verifier        VerifierConfig           `json:"verifier"`
 	PubSub          PubSubConfig             `json:"pub_sub"`
 	IdempotencyKeys []string                 `json:"idempotency_keys"`
+	IdempotencyTTL  string                   `json:"idempotency_ttl"`
 }
 
 func (cs *CreateSource) Validate() error {
@@ -85,6 +86,7 @@ type UpdateSource struct {
 	Verifier        VerifierConfig       `json:"verifier"`
 	PubSub          *PubSubConfig        `json:"pub_sub"`
 	IdempotencyKeys []string             `json:"idempotency_keys"`
+	IdempotencyTTL  string               `json:"idempotency_ttl"`
 }
 
 func (us *UpdateSource) Validate() error {
