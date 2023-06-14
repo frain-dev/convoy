@@ -109,22 +109,24 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		maxIngestSize = cfg.MaxResponseSize
 	}
 
-	duper := dedup.NewDeDuper(r.Context(), a.A.Cache, *r)
-	exists, err := duper.Get(source.Name, source.IdempotencyKeys)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
+	if len(source.IdempotencyKeys) > 0 {
+		duper := dedup.NewDeDuper(r.Context(), a.A.Cache, r)
+		exists, err := duper.Exists(source.Name, source.IdempotencyKeys)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
 
-	if exists {
-		_ = render.Render(w, r, util.NewErrorResponse("duplicate event will not be ingested", http.StatusBadRequest))
-		return
-	}
+		if exists {
+			_ = render.Render(w, r, util.NewErrorResponse("duplicate event will not be ingested", http.StatusBadRequest))
+			return
+		}
 
-	err = duper.Set(source.Name, source.IdempotencyKeys, time.Hour)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
+		_, err = duper.Set(source.Name, source.IdempotencyKeys, time.Minute)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
 	}
 
 	// 3.1 On Failure

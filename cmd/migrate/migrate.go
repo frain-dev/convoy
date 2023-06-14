@@ -169,19 +169,19 @@ func queryParam() {
 		return
 	}
 
-	duper := dedup.NewDeDuper(context.Background(), nil, *request)
+	duper := dedup.NewDeDuper(context.Background(), nil, request)
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
 	}
 
-	err = duper.Set("", []string{"request.QueryParam.name"}, time.Minute)
+	_, err = duper.Set("", []string{"request.QueryParam.name"}, time.Minute)
 	if err != nil {
 		fmt.Println("Error setting data:", err)
 		return
 	}
 
-	result, err := duper.Get("", []string{"request.QueryParam.name"})
+	result, err := duper.Exists("", []string{"request.QueryParam.name"})
 	if err != nil {
 		fmt.Println("Error fetching data:", err)
 		return
@@ -207,19 +207,19 @@ func header() {
 	}
 	request.Header = requestHeader
 
-	duper := dedup.NewDeDuper(context.Background(), nil, *request)
+	duper := dedup.NewDeDuper(context.Background(), nil, request)
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
 	}
 
-	err = duper.Set("noop", []string{"request.Header.Authorization"}, time.Minute)
+	_, err = duper.Set("noop", []string{"request.Header.Authorization"}, time.Minute)
 	if err != nil {
 		fmt.Println("Error setting data:", err)
 		return
 	}
 
-	result, err := duper.Get("noop", []string{"request.Header.Authorization"})
+	result, err := duper.Exists("noop", []string{"request.Header.Authorization"})
 	if err != nil {
 		fmt.Println("Error fecthing data:", err)
 		return
@@ -254,20 +254,20 @@ func requestBody() {
 		return request
 	}
 
-	duper := dedup.NewDeDuper(context.Background(), nil, *makeRequest())
-	err := duper.Set("", []string{"request.Body.age"}, time.Minute*60)
+	duper := dedup.NewDeDuper(context.Background(), nil, makeRequest())
+	_, err := duper.Set("", []string{"request.Body.age"}, time.Minute*60)
 	if err != nil {
 		fmt.Println("Error setting data:", err)
 		return
 	}
 
-	d := dedup.NewDeDuper(context.Background(), nil, *makeRequest())
+	d := dedup.NewDeDuper(context.Background(), nil, makeRequest())
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
 	}
 
-	result, err := d.Get("", []string{"request.Body.age"})
+	result, err := d.Exists("", []string{"request.Body.age"})
 	if err != nil {
 		fmt.Println("Error fetching data:", err)
 		return
@@ -304,20 +304,20 @@ func requestBodyFormData() {
 		return request
 	}
 
-	duper := dedup.NewDeDuper(context.Background(), nil, *makeRequest())
-	err := duper.Set("", []string{"request.body.name"}, time.Minute)
+	duper := dedup.NewDeDuper(context.Background(), nil, makeRequest())
+	_, err := duper.Set("", []string{"request.body.name"}, time.Minute)
 	if err != nil {
 		fmt.Println("Error extracting data:", err)
 		return
 	}
 
-	d := dedup.NewDeDuper(context.Background(), nil, *makeRequest())
+	d := dedup.NewDeDuper(context.Background(), nil, makeRequest())
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
 	}
 
-	result, err := d.Get("", []string{"request.body.name"})
+	result, err := d.Exists("", []string{"request.body.name"})
 	if err != nil {
 		fmt.Println("Error extracting data:", err)
 		return
@@ -341,14 +341,14 @@ func requestBodyUrlEncoded() {
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	duper := dedup.NewDeDuper(context.Background(), nil, *request)
-	err = duper.Set("", []string{"request.Body.age"}, time.Minute)
+	duper := dedup.NewDeDuper(context.Background(), nil, request)
+	_, err = duper.Set("", []string{"request.Body.age"}, time.Minute)
 	if err != nil {
 		fmt.Println("Error setting data:", err)
 		return
 	}
 
-	result, err := duper.Get("", []string{"request.Body.age"})
+	result, err := duper.Exists("", []string{"request.Body.age"})
 	if err != nil {
 		fmt.Println("Error fetching data:", err)
 		return
@@ -429,16 +429,16 @@ func requestBodyFormDataNested() {
 	}
 	request.Header.Set("Content-Type", contentType)
 
-	duper := dedup.NewDeDuper(context.Background(), nil, *request)
+	duper := dedup.NewDeDuper(context.Background(), nil, request)
 
 	// Extract data from the request
-	err = duper.Set("", []string{"request.Body.address[zip]", "request.Body.address[city]"}, time.Minute)
+	_, err = duper.Set("", []string{"request.Body.address[zip]", "request.Body.address[city]"}, time.Minute)
 	if err != nil {
 		fmt.Println("Error extracting data:", err)
 		return
 	}
 
-	result, err := duper.Get("", []string{"request.Body.address[zip]", "request.Body.address[city]"})
+	result, err := duper.Exists("", []string{"request.Body.address[zip]", "request.Body.address[city]"})
 	if err != nil {
 		fmt.Println("Error extracting data:", err)
 		return

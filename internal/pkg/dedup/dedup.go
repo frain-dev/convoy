@@ -1,13 +1,14 @@
 package dedup
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
+	"github.com/tidwall/gjson"
 	"io"
 	"net/http"
 	"net/url"
@@ -18,25 +19,25 @@ import (
 
 type Idempotency interface {
 	Set(source string, input []string, ttl time.Duration) error
-	Get(source string, input []string) (bool, error)
+	Exists(source string, input []string) (bool, error)
 }
 
 type DeDuper struct {
 	ctx     context.Context
 	cache   cache.Cache
-	request http.Request
+	request *http.Request
 }
 
-func NewDeDuper(ctx context.Context, cache cache.Cache, request http.Request) *DeDuper {
+func NewDeDuper(ctx context.Context, cache cache.Cache, request *http.Request) *DeDuper {
 	return &DeDuper{ctx, cache, request}
 }
 
 // Set generates a checksum using the provided request input fields, creates a checksum
 // and writes it to redis with a ttl.
-func (d *DeDuper) Set(source string, input []string, ttl time.Duration) error {
+func (d *DeDuper) Set(source string, input []string, ttl time.Duration) (string, error) {
 	parts, err := d.extractDataFromRequest(input)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// build the checksum from the input parts
@@ -51,13 +52,13 @@ func (d *DeDuper) Set(source string, input []string, ttl time.Duration) error {
 	key := convoy.IdempotencyCacheKey.Get(checksum).String()
 	err = d.cache.Set(d.ctx, key, true, ttl)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return checksum, nil
 }
 
-func (d *DeDuper) Get(source string, input []string) (bool, error) {
+func (d *DeDuper) Exists(source string, input []string) (bool, error) {
 	// extract data from the request
 	parts, err := d.extractDataFromRequest(input)
 	if err != nil {
@@ -91,7 +92,7 @@ func (d *DeDuper) extractDataFromRequest(input []string) ([]interface{}, error) 
 		parts := strings.Split(s, ".")
 
 		switch parts[0] {
-		case "request":
+		case "request", "req":
 			d, err := d.extractFromRequest(parts[1:])
 			if err != nil {
 				return nil, err
@@ -133,7 +134,7 @@ func (d *DeDuper) extractFromRequest(parts []string) (interface{}, error) {
 	}
 }
 
-func (d *DeDuper) extractFromHeader(request http.Request, parts []string) (interface{}, error) {
+func (d *DeDuper) extractFromHeader(request *http.Request, parts []string) (interface{}, error) {
 	if len(parts) != 1 {
 		return nil, fmt.Errorf("unsupported input format for idempotency key")
 	}
@@ -141,7 +142,7 @@ func (d *DeDuper) extractFromHeader(request http.Request, parts []string) (inter
 	return request.Header.Get(parts[0]), nil
 }
 
-func (d *DeDuper) extractFromBodyJSON(request http.Request, parts []string) (interface{}, error) {
+func (d *DeDuper) extractFromBodyJSON(request *http.Request, parts []string) (interface{}, error) {
 	if len(parts) < 1 {
 		return nil, fmt.Errorf("unsupported input format for idempotency key")
 	}
@@ -151,34 +152,18 @@ func (d *DeDuper) extractFromBodyJSON(request http.Request, parts []string) (int
 		return nil, err
 	}
 
-	var jsonData map[string]interface{}
-	if err := json.Unmarshal(body, &jsonData); err != nil {
+	request.Body = io.NopCloser(bytes.NewReader(body))
+	if err != nil {
 		return nil, err
 	}
 
-	return d.extractFromJSON(jsonData, parts)
-}
-
-func (d *DeDuper) extractFromJSON(jsonData map[string]interface{}, parts []string) (interface{}, error) {
-	if len(parts) < 1 {
-		return nil, fmt.Errorf("unsupported input format for idempotency key")
+	var q strings.Builder
+	q.WriteString(parts[0])
+	for i := 1; i < len(parts); i++ {
+		q.WriteString(fmt.Sprintf(".%v", parts[i]))
 	}
 
-	value, ok := jsonData[parts[0]]
-	if !ok {
-		return nil, fmt.Errorf("key not found in JSON data")
-	}
-
-	if len(parts) == 1 {
-		return value, nil
-	}
-
-	subJSON, ok := value.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("value is not a JSON object")
-	}
-
-	return d.extractFromJSON(subJSON, parts[1:])
+	return gjson.GetBytes(body, q.String()), nil
 }
 
 func (d *DeDuper) extractFromQuery(parts []string) (interface{}, error) {
