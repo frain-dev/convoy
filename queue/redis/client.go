@@ -39,6 +39,8 @@ func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName,
 
 	_, err := q.inspector.GetTaskInfo(queue, job.ID)
 	if err != nil {
+		// The task does not exist, and we can proceed to
+		// enqueuing it
 		taskNotFound := fmt.Errorf("asynq: %w", asynq.ErrTaskNotFound)
 		if taskNotFound.Error() == err.Error() {
 			_, err := q.client.Enqueue(t, asynq.Retention(24*time.Hour))
@@ -48,6 +50,8 @@ func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName,
 		return err
 	}
 
+	// The task does exist, we need to delete before
+	// enqueuing
 	err = q.inspector.DeleteTask(queue, job.ID)
 	if err != nil {
 		return err

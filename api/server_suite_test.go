@@ -81,9 +81,13 @@ func getQueueOptions() (queue.QueueOptions, error) {
 		return opts, err
 	}
 	queueNames := map[string]int{
-		string(convoy.SearchIndexQueue): 6,
-		string(convoy.EventQueue):       2,
-		string(convoy.CreateEventQueue): 2,
+		string(convoy.EventQueue):       3,
+		string(convoy.CreateEventQueue): 3,
+		string(convoy.SearchIndexQueue): 1,
+		string(convoy.ScheduleQueue):    1,
+		string(convoy.DefaultQueue):     1,
+		string(convoy.StreamQueue):      1,
+		string(convoy.MetaEventQueue):   1,
 	}
 	opts = queue.QueueOptions{
 		Names:        queueNames,
