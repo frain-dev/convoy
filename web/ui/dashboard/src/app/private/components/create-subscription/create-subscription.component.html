@@ -3,13 +3,13 @@
 
 	<div convoy-card class="px-24px pt-24px relative" [ngClass]="{ 'mb-70px': action !== 'view' }">
 		<ng-container *ngIf="isPortal !== 'true'">
-			<convoy-input-field>
+			<convoy-input-field className="mb-40px">
 				<label for="subscription-name" required="true" convoy-label>Subscription name</label>
 				<input type="text" id="subscription-name" convoy-input autocomplete="subscription-name" formControlName="name" placeholder="e.g paystack-live" />
 				<convoy-input-error *ngIf="subscriptionForm.get('name')?.touched && subscriptionForm.get('name')?.invalid">Enter new subscription name</convoy-input-error>
 			</convoy-input-field>
 
-			<hr class="border-t border-grey-20 mb-24px" />
+			<hr class="border-t border-new.primary-25 mb-40px" />
 		</ng-container>
 
 		<ng-container *ngIf="showConfig('events')">

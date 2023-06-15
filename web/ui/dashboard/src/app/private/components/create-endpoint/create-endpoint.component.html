@@ -7,7 +7,7 @@
 				<convoy-input-error *ngIf="addNewEndpointForm.get('name')?.touched && addNewEndpointForm.get('name')?.invalid">Please provide a name</convoy-input-error>
 			</convoy-input-field>
 
-			<div class="grid gap-24px" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
+			<div class="grid gap-24px mb-16px" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
 				<convoy-input-field>
 					<label for="url" convoy-label required="true">Enter URL</label>
 					<input type="url" id="url" convoy-input autocomplete="url" formControlName="url" placeholder="Enter endpoint URL here" />
@@ -29,7 +29,7 @@
 				</convoy-input-field>
 			</div>
 
-			<hr class="border-grey-10 mb-24px" />
+			<hr class="border-new.primary-25 mb-40px" />
 
 			<ng-container *ngIf="showConfig('alert-config')">
 				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
