@@ -163,7 +163,7 @@
 		</div>
 
 		<convoy-create-endpoint *ngIf="showCreateEndpointForm" (onAction)="$event.action === 'close' ? (showCreateEndpointForm = false) : onCreateEndpoint($event.data)">
-			<button convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="mt-30px text-14 font-medium" (click)="showCreateEndpointForm = false; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">Use Existing Endpoint</button>
+			<button convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="mt-40px text-14 font-medium" (click)="showCreateEndpointForm = false; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">Use Existing Endpoint</button>
 		</convoy-create-endpoint>
 	</ng-container>
 
