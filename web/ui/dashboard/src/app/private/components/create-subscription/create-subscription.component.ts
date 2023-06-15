@@ -243,6 +243,7 @@ export class CreateSubscriptionComponent implements OnInit {
 					this.eventTags.push(addTagInputValue?.value);
 					addTagInputValue.value = '';
 					this.eventTags = this.eventTags.filter(e => String(e).trim());
+					this.subscriptionForm.patchValue({ filter_config: { event_types: this.eventTags } });
 				}
 				e.preventDefault();
 			}
