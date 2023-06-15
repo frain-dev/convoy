@@ -12,6 +12,11 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+var (
+	ErrTaskNotFound  = fmt.Errorf("asynq: %w", asynq.ErrTaskNotFound)
+	ErrQueueNotFound = fmt.Errorf("asynq: %w", asynq.ErrQueueNotFound)
+)
+
 type RedisQueue struct {
 	opts      queue.QueueOptions
 	client    *asynq.Client
@@ -39,10 +44,10 @@ func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName,
 
 	_, err := q.inspector.GetTaskInfo(queue, job.ID)
 	if err != nil {
-		// The task does not exist, and we can proceed to
-		// enqueuing it
-		taskNotFound := fmt.Errorf("asynq: %w", asynq.ErrTaskNotFound)
-		if taskNotFound.Error() == err.Error() {
+		// If the task or queue does not yet exist, we can proceed
+		// to enqueuing the task
+		message := err.Error()
+		if ErrQueueNotFound.Error() == message || ErrTaskNotFound.Error() == message {
 			_, err := q.client.Enqueue(t, asynq.Retention(24*time.Hour))
 			return err
 		}
@@ -50,8 +55,8 @@ func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName,
 		return err
 	}
 
-	// The task does exist, we need to delete before
-	// enqueuing
+	// At this point, the task is already on the queue based on its ID.
+	// We need to delete before enqueuing
 	err = q.inspector.DeleteTask(queue, job.ID)
 	if err != nil {
 		return err
