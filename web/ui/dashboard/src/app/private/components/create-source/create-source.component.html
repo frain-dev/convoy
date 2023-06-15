@@ -113,7 +113,7 @@
 
 			<hr class="border-t border-grey-20 my-24px" />
 
-			<ng-container *ngIf="showConfig('custom_response')">
+			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px"  *ngIf="showConfig('custom_response')">
 				<div class="flex justify-between items-center mb-16px">
 					<h4 class="text-12 text-new.gray-500 font-medium">Custom response</h4>
 					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="sourceForm.patchValue({ custom_response: { content_type: '', body: '' } }); toggleConfigForm('custom_response')">
@@ -133,7 +133,7 @@
 					<label convoy-label>Response Content</label>
 					<textarea formControlName="body" class="min-h-[20vh]" convoy-input name="body" id="body"></textarea>
 				</div>
-			</ng-container>
+			</div>
 
 			<div class="flex flex-wrap items-center">
 				<ng-container *ngFor="let config of configurations">

@@ -13,7 +13,7 @@
 		</ng-container>
 
 		<ng-container *ngIf="showConfig('events')">
-			<div *ngIf="projectType === 'outgoing' || token" class="mb-30px">
+			<div *ngIf="projectType === 'outgoing' || token" class="border-l-2 border-new.primary-25 pl-16px mb-40px">
 				<div class="flex justify-between items-end mb-8px">
 					<p class="text-12 font-medium text-new.gray-500 flex items-center">
 						Event Types
@@ -29,18 +29,22 @@
 					</button>
 				</div>
 
-				<div (click)="focusInput()" class="w-full font-medium text-14 text-grey-100 border border-primary-500 outline-none rounded-4px bg-[#F7F9FC] pt-12px pb-8px px-12px mt-8px relative flex flex-row flex-wrap items-center">
-					<div *ngFor="let tag of eventTags" class="border border-grey-10 bg-grey-10 px-4px font-medium text-12 mr-1 mb-1 rounded-4px flex items-center">
+				<div (click)="focusInput()" class="w-full font-medium text-14 text-new.gray-800 border border-new.primary-25 outline-none rounded-4px bg-white-100 pt-12px pb-8px px-12px mt-8px relative flex flex-row flex-wrap items-center">
+					<div *ngFor="let tag of eventTags" class="border border-new.gray-200 py-4px px-8px font-medium text-12 text-new.gray-400 mr-1 mb-1 rounded-22px flex items-center">
 						{{ tag === '*' ? 'All Events' : tag }}
-						<button convoy-button *ngIf="action !== 'view'" (click)="removeEventTag(tag)" fill="text" type="button" class="py-0 px-0"><img src="/assets/img/close-icon-black.svg" width="12px" class="ml-4px" alt="close icon" /></button>
+						<button convoy-button *ngIf="action !== 'view'" (click)="removeEventTag(tag)" fill="text" type="button" class="py-0 px-0 ml-4px">
+                            <svg width="14" height="14" class="fill-grey-40">
+                                <use xlink:href="#close-icon-2"></use>
+                            </svg>
+                        </button>
 					</div>
-					<input type="text" id="tagInput" (input)="addTag()" required class="text-12 bg-[#F7F9FC] focus:outline-none focus:border-none" [readonly]="action === 'view'" autocomplete="off" />
+					<input type="text" id="tagInput" (input)="addTag()" required class="text-12 bg-transparent focus:outline-none focus:border-none" [readonly]="action === 'view'" autocomplete="off" />
 				</div>
 				<span class="text-new.gray-400 font-normal italic text-10 mb-24px">Separate event types with comma (,) or space</span>
 			</div>
 		</ng-container>
 
-		<ng-container *ngIf="showConfig('retry_config')">
+		<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('retry_config')">
 			<div class="flex justify-between items-center mb-16px">
 				<p class="text-12 text-new.gray-500 font-medium flex items-center">
 					Retry Logic
@@ -56,7 +60,7 @@
 				</button>
 			</div>
 
-			<div class="grid grid-cols-2 gap-x-6 mb-6px" formGroupName="retry_config">
+			<div class="grid grid-cols-2 gap-x-6" formGroupName="retry_config">
 				<convoy-input-field>
 					<convoy-select
 						[options]="retryLogicTypes"
@@ -79,16 +83,16 @@
 					<convoy-input-error *ngIf="subscriptionForm.get('retry_config.duration')?.touched && subscriptionForm.get('retry_config.duration')?.invalid">Enter wait duration before retry</convoy-input-error>
 				</convoy-input-field>
 
-				<convoy-input-field>
+				<convoy-input-field className="!mb-0">
 					<label for="retry-logic-count" convoy-label>Limit</label>
 					<input type="number" id="retry-logic-count" convoy-input autocomplete="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" [readonly]="action === 'view'" [ngClass]="{ 'pointer-events-none': action === 'view' }" />
 					<convoy-input-error *ngIf="subscriptionForm.get('retry_config.retry_count')?.touched && subscriptionForm.get('retry_config.retry_count')?.invalid">Enter max retry limit</convoy-input-error>
 				</convoy-input-field>
 			</div>
-		</ng-container>
+		</div>
 
 		<ng-container *ngIf="showConfig('filter_config')">
-			<div class="flex justify-between items-center mb-30px">
+			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px flex justify-between items-center">
 				<h4 class="text-new.gray-500 font-medium text-14">Events Filter</h4>
 				<div class="flex items-center">
 					<button convoy-button fill="outline" color="grey" class="text-new.gray-500 border-new.gray-200" size="xs" type="button" (click)="setupFilter()">Open Editor</button>
@@ -103,8 +107,6 @@
 				</div>
 			</div>
 		</ng-container>
-
-		<hr class="border-t border-grey-20 mb-24px -mt-6px" *ngIf="shouldShowBorder !== 0 && shouldShowBorder < configurations.length" />
 
 		<div class="flex flex-wrap items-center mb-24px" *ngIf="shouldShowBorder < configurations.length">
 			<ng-container *ngFor="let config of configurations">

@@ -32,7 +32,7 @@
 			<hr class="border-grey-10 mb-24px" />
 
 			<ng-container *ngIf="showConfig('alert-config')">
-				<div class="mb-6px">
+				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
 					<div class="flex justify-between items-center mb-16px">
 						<p class="text-12 text-new.gray-500 font-medium flex items-center">Alert Configuration</p>
 						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('alert-config')">
@@ -42,12 +42,12 @@
 						</button>
 					</div>
 					<div class="grid grid-cols-2 gap-24px">
-						<convoy-input-field>
+						<convoy-input-field className="mb-0">
 							<label for="support-email" convoy-label tooltip="We use this to send an email notifcation for when a failure happens">Support Email</label>
 							<input id="support-email" convoy-input autocomplete="suport-email" formControlName="support_email" placeholder="Enter support email" />
 						</convoy-input-field>
 
-						<convoy-input-field>
+						<convoy-input-field className="mb-0">
 							<label for="slack-url" convoy-label tooltip="We use this to send notifications to your slack channel when a failure happens">Slack webhook url</label>
 							<input id="slack-url" convoy-input autocomplete="slack-url" formControlName="slack_webhook_url" placeholder="Enter slack webhook URL" />
 						</convoy-input-field>
@@ -56,7 +56,7 @@
 			</ng-container>
 
 			<ng-container *ngIf="showConfig('auth')">
-				<div class="mb-6px">
+				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
 					<div class="flex justify-between items-center mb-16px">
 						<p class="flex items-center text-12 font-medium text-new.gray-500">
 							Endpoint Authentication
@@ -84,10 +84,10 @@
 			</ng-container>
 
 			<ng-container *ngIf="showConfig('signature')">
-				<div class="mb-6px">
+				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
 					<div class="flex justify-between items-center mb-16px">
 						<p class="text-12 font-medium text-new.gray-500 flex items-center">
-							Signature Details
+							Signature Format
 							<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your signature format for your project.</convoy-tooltip>
 						</p>
 						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
@@ -104,7 +104,7 @@
 			</ng-container>
 
 			<ng-container *ngIf="showConfig('http_timeout')">
-				<div class="mb-6px">
+				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
 					<div class="flex justify-between items-center mb-16px">
 						<p class="flex items-center text-12 font-medium text-new.gray-500">
 							Endpoint Timeout
@@ -126,8 +126,6 @@
 					</convoy-input-field>
 				</div>
 			</ng-container>
-
-			<hr class="border-t border-grey-20 mt-6px mb-24px" *ngIf="shouldShowBorder !== 0 && shouldShowBorder < configurations.length" />
 
 			<div class="flex items-center" *ngIf="shouldShowBorder < configurations.length">
 				<ng-container *ngFor="let config of configurations; let i = index">
