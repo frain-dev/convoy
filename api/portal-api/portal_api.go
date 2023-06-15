@@ -44,6 +44,7 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 	})
 
 	router.Route("/events", func(eventRouter chi.Router) {
+		eventRouter.Post("/", a.CreateEndpointEvent)
 		eventRouter.With(middleware.Pagination).Get("/", a.GetEventsPaged)
 		eventRouter.Post("/batchreplay", a.BatchReplayEvents)
 		eventRouter.Get("/countbatchreplayevents", a.CountAffectedEvents)
@@ -184,6 +185,8 @@ func canManageEndpoint(a *PortalLinkHandler) func(next http.Handler) http.Handle
 				_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 				return
 			}
+
+			next.ServeHTTP(w, r)
 		})
 	}
 }
