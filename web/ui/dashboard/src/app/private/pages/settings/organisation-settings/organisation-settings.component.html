@@ -11,8 +11,8 @@
 		<convoy-input-error *ngIf="editOrganisationForm.get('name')?.touched && editOrganisationForm.get('name')?.invalid">Please enter a name for your organisation</convoy-input-error>
 	</convoy-input-field>
 	<label convoy-label>Organisation Id</label>
-	<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px">
-		<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ organisationId }}</span>
+	<div class="flex items-center justify-between w-full h-50px bg-white-100 border border-new.primary-25 rounded-[6px] px-16px">
+		<span class="text-16 text-new.gray-600 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ organisationId }}</span>
 		<convoy-copy-button [text]="organisationId" notificationText="Organisation ID has been copied to your clipboard"></convoy-copy-button>
 	</div>
 </form>
