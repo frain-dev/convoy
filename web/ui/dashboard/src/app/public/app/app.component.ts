@@ -8,6 +8,11 @@ import { AppService } from './app.service';
 import { EndpointDetailsService } from 'src/app/private/pages/project/endpoint-details/endpoint-details.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ENDPOINT, PORTAL_LINK } from 'src/app/models/endpoint.model';
+import { PrivateService } from 'src/app/private/private.service';
+
+interface PORTAL_ENDPOINT extends ENDPOINT {
+	subscription?: SUBSCRIPTION;
+}
 
 @Component({
 	selector: 'app-app',
@@ -17,20 +22,20 @@ import { ENDPOINT, PORTAL_LINK } from 'src/app/models/endpoint.model';
 export class AppComponent implements OnInit {
 	@ViewChild('subscriptionDropdown') dropdownComponent!: DropdownComponent;
 	token: string = this.route.snapshot.queryParams.token;
-	subscriptions!: { content: SUBSCRIPTION[]; pagination: PAGINATION };
 	eventDeliveries!: { content: EVENT_DELIVERY[]; pagination: PAGINATION };
-	activeSubscription?: SUBSCRIPTION;
+	activeEndpoint?: PORTAL_ENDPOINT;
 	eventDeliveryFilteredByEventId!: string;
 	isloadingSubscriptions = false;
 	showEndpointSecret: boolean = false;
 	showCreateEndpoint = false;
 	isTogglingEndpoint = false;
 	portalDetails!: PORTAL_LINK;
+	endpoints: PORTAL_ENDPOINT[] = [];
 
-	constructor(private appService: AppService, private route: ActivatedRoute, private endpointDetailsService: EndpointDetailsService, private generalService: GeneralService) {}
+	constructor(private appService: AppService, private route: ActivatedRoute, private endpointDetailsService: EndpointDetailsService, private generalService: GeneralService, private privateService: PrivateService) {}
 
 	ngOnInit(): void {
-		Promise.all([this.getSubscripions(), this.getPortalDetails()]);
+		Promise.all([this.getPortalDetails(), this.getEndpoints()]);
 	}
 
 	async getPortalDetails() {
@@ -40,11 +45,17 @@ export class AppComponent implements OnInit {
 		} catch (_error) {}
 	}
 
-	async getSubscripions() {
+	async getEndpoints() {
 		this.isloadingSubscriptions = true;
 		try {
-			const subscriptions = await this.appService.getSubscriptions();
-			this.subscriptions = subscriptions.data;
+			const endpoints = await this.privateService.getEndpoints();
+			this.endpoints = endpoints.data;
+			const endpointIds = this.endpoints.map(endpoint => endpoint.uid);
+
+			const subscriptions = await this.privateService.getSubscriptions({ endpointId: endpointIds });
+			this.endpoints = this.endpoints.map(endpoint => {
+				return { ...endpoint, subscription: subscriptions.data.content.find((subscription: SUBSCRIPTION) => subscription.endpoint_metadata?.uid === endpoint.uid) };
+			});
 			this.isloadingSubscriptions = false;
 		} catch (_error) {
 			this.isloadingSubscriptions = false;
@@ -82,7 +93,7 @@ export class AppComponent implements OnInit {
 
 		try {
 			const response = await this.endpointDetailsService.toggleEndpoint(endpointDetails?.uid);
-			this.subscriptions.content[subscriptionIndex].endpoint_metadata = response.data;
+			this.endpoints[subscriptionIndex] = { ...this.endpoints[subscriptionIndex], ...response.data };
 			this.generalService.showNotification({ message: `${endpointDetails?.title} status updated successfully`, style: 'success' });
 			this.isTogglingEndpoint = false;
 		} catch {

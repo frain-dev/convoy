@@ -10,7 +10,7 @@
 		</div>
 
 		<ul convoy-card class="p-12px mb-40px">
-			<ng-container *ngIf="isloadingSubscriptions && !subscriptions?.content?.length">
+			<ng-container *ngIf="isloadingSubscriptions && !endpoints?.length">
 				<li class="flex justify-between p-16px">
 					<div class="flex max-w-[790px] justify-between w-full">
 						<div class="bg-grey-10 rounded-8px animate-pulse w-150px h-20px"></div>
@@ -37,17 +37,17 @@
 				</li>
 			</ng-container>
 
-			<li class="@container/endpoint flex justify-between p-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px mb-12px last-of-type:mb-0" *ngFor="let subscription of subscriptions?.content; let i = index">
+			<li class="@container/endpoint flex justify-between p-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px mb-12px last-of-type:mb-0 relative focus-within:z-10" *ngFor="let endpoint of endpoints; let i = index">
 				<div class="flex text-14 text-new.gray-600 max-w-[790px] w-full gap-24px items-center min-h-[28px]">
 					<div class="flex items-center max-w-[150px] w-full">
-						<div class="mr-8px truncate">{{ subscription.endpoint_metadata?.title }}</div>
-						<div convoy-tag size="sm" color="success">{{ subscription.endpoint_metadata?.status }}</div>
+						<div class="mr-8px truncate">{{ endpoint?.title }}</div>
+						<div convoy-tag size="sm" color="success">{{ endpoint?.status }}</div>
 					</div>
-					<div class="max-w-xs whitespace-nowrap text-ellipsis overflow-hidden">{{ subscription.endpoint_metadata?.target_url }}</div>
+					<div class="max-w-xs whitespace-nowrap text-ellipsis overflow-hidden">{{ endpoint?.target_url }}</div>
 					<div class="@[820px]/endpoint:flex hidden whitespace-nowrap">
-						<div convoy-tag [color]="hasFilter(subscription.filter_config.filter) ? 'primary' : 'gray'" class="mr-8px">Filter</div>
-						<div convoy-tag [color]="subscription?.retry_config ? 'primary' : 'gray'" class="mr-8px">Retry Logic</div>
-						<div convoy-tag [color]="subscription.filter_config.event_types.length > 1 || subscription.filter_config.event_types[0] != '*' ? 'primary' : 'gray'" color="primary">Event Types</div>
+						<div convoy-tag *ngIf="endpoint.subscription" [color]="hasFilter(endpoint.subscription.filter_config.filter) ? 'primary' : 'gray'" class="mr-8px">Filter</div>
+						<div convoy-tag *ngIf="endpoint.subscription" [color]="endpoint.subscription.retry_config ? 'primary' : 'gray'" class="mr-8px">Retry Logic</div>
+						<div convoy-tag *ngIf="endpoint.subscription" [color]="endpoint.subscription.filter_config.event_types.length > 1 || endpoint.subscription.filter_config.event_types[0] != '*' ? 'primary' : 'gray'" color="primary">Event Types</div>
 					</div>
 				</div>
 
@@ -59,7 +59,15 @@
 
 						<ul dropdownOptions class="p-10px">
 							<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px" *ngIf="portalDetails?.can_manage_endpoint">
-								<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start px-8px py-4px" color="grey" (click)="showEndpointSecret = true; activeSubscription = subscription">
+								<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start px-8px py-4px" color="grey" (click)="activeEndpoint = endpoint; showCreateEndpoint = true">
+									<svg width="16" height="16" class="mr-8px">
+										<use xlink:href="#edit-icon"></use>
+									</svg>
+									Edit
+								</button>
+							</li>
+							<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px" *ngIf="portalDetails?.can_manage_endpoint">
+								<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start px-8px py-4px" color="grey" (click)="showEndpointSecret = true; activeEndpoint = endpoint">
 									<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-8px">
 										<path
 											d="M6.99344 1.48703L3.66677 2.74036C2.9001 3.02703 2.27344 3.9337 2.27344 4.74703V9.70036C2.27344 10.487 2.79344 11.5204 3.42677 11.9937L6.29344 14.1337C7.23344 14.8404 8.7801 14.8404 9.7201 14.1337L12.5868 11.9937C13.2201 11.5204 13.7401 10.487 13.7401 9.70036V4.74703C13.7401 3.92703 13.1134 3.02036 12.3468 2.7337L9.0201 1.48703C8.45344 1.28036 7.54677 1.28036 6.99344 1.48703Z"
@@ -80,7 +88,7 @@
 								</button>
 							</li>
 							<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px">
-								<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start px-8px py-4px" color="grey" (click)="sendTestEvent(subscription.endpoint_metadata?.uid)">
+								<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start px-8px py-4px" color="grey" (click)="sendTestEvent(endpoint?.uid)">
 									<svg width="16" height="17" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-8px">
 										<path d="M7.33317 11.8346L8.6665 10.5013L7.33317 9.16797L8.6665 10.5013H4.6665" fill="#F97066" />
 										<path d="M7.33317 11.8346L8.6665 10.5013L7.33317 9.16797L8.6665 10.5013H4.6665" stroke="#292D32" stroke-linecap="round" stroke-linejoin="round" />
@@ -97,8 +105,8 @@
 								</button>
 							</li>
 							<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px" *ngIf="portalDetails?.can_manage_endpoint">
-								<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start px-8px py-4px" color="grey" (click)="toggleEndpoint(i, subscription.endpoint_metadata)">
-									<svg width="16" height="17" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-8px" *ngIf="subscription.endpoint_metadata?.status === 'active'; else playIcon">
+								<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start px-8px py-4px" color="grey" (click)="toggleEndpoint(i, endpoint)">
+									<svg width="16" height="17" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-8px" *ngIf="endpoint?.status === 'active'; else playIcon">
 										<path d="M7.1 13.24V3.76C7.1 2.86 6.72 2.5 5.76 2.5H3.34C2.38 2.5 2 2.86 2 3.76V13.24C2 14.14 2.38 14.5 3.34 14.5H5.76C6.72 14.5 7.1 14.14 7.1 13.24Z" stroke="#292D32" stroke-linecap="round" stroke-linejoin="round" />
 										<path
 											d="M13.9999 13.24V3.76C13.9999 2.86 13.6199 2.5 12.6599 2.5H10.2399C9.28657 2.5 8.8999 2.86 8.8999 3.76V13.24C8.8999 14.14 9.2799 14.5 10.2399 14.5H12.6599C13.6199 14.5 13.9999 14.14 13.9999 13.24Z"
@@ -119,15 +127,7 @@
 										</svg>
 									</ng-template>
 
-									<div>{{ subscription.endpoint_metadata?.status === 'active' ? 'Paus' : 'Unpaus' }}{{ isTogglingEndpoint ? 'ing endpoint...' : 'e Endpoint' }}</div>
-								</button>
-							</li>
-							<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px" *ngIf="portalDetails?.can_manage_endpoint">
-								<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start px-8px py-4px" color="grey" (click)="activeSubscription = subscription; showCreateEndpoint = true">
-									<svg width="16" height="16" class="mr-8px">
-										<use xlink:href="#edit-icon"></use>
-									</svg>
-									Edit
+									<div>{{ endpoint?.status === 'active' ? 'Paus' : 'Unpaus' }}{{ isTogglingEndpoint ? 'ing endpoint...' : 'e Endpoint' }}</div>
 								</button>
 							</li>
 						</ul>
@@ -136,7 +136,7 @@
 			</li>
 		</ul>
 
-		<convoy-empty-state class="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" description="No subscription to show here" *ngIf="!isloadingSubscriptions && subscriptions?.content?.length === 0"></convoy-empty-state>
+		<convoy-empty-state class="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" description="No subscription to show here" *ngIf="!isloadingSubscriptions && endpoints?.length === 0"></convoy-empty-state>
 
 		<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event"></app-event-deliveries>
 	</div>
@@ -289,9 +289,9 @@
 
 	<div id="convoy-app"></div>
 
-	<convoy-endpoint-secret *ngIf="showEndpointSecret" [endpointDetails]="activeSubscription?.endpoint_metadata" (closeSecretModal)="showEndpointSecret = false" (expireCurrentSecret)="getSubscripions()"></convoy-endpoint-secret>
+	<convoy-endpoint-secret class="z-20 relative" *ngIf="showEndpointSecret" [endpointDetails]="activeEndpoint" (closeSecretModal)="showEndpointSecret = false" (expireCurrentSecret)="getEndpoints()"></convoy-endpoint-secret>
 
-	<div class="fixed top-0 left-0 right-0 bottom-0 bg-[#fafafe]" *ngIf="showCreateEndpoint === true">
-		<convoy-create-portal-endpoint (onAction)="activeSubscription = undefined; getSubscripions(); showCreateEndpoint = false" [subscription]="activeSubscription"></convoy-create-portal-endpoint>
+	<div class="fixed top-0 left-0 right-0 bottom-0 bg-[#fafafe] z-20" *ngIf="showCreateEndpoint === true">
+		<convoy-create-portal-endpoint (onAction)="activeEndpoint = undefined; getEndpoints(); showCreateEndpoint = false" [endpoint]="activeEndpoint"></convoy-create-portal-endpoint>
 	</div>
 </div>
