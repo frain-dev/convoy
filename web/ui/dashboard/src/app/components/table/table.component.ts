@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 @Directive({
 	selector: 'convoy-table, [convoy-table]',
 	standalone: true,
-	host: { class: 'w-full h-fit text-grey-80', id: 'table' }
+	host: { class: 'w-full h-fit text-new.gray-600', id: 'table' }
 })
 export class TableComponent implements OnInit {
 	constructor() {}
@@ -19,7 +19,7 @@ export class TableComponent implements OnInit {
 	imports: [CommonModule],
 	host: { class: 'p-0 ' },
 	template: `
-		<div [class]="forDate ? 'pt-16px pl-16px pb-8px ' : 'pt-12px pb-12px whitespace-nowrap'" class="flex flex-row items-center text-12 text-new.gray-900 font-normal">
+		<div [class]="forDate ? 'pt-16px pl-16px pb-8px text-new.gray-400' : 'pt-12px pb-12px whitespace-nowrap text-new.gray-900'" class="flex flex-row items-center text-12 font-normal">
 			<ng-content></ng-content>
 		</div>
 	`
@@ -37,7 +37,7 @@ export class TableCellComponent implements OnInit {
 	selector: 'convoy-table-head, [convoy-table-head]',
 	standalone: true,
 	imports: [CommonModule],
-	host: { class: 'bg-primary-500' },
+	host: { class: 'bg-new.primary-25' },
 	template: `
 		<tr>
 			<ng-content></ng-content>
@@ -81,6 +81,6 @@ export class TableRowComponent implements OnInit {
 	ngOnInit(): void {}
 
 	get getClassNames() {
-		return `${this.forDate ? 'border-t border-grey-10 ' : 'hover:bg-primary-500 transition-all duration-300'} ${this.active ? 'bg-primary-500' : ''}`;
+		return `${this.forDate ? 'border-t border-new.primary-25 ' : 'hover:bg-new.primary-25 transition-all duration-300'} ${this.active ? 'bg-new.primary-25' : ''}`;
 	}
 }

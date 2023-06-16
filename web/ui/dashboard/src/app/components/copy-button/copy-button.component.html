@@ -1,7 +1,7 @@
 <div [class]="class">
 	<button convoy-button fill="text" type="button" size="sm" (click)="copyText($event)" class="relative">
-		<svg width="14" height="14" [attr.height]="size === 'sm' ? '14' : '16'" [attr.width]="size === 'sm' ? '14' : '16'" [class]="size === 'sm' ? 'fill-grey-40' : 'fill-primary-100'">
-			<use xlink:href="#copy-alt"></use>
+		<svg width="16" height="16" [class]="size === 'sm' ? 'stroke-grey-40' : 'stroke-primary-100'">
+			<use xlink:href="#copy-icon-2"></use>
 		</svg>
 		<ng-content></ng-content>
 	</button>

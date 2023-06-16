@@ -69,10 +69,6 @@ const routes: Routes = [
 				loadComponent: () => import('./endpoints/endpoints.component').then(m => m.EndpointsComponent)
 			},
 			{
-				path: 'endpoints/:id',
-				loadComponent: () => import('./endpoint-details/endpoint-details.component').then(m => m.EndpointDetailsComponent)
-			},
-			{
 				path: 'endpoints/:id/edit',
 				loadComponent: () => import('./endpoints/endpoints.component').then(m => m.EndpointsComponent)
 			},
