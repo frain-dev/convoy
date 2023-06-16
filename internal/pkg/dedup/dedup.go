@@ -47,7 +47,7 @@ func (d *DeDuper) Set(source string, input []string, ttl time.Duration) (string,
 		builder.WriteString(fmt.Sprintf("%v", parts[i]))
 	}
 
-	checksum := calculateChecksum(builder.String())
+	checksum := GenerateChecksum(builder.String())
 
 	key := convoy.IdempotencyCacheKey.Get(checksum).String()
 	err = d.cache.Set(d.ctx, key, true, ttl)
@@ -72,7 +72,7 @@ func (d *DeDuper) Exists(source string, input []string) (bool, error) {
 		builder.WriteString(fmt.Sprintf("%v", parts[i]))
 	}
 
-	checksum := calculateChecksum(builder.String())
+	checksum := GenerateChecksum(builder.String())
 
 	key := convoy.IdempotencyCacheKey.Get(checksum).String()
 	var data bool
@@ -283,8 +283,8 @@ func (d *DeDuper) extractFromBodyURLEncoded(parts []string) (interface{}, error)
 	return d.extractFromFormValue(formData, parts)
 }
 
-// calculateChecksum generates a checksum using SHA256
-func calculateChecksum(s string) string {
+// GenerateChecksum generates a checksum using SHA256
+func GenerateChecksum(s string) string {
 	// Create a new SHA256 hash object
 	sha256Hash := sha256.New()
 

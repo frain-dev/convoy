@@ -5,13 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/dedup"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/dedup"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"

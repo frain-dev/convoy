@@ -146,7 +146,7 @@ func sendUrlRequest(project *datastore.Project, metaEvent *datastore.MetaEvent) 
 	}
 
 	url := project.Config.MetaEvent.URL
-	resp, err := dispatch.SendRequest(url, string(convoy.HttpPost), sig.Payload, "X-Convoy-Signature", header, int64(cfg.MaxResponseSize), httpheader.HTTPHeader{})
+	resp, err := dispatch.SendRequest(url, string(convoy.HttpPost), sig.Payload, "X-Convoy-Signature", header, int64(cfg.MaxResponseSize), httpheader.HTTPHeader{}, metaEvent.UID)
 	if err != nil {
 		return nil, err
 	}
