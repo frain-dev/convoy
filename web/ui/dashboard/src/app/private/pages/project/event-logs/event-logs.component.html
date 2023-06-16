@@ -126,7 +126,7 @@
 							<tr convoy-table-row class="group" *ngFor="let event of eventGroup.content; let index = index" (click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid)" [active]="event.uid === eventsDetailsItem?.uid">
 								<td convoy-table-cell class="w-130px pl-16px pr-30px relative">
 									<convoy-tag color="gray" className="max-w-[140px] overflow-hidden overflow-ellipsis mr-8px">{{ event.uid }}</convoy-tag>
-									<convoy-copy-button notificationText="Event ID has been copied to clipboard" className="absolute translate-x-0 translate-y-[-50%] top-[50] hidden group-hover:block" [text]="event.uid"></convoy-copy-button>
+									<convoy-copy-button size="sm" notificationText="Event ID has been copied to clipboard" className="absolute translate-x-0 translate-y-[-50%] top-[50] hidden group-hover:block" [text]="event.uid"></convoy-copy-button>
 								</td>
 
 								<td convoy-table-cell>
