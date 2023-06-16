@@ -1,5 +1,5 @@
-<div class="bg-[#fafafe]">
-	<div convoy-page>
+<div>
+	<div>
 		<div class="flex justify-between items-center mb-12px">
 			<h2 class="font-medium text-14 text-new.gray-400">Endpoints</h2>
 
@@ -292,6 +292,6 @@
 	<convoy-endpoint-secret class="z-20 relative" *ngIf="showEndpointSecret" [endpointDetails]="activeEndpoint" (closeSecretModal)="showEndpointSecret = false" (expireCurrentSecret)="getEndpoints()"></convoy-endpoint-secret>
 
 	<div class="fixed top-0 left-0 right-0 bottom-0 bg-[#fafafe] z-20" *ngIf="showCreateEndpoint === true">
-		<convoy-create-portal-endpoint (onAction)="activeEndpoint = undefined; getEndpoints(); showCreateEndpoint = false" [endpoint]="activeEndpoint"></convoy-create-portal-endpoint>
+		<convoy-create-portal-endpoint (onAction)="activeEndpoint = undefined; getEndpoints(); showCreateEndpoint = false; this.location.go('/portal?token=' + token)" [endpoint]="activeEndpoint"></convoy-create-portal-endpoint>
 	</div>
 </div>

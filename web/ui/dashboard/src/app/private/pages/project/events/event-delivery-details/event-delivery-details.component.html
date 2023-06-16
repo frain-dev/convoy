@@ -106,7 +106,7 @@
 		</div>
 		<div *ngIf="!eventDelsDetails?.device_id">
 			<p class="text-grey-40 text-12 font-light">ENDPOINT</p>
-			<button convoy-button size="sm" fill="text" class="!text-14 font-medium" (click)="viewEndpoint(eventDelsDetails?.endpoint_metadata?.uid || '')">View Endpoint</button>
+			<button convoy-button size="sm" fill="text" class="!text-14 font-medium" (click)="portalToken ? onViewEndpoint.emit(eventDelsDetails?.endpoint_id) : viewEndpoint(eventDelsDetails?.endpoint_metadata?.uid || '')">View Endpoint</button>
 		</div>
 
 		<div></div>
