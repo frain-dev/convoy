@@ -9,6 +9,7 @@ import { EndpointDetailsService } from 'src/app/private/pages/project/endpoint-d
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ENDPOINT, PORTAL_LINK } from 'src/app/models/endpoint.model';
 import { PrivateService } from 'src/app/private/private.service';
+import { Location } from '@angular/common';
 
 interface PORTAL_ENDPOINT extends ENDPOINT {
 	subscription?: SUBSCRIPTION;
@@ -32,10 +33,13 @@ export class AppComponent implements OnInit {
 	portalDetails!: PORTAL_LINK;
 	endpoints: PORTAL_ENDPOINT[] = [];
 
-	constructor(private appService: AppService, private route: ActivatedRoute, private endpointDetailsService: EndpointDetailsService, private generalService: GeneralService, private privateService: PrivateService) {}
+	constructor(private appService: AppService, private route: ActivatedRoute, private endpointDetailsService: EndpointDetailsService, private generalService: GeneralService, private privateService: PrivateService, public location: Location) {}
 
 	ngOnInit(): void {
-		Promise.all([this.getPortalDetails(), this.getEndpoints()]);
+		Promise.all([this.getPortalDetails(), this.getEndpoints()]).then(() => {
+			this.activeEndpoint = this.endpoints.find(endpoint => endpoint.uid === this.route.snapshot.queryParams.endpointId);
+			this.showCreateEndpoint = !!this.route.snapshot.queryParams.endpointId;
+		});
 	}
 
 	async getPortalDetails() {
