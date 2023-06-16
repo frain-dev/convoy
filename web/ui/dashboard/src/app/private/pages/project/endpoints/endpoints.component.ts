@@ -82,8 +82,8 @@ export class EndpointsComponent implements OnInit {
 		this.getEndpoints();
 	}
 
-	async getEndpoints(requestDetails?: CURSOR & { search?: string }) {
-		this.isLoadingEndpoints = true;
+	async getEndpoints(requestDetails?: CURSOR & { search?: string; showLoader?: boolean }) {
+		if (requestDetails?.showLoader) this.isLoadingEndpoints = true;
 
 		try {
 			const response = await this.privateService.getEndpoints({ ...requestDetails, q: requestDetails?.search || this.endpointSearchString });
@@ -106,10 +106,8 @@ export class EndpointsComponent implements OnInit {
 
 		try {
 			const response = await this.endpointService.deleteEndpoint(this.selectedEndpoint?.uid || '');
-			this.displayedEndpoints?.forEach(item => {
-				item.content.filter(endpoint => endpoint.uid !== this.selectedEndpoint?.uid);
-			});
-			this.displayedEndpoints?.filter(item => item.content.length !== 0);
+			this.getEndpoints({ showLoader: false });
+
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.showDeleteModal = false;
 			this.isDeletingEndpoint = false;
