@@ -10,6 +10,11 @@ import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { CreateEndpointService } from 'src/app/private/components/create-endpoint/create-endpoint.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
+import { ENDPOINT } from 'src/app/models/endpoint.model';
+
+interface PORTAL_ENDPOINT extends ENDPOINT {
+	subscription?: SUBSCRIPTION;
+}
 
 @Component({
 	selector: 'convoy-create-portal-endpoint',
@@ -22,7 +27,7 @@ export class CreatePortalEndpointComponent implements OnInit {
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
 	@ViewChild(CreateSubscriptionComponent) createSubscriptionForm!: CreateSubscriptionComponent;
 	@Output('onAction') onAction = new EventEmitter();
-	@Input('subscription') subscription?: SUBSCRIPTION;
+	@Input('endpoint') endpoint?: PORTAL_ENDPOINT;
 
 	isCreatingEndpoint = false;
 
@@ -60,9 +65,15 @@ export class CreatePortalEndpointComponent implements OnInit {
 		const endpointFormValue = structuredClone(this.createEndpointForm.addNewEndpointForm.value);
 		delete endpointFormValue.authentication;
 
+		const subscriptionData = structuredClone(this.createSubscriptionForm.subscriptionForm.value);
+		const retryDuration = this.createSubscriptionForm.subscriptionForm.get('retry_config.duration')?.value;
+		retryDuration ? (subscriptionData.retry_config.duration = retryDuration + 's') : delete subscriptionData.retry_config;
+
 		try {
-			await this.endpointService.editEndpoint({ endpointId: this.subscription?.endpoint_metadata?.uid || '', body: endpointFormValue });
-			const subscriptionDetails = await this.subscriptionService.updateSubscription({ data: { ...this.createSubscriptionForm.subscriptionForm.value, endpoint_id: this.subscription?.endpoint_metadata?.uid || '' }, id: this.subscription?.uid || '' });
+			await this.endpointService.editEndpoint({ endpointId: this.endpoint?.uid || '', body: endpointFormValue });
+			const subscriptionDetails = this.endpoint?.subscription?.uid
+				? await this.subscriptionService.updateSubscription({ data: { ...subscriptionData, endpoint_id: this.endpoint?.uid || '' }, id: this.endpoint?.subscription?.uid || '' })
+				: await this.subscriptionService.createSubscription({ ...subscriptionData, endpoint_id: this.endpoint?.uid || '', name: `${this.endpoint?.title}'s Subscription` });
 			this.generalService.showNotification({ message: 'Endpint updated successfully', style: 'success' });
 			this.onAction.emit({ action: 'create', data: subscriptionDetails });
 			this.isCreatingEndpoint = false;
