@@ -79,17 +79,29 @@ export class PrivateComponent implements OnInit {
 			const response = await this.privateService.getUserDetails({ userId: this.authDetails()?.uid });
 			const userDetails = response.data;
 			this.isEmailVerified = userDetails?.email_verified;
-		} catch (error) {
-			return error;
-		}
+		} catch (error) {}
 	}
 
 	async selectOrganisation(organisation: ORGANIZATION_DATA) {
+		this.isLoadingOrganisations = true;
 		this.privateService.organisationDetails = organisation;
 		this.userOrganization = organisation;
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		this.showOrgDropdown = false;
-		this.router.navigateByUrl('/projects');
+		this.getProjects();
+	}
+
+	async getProjects() {
+		try {
+			const response = await this.privateService.getProjects({ refresh: true });
+			if (response.data.length > 0) {
+				localStorage.setItem('CONVOY_PROJECT', JSON.stringify(response.data[0]));
+				await this.privateService.getProjectDetails({ projectId: response.data[0].uid, refresh: true });
+				await this.privateService.getProjectStat({ refresh: true });
+				this.router.navigateByUrl(`/projects/${response.data[0].uid}`);
+			} else this.router.navigateByUrl('/projects');
+			this.isLoadingOrganisations = false;
+		} catch (error) {}
 	}
 
 	checkForSelectedOrganisation() {
@@ -113,10 +125,6 @@ export class PrivateComponent implements OnInit {
 		this.privateService.organisationDetails = this.organisations[0];
 		this.userOrganization = this.organisations[0];
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
-	}
-
-	get isProjectDetailsPage() {
-		return this.router.url.includes('/projects/');
 	}
 
 	get showHelpCard() {

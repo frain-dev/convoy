@@ -6,13 +6,8 @@ import { EventsService } from './events.service';
 import { EVENT_DELIVERY } from 'src/app/models/event.model';
 import { CHARTDATA, PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { SOURCE } from 'src/app/models/source.model';
-
-interface LABELS {
-	date: string;
-	index: number;
-}
 
 @Component({
 	selector: 'app-events',
@@ -42,8 +37,20 @@ export class EventsComponent implements OnInit, OnDestroy {
 	labelsDateFormat!: string;
 	isProjectConfigurationComplete = false;
 	isPageLoading = false;
+	reloadSubscription: any;
 
-	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, public router: Router) {}
+	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, public router: Router) {
+		// for reloading this component when the same route is called again
+		this.router.routeReuseStrategy.shouldReuseRoute = function () {
+			return false;
+		};
+
+		this.reloadSubscription = this.router.events.subscribe(event => {
+			if (event instanceof NavigationEnd) {
+				this.router.navigated = false;
+			}
+		});
+	}
 
 	async ngOnInit() {
 		this.isloadingDashboardData = true;
@@ -69,6 +76,7 @@ export class EventsComponent implements OnInit, OnDestroy {
 
 	ngOnDestroy(): void {
 		clearInterval(this.eventDelievryIntervalTime);
+		this.reloadSubscription?.unsubscribe();
 	}
 
 	async getLatestSource() {

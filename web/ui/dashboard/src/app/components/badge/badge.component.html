@@ -1,4 +1,5 @@
 <div class="flex items-center" [class]="class">
 	<div class="w-24px h-24px rounded-[50%] text-[11px] uppercase text-white-100 flex items-center justify-center" [class]="texture === 'light' ? 'bg-secondary' : 'bg-black'">{{ firstletters }}</div>
-	<div class="text-14 ml-8px capitalize text-left text-grey-100">{{ text }}</div>
+	<div *ngIf="showText" class="text-12 ml-8px capitalize text-left">{{ text }}</div>
+	<div class="text-12 ml-8px capitalize text-left empty:hidden"><ng-content></ng-content></div>
 </div>

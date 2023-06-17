@@ -1,7 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 
 @Component({
-	selector: 'convoy-loader',
+	selector: 'convoy-loader, [convoy-loader]',
 	templateUrl: './loader.component.html',
 	styleUrls: ['./loader.component.scss']
 })

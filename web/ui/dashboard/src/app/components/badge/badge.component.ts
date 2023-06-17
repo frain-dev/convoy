@@ -13,6 +13,8 @@ export class BadgeComponent implements OnInit {
 	@Input('texture') texture: 'dark' | 'light' = 'light';
 	@Input('text') text!: string;
 	@Input('className') class!: string;
+	@Input('show-text') showText = true;
+
 	constructor() {}
 
 	ngOnInit(): void {}
@@ -21,7 +23,8 @@ export class BadgeComponent implements OnInit {
 		const firstLetters = this.text
 			.split(' ')
 			.map(word => word[0])
-			.join('');
+			.join('')
+			.slice(0, 2);
 		return firstLetters;
 	}
 }
