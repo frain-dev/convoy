@@ -86,6 +86,7 @@
 					</a>
 				</li>
 			</ul>
+
 			<ul *ngIf="projectDetails" class="pb-40px pt-16px">
 				<li [class]="shouldShowFullSideBar ? 'w-182px' : 'w-66px'" *ngFor="let nav of secondarySideBarItems" class="transition-all duration-200">
 					<a [routerLink]="'.' + nav.route" routerLinkActive="!text-new.primary-400 !border-l-new.primary-400" #route="routerLinkActive" class="border-l-2 border-l-transparent flex items-center text-new.gray-600 pl-6 mt-24px transition-all duration-200 font-medium">
@@ -186,3 +187,4 @@
 </div>
 
 <div class="fixed h-screen w-screen top-0 right-0 bottom-0 z-[5]" *ngIf="showHelpDropdown" (click)="$event.stopPropagation(); showHelpDropdown = false"></div>
+<convoy-loader [isTransparent]="false" *ngIf="isLoadingProjectDetails"></convoy-loader>
