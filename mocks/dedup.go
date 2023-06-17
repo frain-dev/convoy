@@ -6,7 +6,6 @@ package mocks
 
 import (
 	reflect "reflect"
-	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 )
@@ -34,31 +33,32 @@ func (m *MockIdempotency) EXPECT() *MockIdempotencyMockRecorder {
 	return m.recorder
 }
 
-// Get mocks base method.
-func (m *MockIdempotency) Get(source string, input []string) (bool, error) {
+// Exists mocks base method.
+func (m *MockIdempotency) Exists(arg0, arg1 string, arg2 []string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", source, input)
+	ret := m.ctrl.Call(m, "Exists", arg0, arg1, arg2)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Get indicates an expected call of Get.
-func (mr *MockIdempotencyMockRecorder) Get(source, input interface{}) *gomock.Call {
+// Exists indicates an expected call of Exists.
+func (mr *MockIdempotencyMockRecorder) Exists(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockIdempotency)(nil).Get), source, input)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockIdempotency)(nil).Exists), arg0, arg1, arg2)
 }
 
-// Set mocks base method.
-func (m *MockIdempotency) Set(source string, input []string, ttl time.Duration) error {
+// GenerateChecksum mocks base method.
+func (m *MockIdempotency) GenerateChecksum(arg0 string, arg1 []string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Set", source, input, ttl)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "GenerateChecksum", arg0, arg1)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// Set indicates an expected call of Set.
-func (mr *MockIdempotencyMockRecorder) Set(source, input, ttl interface{}) *gomock.Call {
+// GenerateChecksum indicates an expected call of GenerateChecksum.
+func (mr *MockIdempotencyMockRecorder) GenerateChecksum(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockIdempotency)(nil).Set), source, input, ttl)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateChecksum", reflect.TypeOf((*MockIdempotency)(nil).GenerateChecksum), arg0, arg1)
 }

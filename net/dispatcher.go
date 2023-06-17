@@ -51,9 +51,11 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 	}
 
 	req.Header.Set(signatureHeader, hmac)
-	req.Header.Set("X-Convoy-Idempotency-Key", idempotencyKey)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("User-Agent", defaultUserAgent())
+	if len(idempotencyKey) > 0 {
+		req.Header.Set("X-Convoy-Idempotency-Key", idempotencyKey)
+	}
 
 	header := httpheader.HTTPHeader(req.Header)
 	header.MergeHeaders(headers)

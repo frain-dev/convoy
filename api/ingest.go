@@ -113,8 +113,8 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 	var checksum string
 	if len(source.IdempotencyKeys) > 0 {
-		duper := dedup.NewDeDuper(r.Context(), a.A.Cache, r)
-		exists, err := duper.Exists(source.Name, source.IdempotencyKeys)
+		duper := dedup.NewDeDuper(r.Context(), r, postgres.NewEventRepo(a.A.DB))
+		exists, err := duper.Exists(source.Name, source.ProjectID, source.IdempotencyKeys)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
@@ -125,13 +125,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		dur, err := time.ParseDuration(source.IdempotencyTTL)
-		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-			return
-		}
-
-		checksum, err = duper.Set(source.Name, source.IdempotencyKeys, dur)
+		checksum, err = duper.GenerateChecksum(source.Name, source.IdempotencyKeys)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
@@ -157,21 +151,21 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	// generate the event's idempotency key checksum if it's not set on the source
-	if len(checksum) == 0 {
-		var builder strings.Builder
-		builder.WriteString("body:")
-		builder.Write(payload)
-		builder.WriteString("\n")
-		builder.WriteString("query:")
-		builder.WriteString(r.URL.RawQuery)
-		builder.WriteString("\n")
-		builder.WriteString("headers:")
-		builder.WriteString(stringifyRequestHeaders(r))
-
-		checksum = dedup.GenerateChecksum(builder.String())
-		println("builder: ", builder.String())
-		println("checksum: ", checksum)
-	}
+	//if len(checksum) == 0 {
+	//	var builder strings.Builder
+	//	builder.WriteString("body:")
+	//	builder.Write(payload)
+	//	builder.WriteString("\n")
+	//	builder.WriteString("query:")
+	//	builder.WriteString(r.URL.RawQuery)
+	//	builder.WriteString("\n")
+	//	builder.WriteString("headers:")
+	//	builder.WriteString(stringifyRequestHeaders(r))
+	//
+	//	checksum = dedup.GenerateChecksum(builder.String())
+	//	println("builder: ", builder.String())
+	//	println("checksum: ", checksum)
+	//}
 
 	// 3.2 On success
 	// Attach Source to Event.

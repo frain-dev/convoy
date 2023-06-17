@@ -1,7 +1,6 @@
 -- +migrate Up
 ALTER TABLE convoy.sources
-    ADD COLUMN IF NOT EXISTS idempotency_keys TEXT[],
-    ADD COLUMN IF NOT EXISTS idempotency_ttl TEXT;
+    ADD COLUMN IF NOT EXISTS idempotency_keys TEXT[];
 
 -- +migrate Up
 ALTER TABLE convoy.event_deliveries
@@ -10,11 +9,13 @@ ALTER TABLE convoy.event_deliveries
 -- +migrate Up
 ALTER TABLE convoy.events
     ADD COLUMN IF NOT EXISTS idempotency_key TEXT;
+
+-- +migrate Up
+CREATE INDEX IF NOT EXISTS idx_idempotency_key_key ON convoy.events (idempotency_key);
 
 -- +migrate Down
 ALTER TABLE convoy.sources
-    DROP COLUMN IF EXISTS idempotency_keys,
-    DROP COLUMN IF EXISTS idempotency_ttl;
+    DROP COLUMN IF EXISTS idempotency_keys;
 
 -- +migrate Down
 ALTER TABLE convoy.events
@@ -23,3 +24,6 @@ ALTER TABLE convoy.events
 -- +migrate Down
 ALTER TABLE convoy.event_deliveries
     DROP COLUMN IF EXISTS idempotency_key;
+
+-- +migrate Down
+DROP INDEX IF EXISTS convoy.idx_idempotency_key_key;

@@ -6,35 +6,32 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/tidwall/gjson"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type Idempotency interface {
-	Set(source string, input []string, ttl time.Duration) error
-	Exists(source string, input []string) (bool, error)
+	GenerateChecksum(string, []string) (string, error)
+	Exists(string, string, []string) (bool, error)
 }
 
 type DeDuper struct {
-	ctx     context.Context
-	cache   cache.Cache
-	request *http.Request
+	ctx       context.Context
+	request   *http.Request
+	eventRepo datastore.EventRepository
 }
 
-func NewDeDuper(ctx context.Context, cache cache.Cache, request *http.Request) *DeDuper {
-	return &DeDuper{ctx, cache, request}
+func NewDeDuper(ctx context.Context, request *http.Request, eventRepo datastore.EventRepository) *DeDuper {
+	return &DeDuper{ctx, request, eventRepo}
 }
 
-// Set generates a checksum using the provided request input fields, creates a checksum
-// and writes it to redis with a ttl.
-func (d *DeDuper) Set(source string, input []string, ttl time.Duration) (string, error) {
+// GenerateChecksum generates a checksum using the provided request input fields
+func (d *DeDuper) GenerateChecksum(source string, input []string) (string, error) {
 	parts, err := d.extractDataFromRequest(input)
 	if err != nil {
 		return "", err
@@ -49,16 +46,10 @@ func (d *DeDuper) Set(source string, input []string, ttl time.Duration) (string,
 
 	checksum := GenerateChecksum(builder.String())
 
-	key := convoy.IdempotencyCacheKey.Get(checksum).String()
-	err = d.cache.Set(d.ctx, key, true, ttl)
-	if err != nil {
-		return "", err
-	}
-
 	return checksum, nil
 }
 
-func (d *DeDuper) Exists(source string, input []string) (bool, error) {
+func (d *DeDuper) Exists(source, projectId string, input []string) (bool, error) {
 	// extract data from the request
 	parts, err := d.extractDataFromRequest(input)
 	if err != nil {
@@ -73,16 +64,12 @@ func (d *DeDuper) Exists(source string, input []string) (bool, error) {
 	}
 
 	checksum := GenerateChecksum(builder.String())
-
-	key := convoy.IdempotencyCacheKey.Get(checksum).String()
-	var data bool
-
-	err = d.cache.Get(d.ctx, key, &data)
+	event, err := d.eventRepo.FindEventByIdempotencyKey(d.ctx, projectId, checksum)
 	if err != nil {
 		return false, err
 	}
 
-	return data, nil
+	return event != nil, nil
 }
 
 func (d *DeDuper) extractDataFromRequest(input []string) ([]interface{}, error) {

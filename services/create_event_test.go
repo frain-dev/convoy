@@ -19,6 +19,7 @@ import (
 func provideCreateEventService(ctrl *gomock.Controller, event *models.CreateEvent, project *datastore.Project) *CreateEventService {
 	return &CreateEventService{
 		EndpointRepo: mocks.NewMockEndpointRepository(ctrl),
+		EventRepo:    mocks.NewMockEventRepository(ctrl),
 		Queue:        mocks.NewMockQueuer(ctrl),
 		NewMessage:   event,
 		Project:      project,

@@ -34,6 +34,10 @@ const (
 	FROM convoy.events WHERE id = $1 AND project_id = $2 AND deleted_at is NULL;
 	`
 
+	fetchEventByIdempotencyKey = `
+	SELECT id FROM convoy.events WHERE idempotency_key = $1 AND project_id = $2 AND deleted_at is NULL;
+	`
+
 	fetchEventsByIds = `
 	SELECT ev.id, ev.project_id, ev.id as event_type,
 	COALESCE(ev.source_id, '') AS source_id,
@@ -152,7 +156,8 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		event.Data,
 		event.URLQueryParams,
 		event.IdempotencyKey,
-		event.CreatedAt, event.UpdatedAt,
+		event.CreatedAt,
+		event.UpdatedAt,
 	)
 	if err != nil {
 		return err
@@ -211,6 +216,18 @@ func (e *eventRepo) FindEventsByIDs(ctx context.Context, projectID string, ids [
 	}
 
 	return events, nil
+}
+
+func (e *eventRepo) FindEventByIdempotencyKey(ctx context.Context, projectID string, id string) (*datastore.Event, error) {
+	event := &datastore.Event{}
+	err := e.db.QueryRowxContext(ctx, fetchEventByIdempotencyKey, id, projectID).StructScan(event)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return event, nil
 }
 
 func (e *eventRepo) CountProjectMessages(ctx context.Context, projectID string) (int64, error) {
