@@ -7,7 +7,6 @@ import { HttpService } from 'src/app/services/http/http.service';
 })
 export class CreateSubscriptionService {
 	constructor(private http: HttpService) {}
-	subscriptionData: any;
 
 	createSubscription(requestDetails: any): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
