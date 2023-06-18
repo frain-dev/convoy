@@ -113,7 +113,7 @@
 
 			<hr class="border-t border-new.primary-25 my-40px" />
 
-			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px"  *ngIf="showConfig('custom_response')">
+			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('custom_response')">
 				<div class="flex justify-between items-center mb-16px">
 					<h4 class="text-12 text-new.gray-500 font-medium">Custom response</h4>
 					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="sourceForm.patchValue({ custom_response: { content_type: '', body: '' } }); toggleConfigForm('custom_response')">
@@ -130,8 +130,11 @@
 						<convoy-input-error *ngIf="sourceForm.get('custom_response.content_type')?.touched && sourceForm.get('custom_response.content_type')?.invalid">Enter content type</convoy-input-error>
 					</convoy-input-field>
 
-					<label convoy-label>Response Content</label>
-					<textarea formControlName="body" class="min-h-[20vh]" convoy-input name="body" id="body"></textarea>
+					<convoy-input-field>
+						<label convoy-label>Response Content</label>
+						<textarea formControlName="body" class="min-h-[20vh]" convoy-input name="body" id="body"></textarea>
+						<convoy-input-error *ngIf="sourceForm.get('custom_response.body')?.touched && sourceForm.get('custom_response.body')?.invalid">Enter reponse content</convoy-input-error>
+					</convoy-input-field>
 				</div>
 			</div>
 

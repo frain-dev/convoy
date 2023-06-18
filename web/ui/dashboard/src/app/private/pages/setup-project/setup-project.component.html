@@ -20,12 +20,12 @@
 		</ng-container>
 
 		<div [class]="projectType === 'incoming' ? 'order-4' : 'order-10'" *ngIf="projectType === 'incoming' || connectPubSub">
-			<convoy-create-source></convoy-create-source>
+			<convoy-create-source (onAction)="$event?.action === 'close' ? false : onCreateSource($event.data)"></convoy-create-source>
 		</div>
 
 		<h3 class="font-semibold mt-40px order-5">Create your first endpoint</h3>
 		<p class="text-14 text-grey-60 mt-6px max-w-[634px] order-6">HTTP Endpoint is the destination of events from your sources. Create an endpoint to receive events from your configured sources, including through Convoy API.</p>
-		<convoy-create-endpoint class="mb-40px order-7">
+		<convoy-create-endpoint class="mb-40px order-7" (onAction)="$event.action === 'close' ? false : onCreateEndpoint($event.data)">
 			<hr class="border-t border-grey-20 my-24px" />
 			<convoy-toggle label="Automatically subscribe endpoint to all events sent?" name="automaticSubscription" (onChange)="automaticSubscription = !automaticSubscription" [isChecked]="automaticSubscription"></convoy-toggle>
 		</convoy-create-endpoint>
