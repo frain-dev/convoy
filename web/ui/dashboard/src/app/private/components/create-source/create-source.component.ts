@@ -25,7 +25,6 @@ export class CreateSourceComponent implements OnInit {
 			content_type: ['']
 		}),
 		idempotency_keys: [null],
-		idempotency_ttl: [null],
 		verifier: this.formBuilder.group({
 			api_key: this.formBuilder.group({
 				header_name: ['', Validators.required],
@@ -134,16 +133,6 @@ export class CreateSourceComponent implements OnInit {
 		{ uid: 'idempotency', name: 'Idempotency', show: false }
 	];
 	idempotencyKeys: string[] = [];
-	ttlTimes = [
-		{ name: '6 hours', uid: '6' },
-		{ name: '12 hours', uid: '12' },
-		{ name: '18 hours', uid: '18' },
-		{ name: '24 hours', uid: '24' },
-		{ name: '30 hours', uid: '30' },
-		{ name: '36 hours', uid: '36' },
-		{ name: '42 hours', uid: '42' },
-		{ name: '48 hours', uid: '48' }
-	];
 	private rbacService = inject(RbacService);
 
 	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
