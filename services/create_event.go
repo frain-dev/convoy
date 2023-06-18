@@ -26,6 +26,7 @@ var (
 
 type CreateEventService struct {
 	EndpointRepo datastore.EndpointRepository
+	EventRepo    datastore.EventRepository
 	Queue        queue.Queuer
 
 	NewMessage *models.CreateEvent
@@ -33,14 +34,26 @@ type CreateEventService struct {
 }
 
 type newEvent struct {
-	Raw           string
-	Data          json.RawMessage
-	EventType     string
-	EndpointID    string
-	CustomHeaders map[string]string
+	Raw            string
+	Data           json.RawMessage
+	EventType      string
+	EndpointID     string
+	CustomHeaders  map[string]string
+	IdempotencyKey string
 }
 
 func (c *CreateEventService) Run(ctx context.Context) (*datastore.Event, error) {
+	if len(c.NewMessage.IdempotencyKey) > 0 {
+		event, err := c.EventRepo.FindEventByIdempotencyKey(ctx, c.Project.UID, c.NewMessage.IdempotencyKey)
+		if err != nil {
+			return nil, &ServiceError{ErrMsg: err.Error()}
+		}
+
+		if event != nil {
+			return nil, &ServiceError{ErrMsg: "duplicate event will not be ingested"}
+		}
+	}
+
 	if c.Project == nil {
 		return nil, &ServiceError{ErrMsg: "an error occurred while creating event - invalid project"}
 	}
@@ -60,11 +73,12 @@ func (c *CreateEventService) Run(ctx context.Context) (*datastore.Event, error) 
 	}
 
 	newEvent := &newEvent{
-		Data:          c.NewMessage.Data,
-		EventType:     c.NewMessage.EventType,
-		EndpointID:    c.NewMessage.EndpointID,
-		Raw:           string(c.NewMessage.Data),
-		CustomHeaders: c.NewMessage.CustomHeaders,
+		Data:           c.NewMessage.Data,
+		EventType:      c.NewMessage.EventType,
+		EndpointID:     c.NewMessage.EndpointID,
+		Raw:            string(c.NewMessage.Data),
+		CustomHeaders:  c.NewMessage.CustomHeaders,
+		IdempotencyKey: c.NewMessage.IdempotencyKey,
 	}
 
 	event, err := createEvent(ctx, endpoints, newEvent, c.Project, c.Queue)
@@ -97,15 +111,16 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 	}
 
 	event := &datastore.Event{
-		UID:       ulid.Make().String(),
-		EventType: datastore.EventType(newMessage.EventType),
-		Data:      newMessage.Data,
-		Raw:       newMessage.Raw,
-		Headers:   getCustomHeaders(newMessage.CustomHeaders),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		Endpoints: endpointIDs,
-		ProjectID: g.UID,
+		UID:            ulid.Make().String(),
+		EventType:      datastore.EventType(newMessage.EventType),
+		Data:           newMessage.Data,
+		Raw:            newMessage.Raw,
+		IdempotencyKey: newMessage.IdempotencyKey,
+		Headers:        getCustomHeaders(newMessage.CustomHeaders),
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+		Endpoints:      endpointIDs,
+		ProjectID:      g.UID,
 	}
 
 	if (g.Config == nil || g.Config.Strategy == nil) ||

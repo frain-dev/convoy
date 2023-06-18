@@ -42,6 +42,7 @@ type EventRepository interface {
 	CountEvents(ctx context.Context, projectID string, f *Filter) (int64, error)
 	LoadEventsPaged(ctx context.Context, projectID string, f *Filter) ([]Event, PaginationData, error)
 	DeleteProjectEvents(ctx context.Context, projectID string, f *EventFilter, hardDelete bool) error
+	FindEventByIdempotencyKey(ctx context.Context, projectID string, id string) (*Event, error)
 }
 
 type ProjectRepository interface {

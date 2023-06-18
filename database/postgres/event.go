@@ -15,8 +15,10 @@ import (
 
 const (
 	createEvent = `
-	INSERT INTO convoy.events (id, event_type, endpoints, project_id, source_id, headers, raw, data, url_query_params,created_at,updated_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+	INSERT INTO convoy.events (id,event_type,endpoints,project_id,
+	                           source_id,headers,raw,data,url_query_params,
+	                           idempotency_key,created_at,updated_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 	`
 
 	createEventEndpoints = `
@@ -25,15 +27,21 @@ const (
 
 	fetchEventById = `
 	SELECT id, event_type, endpoints, project_id,
-	COALESCE(source_id, '') AS source_id, headers,
-	COALESCE(url_query_params, '') AS url_query_params,
-	raw, data
+    raw, data, headers,
+	COALESCE(source_id, '') AS source_id,
+	COALESCE(idempotency_key, '') AS idempotency_key,
+	COALESCE(url_query_params, '') AS url_query_params
 	FROM convoy.events WHERE id = $1 AND project_id = $2 AND deleted_at is NULL;
+	`
+
+	fetchEventByIdempotencyKey = `
+	SELECT id FROM convoy.events WHERE idempotency_key = $1 AND project_id = $2 AND deleted_at is NULL;
 	`
 
 	fetchEventsByIds = `
 	SELECT ev.id, ev.project_id, ev.id as event_type,
 	COALESCE(ev.source_id, '') AS source_id,
+	COALESCE(ev.idempotency_key, '') AS idempotency_key,
 	COALESCE(ev.url_query_params, '') AS url_query_params,
 	ev.headers, ev.raw, ev.data, ev.created_at,
 	ev.updated_at, ev.deleted_at,
@@ -63,6 +71,7 @@ const (
 	SELECT ev.id, ev.project_id, ev.id as event_type,
 	COALESCE(ev.source_id, '') AS source_id,
 	ev.headers, ev.raw, ev.data, ev.created_at,
+	COALESCE(idempotency_key, '') AS idempotency_key,
 	COALESCE(url_query_params, '') AS url_query_params,
 	ev.updated_at, ev.deleted_at,
 	COALESCE(s.id, '') AS "source_metadata.id",
@@ -146,7 +155,9 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		event.Raw,
 		event.Data,
 		event.URLQueryParams,
-		event.CreatedAt, event.UpdatedAt,
+		event.IdempotencyKey,
+		event.CreatedAt,
+		event.UpdatedAt,
 	)
 	if err != nil {
 		return err
@@ -205,6 +216,18 @@ func (e *eventRepo) FindEventsByIDs(ctx context.Context, projectID string, ids [
 	}
 
 	return events, nil
+}
+
+func (e *eventRepo) FindEventByIdempotencyKey(ctx context.Context, projectID string, id string) (*datastore.Event, error) {
+	event := &datastore.Event{}
+	err := e.db.QueryRowxContext(ctx, fetchEventByIdempotencyKey, id, projectID).StructScan(event)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return event, nil
 }
 
 func (e *eventRepo) CountProjectMessages(ctx context.Context, projectID string) (int64, error) {

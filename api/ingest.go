@@ -2,9 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/frain-dev/convoy/internal/pkg/dedup"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -109,22 +111,25 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		maxIngestSize = cfg.MaxResponseSize
 	}
 
-	duper := dedup.NewDeDuper(r.Context(), a.A.Cache, *r)
-	exists, err := duper.Get(source.Name, source.IdempotencyKeys)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
+	var checksum string
+	if len(source.IdempotencyKeys) > 0 {
+		duper := dedup.NewDeDuper(r.Context(), r, postgres.NewEventRepo(a.A.DB))
+		exists, err := duper.Exists(source.Name, source.ProjectID, source.IdempotencyKeys)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
 
-	if exists {
-		_ = render.Render(w, r, util.NewErrorResponse("duplicate event will not be ingested", http.StatusBadRequest))
-		return
-	}
+		if exists {
+			_ = render.Render(w, r, util.NewErrorResponse("duplicate event will not be ingested", http.StatusBadRequest))
+			return
+		}
 
-	err = duper.Set(source.Name, source.IdempotencyKeys, time.Hour)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
+		checksum, err = duper.GenerateChecksum(source.Name, source.IdempotencyKeys)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
 	}
 
 	// 3.1 On Failure
@@ -145,6 +150,23 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		payload = []byte("{}")
 	}
 
+	// generate the event's idempotency key checksum if it's not set on the source
+	//if len(checksum) == 0 {
+	//	var builder strings.Builder
+	//	builder.WriteString("body:")
+	//	builder.Write(payload)
+	//	builder.WriteString("\n")
+	//	builder.WriteString("query:")
+	//	builder.WriteString(r.URL.RawQuery)
+	//	builder.WriteString("\n")
+	//	builder.WriteString("headers:")
+	//	builder.WriteString(stringifyRequestHeaders(r))
+	//
+	//	checksum = dedup.GenerateChecksum(builder.String())
+	//	println("builder: ", builder.String())
+	//	println("checksum: ", checksum)
+	//}
+
 	// 3.2 On success
 	// Attach Source to Event.
 	// Write Event to the Ingestion Queue.
@@ -156,6 +178,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		Raw:            string(payload),
 		Data:           payload,
 		URLQueryParams: r.URL.RawQuery,
+		IdempotencyKey: checksum,
 		Headers:        httpheader.HTTPHeader(r.Header),
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
@@ -200,6 +223,21 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 	}
 	_ = render.Render(w, r, util.NewServerResponse("Event received", len(payload), http.StatusOK))
+}
+
+// stringifyRequestHeaders prints out a request's headers in this format
+//
+//	HeaderKey1: HeaderValue1
+//	HeaderKey2: HeaderValue2
+func stringifyRequestHeaders(req *http.Request) string {
+	var h strings.Builder
+	// Iterate over the headers and print them
+	for key, values := range req.Header {
+		for _, value := range values {
+			h.WriteString(fmt.Sprintf("%s: %s\n", key, value))
+		}
+	}
+	return h.String()
 }
 
 func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Request) {

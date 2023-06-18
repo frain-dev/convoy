@@ -56,6 +56,7 @@ func (a *PublicHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Reque
 
 	ce := services.CreateEventService{
 		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		EventRepo:    postgres.NewEventRepo(a.A.DB),
 		Queue:        a.A.Queue,
 		NewMessage:   &newMessage,
 		Project:      project,

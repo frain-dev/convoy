@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lib/pq"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
@@ -31,8 +32,8 @@ var (
 
 const (
 	createEventDelivery = `
-    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,created_at,updated_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15);
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,idempotency_key,created_at,updated_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16);
     `
 
 	baseFetchEventDelivery = `
@@ -40,6 +41,7 @@ const (
         ed.id,ed.project_id,ed.event_id,ed.subscription_id,
         ed.headers,ed.attempts,ed.status,ed.metadata,ed.cli_metadata,
         COALESCE(ed.url_query_params, '') AS url_query_params,
+        COALESCE(ed.idempotency_key, '') AS idempotency_key,
         ed.description,ed.created_at,ed.updated_at,
         COALESCE(ed.device_id,'') as "device_id",
         COALESCE(ed.endpoint_id,'') as "endpoint_id",
@@ -56,7 +58,8 @@ const (
 		COALESCE(d.host_name,'') as "device_metadata.host_name",
 
 		COALESCE(s.id, '') AS "source_metadata.id",
-		COALESCE(s.name, '') AS "source_metadata.name"
+		COALESCE(s.name, '') AS "source_metadata.name",
+		COALESCE(s.idempotency_keys, '{}') AS "source_metadata.idempotency_keys"
     FROM convoy.event_deliveries ed
 	LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id
 	LEFT JOIN convoy.events ev ON ed.event_id = ev.id
@@ -125,6 +128,7 @@ const (
     SELECT
         id,project_id,event_id,subscription_id,
         headers,attempts,status,metadata,cli_metadata,
+        COALESCE(ed.idempotency_key, '') AS idempotency_key,
         COALESCE(url_query_params, '') AS url_query_params,
         description,created_at,updated_at,
         COALESCE(device_id,'') as "device_id",
@@ -136,6 +140,7 @@ const (
     SELECT
         id,project_id,event_id,subscription_id,
         headers,attempts,status,metadata,cli_metadata,
+        COALESCE(idempotency_key, '') AS idempotency_key,
         COALESCE(url_query_params, '') AS url_query_params,
         description,created_at,updated_at,
         COALESCE(device_id,'') as "device_id"
@@ -190,7 +195,8 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 		ctx, createEventDelivery, delivery.UID, delivery.ProjectID,
 		delivery.EventID, endpointID, deviceID,
 		delivery.SubscriptionID, delivery.Headers, delivery.DeliveryAttempts, delivery.Status,
-		delivery.Metadata, delivery.CLIMetadata, delivery.Description, delivery.URLQueryParams, delivery.CreatedAt, delivery.UpdatedAt,
+		delivery.Metadata, delivery.CLIMetadata, delivery.Description, delivery.URLQueryParams, delivery.IdempotencyKey,
+		delivery.CreatedAt, delivery.UpdatedAt,
 	)
 	if err != nil {
 		return err
@@ -542,8 +548,9 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 				SupportEmail: ev.Endpoint.SupportEmail.ValueOrZero(),
 			},
 			Source: &datastore.Source{
-				UID:  ev.Source.UID.ValueOrZero(),
-				Name: ev.Source.Name.ValueOrZero(),
+				UID:             ev.Source.UID.ValueOrZero(),
+				Name:            ev.Source.Name.ValueOrZero(),
+				IdempotencyKeys: ev.Source.IdempotencyKeys,
 			},
 			Device: &datastore.Device{
 				UID:      ev.Device.UID.ValueOrZero(),
@@ -750,8 +757,9 @@ type EventMetadata struct {
 }
 
 type SourceMetadata struct {
-	UID  null.String `db:"id"`
-	Name null.String `db:"name"`
+	UID             null.String    `db:"id"`
+	Name            null.String    `db:"name"`
+	IdempotencyKeys pq.StringArray `db:"idempotency_keys"`
 }
 
 type DeviceMetadata struct {
@@ -774,6 +782,7 @@ type EventDeliveryPaginated struct {
 	SubscriptionID string                `json:"subscription_id,omitempty" db:"subscription_id"`
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
+	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
 
 	Endpoint *EndpointMetadata `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *EventMetadata    `json:"event_metadata,omitempty" db:"event_metadata"`
