@@ -2,6 +2,8 @@ package server
 
 import (
 	"errors"
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/worker"
 	"time"
 
 	"github.com/frain-dev/convoy/api/types"
@@ -177,6 +179,16 @@ func StartConvoyServer(a *cli.App) error {
 	}
 
 	srv.SetHandler(handler.BuildRoutes())
+
+	// initialize scheduler
+	s := worker.NewScheduler(a.Queue, lo)
+
+	// register daily analytic task
+	s.RegisterTask("55 23 * * *", convoy.ScheduleQueue, convoy.DailyAnalytics)
+	s.RegisterTask("58 23 * * *", convoy.ScheduleQueue, convoy.DeleteArchivedTasksProcessor)
+
+	// Start scheduler
+	s.Start()
 
 	a.Logger.Infof("Started convoy server in %s", time.Since(start))
 

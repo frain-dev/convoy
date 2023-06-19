@@ -31,12 +31,13 @@ func (s *Scheduler) Start() {
 	}
 }
 
-func (s *Scheduler) RegisterTask(cronspec string, queue convoy.QueueName, taskName convoy.TaskName) {
+func (s *Scheduler) RegisterTask(cronSpec string, queue convoy.QueueName, taskName convoy.TaskName) {
 	task := asynq.NewTask(string(taskName), nil)
-	_, err := s.inner.Register(cronspec, task, asynq.Queue(string(queue)))
+	id, err := s.inner.Register(cronSpec, task, asynq.Queue(string(queue)))
 	if err != nil {
 		s.log.WithError(err).Fatalf("Failed to register %s scheduler task", taskName)
 	}
+	s.log.Infof("Registered task %v with id %v", taskName, id)
 }
 
 func (s *Scheduler) Stop() {
