@@ -1,6 +1,5 @@
 import { inject, NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-import { PrivateComponent } from './private.component';
+import { RouterModule } from '@angular/router';
 import { PrivateService } from './private.service';
 import { routes } from './private-routers';
 

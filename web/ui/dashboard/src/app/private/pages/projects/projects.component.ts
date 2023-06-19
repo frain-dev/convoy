@@ -37,18 +37,44 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 		this.reloadSubscription?.unsubscribe();
 	}
 
-	async getProjects() {
+	updateProjectDetails(projects: PROJECT[]) {
+		localStorage.setItem('CONVOY_PROJECT', JSON.stringify(projects[0]));
+		this.router.navigateByUrl(`/projects/${projects[0].uid}`);
+	}
+
+	checkForSelectedProject(projects: PROJECT[]) {
+		const selectedProject = localStorage.getItem('CONVOY_PROJECT');
+		if (!selectedProject || selectedProject === 'undefined') return this.updateProjectDetails(projects);
+
+		const projectDetails = JSON.parse(selectedProject);
+		return projects.find(project => project.uid === projectDetails.uid) ? this.router.navigateByUrl(`/projects/${projectDetails.uid}`) : this.updateProjectDetails(projects);
+	}
+
+	async getProjects(): Promise<any> {
 		this.isLoadingProjects = true;
 
 		try {
-			const projectsResponse = await this.privateService.getProjects();
-			this.projects = projectsResponse.data;
+			const response = await this.privateService.getProjects();
 			delete this.privateService.activeProjectDetails;
-			this.isLoadingProjects = false;
+			if (response.data.length === 0) this.isLoadingProjects = false;
+			else this.checkForSelectedProject(response.data);
 		} catch (error) {
-			this.isLoadingProjects = false;
+			return error;
 		}
 	}
+
+	// async getProjects() {
+	// 	this.isLoadingProjects = true;
+
+	// 	try {
+	// 		const projectsResponse = await this.privateService.getProjects();
+	// 		this.projects = projectsResponse.data;
+	// 		delete this.privateService.activeProjectDetails;
+	// 		this.isLoadingProjects = false;
+	// 	} catch (error) {
+	// 		this.isLoadingProjects = false;
+	// 	}
+	// }
 
 	// We're calling project details ahead because every page under project has a guard that requires project details to be present and to also prevent multiple calls
 	async getProjectCompleteDetails(projectId: string) {

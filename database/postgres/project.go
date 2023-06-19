@@ -131,9 +131,7 @@ const (
 	c.meta_events_pub_sub as "config.meta_event.pub_sub",
 	p.created_at,
 	p.updated_at,
-	p.deleted_at,
-	(SELECT count(*) from convoy.events where project_id = p.id AND deleted_at IS NULL) AS "statistics.messages_sent",
-	(SELECT count(*) from convoy.endpoints where project_id = p.id AND deleted_at IS NULL) AS "statistics.total_endpoints"
+	p.deleted_at
   FROM convoy.projects p
   LEFT JOIN convoy.project_configurations c
   ON p.project_configuration_id = c.id

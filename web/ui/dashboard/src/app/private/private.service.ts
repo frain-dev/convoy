@@ -14,9 +14,9 @@ import { USER } from '../models/user.model';
 })
 export class PrivateService {
 	activeProjectDetails?: PROJECT; // we should depricate this
-	organisationDetails!: ORGANIZATION_DATA;
+	organisationDetails?: ORGANIZATION_DATA;
 	apiFlagResponse!: FLIPT_API_RESPONSE;
-	projects: PROJECT[] = [];
+	projects!: HTTP_RESPONSE;
 	organisations!: HTTP_RESPONSE;
 	membership!: HTTP_RESPONSE;
 	configutation!: HTTP_RESPONSE;
@@ -219,8 +219,10 @@ export class PrivateService {
 		});
 	}
 
-	getProjects(): Promise<HTTP_RESPONSE> {
+	getProjects(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
+			if (this.projects && !requestDetails?.refresh) return resolve(this.projects);
+
 			try {
 				const projectsResponse = await this.http.request({
 					url: `/projects`,
@@ -228,7 +230,7 @@ export class PrivateService {
 					level: 'org'
 				});
 
-				this.projects = projectsResponse.data;
+				this.projects = projectsResponse;
 				return resolve(projectsResponse);
 			} catch (error) {
 				return reject(error);
