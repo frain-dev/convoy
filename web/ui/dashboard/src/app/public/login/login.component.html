@@ -33,3 +33,5 @@
 		<button convoy-button fill="link" class="mt-12px w-full" (click)="router.navigateByUrl('/signup')" size="sm">Signup</button>
 	</section>
 </div>
+
+<convoy-loader [isTransparent]="false" *ngIf="isLoadingProject"></convoy-loader>

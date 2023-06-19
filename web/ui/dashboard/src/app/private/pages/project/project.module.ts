@@ -10,6 +10,10 @@ import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
 import { PrivateService } from '../../private.service';
 import { ProjectService } from './project.service';
+import { BadgeComponent } from 'src/app/components/badge/badge.component';
+import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
+import { DropdownContainerComponent } from 'src/app/components/dropdown-container/dropdown-container.component';
+import { LoaderModule } from '../../components/loader/loader.module';
 
 export const projectResolver = async (route: ActivatedRouteSnapshot, _state: RouterStateSnapshot, privateService = inject(PrivateService), projectService = inject(ProjectService), router = inject(Router)) => {
 	try {
@@ -69,10 +73,6 @@ const routes: Routes = [
 				loadComponent: () => import('./endpoints/endpoints.component').then(m => m.EndpointsComponent)
 			},
 			{
-				path: 'endpoints/:id',
-				loadComponent: () => import('./endpoint-details/endpoint-details.component').then(m => m.EndpointDetailsComponent)
-			},
-			{
 				path: 'endpoints/:id/edit',
 				loadComponent: () => import('./endpoints/endpoints.component').then(m => m.EndpointsComponent)
 			},
@@ -102,6 +102,21 @@ const routes: Routes = [
 
 @NgModule({
 	declarations: [ProjectComponent],
-	imports: [CommonModule, RouterModule.forChild(routes), ButtonComponent, GithubStarComponent, ListItemComponent, GithubStarComponent, TagComponent, TooltipComponent, SkeletonLoaderComponent]
+	imports: [
+		CommonModule,
+		RouterModule.forChild(routes),
+		ButtonComponent,
+		GithubStarComponent,
+		ListItemComponent,
+		GithubStarComponent,
+		TagComponent,
+		TooltipComponent,
+		SkeletonLoaderComponent,
+		BadgeComponent,
+		DropdownComponent,
+		DropdownContainerComponent,
+		DropdownOptionDirective,
+		LoaderModule
+	]
 })
 export class ProjectModule {}

@@ -48,6 +48,7 @@ export interface EVENT_DELIVERY {
 	app_metadata: APP;
 	event_metadata: EVENT;
 	device_metadata: DEVICE;
+	endpoint_id: string;
 }
 
 export interface EVENT_DELIVERY_ATTEMPT {

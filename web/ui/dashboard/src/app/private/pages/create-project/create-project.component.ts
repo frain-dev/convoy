@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
+import { Location } from '@angular/common';
 
 export type STAGES = 'createProject' | 'setupSDK' | 'createSource' | 'createApplication' | 'createSubscription';
 @Component({
@@ -10,7 +11,7 @@ export type STAGES = 'createProject' | 'setupSDK' | 'createSource' | 'createAppl
 	styleUrls: ['./create-project.component.scss']
 })
 export class CreateProjectComponent implements OnInit {
-	constructor(private router: Router, public privateService: PrivateService) {}
+	constructor(private router: Router, public privateService: PrivateService, private location: Location) {}
 
 	ngOnInit() {}
 
@@ -20,6 +21,6 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	cancel() {
-		this.router.navigate(['../']);
+		this.location.back();
 	}
 }

@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/danvixent/asynqmon"
@@ -9,6 +10,11 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
 	"github.com/redis/go-redis/v9"
+)
+
+var (
+	ErrTaskNotFound  = fmt.Errorf("asynq: %w", asynq.ErrTaskNotFound)
+	ErrQueueNotFound = fmt.Errorf("asynq: %w", asynq.ErrQueueNotFound)
 )
 
 type RedisQueue struct {
@@ -30,11 +36,33 @@ func NewQueue(opts queue.QueueOptions) queue.Queuer {
 }
 
 func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
+	queue := string(queueName)
 	if job.ID == "" {
 		job.ID = ulid.Make().String()
 	}
-	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(string(queueName)), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
-	_, err := q.client.Enqueue(t, asynq.Retention(24*time.Hour))
+	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(queue), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
+
+	_, err := q.inspector.GetTaskInfo(queue, job.ID)
+	if err != nil {
+		// If the task or queue does not yet exist, we can proceed
+		// to enqueuing the task
+		message := err.Error()
+		if ErrQueueNotFound.Error() == message || ErrTaskNotFound.Error() == message {
+			_, err := q.client.Enqueue(t, asynq.Retention(24*time.Hour))
+			return err
+		}
+
+		return err
+	}
+
+	// At this point, the task is already on the queue based on its ID.
+	// We need to delete before enqueuing
+	err = q.inspector.DeleteTask(queue, job.ID)
+	if err != nil {
+		return err
+	}
+
+	_, err = q.client.Enqueue(t, asynq.Retention(24*time.Hour))
 	return err
 }
 

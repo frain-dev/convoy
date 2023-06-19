@@ -46,16 +46,16 @@
 				</div>
 			</ng-container>
 
-			<div class="border-t border-grey-20 pt-24px mt-24px">
+			<div class="border-t border-new.primary-25 pt-40px mt-40px">
 				<div formGroupName="config">
-					<ng-container *ngIf="showConfig('signature')">
+					<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('signature')">
 						<div class="flex justify-between items-center mb-24px">
 							<p class="text-12 font-medium text-new.gray-500 flex items-center">
 								Signature Details
 								<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 							</p>
 							<button convoy-permission="Project Settings|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
-								<svg width="14" height="14" class="fill-transparent">
+								<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 									<use xlink:href="#delete-icon2"></use>
 								</svg>
 							</button>
@@ -82,10 +82,9 @@
 							</ng-container>
 						</div>
 
-						<hr class="border-new.gray-200 mt-40px mb-40px" *ngIf="action === 'update'" />
-					</ng-container>
+					</div>
 
-					<ng-container *ngIf="showConfig('retry-config')">
+					<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('retry-config')">
 						<div class="flex justify-between items-center mb-24px">
 							<p class="flex items-center text-12 font-medium text-new.gray-500">
 								Retry Logic
@@ -95,7 +94,7 @@
 								</convoy-tooltip>
 							</p>
 							<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('retry-config')">
-								<svg width="14" height="14" class="fill-transparent">
+								<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 									<use xlink:href="#delete-icon2"></use>
 								</svg>
 							</button>
@@ -110,31 +109,30 @@
 								</div>
 								<convoy-input-error *ngIf="projectForm.get('config.strategy.duration')?.touched && projectForm.get('config.strategy.duration')?.invalid">Please enter your retry logic duration</convoy-input-error>
 							</convoy-input-field>
-							<convoy-input-field>
+							<convoy-input-field className="mb-0">
 								<label for="retry-logic-count" convoy-label>Limit</label>
 								<input type="number" id="retry-logic-count" convoy-input autocomplete="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" />
 								<convoy-input-error *ngIf="projectForm.get('config.strategy.retry_count')?.touched && projectForm.get('config.strategy.retry_count')?.invalid">Please enter a retry limit</convoy-input-error>
 							</convoy-input-field>
 						</div>
 
-						<hr class="border-new.gray-200 mt-20px mb-40px" *ngIf="action === 'update'" />
-					</ng-container>
+					</div>
 
-					<ng-container *ngIf="showConfig('rate-limit')">
+					<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('rate-limit')">
 						<div class="flex justify-between items-center mb-24px">
 							<p class="flex items-center text-12 font-medium text-new.gray-500">
 								Rate Limit Parameters
 								<convoy-tooltip size="sm" position="right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
 							</p>
 							<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('rate-limit')">
-								<svg width="14" height="14" class="fill-transparent">
+								<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 									<use xlink:href="#delete-icon2"></use>
 								</svg>
 							</button>
 						</div>
 
 						<div class="grid grid-cols-2 gap-24px" formGroupName="ratelimit">
-							<convoy-input-field>
+							<convoy-input-field className="mb-0">
 								<label for="rate-limit-duration" convoy-label>Duration</label>
 								<div class="relative">
 									<input type="number" id="rate-limit-duration" convoy-input autocomplete="rate-limit-duration" formControlName="duration" placeholder="e.g 50" />
@@ -142,21 +140,19 @@
 								</div>
 								<convoy-input-error *ngIf="projectForm.get('config.ratelimit.duration')?.touched && projectForm.get('config.ratelimit.duration')?.invalid">Please enter a rate limit duration</convoy-input-error>
 							</convoy-input-field>
-							<convoy-input-field>
+							<convoy-input-field className="mb-0">
 								<label for="rate-limit-count" convoy-label>Limit</label>
 								<input type="number" id="rate-limit-count" convoy-input autocomplete="rate-limit-count" formControlName="count" placeholder="e.g 10" />
 								<convoy-input-error *ngIf="projectForm.get('config.ratelimit.count')?.touched && projectForm.get('config.ratelimit.count')?.invalid">Please enter a rate limit</convoy-input-error>
 							</convoy-input-field>
 						</div>
+					</div>
 
-						<hr class="border-new.gray-200 mt-20px mb-40px" *ngIf="action === 'update'" />
-					</ng-container>
-
-					<ng-container *ngIf="showConfig('retention')">
+					<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('retention')">
 						<div class="flex justify-between items-center mb-24px">
 							<p class="text-12 font-medium text-new.gray-500">Retention Policy</p>
 							<button convoy-button type="button" size="xs" fill="outline" convoy-permission="Project Settings|MANAGE" color="grey" texture="light" (click)="toggleConfigForm('retention')">
-								<svg width="14" height="14" class="fill-transparent">
+								<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 									<use xlink:href="#delete-icon2"></use>
 								</svg>
 							</button>
@@ -170,10 +166,8 @@
 								</convoy-input-field>
 							</div>
 						</ng-container>
-					</ng-container>
+					</div>
 				</div>
-
-				<hr class="border-t border-grey-20 mb-24px -mt-6px" *ngIf="shouldShowBorder !== 0 && shouldShowBorder < configurations.length - 1" />
 
 				<div class="flex items-center" *ngIf="shouldShowBorder < configurations.length">
 					<ng-container *ngFor="let config of configurations; let i = index">

@@ -5,7 +5,7 @@ import { HttpService } from 'src/app/services/http/http.service';
 @Injectable({
 	providedIn: 'root'
 })
-export class EndpointDetailsService {
+export class EndpointsService {
 	constructor(private http: HttpService) {}
 
 	getEndpoint(endpointId: string): Promise<HTTP_RESPONSE> {

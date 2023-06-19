@@ -12,10 +12,10 @@ import { CreateEndpointService } from './create-endpoint.service';
 import { PrivateService } from '../../private.service';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.component';
-import { EndpointDetailsService } from '../../pages/project/endpoint-details/endpoint-details.service';
 import { PermissionDirective } from '../permission/permission.directive';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
+import { EndpointsService } from '../../pages/project/endpoints/endpoints.service';
 
 @Component({
 	selector: 'convoy-create-endpoint',
@@ -34,9 +34,9 @@ export class CreateEndpointComponent implements OnInit {
 	isLoadingEndpoints = false;
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
-		support_email: [],
-		slack_webhook_url: [],
 		url: ['', Validators.required],
+		support_email: ['', Validators.email],
+		slack_webhook_url: ['', Validators.pattern(`/^(https?|ftp)://[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+(\:[0-9]+)?/?([a-zA-Z0-9-_\.~!$&'()*+,;=:@/?#%])*[^<>]$/`)],
 		secret: [null],
 		http_timeout: [null, Validators.pattern('^[-+]?[0-9]+$')],
 		description: [null],
@@ -64,7 +64,7 @@ export class CreateEndpointComponent implements OnInit {
 		private route: ActivatedRoute,
 		public privateService: PrivateService,
 		private router: Router,
-		private endpointService: EndpointDetailsService
+		private endpointService: EndpointsService
 	) {}
 
 	async ngOnInit() {
@@ -73,8 +73,37 @@ export class CreateEndpointComponent implements OnInit {
 		if (!(await this.rbacService.userCanAccess('Endpoints|MANAGE'))) this.addNewEndpointForm.disable();
 	}
 
+	async runEndpointValidation() {
+		if (this.configurations[0].show) {
+			this.addNewEndpointForm.get('http_timeout')?.addValidators(Validators.required);
+			this.addNewEndpointForm.get('http_timeout')?.updateValueAndValidity();
+		} else {
+			this.addNewEndpointForm.get('http_timeout')?.removeValidators(Validators.required);
+			this.addNewEndpointForm.get('http_timeout')?.updateValueAndValidity();
+		}
+
+		if (this.configurations[2].show) {
+			this.addNewEndpointForm.get('authentication.api_key.header_name')?.addValidators(Validators.required);
+			this.addNewEndpointForm.get('authentication.api_key.header_value')?.addValidators(Validators.required);
+			this.addNewEndpointForm.get('authentication.api_key.header_name')?.updateValueAndValidity();
+			this.addNewEndpointForm.get('authentication.api_key.header_value')?.updateValueAndValidity();
+		} else {
+			this.addNewEndpointForm.get('authentication.api_key.header_name')?.removeValidators(Validators.required);
+			this.addNewEndpointForm.get('authentication.api_key.header_value')?.removeValidators(Validators.required);
+			this.addNewEndpointForm.get('authentication.api_key.header_name')?.updateValueAndValidity();
+			this.addNewEndpointForm.get('authentication.api_key.header_value')?.updateValueAndValidity();
+		}
+
+		return;
+	}
+
 	async saveEndpoint() {
-		if (this.addNewEndpointForm.invalid) return this.addNewEndpointForm.markAllAsTouched();
+		await this.runEndpointValidation();
+
+		if (this.addNewEndpointForm.invalid) {
+			this.savingEndpoint = false;
+			return this.addNewEndpointForm.markAllAsTouched();
+		}
 
 		this.savingEndpoint = true;
 

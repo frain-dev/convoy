@@ -85,7 +85,7 @@ export class CreateProjectComponent implements OnInit {
 	async ngOnInit() {
 		if (this.action === 'update') this.getProjectDetails();
 		if (!(await this.rbacService.userCanAccess('Project Settings|MANAGE'))) this.projectForm.disable();
-		this.switchTab(this.route.snapshot.queryParams?.activePage ?? 'project config');
+		if (this.action === 'update') this.switchTab(this.route.snapshot.queryParams?.activePage ?? 'project config');
 	}
 
 	get versions(): FormArray {
@@ -176,6 +176,7 @@ export class CreateProjectComponent implements OnInit {
 			const response = await this.createProjectService.createProject(this.enableMoreConfig ? this.projectForm.value : dataForNoConfig);
 			await this.privateService.getProjectDetails({ refresh: true, projectId: response.data.project.uid });
 			await this.privateService.getProjectStat({ refresh: true });
+			this.privateService.getProjects({ refresh: true });
 
 			projectFormModal?.scroll({ top: 0, behavior: 'smooth' });
 			this.isCreatingProject = false;
@@ -221,6 +222,7 @@ export class CreateProjectComponent implements OnInit {
 			this.regeneratingKey = false;
 			this.apiKey = response.data.key;
 			this.showApiKey = true;
+			return;
 		} catch (error) {
 			this.regeneratingKey = false;
 			return error;

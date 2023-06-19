@@ -52,7 +52,7 @@
 				</ng-container>
 			</div>
 
-			<div convoy-dropdown size="md" position="left" #endpointsFilterDropdown [hidden]="portalToken || this.projectService.activeProjectDetails?.type === 'incoming'">
+			<div convoy-dropdown size="md" position="left" #endpointsFilterDropdown [hidden]="portalToken">
 				<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 ml-16px min-w-[117px] whitespace-nowrap justify-between h-36px" [ngClass]="{ 'text-primary-100 !bg-primary-500': queryParams?.endpointId }">
 					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
 					<span class="text-grey-40 w-full">All Endpoints</span>

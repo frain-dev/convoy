@@ -57,7 +57,7 @@ export class EventDeliveriesComponent implements OnInit {
 	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, public projectService: ProjectService, public privateService: PrivateService, private _location: Location) {}
 
 	ngAfterViewInit() {
-		if (!this.portalToken && this.projectService.activeProjectDetails?.type == 'outgoing') {
+		if (!this.portalToken) {
 			this.eventsDelEndpointFilter$ = fromEvent<any>(this.eventDelsEndpointFilter?.nativeElement, 'keyup').pipe(
 				map(event => event.target.value),
 				startWith(''),
@@ -84,6 +84,7 @@ export class EventDeliveriesComponent implements OnInit {
 		this.eventDeliveryFilteredByStatus = this.queryParams.status ? JSON.parse(this.queryParams.status) : [];
 
 		this.eventDeliveriesSource = this.queryParams?.sourceId;
+		this.eventDeliveriesEndpoint = this.queryParams?.endpointId;
 
 		return this.queryParams;
 	}

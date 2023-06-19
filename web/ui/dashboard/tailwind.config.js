@@ -55,10 +55,10 @@ module.exports = {
 				lg: '0px 4px 8px rgba(12, 26, 75, 0.1), 0px 10px 16px rgba(20, 37, 63, 0.06)',
 				xl: '0px 8px 16px rgba(12, 26, 75, 0.1), 0px 20px 24px rgba(20, 37, 63, 0.06)',
 				'2xl': '0px 16px 16px rgba(12, 26, 75, 0.05), 0px 30px 40px rgba(20, 37, 63, 0.08)',
-				'focus--primary': '0px 0px 0px 4px #FFFBFA',
+				'focus--primary-25': '0px 0px 0px 4px #EDF2F7',
 				'focus--success': '0px 0px 0px 4px #F6FEF9',
 				'focus--warning': '0px 0px 0px 4px #FFFCF5',
-				'focus--error': '0px 0px 0px 4px #FFFBFA'
+				'focus--error': '0px 0px 0px 4px #FFFBFA',
 			},
 			fontFamily: {
 				sans: ['Inter', ...defaultTheme.fontFamily.sans],

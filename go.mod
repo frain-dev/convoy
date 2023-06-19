@@ -36,7 +36,7 @@ require (
 	github.com/newrelic/go-agent/v3/integrations/nrredis-v9 v1.0.0
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/client_golang v1.16.0
 	github.com/redis/go-redis/v9 v9.0.5
 	github.com/rubenv/sql-migrate v1.3.0
 	github.com/sebdah/goldie/v2 v2.5.3
@@ -95,12 +95,12 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.15.4 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/nsf/jsondiff v0.0.0-20210926074059-1e845ec5d249
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.26.0 // indirect
-	github.com/prometheus/procfs v0.6.0 // indirect
+	github.com/prometheus/client_model v0.3.0 // indirect
+	github.com/prometheus/common v0.42.0 // indirect
+	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/sergi/go-diff v1.0.0 // indirect
 	github.com/sony/gobreaker v0.5.0 // indirect
@@ -110,8 +110,8 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783 // indirect
-	golang.org/x/sync v0.1.0 // indirect
+	golang.org/x/oauth2 v0.5.0 // indirect
+	golang.org/x/sync v0.2.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
 	golang.org/x/time v0.3.0 // indirect

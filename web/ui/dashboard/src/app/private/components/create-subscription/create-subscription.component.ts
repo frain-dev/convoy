@@ -76,7 +76,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
-		if (this.isPortal !== 'true') await Promise.all([this.getEndpoints(), this.getSources()]);
+		if (this.isPortal !== 'true' && this.showAction === 'true') await Promise.all([this.getEndpoints(), this.getSources()]);
 		if (this.action === 'update') await this.getSubscriptionDetails();
 		this.isLoadingForm = false;
 
@@ -84,7 +84,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (this.projectType === 'incoming') {
 			this.subscriptionForm.get('source_id')?.addValidators(Validators.required);
 			this.subscriptionForm.get('source_id')?.updateValueAndValidity();
-			this.configurations.splice(2, 1);
+			this.configurations.pop();
 		}
 
 		if (this.configSetting) this.toggleConfigForm(this.configSetting, true);
@@ -156,13 +156,13 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async onCreateSource(newSource: SOURCE) {
-		await this.getSources();
 		this.subscriptionForm.patchValue({ source_id: newSource.uid });
+		await this.getSources();
 	}
 
 	async onCreateEndpoint(newEndpoint: ENDPOINT) {
-		await this.getEndpoints();
 		this.subscriptionForm.patchValue({ endpoint_id: newEndpoint.uid });
+		await this.getEndpoints();
 	}
 
 	onToggleConfig() {
@@ -177,26 +177,54 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
-	async saveSubscription(setup?: boolean) {
-		this.isCreatingSubscription = true;
+	toggleFormsLoaders(loaderState: boolean) {
+		this.isCreatingSubscription = loaderState;
+		if (this.createEndpointForm) this.createEndpointForm.savingEndpoint = loaderState;
+		if (this.createSourceForm) this.createSourceForm.isloading = loaderState;
+	}
 
-		// if subscription service has subscription data, use it to update subscription form, else, create endpoint and source
-		if (this.createSubscriptionService.subscriptionData) {
-			this.subscriptionForm.patchValue(this.createSubscriptionService.subscriptionData);
+	async runSubscriptionValidation() {
+		if (this.configurations[1].show) {
+			this.subscriptionForm.get('retry_config.type')?.addValidators(Validators.required);
+			this.subscriptionForm.get('retry_config.retry_count')?.addValidators(Validators.required);
+			this.subscriptionForm.get('retry_config.duration')?.addValidators(Validators.required);
+			this.subscriptionForm.get('retry_config.type')?.updateValueAndValidity();
+			this.subscriptionForm.get('retry_config.retry_count')?.updateValueAndValidity();
+			this.subscriptionForm.get('retry_config.duration')?.updateValueAndValidity();
 		} else {
-			// trigger create endpoint and source together
-			const [endpointDetails, sourceDetails] = await Promise.allSettled([
-				this.showCreateEndpointForm && !this.createEndpointForm.endpointCreated ? this.createEndpointForm.saveEndpoint() : false,
-				this.showCreateSourceForm && !this.createSourceForm.sourceCreated ? this.createSourceForm.saveSource() : false
-			]);
-			if (endpointDetails.status === 'fulfilled' && typeof endpointDetails.value !== 'boolean') this.subscriptionForm.patchValue({ endpoint_id: endpointDetails.value?.data.uid });
-			if (sourceDetails.status === 'fulfilled' && typeof sourceDetails.value !== 'boolean') this.subscriptionForm.patchValue({ source_id: sourceDetails.value?.data.uid });
+			this.subscriptionForm.get('retry_config.type')?.removeValidators(Validators.required);
+			this.subscriptionForm.get('retry_config.retry_count')?.removeValidators(Validators.required);
+			this.subscriptionForm.get('retry_config.duration')?.removeValidators(Validators.required);
+			this.subscriptionForm.get('retry_config.type')?.updateValueAndValidity();
+			this.subscriptionForm.get('retry_config.retry_count')?.updateValueAndValidity();
+			this.subscriptionForm.get('retry_config.duration')?.updateValueAndValidity();
 		}
 
-		// set filter config
-		this.subscriptionForm.patchValue({
-			filter_config: { event_types: this.eventTags.length > 0 ? this.eventTags : ['*'] }
-		});
+		if (this.configurations.length > 2) {
+			if (this.configurations[2].show) {
+				this.subscriptionForm.get('filter_config.event_types')?.addValidators(Validators.required);
+				this.subscriptionForm.get('filter_config.event_types')?.updateValueAndValidity();
+			} else {
+				this.subscriptionForm.get('filter_config.event_types')?.removeValidators(Validators.required);
+				this.subscriptionForm.get('filter_config.event_types')?.updateValueAndValidity();
+			}
+		}
+
+		return;
+	}
+
+	async saveSubscription(setup?: boolean) {
+		this.toggleFormsLoaders(true);
+		await this.runSubscriptionValidation();
+
+		if (this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('retry_config')?.invalid || this.subscriptionForm.get('filter_config')?.invalid) {
+			this.toggleFormsLoaders(false);
+			this.subscriptionForm.markAllAsTouched();
+			return;
+		}
+
+		if (this.createEndpointForm && !this.createEndpointForm.endpointCreated) await this.createEndpointForm.saveEndpoint();
+		if (this.createSourceForm && !this.createSourceForm.sourceCreated) await this.createSourceForm.saveSource();
 
 		// check subscription form validation
 		if (this.subscriptionForm.invalid) {
@@ -243,6 +271,7 @@ export class CreateSubscriptionComponent implements OnInit {
 					this.eventTags.push(addTagInputValue?.value);
 					addTagInputValue.value = '';
 					this.eventTags = this.eventTags.filter(e => String(e).trim());
+					this.subscriptionForm.patchValue({ filter_config: { event_types: this.eventTags } });
 				}
 				e.preventDefault();
 			}

@@ -67,8 +67,8 @@
 								</li>
 								<li>
 									<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="activeSource = source; showDeleteSourceModal = true">
-										<svg width="16" height="16" class="mr-8px fill-danger-100">
-											<use xlink:href="#delete-icon"></use>
+										<svg width="16" height="16" class="mr-8px fill-transparent stroke-new.error-400">
+											<use xlink:href="#delete-icon2"></use>
 										</svg>
 										Delete
 									</button>
@@ -83,7 +83,7 @@
 					<div class="px-24px pb-12px border-b border-b-grey-10 cursor-pointer">
 						<div class="text-grey-40 text-10 mb-4px">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</div>
 						<div class="flex justify-between items-center">
-							<div class="text-14 font-medium">{{ source.name }}</div>
+							<div class="text-14 text-new.gray-800 font-medium">{{ source.name }}</div>
 
 							<div convoy-dropdown #incomingSourceDropdown position="left" size="sm" class="ml-4px">
 								<button dropdownTrigger convoy-button size="sm" fill="clear" class="!p-0">
@@ -91,7 +91,7 @@
 								</button>
 								<ul dropdownOptions>
 									<li class="border-b border-grey-20">
-										<div convoy-copy-button (copyText)="hideIncomingSourceDropdown()" [notificationText]="source.name + ' ID has been copied to clipboard'" className="py-6px px-16px" [text]="source?.uid || ''">
+										<div convoy-copy-button color="primary" size="sm" (copyText)="hideIncomingSourceDropdown()" [notificationText]="source.name + ' ID has been copied to clipboard'" className="py-6px px-16px" [text]="source?.uid || ''">
 											<span class="pl-8px">Copy ID</span>
 										</div>
 									</li>
@@ -116,7 +116,7 @@
 						</div>
 					</div>
 					<div class="mt-12px mx-24px">
-						<convoy-copy-button [text]="source.url" size="md" className="ml-2px" [notificationText]="source.name + ' URL has been copied to clipboard'"><span class="text-14 ml-8px font-medium">Copy URL</span></convoy-copy-button>
+						<convoy-copy-button [text]="source.url" color="primary" className="ml-2px" [notificationText]="source.name + ' URL has been copied to clipboard'"><span class="text-14 ml-8px font-medium">Copy URL</span></convoy-copy-button>
 					</div>
 				</ng-container>
 			</div>

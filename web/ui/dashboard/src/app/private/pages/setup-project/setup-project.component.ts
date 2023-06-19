@@ -63,20 +63,45 @@ export class SetupProjectComponent implements OnInit {
 		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid);
 	}
 
+	onCreateSource(newSource: SOURCE) {
+		this.createSubscriptionForm.subscriptionForm.patchValue({ source_id: newSource.uid });
+	}
+
+	onCreateEndpoint(newEndpoint: ENDPOINT) {
+		this.createSubscriptionForm.subscriptionForm.patchValue({ endpoint_id: newEndpoint.uid });
+	}
+
+	toggleFormsLoaders(loaderState: boolean) {
+		this.createSubscriptionForm.isCreatingSubscription = loaderState;
+		if (this.createEndpointForm) this.createEndpointForm.savingEndpoint = loaderState;
+		if (this.createSourceForm) this.createSourceForm.isloading = loaderState;
+	}
+
 	async saveProjectConfig() {
-		const [sourceDetails, endpointDetails] = await Promise.allSettled([this.createSourceForm && !this.createSourceForm?.sourceCreated ? this.createSourceForm.saveSource() : false, !this.createEndpointForm.endpointCreated ? this.createEndpointForm.saveEndpoint() : false]);
+		this.toggleFormsLoaders(true);
+		this.createSubscriptionForm.subscriptionForm.patchValue({ name: `${this.createEndpointForm.addNewEndpointForm.value.name}${this.projectType === 'incoming' ? ' → ' + this.createSourceForm.sourceForm.value.name : ''}'s Subscription` });
+		await this.createSubscriptionForm.runSubscriptionValidation();
 
-		if (this.projectType === 'incoming' && sourceDetails.status === 'fulfilled' && typeof sourceDetails.value !== 'boolean') {
-			this.newSource = sourceDetails.value?.data;
-			this.subscriptionService.subscriptionData = { source_id: sourceDetails.value?.data.uid };
+		if (this.createSubscriptionForm.subscriptionForm.get('name')?.invalid || this.createSubscriptionForm.subscriptionForm.get('retry_config')?.invalid || this.createSubscriptionForm.subscriptionForm.get('filter_config')?.invalid) {
+			this.toggleFormsLoaders(false);
+			this.createSubscriptionForm.subscriptionForm.markAllAsTouched();
+			return;
 		}
 
-		if (endpointDetails.status === 'fulfilled' && typeof endpointDetails.value !== 'boolean') {
-			this.newEndpoint = endpointDetails.value?.data;
-			this.subscriptionService.subscriptionData = { ...this.subscriptionService.subscriptionData, endpoint_id: endpointDetails.value?.data.uid };
+		if (this.createEndpointForm && !this.createEndpointForm.endpointCreated) await this.createEndpointForm.saveEndpoint();
+		if (this.createSourceForm && !this.createSourceForm.sourceCreated) await this.createSourceForm.saveSource();
+
+		if (this.projectType === 'outgoing' && this.connectPubSub && !this.createSourceForm.sourceCreated) return;
+
+		// check subscription form validation
+		if (this.createSubscriptionForm.subscriptionForm.invalid) {
+			this.createSubscriptionForm.isCreatingSubscription = false;
+			return this.createSubscriptionForm.subscriptionForm.markAllAsTouched();
 		}
 
-		if (this.automaticSubscription) this.subscriptionService.subscriptionData = { ...this.subscriptionService.subscriptionData, name: `${this.newEndpoint.title}${this.newSource ? ' → ' + this.newSource.name : ''}'s Subscription` };
-		await this.createSubscriptionForm.saveSubscription(true);
+		// create subscription
+		try {
+			this.createSubscriptionForm.saveSubscription();
+		} catch (error) {}
 	}
 }

@@ -19,25 +19,34 @@
 					</button>
 				</li>
 			</ul>
-			<hr class="border-grey-20 border-t mb-26px" />
+			<hr class="border-new.primary-25 border-t mb-24px" />
 		</ng-container>
 
 		<convoy-input-field>
 			<label for="source-name" required="true" convoy-label required="true">Source name</label>
-			<input type="text" id="source-name" convoy-input autocomplete="source-name" formControlName="name" placeholder="Enter source name" />
+			<input type="text" id="source-name" convoy-input formControlName="name" placeholder="Enter source name" />
 			<convoy-input-error *ngIf="sourceForm.get('name')?.touched && sourceForm.get('name')?.invalid">Enter new source name</convoy-input-error>
 		</convoy-input-field>
 
 		<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
 			<div formGroupName="verifier">
-				<convoy-select label="Source Verification" name="type" formControlName="type" [options]="sourceVerifications" errorMessage="Select source verification" [required]="true" (selectedOption)="sourceForm.get('verifier.type')?.patchValue($event)"></convoy-select>
+				<convoy-select
+					label="Source Verification"
+					name="source-verification"
+					formControlName="type"
+					[options]="sourceVerifications"
+					errorMessage="Select source verification"
+					[required]="true"
+					(selectedOption)="sourceForm.get('verifier.type')?.patchValue($event)"
+				></convoy-select>
 
 				<div formGroupName="hmac" *ngIf="sourceForm.value.verifier.type === 'hmac' || isCustomSource(sourceForm.value.verifier.type)" class="mt-40px">
-					<h3 class="font-semibold mb-20px capitalize">
+					<h3 class="font-medium text-14 text-new.gray-500 mb-20px capitalize">
 						<span *ngIf="isCustomSource(sourceForm.value.verifier.type)">{{ sourceForm.value.verifier.type }} Credentials</span>
 						<span *ngIf="sourceForm.value.verifier.type === 'hmac'">Configure HMAC</span>
 					</h3>
-					<div class="grid gap-6" style="grid-template-columns: repeat(auto-fit, minmax(360px, 1fr))">
+
+					<div class="grid gap-24px grid-cols-[repeat(auto-fit,minmax(340px,1fr))]">
 						<convoy-select
 							*ngIf="sourceForm.value.verifier.type === 'hmac'"
 							label="Encoding"
@@ -77,15 +86,16 @@
 				</div>
 
 				<div formGroupName="basic_auth" *ngIf="sourceForm.value.verifier.type === 'basic_auth'" class="mt-40px">
-					<h3 class="font-semibold mb-20px">Configure Basic Auth</h3>
+					<h3 class="font-medium text-14 text-new.gray-500 mb-20px">Configure Basic Auth</h3>
 
 					<div class="grid grid-cols-2 gap-6">
-						<convoy-input-field>
+						<convoy-input-field class="mb-0">
 							<label for="username" required="true" convoy-label required="true">Username</label>
 							<input type="text" id="username" convoy-input autocomplete="username" formControlName="username" placeholder="Name goes here" />
 							<convoy-input-error *ngIf="sourceForm.get('basic_auth.username')?.touched && sourceForm.get('basic_auth.username')?.invalid">Enter basic auth username</convoy-input-error>
 						</convoy-input-field>
-						<convoy-input-field>
+
+						<convoy-input-field class="mb-0">
 							<label for="password" required="true" convoy-label required="true">Password</label>
 							<input type="text" id="password" convoy-input autocomplete="password" formControlName="password" placeholder="*******" />
 							<convoy-input-error *ngIf="sourceForm.get('basic_auth.password')?.touched && sourceForm.get('basic_auth.password')?.invalid">Enter basic auth password</convoy-input-error>
@@ -94,15 +104,16 @@
 				</div>
 
 				<div formGroupName="api_key" *ngIf="sourceForm.value.verifier.type === 'api_key'" class="mt-40px">
-					<h3 class="font-semibold mb-20px">Configure API Key</h3>
+					<h3 class="font-medium text-14 text-new.gray-500 mb-20px">Configure API Key</h3>
 
 					<div class="grid grid-cols-2 gap-6">
-						<convoy-input-field>
+						<convoy-input-field class="mb-0">
 							<label for="header_name" required="true" convoy-label required="true">Header Name</label>
 							<input type="text" id="header_name" convoy-input autocomplete="header_name" formControlName="header_name" placeholder="Header Name" />
 							<convoy-input-error *ngIf="sourceForm.get('verifier.header_name')?.touched && sourceForm.get('verifier.header_name')?.invalid">Enter api key header</convoy-input-error>
 						</convoy-input-field>
-						<convoy-input-field>
+
+						<convoy-input-field class="mb-0">
 							<label for="header_value" required="true" convoy-label required="true">Header Value</label>
 							<input type="text" id="header_value" convoy-input autocomplete="header_value" formControlName="header_value" placeholder="Key goes here" />
 							<convoy-input-error *ngIf="sourceForm.get('verifier.header_value')?.touched && sourceForm.get('verifier.header_value')?.invalid">Enter api key header value</convoy-input-error>
@@ -111,15 +122,13 @@
 				</div>
 			</div>
 
-			<hr class="border-t border-grey-20 mt-24px mb-40px" />
-
-			<h3 class="font-medium text-new.gray-800 text-14 mb-24px">Set Configurations</h3>
+			<hr class="border-t border-new.primary-25 my-40px" />
 
 			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('custom_response')">
 				<div class="flex justify-between items-center mb-16px">
 					<h4 class="text-12 text-new.gray-500 font-medium">Custom response</h4>
 					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="sourceForm.patchValue({ custom_response: { content_type: '', body: '' } }); toggleConfigForm('custom_response')">
-						<svg width="14" height="14" class="fill-transparent">
+						<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 							<use xlink:href="#delete-icon2"></use>
 						</svg>
 					</button>
@@ -132,8 +141,11 @@
 						<convoy-input-error *ngIf="sourceForm.get('custom_response.content_type')?.touched && sourceForm.get('custom_response.content_type')?.invalid">Enter content type</convoy-input-error>
 					</convoy-input-field>
 
-					<label convoy-label>Response Content</label>
-					<textarea formControlName="body" class="min-h-[20vh]" convoy-input name="body" id="body"></textarea>
+					<convoy-input-field>
+						<label convoy-label>Response Content</label>
+						<textarea formControlName="body" class="min-h-[20vh]" convoy-input name="body" id="body"></textarea>
+						<convoy-input-error *ngIf="sourceForm.get('custom_response.body')?.touched && sourceForm.get('custom_response.body')?.invalid">Enter reponse content</convoy-input-error>
+					</convoy-input-field>
 				</div>
 			</div>
 

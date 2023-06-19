@@ -20,6 +20,43 @@ import (
 	"github.com/go-chi/render"
 )
 
+func (a *PortalLinkHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
+	var newMessage models.CreateEvent
+	err := util.ReadJSON(r, &newMessage)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	err = newMessage.Validate()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	ce := services.CreateEventService{
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		Queue:        a.A.Queue,
+		NewMessage:   &newMessage,
+		Project:      project,
+	}
+
+	event, err := ce.Run(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	resp := &models.EventResponse{Event: event}
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", resp, http.StatusCreated))
+}
+
 func (a *PortalLinkHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	event, err := a.retrieveEvent(r)
 	if err != nil {

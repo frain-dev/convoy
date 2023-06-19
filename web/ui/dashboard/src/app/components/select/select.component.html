@@ -1,34 +1,13 @@
 <div convoy-dropdown size="full" position="center" [className]="control.touched && control.invalid ? 'top-[85%]' : ''" *ngIf="control">
 	<div class="w-full" [ngClass]="{ 'pointer-events-none': readonly }" dropdownTrigger>
-		<label class="w-full font-normal text-12 text-new.gray-400 mb-8px flex items-center justify-between" [for]="name">
-			<div class="flex items-center">
-				{{ label }}
-				<convoy-tooltip *ngIf="tooltipContent" [position]="tooltipPosition" [size]="tooltipSize" class="ml-4px">{{ tooltipContent }}</convoy-tooltip>
-			</div>
-			<span *ngIf="required" class="text-10 bg-grey-10 rounded-4px px-1 font-normal">required</span>
-		</label>
+		<label convoy-label [required]="required ? 'true' : 'false'" [for]="name" [tooltip]="tooltipContent">{{ label }}</label>
 
-		<input type="text" [formControl]="control" class="peer" [value]="option" hidden readonly />
+		<input type="text" [formControl]="control" [id]="name" class="peer" [value]="option" hidden readonly />
 
 		<div
+			convoy-input
 			class="
-				peer-disabled:text-grey-40 peer-disabled:border-primary-500 peer-disabled:bg-[#F7F9FC] peer-[ng-invalid]:border-danger-100
-				transition-all
-				duration-[.3s]
-				w-full
-				font-medium
-				text-14 text-grey-100
-				border border-grey-20
-				valid:border-primary-500
-				disabled:border-primary-500
-				disabled:bg-[#F7F9FC]
-				hover:bg-primary-500
-				hover:border-grey-20
-				focus:border-primary-100
-				focus:bg-white-100
-				outline-none
-				rounded-4px
-				bg-white-100
+				peer-disabled:text-new.gray-300 peer-disabled:border-new.primary-25 peer-disabled:bg-white-100 peer-[ng-invalid]:border-danger-100
 				py-12px
 				px-16px
 				appearance-none
@@ -43,11 +22,11 @@
 		>
 			<span *ngIf="!multiple">{{ selectedValue?.name || selectedValue?.title || selectedValue }}</span>
 			<ng-container *ngIf="multiple">
-				<div *ngFor="let option of selectedOptions" class="bg-primary-500 px-12px font-medium text-12 text-grey-40 mr-1 mb-1 rounded-[22px] flex items-center">
+				<div *ngFor="let option of selectedOptions" class="border border-new.gray-200 py-4px px-8px font-medium text-12 text-new.gray-400 mr-1 mb-1 rounded-22px flex items-center">
 					{{ option.name || option.title || option }}
 					<button convoy-button (click)="removeOption(option)" fill="text" type="button" class="py-0 px-0 ml-4px">
-						<svg width="10" height="10" class="fill-grey-40">
-							<use xlink:href="#close-icon"></use>
+						<svg width="14" height="14" class="fill-grey-40">
+							<use xlink:href="#close-icon-2"></use>
 						</svg>
 					</button>
 				</div>
@@ -64,7 +43,7 @@
 		<ul>
 			<ng-container *ngIf="searchable">
 				<li>
-					<div class="my-10px mr-20px border border-primary-400 h-36px px-14px rounded-[10px] flex items-center bg-white-100">
+					<div class="my-10px mr-20px border border-new.primary-50 h-36px px-14px rounded-[10px] flex items-center bg-white-100">
 						<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px w-14px" />
 						<input type="search" placeholder="Search here" class="w-full outline-none text-12" #searchFilter />
 					</div>
@@ -73,13 +52,13 @@
 			<li class="text-14 text-grey-20">Select</li>
 
 			<ng-container *ngIf="multiple">
-				<li *ngFor="let option of options" class="list-none py-10px border-b border-grey-20">
+				<li *ngFor="let option of options" class="list-none py-10px border-b border-new.primary-25">
 					<button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
 				</li>
 			</ng-container>
 
 			<ng-container *ngIf="!multiple">
-				<li *ngFor="let option of options" class="list-none py-10px border-b border-grey-20" convoy-dropdown-option>
+				<li *ngFor="let option of options" class="list-none py-10px border-b border-new.primary-25" convoy-dropdown-option>
 					<button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
 				</li>
 			</ng-container>

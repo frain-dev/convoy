@@ -14,9 +14,9 @@ import { USER } from '../models/user.model';
 })
 export class PrivateService {
 	activeProjectDetails?: PROJECT; // we should depricate this
-	organisationDetails!: ORGANIZATION_DATA;
+	organisationDetails?: ORGANIZATION_DATA;
 	apiFlagResponse!: FLIPT_API_RESPONSE;
-	projects: PROJECT[] = [];
+	projects!: HTTP_RESPONSE;
 	organisations!: HTTP_RESPONSE;
 	membership!: HTTP_RESPONSE;
 	configutation!: HTTP_RESPONSE;
@@ -84,10 +84,10 @@ export class PrivateService {
 		});
 	}
 
-	getSubscriptions(requestDetails?: CURSOR): Promise<HTTP_RESPONSE> {
+	getSubscriptions(requestDetails?: any): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				if (!requestDetails) requestDetails = { next_page_cursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF", direction: 'next' };
+				if (!requestDetails) requestDetails = { next_page_cursor: 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF', direction: 'next' };
 
 				const subscriptionsResponse = await this.http.request({
 					url: `/subscriptions`,
@@ -219,8 +219,10 @@ export class PrivateService {
 		});
 	}
 
-	getProjects(): Promise<HTTP_RESPONSE> {
+	getProjects(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
+			if (this.projects && !requestDetails?.refresh) return resolve(this.projects);
+
 			try {
 				const projectsResponse = await this.http.request({
 					url: `/projects`,
@@ -228,7 +230,7 @@ export class PrivateService {
 					level: 'org'
 				});
 
-				this.projects = projectsResponse.data;
+				this.projects = projectsResponse;
 				return resolve(projectsResponse);
 			} catch (error) {
 				return reject(error);
@@ -300,7 +302,7 @@ export class PrivateService {
 	getEndpoints(requestDetails?: CURSOR & { q?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				if (!requestDetails?.next_page_cursor && !requestDetails?.prev_page_cursor) requestDetails = { next_page_cursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF", direction: 'next', q: requestDetails?.q };
+				if (!requestDetails?.next_page_cursor && !requestDetails?.prev_page_cursor) requestDetails = { next_page_cursor: 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF', direction: 'next', q: requestDetails?.q };
 
 				const response = await this.http.request({
 					url: `/endpoints`,
@@ -319,7 +321,7 @@ export class PrivateService {
 	getSources(requestDetails?: CURSOR): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				if (!requestDetails) requestDetails = { next_page_cursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF", direction: 'next' };
+				if (!requestDetails) requestDetails = { next_page_cursor: 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF', direction: 'next' };
 
 				const sourcesResponse = await this.http.request({
 					url: `/sources`,
@@ -375,4 +377,22 @@ export class PrivateService {
 			}
 		});
 	}
+
+
+	deleteEndpoint(endpointId: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/endpoints/${endpointId}`,
+					method: 'delete',
+					level: 'org_project'
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
 }

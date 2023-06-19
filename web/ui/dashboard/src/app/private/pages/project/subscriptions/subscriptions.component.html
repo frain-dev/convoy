@@ -110,12 +110,12 @@
 					<div class="text-12 max-w-[220px] desktop:max-w-[158px] overflow-hidden whitespace-nowrap text-ellipsis">
 						{{ subscription?.endpoint_metadata?.target_url }}
 					</div>
-					<convoy-copy-button [text]="subscription?.endpoint_metadata?.target_url || ''" size="md" notificationText="Endpoint URL has been copied to clipboard" className="ml-8px"></convoy-copy-button>
+					<convoy-copy-button [text]="subscription?.endpoint_metadata?.target_url || ''" color="primary" notificationText="Endpoint URL has been copied to clipboard" className="ml-8px"></convoy-copy-button>
 				</div>
 				<div class="w-full" *ngIf="subscription?.endpoint_metadata?.secrets?.length">
 					<div class="text-12 flex items-center whitespace-nowrap">
 						Endpoint Secret
-						<convoy-copy-button [text]="getEndpointSecret(subscription.endpoint_metadata?.secrets) || ''" size="md" notificationText="Endpoint secret has been copied to clipboard" className="ml-8px"></convoy-copy-button>
+						<convoy-copy-button [text]="getEndpointSecret(subscription.endpoint_metadata?.secrets) || ''" color="primary" notificationText="Endpoint secret has been copied to clipboard" className="ml-8px"></convoy-copy-button>
 					</div>
 				</div>
 				<div class="flex items-center justify-end w-[50%]">
@@ -175,7 +175,7 @@
 					</div>
 				</div>
 				<div class="mt-12px mx-24px">
-					<convoy-copy-button [text]="activeSubscription?.source_metadata?.url || ''" size="md" className="ml-2px" [notificationText]="activeSubscription?.source_metadata?.name + ' URL has been copied to clipboard'">
+					<convoy-copy-button [text]="activeSubscription?.source_metadata?.url || ''" color="primary" className="ml-2px" [notificationText]="activeSubscription?.source_metadata?.name + ' URL has been copied to clipboard'">
 						<span class="text-14 ml-8px font-medium">Copy URL</span>
 					</convoy-copy-button>
 				</div>
@@ -194,7 +194,7 @@
 					</div>
 				</div>
 				<div class="mt-12px mx-24px">
-					<convoy-copy-button [text]="activeSubscription?.endpoint_metadata?.target_url || ''" size="md" className="ml-2px" [notificationText]="activeSubscription?.endpoint_metadata?.title + ' URL has been copied to clipboard'">
+					<convoy-copy-button [text]="activeSubscription?.endpoint_metadata?.target_url || ''" color="primary" className="ml-2px" [notificationText]="activeSubscription?.endpoint_metadata?.title + ' URL has been copied to clipboard'">
 						<span class="text-14 ml-8px font-medium">Copy URL</span>
 					</convoy-copy-button>
 				</div>

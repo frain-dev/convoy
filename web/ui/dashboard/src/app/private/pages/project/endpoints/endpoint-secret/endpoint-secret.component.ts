@@ -5,9 +5,9 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
-import { EndpointDetailsService } from '../endpoint-details.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ENDPOINT, SECRET } from 'src/app/models/endpoint.model';
+import { EndpointsService } from '../endpoints.service';
 
 @Component({
 	selector: 'convoy-endpoint-secret',
@@ -36,7 +36,7 @@ export class EndpointSecretComponent implements OnInit {
 	showExpireSecret = false;
 	isExpiringSecret = false;
 
-	constructor(private formBuilder: FormBuilder, private endpointDetailsService: EndpointDetailsService, private generalService: GeneralService) {}
+	constructor(private formBuilder: FormBuilder, private endpointService: EndpointsService, private generalService: GeneralService) {}
 
 	ngOnInit(): void {}
 
@@ -49,7 +49,7 @@ export class EndpointSecretComponent implements OnInit {
 		this.expireSecretForm.value.expiration = parseInt(this.expireSecretForm.value.expiration);
 		this.isExpiringSecret = true;
 		try {
-			const response = await this.endpointDetailsService.expireSecret({ endpointId: this.endpointDetails?.uid || '', body: this.expireSecretForm.value });
+			const response = await this.endpointService.expireSecret({ endpointId: this.endpointDetails?.uid || '', body: this.expireSecretForm.value });
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.isExpiringSecret = false;
 			this.expireCurrentSecret.emit();
