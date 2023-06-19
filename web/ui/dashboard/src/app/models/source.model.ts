@@ -3,6 +3,7 @@ export interface SOURCE {
 	deleted_at: number;
 	group_id: string;
 	is_disabled: boolean;
+	idempotency_keys: string[];
 	mask_id: string;
 	name: string;
 	type: string;

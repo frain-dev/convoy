@@ -234,7 +234,7 @@
 						</ng-container>
 						<span *ngIf="delivery?.device_id">{{ delivery?.device_metadata?.host_name }}</span>
 					</div>
-					<div class="w-1/4 flex items-center text-new.gray-400 text-12">
+					<div class="w-1/4 flex items-center justify-end text-new.gray-400 text-12">
 						{{ delivery.created_at | date: 'shortTime' }}
 
 						<button convoy-button fill="clear" size="xs" class="pr-0">
