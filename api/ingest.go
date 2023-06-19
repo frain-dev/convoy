@@ -2,11 +2,9 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/frain-dev/convoy/internal/pkg/dedup"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -150,23 +148,6 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		payload = []byte("{}")
 	}
 
-	// generate the event's idempotency key checksum if it's not set on the source
-	//if len(checksum) == 0 {
-	//	var builder strings.Builder
-	//	builder.WriteString("body:")
-	//	builder.Write(payload)
-	//	builder.WriteString("\n")
-	//	builder.WriteString("query:")
-	//	builder.WriteString(r.URL.RawQuery)
-	//	builder.WriteString("\n")
-	//	builder.WriteString("headers:")
-	//	builder.WriteString(stringifyRequestHeaders(r))
-	//
-	//	checksum = dedup.GenerateChecksum(builder.String())
-	//	println("builder: ", builder.String())
-	//	println("checksum: ", checksum)
-	//}
-
 	// 3.2 On success
 	// Attach Source to Event.
 	// Write Event to the Ingestion Queue.
@@ -223,21 +204,6 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 	}
 	_ = render.Render(w, r, util.NewServerResponse("Event received", len(payload), http.StatusOK))
-}
-
-// stringifyRequestHeaders prints out a request's headers in this format
-//
-//	HeaderKey1: HeaderValue1
-//	HeaderKey2: HeaderValue2
-func stringifyRequestHeaders(req *http.Request) string {
-	var h strings.Builder
-	// Iterate over the headers and print them
-	for key, values := range req.Header {
-		for _, value := range values {
-			h.WriteString(fmt.Sprintf("%s: %s\n", key, value))
-		}
-	}
-	return h.String()
 }
 
 func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Request) {
