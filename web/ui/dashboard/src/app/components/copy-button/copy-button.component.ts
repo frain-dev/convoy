@@ -13,7 +13,8 @@ import { ButtonComponent } from '../button/button.component';
 export class CopyButtonComponent implements OnInit {
 	@Input('text') textToCopy!: string;
 	@Input('notificationText') notificationText!: string;
-	@Input('size') size: 'sm' | 'md' = 'sm';
+	@Input('size') size: 'sm' | 'md' = 'md';
+	@Input('color') color: 'primary' | 'gray' = 'gray';
 	@Input('className') class!: string;
 	@Output('copyText') copy = new EventEmitter();
 	textCopied = false;

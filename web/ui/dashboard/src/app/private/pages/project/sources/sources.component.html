@@ -67,8 +67,8 @@
 								</li>
 								<li>
 									<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="activeSource = source; showDeleteSourceModal = true">
-										<svg width="16" height="16" class="mr-8px fill-danger-100">
-											<use xlink:href="#delete-icon"></use>
+										<svg width="16" height="16" class="mr-8px fill-transparent stroke-new.error-400">
+											<use xlink:href="#delete-icon2"></use>
 										</svg>
 										Delete
 									</button>
@@ -91,7 +91,7 @@
 								</button>
 								<ul dropdownOptions>
 									<li class="border-b border-grey-20">
-										<div convoy-copy-button (copyText)="hideIncomingSourceDropdown()" [notificationText]="source.name + ' ID has been copied to clipboard'" className="py-6px px-16px" [text]="source?.uid || ''">
+										<div convoy-copy-button color="primary" size="sm" (copyText)="hideIncomingSourceDropdown()" [notificationText]="source.name + ' ID has been copied to clipboard'" className="py-6px px-16px" [text]="source?.uid || ''">
 											<span class="pl-8px">Copy ID</span>
 										</div>
 									</li>
@@ -116,7 +116,7 @@
 						</div>
 					</div>
 					<div class="mt-12px mx-24px">
-						<convoy-copy-button [text]="source.url" size="md" className="ml-2px" [notificationText]="source.name + ' URL has been copied to clipboard'"><span class="text-14 ml-8px font-medium">Copy URL</span></convoy-copy-button>
+						<convoy-copy-button [text]="source.url" color="primary" className="ml-2px" [notificationText]="source.name + ' URL has been copied to clipboard'"><span class="text-14 ml-8px font-medium">Copy URL</span></convoy-copy-button>
 					</div>
 				</ng-container>
 			</div>

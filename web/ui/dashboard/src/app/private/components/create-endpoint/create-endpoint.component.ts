@@ -12,10 +12,10 @@ import { CreateEndpointService } from './create-endpoint.service';
 import { PrivateService } from '../../private.service';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.component';
-import { EndpointDetailsService } from '../../pages/project/endpoint-details/endpoint-details.service';
 import { PermissionDirective } from '../permission/permission.directive';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
+import { EndpointsService } from '../../pages/project/endpoints/endpoints.service';
 
 @Component({
 	selector: 'convoy-create-endpoint',
@@ -64,7 +64,7 @@ export class CreateEndpointComponent implements OnInit {
 		private route: ActivatedRoute,
 		public privateService: PrivateService,
 		private router: Router,
-		private endpointService: EndpointDetailsService
+		private endpointService: EndpointsService
 	) {}
 
 	async ngOnInit() {

@@ -8,7 +8,7 @@ import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
+import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { CreateEndpointComponent } from 'src/app/private/components/create-endpoint/create-endpoint.component';
@@ -22,6 +22,9 @@ import { ProjectService } from '../project.service';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';
+import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
+import { EndpointSecretComponent } from './endpoint-secret/endpoint-secret.component';
+import { EndpointsService } from './endpoints.service';
 
 @Component({
 	selector: 'convoy-endpoints',
@@ -39,6 +42,7 @@ import { PermissionDirective } from 'src/app/private/components/permission/permi
 		CardComponent,
 		EmptyStateComponent,
 		DropdownComponent,
+		DropdownOptionDirective,
 		ListItemComponent,
 		ModalComponent,
 		ModalHeaderComponent,
@@ -50,7 +54,9 @@ import { PermissionDirective } from 'src/app/private/components/permission/permi
 		TooltipComponent,
 		PaginationComponent,
 		CopyButtonComponent,
-		PermissionDirective
+		PermissionDirective,
+		EndpointSecretComponent,
+		DeleteModalComponent
 	],
 	templateUrl: './endpoints.component.html',
 	styleUrls: ['./endpoints.component.scss']
@@ -58,20 +64,26 @@ import { PermissionDirective } from 'src/app/private/components/permission/permi
 export class EndpointsComponent implements OnInit {
 	showCreateEndpointModal = this.router.url.split('/')[4] === 'new';
 	showEditEndpointModal = this.router.url.split('/')[5] === 'edit';
-	endpointsTableHead = ['ID', 'Status', 'Name', 'Time Created', 'Updated', ''];
+	endpointsTableHead = ['Name', 'Status', 'ID', '', '', ''];
 	displayedEndpoints?: { date: string; content: ENDPOINT[] }[];
 	endpoints?: { pagination?: PAGINATION; content?: ENDPOINT[] };
+	selectedEndpoint?: ENDPOINT;
 	isLoadingEndpoints = false;
+	showEndpointSecret = false;
+	isDeletingEndpoint = false;
+	showDeleteModal = false;
+	isTogglingEndpoint = false;
+	isSendingTestEvent = false;
 	endpointSearchString!: string;
 
-	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private generalService: GeneralService, public route: ActivatedRoute) {}
+	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute) {}
 
 	ngOnInit() {
 		this.getEndpoints();
 	}
 
-	async getEndpoints(requestDetails?: CURSOR & { search?: string }) {
-		this.isLoadingEndpoints = true;
+	async getEndpoints(requestDetails?: CURSOR & { search?: string; showLoader?: boolean }) {
+		if (requestDetails?.showLoader) this.isLoadingEndpoints = true;
 
 		try {
 			const response = await this.privateService.getEndpoints({ ...requestDetails, q: requestDetails?.search || this.endpointSearchString });
@@ -86,6 +98,57 @@ export class EndpointsComponent implements OnInit {
 	searchEndpoint(searchDetails: { searchInput?: any }) {
 		const searchString: string = searchDetails?.searchInput?.target?.value || this.endpointSearchString;
 		this.getEndpoints({ search: searchString });
+	}
+
+	async deleteEndpoint() {
+		if (!this.selectedEndpoint) return;
+		this.isDeletingEndpoint = true;
+
+		try {
+			const response = await this.endpointService.deleteEndpoint(this.selectedEndpoint?.uid || '');
+			this.getEndpoints({ showLoader: false });
+
+			this.generalService.showNotification({ style: 'success', message: response.message });
+			this.showDeleteModal = false;
+			this.isDeletingEndpoint = false;
+		} catch {
+			this.isDeletingEndpoint = false;
+		}
+	}
+
+	async toggleEndpoint() {
+		this.isTogglingEndpoint = true;
+		if (!this.selectedEndpoint?.uid) return;
+
+		try {
+			const response = await this.endpointService.toggleEndpoint(this.selectedEndpoint?.uid);
+			this.displayedEndpoints?.forEach(item => {
+				item.content.forEach(endpoint => {
+					if (response.data.uid === endpoint.uid) endpoint.status = response.data.status;
+				});
+			});
+			this.generalService.showNotification({ message: `${this.selectedEndpoint?.title} status updated successfully`, style: 'success' });
+			this.isTogglingEndpoint = false;
+		} catch {
+			this.isTogglingEndpoint = false;
+		}
+	}
+
+	async sendTestEvent() {
+		const testEvent = {
+			data: { data: 'test event from Convoy', convoy: 'https://getconvoy.io', amount: 1000 },
+			endpoint_id: this.selectedEndpoint?.uid,
+			event_type: 'test.convoy'
+		};
+
+		this.isSendingTestEvent = true;
+		try {
+			const response = await this.endpointService.sendEvent({ body: testEvent });
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.isSendingTestEvent = false;
+		} catch {
+			this.isSendingTestEvent = false;
+		}
 	}
 
 	cancel() {

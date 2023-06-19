@@ -5,9 +5,9 @@ import { PAGINATION } from 'src/app/models/global.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { AppService } from './app.service';
-import { EndpointDetailsService } from 'src/app/private/pages/project/endpoint-details/endpoint-details.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ENDPOINT, PORTAL_LINK } from 'src/app/models/endpoint.model';
+import { EndpointsService } from 'src/app/private/pages/project/endpoints/endpoints.service';
 import { PrivateService } from 'src/app/private/private.service';
 import { Location } from '@angular/common';
 
@@ -33,7 +33,7 @@ export class AppComponent implements OnInit {
 	portalDetails!: PORTAL_LINK;
 	endpoints: PORTAL_ENDPOINT[] = [];
 
-	constructor(private appService: AppService, private route: ActivatedRoute, private endpointDetailsService: EndpointDetailsService, private generalService: GeneralService, private privateService: PrivateService, public location: Location) {}
+	constructor(private appService: AppService, private route: ActivatedRoute, private endpointService: EndpointsService, private generalService: GeneralService, private privateService: PrivateService, public location: Location) {}
 
 	ngOnInit(): void {
 		Promise.all([this.getPortalDetails(), this.getEndpoints()]).then(() => {
@@ -84,7 +84,7 @@ export class AppComponent implements OnInit {
 		};
 
 		try {
-			const response = await this.endpointDetailsService.sendEvent({ body: testEvent });
+			const response = await this.endpointService.sendEvent({ body: testEvent });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 		} catch (error) {
 			console.log(error);
@@ -96,7 +96,7 @@ export class AppComponent implements OnInit {
 		this.isTogglingEndpoint = true;
 
 		try {
-			const response = await this.endpointDetailsService.toggleEndpoint(endpointDetails?.uid);
+			const response = await this.endpointService.toggleEndpoint(endpointDetails?.uid);
 			this.endpoints[subscriptionIndex] = { ...this.endpoints[subscriptionIndex], ...response.data };
 			this.generalService.showNotification({ message: `${endpointDetails?.title} status updated successfully`, style: 'success' });
 			this.isTogglingEndpoint = false;
