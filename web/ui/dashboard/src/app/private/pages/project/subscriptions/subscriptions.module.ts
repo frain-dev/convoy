@@ -16,6 +16,8 @@ import { SourceValueModule } from 'src/app/pipes/source-value/source-value.modul
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';
+import { TableCellComponent, TableComponent, TableRowComponent } from 'src/app/components/table/table.component';
+import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 
 const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 
@@ -39,7 +41,12 @@ const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 		TooltipComponent,
 		CardComponent,
 		PaginationComponent,
-		PermissionDirective
+		PermissionDirective,
+		TableCellComponent,
+		TableRowComponent,
+		TableComponent,
+		DropdownComponent,
+		DropdownOptionDirective
 	]
 })
 export class SubscriptionsModule {}

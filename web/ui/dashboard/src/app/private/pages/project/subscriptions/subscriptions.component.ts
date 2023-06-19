@@ -13,17 +13,18 @@ import { GeneralService } from 'src/app/services/general/general.service';
 export class SubscriptionsComponent implements OnInit {
 	activeSubscription?: SUBSCRIPTION;
 	shouldShowCreateSubscriptionModal = false;
-	projectId?: string;
 	subscriptions?: { content: SUBSCRIPTION[]; pagination?: PAGINATION };
+	displayedSubscriptions?: { date: string; content: SUBSCRIPTION[] }[];
 	subscriptionsLoaders = [1, 2, 3, 4, 5];
 	isLoadindingSubscriptions = false;
 	isDeletingSubscription = false;
 	showUpdateSubscriptionModal = false;
 	showDeleteSubscriptionModal = false;
+	selectedSubscription?: SUBSCRIPTION;
+	endpointsTableHead = ['Name', 'Status', '', '', '', '', '', ''];
+	showSubscriptionDetails = false;
 
 	constructor(private route: ActivatedRoute, public privateService: PrivateService, public router: Router, private generalService: GeneralService) {
-		this.projectId = this.privateService.activeProjectDetails?.uid;
-
 		const urlParam = route.snapshot.params.id;
 		if (urlParam && urlParam === 'new') this.shouldShowCreateSubscriptionModal = true;
 		if (urlParam && urlParam !== 'new') this.showUpdateSubscriptionModal = true;
@@ -31,7 +32,10 @@ export class SubscriptionsComponent implements OnInit {
 
 	async ngOnInit() {
 		await this.getSubscriptions();
-		this.route.queryParams.subscribe(params => (this.activeSubscription = this.subscriptions?.content.find(subscription => subscription.uid === params?.id)));
+		this.route.queryParams.subscribe(params => {
+			this.showSubscriptionDetails = !!params.id;
+			this.activeSubscription = this.subscriptions?.content.find(subscription => subscription.uid === params?.id);
+		});
 	}
 
 	async getSubscriptions(requestDetails?: CURSOR) {
@@ -40,6 +44,7 @@ export class SubscriptionsComponent implements OnInit {
 		try {
 			const subscriptionsResponse = await this.privateService.getSubscriptions(requestDetails);
 			this.subscriptions = subscriptionsResponse.data;
+			this.displayedSubscriptions = this.generalService.setContentDisplayed(subscriptionsResponse.data.content);
 			this.subscriptions?.content?.length === 0 ? localStorage.setItem('isActiveProjectConfigurationComplete', 'false') : localStorage.setItem('isActiveProjectConfigurationComplete', 'true');
 			this.isLoadindingSubscriptions = false;
 		} catch (error) {
@@ -73,5 +78,9 @@ export class SubscriptionsComponent implements OnInit {
 
 	getEndpointSecret(endpointSecrets: any) {
 		return endpointSecrets?.length === 1 ? endpointSecrets[0].value : endpointSecrets[endpointSecrets?.length - 1].value;
+	}
+
+	hasFilter(filterObject: { headers: Object; body: Object }): boolean {
+		return Object.keys(filterObject.body).length > 0 || Object.keys(filterObject.headers).length > 0;
 	}
 }
