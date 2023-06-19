@@ -78,13 +78,11 @@
 						<td convoy-table-cell>
 							<div class="w-full flex items-center justify-end">
 								<button convoy-button size="xs" [routerLink]="['../events']" [relativeTo]="route" [queryParams]="{ linksEndpoint: endpoint.uid }" texture="light">
-									<svg width="15" height="14" class="mr-10px">
-										<use xlink:href="#view-data-icon"></use>
-									</svg>
+									<img src="/assets/img/view-events-icon.svg" class="w-14px mr-10px" alt="view events icon" />
 									View Events
 								</button>
 								<div convoy-dropdown position="right">
-									<button dropdownTrigger convoy-button size="xs" fill="clear" class="ml-40px">
+									<button dropdownTrigger convoy-button size="xs" fill="clear" class="ml-40px pr-24px">
 										<svg width="21" height="20">
 											<use xlink:href="#more-icon"></use>
 										</svg>
