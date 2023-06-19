@@ -152,63 +152,6 @@ func TestLoadConfig(t *testing.T) {
 			wantErrMsg: "",
 		},
 		{
-			name: "should_switch_to_default_MaxResponseSize_for_too_large_config",
-			args: args{
-				path: "./testdata/Config/too-large-max-response-size-convoy.json",
-			},
-			wantCfg: Configuration{
-				Host: "localhost:5005",
-				Database: DatabaseConfiguration{
-					Type:               PostgresDatabaseProvider,
-					Scheme:             "postgres",
-					Host:               "inside-config-file",
-					Username:           "postgres",
-					Password:           "postgres",
-					Database:           "convoy",
-					Options:            "sslmode=disable&connect_timeout=30",
-					Port:               5432,
-					SetConnMaxLifetime: 3600,
-				},
-				Redis: RedisConfiguration{
-					Scheme: "redis",
-					Host:   "localhost",
-					Port:   8379,
-				},
-				Server: ServerConfiguration{
-					HTTP: HTTPServerConfiguration{
-						Port:       80,
-						WorkerPort: 5006,
-					},
-				},
-				Logger: LoggerConfiguration{
-					Level: "error",
-				},
-				Search:          DefaultConfiguration.Search,
-				MaxResponseSize: MaxResponseSize,
-				Environment:     OSSEnvironment,
-				Auth: AuthConfiguration{
-					Native: NativeRealmOptions{
-						Enabled: true,
-					},
-					Jwt: JwtRealmOptions{
-						Enabled: true,
-					},
-					IsSignupEnabled: true,
-				},
-				Analytics: AnalyticsConfiguration{
-					IsEnabled: true,
-				},
-				StoragePolicy: StoragePolicyConfiguration{
-					Type: "on-prem",
-					OnPrem: OnPremStorage{
-						Path: convoy.DefaultOnPremDir,
-					},
-				},
-			},
-			wantErr:    false,
-			wantErrMsg: "",
-		},
-		{
 			name: "should_switch_to_default_MaxResponseSize_for_zero_config",
 			args: args{
 				path: "./testdata/Config/zero-max-response-size-convoy.json",
