@@ -1,11 +1,10 @@
 package google
 
 import (
+	"cloud.google.com/go/pubsub"
 	"context"
 	"errors"
 	"fmt"
-
-	"cloud.google.com/go/pubsub"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"google.golang.org/api/option"
@@ -57,7 +56,7 @@ func (g *Google) Verify() error {
 		return ErrInvalidCredentials
 	}
 
-	defer g.handleError(client.Close())
+	defer g.handleError(client)
 
 	exists, err := client.Subscription(g.Cfg.SubscriptionID).Exists(ctx)
 	if err != nil {
@@ -79,7 +78,7 @@ func (g *Google) Consume() {
 		g.log.WithError(err).Error("failed to create new pubsub client")
 	}
 
-	defer g.handleError(client.Close())
+	defer g.handleError(client)
 
 	sub := client.Subscription(g.Cfg.SubscriptionID)
 
@@ -100,9 +99,9 @@ func (g *Google) Consume() {
 	}
 }
 
-func (g *Google) handleError(err error) {
-	if err != nil {
-		g.log.WithError(err).Println("an error occurred while closing the client")
+func (g *Google) handleError(client *pubsub.Client) {
+	if err := client.Close(); err != nil {
+		g.log.WithError(err).Error("an error occurred while closing the client")
 	}
 
 	if err := recover(); err != nil {
