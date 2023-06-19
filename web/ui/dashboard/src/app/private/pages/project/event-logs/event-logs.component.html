@@ -160,8 +160,8 @@
 			<!-- event details  -->
 			<ng-container *ngIf="!isloadingEvents && displayedEvents">
 				<div class="border-b border-new.primary-25 pb-24px">
-					<button convoy-button size="xs" texture="light" (click)="retryEvent({ eventId: eventsDetailsItem.uid })">
-						<svg width="16" height="16" class="mr-10px">
+					<button convoy-button size="xs" fill="soft" (click)="retryEvent({ eventId: eventsDetailsItem.uid })">
+						<svg width="16" height="16" class="mr-10px scale-75">
 							<use xlink:href="#refresh-icon"></use>
 						</svg>
 						Replay
@@ -207,34 +207,38 @@
 				<li
 					convoy-list-item
 					*ngFor="let delivery of sidebarEventDeliveries"
-					[title]="delivery?.endpoint_metadata?.target_url || ''"
 					[routerLink]="['../events/event-deliveries/' + delivery.uid]"
 					[relativeTo]="route"
-					class="cursor-pointer border-none flex !justify-start mb-10px hover:bg-primary-500 py-10px rounded-4px transition-colors"
+					class="cursor-pointer border-none flex !justify-between mb-10px hover:bg-new.primary-25 py-6px rounded-12px transition-colors pl-4px"
 				>
-					<div class="flex items-center w-1/5">
-						<div convoy-tag [color]="delivery.status | statuscolor" className="mr-20px">{{ delivery.status }}</div>
-						<svg width="16" height="14" class="mr-4px" *ngIf="delivery.device_id">
-							<use xlink:href="#cli-icon"></use>
-						</svg>
-					</div>
-					<div class="text-14 w-3/5 whitespace-nowrap overflow-ellipsis overflow-hidden text-new.gray-600 text-center">
-						<ng-container *ngIf="!delivery?.device_id">
-							<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
-								<span class="max-w-[100px] overflow-hidden overflow-ellipsis">
-									{{ delivery?.source_metadata?.name || 'Rest API' }}
-								</span>
+					<div class="flex items-center">
+						<div class="flex items-center mr-12px">
+							<div convoy-tag [color]="delivery.status | statuscolor" className="mr-20px">{{ delivery.status }}</div>
+							<svg width="16" height="14" class="mr-4px" *ngIf="delivery.device_id">
+								<use xlink:href="#cli-icon"></use>
+							</svg>
+						</div>
 
-								<span class="px-16px font-light">→</span>
-							</ng-container>
+						<div class="whitespace-nowrap overflow-ellipsis overflow-hidden text-new.gray-600 text-center text-12">
+							<div class="flex items-center" *ngIf="!delivery?.device_id">
+								<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
+									<div class="max-w-[100px] truncate">
+										{{ delivery?.source_metadata?.name || 'Rest API' }}
+									</div>
 
-							<span [class]="privateService.activeProjectDetails?.type === 'incoming' ? 'max-w-[100px] overflow-hidden overflow-ellipsis' : 'w-120px' + ' overflow-hidden overflow-ellipsis'">
-								{{ delivery.endpoint_metadata.title }}
-							</span>
-						</ng-container>
-						<span *ngIf="delivery?.device_id">{{ delivery?.device_metadata?.host_name }}</span>
+									<div class="px-16px font-light">→</div>
+								</ng-container>
+
+								<div [title]="delivery?.endpoint_metadata?.target_url || ''" [class]="(privateService.activeProjectDetails?.type === 'incoming' ? 'max-w-[100px]' : 'max-w-[120px]') + ' overflow-hidden overflow-ellipsis'">
+									{{ delivery.endpoint_metadata.title }}
+								</div>
+							</div>
+
+							<span *ngIf="delivery?.device_id">{{ delivery?.device_metadata?.host_name }}</span>
+						</div>
 					</div>
-					<div class="w-1/4 flex items-center justify-end text-new.gray-400 text-12">
+
+					<div class="flex items-center justify-end text-new.gray-400 text-12 self-end">
 						{{ delivery.created_at | date: 'shortTime' }}
 
 						<button convoy-button fill="clear" size="xs" class="pr-0">

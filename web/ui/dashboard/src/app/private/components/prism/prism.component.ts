@@ -46,7 +46,7 @@ export class PrismComponent implements AfterViewInit, OnChanges {
 
 		const header = {
 			headersLength: headers.length,
-			headers: this.showPayload ? headers : headers.slice(0, 3)
+			headers: this.showPayload ? headers : headers.slice(0, 6)
 		};
 
 		return header;

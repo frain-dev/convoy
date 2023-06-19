@@ -78,7 +78,7 @@
 		<div class="flex items-center">
 			<div class="px-30px py-24px">
 				<p class="text-new.gray-400 text-12 font-light mb-6px">TIME</p>
-				<p class="text-14 font-medium">{{ eventDelsDetails?.updated_at | date: 'medium' }}</p>
+				<p class="text-12 font-medium">{{ eventDelsDetails?.updated_at | date: 'medium' }}</p>
 			</div>
 			<div class="w-[1px] h-40px bg-new.primary-25"></div>
 		</div>
@@ -86,12 +86,12 @@
 		<div class="flex items-center">
 			<div class="px-30px py-24px" *ngIf="!eventDelsDetails?.device_id">
 				<p class="text-new.gray-400 text-12 font-light mb-6px">IP ADDRESS</p>
-				<p class="text-14 font-medium">{{ eventDeliveryAtempt?.ip_address || '-' }}</p>
+				<p class="text-12 font-medium">{{ eventDeliveryAtempt?.ip_address || '-' }}</p>
 			</div>
 			<div class="px-30px py-24px" *ngIf="eventDelsDetails?.device_id">
 				<p class="text-new.gray-400 text-12 font-light mb-6px">DEVICE</p>
 
-				<div class="flex items-center text-14 font-medium">
+				<div class="flex items-center text-12 font-medium">
 					<div>
 						<svg width="16" height="14" class="mr-8px">
 							<use xlink:href="#cli-icon"></use>
@@ -106,14 +106,14 @@
 		<div class="flex items-center">
 			<div class="px-30px py-24px" *ngIf="!eventDelsDetails?.device_id">
 				<p class="text-new.gray-400 text-12 font-light mb-6px">API VERSION</p>
-				<p class="text-14 font-medium">{{ eventDeliveryAtempt?.api_version || '-' }}</p>
+				<p class="text-12 font-medium">{{ eventDeliveryAtempt?.api_version || '-' }}</p>
 			</div>
 			<div class="w-[1px] h-40px bg-new.primary-25"></div>
 		</div>
 
 		<div class="pl-30px">
 			<p class="text-new.gray-400 text-12 font-light mb-6px">IDEMPOTENCY KEY</p>
-			<p class="text-14 font-medium w-150px whitespace-nowrap overflow-hidden overflow-ellipsis">{{ eventDelsDetails?.idempotency_key || '-' }}</p>
+			<p class="text-12 font-medium w-150px whitespace-nowrap overflow-hidden overflow-ellipsis">{{ eventDelsDetails?.idempotency_key || '-' }}</p>
 		</div>
 	</div>
 
