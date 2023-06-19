@@ -322,23 +322,34 @@ func Override(newCfg *Configuration) error {
 	ov := reflect.ValueOf(&c).Elem()
 	nv := reflect.ValueOf(newCfg).Elem()
 
-	for i := 0; i < ov.NumField(); i++ {
-		if !ov.Field(i).CanInterface() {
-			continue
-		}
-
-		fv := nv.Field(i).Interface()
-		isZero := reflect.ValueOf(fv).IsZero()
-
-		if isZero {
-			continue
-		}
-
-		ov.Field(i).Set(reflect.ValueOf(fv))
-	}
+	overrideFields(ov, nv)
 
 	cfgSingleton.Store(&c)
 	return nil
+}
+
+func overrideFields(ov, nv reflect.Value) {
+	for i := 0; i < ov.NumField(); i++ {
+		ovField := ov.Field(i)
+		if !ovField.CanInterface() {
+			continue
+		}
+
+		nvField := nv.Field(i)
+
+		if nvField.Kind() == reflect.Struct {
+			overrideFields(ovField, nvField)
+		} else {
+			fv := nvField.Interface()
+			isZero := reflect.ValueOf(fv).IsZero()
+
+			if isZero {
+				continue
+			}
+
+			ovField.Set(reflect.ValueOf(fv))
+		}
+	}
 }
 
 // LoadConfig is used to load the configuration from either the json config file
