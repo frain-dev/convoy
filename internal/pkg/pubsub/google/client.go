@@ -56,8 +56,7 @@ func (g *Google) Verify() error {
 		return ErrInvalidCredentials
 	}
 
-	defer client.Close()
-	defer g.handleError()
+	defer g.handleError(client)
 
 	exists, err := client.Subscription(g.Cfg.SubscriptionID).Exists(ctx)
 	if err != nil {
@@ -79,14 +78,7 @@ func (g *Google) Consume() {
 		g.log.WithError(err).Error("failed to create new pubsub client")
 	}
 
-	defer func(c *pubsub.Client, log log.StdLogger) {
-		err := client.Close()
-		if err != nil {
-			log.WithError(err).Error("failed to close client")
-		}
-	}(client, g.log)
-
-	defer g.handleError()
+	defer g.handleError(client)
 
 	sub := client.Subscription(g.Cfg.SubscriptionID)
 
@@ -107,7 +99,11 @@ func (g *Google) Consume() {
 	}
 }
 
-func (g *Google) handleError() {
+func (g *Google) handleError(client *pubsub.Client) {
+	if err := client.Close(); err != nil {
+		g.log.WithError(err).Error("an error occurred while closing the client")
+	}
+
 	if err := recover(); err != nil {
 		g.log.WithError(fmt.Errorf("sourceID: %s, Errror: %s", g.source.UID, err)).Error("google pubsub source crashed")
 	}
