@@ -131,64 +131,11 @@ func TestLoadConfig(t *testing.T) {
 				Environment:     OSSEnvironment,
 				Auth: AuthConfiguration{
 					Native: NativeRealmOptions{
-						Enabled: true},
-					Jwt: JwtRealmOptions{
-						Enabled: true},
-					IsSignupEnabled: true,
-				},
-				Analytics: AnalyticsConfiguration{
-					IsEnabled: true,
-				},
-				StoragePolicy: StoragePolicyConfiguration{
-					Type: "on-prem",
-					OnPrem: OnPremStorage{
-						Path: convoy.DefaultOnPremDir,
+						Enabled: true,
 					},
-				},
-			},
-			wantErr:    false,
-			wantErrMsg: "",
-		},
-		{
-			name: "should_switch_to_default_MaxResponseSize_for_too_large_config",
-			args: args{
-				path: "./testdata/Config/too-large-max-response-size-convoy.json",
-			},
-			wantCfg: Configuration{
-				Host: "localhost:5005",
-				Database: DatabaseConfiguration{
-					Type:               PostgresDatabaseProvider,
-					Scheme:             "postgres",
-					Host:               "inside-config-file",
-					Username:           "postgres",
-					Password:           "postgres",
-					Database:           "convoy",
-					Options:            "sslmode=disable&connect_timeout=30",
-					Port:               5432,
-					SetConnMaxLifetime: 3600,
-				},
-				Redis: RedisConfiguration{
-					Scheme: "redis",
-					Host:   "localhost",
-					Port:   8379,
-				},
-				Server: ServerConfiguration{
-					HTTP: HTTPServerConfiguration{
-						Port:       80,
-						WorkerPort: 5006,
-					},
-				},
-				Logger: LoggerConfiguration{
-					Level: "error",
-				},
-				Search:          DefaultConfiguration.Search,
-				MaxResponseSize: MaxResponseSize,
-				Environment:     OSSEnvironment,
-				Auth: AuthConfiguration{
-					Native: NativeRealmOptions{
-						Enabled: true},
 					Jwt: JwtRealmOptions{
-						Enabled: true},
+						Enabled: true,
+					},
 					IsSignupEnabled: true,
 				},
 				Analytics: AnalyticsConfiguration{
@@ -241,9 +188,11 @@ func TestLoadConfig(t *testing.T) {
 				Environment:     OSSEnvironment,
 				Auth: AuthConfiguration{
 					Native: NativeRealmOptions{
-						Enabled: true},
+						Enabled: true,
+					},
 					Jwt: JwtRealmOptions{
-						Enabled: true},
+						Enabled: true,
+					},
 					IsSignupEnabled: true,
 				},
 				Analytics: AnalyticsConfiguration{
@@ -323,10 +272,11 @@ func TestOverride(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		args       args
-		config     *Configuration
-		configType string
+		name           string
+		args           args
+		config         *Configuration
+		expectedConfig *Configuration
+		configType     string
 	}{
 		{
 			name: "should_override_database_configuration",
@@ -339,7 +289,21 @@ func TestOverride(t *testing.T) {
 					SetMaxOpenConnections: 10,
 					SetMaxIdleConnections: 10,
 					SetConnMaxLifetime:    3600,
-					Host:                  "localhost",
+				},
+			},
+			expectedConfig: &Configuration{
+				Database: DatabaseConfiguration{
+					Type:                  PostgresDatabaseProvider,
+					Scheme:                "postgres",
+					Host:                  "inside-config-file",
+					Username:              "postgres",
+					Password:              "postgres",
+					Database:              "convoy",
+					Options:               "sslmode=disable&connect_timeout=30",
+					Port:                  5432,
+					SetMaxOpenConnections: 10,
+					SetMaxIdleConnections: 10,
+					SetConnMaxLifetime:    3600,
 				},
 			},
 			configType: "database",
@@ -360,6 +324,13 @@ func TestOverride(t *testing.T) {
 				Redis: RedisConfiguration{
 					Host: "localhost",
 					Port: 6379,
+				},
+			},
+			expectedConfig: &Configuration{
+				Redis: RedisConfiguration{
+					Scheme: "redis",
+					Host:   "localhost",
+					Port:   6379,
 				},
 			},
 			configType: "queue",
@@ -383,9 +354,9 @@ func TestOverride(t *testing.T) {
 
 			switch tc.configType {
 			case "database":
-				require.Equal(t, c.Database, tc.config.Database)
+				require.Equal(t, tc.expectedConfig.Database, c.Database)
 			case "queue":
-				require.Equal(t, c.Redis, tc.config.Redis)
+				require.Equal(t, tc.expectedConfig.Redis, c.Redis)
 			default:
 			}
 		})

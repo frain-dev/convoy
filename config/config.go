@@ -322,23 +322,34 @@ func Override(newCfg *Configuration) error {
 	ov := reflect.ValueOf(&c).Elem()
 	nv := reflect.ValueOf(newCfg).Elem()
 
-	for i := 0; i < ov.NumField(); i++ {
-		if !ov.Field(i).CanInterface() {
-			continue
-		}
-
-		fv := nv.Field(i).Interface()
-		isZero := reflect.ValueOf(fv).IsZero()
-
-		if isZero {
-			continue
-		}
-
-		ov.Field(i).Set(reflect.ValueOf(fv))
-	}
+	overrideFields(ov, nv)
 
 	cfgSingleton.Store(&c)
 	return nil
+}
+
+func overrideFields(ov, nv reflect.Value) {
+	for i := 0; i < ov.NumField(); i++ {
+		ovField := ov.Field(i)
+		if !ovField.CanInterface() {
+			continue
+		}
+
+		nvField := nv.Field(i)
+
+		if nvField.Kind() == reflect.Struct {
+			overrideFields(ovField, nvField)
+		} else {
+			fv := nvField.Interface()
+			isZero := reflect.ValueOf(fv).IsZero()
+
+			if isZero {
+				continue
+			}
+
+			ovField.Set(reflect.ValueOf(fv))
+		}
+	}
 }
 
 // LoadConfig is used to load the configuration from either the json config file
@@ -397,9 +408,6 @@ func ensureMaxResponseSize(c *Configuration) {
 	bytes := c.MaxResponseSize * 1024
 
 	if bytes == 0 {
-		c.MaxResponseSize = MaxResponseSize
-	} else if bytes > MaxResponseSize {
-		log.Warnf("maximum response size of %dkb too large, using default value of %dkb", c.MaxResponseSize, MaxResponseSizeKb)
 		c.MaxResponseSize = MaxResponseSize
 	} else {
 		c.MaxResponseSize = bytes
