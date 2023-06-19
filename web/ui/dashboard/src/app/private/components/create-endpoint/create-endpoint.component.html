@@ -1,19 +1,21 @@
 <div [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'">
 	<div convoy-card class="p-24px relative">
 		<form [formGroup]="addNewEndpointForm">
-			<convoy-input-field>
-				<label for="name" convoy-label required="true">Endpoint Name</label>
-				<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Enter endpoit name here" />
-				<convoy-input-error *ngIf="addNewEndpointForm.get('name')?.touched && addNewEndpointForm.get('name')?.invalid">Please provide a name</convoy-input-error>
-			</convoy-input-field>
-
 			<div class="grid gap-24px mb-16px" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
+				<convoy-input-field>
+					<label for="name" convoy-label required="true">Endpoint Name</label>
+					<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Enter endpoit name here" />
+					<convoy-input-error *ngIf="addNewEndpointForm.get('name')?.touched && addNewEndpointForm.get('name')?.invalid">Please provide a name</convoy-input-error>
+				</convoy-input-field>
+
 				<convoy-input-field>
 					<label for="url" convoy-label required="true">Enter URL</label>
 					<input type="url" id="url" convoy-input autocomplete="url" formControlName="url" placeholder="Enter endpoint URL here" />
 					<convoy-input-error *ngIf="addNewEndpointForm.get('url')?.touched && addNewEndpointForm.get('url')?.invalid">Endpoint URL is required</convoy-input-error>
 				</convoy-input-field>
+			</div>
 
+			<div class="grid gap-24px mb-16px" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
 				<convoy-input-field *ngIf="type !== 'portal'">
 					<label for="owner_id" convoy-label>
 						Owner ID
@@ -26,6 +28,11 @@
 						></convoy-tooltip>
 					</label>
 					<input type="text" id="owner_id" convoy-input autocomplete="owner_id" formControlName="owner_id" placeholder="Enter owner id here" />
+				</convoy-input-field>
+
+				<convoy-input-field>
+					<label for="secret" convoy-label>Endpoint Secret</label>
+					<input type="secret" id="secret" convoy-input formControlName="secret" placeholder="Enter endpoint secret here" />
 				</convoy-input-field>
 			</div>
 
@@ -73,10 +80,13 @@
 							<convoy-input-field className="mb-0">
 								<label for="header_name" convoy-label>API Key Name</label>
 								<input id="header_name" convoy-input autocomplete="header_name" formControlName="header_name" placeholder="Name" />
+								<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.api_key.header_name')?.touched && addNewEndpointForm.get('authentication.api_key.header_name')?.invalid">Endpoint auth API key is required</convoy-input-error>
 							</convoy-input-field>
+
 							<convoy-input-field className="mb-0">
 								<label for="header_value" convoy-label>API Key Value</label>
 								<input id="header_value" convoy-input autocomplete="header_value" formControlName="header_value" placeholder="Value" />
+								<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.api_key.header_value')?.touched && addNewEndpointForm.get('authentication.api_key.header_value')?.invalid">Endpoint auth API key value is required</convoy-input-error>
 							</convoy-input-field>
 						</div>
 					</ng-container>
@@ -153,6 +163,7 @@
 		<div class="empty:hidden">
 			<ng-content></ng-content>
 		</div>
+
 		<div *ngIf="savingEndpoint" convoy-form-loader [loading]="!endpointCreated"></div>
 	</div>
 
