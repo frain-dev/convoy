@@ -34,6 +34,7 @@ export interface EVENT_DELIVERY {
 		event_type: string;
 		host_name: string;
 	};
+    idempotency_key: string;
 	metadata: {
 		interval_seconds: number;
 		next_send_time: string;

@@ -170,7 +170,7 @@
 
 				<div class="flex items-center border-b border-new.primary-25 py-24px text-12">
 					<p class="text-new.gray-400 mr-24px">Idempotency Key</p>
-					<p class="text-new.gray-600">Key – 9c72a01d-fe81-4423-96f9-67fc7e10e108</p>
+					<p class="text-new.gray-600 w-200px overflow-hidden overflow-ellipsis">{{ eventsDetailsItem?.idempotency_key || '-' }}</p>
 				</div>
 
 				<h3 class="text-14 text-new.gray-800 font-medium mb-16px mt-24px">Deliveries Overview</h3>
@@ -218,7 +218,7 @@
 							<use xlink:href="#cli-icon"></use>
 						</svg>
 					</div>
-					<div class="text-14 w-3/5 whitespace-nowrap overflow-ellipsis overflow-hidden text-new.gray-600 text-center pt-4px">
+					<div class="text-14 w-3/5 whitespace-nowrap overflow-ellipsis overflow-hidden text-new.gray-600 text-center">
 						<ng-container *ngIf="!delivery?.device_id">
 							<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
 								<span class="max-w-[100px] overflow-hidden overflow-ellipsis">
@@ -234,7 +234,7 @@
 						</ng-container>
 						<span *ngIf="delivery?.device_id">{{ delivery?.device_metadata?.host_name }}</span>
 					</div>
-					<div class="w-1/5 flex items-center text-new.gray-400 text-12">
+					<div class="w-1/4 flex items-center text-new.gray-400 text-12">
 						{{ delivery.created_at | date: 'shortTime' }}
 
 						<button convoy-button fill="clear" size="xs" class="pr-0">
