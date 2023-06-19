@@ -34,6 +34,7 @@ export interface EVENT_DELIVERY {
 		event_type: string;
 		host_name: string;
 	};
+    idempotency_key: string;
 	metadata: {
 		interval_seconds: number;
 		next_send_time: string;
@@ -42,6 +43,7 @@ export interface EVENT_DELIVERY {
 		strategy: string;
 		data: any;
 	};
+    source_metadata: SOURCE;
 	endpoint_metadata: ENDPOINT;
 	app_metadata: APP;
 	event_metadata: EVENT;

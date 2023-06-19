@@ -24,6 +24,7 @@ export class CreateSourceComponent implements OnInit {
 			body: [''],
 			content_type: ['']
 		}),
+		idempotency_keys: [null],
 		verifier: this.formBuilder.group({
 			api_key: this.formBuilder.group({
 				header_name: ['', Validators.required],
@@ -127,7 +128,11 @@ export class CreateSourceComponent implements OnInit {
 	sourceCreated: boolean = false;
 	showSourceUrl = false;
 	sourceData!: SOURCE;
-	configurations = [{ uid: 'custom_response', name: 'Custom Response', show: false }];
+	configurations = [
+		{ uid: 'custom_response', name: 'Custom Response', show: false },
+		{ uid: 'idempotency', name: 'Idempotency', show: false }
+	];
+	idempotencyKeys: string[] = [];
 	private rbacService = inject(RbacService);
 
 	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
@@ -148,8 +153,11 @@ export class CreateSourceComponent implements OnInit {
 
 			this.sourceForm.patchValue(response.data);
 			if (this.sourceDetails.custom_response.body || this.sourceDetails.custom_response.content_type) this.toggleConfigForm('custom_response');
+			if (this.sourceDetails.idempotency_keys) this.toggleConfigForm('idempotency');
 
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
+
+            this.idempotencyKeys = response.data.idempotency_keys
 			this.isloading = false;
 
 			return;
@@ -174,7 +182,8 @@ export class CreateSourceComponent implements OnInit {
 				verifier: {
 					type: verifier,
 					[verifier]: { ...this.sourceForm.get('verifier.' + verifier)?.value }
-				}
+				},
+				idempotency_keys: this.idempotencyKeys
 			};
 		} else {
 			delete this.sourceForm.value.verifier;
@@ -294,5 +303,36 @@ export class CreateSourceComponent implements OnInit {
 
 	setRegionValue(value: any) {
 		this.sourceForm.get('pub_sub.sqs')?.patchValue({ default_region: value });
+	}
+
+	focusInput() {
+		document.getElementById('keyInput')?.focus();
+	}
+
+	removeIdempotencyKey(key: string) {
+		this.idempotencyKeys = this.idempotencyKeys.filter(e => e !== key);
+	}
+
+	addKey() {
+		const addKeyInput = document.getElementById('keyInput');
+		const addKeyInputValue = document.getElementById('keyInput') as HTMLInputElement;
+		addKeyInput?.addEventListener('keydown', e => {
+			const key = e.keyCode || e.charCode;
+			if (key == 8) {
+				e.stopImmediatePropagation();
+				if (this.idempotencyKeys.length > 0 && !addKeyInputValue?.value) this.idempotencyKeys.splice(-1);
+			}
+			if (e.which === 188 || e.key == ' ') {
+				if (this.idempotencyKeys.includes(addKeyInputValue?.value)) {
+					addKeyInputValue.value = '';
+					this.idempotencyKeys = this.idempotencyKeys.filter(e => String(e).trim());
+				} else {
+					this.idempotencyKeys.push(addKeyInputValue?.value);
+					addKeyInputValue.value = '';
+					this.idempotencyKeys = this.idempotencyKeys.filter(e => String(e).trim());
+				}
+				e.preventDefault();
+			}
+		});
 	}
 }
