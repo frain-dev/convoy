@@ -85,6 +85,8 @@ export class CreateSubscriptionComponent implements OnInit {
 			this.subscriptionForm.get('source_id')?.addValidators(Validators.required);
 			this.subscriptionForm.get('source_id')?.updateValueAndValidity();
 			this.configurations.pop();
+		} else {
+			this.configurations.push({ uid: 'events', name: 'Event Types', show: false });
 		}
 
 		if (this.configSetting) this.toggleConfigForm(this.configSetting, true);
@@ -138,6 +140,7 @@ export class CreateSubscriptionComponent implements OnInit {
 			const response = await this.privateService.getEndpoints();
 			this.endpoints = this.token ? response.data : response.data.content;
 			this.modifyEndpointData(this.token ? response.data : response.data.content);
+			return;
 		} catch (error) {
 			return error;
 		}

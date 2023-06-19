@@ -244,6 +244,7 @@ export class EventDeliveriesComponent implements OnInit {
 			const response = await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.getEventDeliveries();
+			return;
 		} catch (error) {
 			return error;
 		}
@@ -260,6 +261,7 @@ export class EventDeliveriesComponent implements OnInit {
 			const response = await this.eventsService.forceRetryEvent({ body: payload });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.getEventDeliveries();
+			return;
 		} catch (error) {
 			return error;
 		}
@@ -276,6 +278,7 @@ export class EventDeliveriesComponent implements OnInit {
 			this.getEventDeliveries();
 			this.showBatchRetryModal = false;
 			this.isRetrying = false;
+			return;
 		} catch (error) {
 			this.isRetrying = false;
 			return error;

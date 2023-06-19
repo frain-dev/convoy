@@ -21,7 +21,7 @@
 						<convoy-tooltip [withIcon]="false" position="right" class="block" [ngClass]="{ 'ml-10px': !shouldShowFullSideBar }" size="sm" type="white">
 							{{ projectDetails?.type == 'incoming' ? 'This project is for recieving webhook events' : 'This project is for sending out webhook events' }}
 							<div tooltipToggle convoy-tag class="py-[1px] px-[3px]" color="primary" fill="soft" *ngIf="shouldShowFullSideBar">
-								<svg width="16" height="16" class="fill-primary-100 stroke-primary-100 scale-50" [ngClass]="{ 'rotate-180': projectDetails?.type === 'incoming' }">
+								<svg width="16" height="16" class="fill-primary-100 stroke-primary-100 scale-75" [ngClass]="{ 'rotate-180': projectDetails?.type === 'incoming' }">
 									<use xlink:href="#top-right-icon"></use>
 								</svg>
 							</div>
@@ -46,7 +46,7 @@
 									{{ project?.type == 'incoming' ? 'This project is for recieving webhook events' : 'This project is for sending out webhook events' }}
 
 									<div tooltipToggle convoy-tag class="py-[1px] px-[3px]" color="primary" fill="soft" *ngIf="shouldShowFullSideBar">
-										<svg width="16" height="16" class="fill-primary-100 stroke-primary-100 scale-50" [ngClass]="{ 'rotate-180': project?.type === 'incoming' }">
+										<svg width="16" height="16" class="fill-primary-100 stroke-primary-100 scale-75" [ngClass]="{ 'rotate-180': project?.type === 'incoming' }">
 											<use xlink:href="#top-right-icon"></use>
 										</svg>
 									</div>

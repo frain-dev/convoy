@@ -106,6 +106,7 @@ export class ProjectComponent implements OnInit {
 			if (this.projectDetails?.type === 'outgoing' && this.sideBarItems[this.sideBarItems.length - 1].icon === 'endpoint') this.sideBarItems.push({ name: 'Portal Links', icon: 'portal', route: '/portal-links' });
 			if (this.projectDetails?.type === 'incoming' && this.sideBarItems[this.sideBarItems.length - 1].icon === 'portal') this.sideBarItems.pop();
 			await this.privateService.getProjectStat({ refresh: true });
+			this.isLoadingProjectDetails = false;
 			this.router.navigate([`/projects/${projectId}`]);
 		} catch (error) {
 			this.isLoadingProjectDetails = false;
