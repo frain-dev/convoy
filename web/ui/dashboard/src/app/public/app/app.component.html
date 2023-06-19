@@ -1,6 +1,6 @@
 <div>
-	<div>
-		<div class="flex justify-between items-center mb-12px">
+	<div class="max-w-[1100px] w-full mx-auto">
+		<div class="flex justify-between items-center mb-12px mt-40px">
 			<h2 class="font-medium text-14 text-new.gray-400">Endpoints</h2>
 
 			<button convoy-button fill="soft" class="py-4px px-10px rounded-8px text-12" (click)="showCreateEndpoint = true" *ngIf="portalDetails?.can_manage_endpoint && portalDetails?.owner_id">
@@ -134,9 +134,9 @@
 					</div>
 				</div>
 			</li>
-		</ul>
 
-		<convoy-empty-state class="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" description="No subscription to show here" *ngIf="!isloadingSubscriptions && endpoints?.length === 0"></convoy-empty-state>
+			<convoy-empty-state class="h-[30vh] py-32px" type="table" imgSrc="/assets/img/empty-state.svg" description="You don't have any endpoints yet" *ngIf="!isloadingSubscriptions && endpoints?.length === 0"></convoy-empty-state>
+		</ul>
 
 		<app-event-deliveries (pushEventDeliveries)="eventDeliveries = $event"></app-event-deliveries>
 	</div>
