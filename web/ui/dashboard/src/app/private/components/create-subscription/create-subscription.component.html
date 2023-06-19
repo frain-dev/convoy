@@ -1,6 +1,7 @@
 <form class="relative" [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()">
 	<convoy-loader *ngIf="isLoadingForm"></convoy-loader>
 
+	<p *ngIf="action !== 'view'" class="text-14 font-normal pb-20px max-w-[634px]">A subscription enable you to subscribe endpoints to events from any source, with extra configurations like event filters and retry logic</p>
 	<div convoy-card class="px-24px pt-24px relative" [ngClass]="{ 'mb-70px': action !== 'view' }">
 		<ng-container *ngIf="isPortal === 'false' && showAction === 'true'">
 			<convoy-input-field className="mb-40px">
@@ -136,11 +137,11 @@
 					(selectedOption)="subscriptionForm.patchValue({ source_id: $event })"
 				></convoy-select>
 
-				<button convoy-button convoy-permission="Subscriptions|MANAGE" fill="text" type="button" class="mt-40px text-14 font-medium" (click)="showCreateSourceForm = true; subscriptionForm.patchValue({ source_id: null })">Create New Source</button>
+				<button convoy-button convoy-permission="Subscriptions|MANAGE" fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateSourceForm = true; subscriptionForm.patchValue({ source_id: null })">Create New Source</button>
 			</div>
 
 			<convoy-create-source *ngIf="showCreateSourceForm" (onAction)="$event?.action === 'close' ? (showCreateSourceForm = false) : onCreateSource($event.data)">
-				<button convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="mt-30px text-14 font-medium" (click)="showCreateSourceForm = false; subscriptionForm.patchValue({ source_id: null })">Use Existing Source</button>
+				<button convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="pt-30px text-14 font-medium" (click)="showCreateSourceForm = false; subscriptionForm.patchValue({ source_id: null })">Use Existing Source</button>
 			</convoy-create-source>
 		</ng-container>
 
@@ -159,7 +160,7 @@
 				[required]="true"
 			></convoy-select>
 
-			<button convoy-button convoy-permission="Subscriptions|MANAGE" fill="text" type="button" class="mt-40px text-14 font-medium" (click)="showCreateEndpointForm = true; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">Create New Endpoint</button>
+			<button convoy-button convoy-permission="Subscriptions|MANAGE" fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateEndpointForm = true; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">Create New Endpoint</button>
 		</div>
 
 		<convoy-create-endpoint *ngIf="showCreateEndpointForm" (onAction)="$event.action === 'close' ? (showCreateEndpointForm = false) : onCreateEndpoint($event.data)">
