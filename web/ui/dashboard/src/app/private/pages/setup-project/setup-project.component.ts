@@ -79,7 +79,7 @@ export class SetupProjectComponent implements OnInit {
 
 	async saveProjectConfig() {
 		this.toggleFormsLoaders(true);
-		if (this.createSubscriptionForm.subscriptionForm.get('name')?.invalid) this.createSubscriptionForm.subscriptionForm.patchValue({ name: 'New Subscription' });
+		this.createSubscriptionForm.subscriptionForm.patchValue({ name: `${this.createEndpointForm.addNewEndpointForm.value.name}${this.projectType === 'incoming' ? ' → ' + this.createSourceForm.sourceForm.value.name : ''}'s Subscription` });
 		await this.createSubscriptionForm.runSubscriptionValidation();
 
 		if (this.createSubscriptionForm.subscriptionForm.get('name')?.invalid || this.createSubscriptionForm.subscriptionForm.get('retry_config')?.invalid || this.createSubscriptionForm.subscriptionForm.get('filter_config')?.invalid) {
@@ -90,6 +90,8 @@ export class SetupProjectComponent implements OnInit {
 
 		if (this.createEndpointForm && !this.createEndpointForm.endpointCreated) await this.createEndpointForm.saveEndpoint();
 		if (this.createSourceForm && !this.createSourceForm.sourceCreated) await this.createSourceForm.saveSource();
+
+		if (this.projectType === 'outgoing' && this.connectPubSub && !this.createSourceForm.sourceCreated) return;
 
 		// check subscription form validation
 		if (this.createSubscriptionForm.subscriptionForm.invalid) {
