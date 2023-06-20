@@ -58,7 +58,7 @@ module.exports = {
 				'focus--primary-25': '0px 0px 0px 4px #EDF2F7',
 				'focus--success': '0px 0px 0px 4px #F6FEF9',
 				'focus--warning': '0px 0px 0px 4px #FFFCF5',
-				'focus--error': '0px 0px 0px 4px #FFFBFA',
+				'focus--error': '0px 0px 0px 4px #FFFBFA'
 			},
 			fontFamily: {
 				sans: ['Inter', ...defaultTheme.fontFamily.sans],
@@ -79,7 +79,8 @@ module.exports = {
 			extrabold: '700'
 		},
 		screens: {
-			desktop: { max: '1050px' }
+			desktop: { max: '1050px' },
+			md: { min: '850px' }
 		},
 		borderRadius: {
 			'4px': '4px',

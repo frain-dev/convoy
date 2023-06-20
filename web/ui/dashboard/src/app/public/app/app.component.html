@@ -37,14 +37,14 @@
 				</li>
 			</ng-container>
 
-			<li class="@container/endpoint flex justify-between p-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px mb-12px last-of-type:mb-0 relative focus-within:z-10" *ngFor="let endpoint of endpoints; let i = index">
+			<li class="flex justify-between p-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px mb-12px last-of-type:mb-0 relative" *ngFor="let endpoint of endpoints; let i = index">
 				<div class="flex text-14 text-new.gray-600 max-w-[790px] w-full gap-24px items-center min-h-[28px]">
 					<div class="flex items-center max-w-[150px] w-full">
 						<div class="mr-8px truncate">{{ endpoint?.title }}</div>
 						<div convoy-tag size="sm" color="success">{{ endpoint?.status }}</div>
 					</div>
 					<div class="max-w-xs whitespace-nowrap text-ellipsis overflow-hidden">{{ endpoint?.target_url }}</div>
-					<div class="@[820px]/endpoint:flex hidden whitespace-nowrap">
+					<div class="md:flex hidden whitespace-nowrap">
 						<div convoy-tag *ngIf="endpoint.subscription" [color]="hasFilter(endpoint.subscription.filter_config.filter) ? 'primary' : 'gray'" class="mr-8px">Filter</div>
 						<div convoy-tag *ngIf="endpoint.subscription" [color]="endpoint.subscription.retry_config ? 'primary' : 'gray'" class="mr-8px">Retry Logic</div>
 						<div convoy-tag *ngIf="endpoint.subscription" [color]="endpoint.subscription.filter_config.event_types.length > 1 || endpoint.subscription.filter_config.event_types[0] != '*' ? 'primary' : 'gray'" color="primary">Event Types</div>
