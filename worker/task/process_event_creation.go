@@ -57,7 +57,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 
 		subscriptions, err = findSubscriptions(ctx, endpointRepo, cache, subRepo, project, &createEvent)
 		if err != nil {
-			return err
+			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
 		_, err = eventRepo.FindEventByID(ctx, project.UID, event.UID)
@@ -76,6 +76,11 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			if err != nil {
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
+		}
+
+		if event.IsDuplicateEvent {
+			log.FromContext(ctx).Infof("[asynq]: duplicate event with idempotency key %v will not be sent", event.IdempotencyKey)
+			return nil
 		}
 
 		event.MatchedEndpoints = len(subscriptions)

@@ -40,18 +40,18 @@ type newEvent struct {
 	EndpointID     string
 	CustomHeaders  map[string]string
 	IdempotencyKey string
+	IsDuplicate    bool
 }
 
 func (c *CreateEventService) Run(ctx context.Context) (*datastore.Event, error) {
+	var isDuplicate bool
 	if len(c.NewMessage.IdempotencyKey) > 0 {
 		event, err := c.EventRepo.FindEventByIdempotencyKey(ctx, c.Project.UID, c.NewMessage.IdempotencyKey)
 		if err != nil {
 			return nil, &ServiceError{ErrMsg: err.Error()}
 		}
 
-		if event != nil {
-			return nil, &ServiceError{ErrMsg: "duplicate event will not be ingested"}
-		}
+		isDuplicate = event != nil
 	}
 
 	if c.Project == nil {
@@ -79,6 +79,7 @@ func (c *CreateEventService) Run(ctx context.Context) (*datastore.Event, error) 
 		Raw:            string(c.NewMessage.Data),
 		CustomHeaders:  c.NewMessage.CustomHeaders,
 		IdempotencyKey: c.NewMessage.IdempotencyKey,
+		IsDuplicate:    isDuplicate,
 	}
 
 	event, err := createEvent(ctx, endpoints, newEvent, c.Project, c.Queue)
@@ -111,16 +112,17 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 	}
 
 	event := &datastore.Event{
-		UID:            ulid.Make().String(),
-		EventType:      datastore.EventType(newMessage.EventType),
-		Data:           newMessage.Data,
-		Raw:            newMessage.Raw,
-		IdempotencyKey: newMessage.IdempotencyKey,
-		Headers:        getCustomHeaders(newMessage.CustomHeaders),
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
-		Endpoints:      endpointIDs,
-		ProjectID:      g.UID,
+		UID:              ulid.Make().String(),
+		EventType:        datastore.EventType(newMessage.EventType),
+		Data:             newMessage.Data,
+		Raw:              newMessage.Raw,
+		IdempotencyKey:   newMessage.IdempotencyKey,
+		IsDuplicateEvent: newMessage.IsDuplicate,
+		Headers:          getCustomHeaders(newMessage.CustomHeaders),
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
+		Endpoints:        endpointIDs,
+		ProjectID:        g.UID,
 	}
 
 	if (g.Config == nil || g.Config.Strategy == nil) ||

@@ -644,7 +644,7 @@ func (s *EndpointMetadata) Scan(v interface{}) error {
 type Event struct {
 	UID              string    `json:"uid" db:"id"`
 	EventType        EventType `json:"event_type" db:"event_type"`
-	MatchedEndpoints int       `json:"matched_endpoints" db:"matched_enpoints"` // TODO(all) remove this field
+	MatchedEndpoints int       `json:"matched_endpoints" db:"matched_endpoints"` // TODO(all) remove this field
 
 	SourceID         string                `json:"source_id,omitempty" db:"source_id"`
 	AppID            string                `json:"app_id,omitempty" db:"app_id"` // Deprecated
@@ -655,6 +655,7 @@ type Event struct {
 	Source           *Source               `json:"source_metadata,omitempty" db:"source_metadata"`
 	URLQueryParams   string                `json:"url_query_params" db:"url_query_params"`
 	IdempotencyKey   string                `json:"idempotency_key" db:"idempotency_key"`
+	IsDuplicateEvent bool                  `json:"is_duplicate_event" db:"is_duplicate_event"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
