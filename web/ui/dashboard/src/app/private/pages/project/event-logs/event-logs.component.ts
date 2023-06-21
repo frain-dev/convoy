@@ -233,7 +233,7 @@ export class EventLogsComponent implements OnInit {
 	}
 
 	async getDuplicateEvents(event: EVENT) {
-		if (!event.is_duplicate_event && !event.idempotency_key) return;
+		if (!event.is_duplicate_event || !event.idempotency_key) return;
 
 		this.isFetchingDuplicateEvents = true;
 		try {
