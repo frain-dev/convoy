@@ -46,12 +46,12 @@ type newEvent struct {
 func (c *CreateEventService) Run(ctx context.Context) (*datastore.Event, error) {
 	var isDuplicate bool
 	if len(c.NewMessage.IdempotencyKey) > 0 {
-		event, err := c.EventRepo.FindEventByIdempotencyKey(ctx, c.Project.UID, c.NewMessage.IdempotencyKey)
+		events, err := c.EventRepo.FindEventsByIdempotencyKey(ctx, c.Project.UID, c.NewMessage.IdempotencyKey)
 		if err != nil {
 			return nil, &ServiceError{ErrMsg: err.Error()}
 		}
 
-		isDuplicate = event != nil
+		isDuplicate = len(events) > 0
 	}
 
 	if c.Project == nil {

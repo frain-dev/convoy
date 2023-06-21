@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
 	"math"
 	"net/http"
 	"time"
@@ -15,9 +17,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/lib/pq"
-	"github.com/oklog/ulid/v2"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/guregu/null.v4"
 )
 
 type Pageable struct {
@@ -642,9 +642,8 @@ func (s *EndpointMetadata) Scan(v interface{}) error {
 
 // Event defines a payload to be sent to an application
 type Event struct {
-	UID              string    `json:"uid" db:"id"`
-	EventType        EventType `json:"event_type" db:"event_type"`
-	MatchedEndpoints int       `json:"matched_endpoints" db:"matched_endpoints"` // TODO(all) remove this field
+	UID       string    `json:"uid" db:"id"`
+	EventType EventType `json:"event_type" db:"event_type"`
 
 	SourceID         string                `json:"source_id,omitempty" db:"source_id"`
 	AppID            string                `json:"app_id,omitempty" db:"app_id"` // Deprecated

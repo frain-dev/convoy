@@ -55,8 +55,9 @@ type IDs struct {
 
 type QueryListEventDelivery struct {
 	// A list of endpoint IDs to filter by
-	EndpointIDs []string `json:"endpointId"`
-	EventID     string   `json:"eventId"`
+	EndpointIDs    []string `json:"endpointId"`
+	EventID        string   `json:"eventId"`
+	IdempotencyKey string   `json:"idempotencyKey"`
 	// A list of event delivery statuses to filter by
 	Status []string `json:"status"`
 	SearchParams
@@ -75,11 +76,12 @@ func (ql *QueryListEventDelivery) Transform(r *http.Request) (*QueryListEventDel
 
 	return &QueryListEventDeliveryResponse{
 		Filter: &datastore.Filter{
-			EndpointIDs:  getEndpointIDs(r),
-			EventID:      r.URL.Query().Get("eventId"),
-			Status:       getEventDeliveryStatus(r),
-			Pageable:     m.GetPageableFromContext(r.Context()),
-			SearchParams: searchParams,
+			EndpointIDs:    getEndpointIDs(r),
+			IdempotencyKey: r.URL.Query().Get("idempotencyKey"),
+			EventID:        r.URL.Query().Get("eventId"),
+			Status:         getEventDeliveryStatus(r),
+			Pageable:       m.GetPageableFromContext(r.Context()),
+			SearchParams:   searchParams,
 		},
 	}, nil
 }

@@ -83,7 +83,6 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			return nil
 		}
 
-		event.MatchedEndpoints = len(subscriptions)
 		ec := &EventDeliveryConfig{project: project}
 
 		for _, s := range subscriptions {

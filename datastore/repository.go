@@ -30,7 +30,7 @@ type EventDeliveryRepository interface {
 	UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, eventDelivery EventDelivery, attempt DeliveryAttempt) error
 	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
 	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error
-	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable) ([]EventDelivery, PaginationData, error)
+	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable, idempotencyKey string) ([]EventDelivery, PaginationData, error)
 	LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params SearchParams, period Period) ([]EventInterval, error)
 }
 
@@ -42,7 +42,8 @@ type EventRepository interface {
 	CountEvents(ctx context.Context, projectID string, f *Filter) (int64, error)
 	LoadEventsPaged(ctx context.Context, projectID string, f *Filter) ([]Event, PaginationData, error)
 	DeleteProjectEvents(ctx context.Context, projectID string, f *EventFilter, hardDelete bool) error
-	FindEventByIdempotencyKey(ctx context.Context, projectID string, id string) (*Event, error)
+	FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) ([]Event, error)
+	FindFirstEventWithIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) (*Event, error)
 }
 
 type ProjectRepository interface {

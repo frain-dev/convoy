@@ -17,8 +17,8 @@ const (
 	createEvent = `
 	INSERT INTO convoy.events (id,event_type,endpoints,project_id,
 	                           source_id,headers,raw,data,url_query_params,
-	                           idempotency_key,created_at,updated_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+	                           idempotency_key,is_duplicate_event,created_at,updated_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 	`
 
 	createEventEndpoints = `
@@ -27,19 +27,30 @@ const (
 
 	fetchEventById = `
 	SELECT id, event_type, endpoints, project_id,
-    raw, data, headers,
+    raw, data, headers, is_duplicate_event,
 	COALESCE(source_id, '') AS source_id,
 	COALESCE(idempotency_key, '') AS idempotency_key,
 	COALESCE(url_query_params, '') AS url_query_params
 	FROM convoy.events WHERE id = $1 AND project_id = $2 AND deleted_at is NULL;
 	`
 
-	fetchEventByIdempotencyKey = `
+	fetchEventsByIdempotencyKey = `
 	SELECT id FROM convoy.events WHERE idempotency_key = $1 AND project_id = $2 AND deleted_at is NULL;
 	`
 
+	fetchFirstEventWithIdempotencyKey = `
+	SELECT id FROM convoy.events
+	WHERE idempotency_key = $1
+	AND is_duplicate_event IS FALSE
+    AND project_id = $2
+    AND deleted_at is NULL
+	ORDER BY id
+	LIMIT 1;
+	`
+
 	fetchEventsByIds = `
-	SELECT ev.id, ev.project_id, ev.id as event_type,
+	SELECT ev.id, ev.project_id,
+    ev.is_duplicate_event, ev.id as event_type,
 	COALESCE(ev.source_id, '') AS source_id,
 	COALESCE(ev.idempotency_key, '') AS idempotency_key,
 	COALESCE(ev.url_query_params, '') AS url_query_params,
@@ -68,7 +79,8 @@ const (
 	`
 
 	baseEventsPaged = `
-	SELECT ev.id, ev.project_id, ev.id as event_type,
+	SELECT ev.id, ev.project_id,
+	ev.id as event_type, ev.is_duplicate_event,
 	COALESCE(ev.source_id, '') AS source_id,
 	ev.headers, ev.raw, ev.data, ev.created_at,
 	COALESCE(idempotency_key, '') AS idempotency_key,
@@ -101,6 +113,7 @@ const (
 
 	baseEventFilter = ` AND ev.project_id = :project_id
 	AND (ev.source_id = :source_id OR :source_id = '')
+	AND (ev.idempotency_key = :idempotency_key OR :idempotency_key = '')
 	AND ev.created_at >= :start_date
 	AND ev.created_at <= :end_date`
 
@@ -156,6 +169,7 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		event.Data,
 		event.URLQueryParams,
 		event.IdempotencyKey,
+		event.IsDuplicateEvent,
 		event.CreatedAt,
 		event.UpdatedAt,
 	)
@@ -218,13 +232,41 @@ func (e *eventRepo) FindEventsByIDs(ctx context.Context, projectID string, ids [
 	return events, nil
 }
 
-func (e *eventRepo) FindEventByIdempotencyKey(ctx context.Context, projectID string, id string) (*datastore.Event, error) {
+func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID string, id string) ([]datastore.Event, error) {
+	query, args, err := sqlx.In(fetchEventsByIdempotencyKey, id, projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	query = e.db.Rebind(query)
+	rows, err := e.db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	events := make([]datastore.Event, 0)
+	for rows.Next() {
+		var event datastore.Event
+
+		err := rows.StructScan(&event)
+		if err != nil {
+			return nil, err
+		}
+
+		events = append(events, event)
+	}
+
+	return events, nil
+}
+
+func (e *eventRepo) FindFirstEventWithIdempotencyKey(ctx context.Context, projectID string, id string) (*datastore.Event, error) {
 	event := &datastore.Event{}
-	err := e.db.QueryRowxContext(ctx, fetchEventByIdempotencyKey, id, projectID).StructScan(event)
+	err := e.db.QueryRowxContext(ctx, fetchFirstEventWithIdempotencyKey, id, projectID).StructScan(event)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
+			return nil, datastore.ErrEventNotFound
 		}
+
 		return nil, err
 	}
 	return event, nil
@@ -264,13 +306,14 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 	}
 
 	arg := map[string]interface{}{
-		"endpoint_ids": filter.EndpointIDs,
-		"project_id":   projectID,
-		"source_id":    filter.SourceID,
-		"limit":        filter.Pageable.Limit(),
-		"start_date":   startDate,
-		"end_date":     endDate,
-		"cursor":       filter.Pageable.Cursor(),
+		"endpoint_ids":    filter.EndpointIDs,
+		"project_id":      projectID,
+		"source_id":       filter.SourceID,
+		"limit":           filter.Pageable.Limit(),
+		"start_date":      startDate,
+		"end_date":        endDate,
+		"cursor":          filter.Pageable.Cursor(),
+		"idempotency_key": filter.IdempotencyKey,
 	}
 
 	var baseQueryPagination string

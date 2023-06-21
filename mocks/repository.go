@@ -465,21 +465,6 @@ func (mr *MockEventRepositoryMockRecorder) FindEventByID(ctx, projectID, id inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventByID", reflect.TypeOf((*MockEventRepository)(nil).FindEventByID), ctx, projectID, id)
 }
 
-// FindEventByIdempotencyKey mocks base method.
-func (m *MockEventRepository) FindEventByIdempotencyKey(ctx context.Context, projectID, id string) (*datastore.Event, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindEventByIdempotencyKey", ctx, projectID, id)
-	ret0, _ := ret[0].(*datastore.Event)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// FindEventByIdempotencyKey indicates an expected call of FindEventByIdempotencyKey.
-func (mr *MockEventRepositoryMockRecorder) FindEventByIdempotencyKey(ctx, projectID, id interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventByIdempotencyKey", reflect.TypeOf((*MockEventRepository)(nil).FindEventByIdempotencyKey), ctx, projectID, id)
-}
-
 // FindEventsByIDs mocks base method.
 func (m *MockEventRepository) FindEventsByIDs(ctx context.Context, projectID string, ids []string) ([]datastore.Event, error) {
 	m.ctrl.T.Helper()
@@ -493,6 +478,36 @@ func (m *MockEventRepository) FindEventsByIDs(ctx context.Context, projectID str
 func (mr *MockEventRepositoryMockRecorder) FindEventsByIDs(ctx, projectID, ids interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventsByIDs", reflect.TypeOf((*MockEventRepository)(nil).FindEventsByIDs), ctx, projectID, ids)
+}
+
+// FindEventsByIdempotencyKey mocks base method.
+func (m *MockEventRepository) FindEventsByIdempotencyKey(ctx context.Context, projectID, idempotencyKey string) ([]datastore.Event, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindEventsByIdempotencyKey", ctx, projectID, idempotencyKey)
+	ret0, _ := ret[0].([]datastore.Event)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindEventsByIdempotencyKey indicates an expected call of FindEventsByIdempotencyKey.
+func (mr *MockEventRepositoryMockRecorder) FindEventsByIdempotencyKey(ctx, projectID, idempotencyKey interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventsByIdempotencyKey", reflect.TypeOf((*MockEventRepository)(nil).FindEventsByIdempotencyKey), ctx, projectID, idempotencyKey)
+}
+
+// FindFirstEventWithIdempotencyKey mocks base method.
+func (m *MockEventRepository) FindFirstEventWithIdempotencyKey(ctx context.Context, projectID, idempotencyKey string) (*datastore.Event, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindFirstEventWithIdempotencyKey", ctx, projectID, idempotencyKey)
+	ret0, _ := ret[0].(*datastore.Event)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindFirstEventWithIdempotencyKey indicates an expected call of FindFirstEventWithIdempotencyKey.
+func (mr *MockEventRepositoryMockRecorder) FindFirstEventWithIdempotencyKey(ctx, projectID, idempotencyKey interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindFirstEventWithIdempotencyKey", reflect.TypeOf((*MockEventRepository)(nil).FindFirstEventWithIdempotencyKey), ctx, projectID, idempotencyKey)
 }
 
 // LoadEventsPaged mocks base method.

@@ -64,12 +64,12 @@ func (d *DeDuper) Exists(source, projectId string, input []string) (bool, error)
 	}
 
 	checksum := GenerateChecksum(builder.String())
-	event, err := d.eventRepo.FindEventByIdempotencyKey(d.ctx, projectId, checksum)
+	events, err := d.eventRepo.FindEventsByIdempotencyKey(d.ctx, projectId, checksum)
 	if err != nil {
 		return false, err
 	}
 
-	return event != nil, nil
+	return len(events) > 0, nil
 }
 
 func (d *DeDuper) extractDataFromRequest(input []string) ([]interface{}, error) {

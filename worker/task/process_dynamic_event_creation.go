@@ -67,14 +67,25 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 			return err
 		}
 
+		var isDuplicate bool
+		if len(dynamicEvent.Event.IdempotencyKey) > 0 {
+			events, err := eventRepo.FindEventsByIdempotencyKey(ctx, dynamicEvent.Event.ProjectID, dynamicEvent.Event.IdempotencyKey)
+			if err != nil {
+				return &EndpointError{Err: err, delay: 10 * time.Second}
+			}
+
+			isDuplicate = len(events) > 0
+		}
+
 		event := &datastore.Event{
 			UID:              ulid.Make().String(),
 			EventType:        datastore.EventType(dynamicEvent.Event.EventType),
-			MatchedEndpoints: 1,
 			ProjectID:        project.UID,
 			Endpoints:        []string{endpoint.UID},
 			Headers:          getCustomHeaders(dynamicEvent.Event.CustomHeaders),
 			Data:             dynamicEvent.Event.Data,
+			IdempotencyKey:   dynamicEvent.Event.IdempotencyKey,
+			IsDuplicateEvent: isDuplicate,
 			Raw:              string(dynamicEvent.Event.Data),
 			CreatedAt:        time.Now(),
 			UpdatedAt:        time.Now(),
@@ -85,7 +96,11 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
-		event.MatchedEndpoints = 1
+		if event.IsDuplicateEvent {
+			log.FromContext(ctx).Infof("[asynq]: duplicate event with idempotency key %v will not be sent", event.IdempotencyKey)
+			return nil
+		}
+
 		ec := &EventDeliveryConfig{project: project}
 
 		ec.subscription = s
@@ -125,6 +140,7 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 			EndpointID:     s.EndpointID,
 			DeviceID:       s.DeviceID,
 			Headers:        headers,
+			IdempotencyKey: event.IdempotencyKey,
 
 			Status:           getEventDeliveryStatus(ctx, s, s.Endpoint, deviceRepo),
 			DeliveryAttempts: []datastore.DeliveryAttempt{},

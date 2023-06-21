@@ -457,21 +457,22 @@ func (e *eventDeliveryRepo) DeleteProjectEventDeliveries(ctx context.Context, pr
 	return nil
 }
 
-func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable, idempotencyKey string) ([]datastore.EventDelivery, datastore.PaginationData, error) {
 	eventDeliveriesP := make([]EventDeliveryPaginated, 0)
 
 	start := time.Unix(params.CreatedAtStart, 0)
 	end := time.Unix(params.CreatedAtEnd, 0)
 
 	arg := map[string]interface{}{
-		"endpoint_ids": endpointIDs,
-		"project_id":   projectID,
-		"limit":        pageable.Limit(),
-		"start_date":   start,
-		"event_id":     eventID,
-		"end_date":     end,
-		"status":       status,
-		"cursor":       pageable.Cursor(),
+		"endpoint_ids":    endpointIDs,
+		"project_id":      projectID,
+		"limit":           pageable.Limit(),
+		"start_date":      start,
+		"event_id":        eventID,
+		"end_date":        end,
+		"status":          status,
+		"cursor":          pageable.Cursor(),
+		"idempotency_key": idempotencyKey,
 	}
 
 	var query, filterQuery string
@@ -538,6 +539,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 			EndpointID:     ev.EndpointID,
 			DeviceID:       ev.DeviceID,
 			SubscriptionID: ev.SubscriptionID,
+			IdempotencyKey: ev.IdempotencyKey,
 			Headers:        ev.Headers,
 			URLQueryParams: ev.URLQueryParams,
 			Endpoint: &datastore.Endpoint{
