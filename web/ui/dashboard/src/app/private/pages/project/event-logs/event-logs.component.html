@@ -115,26 +115,29 @@
 								<td convoy-table-cell [forDate]="true"></td>
 								<td convoy-table-cell [forDate]="true"></td>
 							</tr>
-							<tr convoy-table-row class="group" *ngFor="let event of eventGroup.content; let index = index" (click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid)" [active]="event.uid === eventsDetailsItem?.uid">
+							<tr convoy-table-row class="group" *ngFor="let event of eventGroup.content; let index = index" (click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid); getDuplicateEvents(event)" [active]="event.uid === eventsDetailsItem?.uid">
 								<td convoy-table-cell class="w-130px pl-16px pr-30px relative">
 									<div convoy-tag color="gray" class="max-w-[121px] overflow-hidden text-ellipsis mr-8px">{{ event.uid }}</div>
 									<convoy-copy-button size="sm" notificationText="Event ID has been copied to clipboard" className="absolute translate-x-0 translate-y-[-50%] top-[50] hidden group-hover:block" [text]="event.uid"></convoy-copy-button>
 								</td>
 
 								<td convoy-table-cell>
-									<span class="max-w-[200px]">
+									<div class="max-w-[200px] w-full">
 										<span (click)="viewSource(event?.source_metadata?.uid)" [ngClass]="{ 'underline text-primary-100': !portalToken && event.source_metadata.name }" class="overflow-hidden overflow-ellipsis">
 											{{ event.source_metadata.name || 'Rest API' }}
 										</span>
-									</span>
+									</div>
 								</td>
 
 								<td convoy-table-cell class="">{{ event.created_at | date: 'mediumTime' }}</td>
 
-								<td convoy-table-cell>
-									<button convoy-button fill="clear" size="sm" class="pr-0" (click)="viewEventDeliveries(event.uid)">
-										Deliveries
-										<img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px h-16px" alt="arrow right" />
+								<td convoy-table-cell class="flex justify-end items-center">
+									<div [class]="event.is_duplicate_event ? 'visible' : 'invisible'" convoy-tag color="gray" size="sm">Duplicate</div>
+
+									<button convoy-button fill="clear" size="sm" class="pr-20px" (click)="viewEventDeliveries(event)">
+										<svg width="20" height="20" class="fill-new.gray-400">
+											<use xlink:href="#arrow-right-icon"></use>
+										</svg>
 									</button>
 								</td>
 							</tr>
@@ -172,83 +175,124 @@
 					<p class="text-new.gray-400 mr-24px">Idempotency Key</p>
 					<p class="text-new.gray-600 w-200px overflow-hidden overflow-ellipsis">{{ eventsDetailsItem?.idempotency_key || '-' }}</p>
 				</div>
-
-				<h3 class="text-14 text-new.gray-800 font-medium mb-16px mt-24px">Deliveries Overview</h3>
 			</ng-container>
 
-			<!-- event deliveries loader  -->
-			<div *ngIf="isLoadingSidebarDeliveries">
-				<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px mb-32px"></div>
+			<ng-container *ngIf="eventsDetailsItem?.is_duplicate_event">
+				<div *ngIf="isFetchingDuplicateEvents" class="mt-20px">
+					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px mb-32px"></div>
 
-				<div class="flex justify-between mb-20px">
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
+					<div class="flex justify-between mb-20px">
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
+					</div>
+					<div class="flex justify-between mb-20px">
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
+					</div>
 				</div>
-				<div class="flex justify-between mb-20px">
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
-				</div>
-				<div class="flex justify-between mb-20px">
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
-				</div>
-			</div>
 
-			<!-- event deliveries empty state  -->
-			<div class="flex items-center justify-center border-y border-new.primary-25 mb-24px p-24px w-full text-14 text-new.gray-400" *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length == 0 && displayedEvents && displayedEvents?.length">
-				No event delivery attempt for this event yet.
-			</div>
+				<!-- duplicate events -->
+				<p *ngIf="duplicateEvents && duplicateEvents.length > 0 && eventsDetailsItem?.is_duplicate_event" class="text-12 text-new.gray-600 font-medium my-16px">Duplicate Events</p>
 
-			<!-- event delieveries -->
-			<ul *ngIf="sidebarEventDeliveries.length > 0" class="border-b border-new.primary-25 mb-24px">
-				<li
-					convoy-list-item
-					*ngFor="let delivery of sidebarEventDeliveries"
-					[routerLink]="['../events/event-deliveries/' + delivery.uid]"
-					[relativeTo]="route"
-					class="cursor-pointer border-none flex !justify-between mb-10px hover:bg-new.primary-25 py-6px rounded-12px transition-colors pl-4px"
-				>
-					<div class="flex items-center">
-						<div class="flex items-center mr-12px">
-							<div convoy-tag [color]="delivery.status | statuscolor" className="mr-20px">{{ delivery.status }}</div>
-							<svg width="16" height="14" class="mr-4px" *ngIf="delivery.device_id">
-								<use xlink:href="#cli-icon"></use>
-							</svg>
+				<ul *ngIf="duplicateEvents && duplicateEvents.length > 0 && eventsDetailsItem?.is_duplicate_event" class="border-b border-new.primary-25 mb-16px">
+					<li convoy-list-item *ngFor="let event of duplicateEvents" class="cursor-pointer border-none flex mb-10px hover:bg-new.primary-25 py-6px rounded-12px transition-colors pl-4px" (click)="viewEventDeliveries(event, true)">
+						<div class="w-1/3 flex items-center">
+							<div convoy-tag color="gray" class="overflow-hidden text-ellipsis mr-8px">{{ event.uid }}</div>
+							<convoy-copy-button size="sm" notificationText="Event ID has been copied to clipboard" className="absolute translate-x-0 translate-y-[-50%] top-[50] hidden group-hover:block" [text]="event.uid"></convoy-copy-button>
 						</div>
 
-						<div class="whitespace-nowrap overflow-ellipsis overflow-hidden text-new.gray-600 text-center text-12">
-							<div class="flex items-center" *ngIf="!delivery?.device_id">
-								<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
-									<div class="max-w-[100px] truncate">
-										{{ delivery?.source_metadata?.name || 'Rest API' }}
-									</div>
+						<div class="w-1/3 whitespace-nowrap overflow-hidden overflow-ellipsis text-12 text-new.gray-600">
+							{{ event.source_metadata.name || 'Rest API' }}
+						</div>
+						<div class="w-1/5">
+							<div convoy-tag color="gray" size="sm" *ngIf="event.is_duplicate_event">Duplicate</div>
+						</div>
+						<div class="flex items-center justify-end text-new.gray-400 text-12">
+							{{ event.created_at | date: 'shortTime' }}
+						</div>
+					</li>
+				</ul>
+			</ng-container>
 
-									<div class="px-16px font-light">→</div>
-								</ng-container>
+			<ng-container *ngIf="!eventsDetailsItem?.is_duplicate_event">
+				<p class="text-12 text-new.gray-600 font-medium mb-16px mt-16px">Deliveries Overview</p>
 
-								<div [title]="delivery?.endpoint_metadata?.target_url || ''" [class]="(privateService.activeProjectDetails?.type === 'incoming' ? 'max-w-[100px]' : 'max-w-[120px]') + ' overflow-hidden overflow-ellipsis'">
-									{{ delivery.endpoint_metadata.title }}
-								</div>
+				<!-- event deliveries loader  -->
+				<div *ngIf="isLoadingSidebarDeliveries">
+					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px mb-32px"></div>
+
+					<div class="flex justify-between mb-20px">
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
+					</div>
+					<div class="flex justify-between mb-20px">
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
+					</div>
+					<div class="flex justify-between mb-20px">
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
+						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
+					</div>
+				</div>
+
+				<!-- event deliveries empty state  -->
+				<div class="flex items-center justify-center border-y border-new.primary-25 mb-24px p-24px w-full text-14 text-new.gray-400" *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length == 0 && displayedEvents && displayedEvents?.length">
+					No event delivery attempt for this event yet.
+				</div>
+
+				<!-- event delieveries -->
+				<ul *ngIf="sidebarEventDeliveries.length > 0" class="border-b border-new.primary-25 mb-24px">
+					<li
+						convoy-list-item
+						*ngFor="let delivery of sidebarEventDeliveries"
+						[routerLink]="['../events/event-deliveries/' + delivery.uid]"
+						[relativeTo]="route"
+						class="cursor-pointer border-none flex !justify-between mb-10px hover:bg-new.primary-25 py-6px rounded-12px transition-colors pl-4px"
+					>
+						<div class="flex items-center">
+							<div class="flex items-center mr-12px">
+								<div convoy-tag [color]="delivery.status | statuscolor" className="mr-20px">{{ delivery.status }}</div>
+								<svg width="16" height="14" class="mr-4px" *ngIf="delivery.device_id">
+									<use xlink:href="#cli-icon"></use>
+								</svg>
 							</div>
 
-							<span *ngIf="delivery?.device_id">{{ delivery?.device_metadata?.host_name }}</span>
+							<div class="whitespace-nowrap overflow-ellipsis overflow-hidden text-new.gray-600 text-center text-12">
+								<div class="flex items-center" *ngIf="!delivery?.device_id">
+									<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
+										<div class="max-w-[100px] truncate">
+											{{ delivery?.source_metadata?.name || 'Rest API' }}
+										</div>
+
+										<div class="px-16px font-light">→</div>
+									</ng-container>
+
+									<div [title]="delivery?.endpoint_metadata?.target_url || ''" [class]="(privateService.activeProjectDetails?.type === 'incoming' ? 'max-w-[100px]' : 'max-w-[120px]') + ' overflow-hidden overflow-ellipsis'">
+										{{ delivery.endpoint_metadata.title }}
+									</div>
+								</div>
+
+								<span *ngIf="delivery?.device_id">{{ delivery?.device_metadata?.host_name }}</span>
+							</div>
 						</div>
-					</div>
 
-					<div class="flex items-center justify-end text-new.gray-400 text-12 self-end">
-						{{ delivery.created_at | date: 'shortTime' }}
+						<div class="flex items-center justify-end text-new.gray-400 text-12 self-end">
+							{{ delivery.created_at | date: 'shortTime' }}
 
-						<button convoy-button fill="clear" size="xs" class="pr-0">
-							<svg width="24" height="24" class="fill-new.gray-400">
-								<use xlink:href="#arrow-right-icon"></use>
-							</svg>
-						</button>
-					</div>
-				</li>
-			</ul>
+							<button convoy-button fill="clear" size="xs" class="pr-0">
+								<svg width="24" height="24" class="fill-new.gray-400">
+									<use xlink:href="#arrow-right-icon"></use>
+								</svg>
+							</button>
+						</div>
+					</li>
+				</ul>
+			</ng-container>
 
 			<!-- events payload and headers loader  -->
 			<ng-container *ngIf="isloadingEvents">

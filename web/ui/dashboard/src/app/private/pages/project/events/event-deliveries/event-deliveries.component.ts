@@ -2,7 +2,7 @@ import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '
 import { ActivatedRoute } from '@angular/router';
 import { format, parseISO } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
-import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, filter, map, startWith, switchMap } from 'rxjs/operators';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { EVENT_DELIVERY } from 'src/app/models/event.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
@@ -21,6 +21,7 @@ interface FILTER_QUERY_PARAM {
 	endDate?: string;
 	eventId?: string;
 	endpointId?: string;
+	idempotencyKey?: string;
 	status?: string;
 	sourceId?: string;
 	next_page_cursor?: string;
@@ -185,6 +186,9 @@ export class EventDeliveriesComponent implements OnInit {
 			if (filterType === 'startDate' || filterType === 'endDate') {
 				delete this.queryParams['startDate'];
 				delete this.queryParams['endDate'];
+			} else if (filterType === 'eventId') {
+				delete this.queryParams['eventId'];
+				delete this.queryParams['idempotencyKey'];
 			} else delete this.queryParams[filterType];
 
 			const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));

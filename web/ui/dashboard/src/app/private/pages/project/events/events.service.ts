@@ -8,7 +8,7 @@ import { HttpService } from 'src/app/services/http/http.service';
 export class EventsService {
 	constructor(private http: HttpService) {}
 
-	getEvents(requestDetails: { page?: number; startDate: string; endDate: string; query?: string; sourceId?: string; endpointId?: string; next_page_cursor?: string; prev_page_cursor?: string; direction?: 'next' | 'prev' }): Promise<HTTP_RESPONSE> {
+	getEvents(requestDetails: { page?: number; idempotencyKey?: string; startDate?: string; endDate?: string; query?: string; sourceId?: string; endpointId?: string; next_page_cursor?: string; prev_page_cursor?: string; direction?: 'next' | 'prev' }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
