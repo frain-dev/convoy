@@ -122,8 +122,8 @@
 								</td>
 
 								<td convoy-table-cell>
-									<div class="max-w-[200px] w-full">
-										<span (click)="viewSource(event?.source_metadata?.uid)" [ngClass]="{ 'underline text-primary-100': !portalToken && event.source_metadata.name }" class="overflow-hidden overflow-ellipsis">
+									<div class="max-w-[200px] w-full overflow-hidden overflow-ellipsis">
+										<span (click)="viewSource(event?.source_metadata?.uid)" [ngClass]="{ 'underline text-primary-100': !portalToken && event.source_metadata.name }">
 											{{ event.source_metadata.name || 'Rest API' }}
 										</span>
 									</div>
@@ -203,7 +203,7 @@
 							<convoy-copy-button size="sm" notificationText="Event ID has been copied to clipboard" className="absolute translate-x-0 translate-y-[-50%] top-[50] hidden group-hover:block" [text]="event.uid"></convoy-copy-button>
 						</div>
 
-						<div class="w-1/3 whitespace-nowrap overflow-hidden overflow-ellipsis text-12 text-new.gray-600">
+						<div class="w-1/3 whitespace-nowrap overflow-hidden overflow-ellipsis text-12 text-new.gray-600 pr-8px">
 							{{ event.source_metadata.name || 'Rest API' }}
 						</div>
 						<div class="w-1/5">
