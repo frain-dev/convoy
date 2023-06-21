@@ -23,7 +23,7 @@ type CreateEndpointService struct {
 	ProjectRepo    datastore.ProjectRepository
 
 	E         models.CreateEndpoint
-    ProjectID string
+	ProjectID string
 }
 
 func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
@@ -44,6 +44,13 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	duration, err := time.ParseDuration(a.E.RateLimitDuration)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: fmt.Sprintf("an error occurred parsing the rate limit duration: %v", err)}
+	}
+
+	if !util.IsStringEmpty(a.E.HttpTimeout) {
+		_, err = time.ParseDuration(a.E.HttpTimeout)
+		if err != nil {
+			return nil, &ServiceError{ErrMsg: fmt.Sprintf("an error occurred parsing the http timeout: %v", err)}
+		}
 	}
 
 	project, err := a.ProjectRepo.FetchProjectByID(ctx, a.ProjectID)
@@ -101,7 +108,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		})
 	}
 
-    auth, err := ValidateEndpointAuthentication(a.E.Authentication.Transform())
+	auth, err := ValidateEndpointAuthentication(a.E.Authentication.Transform())
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -126,7 +133,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 
 		update := models.PortalLink{
 			Name:              portalLink.Name,
-			Endpoints:         portalLink.Endpoints,
+			Endpoints:         append(portalLink.Endpoints, endpoint.UID),
 			OwnerID:           portalLink.OwnerID,
 			CanManageEndpoint: portalLink.CanManageEndpoint,
 		}
