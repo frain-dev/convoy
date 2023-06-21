@@ -46,9 +46,11 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		return nil, &ServiceError{ErrMsg: fmt.Sprintf("an error occurred parsing the rate limit duration: %v", err)}
 	}
 
-	_, err = time.ParseDuration(a.E.HttpTimeout)
-	if err != nil {
-		return nil, &ServiceError{ErrMsg: fmt.Sprintf("an error occurred parsing the http timeout: %v", err)}
+	if !util.IsStringEmpty(a.E.HttpTimeout) {
+		_, err = time.ParseDuration(a.E.HttpTimeout)
+		if err != nil {
+			return nil, &ServiceError{ErrMsg: fmt.Sprintf("an error occurred parsing the http timeout: %v", err)}
+		}
 	}
 
 	project, err := a.ProjectRepo.FetchProjectByID(ctx, a.ProjectID)
