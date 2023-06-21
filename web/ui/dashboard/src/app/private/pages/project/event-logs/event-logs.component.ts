@@ -241,7 +241,6 @@ export class EventLogsComponent implements OnInit {
 				idempotencyKey: event?.idempotency_key
 			});
 			this.duplicateEvents = eventsResponse.data.content;
-			console.log(eventsResponse);
 			this.isFetchingDuplicateEvents = false;
 		} catch {
 			this.isFetchingDuplicateEvents = false;
