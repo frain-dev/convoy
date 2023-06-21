@@ -17,10 +17,11 @@ import (
 
 func provideCreateFanoutEventService(ctrl *gomock.Controller, event *models.FanoutEvent, project *datastore.Project) *CreateFanoutEventService {
 	return &CreateFanoutEventService{
-		EndpointRepo: mocks.NewMockEndpointRepository(ctrl),
-		Queue:        mocks.NewMockQueuer(ctrl),
-		NewMessage:   event,
-		Project:      project,
+		EndpointRepo:   mocks.NewMockEndpointRepository(ctrl),
+		PortalLinkRepo: mocks.NewMockPortalLinkRepository(ctrl),
+		Queue:          mocks.NewMockQueuer(ctrl),
+		NewMessage:     event,
+		Project:        project,
 	}
 }
 
@@ -97,11 +98,61 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 		},
 
 		{
+			name: "should_create_fanout_event_for_owner_id_tied_to_a_portal_link",
+			dbFn: func(es *CreateFanoutEventService) {
+				a, _ := es.EndpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointsByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).Return([]datastore.Endpoint{}, nil)
+
+				p, _ := es.PortalLinkRepo.(*mocks.MockPortalLinkRepository)
+				p.EXPECT().FindPortalLinkByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).Return(&datastore.PortalLink{UID: "12345"}, nil)
+
+				eq, _ := es.Queue.(*mocks.MockQueuer)
+				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
+					Times(1).Return(nil)
+			},
+			args: args{
+				ctx: ctx,
+				newMessage: &models.FanoutEvent{
+					OwnerID:   "12345",
+					EventType: "payment.created",
+					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+				},
+				g: &datastore.Project{
+					UID:  "abc",
+					Name: "test_project",
+					Config: &datastore.ProjectConfig{
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       "linear",
+							Duration:   1000,
+							RetryCount: 10,
+						},
+						Signature:     &datastore.SignatureConfiguration{},
+						ReplayAttacks: false,
+					},
+				},
+			},
+			wantEvent: &datastore.Event{
+				EventType:        datastore.EventType("payment.created"),
+				MatchedEndpoints: 0,
+				Raw:              `{"name":"convoy"}`,
+				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+				ProjectID:        "abc",
+			},
+		},
+
+		{
 			name: "should_error_for_empty_endpoints",
 			dbFn: func(es *CreateFanoutEventService) {
 				a, _ := es.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointsByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return([]datastore.Endpoint{}, nil)
+
+				p, _ := es.PortalLinkRepo.(*mocks.MockPortalLinkRepository)
+				p.EXPECT().FindPortalLinkByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).Return(nil, datastore.ErrPortalLinkNotFound)
+
 			},
 			args: args{
 				ctx: ctx,
@@ -148,12 +199,15 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 
 			stripVariableFields(t, "event", event)
 
-			m1 := tc.wantEvent.Endpoints[0]
-			m2 := event.Endpoints[0]
+			if len(tc.wantEvent.Endpoints) > 0 {
+				m1 := tc.wantEvent.Endpoints[0]
+				m2 := event.Endpoints[0]
 
-			tc.wantEvent.Endpoints[0], event.Endpoints[0] = "", ""
+				tc.wantEvent.Endpoints[0], event.Endpoints[0] = "", ""
+				require.Equal(t, m1, m2)
+			}
+
 			require.Equal(t, tc.wantEvent, event)
-			require.Equal(t, m1, m2)
 		})
 	}
 }
