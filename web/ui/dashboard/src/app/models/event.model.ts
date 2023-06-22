@@ -9,6 +9,8 @@ export interface EVENT {
 	uid: string;
 	updated_at: string;
 	app_id?: string;
+    idempotency_key: string;
+	is_duplicate_event: boolean;
 	event_type: string;
 	data: any;
 	matched_endpoints: number;
@@ -34,7 +36,7 @@ export interface EVENT_DELIVERY {
 		event_type: string;
 		host_name: string;
 	};
-    idempotency_key: string;
+	idempotency_key: string;
 	metadata: {
 		interval_seconds: number;
 		next_send_time: string;
@@ -43,7 +45,7 @@ export interface EVENT_DELIVERY {
 		strategy: string;
 		data: any;
 	};
-    source_metadata: SOURCE;
+	source_metadata: SOURCE;
 	endpoint_metadata: ENDPOINT;
 	app_metadata: APP;
 	event_metadata: EVENT;
