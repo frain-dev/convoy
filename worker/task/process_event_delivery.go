@@ -172,7 +172,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		attemptStatus := false
 		start := time.Now()
 
-		resp, err := dispatch.SendRequest(targetURL, string(convoy.HttpPost), sig.Payload, p.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), ed.Headers)
+		resp, err := dispatch.SendRequest(targetURL, string(convoy.HttpPost), sig.Payload, p.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), ed.Headers, ed.IdempotencyKey)
 		status := "-"
 		statusCode := 0
 		if resp != nil {

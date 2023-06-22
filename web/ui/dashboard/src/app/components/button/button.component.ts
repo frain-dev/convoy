@@ -27,7 +27,7 @@ export class ButtonComponent implements OnInit {
 		const colorLevel = this.texture == 'deep' ? '100' : this.color == 'grey' ? '20' : '500';
 		const buttonTypes = {
 			default: `bg-${this.color}-${colorLevel} text-${this.texture == 'deep' ? 'white' : this.color}-100 border-none rounded-8px`,
-			soft: `bg-new.${this.color}-25 text-new.${this.color}-400 border-none border border-new.${this.color}-25`,
+			soft: `bg-new.${this.color}-25 text-new.${this.color}-400 border-none border border-new.${this.color}-25  rounded-8px`,
 			outline: `border rounded-[10px] border-${this.color}-${colorLevel} text-${this.color}-100`,
 			clear: `border-none text-${this.color}-100`,
 			text: `border-0 text-${this.color}-${colorLevel} ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,

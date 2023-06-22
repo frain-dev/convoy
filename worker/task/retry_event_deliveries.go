@@ -70,7 +70,7 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 		log.Infof("Total number of event deliveries to requeue is %d", counter)
 
 		for {
-			deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", []string{}, "", []datastore.EventDeliveryStatus{status}, searchParams, pageable)
+			deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", []string{}, "", []datastore.EventDeliveryStatus{status}, searchParams, pageable, "")
 			if err != nil {
 				log.WithError(err).Errorf("successfully fetched %d event deliveries", count)
 				close(deliveryChan)

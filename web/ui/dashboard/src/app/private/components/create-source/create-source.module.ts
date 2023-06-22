@@ -12,6 +12,7 @@ import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.
 import { TokenModalComponent } from '../token-modal/token-modal.component';
 import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { PermissionDirective } from '../permission/permission.directive';
+import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 
 @NgModule({
 	declarations: [CreateSourceComponent],
@@ -31,7 +32,8 @@ import { PermissionDirective } from '../permission/permission.directive';
 		ModalComponent,
 		ModalHeaderComponent,
 		TokenModalComponent,
-		PermissionDirective
+		PermissionDirective,
+        TooltipComponent
 	],
 	exports: [CreateSourceComponent]
 })

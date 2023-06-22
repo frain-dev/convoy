@@ -35,7 +35,7 @@ func NewDispatcher(timeout time.Duration, httpProxy string) (*Dispatcher, error)
 	return d, nil
 }
 
-func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader) (*Response, error) {
+func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string) (*Response, error) {
 	r := &Response{}
 	if util.IsStringEmpty(signatureHeader) || util.IsStringEmpty(hmac) {
 		err := errors.New("signature header and hmac are required")
@@ -53,6 +53,9 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 	req.Header.Set(signatureHeader, hmac)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("User-Agent", defaultUserAgent())
+	if len(idempotencyKey) > 0 {
+		req.Header.Set("X-Convoy-Idempotency-Key", idempotencyKey)
+	}
 
 	header := httpheader.HTTPHeader(req.Header)
 	header.MergeHeaders(headers)

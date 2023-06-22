@@ -137,8 +137,8 @@ type PortalLinkResponse struct {
 	DeletedAt         null.Time                  `json:"deleted_at,omitempty"`
 }
 
-// Generic function for looping over a slice of type M
-// and returning a slice of type T
+// NewListResponse is generic function for looping over
+// a slice of type M and returning a slice of type T
 func NewListResponse[T, M any](items []M, fn func(item M) T) []T {
 	results := make([]T, 0)
 

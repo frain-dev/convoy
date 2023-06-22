@@ -77,6 +77,7 @@ export class EventLogsComponent implements OnInit {
 	];
 	displayedEvents: { date: string; content: EVENT[] }[] = [];
 	events?: { pagination: PAGINATION; content: EVENT[] };
+	duplicateEvents!: EVENT[];
 	eventDetailsActiveTab = 'data';
 	eventsDetailsItem: any;
 	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
@@ -88,6 +89,7 @@ export class EventLogsComponent implements OnInit {
 	showBatchRetryModal = false;
 	fetchingCount = false;
 	isRetrying = false;
+	isFetchingDuplicateEvents = false;
 	batchRetryCount: any;
 
 	constructor(private eventsLogService: EventLogsService, public generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService, private _location: Location) {}
@@ -216,13 +218,32 @@ export class EventLogsComponent implements OnInit {
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
 
 			this.eventsDetailsItem = this.events?.content[0];
-			this.eventsDetailsItem?.uid ? this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid) : (this.isLoadingSidebarDeliveries = false);
+			if (this.eventsDetailsItem?.uid) {
+				this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
+				this.getDuplicateEvents(this.eventsDetailsItem);
+			} else this.isLoadingSidebarDeliveries = false;
+			// this.eventsDetailsItem?.uid ? () : ();
 
 			this.isloadingEvents = false;
 			return eventsResponse;
 		} catch (error: any) {
 			this.isloadingEvents = false;
 			return error;
+		}
+	}
+
+	async getDuplicateEvents(event: EVENT) {
+		if (!event.is_duplicate_event || !event.idempotency_key) return;
+
+		this.isFetchingDuplicateEvents = true;
+		try {
+			const eventsResponse = await this.eventsService.getEvents({
+				idempotencyKey: event?.idempotency_key
+			});
+			this.duplicateEvents = eventsResponse.data.content;
+			this.isFetchingDuplicateEvents = false;
+		} catch {
+			this.isFetchingDuplicateEvents = false;
 		}
 	}
 
@@ -307,8 +328,13 @@ export class EventLogsComponent implements OnInit {
 		this.router.navigate([`/projects/${this.privateService.activeProjectDetails?.uid}/sources/${sourceId}`]);
 	}
 
-	viewEventDeliveries(eventId: string) {
-		this.router.navigate([`/projects/${this.privateService.activeProjectDetails?.uid}/events`], { queryParams: { eventId: eventId } });
+	viewEventDeliveries(event: EVENT, filterByIdempotencyKey?: boolean) {
+		const queryParams: any = {
+			eventId: event.uid
+		};
+		if (filterByIdempotencyKey) queryParams['idempotencyKey'] = event.idempotency_key;
+
+		this.router.navigate([`/projects/${this.privateService.activeProjectDetails?.uid}/events`], { queryParams });
 	}
 
 	paginateEvents(event: CURSOR) {
