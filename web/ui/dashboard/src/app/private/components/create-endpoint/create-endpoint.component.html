@@ -4,7 +4,7 @@
 			<div class="grid gap-24px mb-16px" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
 				<convoy-input-field>
 					<label for="name" convoy-label required="true">Endpoint Name</label>
-					<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Enter endpoit name here" />
+					<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Enter endpoint name here" />
 					<convoy-input-error *ngIf="addNewEndpointForm.get('name')?.touched && addNewEndpointForm.get('name')?.invalid">Please provide a name</convoy-input-error>
 				</convoy-input-field>
 

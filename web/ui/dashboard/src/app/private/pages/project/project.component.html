@@ -12,7 +12,7 @@
 		<nav>
 			<convoy-skeleton-loader className="w-132px h-22px mb-20px" *ngIf="!projectDetails"></convoy-skeleton-loader>
 
-			<div convoy-dropdown position="center" class="left-0">
+			<div convoy-dropdown position="center" class="left-0" size="xl">
 				<button convoy-button dropdownTrigger color="grey" fill="outline" class="!p-10px justify-between border-new.gray-200 w-full bg-white-100">
 					<div class="flex items-center">
 						<convoy-badge [show-text]="false" className="text-10 font-medium text-new.gray-800" *ngIf="!shouldShowFullSideBar" [text]="projectDetails?.name || ''"></convoy-badge>
@@ -37,10 +37,10 @@
 				</button>
 
 				<ul dropdownOptions class="p-10px">
-					<li class="mb-10px" *ngFor="let project of projects">
-						<button convoy-dropdown-option class="text-12 text-new.primary-800 py-4px px-8px w-full text-left hover:bg-new.primary-25 rounded-8px flex justify-between items-center" (click)="getProjectCompleteDetails(project.uid)">
-							<div class="flex items-center gap-8px">
-								<div class="max-w-[96px] truncate">{{ project.name }}</div>
+					<li class="mb-10px w-full" *ngFor="let project of projects">
+						<button convoy-dropdown-option class="text-12 text-new.primary-800 py-4px px-8px w-full text-left hover:bg-new.primary-25 rounded-8px flex justify-between items-center gap-24px" (click)="getProjectCompleteDetails(project.uid)">
+							<div class="flex items-center gap-8px max-w-[calc(100%-36px)]">
+								<div class="w-full max-w-[200px] truncate">{{ project.name }}</div>
 
 								<convoy-tooltip [withIcon]="false" position="right" class="block" [ngClass]="{ 'ml-10px': !shouldShowFullSideBar }" size="sm" type="white">
 									{{ project?.type == 'incoming' ? 'This project is for recieving webhook events' : 'This project is for sending out webhook events' }}
@@ -53,7 +53,9 @@
 								</convoy-tooltip>
 							</div>
 
-							<img src="assets/img/check-icon-primary.svg" *ngIf="projectDetails?.uid === project.uid" class="w-12px" alt="check icon" />
+							<div class="w-12px">
+								<img src="assets/img/check-icon-primary.svg" *ngIf="projectDetails?.uid === project.uid" alt="check icon" />
+							</div>
 						</button>
 					</li>
 
