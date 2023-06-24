@@ -77,7 +77,6 @@ export class EventDeliveryDetailsComponent implements OnInit {
 			const response = await this.eventDeliveryDetailsService.getEventDeliveryAttempts({ eventId });
 			const deliveries = response.data;
 			this.eventDeliveryAtempts = deliveries.reverse();
-			this.selectedDeliveryAttempt = this.eventDeliveryAtempts[0];
 			this.eventDeliveryAtempt = this.eventDeliveryAtempts[this.eventDeliveryAtempts.length - 1];
 
 			this.isloadingDeliveryAttempts = false;

@@ -144,6 +144,14 @@
 
 	<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
 
+	<!-- empty state  -->
+	<div class="py-60px rounded-tr-[0] rounded-tl-[0]" *ngIf="!isloadingEventDeliveries && (!displayedEventDeliveries || displayedEventDeliveries?.length === 0)">
+		<div class="flex justify-center items-center p-40px flex-col">
+			<img src="/assets/img/empty-state.svg" alt="empty state image" />
+			<p class="mt-16px text-12 text-new.gray-500">No event to show here</p>
+		</div>
+	</div>
+
 	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container" *ngIf="!isloadingEventDeliveries && displayedEventDeliveries && displayedEventDeliveries.length > 0">
 		<table convoy-table>
 			<thead convoy-table-head>
@@ -221,11 +229,6 @@
 			<div class="text-grey-40 text-14">{{ eventDeliveries?.content?.length }} events</div>
 		</div>
 	</div>
-</div>
-
-<!-- empty state  -->
-<div convoy-card class="py-60px rounded-tr-[0] rounded-tl-[0]" *ngIf="!isloadingEventDeliveries && (!displayedEventDeliveries || displayedEventDeliveries?.length === 0)">
-	<div convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No event to show here"></div>
 </div>
 
 <div convoy-modal position="center" size="sm" *ngIf="showBatchRetryModal">

@@ -17,8 +17,8 @@
 </div>
 
 <div *ngIf="type === 'headers'" class="border border-new.primary-25 rounded-8px mb-26px">
-	<div *ngFor="let header of getHeaders()?.headers; let i = index" class="flex border-b border-new.primary-25 last-of-type:border-none p-16px text-12 text-new.gray-800">
-		<div class="w-2/5 font-medium uppercase">
+	<div *ngFor="let header of getHeaders()?.headers; let i = index" class="flex border-b border-new.primary-25 last-of-type:border-none p-12px text-12 text-new.gray-800">
+		<div class="w-2/5 font-medium uppercase text-new.gray-500">
 			{{ header.header }}
 		</div>
 		<div class="w-3/5 whitespace-nowrap overflow-hidden text-ellipsis">

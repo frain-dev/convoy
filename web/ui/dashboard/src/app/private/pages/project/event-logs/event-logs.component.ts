@@ -289,6 +289,7 @@ export class EventLogsComponent implements OnInit {
 			const response = await this.eventsLogService.retryEvent({ eventId: requestDetails.eventId });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.getEvents();
+			return;
 		} catch (error) {
 			return error;
 		}
@@ -314,7 +315,6 @@ export class EventLogsComponent implements OnInit {
 			this.isRetrying = false;
 		} catch (error) {
 			this.isRetrying = false;
-			return error;
 		}
 	}
 
