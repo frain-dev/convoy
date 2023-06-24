@@ -21,11 +21,11 @@
 				[(ngModel)]="eventsSearchString"
 				(change)="getEvents({ addToURL: true })"
 				[ngModelOptions]="{ standalone: true }"
-				class="w-full text-grey-40 text-14 outline-none bg-transparent"
+				class="w-full text-grey-40 outline-none bg-transparent text-12 font-normal"
 				[ngClass]="{ 'bg-primary-500': eventsSearchString != undefined && eventsSearchString != '' }"
 			/>
-			<button>
-				<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
+			<button *ngIf="eventsSearchString">
+				<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px opacity-75" />
 			</button>
 		</form>
 
@@ -198,7 +198,7 @@
 					<p class="text-12 text-new.gray-600 font-medium my-16px">Duplicate Events</p>
 
 					<ul *ngIf="duplicateEvents && duplicateEvents.length > 0 && eventsDetailsItem?.is_duplicate_event" class="border-b border-new.primary-25 mb-16px">
-						<li convoy-list-item *ngFor="let event of duplicateEvents" class="cursor-pointer border-none flex mb-10px hover:bg-new.primary-25 py-6px rounded-12px transition-colors pl-4px" (click)="viewEventDeliveries(event, true)">
+						<li convoy-list-item *ngFor="let event of duplicateEvents" class="cursor-pointer border-none flex mb-10px hover:bg-new.primary-25 py-6px rounded-12px transition-colors pl-4px">
 							<div class="w-1/3 flex items-center">
 								<div convoy-tag color="gray" class="overflow-hidden text-ellipsis mr-8px">{{ event.uid }}</div>
 								<convoy-copy-button size="sm" notificationText="Event ID has been copied to clipboard" className="absolute translate-x-0 translate-y-[-50%] top-[50] hidden group-hover:block" [text]="event.uid"></convoy-copy-button>
@@ -243,7 +243,7 @@
 				</div>
 
 				<!-- event deliveries empty state  -->
-				<div class="flex items-center justify-center border-y border-new.primary-25 mb-24px p-24px w-full text-12 text-new.gray-400" *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length == 0 && displayedEvents && displayedEvents?.length">
+				<div class="border-b border-new.primary-25 mb-24px p-24px font-normal pl-0 w-full text-12 text-new.gray-400" *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length == 0 && displayedEvents && displayedEvents?.length">
 					No event delivery attempt for this event yet.
 				</div>
 

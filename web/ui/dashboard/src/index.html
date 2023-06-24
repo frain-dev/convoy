@@ -283,7 +283,7 @@
 				/>
 			</symbol>
 
-      <symbol width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" id="close-icon-2">
+			<symbol width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" id="close-icon-2">
 				<rect width="14" height="14" rx="7" fill="#DFE1E6" />
 				<path
 					d="M9.23421 4.99991L8.99991 4.76561C8.93482 4.70053 8.8293 4.70053 8.76421 4.76561L6.99991 6.5299L5.23561 4.76561C5.17053 4.70053 5.065 4.70053 4.99991 4.76561L4.76561 4.99991C4.70053 5.065 4.70053 5.17052 4.76561 5.23561L6.52991 6.9999L4.76562 8.76421C4.70053 8.8293 4.70053 8.93482 4.76562 8.99991L4.99991 9.23421C5.065 9.2993 5.17053 9.2993 5.23562 9.23421L6.99991 7.4699L8.76421 9.2342C8.8293 9.29929 8.93483 9.29929 8.99991 9.2342L9.23421 8.9999C9.2993 8.93481 9.2993 8.82929 9.23421 8.7642L7.46991 6.9999L9.23421 5.23561C9.2993 5.17053 9.2993 5.065 9.23421 4.99991Z"
@@ -492,12 +492,13 @@
 			app_id: 'a5br6kfe',
 			hide_default_launcher:
 				window.location.hostname !== 'dashboard.getconvoy.io' ||
-				window.location.pathname.includes('/portal?') ||
+				window.location.pathname.includes('/portal') ||
 				window.location.pathname.includes('/login') ||
 				window.location.pathname.includes('/signup') ||
 				window.location.pathname.includes('/forgot-password') ||
 				window.location.pathname.includes('/reset-password') ||
-				window.location.pathname.includes('/accept-invite')
+				window.location.pathname.includes('/accept-invite') ||
+				window.location.hostname.includes('nohooks.io')
 		};
 	</script>
 
