@@ -18,7 +18,7 @@ type CreateSource struct {
 	CustomResponse  CustomResponse           `json:"custom_response"`
 	Verifier        VerifierConfig           `json:"verifier"`
 	PubSub          PubSubConfig             `json:"pub_sub"`
-	IdempotencyKeys []string                 `json:"idempotency_keys" valid:"optional,supported_idempotency_key~unsupported source type"`
+	IdempotencyKeys []string                 `json:"idempotency_keys"`
 	IdempotencyTTL  string                   `json:"idempotency_ttl"`
 }
 
