@@ -456,6 +456,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 		datastore.Pageable{
 			PerPage: 10,
 		},
+		"",
 	)
 
 	require.NoError(t, err)

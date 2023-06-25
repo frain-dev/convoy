@@ -17,8 +17,9 @@ type CreateEvent struct {
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data          json.RawMessage   `json:"data" valid:"required~please provide your data"`
-	CustomHeaders map[string]string `json:"custom_headers"`
+	Data           json.RawMessage   `json:"data" valid:"required~please provide your data"`
+	CustomHeaders  map[string]string `json:"custom_headers"`
+	IdempotencyKey string            `json:"idempotency_key"`
 }
 
 func (e *CreateEvent) Validate() error {
@@ -43,9 +44,10 @@ type SearchParams struct {
 }
 
 type QueryListEvent struct {
-	// Any arbitary value to filter the events payload
-	Query    string `json:"query"`
-	SourceID string `json:"sourceId"`
+	// Any arbitrary value to filter the events payload
+	Query          string `json:"query"`
+	SourceID       string `json:"sourceId"`
+	IdempotencyKey string `json:"idempotencyKey"`
 	SearchParams
 	// A list of endpoint ids to filter by
 	EndpointIDs []string `json:"endpointId"`
@@ -64,11 +66,12 @@ func (qs *QueryListEvent) Transform(r *http.Request) (*QueryListEventResponse, e
 
 	return &QueryListEventResponse{
 		Filter: &datastore.Filter{
-			Query:        r.URL.Query().Get("query"),
-			EndpointIDs:  getEndpointIDs(r),
-			SourceID:     r.URL.Query().Get("sourceId"),
-			SearchParams: searchParams,
-			Pageable:     m.GetPageableFromContext(r.Context()),
+			Query:          r.URL.Query().Get("query"),
+			IdempotencyKey: r.URL.Query().Get("idempotencyKey"),
+			EndpointIDs:    getEndpointIDs(r),
+			SourceID:       r.URL.Query().Get("sourceId"),
+			SearchParams:   searchParams,
+			Pageable:       m.GetPageableFromContext(r.Context()),
 		},
 	}, nil
 }
@@ -77,8 +80,9 @@ type DynamicEventStub struct {
 	ProjectID string `json:"project_id"`
 	EventType string `json:"event_type" valid:"required~please provide an event type"`
 	// Data is an arbitrary JSON value that gets sent as the body of the webhook to the endpoints
-	Data          json.RawMessage   `json:"data" valid:"required~please provide your data"`
-	CustomHeaders map[string]string `json:"custom_headers"`
+	Data           json.RawMessage   `json:"data" valid:"required~please provide your data"`
+	CustomHeaders  map[string]string `json:"custom_headers"`
+	IdempotencyKey string            `json:"idempotency_key"`
 }
 
 func (ds *DynamicEventStub) Validate() error {
@@ -91,8 +95,9 @@ type FanoutEvent struct {
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data          json.RawMessage   `json:"data" valid:"required~please provide your data"`
-	CustomHeaders map[string]string `json:"custom_headers"`
+	Data           json.RawMessage   `json:"data" valid:"required~please provide your data"`
+	CustomHeaders  map[string]string `json:"custom_headers"`
+	IdempotencyKey string            `json:"idempotency_key"`
 }
 
 func (fe *FanoutEvent) Validate() error {

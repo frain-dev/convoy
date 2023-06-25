@@ -312,9 +312,9 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesIntervals(
 }
 
 // LoadEventDeliveriesPaged mocks base method.
-func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable, idempotencyKey string) ([]datastore.EventDelivery, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadEventDeliveriesPaged", ctx, projectID, endpointIDs, eventID, status, params, pageable)
+	ret := m.ctrl.Call(m, "LoadEventDeliveriesPaged", ctx, projectID, endpointIDs, eventID, status, params, pageable, idempotencyKey)
 	ret0, _ := ret[0].([]datastore.EventDelivery)
 	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
@@ -322,9 +322,9 @@ func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(ctx context.Conte
 }
 
 // LoadEventDeliveriesPaged indicates an expected call of LoadEventDeliveriesPaged.
-func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesPaged(ctx, projectID, endpointIDs, eventID, status, params, pageable interface{}) *gomock.Call {
+func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesPaged(ctx, projectID, endpointIDs, eventID, status, params, pageable, idempotencyKey interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesPaged", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesPaged), ctx, projectID, endpointIDs, eventID, status, params, pageable)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesPaged", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesPaged), ctx, projectID, endpointIDs, eventID, status, params, pageable, idempotencyKey)
 }
 
 // UpdateEventDeliveryWithAttempt mocks base method.
@@ -478,6 +478,36 @@ func (m *MockEventRepository) FindEventsByIDs(ctx context.Context, projectID str
 func (mr *MockEventRepositoryMockRecorder) FindEventsByIDs(ctx, projectID, ids interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventsByIDs", reflect.TypeOf((*MockEventRepository)(nil).FindEventsByIDs), ctx, projectID, ids)
+}
+
+// FindEventsByIdempotencyKey mocks base method.
+func (m *MockEventRepository) FindEventsByIdempotencyKey(ctx context.Context, projectID, idempotencyKey string) ([]datastore.Event, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindEventsByIdempotencyKey", ctx, projectID, idempotencyKey)
+	ret0, _ := ret[0].([]datastore.Event)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindEventsByIdempotencyKey indicates an expected call of FindEventsByIdempotencyKey.
+func (mr *MockEventRepositoryMockRecorder) FindEventsByIdempotencyKey(ctx, projectID, idempotencyKey interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventsByIdempotencyKey", reflect.TypeOf((*MockEventRepository)(nil).FindEventsByIdempotencyKey), ctx, projectID, idempotencyKey)
+}
+
+// FindFirstEventWithIdempotencyKey mocks base method.
+func (m *MockEventRepository) FindFirstEventWithIdempotencyKey(ctx context.Context, projectID, idempotencyKey string) (*datastore.Event, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindFirstEventWithIdempotencyKey", ctx, projectID, idempotencyKey)
+	ret0, _ := ret[0].(*datastore.Event)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindFirstEventWithIdempotencyKey indicates an expected call of FindFirstEventWithIdempotencyKey.
+func (mr *MockEventRepositoryMockRecorder) FindFirstEventWithIdempotencyKey(ctx, projectID, idempotencyKey interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindFirstEventWithIdempotencyKey", reflect.TypeOf((*MockEventRepository)(nil).FindFirstEventWithIdempotencyKey), ctx, projectID, idempotencyKey)
 }
 
 // LoadEventsPaged mocks base method.

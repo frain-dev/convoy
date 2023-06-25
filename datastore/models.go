@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
 	"math"
 	"net/http"
 	"time"
@@ -15,9 +17,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/lib/pq"
-	"github.com/oklog/ulid/v2"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/guregu/null.v4"
 )
 
 type Pageable struct {
@@ -603,7 +603,6 @@ var (
 	ErrEventDeliveryNotFound         = errors.New("event delivery not found")
 	ErrEventDeliveryAttemptNotFound  = errors.New("event delivery attempt not found")
 	ErrPortalLinkNotFound            = errors.New("portal link not found")
-	ErrDuplicateEndpointName         = errors.New("an endpoint with this name exists")
 	ErrNotAuthorisedToAccessDocument = errors.New("your credentials cannot access or modify this resource")
 	ErrConfigNotFound                = errors.New("config not found")
 	ErrDuplicateProjectName          = errors.New("a project with this name already exists")
@@ -643,9 +642,8 @@ func (s *EndpointMetadata) Scan(v interface{}) error {
 
 // Event defines a payload to be sent to an application
 type Event struct {
-	UID              string    `json:"uid" db:"id"`
-	EventType        EventType `json:"event_type" db:"event_type"`
-	MatchedEndpoints int       `json:"matched_endpoints" db:"matched_enpoints"` // TODO(all) remove this field
+	UID       string    `json:"uid" db:"id"`
+	EventType EventType `json:"event_type" db:"event_type"`
 
 	SourceID         string                `json:"source_id,omitempty" db:"source_id"`
 	AppID            string                `json:"app_id,omitempty" db:"app_id"` // Deprecated
@@ -655,6 +653,8 @@ type Event struct {
 	EndpointMetadata EndpointMetadata      `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Source           *Source               `json:"source_metadata,omitempty" db:"source_metadata"`
 	URLQueryParams   string                `json:"url_query_params" db:"url_query_params"`
+	IdempotencyKey   string                `json:"idempotency_key" db:"idempotency_key"`
+	IsDuplicateEvent bool                  `json:"is_duplicate_event" db:"is_duplicate_event"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
@@ -849,6 +849,7 @@ type EventDelivery struct {
 	SubscriptionID string                `json:"subscription_id,omitempty" db:"subscription_id"`
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
+	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
 
 	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`
@@ -985,20 +986,21 @@ type CustomResponse struct {
 }
 
 type Source struct {
-	UID            string          `json:"uid" db:"id"`
-	ProjectID      string          `json:"project_id" db:"project_id"`
-	MaskID         string          `json:"mask_id" db:"mask_id"`
-	Name           string          `json:"name" db:"name"`
-	URL            string          `json:"url" db:"-"`
-	Type           SourceType      `json:"type" db:"type"`
-	Provider       SourceProvider  `json:"provider" db:"provider"`
-	IsDisabled     bool            `json:"is_disabled" db:"is_disabled"`
-	VerifierID     string          `json:"-" db:"source_verifier_id"`
-	Verifier       *VerifierConfig `json:"verifier" db:"verifier"`
-	CustomResponse CustomResponse  `json:"custom_response" db:"custom_response"`
-	ProviderConfig *ProviderConfig `json:"provider_config" db:"provider_config"`
-	ForwardHeaders pq.StringArray  `json:"forward_headers" db:"forward_headers"`
-	PubSub         *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
+	UID             string          `json:"uid" db:"id"`
+	ProjectID       string          `json:"project_id" db:"project_id"`
+	MaskID          string          `json:"mask_id" db:"mask_id"`
+	Name            string          `json:"name" db:"name"`
+	URL             string          `json:"url" db:"-"`
+	Type            SourceType      `json:"type" db:"type"`
+	Provider        SourceProvider  `json:"provider" db:"provider"`
+	IsDisabled      bool            `json:"is_disabled" db:"is_disabled"`
+	VerifierID      string          `json:"-" db:"source_verifier_id"`
+	Verifier        *VerifierConfig `json:"verifier" db:"verifier"`
+	CustomResponse  CustomResponse  `json:"custom_response" db:"custom_response"`
+	ProviderConfig  *ProviderConfig `json:"provider_config" db:"provider_config"`
+	ForwardHeaders  pq.StringArray  `json:"forward_headers" db:"forward_headers"`
+	PubSub          *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
+	IdempotencyKeys pq.StringArray  `json:"idempotency_keys" db:"idempotency_keys"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`

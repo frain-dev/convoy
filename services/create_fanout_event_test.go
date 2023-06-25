@@ -18,6 +18,7 @@ import (
 func provideCreateFanoutEventService(ctrl *gomock.Controller, event *models.FanoutEvent, project *datastore.Project) *CreateFanoutEventService {
 	return &CreateFanoutEventService{
 		EndpointRepo:   mocks.NewMockEndpointRepository(ctrl),
+		EventRepo:      mocks.NewMockEventRepository(ctrl),
 		PortalLinkRepo: mocks.NewMockPortalLinkRepository(ctrl),
 		Queue:          mocks.NewMockQueuer(ctrl),
 		NewMessage:     event,
@@ -88,12 +89,11 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 				},
 			},
 			wantEvent: &datastore.Event{
-				EventType:        datastore.EventType("payment.created"),
-				MatchedEndpoints: 0,
-				Raw:              `{"name":"convoy"}`,
-				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				Endpoints:        []string{"123", "12345"},
-				ProjectID:        "abc",
+				EventType: datastore.EventType("payment.created"),
+				Raw:       `{"name":"convoy"}`,
+				Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+				Endpoints: []string{"123", "12345"},
+				ProjectID: "abc",
 			},
 		},
 
@@ -134,11 +134,10 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 				},
 			},
 			wantEvent: &datastore.Event{
-				EventType:        datastore.EventType("payment.created"),
-				MatchedEndpoints: 0,
-				Raw:              `{"name":"convoy"}`,
-				Data:             bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
-				ProjectID:        "abc",
+				EventType: datastore.EventType("payment.created"),
+				Raw:       `{"name":"convoy"}`,
+				Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+				ProjectID: "abc",
 			},
 		},
 

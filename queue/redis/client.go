@@ -2,8 +2,6 @@ package redis
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/danvixent/asynqmon"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/queue"
@@ -36,19 +34,19 @@ func NewQueue(opts queue.QueueOptions) queue.Queuer {
 }
 
 func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
-	queue := string(queueName)
+	s := string(queueName)
 	if job.ID == "" {
 		job.ID = ulid.Make().String()
 	}
-	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(queue), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
+	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(s), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
 
-	_, err := q.inspector.GetTaskInfo(queue, job.ID)
+	_, err := q.inspector.GetTaskInfo(s, job.ID)
 	if err != nil {
 		// If the task or queue does not yet exist, we can proceed
 		// to enqueuing the task
 		message := err.Error()
 		if ErrQueueNotFound.Error() == message || ErrTaskNotFound.Error() == message {
-			_, err := q.client.Enqueue(t, asynq.Retention(24*time.Hour))
+			_, err := q.client.Enqueue(t, nil)
 			return err
 		}
 
@@ -57,12 +55,12 @@ func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName,
 
 	// At this point, the task is already on the queue based on its ID.
 	// We need to delete before enqueuing
-	err = q.inspector.DeleteTask(queue, job.ID)
+	err = q.inspector.DeleteTask(s, job.ID)
 	if err != nil {
 		return err
 	}
 
-	_, err = q.client.Enqueue(t, asynq.Retention(24*time.Hour))
+	_, err = q.client.Enqueue(t, nil)
 	return err
 }
 

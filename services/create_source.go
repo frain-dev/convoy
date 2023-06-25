@@ -36,14 +36,15 @@ func (s *CreateSourceService) Run(ctx context.Context) (*datastore.Source, error
 	}
 
 	source := &datastore.Source{
-		UID:       ulid.Make().String(),
-		ProjectID: s.Project.UID,
-		MaskID:    uniuri.NewLen(16),
-		Name:      s.NewSource.Name,
-		Type:      s.NewSource.Type,
-		Provider:  s.NewSource.Provider,
-		Verifier:  s.NewSource.Verifier.Transform(),
-		PubSub:    s.NewSource.PubSub.Transform(),
+		UID:             ulid.Make().String(),
+		ProjectID:       s.Project.UID,
+		MaskID:          uniuri.NewLen(16),
+		Name:            s.NewSource.Name,
+		Type:            s.NewSource.Type,
+		Provider:        s.NewSource.Provider,
+		Verifier:        s.NewSource.Verifier.Transform(),
+		PubSub:          s.NewSource.PubSub.Transform(),
+		IdempotencyKeys: s.NewSource.IdempotencyKeys,
 		CustomResponse: datastore.CustomResponse{
 			Body:        s.NewSource.CustomResponse.Body,
 			ContentType: s.NewSource.CustomResponse.ContentType,

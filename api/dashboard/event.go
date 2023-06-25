@@ -2,12 +2,9 @@ package dashboard
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"net/http"
-	"time"
-
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
+	"net/http"
 
 	"github.com/frain-dev/convoy/pkg/log"
 
@@ -15,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
@@ -44,6 +40,7 @@ func (a *DashboardHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Re
 
 	ce := services.CreateEventService{
 		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		EventRepo:    postgres.NewEventRepo(a.A.DB),
 		Queue:        a.A.Queue,
 		NewMessage:   &newMessage,
 		Project:      project,
@@ -365,7 +362,7 @@ func (a *DashboardHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *htt
 	}
 
 	f := data.Filter
-	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams, f.Pageable)
+	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch event deliveries")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
@@ -399,46 +396,6 @@ func (a *DashboardHandler) retrieveEventDelivery(r *http.Request) (*datastore.Ev
 	eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
 	return eventDeliveryRepo.FindEventDeliveryByID(r.Context(), project.UID, eventDeliveryID)
-}
-
-func getSearchParams(r *http.Request) (datastore.SearchParams, error) {
-	var searchParams datastore.SearchParams
-	format := "2006-01-02T15:04:05"
-	startDate := r.URL.Query().Get("startDate")
-	endDate := r.URL.Query().Get("endDate")
-
-	var err error
-
-	var startT time.Time
-	if len(startDate) == 0 {
-		startT = time.Unix(0, 0)
-	} else {
-		startT, err = time.Parse(format, startDate)
-		if err != nil {
-			return searchParams, errors.New("please specify a startDate in the format " + format)
-		}
-	}
-	var endT time.Time
-	if len(endDate) == 0 {
-		now := time.Now()
-		endT = time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location())
-	} else {
-		endT, err = time.Parse(format, endDate)
-		if err != nil {
-			return searchParams, errors.New("please specify a correct endDate in the format " + format + " or none at all")
-		}
-	}
-
-	if err := m.EnsurePeriod(startT, endT); err != nil {
-		return searchParams, err
-	}
-
-	searchParams = datastore.SearchParams{
-		CreatedAtStart: startT.Unix(),
-		CreatedAtEnd:   endT.Unix(),
-	}
-
-	return searchParams, nil
 }
 
 func getEndpointIDs(r *http.Request) []string {

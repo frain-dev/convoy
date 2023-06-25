@@ -2,12 +2,9 @@ package public
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"net/http"
-	"time"
-
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
+	"net/http"
 
 	"github.com/frain-dev/convoy/pkg/log"
 
@@ -15,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
@@ -56,6 +52,7 @@ func (a *PublicHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Reque
 
 	ce := services.CreateEventService{
 		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		EventRepo:    postgres.NewEventRepo(a.A.DB),
 		Queue:        a.A.Queue,
 		NewMessage:   &newMessage,
 		Project:      project,
@@ -68,7 +65,11 @@ func (a *PublicHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Reque
 	}
 
 	resp := &models.EventResponse{Event: event}
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", resp, http.StatusCreated))
+	if event.IsDuplicateEvent {
+		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", resp, http.StatusCreated))
+	} else {
+		_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", resp, http.StatusCreated))
+	}
 }
 
 // CreateEndpointFanoutEvent
@@ -105,6 +106,7 @@ func (a *PublicHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http
 
 	cf := services.CreateFanoutEventService{
 		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
+		EventRepo:      postgres.NewEventRepo(a.A.DB),
 		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB),
 		Queue:          a.A.Queue,
 		NewMessage:     &newMessage,
@@ -118,7 +120,11 @@ func (a *PublicHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http
 	}
 
 	resp := &models.EventResponse{Event: event}
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", resp, http.StatusCreated))
+	if event.IsDuplicateEvent {
+		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", resp, http.StatusCreated))
+	} else {
+		_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", resp, http.StatusCreated))
+	}
 }
 
 // CreateDynamicEvent
@@ -477,13 +483,13 @@ func (a *PublicHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 			Filter:    data.Filter,
 		}
 
-		m, paginationData, err := se.Run(r.Context())
+		events, paginationData, err := se.Run(r.Context())
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
 		}
 
-		resp := models.NewListResponse(m, func(event datastore.Event) models.EventResponse {
+		resp := models.NewListResponse(events, func(event datastore.Event) models.EventResponse {
 			return models.EventResponse{Event: &event}
 		})
 		_ = render.Render(w, r, util.NewServerResponse("Endpoint events fetched successfully",
@@ -492,14 +498,14 @@ func (a *PublicHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m, paginationData, err := postgres.NewEventRepo(a.A.DB).LoadEventsPaged(r.Context(), project.UID, data.Filter)
+	eventsPaged, paginationData, err := postgres.NewEventRepo(a.A.DB).LoadEventsPaged(r.Context(), project.UID, data.Filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch events")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 		return
 	}
 
-	resp := models.NewListResponse(m, func(event datastore.Event) models.EventResponse {
+	resp := models.NewListResponse(eventsPaged, func(event datastore.Event) models.EventResponse {
 		return models.EventResponse{Event: &event}
 	})
 	_ = render.Render(w, r, util.NewServerResponse("App events fetched successfully",
@@ -533,8 +539,18 @@ func (a *PublicHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// if the idempotency key query is set, find the first event with the key
+	if len(data.IdempotencyKey) > 0 {
+		event, err := postgres.NewEventRepo(a.A.DB).FindFirstEventWithIdempotencyKey(r.Context(), project.UID, data.IdempotencyKey)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+		data.EventID = event.UID
+	}
+
 	f := data.Filter
-	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams, f.Pageable)
+	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch event deliveries")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
@@ -569,46 +585,6 @@ func (a *PublicHandler) retrieveEventDelivery(r *http.Request) (*datastore.Event
 	eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
 	return eventDeliveryRepo.FindEventDeliveryByID(r.Context(), project.UID, eventDeliveryID)
-}
-
-func getSearchParams(r *http.Request) (datastore.SearchParams, error) {
-	var searchParams datastore.SearchParams
-	format := "2006-01-02T15:04:05"
-	startDate := r.URL.Query().Get("startDate")
-	endDate := r.URL.Query().Get("endDate")
-
-	var err error
-
-	var startT time.Time
-	if len(startDate) == 0 {
-		startT = time.Unix(0, 0)
-	} else {
-		startT, err = time.Parse(format, startDate)
-		if err != nil {
-			return searchParams, errors.New("please specify a startDate in the format " + format)
-		}
-	}
-	var endT time.Time
-	if len(endDate) == 0 {
-		now := time.Now()
-		endT = time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location())
-	} else {
-		endT, err = time.Parse(format, endDate)
-		if err != nil {
-			return searchParams, errors.New("please specify a correct endDate in the format " + format + " or none at all")
-		}
-	}
-
-	if err := m.EnsurePeriod(startT, endT); err != nil {
-		return searchParams, err
-	}
-
-	searchParams = datastore.SearchParams{
-		CreatedAtStart: startT.Unix(),
-		CreatedAtEnd:   endT.Unix(),
-	}
-
-	return searchParams, nil
 }
 
 func getEndpointIDs(r *http.Request) []string {

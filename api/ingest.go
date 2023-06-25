@@ -2,6 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/frain-dev/convoy/internal/pkg/dedup"
+	"github.com/go-chi/chi/v5"
+	"github.com/oklog/ulid/v2"
 	"io"
 	"net/http"
 	"time"
@@ -16,9 +19,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/oklog/ulid/v2"
 )
 
 func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
@@ -108,6 +109,25 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		maxIngestSize = cfg.MaxResponseSize
 	}
 
+	var checksum string
+	var isDuplicate bool
+	if len(source.IdempotencyKeys) > 0 {
+		duper := dedup.NewDeDuper(r.Context(), r, postgres.NewEventRepo(a.A.DB))
+		exists, err := duper.Exists(source.Name, source.ProjectID, source.IdempotencyKeys)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+
+		isDuplicate = exists
+
+		checksum, err = duper.GenerateChecksum(source.Name, source.IdempotencyKeys)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+	}
+
 	// 3.1 On Failure
 	// Return 400 Bad Request.
 	body := io.LimitReader(r.Body, int64(maxIngestSize))
@@ -130,16 +150,18 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// Attach Source to Event.
 	// Write Event to the Ingestion Queue.
 	event := &datastore.Event{
-		UID:            ulid.Make().String(),
-		EventType:      datastore.EventType(maskID),
-		SourceID:       source.UID,
-		ProjectID:      source.ProjectID,
-		Raw:            string(payload),
-		Data:           payload,
-		URLQueryParams: r.URL.RawQuery,
-		Headers:        httpheader.HTTPHeader(r.Header),
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+		UID:              ulid.Make().String(),
+		EventType:        datastore.EventType(maskID),
+		SourceID:         source.UID,
+		ProjectID:        source.ProjectID,
+		Raw:              string(payload),
+		Data:             payload,
+		IsDuplicateEvent: isDuplicate,
+		URLQueryParams:   r.URL.RawQuery,
+		IdempotencyKey:   checksum,
+		Headers:          httpheader.HTTPHeader(r.Header),
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
 	}
 
 	createEvent := task.CreateEvent{
@@ -180,7 +202,12 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		return
 
 	}
-	_ = render.Render(w, r, util.NewServerResponse("Event received", len(payload), http.StatusOK))
+
+	if event.IsDuplicateEvent {
+		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", len(payload), http.StatusOK))
+	} else {
+		_ = render.Render(w, r, util.NewServerResponse("Event received", len(payload), http.StatusOK))
+	}
 }
 
 func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Request) {

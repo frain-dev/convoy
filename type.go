@@ -103,6 +103,7 @@ const (
 	ProjectsCacheKey           CacheKey = "projects"
 	TokenCacheKey              CacheKey = "tokens"
 	SourceCacheKey             CacheKey = "sources"
+	IdempotencyCacheKey        CacheKey = "dedup"
 )
 
 // queues

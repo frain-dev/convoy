@@ -144,6 +144,14 @@
 
 	<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
 
+	<!-- empty state  -->
+	<div class="py-60px rounded-tr-[0] rounded-tl-[0]" *ngIf="!isloadingEventDeliveries && (!displayedEventDeliveries || displayedEventDeliveries?.length === 0)">
+		<div class="flex justify-center items-center p-40px flex-col">
+			<img src="/assets/img/empty-state.svg" alt="empty state image" />
+			<p class="mt-16px text-12 text-new.gray-500">No event to show here</p>
+		</div>
+	</div>
+
 	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container" *ngIf="!isloadingEventDeliveries && displayedEventDeliveries && displayedEventDeliveries.length > 0">
 		<table convoy-table>
 			<thead convoy-table-head>
@@ -161,7 +169,7 @@
 					</tr>
 					<ng-container *ngFor="let eventDelivery of eventDeliveriesGroup.content; let index = index">
 						<tr convoy-table-row *ngFor="let event of eventDelivery.eventDeliveries; let index = index" [id]="'eventDel' + i" [routerLink]="['./event-deliveries/' + event.uid]" [queryParams]="{ token: portalToken }">
-							<td convoy-table-cell class="pl-16px relative">
+							<td convoy-table-cell class="pl-16px relative w-140px">
 								<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="assets/img/retry-icon.svg" alt="retry icon" title="manually retried" class="w-12px absolute top-[50%] -translate[3px] -translate-y-[50%] opacity-50" />
 								<convoy-tag className="ml-20px" [color]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
 							</td>
@@ -221,11 +229,6 @@
 			<div class="text-grey-40 text-14">{{ eventDeliveries?.content?.length }} events</div>
 		</div>
 	</div>
-</div>
-
-<!-- empty state  -->
-<div convoy-card class="py-60px rounded-tr-[0] rounded-tl-[0]" *ngIf="!isloadingEventDeliveries && (!displayedEventDeliveries || displayedEventDeliveries?.length === 0)">
-	<div convoy-empty-state imgSrc="/assets/img/empty-state.svg" heading="No event to show here"></div>
 </div>
 
 <div convoy-modal position="center" size="sm" *ngIf="showBatchRetryModal">
