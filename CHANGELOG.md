@@ -1,9 +1,10 @@
 ## 23.06.3
 
--   [Feature] Add support for Webhooks Idempotency #1651
+-   [Feature] Add support for Webhooks Idempotency #1651 #1688
 -   [Enhancement] Add support for deleting archived tasks #1657
 -   [Enhancement] Improved list projects view #1669 #1678 #1683
 -   [Enhancement] Remove 50Kb limit on MaxResponseSize config #1675
+-   [Enhancement] Create Fanout Event if Owner ID is tied to a portal link #1682
 -   [Bugfix] Delete duplicate task ID when writing to queue #1660
 -   [Bugfix] Fixed view endpoint under portal link's event delivery page #1666
 -   [Bugfix] Fixed issue with closing google pub/sub client #1673
