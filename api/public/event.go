@@ -106,6 +106,7 @@ func (a *PublicHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http
 
 	cf := services.CreateFanoutEventService{
 		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		EventRepo:    postgres.NewEventRepo(a.A.DB),
 		Queue:        a.A.Queue,
 		NewMessage:   &newMessage,
 		Project:      project,

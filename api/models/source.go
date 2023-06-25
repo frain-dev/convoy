@@ -7,6 +7,7 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
 	"net/http"
+	"strings"
 )
 
 type CreateSource struct {
@@ -36,6 +37,10 @@ func (cs *CreateSource) Validate() error {
 		return err
 	}
 
+	if err := validateIdempotencyKeyFormat(cs.IdempotencyKeys); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -50,6 +55,29 @@ func validateSourceVerifier(cfg VerifierConfig) error {
 
 	if cfg.Type == datastore.BasicAuthVerifier && cfg.BasicAuth == nil {
 		return errors.New("invalid verifier config for basic auth")
+	}
+
+	return nil
+}
+
+func validateIdempotencyKeyFormat(input []string) error {
+	for _, s := range input {
+		parts := strings.Split(s, ".")
+		if len(parts) < 3 {
+			return fmt.Errorf("not enough parts set for idempotency key location with value: %s", s)
+		}
+
+		switch parts[0] {
+		case "request", "req":
+			switch parts[1] {
+			case "Header", "header", "Body", "body", "QueryParam", "query":
+				continue
+			default:
+				return fmt.Errorf("unsupported input format for idempotency key location with value: %s", s)
+			}
+		default:
+			return fmt.Errorf("unsupported input format for idempotency key location with value: %s", s)
+		}
 	}
 
 	return nil
@@ -95,6 +123,10 @@ func (us *UpdateSource) Validate() error {
 	}
 
 	if err := validateSourceVerifier(us.Verifier); err != nil {
+		return err
+	}
+
+	if err := validateIdempotencyKeyFormat(us.IdempotencyKeys); err != nil {
 		return err
 	}
 
