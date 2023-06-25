@@ -1,3 +1,16 @@
+## 23.06.3
+
+-   [Feature] Add support for Webhooks Idempotency #1651
+-   [Enhancement] Add support for deleting archived tasks #1657
+-   [Enhancement] Improved list projects view #1669 #1678 #1683
+-   [Enhancement] Remove 50Kb limit on MaxResponseSize config #1675
+-   [Bugfix] Delete duplicate task ID when writing to queue #1660
+-   [Bugfix] Fixed view endpoint under portal link's event delivery page #1666
+-   [Bugfix] Fixed issue with closing google pub/sub client #1673
+-   [Bugfix] Fixed issue with overriding config with cli flags #1668
+-   [Bugfix] Fixed issue with HTTP timeout validation #1680
+
+
 ## 23.06.2
 
 -   [Enhancement] Improved logging to include response body #1655
