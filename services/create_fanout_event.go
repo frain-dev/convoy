@@ -2,7 +2,7 @@ package services
 
 import (
 	"context"
-
+	"errors"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
@@ -10,9 +10,10 @@ import (
 )
 
 type CreateFanoutEventService struct {
-	EndpointRepo datastore.EndpointRepository
-	EventRepo    datastore.EventRepository
-	Queue        queue.Queuer
+	EndpointRepo   datastore.EndpointRepository
+	EventRepo      datastore.EventRepository
+	PortalLinkRepo datastore.PortalLinkRepository
+	Queue          queue.Queuer
 
 	NewMessage *models.FanoutEvent
 	Project    *datastore.Project
@@ -43,7 +44,14 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (*datastore.Event, e
 	}
 
 	if len(endpoints) == 0 {
-		return nil, &ServiceError{ErrMsg: ErrNoValidOwnerIDEndpointFound.Error()}
+		_, err := e.PortalLinkRepo.FindPortalLinkByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
+		if err != nil {
+			if errors.Is(err, datastore.ErrPortalLinkNotFound) {
+				return nil, &ServiceError{ErrMsg: ErrNoValidOwnerIDEndpointFound.Error()}
+			}
+
+			return nil, &ServiceError{ErrMsg: err.Error()}
+		}
 	}
 
 	ev := &newEvent{

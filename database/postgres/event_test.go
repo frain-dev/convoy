@@ -361,7 +361,7 @@ func Test_SoftDeleteProjectEvents(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, eventRepo.DeleteProjectEvents(ctx, event.ProjectID, &datastore.EventFilter{
-		CreatedAtStart: time.Now().Unix(),
+		CreatedAtStart: event.CreatedAt.Unix(),
 		CreatedAtEnd:   time.Now().Add(5 * time.Minute).Unix(),
 	}, false))
 
