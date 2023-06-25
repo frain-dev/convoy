@@ -18,6 +18,7 @@ import (
 func provideCreateFanoutEventService(ctrl *gomock.Controller, event *models.FanoutEvent, project *datastore.Project) *CreateFanoutEventService {
 	return &CreateFanoutEventService{
 		EndpointRepo: mocks.NewMockEndpointRepository(ctrl),
+		EventRepo:    mocks.NewMockEventRepository(ctrl),
 		Queue:        mocks.NewMockQueuer(ctrl),
 		NewMessage:   event,
 		Project:      project,
