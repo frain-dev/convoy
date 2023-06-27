@@ -301,16 +301,16 @@ export class CreateSourceComponent implements OnInit {
 			const key = e.keyCode || e.charCode;
 			if (key == 8) {
 				e.stopImmediatePropagation();
-				if (this.idempotencyKeys.length > 0 && !addKeyInputValue?.value) this.idempotencyKeys.splice(-1);
+				if (this.idempotencyKeys?.length > 0 && !addKeyInputValue?.value) this.idempotencyKeys?.splice(-1);
 			}
 			if (e.which === 188 || e.key == ' ') {
-				if (this.idempotencyKeys.includes(addKeyInputValue?.value)) {
+				if (this.idempotencyKeys?.includes(addKeyInputValue?.value)) {
 					addKeyInputValue.value = '';
-					this.idempotencyKeys = this.idempotencyKeys.filter(e => String(e).trim());
+					this.idempotencyKeys = this.idempotencyKeys?.filter(e => String(e).trim());
 				} else {
 					this.idempotencyKeys.push(addKeyInputValue?.value);
 					addKeyInputValue.value = '';
-					this.idempotencyKeys = this.idempotencyKeys.filter(e => String(e).trim());
+					this.idempotencyKeys = this.idempotencyKeys?.filter(e => String(e).trim());
 				}
 				e.preventDefault();
 			}
