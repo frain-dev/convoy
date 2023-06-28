@@ -37,7 +37,7 @@ interface FILTER_QUERY_PARAM {
 export class EventDeliveriesComponent implements OnInit {
 	@Output() pushEventDeliveries = new EventEmitter<any>();
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
-	eventDelTableHead: string[] = ['Status', this.projectService.activeProjectDetails?.type == 'incoming' ? 'Subscription' : 'Endpoint', 'Attempts', 'Next Attempt', 'Time', '', ''];
+	eventDelTableHead: string[] = ['Status', 'Event type', this.projectService.activeProjectDetails?.type == 'incoming' ? 'Subscription' : 'Endpoint', 'Attempts', 'Next Attempt', 'Time', '', ''];
 	fetchingCount = false;
 	showBatchRetryModal = false;
 	isloadingEventDeliveries = false;
