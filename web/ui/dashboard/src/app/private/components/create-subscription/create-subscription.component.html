@@ -1,7 +1,7 @@
 <form class="relative" [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()">
 	<convoy-loader *ngIf="isLoadingForm"></convoy-loader>
 
-	<p *ngIf="action !== 'view'" class="text-14 font-normal pb-20px max-w-[634px]">A subscription enable you to subscribe endpoints to events from any source, with extra configurations like event filters and retry logic</p>
+	<p *ngIf="action !== 'view' && !token" class="text-14 font-normal pb-20px max-w-[634px]">A subscription enable you to subscribe endpoints to events from any source, with extra configurations like event filters and retry logic</p>
 	<div convoy-card class="px-24px pt-24px relative" [ngClass]="{ 'mb-70px': action !== 'view' }">
 		<ng-container *ngIf="isPortal === 'false' && showAction === 'true'">
 			<convoy-input-field className="mb-40px">

@@ -155,7 +155,9 @@
 	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container" *ngIf="!isloadingEventDeliveries && displayedEventDeliveries && displayedEventDeliveries.length > 0">
 		<table convoy-table>
 			<thead convoy-table-head>
-				<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of eventDelTableHead; let i = index">{{ head }}</th>
+				<ng-container *ngFor="let head of eventDelTableHead; let i = index">
+					<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngIf="projectService.activeProjectDetails?.type === 'outgoing' || i !== 1">{{ head }}</th>
+				</ng-container>
 			</thead>
 			<tbody>
 				<ng-container *ngFor="let eventDeliveriesGroup of displayedEventDeliveries; let i = index">
@@ -172,6 +174,9 @@
 							<td convoy-table-cell class="pl-16px relative w-140px">
 								<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="assets/img/retry-icon.svg" alt="retry icon" title="manually retried" class="w-12px absolute top-[50%] -translate[3px] -translate-y-[50%] opacity-50" />
 								<convoy-tag className="ml-20px" [color]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
+							</td>
+							<td convoy-table-cell *ngIf="projectService.activeProjectDetails?.type === 'outgoing'">
+								<div convoy-tag class="bg-new.gray-50">{{ event.event_metadata.event_type }}</div>
 							</td>
 
 							<td convoy-table-cell>
