@@ -156,7 +156,7 @@
 		<table convoy-table>
 			<thead convoy-table-head>
 				<ng-container *ngFor="let head of eventDelTableHead; let i = index">
-					<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngIf="projectService.activeProjectDetails?.type === 'outgoing' || i !== 1">{{ head }}</th>
+					<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngIf="projectService.activeProjectDetails?.type === 'outgoing' || i !== 1 || portalToken">{{ head }}</th>
 				</ng-container>
 			</thead>
 			<tbody>
@@ -175,7 +175,7 @@
 								<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="assets/img/retry-icon.svg" alt="retry icon" title="manually retried" class="w-12px absolute top-[50%] -translate[3px] -translate-y-[50%] opacity-50" />
 								<convoy-tag className="ml-20px" [color]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
 							</td>
-							<td convoy-table-cell *ngIf="projectService.activeProjectDetails?.type === 'outgoing'">
+							<td convoy-table-cell *ngIf="projectService.activeProjectDetails?.type === 'outgoing' || portalToken">
 								<div convoy-tag class="bg-new.gray-50">{{ event.event_metadata.event_type }}</div>
 							</td>
 
