@@ -26,9 +26,18 @@ jobs:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.PAT }}
         DOCKER_REGISTRY_URL: ghcr.io
+    
+    - name: install buildx
+        id: buildx
+        uses: crazy-max/ghaction-docker-buildx@v1
+        with:
+          version: latest
 
-    - name: Build latest image
-      run: docker build -t ghcr.io/${GITHUB_REPOSITORY}:${{ steps.get_version.outputs.tag }} .
+    - name: Multi-Arch Docker Build
+      run: |
+        docker buildx build \
+          --tag ghcr.io/${GITHUB_REPOSITORY}:${{ steps.get_version.outputs.tag }} \
+          --platform linux/amd64,linux/arm/v7,linux/arm64 .
 
     - name: Push
       uses: actions-hub/docker@master
