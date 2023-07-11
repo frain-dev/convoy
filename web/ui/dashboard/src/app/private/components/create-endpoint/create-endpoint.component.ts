@@ -106,11 +106,13 @@ export class CreateEndpointComponent implements OnInit {
 		}
 
 		this.savingEndpoint = true;
+		const endpointValue = structuredClone(this.addNewEndpointForm.value);
 
-		if (!this.addNewEndpointForm.value.authentication.api_key.header_name && !this.addNewEndpointForm.value.authentication.api_key.header_value) delete this.addNewEndpointForm.value.authentication;
+		if (!this.addNewEndpointForm.value.authentication.api_key.header_name && !this.addNewEndpointForm.value.authentication.api_key.header_value) delete endpointValue.authentication;
+		if (this.addNewEndpointForm.get('http_timeout')?.value) endpointValue.http_timeout = endpointValue.http_timeout + 's';
 
 		try {
-			const response = this.endpointUid && this.editMode ? await this.createEndpointService.editEndpoint({ endpointId: this.endpointUid || '', body: this.addNewEndpointForm.value }) : await this.createEndpointService.addNewEndpoint({ body: this.addNewEndpointForm.value });
+			const response = this.endpointUid && this.editMode ? await this.createEndpointService.editEndpoint({ endpointId: this.endpointUid || '', body: endpointValue }) : await this.createEndpointService.addNewEndpoint({ body: endpointValue });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.onAction.emit({ action: this.endpointUid && this.editMode ? 'update' : 'save', data: response.data });
 			this.addNewEndpointForm.reset();
@@ -137,7 +139,10 @@ export class CreateEndpointComponent implements OnInit {
 
 			if (endpointDetails.support_email) this.toggleConfigForm('alert-config');
 			if (endpointDetails.authentication.api_key.header_value || endpointDetails.authentication.api_key.header_name) this.toggleConfigForm('auth');
-			if (endpointDetails.http_timeout) this.toggleConfigForm('http_timeout');
+			if (endpointDetails.http_timeout) {
+				this.toggleConfigForm('http_timeout');
+				this.addNewEndpointForm.patchValue({ http_timeout: endpointDetails.http_timeout.split('s')[0] });
+			}
 
 			this.isLoadingEndpointDetails = false;
 		} catch {
