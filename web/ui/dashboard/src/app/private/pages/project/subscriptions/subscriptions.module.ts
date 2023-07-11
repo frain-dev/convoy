@@ -18,6 +18,7 @@ import { PaginationComponent } from 'src/app/private/components/pagination/pagin
 import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';
 import { TableCellComponent, TableComponent, TableRowComponent } from 'src/app/components/table/table.component';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
+import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 
 const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 
@@ -46,7 +47,8 @@ const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 		TableRowComponent,
 		TableComponent,
 		DropdownComponent,
-		DropdownOptionDirective
+		DropdownOptionDirective,
+		LoaderModule
 	]
 })
 export class SubscriptionsModule {}
