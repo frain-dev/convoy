@@ -171,7 +171,7 @@
 	<div convoy-modal-header fullscreen="true">
 		<div class="flex items-center">
 			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="createSubscription('cancel')">
-				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
+				<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
 			</button>
 
 			<h2 class="font-semibold text-16 capitalize ml-16px">{{ showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription' }}</h2>
@@ -190,7 +190,7 @@
 		<h2 class="font-semibold capitalize max-w-[356px] overflow-ellipsis overflow-hidden whitespace-nowrap">{{ activeSubscription?.name || 'Subscription Details' }}</h2>
 
 		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="closeModal()">
-			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+			<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
 		</button>
 	</div>
 
