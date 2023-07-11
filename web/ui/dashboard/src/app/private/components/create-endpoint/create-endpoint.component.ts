@@ -34,9 +34,9 @@ export class CreateEndpointComponent implements OnInit {
 	isLoadingEndpoints = false;
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
-		url: ['', Validators.required],
+		url: ['', Validators.compose([Validators.required, Validators.pattern(`^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%]*)?$`)])],
 		support_email: ['', Validators.email],
-		slack_webhook_url: ['', Validators.pattern(`/^(https?|ftp)://[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+(\:[0-9]+)?/?([a-zA-Z0-9-_\.~!$&'()*+,;=:@/?#%])*[^<>]$/`)],
+		slack_webhook_url: ['', Validators.pattern(`^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%]*)?$`)],
 		secret: [null],
 		http_timeout: [null, Validators.pattern('^[-+]?[0-9]+$')],
 		description: [null],
