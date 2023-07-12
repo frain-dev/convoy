@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 
@@ -86,7 +87,8 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				a.Logger.Debug("Failed to initialise search backend")
 			}
 
-			rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
+			addresses := strings.Split(cfg.Redis.Addresses, ",")
+			rd, err := rdb.NewClient(addresses)
 			if err != nil {
 				return err
 			}
@@ -127,12 +129,9 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				searchBackend,
 			))
 
-			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(
-				a.DB,
-				a.Queue))
+			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Queue))
 
-			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(
-				endpointRepo))
+			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo))
 
 			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, cfg, rd))
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))

@@ -2,6 +2,7 @@ package limiter
 
 import (
 	"context"
+	"strings"
 
 	"github.com/frain-dev/convoy/config"
 	rlimiter "github.com/frain-dev/convoy/limiter/redis"
@@ -14,7 +15,8 @@ type RateLimiter interface {
 }
 
 func NewLimiter(cfg config.RedisConfiguration) (RateLimiter, error) {
-	ra, err := rlimiter.NewRedisLimiter(cfg.BuildDsn())
+	addresses := strings.Split(cfg.Addresses, ",")
+	ra, err := rlimiter.NewRedisLimiter(addresses)
 	if err != nil {
 		return nil, err
 	}

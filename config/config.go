@@ -132,12 +132,13 @@ type PrometheusConfiguration struct {
 }
 
 type RedisConfiguration struct {
-	Scheme   string `json:"scheme" envconfig:"CONVOY_REDIS_SCHEME"`
-	Host     string `json:"host" envconfig:"CONVOY_REDIS_HOST"`
-	Username string `json:"username" envconfig:"CONVOY_REDIS_USERNAME"`
-	Password string `json:"password" envconfig:"CONVOY_REDIS_PASSWORD"`
-	Database string `json:"database" envconfig:"CONVOY_REDIS_DATABASE"`
-	Port     int    `json:"port" envconfig:"CONVOY_REDIS_PORT"`
+	Scheme    string `json:"scheme" envconfig:"CONVOY_REDIS_SCHEME"`
+	Host      string `json:"host" envconfig:"CONVOY_REDIS_HOST"`
+	Username  string `json:"username" envconfig:"CONVOY_REDIS_USERNAME"`
+	Password  string `json:"password" envconfig:"CONVOY_REDIS_PASSWORD"`
+	Database  string `json:"database" envconfig:"CONVOY_REDIS_DATABASE"`
+	Port      int    `json:"port" envconfig:"CONVOY_REDIS_PORT"`
+	Addresses string `json:"addresses" envconfig:"CONVOY_REDIS_CLUSTER_ADDRESSES"`
 }
 
 func (rc RedisConfiguration) BuildDsn() string {

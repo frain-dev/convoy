@@ -22,10 +22,18 @@ type RedisQueue struct {
 }
 
 func NewQueue(opts queue.QueueOptions) queue.Queuer {
-	var _ redis.UniversalClient = opts.RedisClient.MakeRedisClient().(redis.UniversalClient)
+	var c asynq.RedisConnOpt
+	if len(opts.RedisClusterAddresses) == 0 {
+		var _ = opts.RedisClient.MakeRedisClient().(redis.UniversalClient)
+		c = opts.RedisClient
+	} else {
+		c = asynq.RedisClusterClientOpt{
+			Addrs: opts.RedisClusterAddresses,
+		}
+	}
 
-	client := asynq.NewClient(opts.RedisClient)
-	inspector := asynq.NewInspector(opts.RedisClient)
+	client := asynq.NewClient(c)
+	inspector := asynq.NewInspector(c)
 	return &RedisQueue{
 		client:    client,
 		opts:      opts,

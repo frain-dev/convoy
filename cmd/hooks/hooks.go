@@ -10,6 +10,7 @@ import (
 	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -72,7 +73,9 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		var ca cache.Cache
 		var q queue.Queuer
 
-		redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
+		fmt.Printf("dsn: %v\n", cfg.Redis.BuildDsn())
+		addresses := strings.Split(cfg.Redis.Addresses, ",")
+		redis, err := rdb.NewClient(addresses)
 		if err != nil {
 			return err
 		}
@@ -87,11 +90,12 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		}
 
 		opts := queue.QueueOptions{
-			Names:             queueNames,
-			RedisClient:       redis,
-			RedisAddress:      cfg.Redis.BuildDsn(),
-			Type:              string(config.RedisQueueProvider),
-			PrometheusAddress: cfg.Prometheus.Dsn,
+			Names:       queueNames,
+			RedisClient: redis,
+			//RedisAddress: cfg.Redis.BuildDsn(),
+			RedisClusterAddresses: addresses,
+			Type:                  string(config.RedisQueueProvider),
+			PrometheusAddress:     cfg.Prometheus.Dsn,
 		}
 		q = redisQueue.NewQueue(opts)
 
