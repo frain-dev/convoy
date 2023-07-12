@@ -31,13 +31,13 @@
 		</div>
 
 		<ng-container *ngFor="let subscriptionGroup of displayedSubscriptions; let i = index">
-			<li class="pb-8px">
+			<li class="border-b border-b-new.primary-25 pb-16px">
 				<div class="text-new.gray-400 text-12 pl-16px">{{ subscriptionGroup.date }}</div>
 			</li>
 
 			<li
-				class="flex justify-between hover:bg-new.primary-25 transition-all duration-300 py-12px mb-4px"
-				[class]="subscriptionGroup.content.length === j + 1 ? 'border-b border-b-new.primary-25 pb-16px !mb-16px' : ''"
+				class="border-b border-b-new.primary-25 pb-16px flex justify-between hover:bg-new.primary-25 transition-all duration-300 py-12px"
+				[class]="subscriptionGroup.content.length === j + 1 ? '!mb-16px' : ''"
 				*ngFor="let subscription of subscriptionGroup?.content; let j = index"
 			>
 				<div class="flex gap-50px text-12 text-new.gray-600 max-w-[790px] w-full items-center min-h-[28px]">
