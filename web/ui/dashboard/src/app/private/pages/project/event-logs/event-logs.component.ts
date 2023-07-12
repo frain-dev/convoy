@@ -318,14 +318,9 @@ export class EventLogsComponent implements OnInit {
 		}
 	}
 
-	viewEndpoint(endpointId?: string) {
-		if (!endpointId || this.portalToken) return;
-		this.router.navigate([`/projects/${this.privateService.activeProjectDetails?.uid}/endpoints/${endpointId}`]);
-	}
-
 	viewSource(sourceId?: string) {
 		if (!sourceId || this.portalToken) return;
-		this.router.navigate([`/projects/${this.privateService.activeProjectDetails?.uid}/sources/${sourceId}`]);
+		this.router.navigate([`/projects/${this.privateService.getProjectDetails?.uid}/sources/${sourceId}`]);
 	}
 
 	viewEventDeliveries(event: EVENT, filterByIdempotencyKey?: boolean) {
@@ -334,7 +329,7 @@ export class EventLogsComponent implements OnInit {
 		};
 		if (filterByIdempotencyKey) queryParams['idempotencyKey'] = event.idempotency_key;
 
-		this.router.navigate([`/projects/${this.privateService.activeProjectDetails?.uid}/events`], { queryParams });
+		this.router.navigate([`/projects/${this.privateService.getProjectDetails?.uid}/events`], { queryParams });
 	}
 
 	paginateEvents(event: CURSOR) {

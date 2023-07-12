@@ -131,10 +131,10 @@ export class PortalLinksComponent implements OnInit {
 	}
 
 	openCreateLinkModal() {
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/portal-links/new');
+		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid + '/portal-links/new');
 	}
 
 	viewEndpoint(endpoint: ENDPOINT) {
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/endpoints/' + endpoint.uid);
+		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid + '/endpoints/' + endpoint.uid);
 	}
 }

@@ -36,7 +36,7 @@
 			<convoy-create-subscription (onAction)="onProjectOnboardingComplete()"></convoy-create-subscription>
 		</div>
 
-		<ng-container *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
+		<ng-container *ngIf="privateService.getProjectDetails?.type === 'outgoing'">
 			<div convoy-card class="p-24px mb-40px order-9">
 				<div class="flex justify-between">
 					<div>

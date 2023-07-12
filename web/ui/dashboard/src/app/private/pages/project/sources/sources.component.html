@@ -1,15 +1,3 @@
-<div class="text-12 font-medium flex items-center uppercase mb-24px">
-	<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
-	<svg width="16" height="16" class="mx-4px">
-		<use xlink:href="#arrow-right-icon"></use>
-	</svg>
-	{{ privateService.activeProjectDetails?.name }}
-	<svg width="16" height="16" class="mx-4px">
-		<use xlink:href="#arrow-right-icon"></use>
-	</svg>
-	<span class="text-primary-100 font-medium">Sources</span>
-</div>
-
 <!-- empty state  -->
 <div class="py-100px" convoy-card *ngIf="!isLoadingSources && sources?.content?.length == 0">
 	<div convoy-empty-state imgSrc="/assets/img/sources-empty-state.png" heading="Create your first source" description="Sources are how your webhook events are routed into the Convoy." id="sources-empty-state">
@@ -42,7 +30,7 @@
 		<ng-container *ngFor="let source of sources?.content; let i = index">
 			<div convoy-card [id]="'source' + i" hover="true" class="w-full max-w-[348px] py-20px">
 				<!-- outgoing project sources -->
-				<ng-container *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
+				<ng-container *ngIf="privateService.getProjectDetails?.type === 'outgoing'">
 					<div class="flex items-center justify-between px-24px">
 						<div class="flex items-center">
 							<img [src]="'assets/img/' + source.pub_sub.type + '.png'" alt="icon" class="mr-12px" />
@@ -79,7 +67,7 @@
 				</ng-container>
 
 				<!-- incoming project sources -->
-				<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
+				<ng-container *ngIf="privateService.getProjectDetails?.type === 'incoming'">
 					<div class="px-24px pb-12px border-b border-b-grey-10 cursor-pointer">
 						<div class="text-grey-40 text-10 mb-4px">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</div>
 						<div class="flex justify-between items-center">

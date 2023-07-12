@@ -59,7 +59,7 @@ export class MetaEventsComponent implements OnInit {
 	}
 
 	get isMetaEventEnabled(): Boolean {
-		const isMetaEventEnabled = this.privateService.activeProjectDetails?.config?.meta_event?.is_enabled || false
+		const isMetaEventEnabled = this.privateService.getProjectDetails?.config?.meta_event?.is_enabled || false;
 		return isMetaEventEnabled;
 	}
 
@@ -94,6 +94,6 @@ export class MetaEventsComponent implements OnInit {
 	}
 
 	routeToMetaEvents() {
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.name + '/settings?activePage=meta%20events');
+		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.name + '/settings?activePage=meta%20events');
 	}
 }

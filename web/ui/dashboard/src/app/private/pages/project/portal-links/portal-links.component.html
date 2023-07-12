@@ -3,7 +3,7 @@
 	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	{{ privateService.activeProjectDetails?.name }}
+	{{ privateService.getProjectDetails?.name }}
 	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
@@ -142,7 +142,7 @@
 					<use xlink:href="#delete-icon"></use>
 				</svg>
 			</button>
-			<button convoy-button size="sm" class="ml-24px" [routerLink]="'/projects/' + privateService.activeProjectDetails?.uid + '/portal-links/' + activeLink?.uid + '/edit'">
+			<button convoy-button size="sm" class="ml-24px" [routerLink]="'/projects/' + privateService.getProjectDetails?.uid + '/portal-links/' + activeLink?.uid + '/edit'">
 				Edit Portal Link
 				<svg width="18" height="18" class="ml-8px fill-white-100">
 					<use xlink:href="#edit-icon"></use>

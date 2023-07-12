@@ -114,7 +114,7 @@
 												</button>
 											</li>
 
-											<li *ngIf="privateService.activeProjectDetails?.type === 'outgoing'" class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
+											<li *ngIf="privateService.getProjectDetails?.type === 'outgoing'" class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
 												<button convoy-dropdown-option convoy-button color="grey" class="w-full !justify-start" fill="text" (click)="sendTestEvent()" [disabled]="isSendingTestEvent">
 													<svg width="16" height="17" class="mr-8px">
 														<use xlink:href="#send-icon"></use>

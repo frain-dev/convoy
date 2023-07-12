@@ -1,6 +1,6 @@
 <form class="pb-40px" [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'" [formGroup]="sourceForm" (ngSubmit)="saveSource()">
 	<div convoy-card class="p-24px relative">
-		<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
+		<ng-container *ngIf="privateService.getProjectDetails?.type === 'incoming'">
 			<h4 class="font-medium mb-20px">Pre-configured Sources</h4>
 			<ul class="flex flex-row w-full mb-20px">
 				<li *ngFor="let source of preConfiguredSources" class="list-none mr-40px last-of-type:mr-0">
@@ -28,7 +28,7 @@
 			<convoy-input-error *ngIf="sourceForm.get('name')?.touched && sourceForm.get('name')?.invalid">Enter new source name</convoy-input-error>
 		</convoy-input-field>
 
-		<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
+		<ng-container *ngIf="privateService.getProjectDetails?.type === 'incoming'">
 			<div formGroupName="verifier">
 				<convoy-select
 					label="Source Verification"
@@ -187,7 +187,7 @@
 			</div>
 		</ng-container>
 
-		<div formGroupName="pub_sub" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
+		<div formGroupName="pub_sub" *ngIf="privateService.getProjectDetails?.type === 'outgoing'">
 			<h2 class="mb-6px font-semibold">Pub/Sub Type</h2>
 			<p class="text-14 text-grey-60 mb-24px">Connect your Google Pub/Sub service to automatically trigger a webhook event to an endpoint as soon as a message drops into your Pub/Sub queue.</p>
 			<div class="grid grid-cols-2 gap-6">
