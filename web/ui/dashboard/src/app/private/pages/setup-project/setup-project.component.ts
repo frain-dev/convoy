@@ -101,7 +101,7 @@ export class SetupProjectComponent implements OnInit {
 
 		// create subscription
 		try {
-			this.createSubscriptionForm.saveSubscription();
+			this.createSubscriptionForm.saveSubscription(true);
 		} catch (error) {}
 	}
 }
