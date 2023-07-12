@@ -12,6 +12,7 @@ import { ButtonComponent } from '../button/button.component';
 })
 export class CopyButtonComponent implements OnInit {
 	@Input('text') textToCopy!: string;
+	@Input('show-icon') showIcon: 'true' | 'false' = 'true';
 	@Input('notificationText') notificationText!: string;
 	@Input('size') size: 'sm' | 'md' = 'md';
 	@Input('color') color: 'primary' | 'gray' = 'gray';
