@@ -378,6 +378,21 @@ export class PrivateService {
 		});
 	}
 
+    deleteProject(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const sourceResponse = await this.http.request({
+					url: ``,
+					method: 'delete',
+					level: 'org_project'
+				});
+
+				return resolve(sourceResponse);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
 
 	deleteEndpoint(endpointId: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
