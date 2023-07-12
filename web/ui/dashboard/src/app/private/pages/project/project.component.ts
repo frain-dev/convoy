@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
 import { Router } from '@angular/router';
@@ -60,8 +60,8 @@ export class ProjectComponent implements OnInit {
 		this.isLoadingProjectDetails = true;
 
 		try {
-			const projectDetails = await this.privateService.getProjectDetails();
-			this.projectDetails = projectDetails.data;
+			const projectDetails = await this.privateService.getProjectDetails;
+			this.projectDetails = projectDetails;
 			if (this.projectDetails?.type === 'outgoing') this.sideBarItems.push({ name: 'Portal Links', icon: 'portal', route: '/portal-links' });
 			this.isLoadingProjectDetails = false;
 		} catch (error) {
@@ -97,17 +97,18 @@ export class ProjectComponent implements OnInit {
 		return checkForStrokeIcon;
 	}
 
-	async getProjectCompleteDetails(projectId: string) {
+	async getProjectCompleteDetails(project: PROJECT) {
 		this.isLoadingProjectDetails = true;
 
 		try {
-			this.projectDetails = (await this.privateService.getProjectDetails({ refresh: true, projectId })).data;
+			this.projectDetails = project;
+			localStorage.setItem('CONVOY_PROJECT', JSON.stringify(this.projectDetails));
 
 			if (this.projectDetails?.type === 'outgoing' && this.sideBarItems[this.sideBarItems.length - 1].icon === 'endpoint') this.sideBarItems.push({ name: 'Portal Links', icon: 'portal', route: '/portal-links' });
 			if (this.projectDetails?.type === 'incoming' && this.sideBarItems[this.sideBarItems.length - 1].icon === 'portal') this.sideBarItems.pop();
 			await this.privateService.getProjectStat({ refresh: true });
 			this.isLoadingProjectDetails = false;
-			this.router.navigate([`/projects/${projectId}`]);
+			this.router.navigate([`/projects/${project.uid}`]);
 		} catch (error) {
 			this.isLoadingProjectDetails = false;
 		}

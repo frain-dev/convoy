@@ -117,24 +117,25 @@ export class CreateProjectComponent implements OnInit {
 		return this.configurations.find(config => config.uid === configValue)?.show || false;
 	}
 
-	async getProjectDetails(requestDetails?: { refresh: boolean }) {
+	async getProjectDetails() {
 		this.enableMoreConfig = true;
 
 		try {
-			const response = await this.privateService.getProjectDetails({ ...requestDetails });
-			this.projectDetails = response.data;
+			const projectDetails = this.privateService.getProjectDetails;
 
-			if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab !== 'signature history');
+			if (projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab !== 'signature history');
 
-			this.projectForm.patchValue(response.data);
-			this.projectForm.get('config.strategy')?.patchValue(response.data.config.strategy);
-			this.projectForm.get('config.signature')?.patchValue(response.data.config.signature);
-			this.projectForm.get('config.ratelimit')?.patchValue(response.data.config.ratelimit);
+			this.projectForm.patchValue(projectDetails);
+			this.projectForm.get('config.strategy')?.patchValue(projectDetails.config.strategy);
+			this.projectForm.get('config.signature')?.patchValue(projectDetails.config.signature);
+			this.projectForm.get('config.ratelimit')?.patchValue(projectDetails.config.ratelimit);
+
 			this.configurations.forEach(config => {
-				if (this.privateService.activeProjectDetails?.type === 'outgoing') this.toggleConfigForm(config.uid);
+				if (projectDetails?.type === 'outgoing') this.toggleConfigForm(config.uid);
 				else if (config.uid !== 'signature') this.toggleConfigForm(config.uid);
 			});
-			const versions = response.data.config.signature.versions;
+
+			const versions = projectDetails.config.signature.versions;
 			if (!versions?.length) return;
 			this.signatureVersions = this.generalService.setContentDisplayed(versions);
 			versions.forEach((version: { encoding: any; hash: any }, index: number) => {
@@ -144,9 +145,7 @@ export class CreateProjectComponent implements OnInit {
 					hash: version.hash
 				});
 			});
-		} catch (error) {
-			console.log(error);
-		}
+		} catch {}
 	}
 
 	async createProject() {
@@ -173,9 +172,10 @@ export class CreateProjectComponent implements OnInit {
 		this.isCreatingProject = true;
 
 		try {
+			// this createProject service also updates project as active project in localstorage
 			const response = await this.createProjectService.createProject(this.enableMoreConfig ? this.projectForm.value : dataForNoConfig);
-			await this.privateService.getProjectDetails({ refresh: true, projectId: response.data.project.uid });
 			await this.privateService.getProjectStat({ refresh: true });
+
 			this.privateService.getProjects({ refresh: true });
 
 			projectFormModal?.scroll({ top: 0, behavior: 'smooth' });
@@ -200,10 +200,8 @@ export class CreateProjectComponent implements OnInit {
 		this.isCreatingProject = true;
 
 		try {
+			// this updateProject service also updates project in localstorage
 			const response = await this.createProjectService.updateProject(this.projectForm.value);
-
-			// update project details at service state
-			this.privateService.getProjectDetails({ refresh: true });
 
 			this.generalService.showNotification({ message: 'Project updated successfully!', style: 'success' });
 			this.onAction.emit(response.data);

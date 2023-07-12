@@ -86,7 +86,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 	}
 
 	viewEndpoint(endpointId: string) {
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/endpoints/' + endpointId);
+		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid + '/endpoints/' + endpointId);
 	}
 
 	checkScreenSize() {

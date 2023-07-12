@@ -22,6 +22,6 @@ export class DropdownContainerComponent implements OnInit {
 			left: 'left-[5%]',
 			center: 'left-0'
 		};
-		return `${this.sizes[this.size]} ${positions[this.position]} ${this.show ? 'opacity-100 h-fit pointer-events-auto' : 'opacity-0 h-0 overflow-hidden pointer-events-none'} ${this.class}`;
+		return `${this.sizes[this.size]} ${positions[this.position]} ${this.show ? 'opacity-100 h-fit pointer-events-auto overflow-y-auto overflow-x-hidden' : 'opacity-0 h-0 overflow-hidden pointer-events-none'} ${this.class}`;
 	}
 }

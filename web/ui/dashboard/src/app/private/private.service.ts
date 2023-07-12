@@ -4,16 +4,14 @@ import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { HttpService } from 'src/app/services/http/http.service';
 import { FLIPT_API_RESPONSE } from '../models/flipt.model';
 import { CURSOR } from '../models/global.model';
-import { PROJECT } from '../models/project.model';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
-import { ProjectService } from './pages/project/project.service';
 import { USER } from '../models/user.model';
+import { PROJECT } from '../models/project.model';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class PrivateService {
-	activeProjectDetails?: PROJECT; // we should depricate this
 	organisationDetails?: ORGANIZATION_DATA;
 	apiFlagResponse!: FLIPT_API_RESPONSE;
 	projects!: HTTP_RESPONSE;
@@ -25,7 +23,7 @@ export class PrivateService {
 	profileDetails!: HTTP_RESPONSE;
 	projectStats!: HTTP_RESPONSE;
 
-	constructor(private http: HttpService, private router: Router, private projectService: ProjectService) {}
+	constructor(private http: HttpService, private router: Router) {}
 
 	get getOrganisation(): ORGANIZATION_DATA | null {
 		let org = localStorage.getItem('CONVOY_ORG');
@@ -44,7 +42,7 @@ export class PrivateService {
 			case 'org':
 				return `/organisations/${orgId}`;
 			case 'org_project':
-				return `/organisations/${orgId}/projects/${this.activeProjectDetails?.uid}`;
+				return `/organisations/${orgId}/projects/${this.getProjectDetails?.uid}`;
 			default:
 				return '';
 		}
@@ -103,23 +101,28 @@ export class PrivateService {
 		});
 	}
 
-	getProjectDetails(requestDetails?: { refresh?: boolean; projectId?: string }): Promise<HTTP_RESPONSE> {
-		const projectId = this.router.url.split('/')[2];
+	get getProjectDetails() {
+		const localProject = localStorage.getItem('CONVOY_PROJECT');
+		if (localProject) return JSON.parse(localProject);
 
+		return this.getProject().then(project => {
+			return project.data;
+		});
+	}
+
+	getProject(requestDetails?: { refresh?: boolean; projectId?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			if (this.projectDetails && !requestDetails?.refresh) return resolve(this.projectDetails);
 
 			try {
 				const projectResponse = await this.http.request({
-					url: `/projects/${requestDetails?.projectId || this.activeProjectDetails?.uid || projectId}`,
+					url: `/projects/${requestDetails?.projectId}`,
 					method: 'get',
 					level: 'org'
 				});
 
-				this.activeProjectDetails = projectResponse.data; // we should depricate this
-				this.projectService.activeProjectDetails = projectResponse.data;
-
 				this.projectDetails = projectResponse;
+				localStorage.setItem('CONVOY_PROJECT', JSON.stringify(projectResponse.data));
 				return resolve(projectResponse);
 			} catch (error) {
 				return reject(error);
@@ -255,7 +258,7 @@ export class PrivateService {
 					flagKey: key,
 					entityId: key,
 					context: {
-						group_id: this.activeProjectDetails?.uid || '',
+						group_id: this.getProjectDetails?.uid || '',
 						organisation_id: organisationId
 					}
 				})
@@ -378,7 +381,7 @@ export class PrivateService {
 		});
 	}
 
-    deleteProject(): Promise<HTTP_RESPONSE> {
+	deleteProject(): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const sourceResponse = await this.http.request({
@@ -410,4 +413,27 @@ export class PrivateService {
 		});
 	}
 
+	async updateProjectDetails(projects: PROJECT[]) {
+		localStorage.setItem('CONVOY_PROJECT', JSON.stringify(projects[0]));
+		await this.getProjectStat({ refresh: true });
+
+		this.router.navigateByUrl(`/projects/${projects[0].uid}`);
+	}
+
+	checkForSelectedProject(projects: PROJECT[]) {
+		const selectedProject = localStorage.getItem('CONVOY_PROJECT');
+		if (!selectedProject) return this.updateProjectDetails(projects);
+
+		const projectDetails = JSON.parse(selectedProject);
+		return projects.find(project => project.uid === projectDetails.uid) ? this.router.navigateByUrl(`/projects/${projectDetails.uid}`) : this.updateProjectDetails(projects);
+	}
+
+	async getProjectsHelper(requestDetails?: { refresh: boolean }): Promise<any> {
+		try {
+			const response = await this.getProjects(requestDetails);
+			return response.data.length === 0 ? this.router.navigateByUrl('/projects') : this.checkForSelectedProject(response.data);
+		} catch (error) {
+			return error;
+		}
+	}
 }

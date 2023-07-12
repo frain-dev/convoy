@@ -30,24 +30,13 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 	}
 
 	async ngOnInit() {
-		this.getProjects();
+		this.isLoadingProjects = true;
+		await this.getProjects();
+		this.isLoadingProjects = false;
 	}
 
 	ngOnDestroy(): void {
 		this.reloadSubscription?.unsubscribe();
-	}
-
-	updateProjectDetails(projects: PROJECT[]) {
-		localStorage.setItem('CONVOY_PROJECT', JSON.stringify(projects[0]));
-		this.router.navigateByUrl(`/projects/${projects[0].uid}`);
-	}
-
-	checkForSelectedProject(projects: PROJECT[]) {
-		const selectedProject = localStorage.getItem('CONVOY_PROJECT');
-		if (!selectedProject || selectedProject === 'undefined') return this.updateProjectDetails(projects);
-
-		const projectDetails = JSON.parse(selectedProject);
-		return projects.find(project => project.uid === projectDetails.uid) ? this.router.navigateByUrl(`/projects/${projectDetails.uid}`) : this.updateProjectDetails(projects);
 	}
 
 	async getProjects(): Promise<any> {
@@ -55,36 +44,16 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
 		try {
 			const response = await this.privateService.getProjects();
-			delete this.privateService.activeProjectDetails;
-			if (response.data.length === 0) this.isLoadingProjects = false;
-			else this.checkForSelectedProject(response.data);
+			return response.data.length === 0 ? (this.isLoadingProjects = false) : this.privateService.checkForSelectedProject(response.data);
 		} catch (error) {
 			return error;
 		}
 	}
 
-	// async getProjects() {
-	// 	this.isLoadingProjects = true;
-
-	// 	try {
-	// 		const projectsResponse = await this.privateService.getProjects();
-	// 		this.projects = projectsResponse.data;
-	// 		delete this.privateService.activeProjectDetails;
-	// 		this.isLoadingProjects = false;
-	// 	} catch (error) {
-	// 		this.isLoadingProjects = false;
-	// 	}
-	// }
-
 	// We're calling project details ahead because every page under project has a guard that requires project details to be present and to also prevent multiple calls
-	async getProjectCompleteDetails(projectId: string) {
+	async getProjectCompleteDetails(project: PROJECT) {
 		this.isLoadingProject = true;
 
-		try {
-			await this.privateService.getProjectDetails({ refresh: true, projectId }).then(() => this.privateService.getProjectStat({ refresh: true }));
-			this.router.navigate([`/projects/${projectId}`]);
-		} catch (error) {
-			this.isLoadingProject = false;
-		}
+		await this.privateService.updateProjectDetails([project]);
 	}
 }
