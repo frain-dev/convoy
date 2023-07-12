@@ -88,20 +88,7 @@ export class PrivateComponent implements OnInit {
 		this.userOrganization = organisation;
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		this.showOrgDropdown = false;
-		this.getProjects();
-	}
-
-	async getProjects() {
-		try {
-			const response = await this.privateService.getProjects({ refresh: true });
-			if (response.data.length > 0) {
-				localStorage.setItem('CONVOY_PROJECT', JSON.stringify(response.data[0]));
-				await this.privateService.getProjectDetails({ projectId: response.data[0].uid, refresh: true });
-				await this.privateService.getProjectStat({ refresh: true });
-				this.router.navigateByUrl(`/projects/${response.data[0].uid}`);
-			} else this.router.navigateByUrl('/projects');
-			this.isLoadingOrganisations = false;
-		} catch (error) {}
+		this.privateService.getProjectsHelper({ refresh: true });
 	}
 
 	checkForSelectedOrganisation() {

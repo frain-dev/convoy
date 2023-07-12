@@ -11,7 +11,7 @@
 				<convoy-input-field>
 					<label for="url" convoy-label required="true">Enter URL</label>
 					<input type="url" id="url" convoy-input autocomplete="url" formControlName="url" placeholder="Enter endpoint URL here" />
-					<convoy-input-error *ngIf="addNewEndpointForm.get('url')?.touched && addNewEndpointForm.get('url')?.invalid">Endpoint URL is required</convoy-input-error>
+					<convoy-input-error *ngIf="addNewEndpointForm.get('url')?.touched && addNewEndpointForm.get('url')?.invalid">Invalid endpoint URL</convoy-input-error>
 				</convoy-input-field>
 			</div>
 
@@ -48,15 +48,18 @@
 							</svg>
 						</button>
 					</div>
+
 					<div class="grid grid-cols-2 gap-24px">
 						<convoy-input-field className="mb-0">
 							<label for="support-email" convoy-label tooltip="We use this to send an email notifcation for when a failure happens">Support Email</label>
 							<input id="support-email" convoy-input autocomplete="suport-email" formControlName="support_email" placeholder="Enter support email" />
+							<convoy-input-error *ngIf="addNewEndpointForm.get('support_email')?.touched && addNewEndpointForm.get('support_email')?.invalid">Email is invalid</convoy-input-error>
 						</convoy-input-field>
 
 						<convoy-input-field className="mb-0">
 							<label for="slack-url" convoy-label tooltip="We use this to send notifications to your slack channel when a failure happens">Slack webhook url</label>
 							<input id="slack-url" convoy-input autocomplete="slack-url" formControlName="slack_webhook_url" placeholder="Enter slack webhook URL" />
+							<convoy-input-error *ngIf="addNewEndpointForm.get('slack_webhook_url')?.touched && addNewEndpointForm.get('slack_webhook_url')?.invalid">URL is invalid</convoy-input-error>
 						</convoy-input-field>
 					</div>
 				</div>
@@ -75,6 +78,7 @@
 							</svg>
 						</button>
 					</div>
+
 					<ng-container formGroupName="authentication">
 						<div class="grid grid-cols-2 gap-24px" formGroupName="api_key">
 							<convoy-input-field className="mb-0">
@@ -142,7 +146,7 @@
 					<ng-container *ngIf="!config.show">
 						<button
 							convoy-permission="Endpoints|MANAGE"
-							*ngIf="i < 3 || privateService.activeProjectDetails?.type === 'outgoing'"
+							*ngIf="i < 3 || privateService.getProjectDetails?.type === 'outgoing'"
 							convoy-button
 							size="sm"
 							fill="outline"

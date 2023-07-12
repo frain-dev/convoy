@@ -1,4 +1,4 @@
-<form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()" disabled>
+<form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()" disabled id="project-form">
 	<div convoy-card class="p-24px mt-24px">
 		<ng-container *ngIf="action === 'update'">
 			<ul class="flex gap-32px flex-row w-full border-b-[.5px] border-grey-20 mb-24px">
@@ -81,7 +81,6 @@
 								<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" [required]="true" (selectedOption)="newSignatureForm.patchValue({ hash: $event })"></convoy-select>
 							</ng-container>
 						</div>
-
 					</div>
 
 					<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('retry-config')">
@@ -115,7 +114,6 @@
 								<convoy-input-error *ngIf="projectForm.get('config.strategy.retry_count')?.touched && projectForm.get('config.strategy.retry_count')?.invalid">Please enter a retry limit</convoy-input-error>
 							</convoy-input-field>
 						</div>
-
 					</div>
 
 					<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('rate-limit')">
@@ -305,7 +303,7 @@
 		<h2 class="font-semibold capitalize">New Signature</h2>
 
 		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">
-			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+			<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
 		</button>
 	</div>
 

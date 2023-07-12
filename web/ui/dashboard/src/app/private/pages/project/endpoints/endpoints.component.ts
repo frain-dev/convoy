@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { CardComponent } from 'src/app/components/card/card.component';
@@ -25,6 +24,7 @@ import { PermissionDirective } from 'src/app/private/components/permission/permi
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 import { EndpointSecretComponent } from './endpoint-secret/endpoint-secret.component';
 import { EndpointsService } from './endpoints.service';
+import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 
 @Component({
 	selector: 'convoy-endpoints',
@@ -38,7 +38,6 @@ import { EndpointsService } from './endpoints.service';
 		TableRowComponent,
 		TableCellComponent,
 		TableComponent,
-		TableLoaderModule,
 		CardComponent,
 		EmptyStateComponent,
 		DropdownComponent,
@@ -56,7 +55,8 @@ import { EndpointsService } from './endpoints.service';
 		CopyButtonComponent,
 		PermissionDirective,
 		EndpointSecretComponent,
-		DeleteModalComponent
+		DeleteModalComponent,
+		LoaderModule
 	],
 	templateUrl: './endpoints.component.html',
 	styleUrls: ['./endpoints.component.scss']
@@ -68,7 +68,7 @@ export class EndpointsComponent implements OnInit {
 	displayedEndpoints?: { date: string; content: ENDPOINT[] }[];
 	endpoints?: { pagination?: PAGINATION; content?: ENDPOINT[] };
 	selectedEndpoint?: ENDPOINT;
-	isLoadingEndpoints = false;
+	isLoadingEndpoints = true;
 	showEndpointSecret = false;
 	isDeletingEndpoint = false;
 	showDeleteModal = false;
@@ -82,8 +82,8 @@ export class EndpointsComponent implements OnInit {
 		this.getEndpoints();
 	}
 
-	async getEndpoints(requestDetails?: CURSOR & { search?: string; showLoader?: boolean }) {
-		if (requestDetails?.showLoader) this.isLoadingEndpoints = true;
+	async getEndpoints(requestDetails?: CURSOR & { search?: string; hideLoader?: boolean }) {
+		this.isLoadingEndpoints = !requestDetails?.hideLoader;
 
 		try {
 			const response = await this.privateService.getEndpoints({ ...requestDetails, q: requestDetails?.search || this.endpointSearchString });
@@ -97,7 +97,7 @@ export class EndpointsComponent implements OnInit {
 
 	searchEndpoint(searchDetails: { searchInput?: any }) {
 		const searchString: string = searchDetails?.searchInput?.target?.value || this.endpointSearchString;
-		this.getEndpoints({ search: searchString });
+		this.getEndpoints({ search: searchString, hideLoader: true });
 	}
 
 	async deleteEndpoint() {
@@ -106,7 +106,7 @@ export class EndpointsComponent implements OnInit {
 
 		try {
 			const response = await this.endpointService.deleteEndpoint(this.selectedEndpoint?.uid || '');
-			this.getEndpoints({ showLoader: false });
+			this.getEndpoints({ hideLoader: true });
 
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.showDeleteModal = false;

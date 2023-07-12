@@ -70,7 +70,7 @@ export class TableHeadCellComponent implements OnInit {
 @Directive({
 	selector: 'convoy-table-row, [convoy-table-row]',
 	standalone: true,
-	host: { '[class]': 'getClassNames', class: 'cursor-pointer' }
+	host: { '[class]': 'getClassNames' }
 })
 export class TableRowComponent implements OnInit {
 	@Input('forDate') forDate: boolean = false;

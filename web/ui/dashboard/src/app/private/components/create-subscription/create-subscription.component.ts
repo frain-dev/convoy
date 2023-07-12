@@ -57,7 +57,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	];
 	isCreatingSubscription = false;
 
-	projectType?: 'incoming' | 'outgoing' = this.privateService.activeProjectDetails?.type;
+	projectType?: 'incoming' | 'outgoing' = this.privateService.getProjectDetails?.type;
 	isLoadingForm = true;
 	isLoadingPortalProject = false;
 	token: string = this.route.snapshot.queryParams.token;
@@ -94,7 +94,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	toggleConfig(configValue: string) {
-		this.action === 'view' ? this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions/' + this.subscriptionId], { queryParams: { configSetting: configValue } }) : this.toggleConfigForm(configValue);
+		this.action === 'view' ? this.router.navigate(['/projects/' + this.privateService.getProjectDetails?.uid + '/subscriptions/' + this.subscriptionId], { queryParams: { configSetting: configValue } }) : this.toggleConfigForm(configValue);
 	}
 
 	toggleConfigForm(configValue: string, value?: boolean) {
@@ -147,7 +147,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async getSources() {
-		if (this.privateService.activeProjectDetails?.type === 'outgoing' || this.token) return;
+		if (this.privateService.getProjectDetails?.type === 'outgoing' || this.token) return;
 
 		try {
 			const sourcesResponse = await this.privateService.getSources();
@@ -301,7 +301,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	goToSubsriptionsPage() {
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions');
+		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid + '/subscriptions');
 	}
 
 	setupFilter() {
