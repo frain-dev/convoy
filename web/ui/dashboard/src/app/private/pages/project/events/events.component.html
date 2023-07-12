@@ -26,7 +26,7 @@
 						<p class="mr-12px text-14 text-grey-80">Waiting on your first web-hook event</p>
 						<img src="/assets/img/Loader.png" class="opacity-50 w-50px" alt="loader icon" />
 					</div>
-					<a href="https://getconvoy.io/docs/getting-started/receiving-webhook-example" target="_blank" referrerpolicy="no-referrer" convoy-button fill="clear" class="mt-48px font-medium">Don't See Your Events Yet?</a>
+					<a href="https://getconvoy.io/docs/getting-started/receiving-webhook-example" target="_blank" referrerpolicy="no-referrer" convoy-button fill="text" class="mt-48px font-medium">Don't See Your Events Yet?</a>
 				</ng-container>
 
 				<ng-container *ngIf="lastestEventDeliveries.length > 0">
@@ -87,7 +87,7 @@
 
 				<ul dropdownOptions>
 					<li convoy-dropdown-option convoy-list-item *ngFor="let filterOption of filterOptions" class="text-14 px-20px" [active]="dashboardFrequency == filterOption ? 'true' : 'false'" [hasBorder]="true">
-						<button convoy-button color="grey" fill="text" (click)="dashboardFrequency = filterOption; fetchDashboardData()" class="capitalize text-left w-full !justify-start">
+						<button convoy-button color="gray" fill="text" (click)="dashboardFrequency = filterOption; fetchDashboardData()" class="capitalize text-left w-full !justify-start">
 							{{ filterOption }}
 						</button>
 					</li>

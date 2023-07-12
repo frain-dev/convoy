@@ -47,14 +47,14 @@
 								<td convoy-table-cell class="">{{ event.metadata.num_trials }}</td>
 								<td convoy-table-cell class="">{{ event.created_at | date: 'mediumTime' }}</td>
 								<td convoy-table-cell class="">
-									<button convoy-button size="xs" texture="light" [disabled]="isRetryingMetaEvent" (click)="retryMetaEvent(event.uid)">
+									<button convoy-button size="xs" fill="soft" [disabled]="isRetryingMetaEvent" (click)="retryMetaEvent(event.uid)">
 										<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
 										Retry
 									</button>
 								</td>
 
 								<td convoy-table-cell>
-									<button convoy-button fill="clear" size="sm" (click)="selectedMetaEvent = event">
+									<button convoy-button fill="text" size="sm" (click)="selectedMetaEvent = event">
 										<img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px h-16px" alt="arrow right" />
 									</button>
 								</td>

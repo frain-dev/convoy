@@ -6,10 +6,9 @@
 				<li *ngFor="let source of preConfiguredSources" class="list-none mr-40px last-of-type:mr-0">
 					<button
 						convoy-button
-						texture="light"
 						size="sm"
-						color="grey"
-						fill="outline"
+						color="gray"
+						fill="softOutline"
 						type="button"
 						class="w-60px h-60px"
 						[ngClass]="{ '!border-solid !border !border-primary-100': sourceForm.value.verifier.type === source }"
@@ -127,7 +126,7 @@
 			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('custom_response')">
 				<div class="flex justify-between items-center mb-16px">
 					<h4 class="text-12 text-new.gray-500 font-medium">Custom response</h4>
-					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="sourceForm.patchValue({ custom_response: { content_type: '', body: '' } }); toggleConfigForm('custom_response')">
+					<button convoy-button type="button" size="xs" fill="softOutline" color="gray" (click)="sourceForm.patchValue({ custom_response: { content_type: '', body: '' } }); toggleConfigForm('custom_response')">
 						<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 							<use xlink:href="#delete-icon2"></use>
 						</svg>
@@ -152,8 +151,8 @@
 			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('idempotency')">
 				<div class="flex justify-between items-end mb-24px">
 					<p class="text-14 font-medium text-new.gray-600 flex items-center">Idempotency Config</p>
-					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('idempotency')">
-						<svg width="14" height="14" class="fill-transparent">
+					<button convoy-button type="button" size="xs" fill="softOutline" color="gray" (click)="toggleConfigForm('idempotency')">
+						<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 							<use xlink:href="#delete-icon2"></use>
 						</svg>
 					</button>
@@ -179,7 +178,7 @@
 
 			<div class="flex flex-wrap items-center">
 				<ng-container *ngFor="let config of configurations">
-					<button *ngIf="!config.show" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" class="mr-24px mb-10px" (click)="toggleConfigForm(config.uid)">
+					<button *ngIf="!config.show" convoy-button size="sm" fill="softOutline" color="gray" type="button" class="py-6px mr-24px mb-10px" (click)="toggleConfigForm(config.uid)">
 						{{ config.name }}
 						<img src="assets/img/svg/plus-icon.svg" class="ml-24px" alt="plus icon" />
 					</button>
@@ -296,7 +295,7 @@
 		<p class="text-14 font-medium text-grey-40 mb-24px">You are about to discard this process, please confirm this action.</p>
 		<div class="flex items-center">
 			<button convoy-button color="danger" class="mr-12px px-60px" (click)="onAction.emit({ action: 'close' })">Confirm</button>
-			<button convoy-button fill="clear" [color]="confirmModal ? 'primary' : 'danger'" class="font-semibold" (click)="confirmModal = false">Cancel</button>
+			<button convoy-button fill="text" [color]="confirmModal ? 'primary' : 'danger'" class="font-semibold" (click)="confirmModal = false">Cancel</button>
 		</div>
 	</div>
 </div>

@@ -23,7 +23,7 @@
 							before the next retry attempt.
 						</convoy-tooltip>
 					</p>
-					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" *ngIf="action !== 'view'" (click)="toggleConfigForm('events')">
+					<button convoy-button type="button" size="xs" fill="softOutline" color="gray" *ngIf="action !== 'view'" (click)="toggleConfigForm('events')">
 						<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 							<use xlink:href="#delete-icon2"></use>
 						</svg>
@@ -54,7 +54,7 @@
 						the next retry attempt.
 					</convoy-tooltip>
 				</p>
-				<button convoy-button type="button" size="xs" fill="outline" color="grey" *ngIf="action !== 'view'" texture="light" (click)="toggleConfigForm('retry_config')">
+				<button convoy-button type="button" size="xs" fill="softOutline" color="gray" *ngIf="action !== 'view'" (click)="toggleConfigForm('retry_config')">
 					<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 						<use xlink:href="#delete-icon2"></use>
 					</svg>
@@ -96,11 +96,11 @@
 			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px flex justify-between items-center">
 				<h4 class="text-new.gray-500 font-medium text-14">Events Filter</h4>
 				<div class="flex items-center">
-					<button convoy-button fill="outline" color="grey" class="text-new.gray-500 border-new.gray-200" size="xs" type="button" (click)="setupFilter()">Open Editor</button>
+					<button convoy-button fill="outline" color="gray" class="text-new.gray-500 border-new.gray-200" size="xs" type="button" (click)="setupFilter()">Open Editor</button>
 
 					<div class="mx-10px h-16px w-[1px] bg-new.gray-200"></div>
 
-					<button convoy-button type="button" size="xs" *ngIf="action !== 'view'" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('filter_config')">
+					<button convoy-button type="button" size="xs" *ngIf="action !== 'view'" fill="softOutline" color="gray" (click)="toggleConfigForm('filter_config')">
 						<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 							<use xlink:href="#delete-icon2"></use>
 						</svg>
@@ -111,7 +111,7 @@
 
 		<div class="flex flex-wrap items-center mb-24px gap-24px" *ngIf="shouldShowBorder < configurations.length">
 			<ng-container *ngFor="let config of configurations">
-				<button *ngIf="!config.show" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" (click)="toggleConfig(config.uid)">
+				<button *ngIf="!config.show" convoy-button size="sm" fill="softOutline" color="gray" type="button" class="py-6px" (click)="toggleConfig(config.uid)">
 					{{ config.name }}
 					<img src="assets/img/svg/plus-icon.svg" class="ml-24px" alt="plus icon" />
 				</button>
@@ -194,7 +194,7 @@
 		<p class="text-14 font-medium text-grey-40 mb-24px">You are about to discard this process, please confirm this action.</p>
 		<div class="flex items-center">
 			<button convoy-button color="danger" class="mr-12px px-60px" (click)="onAction.emit({ action: 'close' })">Confirm</button>
-			<button convoy-button fill="clear" [color]="confirmModal ? 'primary' : 'danger'" class="font-semibold" (click)="confirmModal = false">Cancel</button>
+			<button convoy-button fill="text" [color]="confirmModal ? 'primary' : 'danger'" class="font-semibold" (click)="confirmModal = false">Cancel</button>
 		</div>
 	</div>
 </div>

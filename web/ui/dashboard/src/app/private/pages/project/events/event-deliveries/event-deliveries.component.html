@@ -208,7 +208,7 @@
 								<button
 									convoy-button
 									size="xs"
-									texture="light"
+									fill="soft"
 									[disabled]="event.status !== 'Success' && event.status !== 'Failure' && event.status !== 'Discarded'"
 									(click)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
 								>
@@ -242,6 +242,6 @@
 		<div class="text-center text-16 font-medium text-grey-60 mb-8px">The filters applied will affect</div>
 		<div class="text-center text-16 font-semibold mb-32px">{{ batchRetryCount || 0 }} event deliver{{ batchRetryCount > 1 ? 'ies' : 'y' }}</div>
 		<button convoy-button [disabled]="isRetrying || batchRetryCount == 0" class="m-auto" (click)="batchRetryEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
-		<button convoy-button fill="clear" class="font-semibold m-auto" (click)="showBatchRetryModal = false">No, Cancel</button>
+		<button convoy-button fill="text" class="font-semibold m-auto" (click)="showBatchRetryModal = false">No, Cancel</button>
 	</div>
 </div>

@@ -134,7 +134,7 @@
 								<td convoy-table-cell class="flex justify-end items-center">
 									<div [class]="event.is_duplicate_event ? 'visible' : 'invisible'" convoy-tag color="gray" size="sm">Duplicate</div>
 
-									<button convoy-button fill="clear" size="sm" class="pr-20px" (click)="viewEventDeliveries(event)">
+									<button convoy-button fill="text" size="sm" class="pr-20px" (click)="viewEventDeliveries(event)">
 										<svg width="20" height="20" class="fill-new.gray-400">
 											<use xlink:href="#arrow-right-icon"></use>
 										</svg>
@@ -286,7 +286,7 @@
 						<div class="flex items-center justify-end text-new.gray-400 text-12 self-end">
 							{{ delivery.created_at | date: 'shortTime' }}
 
-							<button convoy-button fill="clear" size="xs" class="pr-0">
+							<button convoy-button fill="text" size="xs" class="pr-0">
 								<svg width="24" height="24" class="fill-new.gray-400">
 									<use xlink:href="#arrow-right-icon"></use>
 								</svg>
@@ -323,6 +323,6 @@
 		<div class="text-center text-16 font-medium text-grey-60 mb-8px">The filters applied will affect</div>
 		<div class="text-center text-16 font-semibold mb-32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ? 's' : '' }}</div>
 		<button convoy-button [disabled]="isRetrying || batchRetryCount == 0" class="m-auto" (click)="batchRetryEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
-		<button convoy-button fill="clear" class="font-semibold m-auto" (click)="showBatchRetryModal = false">No, Cancel</button>
+		<button convoy-button fill="text" class="font-semibold m-auto" (click)="showBatchRetryModal = false">No, Cancel</button>
 	</div>
 </div>

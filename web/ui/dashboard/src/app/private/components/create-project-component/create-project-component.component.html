@@ -54,7 +54,7 @@
 								Signature Details
 								<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 							</p>
-							<button convoy-permission="Project Settings|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
+							<button convoy-permission="Project Settings|MANAGE" convoy-button type="button" size="xs" fill="softOutline" color="gray" (click)="toggleConfigForm('signature')">
 								<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 									<use xlink:href="#delete-icon2"></use>
 								</svg>
@@ -93,7 +93,7 @@
 									retry attempt.
 								</convoy-tooltip>
 							</p>
-							<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('retry-config')">
+							<button convoy-button type="button" size="xs" fill="softOutline" color="gray" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('retry-config')">
 								<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 									<use xlink:href="#delete-icon2"></use>
 								</svg>
@@ -124,7 +124,7 @@
 								Rate Limit Parameters
 								<convoy-tooltip size="sm" position="right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
 							</p>
-							<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('rate-limit')">
+							<button convoy-button type="button" size="xs" fill="softOutline" color="gray" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('rate-limit')">
 								<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 									<use xlink:href="#delete-icon2"></use>
 								</svg>
@@ -151,7 +151,7 @@
 					<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('retention')">
 						<div class="flex justify-between items-center mb-24px">
 							<p class="text-12 font-medium text-new.gray-500">Retention Policy</p>
-							<button convoy-button type="button" size="xs" fill="outline" convoy-permission="Project Settings|MANAGE" color="grey" texture="light" (click)="toggleConfigForm('retention')">
+							<button convoy-button type="button" size="xs" fill="softOutline" convoy-permission="Project Settings|MANAGE" color="gray" (click)="toggleConfigForm('retention')">
 								<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 									<use xlink:href="#delete-icon2"></use>
 								</svg>
@@ -177,11 +177,10 @@
 								convoy-permission="Project Settings|MANAGE"
 								convoy-button
 								size="sm"
-								fill="outline"
-								color="grey"
-								texture="light"
+								fill="softOutline"
+								color="gray"
 								type="button"
-								class="mr-24px"
+								class="py-6px mr-24px"
 								(click)="toggleConfigForm(config.uid)"
 							>
 								{{ config.name }}
@@ -304,7 +303,7 @@
 	<div convoy-modal-header>
 		<h2 class="font-semibold capitalize">New Signature</h2>
 
-		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">
+		<button convoy-button fill="soft" size="sm" class="px-8px !py-10px" (click)="versions.removeAt(versionsLength - 1); showNewSignatureModal = false">
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</button>
 	</div>
@@ -340,7 +339,7 @@
 		</p>
 		<div class="flex items-center">
 			<button convoy-button [color]="confirmModal ? 'danger' : 'primary'" class="mr-12px px-60px" (click)="confirmRegenerateKey ? regenerateKey() : router.navigateByUrl('/')">Confirm</button>
-			<button convoy-button fill="clear" [color]="confirmModal ? 'primary' : 'danger'" class="font-semibold" (click)="confirmModal = false; confirmRegenerateKey = false">Cancel</button>
+			<button convoy-button fill="text" [color]="confirmModal ? 'primary' : 'danger'" class="font-semibold" (click)="confirmModal = false; confirmRegenerateKey = false">Cancel</button>
 		</div>
 	</div>
 </div>

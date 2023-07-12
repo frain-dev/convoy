@@ -130,7 +130,7 @@ module.exports = {
 				800: '#05603A,',
 				900: '#054F31,'
 			},
-			'new.error': {
+			'new.danger': {
 				25: '#FFFBFA',
 				50: '#FEF3F2',
 				100: '#FEE4E2',
@@ -157,7 +157,7 @@ module.exports = {
 				900: '#7A2E0E,'
 			},
 			'new.gray': {
-				25: '#FCFCFD',
+				25: '#E8E8E9',
 				50: '#F9FAFB',
 				100: '#F2F4F7',
 				200: '#E4E7EC',

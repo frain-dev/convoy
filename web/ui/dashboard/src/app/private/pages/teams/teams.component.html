@@ -9,13 +9,13 @@
 			<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100">
 				<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
 				<input type="search" placeholder="Search team member" [(ngModel)]="searchString" (change)="searchTeam({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" class="w-full text-grey-40 text-14 outline-none" />
-				<button convoy-button fill="clear" *ngIf="searchString && searchString.length > 0" class="transition-all duration-200 !p-0" (click)="searchTeam({ searchInput: $event })">
+				<button convoy-button fill="text" *ngIf="searchString && searchString.length > 0" class="transition-all duration-200 !p-0" (click)="searchTeam({ searchInput: $event })">
 					<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 				</button>
 			</form>
 
 			<div convoy-dropdown size="sm">
-				<button dropdownTrigger convoy-button size="sm" fill="outline" color="grey" class="px-10px border border-primary-400 mx-16px min-w-[180px] whitespace-nowrap justify-between h-36px">
+				<button dropdownTrigger convoy-button size="sm" fill="outline" color="gray" class="px-10px border border-primary-400 mx-16px min-w-[180px] whitespace-nowrap justify-between h-36px">
 					<span class="text-grey-40 text-12 mr-4px">Filter By:</span>
 					<span class="text-primary-100 text-12 capitalize">{{ selectedFilterOption }} Invites</span>
 					<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" class="w-[16px] ml-8px" />
@@ -56,16 +56,16 @@
 							<td convoy-table-cell>All projects</td>
 							<td convoy-table-cell>
 								<div convoy-dropdown size="md" position="left" *ngIf="team.user_id !== userDetails?.uid">
-									<button dropdownTrigger convoy-button size="sm" fill="clear">
+									<button dropdownTrigger convoy-button size="sm" fill="text">
 										<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
 									</button>
 
 									<ul dropdownOptions>
 										<li>
-											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="clear" class="w-full !justify-start" (click)="selectedMember = team; showUpdateMemberModal()">Update</button>
+											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="text" class="w-full !justify-start" (click)="selectedMember = team; showUpdateMemberModal()">Update</button>
 										</li>
 										<li>
-											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full !justify-start" (click)="showDeactivateModal = !showDeactivateModal; selectedMember = team; showOverlay = false">
+											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="text" color="danger" class="w-full !justify-start" (click)="showDeactivateModal = !showDeactivateModal; selectedMember = team; showOverlay = false">
 												Deactivate
 											</button>
 										</li>
@@ -119,16 +119,16 @@
 						<td convoy-table-cell>All projects</td>
 						<td convoy-table-cell>
 							<div convoy-dropdown>
-								<button dropdownTrigger convoy-button size="sm" fill="clear">
+								<button dropdownTrigger convoy-button size="sm" fill="text">
 									<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
 								</button>
 
 								<ul dropdownOptions>
 									<li class="border-b border-b-grey-10">
-										<button convoy-dropdown-option convoy-button fill="clear" color="grey" class="w-full" (click)="resendInvite(team.uid)">Resend Invite</button>
+										<button convoy-dropdown-option convoy-button fill="text" color="gray" class="w-full" (click)="resendInvite(team.uid)">Resend Invite</button>
 									</li>
 									<li>
-										<button convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
+										<button convoy-dropdown-option convoy-button fill="text" color="danger" class="w-full" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
 									</li>
 								</ul>
 							</div>
@@ -188,7 +188,7 @@
 	<div convoy-modal-header>
 		<h2 class="font-semibold capitalize">{{ showUpdateMember ? 'Update' : 'Add' }} Team Member</h2>
 
-		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="goToTeams()">
+		<button convoy-button fill="soft" size="sm" class="px-8px !py-10px" (click)="goToTeams()">
 			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
 		</button>
 	</div>
