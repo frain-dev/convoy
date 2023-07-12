@@ -1,17 +1,7 @@
+<div id="project-settings"></div>
 <convoy-loader *ngIf="isloading"></convoy-loader>
-<div class="text-12 font-medium flex items-center uppercase mb-24px">
-	<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
-	<svg width="16" height="16" class="mx-4px">
-		<use xlink:href="#arrow-right-icon"></use>
-	</svg>
-	{{ privateService.activeProjectDetails?.name }}
-	<svg width="16" height="16" class="mx-4px">
-		<use xlink:href="#arrow-right-icon"></use>
-	</svg>
-	<span class="text-primary-100 font-medium">Settings</span>
-</div>
 
-<app-create-project-component [action]="'update'"></app-create-project-component>
+<app-create-project-component [action]="'update'" class="block -mt-24px"></app-create-project-component>
 
 <hr class="border-t border-grey-10 my-40px" />
 

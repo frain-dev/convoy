@@ -146,7 +146,7 @@
 					<ng-container *ngIf="!config.show">
 						<button
 							convoy-permission="Endpoints|MANAGE"
-							*ngIf="i < 3 || privateService.activeProjectDetails?.type === 'outgoing'"
+							*ngIf="i < 3 || privateService.getProjectDetails?.type === 'outgoing'"
 							convoy-button
 							size="sm"
 							fill="outline"

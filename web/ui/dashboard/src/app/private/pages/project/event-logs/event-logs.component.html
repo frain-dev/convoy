@@ -3,7 +3,7 @@
 	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
-	{{ privateService.activeProjectDetails?.name }}
+	{{ privateService.getProjectDetails?.name }}
 	<svg width="16" height="16" class="mx-4px">
 		<use xlink:href="#arrow-right-icon"></use>
 	</svg>
@@ -115,7 +115,14 @@
 								<td convoy-table-cell [forDate]="true"></td>
 								<td convoy-table-cell [forDate]="true"></td>
 							</tr>
-							<tr convoy-table-row class="group" *ngFor="let event of eventGroup.content; let index = index" (click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid); getDuplicateEvents(event)" [active]="event.uid === eventsDetailsItem?.uid">
+							<tr
+								convoy-table-row
+								class="group"
+								*ngFor="let event of eventGroup.content; let index = index"
+								(click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid); getDuplicateEvents(event)"
+								class="cursor-pointer"
+								[active]="event.uid === eventsDetailsItem?.uid"
+							>
 								<td convoy-table-cell class="w-130px pl-16px pr-30px relative">
 									<div convoy-tag color="gray" class="max-w-[121px] overflow-hidden text-ellipsis mr-8px">{{ event.uid }}</div>
 									<convoy-copy-button size="sm" notificationText="Event ID has been copied to clipboard" className="absolute translate-x-0 translate-y-[-50%] top-[50] hidden group-hover:block" [text]="event.uid"></convoy-copy-button>
@@ -266,7 +273,7 @@
 
 							<div class="whitespace-nowrap overflow-ellipsis overflow-hidden text-new.gray-600 text-center text-12">
 								<div class="flex items-center" *ngIf="!delivery?.device_id">
-									<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
+									<ng-container *ngIf="privateService.getProjectDetails?.type === 'incoming'">
 										<div class="max-w-[100px] truncate">
 											{{ delivery?.source_metadata?.name || 'Rest API' }}
 										</div>
@@ -274,7 +281,7 @@
 										<div class="px-16px font-light">→</div>
 									</ng-container>
 
-									<div [title]="delivery?.endpoint_metadata?.target_url || ''" [class]="(privateService.activeProjectDetails?.type === 'incoming' ? 'max-w-[100px]' : 'max-w-[120px]') + ' overflow-hidden overflow-ellipsis'">
+									<div [title]="delivery?.endpoint_metadata?.target_url || ''" [class]="(privateService.getProjectDetails?.type === 'incoming' ? 'max-w-[100px]' : 'max-w-[120px]') + ' overflow-hidden overflow-ellipsis'">
 										{{ delivery.endpoint_metadata.title }}
 									</div>
 								</div>

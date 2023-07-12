@@ -1,13 +1,10 @@
-<div class="text-12 font-medium flex items-center uppercase mb-24px">
-	<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
-	<svg width="16" height="16" class="mx-4px">
-		<use xlink:href="#arrow-right-icon"></use>
-	</svg>
-	{{ privateService.activeProjectDetails?.name }}
-	<svg width="16" height="16" class="mx-4px">
-		<use xlink:href="#arrow-right-icon"></use>
-	</svg>
-	<span class="text-primary-100 font-medium">Sources</span>
+<div class="flex justify-between items-end border-b border-b-grey-10 pb-20px mb-24px">
+	<div class="flex items-center">
+		<h1 class="text-24 font-bold text-grey-80 mr-10px">Sources</h1>
+		<convoy-tooltip tooltipContent="Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints" position="right"></convoy-tooltip>
+	</div>
+
+	<button convoy-button size="sm" routerLink="./new" convoy-permission="Sources|MANAGE" *ngIf="!isLoadingSources && sources?.content?.length">Connect a source</button>
 </div>
 
 <!-- empty state  -->
@@ -18,83 +15,32 @@
 </div>
 
 <!-- loader  -->
-<div class="flex flex-wrap gap-24px" *ngIf="isLoadingSources">
-	<div class="bg-grey-10 rounded-8px animate-pulse w-348px h-128px"></div>
-	<div class="bg-grey-10 rounded-8px animate-pulse w-348px h-128px"></div>
-	<div class="bg-grey-10 rounded-8px animate-pulse w-348px h-128px"></div>
-	<div class="bg-grey-10 rounded-8px animate-pulse w-348px h-128px"></div>
-	<div class="bg-grey-10 rounded-8px animate-pulse w-348px h-128px"></div>
-	<div class="bg-grey-10 rounded-8px animate-pulse w-348px h-128px"></div>
+<div convoy-card class="relative min-h-[500px] flex items-center justify-center" *ngIf="isLoadingSources">
+	<convoy-loader position="relative"></convoy-loader>
 </div>
 
 <ng-container *ngIf="!isLoadingSources && sources?.content?.length">
-	<div class="flex justify-between items-end border-b border-b-grey-10 pb-20px mb-24px">
-		<div class="flex items-center">
-			<h1 class="text-24 font-bold text-grey-80 mr-10px">Sources</h1>
-			<convoy-tooltip tooltipContent="Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints" position="right"></convoy-tooltip>
-		</div>
-
-		<button convoy-button size="sm" routerLink="./new" convoy-permission="Sources|MANAGE">Connect a source</button>
-	</div>
-
 	<!-- list of sources  -->
-	<div class="flex flex-wrap gap-24px">
-		<ng-container *ngFor="let source of sources?.content; let i = index">
-			<div convoy-card [id]="'source' + i" hover="true" class="w-full max-w-[348px] py-20px">
-				<!-- outgoing project sources -->
-				<ng-container *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
-					<div class="flex items-center justify-between px-24px">
-						<div class="flex items-center">
-							<img [src]="'assets/img/' + source.pub_sub.type + '.png'" alt="icon" class="mr-12px" />
-							<div>
-								<p class="text-10 text-grey-40 capitalize mb-4px">{{ source.pub_sub.type | sourceValue: 'pub_sub' }}</p>
-								<p class="text-14 font-medium">{{ source.name }}</p>
+	<div class="p-24px min-h-[600px]" convoy-card>
+		<div class="flex flex-wrap gap-24px">
+			<ng-container *ngFor="let source of sources?.content; let i = index">
+				<div convoy-card [id]="'source' + i" class="w-full max-w-[338px] min-w-[300px] py-20px h-fit">
+					<!-- outgoing project sources -->
+					<ng-container *ngIf="privateService.getProjectDetails?.type === 'outgoing'">
+						<div class="flex items-center justify-between px-24px">
+							<div class="flex items-center">
+								<img [src]="'assets/img/' + source.pub_sub.type + '.png'" alt="icon" class="mr-12px" />
+								<div>
+									<p class="text-10 text-grey-40 capitalize mb-4px">{{ source.pub_sub.type | sourceValue: 'pub_sub' }}</p>
+									<p class="text-14 font-medium">{{ source.name }}</p>
+								</div>
 							</div>
-						</div>
 
-						<div convoy-dropdown position="left" size="sm" class="ml-4px">
-							<button dropdownTrigger convoy-button size="sm" fill="clear" class="!p-0">
-								<img src="assets/img/more-icon-vertical.svg" class="h-5" alt="more icon" />
-							</button>
-							<ul dropdownOptions>
-								<li class="border-b border-grey-20">
-									<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start" [routerLink]="'./' + source?.uid">
-										<svg width="16" height="16" class="mr-8px fill-primary-100">
-											<use xlink:href="#edit-icon"></use>
-										</svg>
-										Edit
-									</button>
-								</li>
-								<li>
-									<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="activeSource = source; showDeleteSourceModal = true">
-										<svg width="16" height="16" class="mr-8px fill-transparent stroke-new.error-400">
-											<use xlink:href="#delete-icon2"></use>
-										</svg>
-										Delete
-									</button>
-								</li>
-							</ul>
-						</div>
-					</div>
-				</ng-container>
-
-				<!-- incoming project sources -->
-				<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
-					<div class="px-24px pb-12px border-b border-b-grey-10 cursor-pointer">
-						<div class="text-grey-40 text-10 mb-4px">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</div>
-						<div class="flex justify-between items-center">
-							<div class="text-14 text-new.gray-800 font-medium">{{ source.name }}</div>
-
-							<div convoy-dropdown #incomingSourceDropdown position="left" size="sm" class="ml-4px">
+							<div convoy-dropdown position="left" size="sm" class="ml-4px">
 								<button dropdownTrigger convoy-button size="sm" fill="clear" class="!p-0">
 									<img src="assets/img/more-icon-vertical.svg" class="h-5" alt="more icon" />
 								</button>
 								<ul dropdownOptions>
-									<li class="border-b border-grey-20">
-										<div convoy-copy-button color="primary" size="sm" (copyText)="hideIncomingSourceDropdown()" [notificationText]="source.name + ' ID has been copied to clipboard'" className="py-6px px-16px" [text]="source?.uid || ''">
-											<span class="pl-8px">Copy ID</span>
-										</div>
-									</li>
 									<li class="border-b border-grey-20">
 										<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start" [routerLink]="'./' + source?.uid">
 											<svg width="16" height="16" class="mr-8px fill-primary-100">
@@ -105,8 +51,8 @@
 									</li>
 									<li>
 										<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="activeSource = source; showDeleteSourceModal = true">
-											<svg width="16" height="16" class="mr-8px fill-danger-100">
-												<use xlink:href="#delete-icon"></use>
+											<svg width="16" height="16" class="mr-8px fill-transparent stroke-new.error-400">
+												<use xlink:href="#delete-icon2"></use>
 											</svg>
 											Delete
 										</button>
@@ -114,13 +60,56 @@
 								</ul>
 							</div>
 						</div>
-					</div>
-					<div class="mt-12px mx-24px">
-						<convoy-copy-button [text]="source.url" color="primary" className="ml-2px" [notificationText]="source.name + ' URL has been copied to clipboard'"><span class="text-14 ml-8px font-medium">Copy URL</span></convoy-copy-button>
-					</div>
-				</ng-container>
-			</div>
-		</ng-container>
+					</ng-container>
+
+					<!-- incoming project sources -->
+					<ng-container *ngIf="privateService.getProjectDetails?.type === 'incoming'">
+						<div class="px-24px pb-12px border-b border-b-grey-10">
+							<div class="text-grey-40 text-10 mb-4px">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</div>
+							<div class="flex justify-between items-center">
+								<div class="text-14 text-new.gray-800 font-medium">{{ source.name }}</div>
+
+								<div convoy-dropdown #incomingSourceDropdown position="left" size="md" class="ml-4px">
+									<button dropdownTrigger convoy-button size="sm" fill="clear" class="!p-0">
+										<img src="assets/img/more-icon-vertical.svg" class="h-5" alt="more icon" />
+									</button>
+
+									<ul dropdownOptions class="p-10px">
+										<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
+											<div convoy-copy-button show-icon="false" class="w-full" color="gray" size="sm" (copyText)="hideIncomingSourceDropdown()" [notificationText]="source.name + ' ID has been copied to clipboard'" [text]="source?.uid || ''">
+												<svg width="16" height="16" class="stroke-new.gray-600">
+													<use xlink:href="#copy-icon-3"></use>
+												</svg>
+												<span class="pl-8px text-new.gray-600">Copy ID</span>
+											</div>
+										</li>
+										<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
+											<button convoy-dropdown-option convoy-button color="grey" size="sm" fill="text" class="w-full !justify-start" [routerLink]="'./' + source?.uid">
+												<svg width="17" height="16" class="fill-new.gray-600 mr-8px">
+													<use xlink:href="#edit-icon"></use>
+												</svg>
+												Edit
+											</button>
+										</li>
+										<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
+											<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="danger" class="w-full !justify-start" (click)="activeSource = source; showDeleteSourceModal = true">
+												<svg width="16" height="16" class="mr-8px fill-danger-100">
+													<use xlink:href="#delete-icon"></use>
+												</svg>
+												Delete
+											</button>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+						<div class="mt-12px mx-24px">
+							<convoy-copy-button [text]="source.url" color="primary" className="ml-2px" [notificationText]="source.name + ' URL has been copied to clipboard'"><span class="text-14 ml-8px font-medium">Copy URL</span></convoy-copy-button>
+						</div>
+					</ng-container>
+				</div>
+			</ng-container>
+		</div>
 	</div>
 
 	<!-- Pagination -->

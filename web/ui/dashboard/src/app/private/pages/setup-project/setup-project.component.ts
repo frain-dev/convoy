@@ -42,25 +42,25 @@ export class SetupProjectComponent implements OnInit {
 	constructor(public privateService: PrivateService, private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private subscriptionService: CreateSubscriptionService) {}
 
 	async ngOnInit() {
-		if (!this.privateService.activeProjectDetails?.uid) {
+		if (!this.privateService.getProjectDetails?.uid) {
 			this.showLoader = true;
-			await this.privateService.getProjectDetails();
+			await this.privateService.getProjectDetails;
 			this.showLoader = false;
 		}
 
-		if (this.privateService.activeProjectDetails?.uid) {
-			this.projectType = this.privateService.activeProjectDetails?.type;
+		if (this.privateService.getProjectDetails?.uid) {
+			this.projectType = this.privateService.getProjectDetails?.type;
 		}
 	}
 
 	cancel() {
-		this.privateService.activeProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid) : this.router.navigateByUrl('/projects/' + this.activeProjectId);
+		this.privateService.getProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid) : this.router.navigateByUrl('/projects/' + this.activeProjectId);
 	}
 
 	onProjectOnboardingComplete() {
-		this.generalService.showNotification({ message: `${this.privateService.activeProjectDetails?.type} configuration complete`, style: 'success', type: 'modal' });
+		this.generalService.showNotification({ message: `${this.privateService.getProjectDetails?.type} configuration complete`, style: 'success', type: 'modal' });
 
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid);
+		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid);
 	}
 
 	onCreateSource(newSource: SOURCE) {
@@ -101,7 +101,7 @@ export class SetupProjectComponent implements OnInit {
 
 		// create subscription
 		try {
-			this.createSubscriptionForm.saveSubscription();
+			this.createSubscriptionForm.saveSubscription(true);
 		} catch (error) {}
 	}
 }

@@ -60,7 +60,7 @@ export class EventsComponent implements OnInit, OnDestroy {
 		if (this.isProjectConfigurationComplete) {
 			await this.checkEventsOnFirstLoad();
 
-			if (this.privateService.activeProjectDetails?.type === 'incoming' && !this.hasEvents) {
+			if (this.privateService.getProjectDetails?.type === 'incoming' && !this.hasEvents) {
 				this.eventDelievryIntervalTime = setInterval(() => {
 					this.getLatestEvent();
 				}, 2000);
@@ -110,7 +110,7 @@ export class EventsComponent implements OnInit, OnDestroy {
 			return;
 		}
 
-		if (this.privateService.activeProjectDetails?.type === 'incoming' && this.isProjectConfigurationComplete) await this.getLatestSource();
+		if (this.privateService.getProjectDetails?.type === 'incoming' && this.isProjectConfigurationComplete) await this.getLatestSource();
 	}
 
 	continueToDashboard() {
