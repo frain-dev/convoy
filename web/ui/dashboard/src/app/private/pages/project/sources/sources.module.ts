@@ -17,6 +17,7 @@ import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skel
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';
+import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 
 const routes: Routes = [{ path: '', component: SourcesComponent }];
 
@@ -41,7 +42,8 @@ const routes: Routes = [{ path: '', component: SourcesComponent }];
 		SkeletonLoaderComponent,
 		TooltipComponent,
 		PaginationComponent,
-		PermissionDirective
+		PermissionDirective,
+		LoaderModule
 	]
 })
 export class SourcesModule {}
