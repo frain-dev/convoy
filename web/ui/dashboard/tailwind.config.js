@@ -38,12 +38,12 @@ module.exports = {
 		'text-new.primary-400',
 		'bg-new.primary-25',
 		'bg-new.gray-50',
-		'text-new.error-400',
+		'text-new.danger-400',
 		'bg-new.success-25',
 		'bg-new.success-50',
 		'text-new.success-400',
 		'bg-new.primary-50',
-		'bg-new.error-50',
+		'bg-new.danger-50',
 		'text-new.gray-400'
 	],
 	theme: {

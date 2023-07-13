@@ -78,7 +78,7 @@
 				<convoy-input-field>
 					<label for="retry-logic-duration" convoy-label>Duration</label>
 					<div class="relative">
-						<input type="text" id="retry-logic-duration" convoy-input autocomplete="retry-logic-duration" formControlName="duration" placeholder="e.g 3" [readonly]="action === 'view'" [ngClass]="{ 'pointer-events-none': action === 'view' }" />
+						<input type="number" id="retry-logic-duration" convoy-input autocomplete="retry-logic-duration" formControlName="duration" placeholder="e.g 3" [readonly]="action === 'view'" [ngClass]="{ 'pointer-events-none': action === 'view' }" />
 						<div class="absolute top-[50%] right-14px text-16 text-grey-100 opacity-40 translate-y-[-50%]">sec</div>
 					</div>
 					<convoy-input-error *ngIf="subscriptionForm.get('retry_config.duration')?.touched && subscriptionForm.get('retry_config.duration')?.invalid">Enter wait duration before retry</convoy-input-error>
@@ -110,7 +110,7 @@
 		</ng-container>
 
 		<div class="flex flex-wrap items-center mb-24px gap-24px" *ngIf="shouldShowBorder < configurations.length">
-			<ng-container *ngFor="let config of configurations">
+			<ng-container *ngFor="let config of configurations; let i = index">
 				<button *ngIf="!config.show" convoy-button size="sm" fill="softOutline" color="gray" type="button" class="py-6px" (click)="toggleConfig(config.uid)">
 					{{ config.name }}
 					<img src="assets/img/svg/plus-icon.svg" class="ml-24px" alt="plus icon" />
@@ -194,7 +194,7 @@
 		<p class="text-14 font-medium text-grey-40 mb-24px">You are about to discard this process, please confirm this action.</p>
 		<div class="flex items-center">
 			<button convoy-button color="danger" class="mr-12px px-60px" (click)="onAction.emit({ action: 'close' })">Confirm</button>
-			<button convoy-button fill="text" [color]="confirmModal ? 'primary' : 'danger'" class="font-semibold" (click)="confirmModal = false">Cancel</button>
+			<button convoy-button fill="outline" [color]="confirmModal ? 'primary' : 'danger'" class="px-40px" (click)="confirmModal = false">Cancel</button>
 		</div>
 	</div>
 </div>

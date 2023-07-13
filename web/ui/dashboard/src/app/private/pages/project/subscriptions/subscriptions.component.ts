@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
+import { PROJECT } from 'src/app/models/project.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
@@ -23,6 +24,7 @@ export class SubscriptionsComponent implements OnInit {
 	selectedSubscription?: SUBSCRIPTION;
 	endpointsTableHead = ['Name', 'Status', '', '', '', '', '', ''];
 	showSubscriptionDetails = false;
+	projectDetails?: PROJECT;
 
 	constructor(private route: ActivatedRoute, public privateService: PrivateService, public router: Router, private generalService: GeneralService) {
 		const urlParam = route.snapshot.params.id;
@@ -32,6 +34,7 @@ export class SubscriptionsComponent implements OnInit {
 
 	async ngOnInit() {
 		await this.getSubscriptions();
+
 		this.route.queryParams.subscribe(params => {
 			this.showSubscriptionDetails = !!params.id;
 			this.activeSubscription = this.subscriptions?.content.find(subscription => subscription.uid === params?.id);
@@ -53,11 +56,11 @@ export class SubscriptionsComponent implements OnInit {
 	}
 
 	closeModal() {
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions');
+		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid + '/subscriptions');
 	}
 
 	createSubscription(action: any) {
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions');
+		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid + '/subscriptions');
 		if (action !== 'cancel') this.generalService.showNotification({ message: `Subscription has been ${action}d successfully`, style: 'success' });
 	}
 

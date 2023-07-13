@@ -1,4 +1,4 @@
-<form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()" disabled>
+<form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()" disabled id="project-form">
 	<div convoy-card class="p-24px mt-24px">
 		<ng-container *ngIf="action === 'update'">
 			<ul class="flex gap-32px flex-row w-full border-b-[.5px] border-grey-20 mb-24px">
@@ -81,7 +81,6 @@
 								<convoy-select label="Hash" name="hash" formControlName="hash" [options]="hashAlgorithms" errorMessage="Please select a hash" [required]="true" (selectedOption)="newSignatureForm.patchValue({ hash: $event })"></convoy-select>
 							</ng-container>
 						</div>
-
 					</div>
 
 					<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('retry-config')">
@@ -115,7 +114,6 @@
 								<convoy-input-error *ngIf="projectForm.get('config.strategy.retry_count')?.touched && projectForm.get('config.strategy.retry_count')?.invalid">Please enter a retry limit</convoy-input-error>
 							</convoy-input-field>
 						</div>
-
 					</div>
 
 					<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('rate-limit')">
@@ -339,7 +337,7 @@
 		</p>
 		<div class="flex items-center">
 			<button convoy-button [color]="confirmModal ? 'danger' : 'primary'" class="mr-12px px-60px" (click)="confirmRegenerateKey ? regenerateKey() : router.navigateByUrl('/')">Confirm</button>
-			<button convoy-button fill="text" [color]="confirmModal ? 'primary' : 'danger'" class="font-semibold" (click)="confirmModal = false; confirmRegenerateKey = false">Cancel</button>
+			<button convoy-button fill="outline" [color]="confirmModal ? 'primary' : 'danger'" class="font-semibold px-40px" (click)="confirmModal = false; confirmRegenerateKey = false">Cancel</button>
 		</div>
 	</div>
 </div>
@@ -347,9 +345,9 @@
 <div convoy-modal *ngIf="disableEndpointsModal" position="center" size="sm">
 	<div modalBody class="flex flex-col justify-center items-center p-30px">
 		<h3 class="text-16 font-semibold text-black mb-8px">Confirm Action</h3>
-		<p class="text-14 font-medium text-grey-40 text-center mb-20px">You are about to re-enable all endpoints on this project, please confirm this action</p>
-		<button convoy-button class="mb-24px" (click)="updateProject(); disableEndpointsModal = false">Confirm</button>
-		<button convoy-button fill="text" class="font-semibold" (click)="disableEndpointsModal = false; projectForm.patchValue({ config: { disable_endpoint: true } })">Close</button>
+		<p class="text-14 font-medium text-grey-40 text-center mb-30px">You are about to re-enable all endpoints on this project, please confirm this action</p>
+		<button convoy-button class="mb-16px w-full" (click)="updateProject(); disableEndpointsModal = false">Confirm</button>
+		<button convoy-button fill="outline" class="w-full" (click)="disableEndpointsModal = false; projectForm.patchValue({ config: { disable_endpoint: true } })">Close</button>
 	</div>
 </div>
 
@@ -357,9 +355,9 @@
 <div convoy-modal *ngIf="showMetaEventPrompt" position="center" size="sm">
 	<div class="flex flex-col justify-center items-center px-30px py-40px">
 		<img src="/assets/img/warning.gif" class="h-[126px] w-[126px]" alt="warning" />
-		<p class="text-16 font-semibold text-black mb-12px text-center">Are you sure you want to disable meta events on this project?</p>
-		<button convoy-button color="danger" class="mb-24px" [disabled]="isCreatingProject" (click)="updateProject(); showMetaEventPrompt = false">Yes, Disable</button>
-		<button convoy-button fill="text" class="font-semibold" (click)="showMetaEventPrompt = false; projectForm.patchValue({ config: { meta_event: { is_enabled: true } } })">No, Cancel</button>
+		<p class="text-16 font-semibold text-black mb-30px text-center">Are you sure you want to disable meta events on this project?</p>
+		<button convoy-button color="danger" class="mb-16px w-full" [disabled]="isCreatingProject" (click)="updateProject(); showMetaEventPrompt = false">Yes, Disable</button>
+		<button convoy-button fill="outline" class="w-full" (click)="showMetaEventPrompt = false; projectForm.patchValue({ config: { meta_event: { is_enabled: true } } })">No, Cancel</button>
 	</div>
 </div>
 <!-- disable meta events prompt  -->

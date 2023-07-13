@@ -58,7 +58,7 @@ export class LoginComponent implements OnInit {
 
 		this.privateService.organisationDetails = this.organisations[0];
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
-		return this.getProjects();
+		return this.privateService.getProjectsHelper();
 	}
 
 	checkForSelectedOrganisation() {
@@ -69,7 +69,7 @@ export class LoginComponent implements OnInit {
 
 		const organisationDetails = JSON.parse(selectedOrganisation);
 		this.privateService.organisationDetails = this.organisations.find(org => org.uid === organisationDetails.uid);
-		return this.privateService.organisationDetails ? this.getProjects() : this.updateOrganisationDetails();
+		return this.privateService.organisationDetails ? this.privateService.getProjectsHelper() : this.updateOrganisationDetails();
 	}
 
 	async getOrganisations() {
@@ -78,41 +78,6 @@ export class LoginComponent implements OnInit {
 			this.organisations = response.data.content;
 			if (this.organisations?.length === 0) return this.router.navigateByUrl('/get-started');
 			return this.checkForSelectedOrganisation();
-		} catch (error) {
-			return error;
-		}
-	}
-
-	async getProjectCompleteDetails(projectId: string) {
-		this.isLoadingProject = true;
-
-		try {
-			await this.privateService.getProjectDetails({ refresh: true, projectId }).then(() => this.privateService.getProjectStat({ refresh: true }));
-			this.router.navigate([`/projects/${projectId}`]);
-		} catch (error) {
-			this.isLoadingProject = false;
-		}
-	}
-
-	updateProjectDetails(projects: PROJECT[]) {
-		localStorage.setItem('CONVOY_PROJECT', JSON.stringify(projects[0]));
-		this.router.navigateByUrl(`/projects/${projects[0].uid}`);
-	}
-
-	checkForSelectedProject(projects: PROJECT[]) {
-		const selectedProject = localStorage.getItem('CONVOY_PROJECT');
-		if (!selectedProject || selectedProject === 'undefined') return this.updateProjectDetails(projects);
-
-		const projectDetails = JSON.parse(selectedProject);
-		return projects.find(project => project.uid === projectDetails.uid) ? this.router.navigateByUrl(`/projects/${projectDetails.uid}`) : this.updateProjectDetails(projects);
-	}
-
-	async getProjects(): Promise<any> {
-		try {
-			const response = await this.privateService.getProjects();
-			delete this.privateService.activeProjectDetails;
-			if (response.data.length === 0) this.router.navigateByUrl('/projects');
-			else this.checkForSelectedProject(response.data);
 		} catch (error) {
 			return error;
 		}

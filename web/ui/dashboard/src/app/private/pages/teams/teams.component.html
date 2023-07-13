@@ -23,7 +23,7 @@
 
 				<ul dropdownOptions>
 					<li class="px-20px" convoy-list-item convoy-dropdown-option *ngFor="let filterOption of filterOptions" [active]="selectedFilterOption == filterOption ? 'true' : 'false'">
-						<button convoy-button fill="text" class="w-full text-12 text-black !justify-start capitalize" (click)="toggleFilter(filterOption); dropdownComponent.show = false">{{ filterOption }} Invites</button>
+						<button convoy-button fill="text" color="gray" size="sm" class="w-full !justify-start capitalize" (click)="toggleFilter(filterOption); dropdownComponent.show = false">{{ filterOption }} Invites</button>
 					</li>
 				</ul>
 			</div>
@@ -189,7 +189,7 @@
 		<h2 class="font-semibold capitalize">{{ showUpdateMember ? 'Update' : 'Add' }} Team Member</h2>
 
 		<button convoy-button fill="soft" size="sm" class="px-8px !py-10px" (click)="goToTeams()">
-			<img src="/assets/img/modal-close-icon.svg" alt="close icon" />
+			<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px"  alt="close icon" />
 		</button>
 	</div>
 

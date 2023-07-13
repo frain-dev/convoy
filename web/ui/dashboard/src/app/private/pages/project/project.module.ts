@@ -17,7 +17,7 @@ import { LoaderModule } from '../../components/loader/loader.module';
 
 export const projectResolver = async (route: ActivatedRouteSnapshot, _state: RouterStateSnapshot, privateService = inject(PrivateService), projectService = inject(ProjectService), router = inject(Router)) => {
 	try {
-		const projectDetails = await privateService.getProjectDetails({ projectId: route.params.id });
+		const projectDetails = await privateService.getProject({ projectId: route.params.id });
 		projectService.activeProjectDetails = projectDetails.data;
 		return projectDetails;
 	} catch (error) {

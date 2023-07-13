@@ -6,6 +6,7 @@ import { SOURCE } from 'src/app/models/source.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { SourcesService } from './sources.service';
+import { PROJECT } from 'src/app/models/project.model';
 
 @Component({
 	selector: 'app-sources',
@@ -23,6 +24,7 @@ export class SourcesComponent implements OnInit {
 	isDeletingSource = false;
 	showDeleteSourceModal = false;
 	showSourceDetails = false;
+	projectDetails?: PROJECT;
 
 	constructor(private route: ActivatedRoute, public router: Router, private sourcesService: SourcesService, public privateService: PrivateService, private generalService: GeneralService) {}
 
@@ -41,9 +43,9 @@ export class SourcesComponent implements OnInit {
 			const sourcesResponse = await this.privateService.getSources(requestDetails);
 			this.sources = sourcesResponse.data;
 			this.isLoadingSources = false;
-		} catch (error) {
+		} catch {
 			this.isLoadingSources = false;
-			return error;
+			return;
 		}
 	}
 
@@ -63,7 +65,7 @@ export class SourcesComponent implements OnInit {
 
 	closeCreateSourceModal(source: { action: string; data?: any }) {
 		if (source.action !== 'close') this.generalService.showNotification({ message: `Source ${source.action}d successfully`, style: 'success' });
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/sources');
+		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid + '/sources');
 	}
 
 	isDateBefore(date1?: Date, date2?: Date): boolean {

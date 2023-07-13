@@ -57,7 +57,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	];
 	isCreatingSubscription = false;
 
-	projectType?: 'incoming' | 'outgoing' = this.privateService.activeProjectDetails?.type;
+	projectType?: 'incoming' | 'outgoing' = this.privateService.getProjectDetails?.type;
 	isLoadingForm = true;
 	isLoadingPortalProject = false;
 	token: string = this.route.snapshot.queryParams.token;
@@ -66,13 +66,12 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	configurations = [
 		{ uid: 'filter_config', name: 'Filter', show: false },
-		{ uid: 'retry_config', name: 'Retry Logic', show: false },
-		{ uid: 'events', name: 'Event Types', show: false }
+		{ uid: 'retry_config', name: 'Retry Logic', show: false }
 	];
 	createdSubscription = false;
 	private rbacService = inject(RbacService);
 
-	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router) {}
+	constructor(private formBuilder: FormBuilder, public privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router) {}
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
@@ -84,7 +83,6 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (this.projectType === 'incoming') {
 			this.subscriptionForm.get('source_id')?.addValidators(Validators.required);
 			this.subscriptionForm.get('source_id')?.updateValueAndValidity();
-			this.configurations.pop();
 		} else {
 			this.configurations.push({ uid: 'events', name: 'Event Types', show: false });
 		}
@@ -94,7 +92,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	toggleConfig(configValue: string) {
-		this.action === 'view' ? this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions/' + this.subscriptionId], { queryParams: { configSetting: configValue } }) : this.toggleConfigForm(configValue);
+		this.action === 'view' ? this.router.navigate(['/projects/' + this.privateService.getProjectDetails?.uid + '/subscriptions/' + this.subscriptionId], { queryParams: { configSetting: configValue } }) : this.toggleConfigForm(configValue);
 	}
 
 	toggleConfigForm(configValue: string, value?: boolean) {
@@ -147,7 +145,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async getSources() {
-		if (this.privateService.activeProjectDetails?.type === 'outgoing' || this.token) return;
+		if (this.privateService.getProjectDetails?.type === 'outgoing' || this.token) return;
 
 		try {
 			const sourcesResponse = await this.privateService.getSources();
@@ -301,7 +299,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	goToSubsriptionsPage() {
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions');
+		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid + '/subscriptions');
 	}
 
 	setupFilter() {

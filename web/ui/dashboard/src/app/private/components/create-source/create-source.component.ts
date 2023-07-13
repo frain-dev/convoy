@@ -139,7 +139,7 @@ export class CreateSourceComponent implements OnInit {
 
 	async ngOnInit() {
 		if (this.action === 'update') this.getSourceDetails();
-		this.privateService.activeProjectDetails?.type === 'incoming' ? this.sourceForm.patchValue({ type: 'http' }) : this.sourceForm.patchValue({ type: 'pub_sub' });
+		this.privateService.getProjectDetails?.type === 'incoming' ? this.sourceForm.patchValue({ type: 'http' }) : this.sourceForm.patchValue({ type: 'pub_sub' });
 
 		if (!(await this.rbacService.userCanAccess('Sources|MANAGE'))) this.sourceForm.disable();
 	}
@@ -157,7 +157,7 @@ export class CreateSourceComponent implements OnInit {
 
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
 
-            this.idempotencyKeys = response.data.idempotency_keys
+			this.idempotencyKeys = response.data.idempotency_keys;
 			this.isloading = false;
 
 			return;
@@ -168,7 +168,7 @@ export class CreateSourceComponent implements OnInit {
 	}
 
 	checkSourceSetup() {
-		if (this.privateService.activeProjectDetails?.type === 'incoming') {
+		if (this.privateService.getProjectDetails?.type === 'incoming') {
 			delete this.sourceForm.value.pub_sub;
 			const verifierType = this.sourceForm.get('verifier.type')?.value;
 			const verifier = this.isCustomSource(verifierType) ? 'hmac' : verifierType;
@@ -315,7 +315,7 @@ export class CreateSourceComponent implements OnInit {
 				e.preventDefault();
 			}
 		});
-  }
+	}
 
 	async runSourceFormValidation() {
 		if (this.configurations[0].show) {
@@ -330,7 +330,7 @@ export class CreateSourceComponent implements OnInit {
 			this.sourceForm.get('custom_response.content_type')?.updateValueAndValidity();
 		}
 
-		if (this.privateService.activeProjectDetails?.type === 'incoming') {
+		if (this.privateService.getProjectDetails?.type === 'incoming') {
 			this.sourceForm.get('verifier.type')?.addValidators(Validators.required);
 			this.sourceForm.get('verifier.type')?.updateValueAndValidity();
 
@@ -382,7 +382,7 @@ export class CreateSourceComponent implements OnInit {
 			this.sourceForm.get('verifier.type')?.updateValueAndValidity();
 		}
 
-		if (this.privateService.activeProjectDetails?.type === 'outgoing') {
+		if (this.privateService.getProjectDetails?.type === 'outgoing') {
 			this.sourceForm.get('pub_sub.workers')?.addValidators(Validators.required);
 			this.sourceForm.get('pub_sub.workers')?.updateValueAndValidity();
 			this.sourceForm.get('pub_sub.type')?.addValidators(Validators.required);

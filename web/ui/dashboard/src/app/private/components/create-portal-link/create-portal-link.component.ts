@@ -93,6 +93,6 @@ export class CreatePortalLinkComponent implements OnInit {
 	}
 
 	goBack() {
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/portal-links');
+		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid + '/portal-links');
 	}
 }

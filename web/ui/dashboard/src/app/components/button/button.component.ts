@@ -32,8 +32,8 @@ export class ButtonComponent implements OnInit {
 			softOutline: `border border-new.${this.color}-${this.color === 'gray' ? '300' : '50'} text-new.${this.color}-${this.color === 'gray' ? '800' : '400'} rounded-8px`,
 			tab: `text-new.${this.color}-${this.color === 'gray' ? '800' : '400'} border-b-4px border-new.${this.color}-400`,
 			link: `text-new.${this.color}-${this.color === 'gray' ? '800' : '400'} underline decoration-new.${this.color}-${this.color === 'gray' ? '600' : '400'}`,
-			solid: `bg-new.${this.color}-400 text-white-100 border-none rounded-8px`,
-			soft: `text-new.${this.color}-${this.color == 'gray' ? '600' : '400'} bg-new.${this.color}-${softColorLevels[this.color]} border-none rounded-8px`
+			solid: `bg-new.${this.color}-400 text-white-100 border border-new.${this.color}-400 rounded-8px`,
+			soft: `text-new.${this.color}-${this.color == 'gray' ? '600' : '400'} bg-new.${this.color}-${softColorLevels[this.color]} border border-new.${this.color}-${softColorLevels[this.color]} rounded-8px`
 		};
 
 		return `${this.buttonSizes[this.size]} ${buttonTypes[this.fill]} ${this.fill === 'text' ? 'px-0' : ''} flex items-center justify-center disabled:opacity-50 whitespace-nowrap`;
