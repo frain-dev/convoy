@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/oklog/ulid/v2"
-	"gopkg.in/guregu/null.v4"
+	"io"
 	"math"
 	"net/http"
 	"time"
+
+	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
@@ -1262,6 +1264,11 @@ type OrganisationInvite struct {
 	CreatedAt        time.Time    `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt        time.Time    `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt        null.Time    `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+type WriterSyncerCloser interface {
+	io.WriteCloser
+	Sync() error
 }
 
 type PortalLink struct {

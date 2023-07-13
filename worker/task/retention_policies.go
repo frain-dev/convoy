@@ -47,7 +47,9 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 			return err
 		}
 
-		for _, p := range projects {
+		fmt.Println("total projects", len(projects))
+		for i, p := range projects {
+			fmt.Println("current project", p.UID, i)
 			cfg := p.Config
 			if cfg.IsRetentionPolicyEnabled {
 				// export tables
@@ -187,5 +189,6 @@ func ExportCollection(
 		log.WithError(err).Error("typesense: an error occured deleting typesense record")
 	}
 
+	fmt.Printf("Succesfully exported %d records for project %s\n", numDocs, project.UID)
 	return nil
 }

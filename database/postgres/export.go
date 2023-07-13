@@ -40,7 +40,7 @@ const (
 
 // ExportRecords exports the records from the given table and writes them in json format to the passed writer.
 // It's the callers responsibility to close the writer.
-func (e *exportRepo) ExportRecords(ctx context.Context, tableName, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
+func (e *exportRepo) ExportRecords(ctx context.Context, tableName, projectID string, createdAt time.Time, w datastore.WriterSyncerCloser) (int64, error) {
 	c := &struct {
 		Count int64 `db:"count"`
 	}{}
@@ -56,7 +56,7 @@ func (e *exportRepo) ExportRecords(ctx context.Context, tableName, projectID str
 	}
 
 	var (
-		batchSize  = 2000
+		batchSize  = 1000
 		numDocs    int64
 		numBatches = int(math.Ceil(float64(c.Count) / float64(batchSize)))
 	)
@@ -65,17 +65,25 @@ func (e *exportRepo) ExportRecords(ctx context.Context, tableName, projectID str
 	if err != nil {
 		return 0, err
 	}
+	fmt.Println("numBatches", numBatches)
 
 	q := fmt.Sprintf(exportRepoQ, tableName, where)
 	for i := 0; i < numBatches; i++ {
+		fmt.Println("batch ", i)
 		offset := i * batchSize
 
-		n, err := e.querybatch(ctx, q, projectID, createdAt, batchSize, offset, w)
+		n, err := e.querybatch(context.Background(), q, projectID, createdAt, batchSize, offset, w)
+		fmt.Println("querybatch", err)
 		if err != nil {
-			return 0, fmt.Errorf("failed to remarshal results: %v", err)
+			return 0, fmt.Errorf("failed to query batch %d: %v", i, err)
 		}
 
 		numDocs += n
+		err = w.Sync()
+		fmt.Println("sync err ", err)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	_, err = w.Write([]byte(`]`))
@@ -92,16 +100,20 @@ func (e *exportRepo) querybatch(ctx context.Context, q, projectID string, create
 	// Calling rows.Close() manually in places before we return is important here to prevent
 	//  a memory leak, we cannot use defer in a loop because this can fill up the function stack quickly
 	rows, err := e.db.QueryxContext(ctx, q, projectID, createdAt, batchSize, offset)
+	fmt.Println("111")
 	if err != nil {
 		return 0, err
 	}
 	defer rows.Close()
 
-	var records []json.RawMessage
+	records := make([]json.RawMessage, 0, batchSize)
+	var record json.RawMessage
+	fmt.Println("imm befrr next")
 	for rows.Next() {
+		fmt.Println("imm next")
 		numDocs++
-		var record json.RawMessage
 		err = rows.Scan(&record)
+		fmt.Println("NEXT", err)
 		if err != nil {
 			return 0, err
 		}
@@ -109,6 +121,7 @@ func (e *exportRepo) querybatch(ctx context.Context, q, projectID string, create
 		records = append(records, record)
 	}
 
+	fmt.Println("222")
 	m, err := json.Marshal(records)
 	if err != nil {
 		return 0, fmt.Errorf("failed to remarshal results: %v", err)

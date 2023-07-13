@@ -2,7 +2,6 @@ package exporter
 
 import (
 	"context"
-	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -49,7 +48,7 @@ func (ex *Exporter) Export(ctx context.Context, exportRepo datastore.ExportRepos
 
 // GetOutputWriter opens and returns an io.WriteCloser for the output
 // options or nil if none is set. The caller is responsible for closing it.
-func GetOutputWriter(out string) (io.WriteCloser, error) {
+func GetOutputWriter(out string) (datastore.WriterSyncerCloser, error) {
 	// If the directory in which the output file is to be
 	// written does not exist, create it
 	fileDir := filepath.Dir(out)
