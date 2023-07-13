@@ -141,6 +141,7 @@
 				size="sm"
                 color="gray"
                 fill="soft"
+                class="py-4px"
 				(click)="eventDelsDetails.status === 'Success' ? forceRetryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid }) : retryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid })"
 			>
 				<svg width="16" height="16" class="mr-10px">

@@ -17,8 +17,9 @@ export class ButtonComponent implements OnInit {
 	@Input('color') color: 'primary' | 'success' | 'warning' | 'danger' | 'gray' | 'transparent' = 'primary';
 	@Input('texture') texture: 'deep' | 'light' = 'deep';
 	@Input('index') tabIndex = 0;
+	@Input('width') width!: 'full' | '75' | '50' | '25';
 	buttonSizes = { xs: 'py-4px px-8px text-10', sm: `py-8px px-10px text-12`, md: `py-12px px-16px text-14`, lg: `py-16px px-36px w-full text-16` };
-
+	buttonWidths = { full: 'w-full', 75: 'w-3/4', 50: '1/2', 25: 'w-1/4' };
 	constructor() {}
 
 	ngOnInit(): void {}
@@ -36,6 +37,6 @@ export class ButtonComponent implements OnInit {
 			soft: `text-new.${this.color}-${this.color == 'gray' ? '600' : '400'} bg-new.${this.color}-${softColorLevels[this.color]} border border-new.${this.color}-${softColorLevels[this.color]} rounded-8px`
 		};
 
-		return `${this.buttonSizes[this.size]} ${buttonTypes[this.fill]} ${this.fill === 'text' ? 'px-0' : ''} flex items-center justify-center disabled:opacity-50 whitespace-nowrap`;
+		return `${this.buttonSizes[this.size]} ${buttonTypes[this.fill]} ${this.fill === 'text' ? 'px-0' : ''} ${this.width ? this.buttonWidths[this.width] : ''} flex items-center justify-center disabled:opacity-50 whitespace-nowrap`;
 	}
 }

@@ -125,10 +125,10 @@
 
 								<ul dropdownOptions>
 									<li class="border-b border-b-grey-10">
-										<button convoy-dropdown-option convoy-button fill="text" color="gray" class="w-full" (click)="resendInvite(team.uid)">Resend Invite</button>
+										<button convoy-dropdown-option convoy-button fill="text" color="gray" width="full" (click)="resendInvite(team.uid)">Resend Invite</button>
 									</li>
 									<li>
-										<button convoy-dropdown-option convoy-button fill="text" color="danger" class="w-full" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
+										<button convoy-dropdown-option convoy-button fill="text" color="danger" width="full" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
 									</li>
 								</ul>
 							</div>
@@ -189,7 +189,7 @@
 		<h2 class="font-semibold capitalize">{{ showUpdateMember ? 'Update' : 'Add' }} Team Member</h2>
 
 		<button convoy-button fill="soft" size="sm" class="px-8px !py-10px" (click)="goToTeams()">
-			<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px"  alt="close icon" />
+			<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
 		</button>
 	</div>
 

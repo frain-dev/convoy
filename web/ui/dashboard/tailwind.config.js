@@ -44,6 +44,7 @@ module.exports = {
 		'border-new.danger-400',
 		'border-new.gray-600',
 		'border-new.gray-300',
+		'border-new.gray-100',
 		'border-new.primary-50',
 		'border-new.warning-50',
 		'border-new.danger-50',

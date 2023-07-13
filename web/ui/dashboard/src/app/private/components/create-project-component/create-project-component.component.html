@@ -346,8 +346,8 @@
 	<div modalBody class="flex flex-col justify-center items-center p-30px">
 		<h3 class="text-16 font-semibold text-black mb-8px">Confirm Action</h3>
 		<p class="text-14 font-medium text-grey-40 text-center mb-30px">You are about to re-enable all endpoints on this project, please confirm this action</p>
-		<button convoy-button class="mb-16px w-full" (click)="updateProject(); disableEndpointsModal = false">Confirm</button>
-		<button convoy-button fill="outline" class="w-full" (click)="disableEndpointsModal = false; projectForm.patchValue({ config: { disable_endpoint: true } })">Close</button>
+		<button convoy-button  width="full" class="mb-16px" (click)="updateProject(); disableEndpointsModal = false">Confirm</button>
+		<button convoy-button fill="outline" width="full" (click)="disableEndpointsModal = false; projectForm.patchValue({ config: { disable_endpoint: true } })">Close</button>
 	</div>
 </div>
 
@@ -357,7 +357,7 @@
 		<img src="/assets/img/warning.gif" class="h-[126px] w-[126px]" alt="warning" />
 		<p class="text-16 font-semibold text-black mb-30px text-center">Are you sure you want to disable meta events on this project?</p>
 		<button convoy-button color="danger" class="mb-16px w-full" [disabled]="isCreatingProject" (click)="updateProject(); showMetaEventPrompt = false">Yes, Disable</button>
-		<button convoy-button fill="outline" class="w-full" (click)="showMetaEventPrompt = false; projectForm.patchValue({ config: { meta_event: { is_enabled: true } } })">No, Cancel</button>
+		<button convoy-button fill="outline" width="full" (click)="showMetaEventPrompt = false; projectForm.patchValue({ config: { meta_event: { is_enabled: true } } })">No, Cancel</button>
 	</div>
 </div>
 <!-- disable meta events prompt  -->

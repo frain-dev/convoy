@@ -34,7 +34,7 @@
 				<convoy-input-error *ngIf="signupForm.get('password')?.touched && signupForm.get('password')?.invalid">Password is required</convoy-input-error>
 			</convoy-input-field>
 
-			<button convoy-button [disabled]="disableSignupBtn" size="lg" class="w-full">
+			<button convoy-button [disabled]="disableSignupBtn" size="sm" width="full">
 				<span class="text-14" *ngIf="!disableSignupBtn">Signup</span>
 				<img *ngIf="disableSignupBtn" src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
 			</button>

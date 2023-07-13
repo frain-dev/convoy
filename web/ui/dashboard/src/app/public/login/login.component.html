@@ -24,7 +24,7 @@
 				<button convoy-button fill="link" type="button" class="px-0 ml-6px" (click)="router.navigateByUrl('/forgot-password')" size="sm">Reset it here</button>
 			</div>
 
-			<button convoy-button [disabled]="disableLoginBtn" size="lg">
+			<button convoy-button [disabled]="disableLoginBtn" size="sm" width="full">
 				<span class="text-14" *ngIf="!disableLoginBtn">Login</span>
 				<img *ngIf="disableLoginBtn" src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
 			</button>
