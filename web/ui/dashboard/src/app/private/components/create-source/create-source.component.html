@@ -217,8 +217,8 @@
 					<convoy-input-field>
 						<label for="service_account" required="true" convoy-label required="true" tooltip="Service accounts provide a way to manage authentication into your Google Pub/Sub.">Service Account</label>
 						<convoy-file-input (selectedFile)="parseJsonFile($event)" (deleteFile)="deleteJsonFile()">
-							<p class="text-center text-12 text-grey-60 max-w-[186px] mx-auto">
-								<span class="text-primary-100 font-bold">Click to {{ action === 'update' ? 'update' : 'upload' }}</span>
+							<p class="text-center text-12 text-new.gray-400 max-w-[186px] mx-auto">
+								<span class="text-new.primary-400 font-bold">Click to {{ action === 'update' ? 'update' : 'upload' }}</span>
 								or drag and drop JSON (max 5kb)
 							</p>
 						</convoy-file-input>

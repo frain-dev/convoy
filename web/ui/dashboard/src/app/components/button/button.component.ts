@@ -13,7 +13,6 @@ import { CommonModule } from '@angular/common';
 export class ButtonComponent implements OnInit {
 	@Input('buttonText') buttonText!: string;
 	@Input('fill') fill: 'text' | 'outline' | 'softOutline' | 'tab' | 'link' | 'solid' | 'soft' = 'solid';
-	// @Input('fill') fill: 'solid' | 'outline' | 'clear' | 'text' | 'link' | 'soft' = 'solid';
 	@Input('size') size: 'xs' | 'sm' | 'md' | 'lg' = 'md';
 	@Input('color') color: 'primary' | 'success' | 'warning' | 'danger' | 'gray' | 'transparent' = 'primary';
 	@Input('texture') texture: 'deep' | 'light' = 'deep';

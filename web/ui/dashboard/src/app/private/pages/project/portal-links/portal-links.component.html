@@ -49,15 +49,15 @@
 				</div>
 
 				<ul class="min-h-[100px] pb-10px">
-					<li class="py-8px flex items-center justify-between border-b border-grey-10 px-10px" *ngFor="let endpoint of linksEndpointFilter$ | async" convoy-dropdown-option [ngClass]="{ 'bg-primary-500': endpoint.uid === linkEndpoint }">
-						<button convoy-button fill="text" class="text-12 text-black w-full !justify-start" (click)="updateEndpointFilter(endpoint.uid)">
+					<li class="flex items-center justify-between border-b border-grey-10 px-10px" *ngFor="let endpoint of linksEndpointFilter$ | async" convoy-dropdown-option [ngClass]="{ 'bg-primary-500': endpoint.uid === linkEndpoint }">
+						<button convoy-button fill="text" size="sm" color="gray" class="w-full !justify-start" (click)="updateEndpointFilter(endpoint.uid)">
 							{{ endpoint.title }}
 						</button>
 					</li>
 				</ul>
 
 				<div *ngIf="!!linkEndpoint" class="p-10px pb-20px flex justify-end">
-					<button convoy-dropdown-option convoy-button size="sm" fill="outline" color="danger" (click)="clearEndpointFilter()">Clear</button>
+					<button convoy-dropdown-option convoy-button size="xs" fill="outline" color="danger" (click)="clearEndpointFilter()">Clear</button>
 				</div>
 			</ng-container>
 		</div>
