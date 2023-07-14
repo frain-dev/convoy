@@ -27,6 +27,7 @@ interface FILTER_QUERY_PARAM {
 	next_page_cursor?: string;
 	prev_page_cursor?: string;
 	direction?: 'next' | 'prev';
+	showLoader?: boolean;
 }
 
 @Component({
@@ -54,6 +55,7 @@ export class EventDeliveriesComponent implements OnInit {
 	portalToken = this.route.snapshot.queryParams?.token;
 	filterSources: SOURCE[] = [];
 	queryParams?: FILTER_QUERY_PARAM;
+	getEventDeliveriesInterval: any;
 
 	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, public projectService: ProjectService, public privateService: PrivateService, private _location: Location) {}
 
@@ -71,9 +73,14 @@ export class EventDeliveriesComponent implements OnInit {
 
 	ngOnInit() {
 		const data = this.getFiltersFromURL();
-		this.getEventDeliveries(data);
+		this.getEventDeliveries({ ...data, showLoader: true }).then(() => this.getEventDeliveriesAtInterval(data));
+
 		if (!this.portalToken || this.projectService.activeProjectDetails?.type == 'incoming') this.getSourcesForFilter();
 	}
+
+    ngOnDestroy(){
+        clearInterval(this.getEventDeliveriesInterval);
+    }
 
 	getFiltersFromURL() {
 		const filters = this.route.snapshot.queryParams;
@@ -90,8 +97,14 @@ export class EventDeliveriesComponent implements OnInit {
 		return this.queryParams;
 	}
 
+	getEventDeliveriesAtInterval(requestDetails?: FILTER_QUERY_PARAM) {
+		this.getEventDeliveriesInterval = setInterval(() => {
+			this.getEventDeliveries({ ...requestDetails, showLoader: false });
+		}, 4000);
+	}
+
 	async getEventDeliveries(requestDetails?: FILTER_QUERY_PARAM): Promise<HTTP_RESPONSE> {
-		this.isloadingEventDeliveries = true;
+		if (requestDetails?.showLoader) this.isloadingEventDeliveries = true;
 
 		try {
 			const eventDeliveriesResponse = await this.eventDeliveriesRequest(requestDetails);
