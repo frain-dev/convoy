@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"runtime"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
@@ -56,7 +57,7 @@ func (e *exportRepo) ExportRecords(ctx context.Context, tableName, projectID str
 	}
 
 	var (
-		batchSize  = 1000
+		batchSize  = 500
 		numDocs    int64
 		numBatches = int(math.Ceil(float64(c.Count) / float64(batchSize)))
 	)
@@ -74,13 +75,14 @@ func (e *exportRepo) ExportRecords(ctx context.Context, tableName, projectID str
 
 		n, err := e.querybatch(context.Background(), q, projectID, createdAt, batchSize, offset, w)
 		fmt.Println("querybatch", err)
+		runtime.GC()
 		if err != nil {
 			return 0, fmt.Errorf("failed to query batch %d: %v", i, err)
 		}
 
 		numDocs += n
-		err = w.Sync()
-		fmt.Println("sync err ", err)
+		// err = w.Sync()
+		// fmt.Println("sync err ", err)
 		if err != nil {
 			return 0, err
 		}
