@@ -64,11 +64,8 @@ export class EventLogsComponent implements OnInit {
 	eventLogsTableHead: string[] = ['Event ID', 'Source', 'Time', ''];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	eventsSearchString?: string;
-	eventEndpoint?: string;
 	eventSource?: string;
-	showEventFilterCalendar: boolean = false;
 	isloadingEvents: boolean = false;
-	selectedEventsDateOption: string = '';
 	eventDetailsTabs = [
 		{ id: 'data', label: 'Event' },
 		{ id: 'response', label: 'Response' },
@@ -148,7 +145,6 @@ export class EventLogsComponent implements OnInit {
 		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams };
 
 		this.eventsDateFilterFromURL = { startDate: filters.eventsStartDate || '', endDate: filters.eventsEndDate || '' };
-		if (!this.portalToken) this.eventEndpoint = filters.eventsEndpoint ?? undefined;
 		this.eventsSearchString = filters.eventsSearch ?? undefined;
 		this.eventSource = filters.eventSource;
 
@@ -268,7 +264,6 @@ export class EventLogsComponent implements OnInit {
 				page: page,
 				startDate: startDate,
 				endDate: endDate,
-				endpointId: this.eventEndpoint || '',
 				sourceId: this.eventSource || ''
 			});
 
@@ -300,7 +295,6 @@ export class EventLogsComponent implements OnInit {
 				page: page || 1,
 				startDate: startDate,
 				endDate: endDate,
-				endpointId: this.eventEndpoint || '',
 				sourceId: this.eventSource || ''
 			});
 
