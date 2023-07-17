@@ -17,7 +17,6 @@ require (
 	github.com/go-chi/render v1.0.1
 	github.com/go-redis/cache/v9 v9.0.0
 	github.com/go-redis/redis_rate/v10 v10.0.1
-	github.com/go-redis/redis_rate/v9 v9.1.2
 	github.com/go-redsync/redsync/v4 v4.8.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/mock v1.6.0
@@ -46,6 +45,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.1
 	github.com/swaggo/swag v1.8.12
+	github.com/tidwall/gjson v1.14.4
 	github.com/typesense/typesense-go v0.4.0
 	github.com/xdg-go/pbkdf2 v1.0.0
 	golang.org/x/crypto v0.5.0
@@ -59,7 +59,6 @@ require (
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/tidwall/gjson v1.14.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 )

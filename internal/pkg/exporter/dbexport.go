@@ -24,12 +24,6 @@ type Exporter struct {
 }
 
 func (ex *Exporter) Export(ctx context.Context, exportRepo datastore.ExportRepository) (int64, error) {
-	data, numDocs, err := exportRepo.ExportRecords(ctx, ex.TableName, ex.ProjectID, ex.CreatedAt)
-	if err != nil {
-		log.WithError(err).Error("failed to export records")
-		return 0, err
-	}
-
 	writer, err := GetOutputWriter(ex.Out)
 	if err != nil {
 		log.WithError(err).Error("error opening output stream")
@@ -42,9 +36,9 @@ func (ex *Exporter) Export(ctx context.Context, exportRepo datastore.ExportRepos
 		defer writer.Close()
 	}
 
-	_, err = writer.Write(data)
+	numDocs, err := exportRepo.ExportRecords(ctx, ex.TableName, ex.ProjectID, ex.CreatedAt, writer)
 	if err != nil {
-		log.WithError(err).Errorf("failed to write export data to output file %s", ex.Out)
+		log.WithError(err).Error("failed to export records")
 		return 0, err
 	}
 
