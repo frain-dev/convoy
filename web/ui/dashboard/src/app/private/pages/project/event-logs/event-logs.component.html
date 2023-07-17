@@ -67,7 +67,7 @@
 			size="sm"
 			fill="outline"
 			class="ml-14px px-10px border-primary-400 h-36px whitespace-nowrap"
-			[disabled]="(eventsDateFilterFromURL.startDate == '' || eventsDateFilterFromURL.endDate == '') && (eventEndpoint?.length == 0 || eventEndpoint == undefined) && (eventSource?.length == 0 || eventSource == undefined)"
+			[disabled]="(eventsDateFilterFromURL.startDate == '' || eventsDateFilterFromURL.endDate == '') && (eventSource?.length == 0 || eventSource == undefined)"
 			(click)="fetchRetryCount(); showBatchRetryModal = true"
 		>
 			Batch Replay

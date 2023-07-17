@@ -284,7 +284,6 @@ export class EventDeliveriesComponent implements OnInit {
 			const response = await this.eventsService.batchRetryEvent(this.queryParams);
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			// this.getEventDeliveries();
 			this.showBatchRetryModal = false;
 			this.isRetrying = false;
 			return;
