@@ -67,3 +67,19 @@ export interface EVENT_DELIVERY_ATTEMPT {
 	uid: string;
 	error?: string;
 }
+
+
+export interface FILTER_QUERY_PARAM {
+	startDate?: string;
+	endDate?: string;
+	eventId?: string;
+	endpointId?: string;
+	idempotencyKey?: string;
+	status?: string;
+	sourceId?: string;
+	next_page_cursor?: string;
+	prev_page_cursor?: string;
+	direction?: 'next' | 'prev';
+	showLoader?: boolean;
+    query?:string;
+}

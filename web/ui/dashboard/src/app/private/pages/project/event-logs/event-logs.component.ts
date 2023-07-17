@@ -14,7 +14,7 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { format, parseISO } from 'date-fns';
 import { SOURCE } from 'src/app/models/source.model';
-import { EVENT, EVENT_DELIVERY } from 'src/app/models/event.model';
+import { EVENT, EVENT_DELIVERY, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.component';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
@@ -48,7 +48,6 @@ import { ListItemComponent } from 'src/app/components/list-item/list-item.compon
 		TableRowComponent,
 		TableHeadCellComponent,
 		TableCellComponent,
-		TimePickerComponent,
 		DatePickerComponent,
 		DropdownComponent,
 		ModalComponent,
@@ -81,7 +80,6 @@ export class EventLogsComponent implements OnInit {
 	eventDetailsActiveTab = 'data';
 	eventsDetailsItem: any;
 	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
-	eventsTimeFilterData: { startTime: string; endTime: string } = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
 	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
 	portalToken = this.route.snapshot.params?.token;
 	filterSources: SOURCE[] = [];
@@ -91,47 +89,20 @@ export class EventLogsComponent implements OnInit {
 	isRetrying = false;
 	isFetchingDuplicateEvents = false;
 	batchRetryCount: any;
+	getEventsInterval: any;
+	queryParams?: FILTER_QUERY_PARAM;
 
 	constructor(private eventsLogService: EventLogsService, public generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService, private _location: Location) {}
 
 	async ngOnInit() {
-		this.getFiltersFromURL();
-		this.getEvents();
+		const data = this.getFiltersFromURL();
+		this.getEventLogs({ ...data, showLoader: true }).then(() => this.getEventsAtInterval({ ...data }));
+
 		if (!this.portalToken) this.getSourcesForFilter();
 	}
 
-	clearEventFilters(filterType?: 'eventsDate' | 'eventsEndpoint' | 'eventsSearch' | 'eventsSource') {
-		const activeFilters = Object.assign({}, this.route.snapshot.queryParams);
-		let filterItems: string[] = [];
-		this.datePicker.clearDate();
-
-		switch (filterType) {
-			case 'eventsEndpoint':
-				filterItems = ['eventsEndpoint'];
-				break;
-			case 'eventsDate':
-				filterItems = ['eventsStartDate', 'eventsEndDate'];
-				break;
-			case 'eventsSearch':
-				filterItems = ['eventsSearch'];
-				break;
-			case 'eventsSource':
-				filterItems = ['eventsSource'];
-				break;
-			default:
-				filterItems = ['eventsStartDate', 'eventsEndDate', 'eventsEndpoint', 'eventsSearch', 'eventsSource'];
-				break;
-		}
-
-		this.eventsDateFilterFromURL = { startDate: '', endDate: '' };
-		this.eventsTimeFilterData = { startTime: 'T00:00:00', endTime: 'T23:59:59' };
-		this.eventEndpoint = undefined;
-		this.eventSource = undefined;
-		this.eventsSearchString = undefined;
-
-		filterItems.forEach(key => (activeFilters.hasOwnProperty(key) ? delete activeFilters[key] : null));
-		this.router.navigate([], { relativeTo: this.route, queryParams: activeFilters });
-		this.getEvents();
+	ngOnDestroy() {
+		clearInterval(this.getEventsInterval);
 	}
 
 	async getSourcesForFilter() {
@@ -141,18 +112,25 @@ export class EventLogsComponent implements OnInit {
 		} catch (error) {}
 	}
 
-	updateEndpointFilter(endpointId: string, isChecked: any) {
-		isChecked.target.checked ? (this.eventEndpoint = endpointId) : (this.eventEndpoint = undefined);
-		this.getEvents({ addToURL: true });
+	searchEvents() {
+		const data = this.addFilterToURL({ query: this.eventsSearchString });
+		this.refetchEvents(data);
+	}
+
+	paginateEvents(event: CURSOR) {
+		const data = this.addFilterToURL(event);
+		this.refetchEvents(data);
 	}
 
 	updateSourceFilter() {
-		this.getEvents({ addToURL: true });
+		const data = this.addFilterToURL({ sourceId: this.eventSource });
+		this.refetchEvents(data);
 	}
 
 	getSelectedDateRange(dateRange: { startDate: string; endDate: string }) {
 		this.eventsDateFilterFromURL = dateRange;
-		this.getEvents({ addToURL: true });
+		const data = this.addFilterToURL(dateRange);
+		this.refetchEvents(data);
 	}
 
 	setDateForFilter(requestDetails: { startDate: any; endDate: any; startTime?: string; endTime?: string }) {
@@ -167,62 +145,80 @@ export class EventLogsComponent implements OnInit {
 		const filters = this.route.snapshot.queryParams;
 		if (Object.keys(filters).length == 0) return;
 
+		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams };
+
 		this.eventsDateFilterFromURL = { startDate: filters.eventsStartDate || '', endDate: filters.eventsEndDate || '' };
 		if (!this.portalToken) this.eventEndpoint = filters.eventsEndpoint ?? undefined;
 		this.eventsSearchString = filters.eventsSearch ?? undefined;
 		this.eventSource = filters.eventSource;
+
+		return this.queryParams;
 	}
 
-	addFilterToURL(params?: any) {
-		const currentURLfilters = this.route.snapshot.queryParams;
-		const queryParams: any = {};
+	// fetch and add new filter to url
+	addFilterToURL(params?: FILTER_QUERY_PARAM) {
+		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams, ...params };
 
-		if (this.eventsDateFilterFromURL.startDate) queryParams.eventsStartDate = this.eventsDateFilterFromURL.startDate;
-		if (this.eventsDateFilterFromURL.endDate) queryParams.eventsEndDate = this.eventsDateFilterFromURL.endDate;
-		if (this.eventEndpoint) queryParams.eventsEndpoint = this.eventEndpoint;
+		if (!params?.next_page_cursor) delete this.queryParams.next_page_cursor;
+		if (!params?.prev_page_cursor) delete this.queryParams.prev_page_cursor;
 
-		queryParams.eventsSource = this.eventSource;
-		queryParams.eventsSearch = this.eventsSearchString;
+		const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
+		const queryParams = new URLSearchParams(cleanedQuery).toString();
+		this._location.go(`${location.pathname}?${queryParams}`);
 
-		const paramsObject = Object.assign({}, currentURLfilters, queryParams, params);
-		const cleanedQuery: any = Object.fromEntries(Object.entries(paramsObject).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
-		const queryParamss = new URLSearchParams(cleanedQuery).toString();
-		this._location.go(`${location.pathname}?${queryParamss}`);
+		return this.queryParams;
 	}
 
-	async getEvents(requestDetails?: { endpointId?: string; addToURL?: boolean }, pagination?: { next_page_cursor?: string; prev_page_cursor?: string; direction?: 'next' | 'prev' }): Promise<HTTP_RESPONSE> {
-		this.isloadingEvents = true;
+	// clear filters
+	clearEventFilters(filterType?: 'startDate' | 'endDate' | 'sourceId' | 'next_page_cursor' | 'prev_page_cursor' | 'direction') {
+		if (filterType && this.queryParams) {
+			if (filterType === 'startDate' || filterType === 'endDate') {
+				delete this.queryParams['startDate'];
+				delete this.queryParams['endDate'];
+			} else delete this.queryParams[filterType];
 
-		if (requestDetails?.endpointId) this.eventEndpoint = requestDetails.endpointId;
-		if (requestDetails?.addToURL) this.addFilterToURL();
-
-		if (!pagination) {
-			pagination = { next_page_cursor: 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF' };
-			delete this.eventsDetailsItem;
-			this.sidebarEventDeliveries = [];
+			const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
+			const queryParams = new URLSearchParams(cleanedQuery).toString();
+			this._location.go(`${location.pathname}?${queryParams}`);
+		} else {
+			this.datePicker.clearDate();
+			this.queryParams = {};
+			this.eventsSearchString = '';
+			this.eventSource = '';
+			this._location.go(`${location.pathname}`);
 		}
+		this.refetchEvents(this.queryParams);
+	}
 
-		if (this.eventsSearchString) this.displayedEvents = [];
+	getEventsAtInterval(requestDetails?: FILTER_QUERY_PARAM) {
+		this.getEventsInterval = setInterval(() => {
+			this.getEventLogs({ ...requestDetails });
+		}, 4000);
+	}
+
+	async refetchEvents(data?: FILTER_QUERY_PARAM) {
+		delete this.eventsDetailsItem;
+		clearInterval(this.getEventsInterval);
+		await this.getEventLogs({ ...data, showLoader: true }).then(() => this.getEventsAtInterval({ ...data }));
+	}
+
+	async getEventLogs(requestDetails?: FILTER_QUERY_PARAM) {
+		if (requestDetails?.showLoader) this.isloadingEvents = true;
 
 		try {
-			const eventsResponse = await this.eventsService.getEvents({
-				startDate: this.eventsDateFilterFromURL.startDate,
-				endDate: this.eventsDateFilterFromURL.endDate,
-				endpointId: this.eventEndpoint || '',
-				sourceId: this.eventSource || '',
-				query: this.eventsSearchString || '',
-				...pagination
-			});
+			const eventsResponse = await this.eventsService.getEvents(requestDetails);
 			this.events = eventsResponse.data;
 
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
 
-			this.eventsDetailsItem = this.events?.content[0];
-			if (this.eventsDetailsItem?.uid) {
-				this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
-				this.getDuplicateEvents(this.eventsDetailsItem);
-			} else this.isLoadingSidebarDeliveries = false;
-			// this.eventsDetailsItem?.uid ? () : ();
+			if (this.eventsDetailsItem) return;
+			else {
+				this.eventsDetailsItem = this.events?.content[0];
+				if (this.eventsDetailsItem?.uid) {
+					this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
+					this.getDuplicateEvents(this.eventsDetailsItem);
+				} else this.isLoadingSidebarDeliveries = false;
+			}
 
 			this.isloadingEvents = false;
 			return eventsResponse;
@@ -288,7 +284,6 @@ export class EventLogsComponent implements OnInit {
 		try {
 			const response = await this.eventsLogService.retryEvent({ eventId: requestDetails.eventId });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.getEvents();
 			return;
 		} catch (error) {
 			return error;
@@ -310,7 +305,6 @@ export class EventLogsComponent implements OnInit {
 			});
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.getEvents();
 			this.showBatchRetryModal = false;
 			this.isRetrying = false;
 		} catch (error) {
@@ -330,10 +324,5 @@ export class EventLogsComponent implements OnInit {
 		if (filterByIdempotencyKey) queryParams['idempotencyKey'] = event.idempotency_key;
 
 		this.router.navigate([`/projects/${this.privateService.getProjectDetails?.uid}/events`], { queryParams });
-	}
-
-	paginateEvents(event: CURSOR) {
-		this.addFilterToURL(event);
-		this.getEvents({}, event);
 	}
 }
