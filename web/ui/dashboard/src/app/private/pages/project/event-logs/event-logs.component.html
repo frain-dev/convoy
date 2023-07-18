@@ -19,7 +19,7 @@
 				type="search"
 				placeholder="Search events"
 				[(ngModel)]="eventsSearchString"
-				(change)="getEvents({ addToURL: true })"
+				(change)="searchEvents()"
 				[ngModelOptions]="{ standalone: true }"
 				class="w-full text-grey-40 outline-none bg-transparent text-12 font-normal"
 				[ngClass]="{ 'bg-primary-500': eventsSearchString != undefined && eventsSearchString != '' }"
@@ -29,29 +29,37 @@
 			</button>
 		</form>
 
-		<convoy-date-picker class="ml-14px" (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="eventsDateFilterFromURL" (clearDates)="clearEventFilters('eventsDate')" #datePicker></convoy-date-picker>
+		<convoy-date-picker class="ml-14px" (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="eventsDateFilterFromURL" (clearDates)="clearEventFilters('startDate')" #datePicker></convoy-date-picker>
 
-		<convoy-time-picker class="ml-14px" (applyFilter)="eventsTimeFilterData = $event; getEvents({ addToURL: true })" #timeFilter></convoy-time-picker>
-
-		<div convoy-dropdown size="lg" position="left" #sourcesDropdown [hidden]="portalToken">
-			<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 ml-16px min-w-[130px] whitespace-nowrap justify-between h-36px" [ngClass]="{ 'text-primary-100 !bg-primary-500': !!eventSource }">
+		<div convoy-dropdown size="md" position="left" #sourcesDropdown [hidden]="portalToken || privateService.getProjectDetails?.type === 'outgoing'">
+			<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 ml-16px min-w-[130px] whitespace-nowrap justify-between h-36px" [ngClass]="{ 'text-primary-100 !bg-primary-500': queryParams?.sourceId }">
 				<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
 				<span class="text-grey-40 w-full">All Sources</span>
 				<img class="ml-10px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
 			</button>
 
-			<ng-container dropdownOptions>
-				<ul class="min-h-[100px] py-10px">
-					<li class="py-4px px-20px flex items-center justify-between border-b border-grey-10" *ngFor="let source of filterSources" convoy-list-item convoy-dropdown-option>
-						<label class="text-12 block w-full" [for]="source.uid">{{ source.name }}</label>
-						<input type="checkbox" name="source" [value]="source.uid" [id]="source.uid" [checked]="source.uid === eventSource" (change)="eventSource ? updateSourceFilter() : false" />
+			<div dropdownOptions class="!max-h-[324px]">
+				<ul class="min-h-[100px] pt-10px">
+					<li class="!py-0 pr-20px relative" *ngFor="let source of filterSources" convoy-list-item>
+						<label class="py-10px pl-20px text-12 block w-full capitalize" [for]="source.uid + 'event'">{{ source.name }}</label>
+						<input
+							type="checkbox"
+							class="peer w-20px h-18px border border-new.primary-50 rounded-4px checked:border-new.primary-400 checked:bg-new.primary-25 focus:bottom-2 focus:border-new.primary-400 checked:bg bg-white-100"
+							name="source"
+							[value]="source.uid"
+							[id]="source.uid + 'event'"
+							[checked]="source.uid === eventSource"
+							(change)="eventSource = source.uid"
+						/>
+						<img src="assets/img/check-icon-primary.svg" class="w-12px hidden peer-checked:block absolute top-[50%] translate-y-[-50%] right-[23px]" alt="check icon" />
 					</li>
 				</ul>
 
-				<div *ngIf="!!eventSource" class="p-10px pb-20px">
-					<button convoy-dropdown-option convoy-button size="sm" (click)="clearEventFilters('eventsSource')">Clear</button>
+				<div class="flex items-center justify-end mt-10px p-10px">
+					<button convoy-button convoy-dropdown-option size="sm" fill="outline" color="danger" class="mr-14px" *ngIf="queryParams?.sourceId" (click)="clearEventFilters('sourceId')">Clear</button>
+					<button convoy-dropdown-option convoy-button size="sm" (click)="eventSource ? updateSourceFilter() : false">Apply</button>
 				</div>
-			</ng-container>
+			</div>
 		</div>
 
 		<button
@@ -59,37 +67,14 @@
 			size="sm"
 			fill="outline"
 			class="ml-14px px-10px border-primary-400 h-36px whitespace-nowrap"
-			[disabled]="
-				(eventsDateFilterFromURL.startDate == '' || eventsDateFilterFromURL.endDate == '') &&
-				(eventEndpoint?.length == 0 || eventEndpoint == undefined) &&
-				eventsTimeFilterData.startTime == 'T00:00:00' &&
-				eventsTimeFilterData.endTime == 'T23:59:59' &&
-				(eventSource?.length == 0 || eventSource == undefined)
-			"
+			[disabled]="(eventsDateFilterFromURL.startDate == '' || eventsDateFilterFromURL.endDate == '') && (eventSource?.length == 0 || eventSource == undefined)"
 			(click)="fetchRetryCount(); showBatchRetryModal = true"
 		>
 			Batch Replay
 		</button>
 	</div>
 
-	<button
-		convoy-button
-		fill="outline"
-		size="sm"
-		(click)="clearEventFilters(); selectedEventsDateOption = ''"
-		*ngIf="
-			!(
-				(eventsDateFilterFromURL.startDate == '' || eventsDateFilterFromURL.endDate == '') &&
-				(eventEndpoint?.length == 0 || eventEndpoint == undefined) &&
-				(eventsSearchString?.length == 0 || eventsSearchString == undefined) &&
-				eventsTimeFilterData.startTime == 'T00:00:00' &&
-				eventsTimeFilterData.endTime == 'T23:59:59' &&
-				(eventSource?.length == 0 || eventSource == undefined)
-			)
-		"
-	>
-		Clear Filters
-	</button>
+	<button convoy-button fill="outline" size="sm" (click)="clearEventFilters()" *ngIf="queryParams?.startDate || queryParams?.endDate || queryParams?.sourceId || queryParams?.query">Clear Filters</button>
 </div>
 
 <!-- empty state  -->
