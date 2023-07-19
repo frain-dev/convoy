@@ -60,7 +60,7 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 			sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, a.Queue, sourcePool, lo)
 
 			stop := make(chan struct{})
-			sourceLoader.Run(context.Background(), interval, stop)
+			go sourceLoader.Run(context.Background(), interval, stop)
 
 			srv := server.NewServer(cfg.Server.HTTP.Port, func() { stop <- struct{}{} })
 			srv.SetHandler(chi.NewMux())
