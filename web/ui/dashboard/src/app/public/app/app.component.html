@@ -3,7 +3,7 @@
 		<div class="flex justify-between items-center mb-12px mt-40px">
 			<h2 class="font-medium text-14 text-new.gray-400">Endpoints</h2>
 
-			<button convoy-button fill="soft" class="py-4px px-10px rounded-8px text-12" (click)="showCreateEndpoint = true" *ngIf="portalDetails?.can_manage_endpoint && portalDetails?.owner_id">
+			<button convoy-button fill="soft" class="py-4px px-10px rounded-8px text-12" (click)="onClickAddEndpoint()" *ngIf="portalDetails?.can_manage_endpoint && portalDetails?.owner_id">
 				<img src="/assets/img/add-icon.svg" alt="add icon" class="mr-8px w-12px" />
 				Add Endpoint
 			</button>
@@ -292,7 +292,7 @@
 
 	<convoy-endpoint-secret class="z-20 relative" *ngIf="showEndpointSecret" [endpointDetails]="activeEndpoint" (closeSecretModal)="showEndpointSecret = false" (expireCurrentSecret)="getEndpoints()"></convoy-endpoint-secret>
 
-	<div class="fixed top-0 left-0 right-0 bottom-0 bg-[#fff] z-20" *ngIf="showCreateEndpoint === true">
-		<convoy-create-portal-endpoint (onAction)="activeEndpoint = undefined; getEndpoints(); showCreateEndpoint = false; this.location.go('/portal?token=' + token)" [endpoint]="activeEndpoint"></convoy-create-portal-endpoint>
+	<div class="fixed top-0 left-0 right-0 bottom-0 bg-[#fff] z-20 pb-100px overflow-auto" *ngIf="showCreateEndpoint === true">
+		<convoy-create-portal-endpoint (onAction)="onCloseEndpointForm()" [endpoint]="activeEndpoint"></convoy-create-portal-endpoint>
 	</div>
 </div>

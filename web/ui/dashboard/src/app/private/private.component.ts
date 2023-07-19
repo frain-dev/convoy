@@ -144,17 +144,21 @@ export class PrivateComponent implements OnInit {
 		}
 	}
 
-	getRefreshToken() {
+	async getRefreshToken() {
 		try {
-			this.privateService.getRefreshToken();
+			await this.privateService.getRefreshToken();
+			clearTimeout(this.checkTokenInterval);
+			this.checkIfTokenIsExpired();
 		} catch (error) {
 			clearTimeout(this.checkTokenInterval);
 		}
 	}
 
-	checkIfTokenIsExpired() {
+	async checkIfTokenIsExpired() {
 		let authTokens = localStorage.CONVOY_AUTH_TOKENS;
 		authTokens = authTokens ? JSON.parse(authTokens) : false;
+
+		if (!authTokens) return;
 
 		const currentTime = new Date();
 		const tokenExpiryTime = this.jwtHelper.getTokenExpirationDate(authTokens.access_token);

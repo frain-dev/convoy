@@ -21,6 +21,7 @@ import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/m
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';
+import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 
 @Component({
 	selector: 'convoy-portal-links',
@@ -42,7 +43,8 @@ import { PermissionDirective } from 'src/app/private/components/permission/permi
 		ModalHeaderComponent,
 		TooltipComponent,
 		PaginationComponent,
-		PermissionDirective
+		PermissionDirective,
+		LoaderModule
 	],
 	templateUrl: './portal-links.component.html',
 	styleUrls: ['./portal-links.component.scss']
@@ -61,9 +63,7 @@ export class PortalLinksComponent implements OnInit {
 	@ViewChild('linksEndpointFilter', { static: true }) linksEndpointFilter!: ElementRef;
 	linksEndpointFilter$!: Observable<ENDPOINT[]>;
 
-	constructor(public privateService: PrivateService, public router: Router, private portalLinksService: PortalLinksService, private route: ActivatedRoute, private generalService: GeneralService) {
-		this.route.queryParams.subscribe(params => (this.activeLink = this.portalLinks?.content.find(link => link.uid === params?.id)));
-	}
+	constructor(public privateService: PrivateService, public router: Router, private portalLinksService: PortalLinksService, private route: ActivatedRoute, private generalService: GeneralService) {}
 
 	ngOnInit() {
 		this.getPortalLinks();
@@ -132,9 +132,5 @@ export class PortalLinksComponent implements OnInit {
 
 	openCreateLinkModal() {
 		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid + '/portal-links/new');
-	}
-
-	viewEndpoint(endpoint: ENDPOINT) {
-		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid + '/endpoints/' + endpoint.uid);
 	}
 }
