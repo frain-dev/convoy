@@ -108,4 +108,17 @@ export class AppComponent implements OnInit {
 	hideSubscriptionDropdown() {
 		this.dropdownComponent.show = false;
 	}
+
+	onClickAddEndpoint() {
+		this.showCreateEndpoint = true;
+		document.getElementsByTagName('body')[0].classList.add('overflow-hidden');
+	}
+
+	onCloseEndpointForm() {
+		this.activeEndpoint = undefined;
+		this.getEndpoints();
+		this.showCreateEndpoint = false;
+		this.location.go('/portal?token=' + this.token);
+		document.getElementsByTagName('body')[0].classList.remove('overflow-hidden');
+	}
 }
