@@ -166,6 +166,7 @@ const (
 const (
 	SqsPubSub    PubSubType = "sqs"
 	GooglePubSub PubSubType = "google"
+	KafkaPubSub  PubSubType = "kafka"
 )
 
 func (s SourceProvider) IsValid() bool {
@@ -1012,6 +1013,7 @@ type PubSubConfig struct {
 	Workers int                 `json:"workers" db:"workers"`
 	Sqs     *SQSPubSubConfig    `json:"sqs" db:"sqs"`
 	Google  *GooglePubSubConfig `json:"google" db:"google"`
+	KafKa   *KafkaPubSubConfig  `json:"kafka" db:"kafka"`
 }
 
 func (p *PubSubConfig) Scan(value interface{}) error {
@@ -1050,6 +1052,19 @@ type GooglePubSubConfig struct {
 	SubscriptionID string `json:"subscription_id" db:"subscription_id"`
 	ServiceAccount []byte `json:"service_account" db:"service_account"`
 	ProjectID      string `json:"project_id" db:"project_id"`
+}
+
+type KafkaPubSubConfig struct {
+	Brokers         []string   `json:"brokers" db:"brokers"`
+	ConsumerGroupID string     `json:"consumer_group_id" db:"consumer_group_id"`
+	TopicName       string     `json:"topic_name" db:"topic_name"`
+	Auth            *KafkaAuth `json:"auth" db:"auth"`
+}
+
+type KafkaAuth struct {
+	Type     string `json:"type" db:"type"`
+	Username string `json:"username" db:"username"`
+	Password string `json:"password" db:"password"`
 }
 
 type User struct {

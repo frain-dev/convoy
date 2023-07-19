@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"errors"
+	"github.com/frain-dev/convoy/internal/pkg/pubsub/kafka"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/google"
@@ -20,6 +21,19 @@ type SqsPubSub struct {
 	SecretKey     string `json:"secret_key" valid:"required"`
 	DefaultRegion string `json:"default_region" valid:"required"`
 	QueueName     string `json:"queue_name" valid:"required"`
+}
+
+type KafkaPubSub struct {
+	Brokers         []string   `json:"brokers" valid:"required"`
+	ConsumerGroupID string     `json:"consumer_group_id" valid:"required"`
+	TopicName       string     `json:"topic_name" valid:"required"`
+	Auth            *KafkaAuth `json:"auth"`
+}
+
+type KafkaAuth struct {
+	Type     string `json:"type" valid:"optional,in(plain|scram)"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type PS struct {
@@ -83,6 +97,36 @@ func Validate(cfg *datastore.PubSubConfig) error {
 
 		s := &sqs.Sqs{Cfg: cfg.Sqs}
 		if err := s.Verify(); err != nil {
+			return err
+		}
+
+		return nil
+
+	case datastore.KafkaPubSub:
+		if cfg.KafKa == nil {
+			return errors.New("kafka config is required")
+		}
+
+		kPubSub := &KafkaPubSub{
+			Brokers:         cfg.KafKa.Brokers,
+			ConsumerGroupID: cfg.KafKa.ConsumerGroupID,
+			TopicName:       cfg.KafKa.TopicName,
+		}
+
+		if cfg.KafKa.Auth != nil {
+			kPubSub.Auth = &KafkaAuth{
+				Type:     cfg.KafKa.Auth.Type,
+				Username: cfg.KafKa.Auth.Username,
+				Password: cfg.KafKa.Auth.Password,
+			}
+		}
+
+		if err := util.Validate(kPubSub); err != nil {
+			return err
+		}
+
+		k := &kafka.Kafka{Cfg: cfg.KafKa}
+		if err := k.Verify(); err != nil {
 			return err
 		}
 
