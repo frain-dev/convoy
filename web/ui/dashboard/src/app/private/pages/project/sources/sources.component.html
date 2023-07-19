@@ -36,23 +36,24 @@
 								</div>
 							</div>
 
-							<div convoy-dropdown position="left" size="sm" class="ml-4px">
+							<div convoy-dropdown position="left" size="md" class="ml-4px">
 								<button dropdownTrigger convoy-button size="sm" fill="clear" class="!p-0">
 									<img src="assets/img/more-icon-vertical.svg" class="h-5" alt="more icon" />
 								</button>
-								<ul dropdownOptions>
-									<li class="border-b border-grey-20">
-										<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start" [routerLink]="'./' + source?.uid">
-											<svg width="16" height="16" class="mr-8px fill-primary-100">
+
+								<ul dropdownOptions class="p-10px">
+									<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
+										<button convoy-dropdown-option convoy-button color="grey" size="sm" fill="text" class="w-full !justify-start" [routerLink]="'./' + source?.uid">
+											<svg width="17" height="16" class="fill-new.gray-600 mr-8px">
 												<use xlink:href="#edit-icon"></use>
 											</svg>
 											Edit
 										</button>
 									</li>
-									<li>
-										<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="clear" color="danger" class="w-full !justify-start" (click)="activeSource = source; showDeleteSourceModal = true">
-											<svg width="16" height="16" class="mr-8px fill-transparent stroke-new.error-400">
-												<use xlink:href="#delete-icon2"></use>
+									<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
+										<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="danger" class="w-full !justify-start" (click)="activeSource = source; showDeleteSourceModal = true">
+											<svg width="16" height="16" class="mr-8px fill-danger-100">
+												<use xlink:href="#delete-icon"></use>
 											</svg>
 											Delete
 										</button>
