@@ -2,12 +2,15 @@ package ingest
 
 import (
 	"context"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
+	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
+	"github.com/go-chi/chi/v5"
 	"github.com/spf13/cobra"
 )
 
@@ -56,7 +59,13 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 			sourcePool := pubsub.NewSourcePool(lo)
 			sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, a.Queue, sourcePool, lo)
 
-			sourceLoader.Run(context.Background(), interval)
+			stop := make(chan struct{})
+			sourceLoader.Run(context.Background(), interval, stop)
+
+			srv := server.NewServer(cfg.Server.HTTP.Port, func() { stop <- struct{}{} })
+			srv.SetHandler(chi.NewMux())
+
+			srv.Listen()
 
 			return nil
 		},
