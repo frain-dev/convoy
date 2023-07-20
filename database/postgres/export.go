@@ -95,12 +95,10 @@ func (e *exportRepo) querybatch(ctx context.Context, q, projectID, lastID string
 
 	// Calling rows.Close() manually in places before we return is important here to prevent
 	//  a memory leak, we cannot use defer in a loop because this can fill up the function stack quickly
-	c := time.Now()
 	rows, err := e.db.QueryxContext(ctx, q, projectID, createdAt, lastID, batchSize)
 	if err != nil {
 		return 0, "", err
 	}
-	fmt.Println("since", time.Since(c).Seconds())
 	defer rows.Close()
 
 	var record json.RawMessage
