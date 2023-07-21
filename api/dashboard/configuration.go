@@ -4,6 +4,9 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -101,4 +104,15 @@ func (a *DashboardHandler) UpdateConfiguration(w http.ResponseWriter, r *http.Re
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Configuration updated successfully", c, http.StatusAccepted))
+}
+
+func (a *DashboardHandler) IsSignUpEnabled(w http.ResponseWriter, r *http.Request) {
+	cfg, err := config.Get()
+	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to load configuration")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to load configuration", http.StatusBadRequest))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Configuration loaded successfully", cfg.Auth.IsSignupEnabled, http.StatusOK))
 }

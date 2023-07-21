@@ -1,11 +1,12 @@
 package models
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
-	"net/http"
-	"strings"
 )
 
 type CreateEndpoint struct {
