@@ -117,7 +117,10 @@ func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_False() {
 	// Assert
 	require.Equal(u.T(), http.StatusOK, w.Code)
 
-	require.Equal(u.T(), w.Body.String(), "false")
+	var response bool
+	parseResponse(u.T(), w.Result(), &response)
+
+	require.Equal(u.T(), w.Body.String(), response)
 }
 
 func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_True() {
@@ -135,7 +138,10 @@ func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_True() {
 	// Assert
 	require.Equal(u.T(), http.StatusOK, w.Code)
 
-	require.Equal(u.T(), w.Body.String(), "true")
+	var response bool
+	parseResponse(u.T(), w.Result(), &response)
+
+	require.Equal(u.T(), w.Body.String(), response)
 }
 
 func (u *AuthIntegrationTestSuite) Test_LoginUser_Invalid_Username() {
