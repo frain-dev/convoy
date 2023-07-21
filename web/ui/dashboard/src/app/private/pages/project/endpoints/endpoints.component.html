@@ -106,7 +106,7 @@
 											</li>
 
 											<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-												<button convoy-dropdown-option convoy-button color="danger" class="w-full !justify-start" fill="text" (click)="showDeleteModal = true">
+												<button convoy-dropdown-option convoy-button color="danger" class="w-full !justify-start" fill="text" (click)="deleteDialog.showModal()">
 													<svg width="14" height="14" class="fill-transparent stroke-new.error-400 mr-8px">
 														<use xlink:href="#delete-icon2"></use>
 													</svg>
@@ -141,24 +141,26 @@
 <!-- end If user has endpoints -->
 
 <!-- create endpoint modal -->
-<div convoy-modal *ngIf="showCreateEndpointModal || showEditEndpointModal" position="full" (closeModal)="cancel()">
+<dialog #endpointDialog convoy-dialog position="full">
 	<div convoy-modal-header fullscreen="true">
 		<div class="flex items-center">
 			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="cancel()">
 				<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
 			</button>
 
-			<h2 class="font-semibold capitalize ml-2">{{ showEditEndpointModal ? 'Edit Endpoint' : 'Create Endpoint' }}</h2>
+			<h2 class="font-semibold capitalize ml-2">{{ action === 'update' ? 'Edit Endpoint' : 'Create Endpoint' }}</h2>
 		</div>
 	</div>
 
 	<div class="max-w-[770px] m-auto">
-		<convoy-create-endpoint showAction="true" (onAction)="$event.action === 'close' ? cancel() : getEndpoints(); cancel()" [editMode]="showEditEndpointModal"></convoy-create-endpoint>
+		<convoy-create-endpoint showAction="true" (onAction)="$event.action === 'close' ? cancel() : getEndpoints(); cancel()" [editMode]="action === 'update'"></convoy-create-endpoint>
 	</div>
-</div>
+</dialog>
 
 <!-- endpoint secret  -->
 <convoy-endpoint-secret *ngIf="showEndpointSecret" [endpointDetails]="selectedEndpoint" (closeSecretModal)="showEndpointSecret = false" (expireCurrentSecret)="getEndpoints()"></convoy-endpoint-secret>
 
 <!-- delete modal  -->
-<app-delete-modal *ngIf="showDeleteModal" [isLoading]="isDeletingEndpoint" [deleteText]="'delete “' + selectedEndpoint?.title + '”'" (closeModal)="showDeleteModal = false" (deleteData)="deleteEndpoint()"></app-delete-modal>
+<dialog #deleteDialog convoy-dialog position="center" size="sm">
+	<app-delete-modal [isLoading]="isDeletingEndpoint" [deleteText]="'delete “' + selectedEndpoint?.title + '”'" (closeModal)="deleteDialog.close()" (deleteData)="deleteEndpoint()"></app-delete-modal>
+</dialog>

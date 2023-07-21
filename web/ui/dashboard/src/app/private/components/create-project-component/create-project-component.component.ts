@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject, ViewChild, ElementRef } from '@angular/core';
 import { FormGroup, Validators, FormBuilder, FormArray } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PROJECT, VERSIONS } from 'src/app/models/project.model';
@@ -13,6 +13,11 @@ import { RbacService } from 'src/app/services/rbac/rbac.service';
 	styleUrls: ['./create-project-component.component.scss']
 })
 export class CreateProjectComponent implements OnInit {
+	@ViewChild('disableEndpointsDialog', { static: true }) disableEndpointsDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('metaEventsDialog', { static: true }) metaEventsDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('confirmationDialog', { static: true }) confirmationDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('newSignatureDialog', { static: true }) newSignatureDialog!: ElementRef<HTMLDialogElement>;
+
 	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding'];
 	projectForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
@@ -52,9 +57,7 @@ export class CreateProjectComponent implements OnInit {
 	isCreatingProject = false;
 	showApiKey = false;
 	enableMoreConfig = false;
-	confirmModal = false;
 	confirmRegenerateKey = false;
-	showNewSignatureModal = false;
 	regeneratingKey = false;
 	showMetaEventPrompt = false;
 	apiKey!: string;
@@ -122,6 +125,8 @@ export class CreateProjectComponent implements OnInit {
 
 		try {
 			const projectDetails = this.privateService.getProjectDetails;
+
+			this.projectDetails = this.privateService.getProjectDetails;
 
 			if (projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab !== 'signature history');
 
@@ -212,11 +217,12 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async regenerateKey() {
-		this.confirmRegenerateKey = false;
 		this.regeneratingKey = true;
 		try {
 			const response = await this.createProjectService.regenerateKey();
 			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.confirmationDialog.nativeElement.close();
+			this.confirmRegenerateKey = false;
 			this.regeneratingKey = false;
 			this.apiKey = response.data.key;
 			this.showApiKey = true;
@@ -233,7 +239,7 @@ export class CreateProjectComponent implements OnInit {
 		this.versions.at(i).patchValue(this.newSignatureForm.value);
 		await this.updateProject();
 		this.newSignatureForm.reset();
-		this.showNewSignatureModal = false;
+        this.newSignatureDialog.nativeElement.showModal()
 	}
 
 	checkProjectConfig() {
@@ -272,14 +278,14 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	cancel() {
-		this.confirmModal = true;
+		this.confirmationDialog.nativeElement.showModal()
 		document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
 	}
 
 	confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints') {
 		const disableValue = event.target.checked;
-		if (actionType !== 'metaEvents') disableValue ? this.updateProject() : (this.disableEndpointsModal = true);
-		else if (!disableValue && actionType === 'metaEvents') this.showMetaEventPrompt = true;
+		if (actionType !== 'metaEvents') disableValue ? this.updateProject() : this.disableEndpointsDialog.nativeElement.showModal();
+		else if (!disableValue && actionType === 'metaEvents') this.metaEventsDialog.nativeElement.showModal();
 	}
 
 	switchTab(tab: string) {

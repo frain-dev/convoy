@@ -41,6 +41,10 @@ const routes: Routes = [
 				path: 'team',
 				loadChildren: () => import('./pages/teams/teams.module').then(m => m.TeamsModule)
 			},
+            {
+				path: 'team/:id',
+				loadChildren: () => import('./pages/teams/teams.module').then(m => m.TeamsModule)
+			},
 			{
 				path: 'user-settings',
 				loadChildren: () => import('./pages/account/account.module').then(m => m.AccountModule)

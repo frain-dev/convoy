@@ -58,7 +58,7 @@
 							</ul>
 
 							<li class="border-t border-t-grey-10">
-								<button convoy-dropdown-option convoy-button fill="text" size="sm" class="px-30px py-16px" (click)="privateService.showCreateOrgModal = true">
+								<button convoy-dropdown-option convoy-button fill="text" size="sm" class="px-30px py-16px" (click)="dialog.nativeElement.showModal()">
 									<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
 									Add {{ organisations?.length ? 'another' : 'an' }} Organization
 								</button>
@@ -115,8 +115,8 @@
 	<span class="text-warning-100 text-14 font-medium">Please remember to verify your email.</span>
 </div>
 
-<div convoy-modal position="center" *ngIf="privateService.showCreateOrgModal">
-	<div class="p-40px" modalBody>
+<dialog #orgDialog convoy-dialog position="center">
+	<div class="p-40px">
 		<img src="/assets/img/organisation-icon.svg" alt="organisation icon" class="pb-12px" />
 		<p class="text-grey-40 text-16 max-w-[423px] pb-40px">Your organization information will help us to know how to get you set up.</p>
 		<form [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
@@ -130,4 +130,4 @@
 			</div>
 		</form>
 	</div>
-</div>
+</dialog>

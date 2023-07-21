@@ -1,4 +1,4 @@
-<div convoy-modal position="center" size="sm">
+<dialog #tokenDialog convoy-dialog position="center" size="sm">
 	<div class="flex flex-col items-center justify-center p-30px">
 		<img src="/assets/img/success.gif" class="w-100px" alt="success" />
 		<h2 class="font-semibold mt-16px text-16">{{ title }}</h2>
@@ -8,6 +8,6 @@
 			<span class="text-16 text-grey-60 font-normal truncate">{{ token }}</span>
 			<div class="ml-8px" convoy-copy-button [text]="token" [notificationText]="notificationText"></div>
 		</div>
-		<button convoy-button size="sm" class="px-40px" (click)="closeModal.emit()" type="button">Done</button>
+		<button convoy-button size="sm" class="px-40px" (click)="dialog.nativeElement.close(); closeModal.emit()" type="button">Done</button>
 	</div>
-</div>
+</dialog>

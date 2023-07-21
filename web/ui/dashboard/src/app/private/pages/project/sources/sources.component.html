@@ -117,20 +117,21 @@
 	<convoy-pagination *ngIf="sources.pagination?.has_next_page || sources.pagination?.has_prev_page" [pagination]="sources.pagination" (paginate)="getSources($event)"></convoy-pagination>
 </ng-container>
 
-<div convoy-modal *ngIf="shouldShowCreateSourceModal || shouldShowUpdateSourceModal" position="full" [id]="'sourceForm'" (closeModal)="closeCreateSourceModal({ action: 'close' })">
+<dialog #sourceDialog convoy-dialog id="sourceForm" position="full">
 	<div convoy-modal-header fullscreen="true">
 		<div class="flex items-center">
 			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="closeCreateSourceModal({ action: 'close' })">
 				<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
 			</button>
 
-			<h2 class="font-semibold capitalize ml-2">{{ shouldShowUpdateSourceModal ? 'Update Source' : 'Create source' }}</h2>
+			<h2 class="font-semibold capitalize ml-2">{{ action === 'update' ? 'Update Source' : 'Create source' }}</h2>
 		</div>
 	</div>
 
 	<div class="max-w-[770px] m-auto">
-		<convoy-create-source showAction="true" (onAction)="closeCreateSourceModal($event)" [action]="shouldShowUpdateSourceModal ? 'update' : 'create'"></convoy-create-source>
+		<convoy-create-source showAction="true" (onAction)="closeCreateSourceModal($event)" [action]="action"></convoy-create-source>
 	</div>
-</div>
+</dialog>
+
 
 <app-delete-modal *ngIf="showDeleteSourceModal" [isLoading]="isDeletingSource" [deleteText]="'delete “' + activeSource?.name + '”'" (closeModal)="showDeleteSourceModal = false" (deleteData)="deleteSource()"></app-delete-modal>

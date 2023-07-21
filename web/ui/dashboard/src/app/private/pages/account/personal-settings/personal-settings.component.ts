@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { format } from 'date-fns';
@@ -12,6 +12,8 @@ import { AccountService } from '../account.service';
 	styleUrls: ['./personal-settings.component.scss']
 })
 export class PersonalSettingsComponent implements OnInit {
+	@ViewChild('settingsDialog', { static: true }) settingsDialog!: ElementRef<HTMLDialogElement>;
+
 	showCreateNewTokenForm = false;
 	isFetchingKeys = false;
 	isGeneratingNewKey = false;
@@ -89,7 +91,7 @@ export class PersonalSettingsComponent implements OnInit {
 			const response = await this.accountService.revokeKey({ userId: this.userId, keyId: this.selectedKey?.uid });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.isRevokingKey = false;
-			this.showRevokeKeyModal = false;
+			this.settingsDialog.nativeElement.close();
 			this.fetchPersonalKeys();
 		} catch {
 			this.isRevokingKey = false;

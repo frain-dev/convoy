@@ -1,4 +1,4 @@
-<div convoy-modal position="full" [id]="'configureProjectForm'" (closeModal)="cancel()">
+<dialog #projectSetupDialog convoy-dialog id="configureProjectForm" position="full">
 	<div convoy-modal-header fullscreen="true">
 		<div class="flex items-center">
 			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="cancel()">
@@ -66,4 +66,4 @@
 			</button>
 		</div>
 	</div>
-</div>
+</dialog>
