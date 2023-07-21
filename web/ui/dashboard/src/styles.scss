@@ -47,6 +47,10 @@
 		@apply text-h4;
 	}
 
+    dialog:modal{
+        @apply max-w-full max-h-full;
+    }
+
 	.docs {
 		article {
 			h3 {
