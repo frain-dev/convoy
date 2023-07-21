@@ -106,6 +106,9 @@ func (u *AuthIntegrationTestSuite) Test_LoginUser() {
 }
 
 func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_False() {
+	err := config.LoadConfig("./testdata/Auth_Config/jwt-convoy-signup-disabled.json")
+	require.NoError(u.T(), err)
+
 	// Arrange Request
 	url := "/ui/configuration/is_signup_enabled"
 	req := createRequest(http.MethodGet, url, "", nil)
@@ -120,7 +123,7 @@ func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_False() {
 	var response bool
 	parseResponse(u.T(), w.Result(), &response)
 
-	require.Equal(u.T(), response, false)
+	require.Equal(u.T(), false, response)
 }
 
 func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_True() {
@@ -141,7 +144,7 @@ func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_True() {
 	var response bool
 	parseResponse(u.T(), w.Result(), &response)
 
-	require.Equal(u.T(), response, true)
+	require.Equal(u.T(), true, response)
 }
 
 func (u *AuthIntegrationTestSuite) Test_LoginUser_Invalid_Username() {
