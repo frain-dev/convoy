@@ -120,7 +120,7 @@ func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_False() {
 	var response bool
 	parseResponse(u.T(), w.Result(), &response)
 
-	require.Equal(u.T(), w.Body.String(), response)
+	require.Equal(u.T(), response, false)
 }
 
 func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_True() {
@@ -141,7 +141,7 @@ func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_True() {
 	var response bool
 	parseResponse(u.T(), w.Result(), &response)
 
-	require.Equal(u.T(), w.Body.String(), response)
+	require.Equal(u.T(), response, true)
 }
 
 func (u *AuthIntegrationTestSuite) Test_LoginUser_Invalid_Username() {
