@@ -186,7 +186,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async runSubscriptionValidation() {
-		if (this.configurations[1].show) {
+		if (this.configurations[1]?.show) {
 			this.subscriptionForm.get('retry_config.type')?.addValidators(Validators.required);
 			this.subscriptionForm.get('retry_config.retry_count')?.addValidators(Validators.required);
 			this.subscriptionForm.get('retry_config.duration')?.addValidators(Validators.required);
@@ -203,7 +203,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 
 		if (this.configurations.length > 2) {
-			if (this.configurations[2].show) {
+			if (this.configurations[2]?.show) {
 				this.subscriptionForm.get('filter_config.event_types')?.addValidators(Validators.required);
 				this.subscriptionForm.get('filter_config.event_types')?.updateValueAndValidity();
 			} else {
@@ -237,7 +237,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		// check if configs are added, else delete the properties
 		const subscriptionData = structuredClone(this.subscriptionForm.value);
 		const retryDuration = this.subscriptionForm.get('retry_config.duration');
-		this.configurations[1].show ? (subscriptionData.retry_config.duration = retryDuration?.value + 's') : delete subscriptionData.retry_config;
+		this.configurations[1]?.show ? (subscriptionData.retry_config.duration = retryDuration?.value + 's') : delete subscriptionData.retry_config;
 
 		// create subscription
 		try {
