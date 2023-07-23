@@ -64,9 +64,8 @@ func (p *PubSubSource) getHash() string {
 	}
 
 	if source.PubSub.Type == datastore.KafkaPubSub {
-		kq := source.PubSub.KafKa
-		hash = fmt.Sprintf("%s,%s,%s,%s,%s,%s,%v", kq.Brokers, kq.ConsumerGroupID, kq.TopicName, kq.Auth.Type, kq.Auth.Username, kq.Auth.Password, source.PubSub.Workers)
-		fmt.Println("hash is >>>", hash)
+		kq := source.PubSub.Kafka
+		hash = fmt.Sprintf("%s,%s,%s,%s,%v", kq.Brokers, kq.ConsumerGroupID, kq.TopicName, kq.Auth, source.PubSub.Workers)
 	}
 
 	h := md5.Sum([]byte(hash))

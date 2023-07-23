@@ -1013,7 +1013,7 @@ type PubSubConfig struct {
 	Workers int                 `json:"workers" db:"workers"`
 	Sqs     *SQSPubSubConfig    `json:"sqs" db:"sqs"`
 	Google  *GooglePubSubConfig `json:"google" db:"google"`
-	KafKa   *KafkaPubSubConfig  `json:"kafka" db:"kafka"`
+	Kafka   *KafkaPubSubConfig  `json:"kafka" db:"kafka"`
 }
 
 func (p *PubSubConfig) Scan(value interface{}) error {

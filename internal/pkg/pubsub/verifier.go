@@ -24,14 +24,14 @@ type SqsPubSub struct {
 }
 
 type KafkaPubSub struct {
-	Brokers         []string   `json:"brokers" valid:"required"`
-	ConsumerGroupID string     `json:"consumer_group_id" valid:"required"`
-	TopicName       string     `json:"topic_name" valid:"required"`
+	Brokers         []string   `json:"brokers" valid:"required~brokers list is required"`
+	ConsumerGroupID string     `json:"consumer_group_id" valid:"required~consumer group ID is required"`
+	TopicName       string     `json:"topic_name" valid:"required~topic name is required"`
 	Auth            *KafkaAuth `json:"auth"`
 }
 
 type KafkaAuth struct {
-	Type     string `json:"type" valid:"optional,in(plain|scram)"`
+	Type     string `json:"type" valid:"optional,in(plain|scram)~unsupported auth type"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
@@ -103,21 +103,21 @@ func Validate(cfg *datastore.PubSubConfig) error {
 		return nil
 
 	case datastore.KafkaPubSub:
-		if cfg.KafKa == nil {
+		if cfg.Kafka == nil {
 			return errors.New("kafka config is required")
 		}
 
 		kPubSub := &KafkaPubSub{
-			Brokers:         cfg.KafKa.Brokers,
-			ConsumerGroupID: cfg.KafKa.ConsumerGroupID,
-			TopicName:       cfg.KafKa.TopicName,
+			Brokers:         cfg.Kafka.Brokers,
+			ConsumerGroupID: cfg.Kafka.ConsumerGroupID,
+			TopicName:       cfg.Kafka.TopicName,
 		}
 
-		if cfg.KafKa.Auth != nil {
+		if cfg.Kafka.Auth != nil {
 			kPubSub.Auth = &KafkaAuth{
-				Type:     cfg.KafKa.Auth.Type,
-				Username: cfg.KafKa.Auth.Username,
-				Password: cfg.KafKa.Auth.Password,
+				Type:     cfg.Kafka.Auth.Type,
+				Username: cfg.Kafka.Auth.Username,
+				Password: cfg.Kafka.Auth.Password,
 			}
 		}
 
@@ -125,7 +125,7 @@ func Validate(cfg *datastore.PubSubConfig) error {
 			return err
 		}
 
-		k := &kafka.Kafka{Cfg: cfg.KafKa}
+		k := &kafka.Kafka{Cfg: cfg.Kafka}
 		if err := k.Verify(); err != nil {
 			return err
 		}

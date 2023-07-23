@@ -6,22 +6,33 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/segmentio/kafka-go"
+	"github.com/segmentio/kafka-go/sasl"
+	"github.com/segmentio/kafka-go/sasl/plain"
+	"github.com/segmentio/kafka-go/sasl/scram"
+	"time"
 )
 
 type Kafka struct {
 	Cfg     *datastore.KafkaPubSubConfig
 	source  *datastore.Source
 	workers int
-	done    chan struct{}
+	ctx     context.Context
+	cancel  context.CancelFunc
+	done    bool
+	handler datastore.PubSubHandler
 	log     log.StdLogger
 }
 
 func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) *Kafka {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	return &Kafka{
-		Cfg:     source.PubSub.KafKa,
+		Cfg:     source.PubSub.Kafka,
 		source:  source,
 		workers: source.PubSub.Workers,
-		done:    make(chan struct{}),
+		handler: handler,
+		ctx:     ctx,
+		cancel:  cancel,
 		log:     log,
 	}
 }
@@ -32,17 +43,49 @@ func (k *Kafka) Start() {
 	}
 }
 
-func (k *Kafka) cancelled() bool {
-	select {
-	case <-k.done:
-		return true
-	default:
-		return false
+func (k *Kafka) auth() (sasl.Mechanism, error) {
+	var mechanism sasl.Mechanism
+	var err error
+
+	auth := k.Cfg.Auth
+	if auth == nil {
+		return nil, nil
 	}
+
+	if auth.Type == "plain" {
+		mechanism = plain.Mechanism{
+			Username: auth.Username,
+			Password: auth.Password,
+		}
+
+		return mechanism, nil
+	}
+
+	if auth.Type == "sasl" {
+		mechanism, err = scram.Mechanism(scram.SHA512, auth.Username, auth.Password)
+		if err != nil {
+			return nil, err
+		}
+
+		return mechanism, nil
+	}
+
+	return nil, fmt.Errorf("auth type: %s is not supported", auth.Type)
 }
 
 func (k *Kafka) Verify() error {
-	_, err := kafka.DialLeader(context.Background(), "tcp", k.Cfg.Brokers[0], k.Cfg.TopicName, 0)
+	auth, err := k.auth()
+	if err != nil {
+		return err
+	}
+
+	dialer := &kafka.Dialer{
+		Timeout:       10 * time.Second,
+		DualStack:     true,
+		SASLMechanism: auth,
+	}
+
+	_, err = dialer.DialContext(context.Background(), "tcp", k.Cfg.Brokers[0])
 	if err != nil {
 		return err
 	}
@@ -52,32 +95,53 @@ func (k *Kafka) Verify() error {
 }
 
 func (k *Kafka) Consume() {
+	auth, err := k.auth()
+	if err != nil {
+		log.WithError(err).Error("failed to fetch kafka auth")
+		return
+	}
+
 	// make a new reader that consumes from topic
 	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:  k.Cfg.Brokers,
-		GroupID:  k.Cfg.ConsumerGroupID,
-		Topic:    k.Cfg.TopicName,
-		MaxBytes: 10e6, // 10MB
+		Brokers: k.Cfg.Brokers,
+		GroupID: k.Cfg.ConsumerGroupID,
+		Topic:   k.Cfg.TopicName,
+		Dialer: &kafka.Dialer{
+			Timeout:       15 * time.Second,
+			DualStack:     true,
+			SASLMechanism: auth,
+		},
 	})
 
 	defer k.handleError(r)
 
 	for {
-		if k.cancelled() {
+		if k.done {
 			return
 		}
 
-		m, err := r.ReadMessage(context.Background())
+		m, err := r.FetchMessage(k.ctx)
 		if err != nil {
-			log.WithError(err).Errorf("failed to read message from topic %s - kafka", k.Cfg.TopicName)
+			log.WithError(err).Errorf("failed to fetch message from topic %s - kafka", k.Cfg.TopicName)
+			continue
 		}
 
-		fmt.Printf("message at topic/partition/offset %v/%v/%v: %s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
+		ctx := context.Background()
+		if err := k.handler(ctx, k.source, string(m.Value)); err != nil {
+			k.log.WithError(err).Error("failed to write message to create event queue - kafka pub sub")
+		} else {
+			// acknowledge the message
+			err := r.CommitMessages(ctx, m)
+			if err != nil {
+				k.log.WithError(err).Error("failed to commit message - kafka pub sub")
+			}
+		}
 	}
 }
 
 func (k *Kafka) Stop() {
-	close(k.done)
+	k.cancel()
+	k.done = true
 }
 
 func (k *Kafka) handleError(reader *kafka.Reader) {

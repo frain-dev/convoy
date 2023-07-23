@@ -253,6 +253,7 @@ type PubSubConfig struct {
 	Workers int                  `json:"workers"`
 	Sqs     *SQSPubSubConfig     `json:"sqs"`
 	Google  *GooglePubSubConfig  `json:"google"`
+	Kafka   *KafkaPubSubConfig   `json:"kafka"`
 }
 
 func (pc *PubSubConfig) Transform() *datastore.PubSubConfig {
@@ -265,6 +266,7 @@ func (pc *PubSubConfig) Transform() *datastore.PubSubConfig {
 		Workers: pc.Workers,
 		Sqs:     pc.Sqs.transform(),
 		Google:  pc.Google.transform(),
+		Kafka:   pc.Kafka.transform(),
 	}
 }
 
@@ -303,6 +305,44 @@ func (gc *GooglePubSubConfig) transform() *datastore.GooglePubSubConfig {
 		SubscriptionID: gc.SubscriptionID,
 		ServiceAccount: gc.ServiceAccount,
 		ProjectID:      gc.ProjectID,
+	}
+}
+
+type KafkaPubSubConfig struct {
+	Brokers         []string   `json:"brokers"`
+	ConsumerGroupID string     `json:"consumer_group_id"`
+	TopicName       string     `json:"topic_name"`
+	Auth            *KafkaAuth `json:"auth"`
+}
+
+func (kc *KafkaPubSubConfig) transform() *datastore.KafkaPubSubConfig {
+	if kc == nil {
+		return nil
+	}
+
+	return &datastore.KafkaPubSubConfig{
+		Brokers:         kc.Brokers,
+		ConsumerGroupID: kc.ConsumerGroupID,
+		TopicName:       kc.TopicName,
+		Auth:            kc.Auth.transform(),
+	}
+}
+
+type KafkaAuth struct {
+	Type     string `json:"type"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (ka *KafkaAuth) transform() *datastore.KafkaAuth {
+	if ka == nil {
+		return nil
+	}
+
+	return &datastore.KafkaAuth{
+		Type:     ka.Type,
+		Username: ka.Username,
+		Password: ka.Password,
 	}
 }
 
