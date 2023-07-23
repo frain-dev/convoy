@@ -5,11 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/apm"
 	"math"
-	"os"
-	"os/signal"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/apm"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -45,11 +44,8 @@ func NewSourceLoader(endpointRepo datastore.EndpointRepository, sourceRepo datas
 	}
 }
 
-func (s *SourceLoader) Run(ctx context.Context, interval int) {
+func (s *SourceLoader) Run(ctx context.Context, interval int, stop <-chan struct{}) {
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
-	exit := make(chan os.Signal, 1)
-
-	signal.Notify(exit, os.Interrupt)
 
 	for {
 		select {
@@ -58,8 +54,7 @@ func (s *SourceLoader) Run(ctx context.Context, interval int) {
 			if err != nil {
 				s.log.WithError(err).Error("failed to fetch sources")
 			}
-
-		case <-exit:
+		case <-stop:
 			// Stop the ticker
 			ticker.Stop()
 

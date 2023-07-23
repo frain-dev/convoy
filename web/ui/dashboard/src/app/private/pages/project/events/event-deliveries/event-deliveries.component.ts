@@ -4,7 +4,7 @@ import { format, parseISO } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, map, startWith, switchMap } from 'rxjs/operators';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
-import { EVENT_DELIVERY } from 'src/app/models/event.model';
+import { EVENT_DELIVERY, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { GeneralService } from 'src/app/services/general/general.service';
@@ -12,22 +12,8 @@ import { EventsService } from '../events.service';
 import { PrivateService } from 'src/app/private/private.service';
 import { SOURCE } from 'src/app/models/source.model';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
-import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.component';
 import { ProjectService } from '../../project.service';
 import { Location } from '@angular/common';
-
-interface FILTER_QUERY_PARAM {
-	startDate?: string;
-	endDate?: string;
-	eventId?: string;
-	endpointId?: string;
-	idempotencyKey?: string;
-	status?: string;
-	sourceId?: string;
-	next_page_cursor?: string;
-	prev_page_cursor?: string;
-	direction?: 'next' | 'prev';
-}
 
 @Component({
 	selector: 'app-event-deliveries',
@@ -54,6 +40,7 @@ export class EventDeliveriesComponent implements OnInit {
 	portalToken = this.route.snapshot.queryParams?.token;
 	filterSources: SOURCE[] = [];
 	queryParams?: FILTER_QUERY_PARAM;
+	getEventDeliveriesInterval: any;
 
 	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, public projectService: ProjectService, public privateService: PrivateService, private _location: Location) {}
 
@@ -71,8 +58,15 @@ export class EventDeliveriesComponent implements OnInit {
 
 	ngOnInit() {
 		const data = this.getFiltersFromURL();
-		this.getEventDeliveries(data);
+		this.getEventDeliveries({ ...data, showLoader: true }).then(() => {
+			this.getEventDeliveriesAtInterval(data);
+		});
+
 		if (!this.portalToken || this.projectService.activeProjectDetails?.type == 'incoming') this.getSourcesForFilter();
+	}
+
+	ngOnDestroy() {
+		clearInterval(this.getEventDeliveriesInterval);
 	}
 
 	getFiltersFromURL() {
@@ -90,8 +84,14 @@ export class EventDeliveriesComponent implements OnInit {
 		return this.queryParams;
 	}
 
+	getEventDeliveriesAtInterval(requestDetails?: FILTER_QUERY_PARAM) {
+		this.getEventDeliveriesInterval = setInterval(() => {
+			this.getEventDeliveries({ ...requestDetails });
+		}, 4000);
+	}
+
 	async getEventDeliveries(requestDetails?: FILTER_QUERY_PARAM): Promise<HTTP_RESPONSE> {
-		this.isloadingEventDeliveries = true;
+		if (requestDetails?.showLoader) this.isloadingEventDeliveries = true;
 
 		try {
 			const eventDeliveriesResponse = await this.eventDeliveriesRequest(requestDetails);
@@ -169,15 +169,16 @@ export class EventDeliveriesComponent implements OnInit {
 	}
 
 	getSelectedDateRange(dateRange: { startDate: string; endDate: string }) {
-		console.log('🚀 ~ file: event-deliveries.component.ts:170 ~ EventDeliveriesComponent ~ getSelectedDateRange ~ dateRange:', dateRange);
 		const data = this.addFilterToURL(dateRange);
-		this.getEventDeliveries(data);
+		clearInterval(this.getEventDeliveriesInterval);
+		this.getEventDeliveries({ ...data, showLoader: true }).then(() => this.getEventDeliveriesAtInterval(data));
 	}
 
 	getSelectedStatusFilter() {
 		const eventDelsStatus = this.eventDeliveryFilteredByStatus.length > 0 ? JSON.stringify(this.eventDeliveryFilteredByStatus) : '';
 		const data = this.addFilterToURL({ status: eventDelsStatus });
-		this.getEventDeliveries(data);
+		clearInterval(this.getEventDeliveriesInterval);
+		this.getEventDeliveries({ ...data, showLoader: true }).then(() => this.getEventDeliveriesAtInterval(data));
 	}
 
 	clearFilters(filterType?: 'startDate' | 'endDate' | 'eventId' | 'endpointId' | 'status' | 'sourceId' | 'next_page_cursor' | 'prev_page_cursor' | 'direction') {
@@ -189,6 +190,9 @@ export class EventDeliveriesComponent implements OnInit {
 			} else if (filterType === 'eventId') {
 				delete this.queryParams['eventId'];
 				delete this.queryParams['idempotencyKey'];
+			} else if (filterType === 'endpointId') {
+				this.eventDeliveriesEndpoint = '';
+				delete this.queryParams['endpointId'];
 			} else delete this.queryParams[filterType];
 
 			const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
@@ -200,7 +204,8 @@ export class EventDeliveriesComponent implements OnInit {
 			this._location.go(`${location.pathname}`);
 		}
 
-		this.getEventDeliveries(this.queryParams);
+		clearInterval(this.getEventDeliveriesInterval);
+		this.getEventDeliveries({ ...this.queryParams, showLoader: true }).then(() => this.getEventDeliveriesAtInterval(this.queryParams));
 	}
 
 	async fetchRetryCount() {
@@ -233,12 +238,14 @@ export class EventDeliveriesComponent implements OnInit {
 
 	updateEndpointFilter() {
 		const data = this.addFilterToURL({ endpointId: this.eventDeliveriesEndpoint });
-		this.getEventDeliveries(data);
+		clearInterval(this.getEventDeliveriesInterval);
+		this.getEventDeliveries({ ...data, showLoader: true }).then(() => this.getEventDeliveriesAtInterval(data));
 	}
 
 	updateSourceFilter() {
 		const data = this.addFilterToURL({ sourceId: this.eventDeliveriesSource });
-		this.getEventDeliveries(data);
+		clearInterval(this.getEventDeliveriesInterval);
+		this.getEventDeliveries({ ...data, showLoader: true }).then(() => this.getEventDeliveriesAtInterval(data));
 	}
 
 	async retryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
@@ -247,7 +254,6 @@ export class EventDeliveriesComponent implements OnInit {
 		try {
 			const response = await this.eventsService.retryEvent({ eventId: requestDetails.eventDeliveryId });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.getEventDeliveries();
 			return;
 		} catch (error) {
 			return error;
@@ -264,7 +270,6 @@ export class EventDeliveriesComponent implements OnInit {
 		try {
 			const response = await this.eventsService.forceRetryEvent({ body: payload });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.getEventDeliveries();
 			return;
 		} catch (error) {
 			return error;
@@ -279,7 +284,6 @@ export class EventDeliveriesComponent implements OnInit {
 			const response = await this.eventsService.batchRetryEvent(this.queryParams);
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.getEventDeliveries();
 			this.showBatchRetryModal = false;
 			this.isRetrying = false;
 			return;
@@ -291,6 +295,7 @@ export class EventDeliveriesComponent implements OnInit {
 
 	paginateEvents(event: CURSOR) {
 		this.addFilterToURL({ next_page_cursor: event.next_page_cursor, prev_page_cursor: event.prev_page_cursor });
-		this.getEventDeliveries(event);
+		clearInterval(this.getEventDeliveriesInterval);
+		this.getEventDeliveries({ ...event, showLoader: true }).then(() => this.getEventDeliveriesAtInterval(event));
 	}
 }

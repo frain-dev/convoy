@@ -10,9 +10,9 @@
 		<img src="/assets/img/calendar-icon.svg" class="w-14px mr-10px" *ngIf="formType === 'filter'" />
 		<span class="text-grey-40 mr-4px">Date</span>
 
-		<span class="flex ml-auto items-center order-3" class="order-1">
+		<span class="flex justify-center ml-auto items-center order-1">
 			<img src="/assets/img/angle-arrow-down.svg" class="ml-16px mr-0px w-14px" alt="arrow down icon" *ngIf="!selectedDates?.startDate && !selectedDates?.endDate && formType === 'filter'" />
-			<button type="button" *ngIf="selectedDates?.startDate && selectedDates?.endDate" (click)="clearDate($event); clearDates.emit()">
+			<button type="button" *ngIf="selectedDates?.startDate && selectedDates?.endDate" (click)="clearDate($event); clearDates.emit()" class="ml-16px mr-0px w-14px">
 				<svg width="10" height="10" class="fill-primary-100">
 					<use xlink:href="#close-icon"></use>
 				</svg>
