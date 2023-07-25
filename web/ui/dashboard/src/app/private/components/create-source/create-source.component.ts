@@ -55,9 +55,20 @@ export class CreateSourceComponent implements OnInit {
 				access_key_id: [''],
 				secret_key: [''],
 				default_region: ['']
+			}),
+			kafka: this.formBuilder.group({
+				brokers: [null],
+				consumer_group_id: [null],
+				topic_name: [null],
+				auth: this.formBuilder.group({
+					type: [null],
+					username: [null],
+					password: [null]
+				})
 			})
 		})
 	});
+	authTypes = ['plain', 'scram'];
 	sourceTypes = [
 		{ value: 'http', viewValue: 'Ingestion HTTP', description: 'Trigger webhook event from a thirdparty webhook event' },
 		{ value: 'pub_sub', viewValue: 'Pub/Sub (Coming Soon)', description: 'Trigger webhook event from your Pub/Sub messaging system' },
@@ -65,6 +76,7 @@ export class CreateSourceComponent implements OnInit {
 	];
 	pubSubTypes = [
 		{ value: 'google', viewValue: 'Google Pub/Sub' },
+		{ value: 'kafka', viewValue: 'Kafka Pub/Sub' },
 		{ value: 'sqs', viewValue: 'SQS' }
 	];
 	httpTypes = [
@@ -431,5 +443,13 @@ export class CreateSourceComponent implements OnInit {
 		}
 
 		return;
+	}
+
+	addBrokers(brokers: string[]) {
+		this.sourceForm.patchValue({
+			pub_sub: {
+				kafka: { brokers }
+			}
+		});
 	}
 }

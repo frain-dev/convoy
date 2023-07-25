@@ -193,6 +193,7 @@
 			<div class="grid grid-cols-2 gap-6">
 				<convoy-radio *ngFor="let pubSubType of pubSubTypes" formControlName="type" [label]="pubSubType.viewValue" [_name]="pubSubType.value" [value]="pubSubType.value" [_id]="pubSubType.value" [checked]="sourceForm.value.pub_sub.type === pubSubType.value"></convoy-radio>
 			</div>
+
 			<convoy-input-field class="mt-24px">
 				<label for="workers" required="true" convoy-label required="true" tooltip="This specifies the number of consumers you want polling messages from your queue.">Workers</label>
 				<input type="number" id="workers" convoy-input autocomplete="workers" formControlName="workers" placeholder="Workers" />
@@ -260,6 +261,24 @@
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.sqs.queue_name')?.touched && sourceForm.get('pub_sub.sqs.queue_name')?.invalid">Enter queue name</convoy-input-error>
 					</convoy-input-field>
 				</div>
+			</ng-container>
+			<ng-container *ngIf="sourceForm.value.pub_sub.type === 'kafka'">
+				<h2 class="font-semibold mb-20px">Configure Kafka</h2>
+
+				<div class="grid grid-cols-2 gap-6" formGroupName="kafka">
+					<convoy-input-field>
+						<label for="topic_name" required="true" convoy-label required="true">Topic Name</label>
+						<input type="text" id="topic_name" convoy-input autocomplete="topic_name" formControlName="topic_name" placeholder="Topic name" />
+						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.topic_name')?.touched && sourceForm.get('pub_sub.kafka.topic_name')?.invalid">Enter topic name</convoy-input-error>
+					</convoy-input-field>
+
+					<convoy-input-field>
+						<label for="consumer_group_id" required="true" convoy-label required="true">Consumer Group ID</label>
+						<input type="text" id="consumer_group_id" convoy-input autocomplete="consumer_group_id" formControlName="consumer_group_id" placeholder="Consumer Group Id" />
+						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.consumer_group_id')?.touched && sourceForm.get('pub_sub.kafka.consumer_group_id')?.invalid">Enter consumer group ID</convoy-input-error>
+					</convoy-input-field>
+				</div>
+				<convoy-multi-input label="Brokers" (inputValues)="addBrokers($event)"></convoy-multi-input>
 			</ng-container>
 		</div>
 
