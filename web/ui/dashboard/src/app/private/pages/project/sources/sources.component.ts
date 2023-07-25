@@ -16,6 +16,7 @@ import { PROJECT } from 'src/app/models/project.model';
 export class SourcesComponent implements OnInit {
 	@ViewChild('incomingSourceDropdown') incomingSourceDropdown!: DropdownComponent;
 	@ViewChild('sourceDialog', { static: true }) sourceDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('deleteDialog', { static: true }) deleteDialog!: ElementRef<HTMLDialogElement>;
 
 	sourcesTableHead: string[] = ['Name', 'Type', 'Verifier', 'URL', 'Date created', ''];
 	activeSource?: SOURCE;
@@ -59,7 +60,7 @@ export class SourcesComponent implements OnInit {
 			this.isDeletingSource = false;
 			this.getSources();
 			this.closeModal();
-			this.showDeleteSourceModal = false;
+			this.deleteDialog.nativeElement.close();
 			this.activeSource = undefined;
 		} catch (error) {
 			this.isDeletingSource = false;

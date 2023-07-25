@@ -33,7 +33,7 @@
 			</form>
 		</div>
 
-		<button convoy-permission="Endpoints|MANAGE" *ngIf="displayedEndpoints?.length" convoy-button size="sm" class="h-36px" id="create-endpoint-modal-button" routerLink="./new">Create Endpoint</button>
+		<button convoy-permission="Endpoints|MANAGE" *ngIf="displayedEndpoints?.length" convoy-button size="sm" class="h-36px" id="create-endpoint-modal-button" routerLink="./new" >Create Endpoint</button>
 	</div>
 
 	<div convoy-card>
@@ -81,7 +81,7 @@
 
 										<ul dropdownOptions class="p-10px">
 											<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-												<button convoy-dropdown-option convoy-button color="grey" class="w-full !justify-start" fill="text" (click)="showEndpointSecret = true">
+												<button convoy-dropdown-option convoy-button color="grey" class="w-full !justify-start" fill="text" (click)="secretDialog.showModal()">
 													<svg width="16" height="16" class="mr-8px">
 														<use xlink:href="#shield-icon"></use>
 													</svg>
@@ -97,7 +97,7 @@
 												</button>
 											</li>
 											<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-												<button convoy-dropdown-option convoy-button color="grey" fill="text" class="w-full !justify-start" [routerLink]="'./' + selectedEndpoint?.uid + '/edit'" [relativeTo]="route">
+												<button convoy-dropdown-option convoy-button color="grey" fill="text" class="w-full !justify-start" [routerLink]="'./' + selectedEndpoint?.uid">
 													<svg width="17" height="16" class="fill-new.gray-600 mr-8px">
 														<use xlink:href="#edit-icon"></use>
 													</svg>
@@ -158,7 +158,9 @@
 </dialog>
 
 <!-- endpoint secret  -->
-<convoy-endpoint-secret *ngIf="showEndpointSecret" [endpointDetails]="selectedEndpoint" (closeSecretModal)="showEndpointSecret = false" (expireCurrentSecret)="getEndpoints()"></convoy-endpoint-secret>
+<dialog #secretDialog convoy-dialog position="center">
+	<convoy-endpoint-secret [endpointDetails]="selectedEndpoint" (closeSecretModal)="secretDialog.close()" (expireCurrentSecret)="getEndpoints()"></convoy-endpoint-secret>
+</dialog>
 
 <!-- delete modal  -->
 <dialog #deleteDialog convoy-dialog position="center" size="sm">

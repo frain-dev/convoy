@@ -51,7 +51,7 @@
 										</button>
 									</li>
 									<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-										<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="danger" class="w-full !justify-start" (click)="activeSource = source; showDeleteSourceModal = true">
+										<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="danger" class="w-full !justify-start" (click)="activeSource = source; deleteDialog.showModal()">
 											<svg width="16" height="16" class="mr-8px fill-danger-100">
 												<use xlink:href="#delete-icon"></use>
 											</svg>
@@ -93,7 +93,7 @@
 											</button>
 										</li>
 										<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-											<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="danger" class="w-full !justify-start" (click)="activeSource = source; showDeleteSourceModal = true">
+											<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="danger" class="w-full !justify-start" (click)="activeSource = source; deleteDialog.showModal()">
 												<svg width="16" height="16" class="mr-8px fill-danger-100">
 													<use xlink:href="#delete-icon"></use>
 												</svg>
@@ -133,5 +133,6 @@
 	</div>
 </dialog>
 
-
-<app-delete-modal *ngIf="showDeleteSourceModal" [isLoading]="isDeletingSource" [deleteText]="'delete “' + activeSource?.name + '”'" (closeModal)="showDeleteSourceModal = false" (deleteData)="deleteSource()"></app-delete-modal>
+<dialog #deleteDialog convoy-dialog position="center" size="sm">
+    <app-delete-modal [isLoading]="isDeletingSource" [deleteText]="'delete “' + activeSource?.name + '”'" (closeModal)="deleteDialog.close()" (deleteData)="deleteSource()"></app-delete-modal>
+</dialog>

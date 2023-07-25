@@ -14,13 +14,13 @@ import { differenceInSeconds } from 'date-fns';
 })
 export class PrivateComponent implements OnInit {
 	@ViewChild('orgDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
+    @ViewChild('verifyEmailDialog', { static: true }) verifyEmailDialog!: ElementRef<HTMLDialogElement>;
 
 	showDropdown = false;
 	showOrgDropdown = false;
 	showMoreDropdown = false;
 	showOverlay = false;
 	showAddOrganisationModal = false;
-	showVerifyEmailModal = false;
 	isEmailVerified = true;
 	apiURL = this.generalService.apiURL();
 	organisations?: ORGANIZATION_DATA[];

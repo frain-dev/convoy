@@ -5,7 +5,7 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
-import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
+import { ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { MetaEventsService } from './meta-events.service';
 import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
 import { TableCellComponent, TableComponent, TableHeadCellComponent, TableHeadComponent, TableRowComponent } from 'src/app/components/table/table.component';
@@ -27,7 +27,6 @@ import { Router } from '@angular/router';
 		EmptyStateComponent,
 		ButtonComponent,
 		TooltipComponent,
-		ModalComponent,
 		ModalHeaderComponent,
 		TableLoaderModule,
 		TableCellComponent,

@@ -14,6 +14,7 @@ import { GeneralService } from 'src/app/services/general/general.service';
 export class SubscriptionsComponent implements OnInit {
 	@ViewChild('subscriptionDialog', { static: true }) subscriptionDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('detailsDialog', { static: true }) detailsDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('deleteDialog', { static: true }) deleteDialog!: ElementRef<HTMLDialogElement>;
 
 	activeSubscription?: SUBSCRIPTION;
 	shouldShowCreateSubscriptionModal = false;
@@ -79,7 +80,7 @@ export class SubscriptionsComponent implements OnInit {
 			this.generalService.showNotification({ message: response?.message, style: 'success' });
 			this.getSubscriptions();
 			delete this.activeSubscription;
-			this.showDeleteSubscriptionModal = false;
+            this.deleteDialog.nativeElement.close();
 			this.isDeletingSubscription = false;
 		} catch (error) {
 			this.isDeletingSubscription = false;

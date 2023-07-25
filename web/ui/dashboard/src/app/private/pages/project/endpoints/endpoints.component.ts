@@ -9,7 +9,7 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
-import { DialogDirective, ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
+import { DialogDirective, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { CreateEndpointComponent } from 'src/app/private/components/create-endpoint/create-endpoint.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { FormsModule } from '@angular/forms';
@@ -43,7 +43,6 @@ import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 		DropdownComponent,
 		DropdownOptionDirective,
 		ListItemComponent,
-		ModalComponent,
 		ModalHeaderComponent,
 		CreateEndpointComponent,
 		TagComponent,
@@ -64,6 +63,7 @@ import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 })
 export class EndpointsComponent implements OnInit {
 	@ViewChild('endpointDialog', { static: true }) endpointDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('secretDialog', { static: true }) secretDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('deleteDialog', { static: true }) deleteDialog!: ElementRef<HTMLDialogElement>;
 
 	showCreateEndpointModal = this.router.url.split('/')[4] === 'new';
@@ -73,7 +73,6 @@ export class EndpointsComponent implements OnInit {
 	endpoints?: { pagination?: PAGINATION; content?: ENDPOINT[] };
 	selectedEndpoint?: ENDPOINT;
 	isLoadingEndpoints = true;
-	showEndpointSecret = false;
 	isDeletingEndpoint = false;
 	showDeleteModal = false;
 	isTogglingEndpoint = false;

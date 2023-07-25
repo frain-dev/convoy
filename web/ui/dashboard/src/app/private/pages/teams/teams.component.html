@@ -65,9 +65,7 @@
 											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="clear" class="w-full !justify-start" (click)="selectedMember = team; showUpdateMemberModal()">Update</button>
 										</li>
 										<li>
-											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full !justify-start" (click)="showDeactivateModal = !showDeactivateModal; selectedMember = team; showOverlay = false">
-												Deactivate
-											</button>
+											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full !justify-start" (click)="deleteDialog.showModal(); selectedMember = team; showOverlay = false">Deactivate</button>
 										</li>
 									</ul>
 								</div>
@@ -128,7 +126,7 @@
 										<button convoy-dropdown-option convoy-button fill="clear" color="grey" class="w-full" (click)="resendInvite(team.uid)">Resend Invite</button>
 									</li>
 									<li>
-										<button convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full" (click)="showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
+										<button convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full" (click)="deleteDialog.showModal(); showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
 									</li>
 								</ul>
 							</div>
@@ -280,11 +278,12 @@
 	</ng-template>
 </div> -->
 
-<app-delete-modal
-	*ngIf="showDeactivateModal || showCancelInviteModal"
-	[isLoading]="deactivatingUser || cancelingInvite"
-	[deleteText]="showCancelInviteModal ? 'cancel this invite' : 'deactivate “' + selectedMember?.user_metadata?.first_name + ' ' + selectedMember?.user_metadata?.last_name + '”'"
-	[deleteButtonText]="showCancelInviteModal ? 'Cancel Invite' : 'Deactivate'"
-	(closeModal)="showDeactivateModal = false; showCancelInviteModal = false"
-	(deleteData)="showCancelInviteModal ? cancelInvite() : deactivateMember()"
-></app-delete-modal>
+<dialog #deleteDialog convoy-dialog position="center" size="sm">
+	<app-delete-modal
+		[isLoading]="deactivatingUser || cancelingInvite"
+		[deleteText]="showCancelInviteModal ? 'cancel this invite' : 'deactivate “' + selectedMember?.user_metadata?.first_name + ' ' + selectedMember?.user_metadata?.last_name + '”'"
+		[deleteButtonText]="showCancelInviteModal ? 'Cancel Invite' : 'Deactivate'"
+		(closeModal)="deleteDialog.close()"
+		(deleteData)="showCancelInviteModal ? cancelInvite() : deactivateMember()"
+	></app-delete-modal>
+</dialog>

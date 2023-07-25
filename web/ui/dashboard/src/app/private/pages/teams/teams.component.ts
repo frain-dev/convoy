@@ -17,11 +17,11 @@ import { TEAM } from 'src/app/models/organisation.model';
 export class TeamsComponent implements OnInit {
 	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
 	@ViewChild('teamsDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('deleteDialog', { static: true }) deleteDialog!: ElementRef<HTMLDialogElement>;
 
 	tableHead: string[] = ['Name', 'Role', 'Projects', ''];
 	filterOptions: ['active', 'pending'] = ['active', 'pending'];
 	showInviteTeamMemberModal = this.router.url.split('/')[2]?.includes('new');
-	showDeactivateModal = false;
 	showCancelInviteModal = false;
 	cancelingInvite = false;
 	selectedMember?: TEAM;
@@ -69,7 +69,6 @@ export class TeamsComponent implements OnInit {
 	async ngOnInit() {
 		const urlParam = this.route.snapshot.params.id;
 		if (urlParam) {
-			console.log(urlParam);
 			urlParam === 'new' ? (this.action = 'create') : (this.action = 'update');
 			this.dialog.nativeElement.showModal();
 		}
@@ -125,7 +124,7 @@ export class TeamsComponent implements OnInit {
 		};
 		try {
 			const response = await this.teamService.deactivateTeamMember(requestOptions);
-			this.showDeactivateModal = false;
+			this.deleteDialog.nativeElement.close();
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.fetchTeamMembers();
 			this.deactivatingUser = false;
@@ -187,7 +186,7 @@ export class TeamsComponent implements OnInit {
 			const response = await this.teamService.cancelPendingInvite(this.selectedMember.uid);
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.fetchPendingTeamMembers();
-			this.showCancelInviteModal = false;
+			this.deleteDialog.nativeElement.close();
 			this.cancelingInvite = false;
 		} catch {
 			this.cancelingInvite = false;

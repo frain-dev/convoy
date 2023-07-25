@@ -5,7 +5,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, Routes } from '@angular/router';
 import { TableLoaderModule } from '../../components/table-loader/table-loader.module';
 import { PageDirective } from 'src/app/components/page/page.component';
-import { DialogDirective, ModalComponent, ModalDialogDirective, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
+import { DialogDirective, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { CardComponent } from 'src/app/components/card/card.component';
@@ -34,7 +34,6 @@ const routes: Routes = [
 		ReactiveFormsModule,
 		DeleteModalComponent,
 		PageDirective,
-		ModalComponent,
 		ModalHeaderComponent,
 		DropdownComponent,
 		ButtonComponent,
@@ -57,7 +56,6 @@ const routes: Routes = [
 		SelectComponent,
 		EnterpriseDirective,
 		RolePipe,
-        ModalDialogDirective,
         DialogDirective
 	]
 })

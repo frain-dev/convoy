@@ -89,7 +89,7 @@
 							</li>
 
 							<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-								<button convoy-dropdown-option convoy-button size="sm" color="danger" class="w-full !justify-start" fill="text" (click)="activeSubscription = subscription; showDeleteSubscriptionModal = true">
+								<button convoy-dropdown-option convoy-button size="sm" color="danger" class="w-full !justify-start" fill="text" (click)="activeSubscription = subscription; deleteDialog.showModal()">
 									<svg width="14" height="14" class="fill-transparent stroke-new.error-400 mr-8px">
 										<use xlink:href="#delete-icon2"></use>
 									</svg>
@@ -211,5 +211,6 @@
 	</div>
 </dialog>
 
-
-<app-delete-modal *ngIf="showDeleteSubscriptionModal" [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="showDeleteSubscriptionModal = false" (deleteData)="deleteSubscripton()"></app-delete-modal>
+<dialog #deleteDialog convoy-dialog position="center" size="sm">
+	<app-delete-modal [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="deleteDialog.close()" (deleteData)="deleteSubscripton()"></app-delete-modal>
+</dialog>
