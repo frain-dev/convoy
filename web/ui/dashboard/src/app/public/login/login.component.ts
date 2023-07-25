@@ -25,11 +25,23 @@ export class LoginComponent implements OnInit {
 		password: ['', Validators.required]
 	});
 	isLoadingProject = false;
+	isSignupEnabled = false;
 	organisations?: ORGANIZATION_DATA[];
 
 	constructor(private formBuilder: FormBuilder, public router: Router, private loginService: LoginService, private privateService: PrivateService) {}
 
-	ngOnInit(): void {}
+	ngOnInit() {
+		this.getSignUpConfig();
+	}
+
+	async getSignUpConfig() {
+		try {
+			const response = await this.loginService.getSignupConfig();
+			this.isSignupEnabled = response.data && location.hostname !== 'dashboard.getconvoy.io';
+		} catch (error) {
+			return error;
+		}
+	}
 
 	async login() {
 		if (this.loginForm.invalid) return this.loginForm.markAllAsTouched();
