@@ -2,12 +2,13 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/frain-dev/convoy/internal/pkg/dedup"
-	"github.com/go-chi/chi/v5"
-	"github.com/oklog/ulid/v2"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/dedup"
+	"github.com/go-chi/chi/v5"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -163,6 +164,8 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
 	}
+
+	event.Headers["X-Convoy-Source-Id"] = []string{source.MaskID}
 
 	createEvent := task.CreateEvent{
 		Event: *event,
