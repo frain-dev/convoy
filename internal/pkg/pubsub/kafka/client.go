@@ -18,7 +18,7 @@ type Kafka struct {
 	workers int
 	ctx     context.Context
 	cancel  context.CancelFunc
-	done    bool
+	done    chan struct{}
 	handler datastore.PubSubHandler
 	log     log.StdLogger
 }
@@ -32,6 +32,7 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 		workers: source.PubSub.Workers,
 		handler: handler,
 		ctx:     ctx,
+		done:    make(chan struct{}),
 		cancel:  cancel,
 		log:     log,
 	}
@@ -61,7 +62,7 @@ func (k *Kafka) auth() (sasl.Mechanism, error) {
 		return mechanism, nil
 	}
 
-	if auth.Type == "sasl" {
+	if auth.Type == "scram" {
 		mechanism, err = scram.Mechanism(scram.SHA512, auth.Username, auth.Password)
 		if err != nil {
 			return nil, err
@@ -71,6 +72,15 @@ func (k *Kafka) auth() (sasl.Mechanism, error) {
 	}
 
 	return nil, fmt.Errorf("auth type: %s is not supported", auth.Type)
+}
+
+func (k *Kafka) cancelled() bool {
+	select {
+	case <-k.done:
+		return true
+	default:
+		return false
+	}
 }
 
 func (k *Kafka) Verify() error {
@@ -116,7 +126,7 @@ func (k *Kafka) Consume() {
 	defer k.handleError(r)
 
 	for {
-		if k.done {
+		if k.cancelled() {
 			return
 		}
 
@@ -141,7 +151,7 @@ func (k *Kafka) Consume() {
 
 func (k *Kafka) Stop() {
 	k.cancel()
-	k.done = true
+	close(k.done)
 }
 
 func (k *Kafka) handleError(reader *kafka.Reader) {
