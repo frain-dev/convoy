@@ -3,8 +3,9 @@ package public
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"net/http"
+
+	"github.com/frain-dev/convoy/internal/pkg/searcher"
 
 	"github.com/frain-dev/convoy/pkg/log"
 
@@ -550,7 +551,7 @@ func (a *PublicHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.R
 	}
 
 	f := data.Filter
-	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey)
+	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch event deliveries")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
