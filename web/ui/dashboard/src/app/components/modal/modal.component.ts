@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, Directive, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
+import { Component, Directive, Input, OnInit } from '@angular/core';
 import { ButtonComponent } from '../button/button.component';
-import { OverlayDirective } from '../overlay/overlay.directive';
 
 // modal header
 @Component({
@@ -26,61 +25,6 @@ export class ModalHeaderComponent {
 	constructor() {}
 }
 
-// modal dialog
-@Directive({
-	selector: '[convoy-modal-dialog]',
-	standalone: true,
-	host: { class: 'fixed w-full shadow z-50', '[class]': 'classes', '[id]': 'id' }
-})
-export class ModalDialogDirective implements OnInit {
-	@Input('position') position: 'full' | 'left' | 'right' | 'center' = 'right';
-	@Input('size') size: 'sm' | 'md' | 'lg' = 'md';
-	@Input('id') id!: string;
-	modalSizes = { sm: 'max-w-[380px]', md: 'max-w-[460px]', lg: 'max-w-[600px]' };
-	modalType = {
-		full: ` h-screen w-screen top-0 right-0 bottom-0 overflow-y-auto translate-x-0`,
-		left: ` h-screen top-0 left-0 bottom-0 overflow-y-auto translate-x-0`,
-		right: ` h-screen top-0 right-0 bottom-0 overflow-y-auto translate-x-0`,
-		center: ` h-fit top-[50%] left-[50%] -translate-x-2/4 -translate-y-2/4 rounded-[16px]`
-	};
-	constructor() {}
-
-	ngOnInit(): void {}
-
-	get classes(): string {
-		return `${this.modalType[this.position]} ${this.position === 'full' ? 'bg-[#fafafe]' : 'bg-white-100 ' + this.modalSizes[this.size]}`;
-	}
-}
-
-// modal component
-@Component({
-	selector: '[convoy-modal]',
-	standalone: true,
-	imports: [CommonModule, ButtonComponent, OverlayDirective, ModalDialogDirective],
-	templateUrl: './modal.component.html',
-	styleUrls: ['./modal.component.scss']
-})
-export class ModalComponent implements OnInit {
-	@Input('position') position: 'full' | 'left' | 'right' | 'center' = 'right';
-	@Input('size') size: 'sm' | 'md' | 'lg' = 'md';
-	@Input('id') id!: string;
-	@Output('closeModal') closeModal = new EventEmitter<any>();
-
-	constructor() {}
-
-	ngOnInit(): void {}
-
-	@HostListener('document:keydown', ['$event'])
-	public onFocusIn(event: any): any {
-		if (event.key === 'Escape') {
-			this.closeModal.emit();
-		}
-	}
-}
-
-
-
-
 @Directive({
 	selector: '[convoy-dialog]',
 	standalone: true,
@@ -91,7 +35,7 @@ export class DialogDirective implements OnInit {
 	@Input('size') size: 'sm' | 'md' | 'lg' = 'md';
 	@Input('id') id!: string;
 	modalSizes = { sm: 'w-[380px]', md: 'w-[460px]', lg: 'w-[600px]' };
-    modalType = {
+	modalType = {
 		full: ` w-full h-full`,
 		left: ` ml-0 h-full`,
 		right: ` mr-0 h-full`,
