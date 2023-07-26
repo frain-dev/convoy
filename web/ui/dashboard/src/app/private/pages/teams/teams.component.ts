@@ -16,12 +16,11 @@ import { TEAM } from 'src/app/models/organisation.model';
 })
 export class TeamsComponent implements OnInit {
 	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
-	@ViewChild('teamsDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('teamsDialog', { static: true }) teamsDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('deleteDialog', { static: true }) deleteDialog!: ElementRef<HTMLDialogElement>;
 
 	tableHead: string[] = ['Name', 'Role', 'Projects', ''];
 	filterOptions: ['active', 'pending'] = ['active', 'pending'];
-	showInviteTeamMemberModal = this.router.url.split('/')[2]?.includes('new');
 	showCancelInviteModal = false;
 	cancelingInvite = false;
 	selectedMember?: TEAM;
@@ -67,12 +66,6 @@ export class TeamsComponent implements OnInit {
 	constructor(private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private teamService: TeamsService, private formBuilder: FormBuilder, private privateService: PrivateService) {}
 
 	async ngOnInit() {
-		const urlParam = this.route.snapshot.params.id;
-		if (urlParam) {
-			urlParam === 'new' ? (this.action = 'create') : (this.action = 'update');
-			this.dialog.nativeElement.showModal();
-		}
-
 		this.toggleFilter(this.route.snapshot.queryParams?.inviteType ?? 'active');
 		if (!(await this.rbacService.userCanAccess('Team|MANAGE'))) this.inviteUserForm.disable();
 	}
@@ -147,7 +140,7 @@ export class TeamsComponent implements OnInit {
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.inviteUserForm.reset();
 			this.invitingUser = false;
-			this.dialog.nativeElement.close();
+			this.teamsDialog.nativeElement.close();
 			this.router.navigate(['/team'], { queryParams: { inviteType: 'pending' } });
 		} catch {
 			this.invitingUser = false;
@@ -164,7 +157,7 @@ export class TeamsComponent implements OnInit {
 			this.memberForm.reset();
 			this.updatingMember = false;
 			this.action = 'create';
-			this.dialog.nativeElement.close();
+			this.teamsDialog.nativeElement.close();
 		} catch {
 			this.updatingMember = false;
 		}
@@ -193,21 +186,11 @@ export class TeamsComponent implements OnInit {
 		}
 	}
 
-	goToTeams() {
-		this.dialog.nativeElement.close();
-		this.router.navigateByUrl('/team');
-	}
 
-	openCreateTeamModal() {
-		this.dialog.nativeElement.showModal();
-		this.router.navigateByUrl('/team/new');
-	}
-
-	showUpdateMemberModal() {
-		if (this.selectedMember) {
-			this.memberForm.patchValue(this.selectedMember);
-			this.action = 'update';
-			this.dialog.nativeElement.showModal();
-		}
+	showUpdateMemberModal(member: TEAM) {
+		this.selectedMember = member;
+		this.memberForm.patchValue(member);
+		this.action = 'update';
+		this.teamsDialog.nativeElement.showModal();
 	}
 }

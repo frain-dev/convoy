@@ -271,7 +271,6 @@
 	</div>
 
 	<div class="flex justify-end mt-32px" [ngClass]="{ hidden: showAction === 'false' }">
-		<button convoy-button [disabled]="sourceForm.disabled" fill="outline" type="button" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" (click)="cancel()">Cancel</button>
 		<button convoy-button [disabled]="isloading || sourceForm.disabled">
 			{{ action === 'update' ? 'Update Source' : 'Create Source' }}
 			<svg width="24" height="24" class="ml-8px fill-white-100">
@@ -281,13 +280,3 @@
 	</div>
 </form>
 
-<dialog #confirmDialog convoy-dialog position="center" size="sm">
-	<div class="px-20px py-30px">
-		<p class="text-16 font-semibold text-black mb-8px">Confirm Action</p>
-		<p class="text-14 font-medium text-grey-40 mb-24px">You are about to discard this process, please confirm this action.</p>
-		<div class="flex items-center">
-			<button convoy-button color="danger" class="mr-12px px-60px" (click)="onAction.emit({ action: 'close' })">Confirm</button>
-			<button convoy-button fill="clear" color="primary" class="font-semibold" (click)="confirmDialog.close()">Cancel</button>
-		</div>
-	</div>
-</dialog>

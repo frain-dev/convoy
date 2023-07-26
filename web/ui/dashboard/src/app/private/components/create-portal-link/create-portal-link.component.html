@@ -72,7 +72,6 @@
 		</div>
 
 		<div class="flex justify-end items-center my-60px">
-			<button convoy-button [disabled]="portalLinkForm.disabled" class="mr-16px text-14 transition-all duration-300 hover:text-danger-100 hover:border-danger-100" fill="outline" type="button" *ngIf="!portalLink" (click)="goBack()">Cancel</button>
 			<button convoy-button [disabled]="isCreatingPortalLink || portalLink || portalLinkForm.disabled">
 				{{ action === 'update' ? 'Update Portal Link' : 'Create Portal Link' }}
 			</button>

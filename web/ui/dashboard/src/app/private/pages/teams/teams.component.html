@@ -28,7 +28,7 @@
 				</ul>
 			</div>
 
-			<button convoy-permission="Team|MANAGE" convoy-button size="sm" class="min-w-[150px] h-36px" routerLink="./new">Add team member</button>
+			<button convoy-permission="Team|MANAGE" convoy-button size="sm" class="min-w-[150px] h-36px" (click)="action = 'create'; teamsDialog.showModal()">Add team member</button>
 		</div>
 	</div>
 
@@ -62,7 +62,7 @@
 
 									<ul dropdownOptions>
 										<li>
-											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="clear" class="w-full !justify-start" (click)="selectedMember = team; showUpdateMemberModal()">Update</button>
+											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="clear" class="w-full !justify-start" (click)="showUpdateMemberModal(team)">Update</button>
 										</li>
 										<li>
 											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full !justify-start" (click)="deleteDialog.showModal(); selectedMember = team; showOverlay = false">Deactivate</button>
@@ -173,7 +173,7 @@
 	<div convoy-card class="py-100px" *ngIf="((selectedFilterOption === 'active' && noData) || (selectedFilterOption === 'pending' && noInvitesData)) && (!isFetchingTeamMembers || !isFetchingPendingInvites)">
 		<div
 			convoy-empty-state
-			(onAction)="openCreateTeamModal()"
+			(onAction)="action = 'create'; teamsDialog.showModal()"
 			imgSrc="/assets/img/teams-empty-state.png"
 			[buttonText]="!searchString ? 'Add team member' : ''"
 			[heading]="searchString ? 'You have no one with the name ' + searchString + ' on your team' : selectedFilterOption === 'active' ? 'You have no one on your team yet' : 'You have no pending invites'"
@@ -186,7 +186,7 @@
 	<div convoy-modal-header>
 		<h2 class="font-semibold capitalize">{{ action === 'update' ? 'Update' : 'Add' }} Team Member</h2>
 
-		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="goToTeams()">
+		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="memberForm.reset(); teamsDialog.close()">
 			<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
 		</button>
 	</div>

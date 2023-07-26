@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject, ViewChild, ElementRef } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SOURCE } from 'src/app/models/source.model';
@@ -16,7 +16,6 @@ export class CreateSourceComponent implements OnInit {
 	@Input('action') action: 'update' | 'create' = 'create';
 	@Input('showAction') showAction: 'true' | 'false' = 'false';
 	@Output() onAction = new EventEmitter<any>();
-	@ViewChild('confirmDialog', { static: true }) confirmDialog!: ElementRef<HTMLDialogElement>;
 	sourceForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		is_disabled: [true, Validators.required],
@@ -211,7 +210,6 @@ export class CreateSourceComponent implements OnInit {
 		};
 		fileReader.onerror = error => {
 			this.generalService.showNotification({ message: 'Please upload a JSON file', style: 'warning' });
-			console.log(error);
 		};
 	}
 
@@ -244,7 +242,6 @@ export class CreateSourceComponent implements OnInit {
 			this.sourceCreated = true;
 			return response;
 		} catch (error) {
-			console.log(error);
 			this.sourceCreated = false;
 			this.isloading = false;
 		}
@@ -277,11 +274,6 @@ export class CreateSourceComponent implements OnInit {
 
 	showConfig(configValue: string): boolean {
 		return this.configurations.find(config => config.uid === configValue)?.show || false;
-	}
-
-	cancel() {
-		document.getElementById(this.router.url.includes('/configure') ? 'configureProjectForm' : 'sourceForm')?.scroll({ top: 0, behavior: 'smooth' });
-		this.confirmDialog.nativeElement.showModal();
 	}
 
 	setRegionValue(value: any) {

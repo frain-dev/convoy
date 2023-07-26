@@ -25,7 +25,7 @@
 				</div>
 
 				<div class="flex justify-end mt-24px">
-					<button convoy-button convoy-permission="Project Settings|MANAGE" color="primary" fill="outline" size="sm" type="button" (click)="confirmationDialog.close(); confirmRegenerateKey = true" [disabled]="regeneratingKey">
+					<button convoy-button convoy-permission="Project Settings|MANAGE" color="primary" fill="outline" size="sm" type="button" (click)="confirmationDialog.showModal()" [disabled]="regeneratingKey">
 						<svg width="16" height="16" class="mr-8px" [ngClass]="{ 'animate-spin-slow': regeneratingKey }">
 							<use xlink:href="#refresh-icon"></use>
 						</svg>
@@ -288,7 +288,6 @@
 	</div>
 
 	<div class="flex justify-end mt-48px" *ngIf="activeTab !== 'signature history' && activeTab !== 'endpoints config'">
-		<button [disabled]="projectForm.disabled" convoy-button fill="outline" *ngIf="action !== 'update'" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" type="button" (click)="cancel()">Cancel</button>
 		<button convoy-button [disabled]="isCreatingProject || projectForm.disabled">
 			{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
 			<svg width="24" height="24" class="ml-8px fill-white-100" *ngIf="action !== 'update'">
@@ -298,7 +297,7 @@
 	</div>
 </form>
 
-<dialog #tokenDialog convoy-dialog position="center">
+<dialog #tokenDialog convoy-dialog position="center" size="sm">
 	<convoy-token-modal
 		[title]="action === 'update' ? 'Api Key Generated Successfully' : 'Project Created Successfully'"
 		[description]="action === 'update' ? 'Please copy this key and save it somewhere safe.' : 'Your API Key has also been created. Please copy this key and save it somewhere safe.'"
@@ -337,12 +336,10 @@
 <dialog #confirmationDialog convoy-dialog position="center" size="sm">
 	<div class="px-20px py-30px">
 		<p class="text-16 font-semibold text-black mb-8px">Confirm Action</p>
-		<p class="text-14 font-medium text-grey-40 mb-24px">
-			<span>{{ !confirmRegenerateKey ? 'You are about to discard this process, please confirm this action.' : 'You are about to regenerate a new Api Key for this project' }}</span>
-		</p>
+		<p class="text-14 font-medium text-grey-40 mb-24px">You are about to regenerate a new Api Key for this project</p>
 		<div class="flex items-center">
-			<button convoy-button [color]="!confirmRegenerateKey ? 'danger' : 'primary'" class="mr-12px px-60px" (click)="confirmRegenerateKey ? regenerateKey() : router.navigateByUrl('/')">Confirm</button>
-			<button convoy-button fill="clear" [color]="!confirmRegenerateKey ? 'primary' : 'danger'" class="font-semibold" (click)="confirmationDialog.close(); confirmRegenerateKey = false">Cancel</button>
+			<button convoy-button color="primary" class="mr-12px px-60px" (click)="regenerateKey()">Confirm</button>
+			<button convoy-button fill="clear" color="danger" class="font-semibold" (click)="confirmationDialog.close()">Cancel</button>
 		</div>
 	</div>
 </dialog>

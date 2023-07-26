@@ -25,7 +25,6 @@ export class CreateSubscriptionComponent implements OnInit {
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
 	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;
 	@ViewChild('filterDialog', { static: true }) filterDialog!: ElementRef<HTMLDialogElement>;
-	@ViewChild('confirmationDialog', { static: true }) confirmationDialog!: ElementRef<HTMLDialogElement>;
 
 	subscriptionForm: FormGroup = this.formBuilder.group({
 		name: [null, Validators.required],
@@ -293,11 +292,6 @@ export class CreateSubscriptionComponent implements OnInit {
 			});
 			this.endPoints = endpointData;
 		}
-	}
-
-	cancel() {
-		document.getElementById(this.router.url.includes('/configure') ? 'configureProjectForm' : 'subscriptionForm')?.scroll({ top: 0, behavior: 'smooth' });
-		this.confirmationDialog.nativeElement.showModal();
 	}
 
 	goToSubsriptionsPage() {

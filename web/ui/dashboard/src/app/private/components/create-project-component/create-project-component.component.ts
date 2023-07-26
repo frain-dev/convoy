@@ -57,9 +57,7 @@ export class CreateProjectComponent implements OnInit {
 	});
 	isCreatingProject = false;
 	enableMoreConfig = false;
-	confirmRegenerateKey = false;
 	regeneratingKey = false;
-	showMetaEventPrompt = false;
 	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512'];
 	retryLogicTypes = [
@@ -78,7 +76,6 @@ export class CreateProjectComponent implements OnInit {
 		{ uid: 'signature', name: 'Signature Format', show: false }
 	];
 	public rbacService = inject(RbacService);
-	disableEndpointsModal = false;
 	tabs: string[] = ['project config', 'signature history', 'endpoints config', 'meta events'];
 	activeTab = 'project config';
 	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed'];
@@ -222,7 +219,6 @@ export class CreateProjectComponent implements OnInit {
 		try {
 			const response = await this.createProjectService.regenerateKey();
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.confirmRegenerateKey = false;
 			this.regeneratingKey = false;
 			this.apiKey = response.data.key;
 			this.tokenDialog.nativeElement.showModal();
