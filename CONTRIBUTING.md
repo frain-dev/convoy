@@ -46,3 +46,14 @@ How to get your contributions merged smoothly and quickly.
 
 - For convenience, run `make setup` to run set relevant configurations, like a pre-commit hook to regenerate openapi docs on every commit to files in the server folder.
 - Exceptions to the rules can be made if there's a compelling reason for doing so.
+
+## Guidelines for Raising Issues
+
+When raising issues, it's important to provide as much context and detail as possible. This helps maintainers and other contributors understand the issue and makes it easier for them to address it. Here's a template you can follow when creating a new issue:
+
+- **Title**: Provide a clear and concise title that summarizes the issue.
+- **Description**: Provide a detailed description of the issue. Include any relevant information that can help others understand the issue.
+- **Steps to Reproduce**: Provide detailed steps to reproduce the issue. This should be a list of actions that lead to the issue occurring.
+- **Expected Results**: Describe what you expected to happen when you followed the steps to reproduce.
+- **Actual Results**: Describe what actually happened when you followed the steps to reproduce.
+- **Error Messages/Logs**: If applicable, include any error messages or logs that are related to the issue.
