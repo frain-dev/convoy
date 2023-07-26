@@ -1,4 +1,4 @@
-import { DialogDirective } from './modal.component';
+import { DialogDirective } from './dialog.directive';
 
 describe('DialogDirective', () => {
   it('should create an instance', () => {

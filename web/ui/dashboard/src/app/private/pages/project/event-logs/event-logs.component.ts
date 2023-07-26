@@ -20,7 +20,7 @@ import { PrismModule } from 'src/app/private/components/prism/prism.module';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { FormsModule } from '@angular/forms';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
-import { DialogDirective } from 'src/app/components/modal/modal.component';
+import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { EventsService } from '../events/events.service';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';

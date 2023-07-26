@@ -8,7 +8,7 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
 import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';
-import { DialogDirective } from 'src/app/components/modal/modal.component';
+import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 
 const routes: Routes = [{ path: '', component: SettingsComponent }];
 

@@ -11,7 +11,7 @@ import { VerifyEmailComponent } from './components/verify-email/verify-email.com
 import { LoaderModule } from './components/loader/loader.module';
 import { ReactiveFormsModule } from '@angular/forms';
 import { InputFieldDirective, InputErrorComponent, InputDirective, LabelComponent } from '../components/input/input.component';
-import { DialogDirective } from '../components/modal/modal.component';
+import { DialogDirective } from '../components/dialog/dialog.directive';
 
 @NgModule({
 	declarations: [PrivateComponent],

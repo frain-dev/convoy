@@ -18,7 +18,7 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { TokenModalComponent } from '../../components/token-modal/token-modal.component';
-import { DialogDirective } from 'src/app/components/modal/modal.component';
+import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 
 const routes: Routes = [{ path: '', component: AccountComponent }];
 

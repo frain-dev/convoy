@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ModalHeaderComponent, DialogDirective } from 'src/app/components/modal/modal.component';
+import { ModalHeaderComponent, DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { CreateSourceModule } from '../../components/create-source/create-source.module';

@@ -1,18 +1,16 @@
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DialogDirective } from 'src/app/components/modal/modal.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 
 @Component({
 	selector: 'convoy-token-modal',
 	standalone: true,
-	imports: [CommonModule, CopyButtonComponent, ButtonComponent, DialogDirective],
+	imports: [CommonModule, CopyButtonComponent, ButtonComponent],
 	templateUrl: './token-modal.component.html',
 	styleUrls: ['./token-modal.component.scss']
 })
 export class TokenModalComponent implements OnInit {
-	@ViewChild('tokenDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
 	@Input('title') title!: string;
 	@Input('description') description!: string;
 	@Input('token') token!: string;
@@ -21,11 +19,5 @@ export class TokenModalComponent implements OnInit {
 
 	constructor() {}
 
-	ngOnInit(): void {
-		this.dialog.nativeElement.showModal();
-	}
-
-	ngOnDestroy() {
-		this.dialog.nativeElement.close();
-	}
+	ngOnInit(): void {}
 }

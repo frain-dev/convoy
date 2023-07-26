@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ModalHeaderComponent } from 'src/app/components/modal/modal.component';
+import { ModalHeaderComponent } from 'src/app/components/dialog/dialog.directive';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';

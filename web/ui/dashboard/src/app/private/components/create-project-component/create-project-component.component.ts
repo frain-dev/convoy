@@ -17,6 +17,7 @@ export class CreateProjectComponent implements OnInit {
 	@ViewChild('metaEventsDialog', { static: true }) metaEventsDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('confirmationDialog', { static: true }) confirmationDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('newSignatureDialog', { static: true }) newSignatureDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('tokenDialog', { static: true }) tokenDialog!: ElementRef<HTMLDialogElement>;
 
 	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding'];
 	projectForm: FormGroup = this.formBuilder.group({
@@ -55,7 +56,6 @@ export class CreateProjectComponent implements OnInit {
 		hash: [null]
 	});
 	isCreatingProject = false;
-	showApiKey = false;
 	enableMoreConfig = false;
 	confirmRegenerateKey = false;
 	regeneratingKey = false;
@@ -126,7 +126,7 @@ export class CreateProjectComponent implements OnInit {
 		try {
 			const projectDetails = this.privateService.getProjectDetails;
 
-			this.projectDetails = this.privateService.getProjectDetails;
+			this.projectDetails = projectDetails;
 
 			if (projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab !== 'signature history');
 
@@ -189,7 +189,7 @@ export class CreateProjectComponent implements OnInit {
 			this.apiKey = response.data.api_key.key;
 			this.projectDetails = response.data.project;
 			if (projectFormModal) projectFormModal.style.overflowY = 'hidden';
-			this.showApiKey = true;
+			this.tokenDialog.nativeElement.showModal();
 		} catch (error) {
 			this.isCreatingProject = false;
 		}
@@ -217,15 +217,15 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async regenerateKey() {
+		this.confirmationDialog.nativeElement.close();
 		this.regeneratingKey = true;
 		try {
 			const response = await this.createProjectService.regenerateKey();
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.confirmationDialog.nativeElement.close();
 			this.confirmRegenerateKey = false;
 			this.regeneratingKey = false;
 			this.apiKey = response.data.key;
-			this.showApiKey = true;
+			this.tokenDialog.nativeElement.showModal();
 			return;
 		} catch (error) {
 			this.regeneratingKey = false;
@@ -239,7 +239,7 @@ export class CreateProjectComponent implements OnInit {
 		this.versions.at(i).patchValue(this.newSignatureForm.value);
 		await this.updateProject();
 		this.newSignatureForm.reset();
-        this.newSignatureDialog.nativeElement.showModal()
+		this.newSignatureDialog.nativeElement.showModal();
 	}
 
 	checkProjectConfig() {
@@ -278,7 +278,7 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	cancel() {
-		this.confirmationDialog.nativeElement.showModal()
+		this.confirmationDialog.nativeElement.showModal();
 		document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
 	}
 

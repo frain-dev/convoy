@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { CreateProjectComponent } from './create-project.component';
 import { Routes, RouterModule } from '@angular/router';
 import { CreateProjectComponentModule } from '../../components/create-project-component/create-project-component.module';
-import { ModalHeaderComponent, DialogDirective } from 'src/app/components/modal/modal.component';
+import { ModalHeaderComponent, DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { LoaderModule } from '../../components/loader/loader.module';
 

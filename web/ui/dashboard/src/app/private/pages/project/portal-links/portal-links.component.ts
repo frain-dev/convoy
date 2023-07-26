@@ -17,7 +17,7 @@ import { FormsModule } from '@angular/forms';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
-import { DialogDirective, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
+import { DialogDirective, ModalHeaderComponent } from 'src/app/components/dialog/dialog.directive';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';

@@ -7,7 +7,7 @@ import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { ModalHeaderComponent, DialogDirective } from 'src/app/components/modal/modal.component';
+import { ModalHeaderComponent, DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';

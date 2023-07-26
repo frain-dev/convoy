@@ -230,54 +230,6 @@
 	</ng-template>
 </dialog>
 
-<!-- <div convoy-modal (closeModal)="goToTeams()" *ngIf="showInviteTeamMemberModal || showUpdateMember">
-	<div convoy-modal-header>
-		<h2 class="font-semibold capitalize">{{ showUpdateMember ? 'Update' : 'Add' }} Team Member</h2>
-
-		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="goToTeams()">
-			<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
-		</button>
-	</div>
-
-	<form class="p-20px" [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()" *ngIf="!showUpdateMember; else updateMemberForm">
-		<convoy-input-field>
-			<label for="email" convoy-label required="true">Email</label>
-			<input type="email" id="email" convoy-input autocomplete="email" formControlName="invitee_email" placeholder="Enter member email" />
-			<convoy-input-error *ngIf="inviteUserForm.get('invitee_email')?.touched && inviteUserForm.get('invitee_email')?.invalid">Please enter a valid email</convoy-input-error>
-		</convoy-input-field>
-
-		<ng-container formGroupName="role">
-			<convoy-select *convoy-enterprise className="mb-24px" label="Role" name="role" formControlName="type" [options]="roles" errorMessage="Select user role" [required]="true" (selectedOption)="inviteUserForm.get('role')?.patchValue({ type: $event })"></convoy-select>
-		</ng-container>
-
-		<div class="flex justify-end pt-24px pb-40px">
-			<button convoy-button class="ml-16px" [disabled]="invitingUser || inviteUserForm.disabled">
-				{{ invitingUser ? 'Inviting User...' : 'Send Invite' }}
-			</button>
-		</div>
-	</form>
-
-	<ng-template #updateMemberForm>
-		<form class="p-20px" [formGroup]="memberForm" (ngSubmit)="updateMember()">
-			<convoy-input-field formGroupName="user_metadata">
-				<label for="email" convoy-label required="true">Email</label>
-				<input type="email" id="email" convoy-input autocomplete="email" formControlName="email" placeholder="Enter member email" />
-				<convoy-input-error *ngIf="memberForm.get('email')?.touched && memberForm.get('email')?.invalid">Please enter a valid email</convoy-input-error>
-			</convoy-input-field>
-
-			<ng-container formGroupName="role">
-				<convoy-select *convoy-enterprise className="mb-24px" label="Role" name="role" formControlName="type" [options]="roles" errorMessage="Select user role" [required]="true" (selectedOption)="memberForm.get('role')?.patchValue({ type: $event })"></convoy-select>
-			</ng-container>
-
-			<div class="flex justify-end pt-24px pb-40px">
-				<button convoy-button class="ml-16px" [disabled]="updatingMember || memberForm.disabled">
-					{{ updatingMember ? 'Updating...' : 'Update' }}
-				</button>
-			</div>
-		</form>
-	</ng-template>
-</div> -->
-
 <dialog #deleteDialog convoy-dialog position="center" size="sm">
 	<app-delete-modal
 		[isLoading]="deactivatingUser || cancelingInvite"

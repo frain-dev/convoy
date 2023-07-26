@@ -13,11 +13,11 @@ import { AccountService } from '../account.service';
 })
 export class PersonalSettingsComponent implements OnInit {
 	@ViewChild('settingsDialog', { static: true }) settingsDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('tokenDialog', { static: true }) tokenDialog!: ElementRef<HTMLDialogElement>;
 
 	showCreateNewTokenForm = false;
 	isFetchingKeys = false;
 	isGeneratingNewKey = false;
-	showAccessKey = false;
 	showRevokeKeyModal = false;
 	isRevokingKey = false;
 	selectedKey!: any;
@@ -63,7 +63,7 @@ export class PersonalSettingsComponent implements OnInit {
 			const response = await this.accountService.generatePersonalKey(this.userId, this.generateKeyForm.value);
 			this.accessKey = response.data.key;
 			this.showCreateNewTokenForm = false;
-			this.showAccessKey = true;
+			this.tokenDialog.nativeElement.showModal();
 			this.generateKeyForm.reset();
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.isGeneratingNewKey = false;
