@@ -1228,7 +1228,7 @@ func (s *PublicEventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event2, endpoint2, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
 	require.NoError(s.T(), err)
 
-	url := fmt.Sprintf("/api/v1/projects/%s/eventdeliveries?endpointId=%s", s.DefaultProject.UID, endpoint1.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/eventdeliveries?endpointId=%s?subscriptionId=%s", s.DefaultProject.UID, endpoint1.UID, subscription.UID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 
