@@ -72,7 +72,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 					gomock.Any(),
 					"123",
 					[]string{"abc"},
-					"13429",
+					"13429", "",
 					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.RetryEventStatus},
 					datastore.SearchParams{
 						CreatedAtStart: 1342,
@@ -142,7 +142,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 					gomock.Any(),
 					"123",
 					[]string{"abc"},
-					"13429",
+					"13429", "",
 					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.RetryEventStatus},
 					datastore.SearchParams{
 						CreatedAtStart: 1342,
