@@ -25,6 +25,7 @@ export class LoginComponent implements OnInit {
 		password: ['', Validators.required]
 	});
 	isLoadingProject = false;
+	isFetchingConfig = false;
 	isSignupEnabled = false;
 	organisations?: ORGANIZATION_DATA[];
 
@@ -35,10 +36,13 @@ export class LoginComponent implements OnInit {
 	}
 
 	async getSignUpConfig() {
+		this.isFetchingConfig = true;
 		try {
 			const response = await this.loginService.getSignupConfig();
 			this.isSignupEnabled = response.data && location.hostname !== 'dashboard.getconvoy.io';
+			this.isFetchingConfig = false;
 		} catch (error) {
+			this.isFetchingConfig = false;
 			return error;
 		}
 	}
@@ -52,12 +56,6 @@ export class LoginComponent implements OnInit {
 			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
 			localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
 
-			// get previous location in localstorage
-			// const lastLoacation = localStorage.getItem('CONVOY_LAST_AUTH_LOCATION');
-
-			// check active local project
-			// const localProject = localStorage.getItem('CONVOY_PROJECT');
-			// if (localProject) return lastLoacation ? (location.href = lastLoacation) : this.router.navigate([`/projects/${JSON.parse(localProject).uid}`]);
 			this.isLoadingProject = true;
 			return this.getOrganisations();
 		} catch {

@@ -30,10 +30,21 @@ export class LoginService {
 					url: '/configuration/is_signup_enabled',
 					method: 'get'
 				});
+
+				localStorage.setItem('IS_SIGNUP_ENABLED', JSON.stringify(response.data));
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
 			}
+		});
+	}
+
+	get signupConfig() {
+		const isSignupEnabled = localStorage.getItem('IS_SIGNUP_ENABLED');
+		if (isSignupEnabled) return JSON.parse(isSignupEnabled);
+
+		return this.getSignupConfig().then(response => {
+			return response.data;
 		});
 	}
 }

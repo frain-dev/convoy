@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PublicComponent } from './public.component';
 import { RouterModule, Routes } from '@angular/router';
+import { SignupGuard } from '../guards/signup/signup.guard';
 
 const routes: Routes = [
 	{
@@ -14,7 +15,8 @@ const routes: Routes = [
 			},
 			{
 				path: 'signup',
-				loadComponent: () => import('./signup/signup.component').then(mod => mod.SignupComponent)
+				loadComponent: () => import('./signup/signup.component').then(mod => mod.SignupComponent),
+                canActivate: [SignupGuard]
 			},
 			{
 				path: 'forgot-password',

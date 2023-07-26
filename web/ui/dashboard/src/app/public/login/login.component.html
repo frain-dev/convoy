@@ -34,4 +34,4 @@
 	</section>
 </div>
 
-<convoy-loader [isTransparent]="false" *ngIf="isLoadingProject"></convoy-loader>
+<convoy-loader [isTransparent]="false" *ngIf="isLoadingProject || isFetchingConfig"></convoy-loader>
