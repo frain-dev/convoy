@@ -9,7 +9,7 @@ export class SignupGuard implements CanActivate {
 	constructor(private router: Router, private loginService: LoginService) {}
 
 	canActivate() {
-		const isSignupEnabled = this.loginService.signupConfig;
+		const isSignupEnabled = this.loginService.signUpConfig.data;
 
 		if (!isSignupEnabled) {
 			this.router.navigate(['login']);
