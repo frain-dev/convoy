@@ -95,7 +95,6 @@ func (s *SourcePool) Insert(ps *PubSubSource) {
 		so := &PubSubSource{source: source}
 		// config hasn't changed
 		if existingSource.hash == so.getHash() {
-			fmt.Println("source don change ooo >>>>", source)
 			return
 		}
 
