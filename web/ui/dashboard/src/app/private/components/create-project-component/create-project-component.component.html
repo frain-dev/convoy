@@ -20,8 +20,8 @@
 			<ng-container *ngIf="action === 'update'">
 				<label for="project-name" convoy-label>Project Id</label>
 				<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px">
-					<span class="text-16 text-grey-60 font-normal">{{ projectDetails?.uid }}</span>
-					<convoy-copy-button [text]="projectDetails?.uid || ''" notificationText="Project ID has been copied to you clipboard."></convoy-copy-button>
+					<span class="text-16 text-grey-60 font-normal">{{ projectDetails.uid }}</span>
+					<convoy-copy-button [text]="projectDetails.uid || ''" notificationText="Project ID has been copied to you clipboard."></convoy-copy-button>
 				</div>
 
 				<div class="flex justify-end mt-24px">
@@ -233,7 +233,7 @@
 							<tr convoy-table-row *ngFor="let signatureVersion of version.content; let index = index" [id]="'app' + i">
 								<td convoy-table-cell class="pl-16px">
 									<div class="flex items-center">
-										{{ projectDetails?.config?.signature?.header }}
+										{{ projectDetails.config.signature.header }}
 									</div>
 								</td>
 								<td convoy-table-cell>v{{ index + 1 }}</td>
@@ -309,12 +309,8 @@
 
 <!-- add new signature modal  -->
 <dialog #newSignatureDialog convoy-dialog>
-	<div convoy-modal-header>
+	<div convoy-dialog-header (closeDialog)="versions.removeAt(versionsLength - 1); newSignatureDialog.close()">
 		<h2 class="font-semibold capitalize">New Signature</h2>
-
-		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="versions.removeAt(versionsLength - 1); newSignatureDialog.close()">
-			<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
-		</button>
 	</div>
 
 	<div class="p-20px">
