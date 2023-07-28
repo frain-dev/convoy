@@ -67,7 +67,7 @@ export class CreateProjectComponent implements OnInit {
 	encodings = ['base64', 'hex'];
 	@Output('onAction') onAction = new EventEmitter<any>();
 	@Input('action') action: 'create' | 'update' = 'create';
-	projectDetails?: PROJECT;
+	projectDetails!: PROJECT;
 	signatureVersions!: { date: string; content: VERSIONS[] }[];
 	configurations = [
 		{ uid: 'retry-config', name: 'Retry Config', show: false },
@@ -121,23 +121,21 @@ export class CreateProjectComponent implements OnInit {
 		this.enableMoreConfig = true;
 
 		try {
-			const projectDetails = this.privateService.getProjectDetails;
+			this.projectDetails = this.privateService.getProjectDetails;
 
-			this.projectDetails = projectDetails;
+			if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab !== 'signature history');
 
-			if (projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab !== 'signature history');
-
-			this.projectForm.patchValue(projectDetails);
-			this.projectForm.get('config.strategy')?.patchValue(projectDetails.config.strategy);
-			this.projectForm.get('config.signature')?.patchValue(projectDetails.config.signature);
-			this.projectForm.get('config.ratelimit')?.patchValue(projectDetails.config.ratelimit);
+			this.projectForm.patchValue(this.projectDetails);
+			this.projectForm.get('config.strategy')?.patchValue(this.projectDetails.config.strategy);
+			this.projectForm.get('config.signature')?.patchValue(this.projectDetails.config.signature);
+			this.projectForm.get('config.ratelimit')?.patchValue(this.projectDetails.config.ratelimit);
 
 			this.configurations.forEach(config => {
-				if (projectDetails?.type === 'outgoing') this.toggleConfigForm(config.uid);
+				if (this.projectDetails?.type === 'outgoing') this.toggleConfigForm(config.uid);
 				else if (config.uid !== 'signature') this.toggleConfigForm(config.uid);
 			});
 
-			const versions = projectDetails.config.signature.versions;
+			const versions = this.projectDetails.config.signature.versions;
 			if (!versions?.length) return;
 			this.signatureVersions = this.generalService.setContentDisplayed(versions);
 			versions.forEach((version: { encoding: any; hash: any }, index: number) => {
