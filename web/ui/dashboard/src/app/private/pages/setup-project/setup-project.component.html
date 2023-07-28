@@ -1,12 +1,6 @@
 <dialog #projectSetupDialog convoy-dialog id="configureProjectForm" position="full">
-	<div convoy-modal-header fullscreen="true">
-		<div class="flex items-center">
-			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="cancel()">
-				<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
-			</button>
-
-			<h2 class="font-semibold capitalize ml-2">{{ projectType === 'outgoing' ? 'Configure Outgoing Project' : 'Configure Incoming Project' }}</h2>
-		</div>
+	<div convoy-dialog-header fullscreen="true" (closeDialog)="cancel()">
+		<h2 class="font-semibold capitalize">{{ projectType === 'outgoing' ? 'Configure Outgoing Project' : 'Configure Incoming Project' }}</h2>
 	</div>
 
 	<div class="max-w-[770px] m-auto pb-60px flex flex-col">

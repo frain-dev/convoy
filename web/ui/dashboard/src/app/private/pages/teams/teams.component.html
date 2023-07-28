@@ -183,12 +183,8 @@
 </div>
 
 <dialog #teamsDialog convoy-dialog>
-	<div convoy-modal-header>
+	<div convoy-dialog-header (closeDialog)="memberForm.reset(); teamsDialog.close()">
 		<h2 class="font-semibold capitalize">{{ action === 'update' ? 'Update' : 'Add' }} Team Member</h2>
-
-		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="memberForm.reset(); teamsDialog.close()">
-			<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
-		</button>
 	</div>
 
 	<form class="p-20px" [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()" *ngIf="action === 'create'; else updateMemberForm">

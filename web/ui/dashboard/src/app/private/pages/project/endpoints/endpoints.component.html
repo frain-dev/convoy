@@ -33,7 +33,7 @@
 			</form>
 		</div>
 
-		<button convoy-permission="Endpoints|MANAGE" *ngIf="displayedEndpoints?.length" convoy-button size="sm" class="h-36px" id="create-endpoint-modal-button" routerLink="./new" >Create Endpoint</button>
+		<button convoy-permission="Endpoints|MANAGE" *ngIf="displayedEndpoints?.length" convoy-button size="sm" class="h-36px" id="create-endpoint-modal-button" routerLink="./new">Create Endpoint</button>
 	</div>
 
 	<div convoy-card>
@@ -142,14 +142,8 @@
 
 <!-- create endpoint modal -->
 <dialog #endpointDialog convoy-dialog position="full">
-	<div convoy-modal-header fullscreen="true">
-		<div class="flex items-center">
-			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="cancel()">
-				<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
-			</button>
-
-			<h2 class="font-semibold capitalize ml-2">{{ action === 'update' ? 'Edit Endpoint' : 'Create Endpoint' }}</h2>
-		</div>
+	<div convoy-dialog-header fullscreen="true" (closeDialog)="cancel()">
+		<h2 class="font-semibold capitalize">{{ action === 'update' ? 'Edit Endpoint' : 'Create Endpoint' }}</h2>
 	</div>
 
 	<div class="max-w-[770px] m-auto">

@@ -9,7 +9,7 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
-import { DialogDirective, ModalHeaderComponent } from 'src/app/components/dialog/dialog.directive';
+import { DialogDirective, DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
 import { CreateEndpointComponent } from 'src/app/private/components/create-endpoint/create-endpoint.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { FormsModule } from '@angular/forms';
@@ -43,7 +43,7 @@ import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 		DropdownComponent,
 		DropdownOptionDirective,
 		ListItemComponent,
-		ModalHeaderComponent,
+		DialogHeaderComponent,
 		CreateEndpointComponent,
 		TagComponent,
 		FormsModule,

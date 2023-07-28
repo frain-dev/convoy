@@ -16,7 +16,7 @@ import { PaginationComponent } from 'src/app/private/components/pagination/pagin
 import { META_EVENT } from 'src/app/models/project.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { Router } from '@angular/router';
-import { ModalHeaderComponent } from 'src/app/components/dialog/dialog.directive';
+import { DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
 
 @Component({
 	selector: 'convoy-meta-events',
@@ -27,7 +27,7 @@ import { ModalHeaderComponent } from 'src/app/components/dialog/dialog.directive
 		EmptyStateComponent,
 		ButtonComponent,
 		TooltipComponent,
-		ModalHeaderComponent,
+		DialogHeaderComponent,
 		TableLoaderModule,
 		TableCellComponent,
 		TableComponent,

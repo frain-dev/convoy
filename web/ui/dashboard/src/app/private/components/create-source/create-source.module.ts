@@ -12,7 +12,7 @@ import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.
 import { TokenModalComponent } from '../token-modal/token-modal.component';
 import { PermissionDirective } from '../permission/permission.directive';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
-import { DialogDirective, ModalHeaderComponent } from 'src/app/components/dialog/dialog.directive';
+import { DialogDirective, DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
 
 @NgModule({
 	declarations: [CreateSourceComponent],
@@ -29,7 +29,7 @@ import { DialogDirective, ModalHeaderComponent } from 'src/app/components/dialog
 		LabelComponent,
 		FileInputComponent,
 		FormLoaderComponent,
-		ModalHeaderComponent,
+		DialogHeaderComponent,
 		TokenModalComponent,
 		PermissionDirective,
         TooltipComponent,

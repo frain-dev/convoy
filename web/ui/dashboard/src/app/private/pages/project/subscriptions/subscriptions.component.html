@@ -109,14 +109,8 @@
 
 <!-- subscription form  -->
 <dialog #subscriptionDialog convoy-dialog id="subscriptionForm" position="full">
-	<div convoy-modal-header fullscreen="true">
-		<div class="flex items-center">
-			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="createSubscription('cancel')">
-				<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
-			</button>
-
-			<h2 class="font-semibold text-16 capitalize ml-16px">{{ action === 'update' ? 'Update Subscription' : 'Create Subscription' }}</h2>
-		</div>
+	<div convoy-dialog-header fullscreen="true" (closeDialog)="createSubscription('cancel')">
+		<h2 class="font-semibold text-16 capitalize">{{ action === 'update' ? 'Update Subscription' : 'Create Subscription' }}</h2>
 	</div>
 
 	<div class="max-w-[770px] m-auto">
@@ -126,12 +120,8 @@
 
 <!-- subscription details dialog  -->
 <dialog #detailsDialog convoy-dialog id="subscription-details" position="right">
-	<div convoy-modal-header>
+	<div convoy-dialog-header (closeDialog)="closeModal()">
 		<h2 class="font-semibold capitalize max-w-[356px] overflow-ellipsis overflow-hidden whitespace-nowrap">{{ activeSubscription?.name || 'Subscription Details' }}</h2>
-
-		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="closeModal()">
-			<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
-		</button>
 	</div>
 
 	<div class="p-20px">

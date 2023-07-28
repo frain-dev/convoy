@@ -1,10 +1,6 @@
 <div #dialog convoy-dialog position="center" class="px-20px max-h-[620px] overflow-auto">
-	<div convoy-modal-header>
+	<div convoy-dialog-header (closeDialog)="closeCreateSubscriptionModal()">
 		<h2 class="font-semibold capitalize">Create Webhook Subscription</h2>
-
-		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="closeCreateSubscriptionModal()">
-			<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
-		</button>
 	</div>
 
 	<convoy-create-subscription (onAction)="closeCreateSubscriptionModal()"></convoy-create-subscription>

@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ModalHeaderComponent } from 'src/app/components/dialog/dialog.directive';
+import { DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -19,7 +19,7 @@ import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 @Component({
 	selector: 'convoy-create-portal-link',
 	standalone: true,
-	imports: [CommonModule, ModalHeaderComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, SelectComponent, CardComponent, ButtonComponent, ReactiveFormsModule, CopyButtonComponent, RadioComponent, ToggleComponent],
+	imports: [CommonModule, DialogHeaderComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, SelectComponent, CardComponent, ButtonComponent, ReactiveFormsModule, CopyButtonComponent, RadioComponent, ToggleComponent],
 	templateUrl: './create-portal-link.component.html',
 	styleUrls: ['./create-portal-link.component.scss']
 })
