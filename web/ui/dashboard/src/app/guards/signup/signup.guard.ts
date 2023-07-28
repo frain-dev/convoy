@@ -9,7 +9,7 @@ export class SignupGuard implements CanActivate {
 	constructor(private router: Router, private loginService: LoginService) {}
 
 	canActivate() {
-		const isSignupEnabled = this.loginService.signupConfig && location.hostname !== 'dashboard.getconvoy.io';
+		const isSignupEnabled = this.loginService.signupConfig;
 
 		if (!isSignupEnabled) {
 			this.router.navigate(['login']);

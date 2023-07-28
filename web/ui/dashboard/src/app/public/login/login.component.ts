@@ -39,7 +39,7 @@ export class LoginComponent implements OnInit {
 		this.isFetchingConfig = true;
 		try {
 			const response = await this.loginService.getSignupConfig();
-			this.isSignupEnabled = response.data && location.hostname !== 'dashboard.getconvoy.io';
+			this.isSignupEnabled = response.data;
 			this.isFetchingConfig = false;
 		} catch (error) {
 			this.isFetchingConfig = false;
