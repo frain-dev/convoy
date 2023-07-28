@@ -1210,6 +1210,12 @@ func (s *PublicEventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	})
 	require.NoError(s.T(), err)
 
+	subscription2, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, endpoint1, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
+		EventTypes: []string{"*"},
+		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
+	})
+	require.NoError(s.T(), err)
+
 	event1, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint1, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
 	require.NoError(s.T(), err)
 
@@ -1217,6 +1223,12 @@ func (s *PublicEventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	require.NoError(s.T(), err)
 
 	d2, err := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event1, endpoint1, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event1, endpoint1, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription2)
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event1, endpoint1, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription2)
 	require.NoError(s.T(), err)
 
 	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
@@ -1228,7 +1240,7 @@ func (s *PublicEventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event2, endpoint2, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
 	require.NoError(s.T(), err)
 
-	url := fmt.Sprintf("/api/v1/projects/%s/eventdeliveries?endpointId=%s", s.DefaultProject.UID, endpoint1.UID)
+	url := fmt.Sprintf("/api/v1/projects/%s/eventdeliveries?endpointId=%s&subscriptionId=%s", s.DefaultProject.UID, endpoint1.UID, subscription.UID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()
 

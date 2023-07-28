@@ -72,7 +72,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 					gomock.Any(),
 					"123",
 					[]string{"abc"},
-					"13429",
+					"13429", "",
 					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.RetryEventStatus},
 					datastore.SearchParams{
 						CreatedAtStart: 1342,
@@ -114,9 +114,10 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				filter: &datastore.Filter{
-					Project:     &datastore.Project{UID: "123"},
-					EndpointIDs: []string{"abc"},
-					EventID:     "13429",
+					Project:        &datastore.Project{UID: "123"},
+					EndpointIDs:    []string{"abc"},
+					SubscriptionID: "sub-1",
+					EventID:        "13429",
 					Pageable: datastore.Pageable{
 						PerPage:    10,
 						Direction:  datastore.Next,
@@ -142,7 +143,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 					gomock.Any(),
 					"123",
 					[]string{"abc"},
-					"13429",
+					"13429", "sub-1",
 					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.RetryEventStatus},
 					datastore.SearchParams{
 						CreatedAtStart: 1342,

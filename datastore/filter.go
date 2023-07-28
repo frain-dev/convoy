@@ -11,6 +11,7 @@ type Filter struct {
 	Project        *Project
 	EndpointID     string
 	EndpointIDs    []string
+	SubscriptionID string
 	EventID        string
 	SourceID       string
 	Pageable       Pageable

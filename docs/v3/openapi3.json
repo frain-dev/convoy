@@ -311,9 +311,11 @@
 					"headers": {
 						"$ref": "#/components/schemas/httpheader.HTTPHeader"
 					},
-					"matched_endpoints": {
-						"description": "TODO(all) remove this field",
-						"type": "integer"
+					"idempotency_key": {
+						"type": "string"
+					},
+					"is_duplicate_event": {
+						"type": "boolean"
 					},
 					"project_id": {
 						"type": "string"
@@ -844,9 +846,6 @@
 						},
 						"type": "array"
 					},
-					"idempotency_ttl": {
-						"type": "string"
-					},
 					"is_disabled": {
 						"type": "boolean"
 					},
@@ -1138,9 +1137,6 @@
 					},
 					"idempotency_key": {
 						"type": "string"
-					},
-					"idempotency_ttl": {
-						"type": "string"
 					}
 				},
 				"type": "object"
@@ -1329,6 +1325,9 @@
 					"event_type": {
 						"type": "string"
 					},
+					"idempotency_key": {
+						"type": "string"
+					},
 					"project_id": {
 						"type": "string"
 					}
@@ -1466,6 +1465,9 @@
 					"headers": {
 						"$ref": "#/components/schemas/httpheader.HTTPHeader"
 					},
+					"idempotency_key": {
+						"type": "string"
+					},
 					"metadata": {
 						"$ref": "#/components/schemas/datastore.Metadata"
 					},
@@ -1530,9 +1532,11 @@
 					"headers": {
 						"$ref": "#/components/schemas/httpheader.HTTPHeader"
 					},
-					"matched_endpoints": {
-						"description": "TODO(all) remove this field",
-						"type": "integer"
+					"idempotency_key": {
+						"type": "string"
+					},
+					"is_duplicate_event": {
+						"type": "boolean"
 					},
 					"project_id": {
 						"type": "string"
@@ -1596,6 +1600,9 @@
 						"type": "array"
 					},
 					"event_type": {
+						"type": "string"
+					},
+					"idempotency_key": {
 						"type": "string"
 					},
 					"owner_id": {
@@ -2002,9 +2009,6 @@
 							"type": "string"
 						},
 						"type": "array"
-					},
-					"idempotency_ttl": {
-						"type": "string"
 					},
 					"is_disabled": {
 						"type": "boolean"
@@ -4036,6 +4040,13 @@
 						}
 					},
 					{
+						"in": "query",
+						"name": "idempotencyKey",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "A pagination cursor to fetch the next page of a list",
 						"in": "query",
 						"name": "next_page_cursor",
@@ -4076,6 +4087,13 @@
 								"type": "string"
 							},
 							"type": "array"
+						}
+					},
+					{
+						"in": "query",
+						"name": "subscriptionId",
+						"schema": {
+							"type": "string"
 						}
 					}
 				],
@@ -4235,6 +4253,13 @@
 								"type": "string"
 							},
 							"type": "array"
+						}
+					},
+					{
+						"in": "query",
+						"name": "subscriptionId",
+						"schema": {
+							"type": "string"
 						}
 					}
 				],
@@ -5019,6 +5044,13 @@
 						}
 					},
 					{
+						"in": "query",
+						"name": "idempotencyKey",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "A pagination cursor to fetch the next page of a list",
 						"in": "query",
 						"name": "next_page_cursor",
@@ -5043,7 +5075,7 @@
 						}
 					},
 					{
-						"description": "Any arbitary value to filter the events payload",
+						"description": "Any arbitrary value to filter the events payload",
 						"in": "query",
 						"name": "query",
 						"schema": {
@@ -5346,6 +5378,13 @@
 					},
 					{
 						"in": "query",
+						"name": "idempotencyKey",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
 						"name": "ownerID",
 						"schema": {
 							"type": "string"
@@ -5361,6 +5400,13 @@
 					{
 						"in": "query",
 						"name": "sourceID",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "subscriptionID",
 						"schema": {
 							"type": "string"
 						}

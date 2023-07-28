@@ -12,15 +12,14 @@ type EventDeliveryResponse struct {
 	*datastore.EventDelivery
 }
 
-var (
-	defaultPageable datastore.Pageable = datastore.Pageable{
-		Direction:  datastore.Next,
-		PerPage:    1000000000000,
-		NextCursor: datastore.DefaultCursor,
-	}
-)
+var defaultPageable datastore.Pageable = datastore.Pageable{
+	Direction:  datastore.Next,
+	PerPage:    1000000000000,
+	NextCursor: datastore.DefaultCursor,
+}
 
 type QueryBatchRetryEventDelivery struct {
+	SubscriptionID string `json:"subscriptionId"`
 	// A list of endpoint IDs to filter by
 	EndpointIDs []string `json:"endpointId"`
 	EventID     string   `json:"eventId"`
@@ -40,11 +39,12 @@ func (qb *QueryBatchRetryEventDelivery) Transform(r *http.Request) (*QueryBatchR
 
 	return &QueryBatchRetryEventDeliveryResponse{
 		Filter: &datastore.Filter{
-			EndpointIDs:  getEndpointIDs(r),
-			EventID:      r.URL.Query().Get("eventId"),
-			Status:       getEventDeliveryStatus(r),
-			Pageable:     defaultPageable,
-			SearchParams: searchParams,
+			EndpointIDs:    getEndpointIDs(r),
+			SubscriptionID: r.URL.Query().Get("subscriptionId"),
+			EventID:        r.URL.Query().Get("eventId"),
+			Status:         getEventDeliveryStatus(r),
+			Pageable:       defaultPageable,
+			SearchParams:   searchParams,
 		},
 	}, nil
 }
@@ -57,6 +57,7 @@ type QueryListEventDelivery struct {
 	// A list of endpoint IDs to filter by
 	EndpointIDs    []string `json:"endpointId"`
 	EventID        string   `json:"eventId"`
+	SubscriptionID string   `json:"subscriptionId"`
 	IdempotencyKey string   `json:"idempotencyKey"`
 	// A list of event delivery statuses to filter by
 	Status []string `json:"status"`
@@ -77,6 +78,7 @@ func (ql *QueryListEventDelivery) Transform(r *http.Request) (*QueryListEventDel
 	return &QueryListEventDeliveryResponse{
 		Filter: &datastore.Filter{
 			EndpointIDs:    getEndpointIDs(r),
+			SubscriptionID: r.URL.Query().Get("subscriptionId"),
 			IdempotencyKey: r.URL.Query().Get("idempotencyKey"),
 			EventID:        r.URL.Query().Get("eventId"),
 			Status:         getEventDeliveryStatus(r),

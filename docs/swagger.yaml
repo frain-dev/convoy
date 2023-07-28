@@ -211,9 +211,10 @@ definitions:
         type: string
       headers:
         $ref: '#/definitions/httpheader.HTTPHeader'
-      matched_endpoints:
-        description: TODO(all) remove this field
-        type: integer
+      idempotency_key:
+        type: string
+      is_duplicate_event:
+        type: boolean
       project_id:
         type: string
       raw:
@@ -570,8 +571,6 @@ definitions:
         items:
           type: string
         type: array
-      idempotency_ttl:
-        type: string
       is_disabled:
         type: boolean
       mask_id:
@@ -774,8 +773,6 @@ definitions:
         type: string
       idempotency_key:
         type: string
-      idempotency_ttl:
-        type: string
     type: object
   models.CreateProject:
     properties:
@@ -900,6 +897,8 @@ definitions:
         type: array
       event_type:
         type: string
+      idempotency_key:
+        type: string
       project_id:
         type: string
     type: object
@@ -990,6 +989,8 @@ definitions:
         $ref: '#/definitions/datastore.Event'
       headers:
         $ref: '#/definitions/httpheader.HTTPHeader'
+      idempotency_key:
+        type: string
       metadata:
         $ref: '#/definitions/datastore.Metadata'
       project_id:
@@ -1035,9 +1036,10 @@ definitions:
         type: string
       headers:
         $ref: '#/definitions/httpheader.HTTPHeader'
-      matched_endpoints:
-        description: TODO(all) remove this field
-        type: integer
+      idempotency_key:
+        type: string
+      is_duplicate_event:
+        type: boolean
       project_id:
         type: string
       raw:
@@ -1081,6 +1083,8 @@ definitions:
           type: integer
         type: array
       event_type:
+        type: string
+      idempotency_key:
         type: string
       owner_id:
         type: string
@@ -1346,8 +1350,6 @@ definitions:
         items:
           type: string
         type: array
-      idempotency_ttl:
-        type: string
       is_disabled:
         type: boolean
       mask_id:
@@ -2392,6 +2394,9 @@ paths:
       - in: query
         name: eventId
         type: string
+      - in: query
+        name: idempotencyKey
+        type: string
       - description: A pagination cursor to fetch the next page of a list
         example: 01H0JA5MEES38RRK3HTEJC647K
         in: query
@@ -2418,6 +2423,9 @@ paths:
           type: string
         name: status
         type: array
+      - in: query
+        name: subscriptionId
+        type: string
       produces:
       - application/json
       responses:
@@ -2742,6 +2750,9 @@ paths:
           type: string
         name: status
         type: array
+      - in: query
+        name: subscriptionId
+        type: string
       produces:
       - application/json
       responses:
@@ -2874,6 +2885,9 @@ paths:
           type: string
         name: endpointId
         type: array
+      - in: query
+        name: idempotencyKey
+        type: string
       - description: A pagination cursor to fetch the next page of a list
         example: 01H0JA5MEES38RRK3HTEJC647K
         in: query
@@ -2889,7 +2903,7 @@ paths:
         in: query
         name: prev_page_cursor
         type: string
-      - description: Any arbitary value to filter the events payload
+      - description: Any arbitrary value to filter the events payload
         in: query
         name: query
         type: string
@@ -3155,6 +3169,9 @@ paths:
         name: eventID
         type: string
       - in: query
+        name: idempotencyKey
+        type: string
+      - in: query
         name: ownerID
         type: string
       - in: query
@@ -3162,6 +3179,9 @@ paths:
         type: string
       - in: query
         name: sourceID
+        type: string
+      - in: query
+        name: subscriptionID
         type: string
       produces:
       - application/json
