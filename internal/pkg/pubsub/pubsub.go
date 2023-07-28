@@ -65,7 +65,7 @@ func (p *PubSubSource) getHash() string {
 
 	if source.PubSub.Type == datastore.KafkaPubSub {
 		kq := source.PubSub.Kafka
-		hash = fmt.Sprintf("%s,%s,%s,%s,%v", kq.Brokers, kq.ConsumerGroupID, kq.TopicName, kq.Auth, source.PubSub.Workers)
+		hash = fmt.Sprintf("%s,%s,%s,%v,%v", kq.Brokers, kq.ConsumerGroupID, kq.TopicName, kq.Auth, source.PubSub.Workers)
 	}
 
 	h := md5.Sum([]byte(hash))
@@ -95,6 +95,7 @@ func (s *SourcePool) Insert(ps *PubSubSource) {
 		so := &PubSubSource{source: source}
 		// config hasn't changed
 		if existingSource.hash == so.getHash() {
+			fmt.Println("source don change ooo >>>>", source)
 			return
 		}
 

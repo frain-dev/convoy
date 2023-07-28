@@ -147,8 +147,7 @@ func (k *Kafka) Consume() {
 			continue
 		}
 
-		ctx, _ := context.WithTimeout(k.ctx, 15*time.Second)
-
+		ctx := context.Background()
 		if err := k.handler(ctx, k.source, string(m.Value)); err != nil {
 			k.log.WithError(err).Error("failed to write message to create event queue - kafka pub sub")
 		} else {
