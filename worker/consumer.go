@@ -19,7 +19,9 @@ type Consumer struct {
 
 func NewConsumer(q queue.Queuer, lo log.StdLogger) *Consumer {
 	srv := asynq.NewServer(
-		q.Options().RedisClient,
+		asynq.RedisClusterClientOpt{
+			Addrs: q.Options().RedisClusterAddresses,
+		},
 		asynq.Config{
 			Concurrency: convoy.Concurrency,
 			BaseContext: func() context.Context {

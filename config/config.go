@@ -141,6 +141,10 @@ type RedisConfiguration struct {
 	Addresses string `json:"addresses" envconfig:"CONVOY_REDIS_CLUSTER_ADDRESSES"`
 }
 
+func (rc RedisConfiguration) BuildAddresses() []string {
+	return strings.Split(rc.Addresses, ",")
+}
+
 func (rc RedisConfiguration) BuildDsn() string {
 	if rc.Scheme == "" {
 		return ""
@@ -398,7 +402,7 @@ func ensureSSL(s ServerConfiguration) error {
 }
 
 func ensureQueueConfig(queueCfg RedisConfiguration) error {
-	if queueCfg.BuildDsn() == "" {
+	if queueCfg.BuildDsn() == "" || len(queueCfg.BuildAddresses()) == 0 {
 		return errors.New("redis queue dsn is empty")
 	}
 
