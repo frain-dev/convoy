@@ -40,15 +40,14 @@ export class DialogHeaderComponent {
 	host: { class: 'backdrop:bg-black backdrop:bg-opacity-50 p-0', '[class]': 'classes', '[id]': 'id' }
 })
 export class DialogDirective implements OnInit {
-	@Input('position') position: 'full' | 'left' | 'right' | 'center' = 'right';
+	@Input('position') position: 'full' | 'right' | 'center' = 'right';
 	@Input('size') size: 'sm' | 'md' | 'lg' = 'md';
 	@Input('id') id!: string;
-	modalSizes = { sm: 'w-[380px]', md: 'w-[460px]', lg: 'w-[600px]' };
+	modalSizes = { sm: 'w-[380px]', md: 'w-[914px]', lg: 'w-[914px]' };
 	modalType = {
 		full: ` w-full h-full`,
-		left: ` ml-0 h-full`,
 		right: ` mr-0 h-full`,
-		center: ` rounded-[16px]`
+		center: ` rounded-[16px] mt-180px`
 	};
 	constructor() {}
 
