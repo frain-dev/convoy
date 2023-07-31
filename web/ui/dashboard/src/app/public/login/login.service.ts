@@ -22,19 +22,4 @@ export class LoginService {
 			}
 		});
 	}
-
-	getSignupConfig(): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: '/configuration/is_signup_enabled',
-					method: 'get'
-				});
-
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
 }

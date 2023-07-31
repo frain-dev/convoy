@@ -8,7 +8,7 @@ import { LoginService } from './login.service';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { PrivateService } from 'src/app/private/private.service';
 import { ORGANIZATION_DATA } from 'src/app/models/organisation.model';
-import { PROJECT } from 'src/app/models/project.model';
+import { SignupService } from '../signup/signup.service';
 
 @Component({
 	selector: 'app-login',
@@ -29,7 +29,7 @@ export class LoginComponent implements OnInit {
 	isSignupEnabled = false;
 	organisations?: ORGANIZATION_DATA[];
 
-	constructor(private formBuilder: FormBuilder, public router: Router, private loginService: LoginService, private privateService: PrivateService) {}
+	constructor(private formBuilder: FormBuilder, public router: Router, private loginService: LoginService, private signupService:SignupService, private privateService: PrivateService) {}
 
 	ngOnInit() {
 		this.getSignUpConfig();
@@ -38,7 +38,7 @@ export class LoginComponent implements OnInit {
 	async getSignUpConfig() {
 		this.isFetchingConfig = true;
 		try {
-			const response = await this.loginService.getSignupConfig();
+			const response = await this.signupService.getSignupConfig();
 			this.isSignupEnabled = response.data;
 			this.isFetchingConfig = false;
 		} catch (error) {
