@@ -172,10 +172,6 @@ export class CreateEndpointComponent implements OnInit {
 		return this.configurations.find(config => config.uid === configValue)?.show || false;
 	}
 
-	cancel() {
-		this.onAction.emit({ action: 'close' });
-	}
-
 	get shouldShowBorder(): number {
 		return this.configurations.filter(config => config.show).length;
 	}

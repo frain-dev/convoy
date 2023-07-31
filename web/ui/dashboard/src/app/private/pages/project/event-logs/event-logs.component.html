@@ -68,7 +68,7 @@
 			fill="outline"
 			class="ml-14px px-10px border-primary-400 h-36px whitespace-nowrap"
 			[disabled]="(eventsDateFilterFromURL.startDate == '' || eventsDateFilterFromURL.endDate == '') && (eventSource?.length == 0 || eventSource == undefined)"
-			(click)="fetchRetryCount(); showBatchRetryModal = true"
+			(click)="fetchRetryCount(); batchDialog.showModal()"
 		>
 			Batch Replay
 		</button>
@@ -309,12 +309,12 @@
 <convoy-pagination *ngIf="events?.pagination?.has_next_page || events?.pagination?.has_prev_page" [pagination]="events?.pagination" (paginate)="paginateEvents($event)"></convoy-pagination>
 
 <!-- bacth retry modal -->
-<div convoy-modal position="center" size="sm" *ngIf="showBatchRetryModal">
+<dialog #batchDialog convoy-dialog position="center" size="sm">
 	<div class="text-center py-30px">
 		<img src="/assets/img/filter.gif" alt="filter icon" class="w-50px m-auto mb-16px" />
 		<div class="text-center text-16 font-medium text-grey-60 mb-8px">The filters applied will affect</div>
 		<div class="text-center text-16 font-semibold mb-32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ? 's' : '' }}</div>
 		<button convoy-button [disabled]="isRetrying || batchRetryCount == 0" class="m-auto" (click)="batchRetryEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
-		<button convoy-button fill="clear" class="font-semibold m-auto" (click)="showBatchRetryModal = false">No, Cancel</button>
+		<button convoy-button fill="clear" class="font-semibold m-auto" (click)="batchDialog.close()">No, Cancel</button>
 	</div>
-</div>
+</dialog>

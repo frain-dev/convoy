@@ -5,7 +5,6 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
-import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { MetaEventsService } from './meta-events.service';
 import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
 import { TableCellComponent, TableComponent, TableHeadCellComponent, TableHeadComponent, TableRowComponent } from 'src/app/components/table/table.component';
@@ -17,6 +16,7 @@ import { PaginationComponent } from 'src/app/private/components/pagination/pagin
 import { META_EVENT } from 'src/app/models/project.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { Router } from '@angular/router';
+import { DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
 
 @Component({
 	selector: 'convoy-meta-events',
@@ -27,8 +27,7 @@ import { Router } from '@angular/router';
 		EmptyStateComponent,
 		ButtonComponent,
 		TooltipComponent,
-		ModalComponent,
-		ModalHeaderComponent,
+		DialogHeaderComponent,
 		TableLoaderModule,
 		TableCellComponent,
 		TableComponent,

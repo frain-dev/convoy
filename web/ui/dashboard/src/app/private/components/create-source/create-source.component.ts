@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SOURCE } from 'src/app/models/source.model';
@@ -153,7 +153,7 @@ export class CreateSourceComponent implements OnInit {
 
 			this.sourceForm.patchValue(response.data);
 			if (this.sourceDetails.custom_response.body || this.sourceDetails.custom_response.content_type) this.toggleConfigForm('custom_response');
-			if (this.sourceDetails.idempotency_keys) this.toggleConfigForm('idempotency');
+			if (this.sourceDetails.idempotency_keys.length) this.toggleConfigForm('idempotency');
 
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
 
@@ -210,7 +210,6 @@ export class CreateSourceComponent implements OnInit {
 		};
 		fileReader.onerror = error => {
 			this.generalService.showNotification({ message: 'Please upload a JSON file', style: 'warning' });
-			console.log(error);
 		};
 	}
 
@@ -275,11 +274,6 @@ export class CreateSourceComponent implements OnInit {
 
 	showConfig(configValue: string): boolean {
 		return this.configurations.find(config => config.uid === configValue)?.show || false;
-	}
-
-	cancel() {
-		document.getElementById(this.router.url.includes('/configure') ? 'configureProjectForm' : 'sourceForm')?.scroll({ top: 0, behavior: 'smooth' });
-		this.confirmModal = true;
 	}
 
 	setRegionValue(value: any) {

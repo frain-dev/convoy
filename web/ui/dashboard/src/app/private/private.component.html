@@ -58,7 +58,7 @@
 							</ul>
 
 							<li class="border-t border-t-grey-10">
-								<button convoy-dropdown-option convoy-button fill="text" size="sm" class="px-30px py-16px" (click)="privateService.showCreateOrgModal = true">
+								<button convoy-dropdown-option convoy-button fill="text" size="sm" class="px-30px py-16px" (click)="dialog.nativeElement.showModal()">
 									<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
 									Add {{ organisations?.length ? 'another' : 'an' }} Organization
 								</button>
@@ -94,8 +94,6 @@
 
 		<convoy-github-star></convoy-github-star>
 
-		<convoy-verify-email *ngIf="showVerifyEmailModal" (closeModal)="showVerifyEmailModal = false"></convoy-verify-email>
-
 		<convoy-loader *ngIf="isLoadingOrganisations" position="fixed"></convoy-loader>
 
 		<router-outlet></router-outlet>
@@ -110,13 +108,18 @@
 	<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer" class="text-grey-60 text-14 text-center">Need help? Go to docs</a>
 </div>
 
-<div class="fixed left-30px top-[90vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex justify-center items-center rounded-12px px-24px py-16px z-[5] hover:cursor-pointer" *ngIf="!isEmailVerified" (click)="showVerifyEmailModal = true">
+<div class="fixed left-30px top-[90vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex justify-center items-center rounded-12px px-24px py-16px z-[5] hover:cursor-pointer" *ngIf="!isEmailVerified" (click)="verifyEmailDialog.showModal()">
 	<img src="/assets/img/svg/lock_open.svg" alt="lock icon" class="w-24px h-24px mr-16px" />
 	<span class="text-warning-100 text-14 font-medium">Please remember to verify your email.</span>
 </div>
 
-<div convoy-modal position="center" *ngIf="privateService.showCreateOrgModal">
-	<div class="p-40px" modalBody>
+
+<dialog #verifyEmailDialog convoy-dialog position="center" size="md">
+    <convoy-verify-email (closeModal)="verifyEmailDialog.close()"></convoy-verify-email>
+</dialog>
+
+<dialog #orgDialog convoy-dialog position="center">
+	<div class="p-40px">
 		<img src="/assets/img/organisation-icon.svg" alt="organisation icon" class="pb-12px" />
 		<p class="text-grey-40 text-16 max-w-[423px] pb-40px">Your organization information will help us to know how to get you set up.</p>
 		<form [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
@@ -130,4 +133,4 @@
 			</div>
 		</form>
 	</div>
-</div>
+</dialog>

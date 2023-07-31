@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
@@ -15,9 +15,10 @@ import { PROJECT } from 'src/app/models/project.model';
 })
 export class SourcesComponent implements OnInit {
 	@ViewChild('incomingSourceDropdown') incomingSourceDropdown!: DropdownComponent;
+	@ViewChild('sourceDialog', { static: true }) sourceDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('deleteDialog', { static: true }) deleteDialog!: ElementRef<HTMLDialogElement>;
+
 	sourcesTableHead: string[] = ['Name', 'Type', 'Verifier', 'URL', 'Date created', ''];
-	shouldShowCreateSourceModal = false;
-	shouldShowUpdateSourceModal = false;
 	activeSource?: SOURCE;
 	sources: { content: SOURCE[]; pagination?: PAGINATION } = { content: [], pagination: undefined };
 	isLoadingSources = false;
@@ -25,6 +26,7 @@ export class SourcesComponent implements OnInit {
 	showDeleteSourceModal = false;
 	showSourceDetails = false;
 	projectDetails?: PROJECT;
+	action: 'create' | 'update' = 'create';
 
 	constructor(private route: ActivatedRoute, public router: Router, private sourcesService: SourcesService, public privateService: PrivateService, private generalService: GeneralService) {}
 
@@ -32,8 +34,10 @@ export class SourcesComponent implements OnInit {
 		this.getSources();
 
 		const urlParam = this.route.snapshot.params.id;
-		if (urlParam && urlParam === 'new') this.shouldShowCreateSourceModal = true;
-		if (urlParam && urlParam !== 'new') this.shouldShowUpdateSourceModal = true;
+		if (urlParam) {
+			urlParam === 'new' ? (this.action = 'create') : (this.action = 'update');
+			this.sourceDialog.nativeElement.showModal();
+		}
 	}
 
 	async getSources(requestDetails?: CURSOR) {
@@ -56,7 +60,7 @@ export class SourcesComponent implements OnInit {
 			this.isDeletingSource = false;
 			this.getSources();
 			this.closeModal();
-			this.showDeleteSourceModal = false;
+			this.deleteDialog.nativeElement.close();
 			this.activeSource = undefined;
 		} catch (error) {
 			this.isDeletingSource = false;

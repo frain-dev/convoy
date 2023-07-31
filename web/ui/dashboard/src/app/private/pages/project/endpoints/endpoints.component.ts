@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -9,7 +9,7 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
-import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
+import { DialogDirective, DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
 import { CreateEndpointComponent } from 'src/app/private/components/create-endpoint/create-endpoint.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { FormsModule } from '@angular/forms';
@@ -43,8 +43,7 @@ import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 		DropdownComponent,
 		DropdownOptionDirective,
 		ListItemComponent,
-		ModalComponent,
-		ModalHeaderComponent,
+		DialogHeaderComponent,
 		CreateEndpointComponent,
 		TagComponent,
 		FormsModule,
@@ -56,12 +55,17 @@ import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 		PermissionDirective,
 		EndpointSecretComponent,
 		DeleteModalComponent,
-		LoaderModule
+		LoaderModule,
+		DialogDirective
 	],
 	templateUrl: './endpoints.component.html',
 	styleUrls: ['./endpoints.component.scss']
 })
 export class EndpointsComponent implements OnInit {
+	@ViewChild('endpointDialog', { static: true }) endpointDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('secretDialog', { static: true }) secretDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('deleteDialog', { static: true }) deleteDialog!: ElementRef<HTMLDialogElement>;
+
 	showCreateEndpointModal = this.router.url.split('/')[4] === 'new';
 	showEditEndpointModal = this.router.url.split('/')[5] === 'edit';
 	endpointsTableHead = ['Name', 'Status', 'ID', '', '', ''];
@@ -69,16 +73,22 @@ export class EndpointsComponent implements OnInit {
 	endpoints?: { pagination?: PAGINATION; content?: ENDPOINT[] };
 	selectedEndpoint?: ENDPOINT;
 	isLoadingEndpoints = true;
-	showEndpointSecret = false;
 	isDeletingEndpoint = false;
 	showDeleteModal = false;
 	isTogglingEndpoint = false;
 	isSendingTestEvent = false;
 	endpointSearchString!: string;
+	action: 'create' | 'update' = 'create';
 
 	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute) {}
 
 	ngOnInit() {
+		const urlParam = this.route.snapshot.params.id;
+		if (urlParam) {
+			urlParam === 'new' ? (this.action = 'create') : (this.action = 'update');
+			this.endpointDialog.nativeElement.showModal();
+		}
+
 		this.getEndpoints();
 	}
 
@@ -109,7 +119,7 @@ export class EndpointsComponent implements OnInit {
 			this.getEndpoints({ hideLoader: true });
 
 			this.generalService.showNotification({ style: 'success', message: response.message });
-			this.showDeleteModal = false;
+			this.deleteDialog.nativeElement.close();
 			this.isDeletingEndpoint = false;
 		} catch {
 			this.isDeletingEndpoint = false;
@@ -152,6 +162,7 @@ export class EndpointsComponent implements OnInit {
 	}
 
 	cancel() {
+		this.endpointDialog.nativeElement.close();
 		this.router.navigateByUrl('/projects/' + this.projectService.activeProjectDetails?.uid + '/endpoints');
 	}
 }

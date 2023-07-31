@@ -126,7 +126,7 @@
 				</button>
 			</div>
 
-			<button convoy-button size="sm" fill="outline" class="ml-14px px-10px border-primary-400 h-36px" [disabled]="(!queryParams?.startDate || !queryParams?.endDate) && !queryParams?.endpointId && !queryParams?.eventId && !queryParams?.status" (click)="fetchRetryCount()">
+			<button convoy-button size="sm" fill="outline" class="ml-14px px-10px border-primary-400 h-36px" [disabled]="(!queryParams?.startDate || !queryParams?.endDate) && !queryParams?.endpointId && !queryParams?.eventId && !queryParams?.status && !queryParams?.sourceId" (click)="fetchRetryCount()">
 				Batch Retry
 			</button>
 		</div>
@@ -236,12 +236,14 @@
 	</div>
 </div>
 
-<div convoy-modal position="center" size="sm" *ngIf="showBatchRetryModal">
-	<div class="text-center py-30px">
+<!-- batch retry modal  -->
+<dialog #batchRetryDialog convoy-dialog position="center" size="sm" >
+    <div class="text-center py-30px">
 		<img src="/assets/img/filter.gif" alt="filter icon" class="w-50px m-auto mb-16px" />
 		<div class="text-center text-16 font-medium text-grey-60 mb-8px">The filters applied will affect</div>
 		<div class="text-center text-16 font-semibold mb-32px">{{ batchRetryCount || 0 }} event deliver{{ batchRetryCount > 1 ? 'ies' : 'y' }}</div>
 		<button convoy-button [disabled]="isRetrying || batchRetryCount == 0" class="m-auto" (click)="batchRetryEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
-		<button convoy-button fill="clear" class="font-semibold m-auto" (click)="showBatchRetryModal = false">No, Cancel</button>
+		<button convoy-button fill="clear" class="font-semibold m-auto" (click)="dialog.nativeElement.close()">No, Cancel</button>
 	</div>
-</div>
+</dialog>
+

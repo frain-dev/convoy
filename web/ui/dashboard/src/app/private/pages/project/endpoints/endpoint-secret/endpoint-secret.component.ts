@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
-import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ENDPOINT, SECRET } from 'src/app/models/endpoint.model';
@@ -12,7 +11,7 @@ import { EndpointsService } from '../endpoints.service';
 @Component({
 	selector: 'convoy-endpoint-secret',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, SelectComponent, ModalComponent, ModalHeaderComponent, CopyButtonComponent],
+	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, SelectComponent, CopyButtonComponent],
 	templateUrl: './endpoint-secret.component.html',
 	styleUrls: ['./endpoint-secret.component.scss']
 })

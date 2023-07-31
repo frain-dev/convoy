@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
 import { GeneralService } from '../services/general/general.service';
@@ -13,12 +13,14 @@ import { differenceInSeconds } from 'date-fns';
 	styleUrls: ['./private.component.scss']
 })
 export class PrivateComponent implements OnInit {
+	@ViewChild('orgDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
+    @ViewChild('verifyEmailDialog', { static: true }) verifyEmailDialog!: ElementRef<HTMLDialogElement>;
+
 	showDropdown = false;
 	showOrgDropdown = false;
 	showMoreDropdown = false;
 	showOverlay = false;
 	showAddOrganisationModal = false;
-	showVerifyEmailModal = false;
 	isEmailVerified = true;
 	apiURL = this.generalService.apiURL();
 	organisations?: ORGANIZATION_DATA[];
@@ -136,6 +138,7 @@ export class PrivateComponent implements OnInit {
 			this.creatingOrganisation = false;
 			this.showCreateOrganisationModal = false;
 			this.privateService.showCreateOrgModal = false;
+			this.dialog.nativeElement.close();
 
 			await this.getOrganizations(true);
 			this.selectOrganisation(response.data);

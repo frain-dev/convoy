@@ -1,13 +1,11 @@
-<div convoy-modal position="center" size="sm">
-	<div class="flex flex-col items-center justify-center p-30px">
-		<img src="/assets/img/success.gif" class="w-100px" alt="success" />
-		<h2 class="font-semibold mt-16px text-16">{{ title }}</h2>
-		<p class="text-12 text-grey-60 font-normal text-center mb-38px mt-8px m-auto">{{ description }}</p>
+<div class="flex flex-col items-center justify-center p-30px">
+	<img src="/assets/img/success.gif" class="w-100px" alt="success" />
+	<h2 class="font-semibold mt-16px text-16">{{ title }}</h2>
+	<p class="text-12 text-grey-60 font-normal text-center mb-38px mt-8px m-auto">{{ description }}</p>
 
-		<div class="flex items-center justify-between w-full h-50px border border-grey-10 bg-[#F7F9FC] rounded-[6px] px-16px mb-32px">
-			<span class="text-16 text-grey-60 font-normal truncate">{{ token }}</span>
-			<div class="ml-8px" convoy-copy-button [text]="token" [notificationText]="notificationText"></div>
-		</div>
-		<button convoy-button size="sm" class="px-40px" (click)="closeModal.emit()" type="button">Done</button>
+	<div class="flex items-center justify-between w-full h-50px border border-grey-10 bg-[#F7F9FC] rounded-[6px] px-16px mb-32px">
+		<span class="text-16 text-grey-60 font-normal truncate">{{ token }}</span>
+		<div class="ml-8px" convoy-copy-button [text]="token" [notificationText]="notificationText"></div>
 	</div>
+	<button convoy-button size="sm" class="px-40px" (click)="closeModal.emit()" type="button">Done</button>
 </div>
