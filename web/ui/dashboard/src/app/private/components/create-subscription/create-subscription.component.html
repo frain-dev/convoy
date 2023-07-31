@@ -185,5 +185,7 @@
 
 <!-- subscription filters form   -->
 <dialog #filterDialog convoy-dialog position="full">
-	<convoy-create-subscription-filter (close)="filterDialog.close()" [schema]="subscriptionForm.get('filter_config.filter')?.value" [action]="action" (filterSchema)="getFilterSchema($event)"></convoy-create-subscription-filter>
+	<div class="w-full h-full">
+        <convoy-create-subscription-filter (close)="filterDialog.close()" [schema]="subscriptionForm.get('filter_config.filter')?.value" [action]="action" (filterSchema)="getFilterSchema($event)"></convoy-create-subscription-filter>
+    </div>
 </dialog>

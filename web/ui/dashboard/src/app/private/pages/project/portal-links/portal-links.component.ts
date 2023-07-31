@@ -80,7 +80,7 @@ export class PortalLinksComponent implements OnInit {
 
 	ngAfterViewInit() {
 		this.linksEndpointFilter$ = fromEvent<any>(this.linksEndpointFilter?.nativeElement, 'keyup').pipe(
-			map(event => event.target.value),
+			map(event => event?.target?.value),
 			startWith(''),
 			debounceTime(500),
 			distinctUntilChanged(),

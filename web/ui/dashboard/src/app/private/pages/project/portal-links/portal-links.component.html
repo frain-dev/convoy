@@ -124,7 +124,9 @@
 <convoy-pagination *ngIf="portalLinks?.pagination?.has_next_page || portalLinks?.pagination?.has_prev_page" [pagination]="portalLinks?.pagination" (paginate)="getPortalLinks($event)"></convoy-pagination>
 
 <dialog #portalLinkDialog convoy-dialog position="full">
-	<convoy-create-portal-link [action]="action"></convoy-create-portal-link>
+	<div class="w-full h-full">
+        <convoy-create-portal-link [action]="action"></convoy-create-portal-link>
+    </div>
 </dialog>
 
 <dialog #deleteModal convoy-dialog position="center" size="sm">

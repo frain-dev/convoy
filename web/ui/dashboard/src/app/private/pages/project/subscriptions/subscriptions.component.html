@@ -113,18 +113,20 @@
 		<h2 class="font-semibold text-16 capitalize">{{ action === 'update' ? 'Update Subscription' : 'Create Subscription' }}</h2>
 	</div>
 
-	<div class="max-w-[770px] m-auto">
-		<convoy-create-subscription showAction="true" (onAction)="createSubscription($event.action)" [action]="action === 'update' ? 'update' : 'create'"></convoy-create-subscription>
-	</div>
+	<div class="w-full h-full">
+        <div class="max-w-[770px] m-auto">
+            <convoy-create-subscription showAction="true" (onAction)="createSubscription($event.action)" [action]="action === 'update' ? 'update' : 'create'"></convoy-create-subscription>
+        </div>
+    </div>
 </dialog>
 
 <!-- subscription details dialog  -->
-<dialog #detailsDialog convoy-dialog id="subscription-details" position="right">
+<dialog #detailsDialog convoy-dialog id="subscription-details">
 	<div convoy-dialog-header (closeDialog)="closeModal()">
 		<h2 class="font-semibold capitalize max-w-[356px] overflow-ellipsis overflow-hidden whitespace-nowrap">{{ activeSubscription?.name || 'Subscription Details' }}</h2>
 	</div>
 
-	<div class="p-20px">
+	<div class="p-20px h-full">
 		<ng-container *ngIf="projectDetails?.type === 'incoming'">
 			<h2 class="font-medium mb-10px text-14 text-grey-40">Source</h2>
 			<div convoy-card hover="true" class="w-full cursor-pointer py-20px mb-24px">

@@ -313,7 +313,7 @@
 		<h2 class="font-semibold capitalize">New Signature</h2>
 	</div>
 
-	<div class="p-20px">
+	<div class="p-20px h-full">
 		<form [formGroup]="newSignatureForm">
 			<convoy-select className="mb-24px" label="Encoding" name="encoding" formControlName="encoding" [options]="encodings" errorMessage="Select encoding type" [required]="true" (selectedOption)="newSignatureForm.patchValue({ encoding: $event })"></convoy-select>
 			<div class="spacer mb-24px"></div>
