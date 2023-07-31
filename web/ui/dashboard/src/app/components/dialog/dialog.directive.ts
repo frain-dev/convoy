@@ -43,7 +43,7 @@ export class DialogDirective implements OnInit {
 	@Input('position') position: 'full' | 'right' | 'center' = 'right';
 	@Input('size') size: 'sm' | 'md' | 'lg' = 'md';
 	@Input('id') id!: string;
-	modalSizes = { sm: 'w-[380px]', md: 'w-[914px]', lg: 'w-[914px]' };
+	modalSizes = { sm: 'w-[340px]', md: 'w-[490px]', lg: 'w-[914px]' };
 	modalType = {
 		full: ` w-full h-full`,
 		right: ` mr-0 h-full`,
