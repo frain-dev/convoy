@@ -1,8 +1,6 @@
-import { inject, NgModule } from '@angular/core';
+import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { LoginService } from './public/login/login.service';
 
-export const getSignupConfig = async (loginService = inject(LoginService)) => await loginService.getSignupConfig();
 
 const routes: Routes = [
 	{
@@ -27,7 +25,6 @@ const routes: Routes = [
 	},
 	{
 		path: '',
-		resolve: [() => getSignupConfig()],
 		loadChildren: () => import('./public/public.module').then(m => m.PublicModule)
 	}
 ];
