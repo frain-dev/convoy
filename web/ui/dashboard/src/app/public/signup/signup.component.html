@@ -43,3 +43,6 @@
 
 	<button convoy-button fill="link" class="mt-34px w-full" (click)="router.navigateByUrl('/login')" size="sm">Log in if you already have an account</button>
 </div>
+
+
+<convoy-loader [isTransparent]="false" *ngIf="isFetchingConfig"></convoy-loader>
