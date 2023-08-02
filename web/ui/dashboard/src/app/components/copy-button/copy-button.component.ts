@@ -18,27 +18,21 @@ export class CopyButtonComponent implements OnInit {
 	@Input('color') color: 'primary' | 'gray' = 'gray';
 	@Input('className') class!: string;
 	@Output('copyText') copy = new EventEmitter();
-	textCopied = false;
-
 	constructor(private generalService: GeneralService) {}
 
 	ngOnInit(): void {}
 
-	copyText(event: any) {
+	async copyItem(event: any) {
 		event.stopPropagation();
 		if (!this.textToCopy) return;
-		const text = this.textToCopy;
-		const el = document.createElement('textarea');
-		el.value = text;
-		document.body.appendChild(el);
-		el.select();
-		document.execCommand('copy');
-		this.textCopied = true;
-		this.copy.emit();
-		setTimeout(() => {
-			this.textCopied = false;
-		}, 2000);
-		document.body.removeChild(el);
-		if (this.notificationText) this.generalService.showNotification({ message: this.notificationText, style: 'info' });
+
+		try {
+			await navigator.clipboard.writeText(this.textToCopy);
+			this.copy.emit();
+			if (this.notificationText) this.generalService.showNotification({ message: this.notificationText, style: 'info' });
+
+		} catch (err) {
+			return err;
+		}
 	}
 }

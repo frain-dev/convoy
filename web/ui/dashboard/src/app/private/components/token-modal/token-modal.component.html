@@ -5,7 +5,7 @@
 
 	<div class="flex items-center justify-between w-full h-50px border border-grey-10 bg-[#F7F9FC] rounded-[6px] px-16px mb-32px">
 		<span class="text-16 text-grey-60 font-normal truncate">{{ token }}</span>
-		<div class="ml-8px" convoy-copy-button [text]="token" [notificationText]="notificationText"></div>
+		<div convoy-copy-button class="ml-8px" [text]="token" [notificationText]="notificationText"></div>
 	</div>
 	<button convoy-button size="sm" class="px-40px" (click)="closeModal.emit()" type="button">Done</button>
 </div>
