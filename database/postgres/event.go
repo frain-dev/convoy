@@ -31,11 +31,11 @@ const (
 	COALESCE(source_id, '') AS source_id,
 	COALESCE(idempotency_key, '') AS idempotency_key,
 	COALESCE(url_query_params, '') AS url_query_params
-	FROM convoy.events WHERE id = $1 AND project_id = $2 AND deleted_at is NULL;
+	FROM convoy.events WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	fetchEventsByIdempotencyKey = `
-	SELECT id FROM convoy.events WHERE idempotency_key = $1 AND project_id = $2 AND deleted_at is NULL;
+	SELECT id FROM convoy.events WHERE idempotency_key = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	fetchFirstEventWithIdempotencyKey = `
@@ -43,14 +43,14 @@ const (
 	WHERE idempotency_key = $1
 	AND is_duplicate_event IS FALSE
     AND project_id = $2
-    AND deleted_at is NULL
+    AND deleted_at IS NULL
 	ORDER BY id
 	LIMIT 1;
 	`
 
 	fetchEventsByIds = `
 	SELECT ev.id, ev.project_id,
-    ev.is_duplicate_event, ev.id as event_type,
+    ev.is_duplicate_event, ev.id AS event_type,
 	COALESCE(ev.source_id, '') AS source_id,
 	COALESCE(ev.idempotency_key, '') AS idempotency_key,
 	COALESCE(ev.url_query_params, '') AS url_query_params,
@@ -68,19 +68,19 @@ const (
 	`
 
 	countProjectMessages = `
-	SELECT count(*) from convoy.events WHERE project_id = $1 AND deleted_at IS NULL;
+	SELECT COUNT(*) FROM convoy.events WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 	countEvents = `
-	SELECT count(distinct(ev.id)) from convoy.events ev
-	LEFT JOIN convoy.events_endpoints ee on ee.event_id = ev.id
-	LEFT JOIN convoy.endpoints e on ee.endpoint_id = e.id
+	SELECT COUNT(DISTINCT(ev.id)) FROM convoy.events ev
+	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
+	LEFT JOIN convoy.endpoints e ON ee.endpoint_id = e.id
 	WHERE ev.project_id = $1 AND (e.id = $2 OR $2 = '' )
 	AND (ev.source_id = $3 OR $3 = '') AND ev.created_at >= $4 AND ev.created_at <= $5 AND ev.deleted_at IS NULL;
 	`
 
 	baseEventsPaged = `
 	SELECT ev.id, ev.project_id,
-	ev.id as event_type, ev.is_duplicate_event,
+	ev.id AS event_type, ev.is_duplicate_event,
 	COALESCE(ev.source_id, '') AS source_id,
 	ev.headers, ev.raw, ev.data, ev.created_at,
 	COALESCE(idempotency_key, '') AS idempotency_key,
@@ -119,8 +119,10 @@ const (
 
 	endpointFilter = ` AND ee.endpoint_id IN (:endpoint_ids) `
 
+	searchFilter = ` AND search_token @@ websearch_to_tsquery('english',:query) `
+
 	baseCountPrevEvents = `
-	SELECT count(distinct(ev.id)) as count
+	SELECT COUNT(DISTINCT(ev.id)) AS count
 	FROM convoy.events ev
 	LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
 	WHERE ev.deleted_at IS NULL
@@ -128,12 +130,12 @@ const (
 	countPrevEvents = ` AND ev.id > :cursor GROUP BY ev.id ORDER BY ev.id DESC LIMIT 1`
 
 	softDeleteProjectEvents = `
-	UPDATE convoy.events SET deleted_at = now()
+	UPDATE convoy.events SET deleted_at = NOW()
 	WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3
 	AND deleted_at IS NULL
 	`
 	hardDeleteProjectEvents = `
-	DELETE from convoy.events WHERE project_id = $1 AND created_at
+	DELETE FROM convoy.events WHERE project_id = $1 AND created_at
 	>= $2 AND created_at <= $3 AND deleted_at IS NULL
 	`
 )
@@ -312,6 +314,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		"limit":           filter.Pageable.Limit(),
 		"start_date":      startDate,
 		"end_date":        endDate,
+		"query":           filter.Query,
 		"cursor":          filter.Pageable.Cursor(),
 		"idempotency_key": filter.IdempotencyKey,
 	}
@@ -326,6 +329,10 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 	filterQuery = baseEventFilter
 	if len(filter.EndpointIDs) > 0 {
 		filterQuery += endpointFilter
+	}
+
+	if len(filter.Query) > 0 {
+		filterQuery += searchFilter
 	}
 
 	query = fmt.Sprintf(baseQueryPagination, baseEventsPaged, filterQuery)
