@@ -6,9 +6,9 @@ CREATE TABLE IF NOT EXISTS convoy.events_search
     event_type         TEXT    NOT NULL,
     endpoints          TEXT,
     project_id         VARCHAR NOT NULL
-        REFERENCES convoy.projects,
+        REFERENCES convoy.projects (id),
     source_id          VARCHAR
-        REFERENCES convoy.sources,
+        REFERENCES convoy.sources (id),
     headers            JSONB,
     raw                TEXT    NOT NULL,
     data               BYTEA   NOT NULL,
@@ -89,6 +89,23 @@ ALTER TABLE IF EXISTS convoy.events_search
 
 -- +migrate Up
 DROP TABLE IF EXISTS convoy.events_search;
+
+-- +migrate Up
+ALTER TABLE convoy.events_endpoints
+    DROP CONSTRAINT events_endpoints_event_id_fkey;
+
+-- +migrate Up
+ALTER TABLE convoy.events_endpoints
+    ADD FOREIGN KEY (event_id) REFERENCES convoy.events
+        ON DELETE CASCADE;
+
+-- +migrate Up
+ALTER TABLE convoy.event_deliveries
+    DROP CONSTRAINT event_deliveries_event_id_fkey;
+
+-- +migrate Up
+ALTER TABLE convoy.event_deliveries
+    ADD FOREIGN KEY (event_id) REFERENCES convoy.events;
 
 -- +migrate Down
 ALTER TABLE IF EXISTS convoy.events
