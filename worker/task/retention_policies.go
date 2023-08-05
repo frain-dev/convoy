@@ -24,6 +24,7 @@ const (
 
 func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, exportRepo datastore.ExportRepository, searcher searcher.Searcher) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
+		c := time.Now()
 		config, err := configRepo.LoadConfiguration(ctx)
 		if err != nil {
 			if errors.Is(err, datastore.ErrConfigNotFound) {
@@ -64,6 +65,7 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 				}
 			}
 		}
+		fmt.Printf("Retention policy job took %s minutes to run", time.Since(c).Minutes())
 		return nil
 	}
 }
