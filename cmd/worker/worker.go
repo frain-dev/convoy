@@ -3,10 +3,8 @@ package worker
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"strings"
-
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"net/http"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/analytics"
@@ -87,8 +85,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				a.Logger.Debug("Failed to initialise search backend")
 			}
 
-			addresses := strings.Split(cfg.Redis.Addresses, ",")
-			rd, err := rdb.NewClient(addresses)
+			rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
 			if err != nil {
 				return err
 			}

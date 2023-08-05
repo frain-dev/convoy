@@ -71,7 +71,7 @@ func initializeQueue(configFile string, _ string, t *testing.T) queue.Queuer {
 
 	var opts queue.QueueOptions
 
-	redis, err := rdb.NewClient([]string{cfg.Redis.BuildDsn()})
+	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
 	if err != nil {
 		t.Fatalf("Failed to load new client: %v", err)
 	}

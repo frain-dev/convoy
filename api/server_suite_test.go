@@ -76,7 +76,7 @@ func getDB() database.Database {
 func getQueueOptions() (queue.QueueOptions, error) {
 	var opts queue.QueueOptions
 	cfg := getConfig()
-	redis, err := rdb.NewClient([]string{cfg.Redis.BuildDsn()})
+	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
 	if err != nil {
 		return opts, err
 	}

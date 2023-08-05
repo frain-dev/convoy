@@ -2,7 +2,6 @@ package rdb
 
 import (
 	"errors"
-
 	"github.com/frain-dev/convoy/util"
 	"github.com/newrelic/go-agent/v3/integrations/nrredis-v9"
 	"github.com/redis/go-redis/v9"
@@ -26,17 +25,25 @@ func NewClient(addresses []string) (*Redis, error) {
 			return nil, errors.New("dsn cannot be empty")
 		}
 	}
-	//_, err := redis.ParseURL(dsn)
-	//if err != nil {
-	//	return nil, err
-	//}
 
-	client := redis.NewUniversalClient(&redis.UniversalOptions{
-		Addrs: addresses,
-	})
+	var client redis.UniversalClient
 
-	// Add Instrumentation
-	client.AddHook(nrredis.NewHook(nil))
+	if len(addresses) == 1 {
+		opts, err := redis.ParseURL(addresses[0])
+		if err != nil {
+			return nil, err
+		}
+
+		client = redis.NewClient(opts)
+		// Add Instrumentation
+		client.AddHook(nrredis.NewHook(opts))
+	} else {
+		client = redis.NewUniversalClient(&redis.UniversalOptions{
+			Addrs: addresses,
+		})
+		// Add Instrumentation
+		client.AddHook(nrredis.NewHook(nil))
+	}
 
 	return &Redis{addresses: addresses, client: client}, nil
 }

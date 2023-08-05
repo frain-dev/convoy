@@ -23,7 +23,7 @@ func AddRetryCommand(a *cli.App) *cobra.Command {
 				log.Fatalf("Error getting config: %v", err)
 			}
 
-			if len(cfg.Redis.BuildAddresses()) == 0 {
+			if len(cfg.Redis.BuildDsn()) == 0 {
 				log.WithError(err).Fatalf("Queue type error: Command is available for redis queue only.")
 			}
 

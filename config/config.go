@@ -141,13 +141,13 @@ type RedisConfiguration struct {
 	Addresses string `json:"addresses" envconfig:"CONVOY_REDIS_CLUSTER_ADDRESSES"`
 }
 
-func (rc RedisConfiguration) BuildAddresses() []string {
-	return strings.Split(rc.Addresses, ",")
-}
+func (rc RedisConfiguration) BuildDsn() []string {
+	if len(strings.TrimSpace(rc.Addresses)) != 0 {
+		return strings.Split(rc.Addresses, ",")
+	}
 
-func (rc RedisConfiguration) BuildDsn() string {
 	if rc.Scheme == "" {
-		return ""
+		return []string{}
 	}
 
 	authPart := ""
@@ -160,7 +160,7 @@ func (rc RedisConfiguration) BuildDsn() string {
 		dbPart = fmt.Sprintf("/%s", rc.Database)
 	}
 
-	return fmt.Sprintf("%s://%s%s:%d%s", rc.Scheme, authPart, rc.Host, rc.Port, dbPart)
+	return []string{fmt.Sprintf("%s://%s%s:%d%s", rc.Scheme, authPart, rc.Host, rc.Port, dbPart)}
 }
 
 type FileRealmOption struct {
@@ -402,7 +402,7 @@ func ensureSSL(s ServerConfiguration) error {
 }
 
 func ensureQueueConfig(queueCfg RedisConfiguration) error {
-	if queueCfg.BuildDsn() == "" || len(queueCfg.BuildAddresses()) == 0 {
+	if len(queueCfg.BuildDsn()) == 0 {
 		return errors.New("redis queue dsn is empty")
 	}
 

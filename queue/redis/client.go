@@ -23,12 +23,12 @@ type RedisQueue struct {
 
 func NewQueue(opts queue.QueueOptions) queue.Queuer {
 	var c asynq.RedisConnOpt
-	if len(opts.RedisClusterAddresses) == 0 {
+	if len(opts.RedisAddress) == 1 {
 		var _ = opts.RedisClient.MakeRedisClient().(redis.UniversalClient)
 		c = opts.RedisClient
 	} else {
 		c = asynq.RedisClusterClientOpt{
-			Addrs: opts.RedisClusterAddresses,
+			Addrs: opts.RedisAddress,
 		}
 	}
 

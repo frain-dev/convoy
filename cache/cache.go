@@ -2,7 +2,6 @@ package cache
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	rcache "github.com/frain-dev/convoy/cache/redis"
@@ -16,8 +15,7 @@ type Cache interface {
 }
 
 func NewCache(cfg config.RedisConfiguration) (Cache, error) {
-	addresses := strings.Split(cfg.Addresses, ",")
-	ca, err := rcache.NewRedisCache(addresses)
+	ca, err := rcache.NewRedisCache(cfg.BuildDsn())
 	if err != nil {
 		return nil, err
 	}

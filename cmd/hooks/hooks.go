@@ -72,7 +72,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		var ca cache.Cache
 		var q queue.Queuer
 
-		redis, err := rdb.NewClient(cfg.Redis.BuildAddresses())
+		redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
 		if err != nil {
 			return err
 		}
@@ -87,12 +87,11 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		}
 
 		opts := queue.QueueOptions{
-			Names:       queueNames,
-			RedisClient: redis,
-			//RedisAddress: cfg.Redis.BuildDsn(),
-			RedisClusterAddresses: cfg.Redis.BuildAddresses(),
-			Type:                  string(config.RedisQueueProvider),
-			PrometheusAddress:     cfg.Prometheus.Dsn,
+			Names:             queueNames,
+			RedisClient:       redis,
+			RedisAddress:      cfg.Redis.BuildDsn(),
+			Type:              string(config.RedisQueueProvider),
+			PrometheusAddress: cfg.Prometheus.Dsn,
 		}
 		q = redisQueue.NewQueue(opts)
 
