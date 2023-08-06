@@ -65,7 +65,7 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 				}
 			}
 		}
-		fmt.Printf("Retention policy job took %s minutes to run", time.Since(c).Minutes())
+		fmt.Printf("Retention policy job took %f minutes to run", time.Since(c).Minutes())
 		return nil
 	}
 }
