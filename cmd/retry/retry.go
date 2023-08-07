@@ -17,6 +17,9 @@ func AddRetryCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "retry",
 		Short: "retry event deliveries with a particular status in a timeframe",
+		Annotations: map[string]string{
+			"ShouldBootstrap": "false",
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, err := config.Get()
 			if err != nil {
