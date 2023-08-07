@@ -24,6 +24,9 @@ func AddSchedulerCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "scheduler",
 		Short: "scheduler runs periodic tasks",
+		Annotations: map[string]string{
+			"ShouldBootstrap": "false",
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()
 			if err != nil {

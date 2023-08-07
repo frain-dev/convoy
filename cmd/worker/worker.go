@@ -36,6 +36,9 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "worker",
 		Short: "Start worker instance",
+		Annotations: map[string]string{
+			"ShouldBootstrap": "false",
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// override config with cli Flags
 			cliConfig, err := buildWorkerCliConfiguration(cmd)

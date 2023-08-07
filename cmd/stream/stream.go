@@ -29,6 +29,9 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stream",
 		Short: "Start a websocket server to pipe events to a convoy cli instance",
+		Annotations: map[string]string{
+			"ShouldBootstrap": "false",
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// override config with cli flags
 			cliConfig, err := buildCliFlagConfiguration(cmd)
