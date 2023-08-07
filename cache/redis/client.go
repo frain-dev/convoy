@@ -13,8 +13,8 @@ type RedisCache struct {
 	cache *cache.Cache
 }
 
-func NewRedisCache(dsn string) (*RedisCache, error) {
-	rdb, err := rdb.NewClient(dsn)
+func NewRedisCache(addresses []string) (*RedisCache, error) {
+	rdb, err := rdb.NewClient(addresses)
 	if err != nil {
 		return nil, err
 	}

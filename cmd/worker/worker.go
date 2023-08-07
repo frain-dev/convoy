@@ -3,9 +3,8 @@ package worker
 import (
 	"context"
 	"fmt"
-	"net/http"
-
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"net/http"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/analytics"
@@ -127,12 +126,9 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				searchBackend,
 			))
 
-			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(
-				a.DB,
-				a.Queue))
+			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Queue))
 
-			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(
-				endpointRepo))
+			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo))
 
 			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, cfg, rd))
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))

@@ -13,8 +13,8 @@ type RedisLimiter struct {
 	limiter *redis_rate.Limiter
 }
 
-func NewRedisLimiter(dsn string) (*RedisLimiter, error) {
-	client, err := rdb.NewClient(dsn)
+func NewRedisLimiter(addresses []string) (*RedisLimiter, error) {
+	client, err := rdb.NewClient(addresses)
 	if err != nil {
 		return nil, err
 	}
