@@ -105,6 +105,48 @@ func (u *AuthIntegrationTestSuite) Test_LoginUser() {
 	require.Equal(u.T(), user.Email, response.Email)
 }
 
+func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_False() {
+	err := config.LoadConfig("./testdata/Auth_Config/jwt-convoy-signup-disabled.json")
+	require.NoError(u.T(), err)
+
+	// Arrange Request
+	url := "/ui/configuration/is_signup_enabled"
+	req := createRequest(http.MethodGet, url, "", nil)
+	w := httptest.NewRecorder()
+
+	// Act
+	u.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(u.T(), http.StatusOK, w.Code)
+
+	var response bool
+	parseResponse(u.T(), w.Result(), &response)
+
+	require.Equal(u.T(), false, response)
+}
+
+func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_True() {
+	err := config.LoadConfig("./testdata/Auth_Config/jwt-convoy-signup-enabled.json")
+	require.NoError(u.T(), err)
+
+	// Arrange Request
+	url := "/ui/configuration/is_signup_enabled"
+	req := createRequest(http.MethodGet, url, "", nil)
+	w := httptest.NewRecorder()
+
+	// Act
+	u.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(u.T(), http.StatusOK, w.Code)
+
+	var response bool
+	parseResponse(u.T(), w.Result(), &response)
+
+	require.Equal(u.T(), true, response)
+}
+
 func (u *AuthIntegrationTestSuite) Test_LoginUser_Invalid_Username() {
 	// Arrange Request
 	url := "/ui/auth/login"

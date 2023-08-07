@@ -282,6 +282,8 @@ func (a *ApplicationHandler) RegisterDashboardRoutes(r *chi.Mux) {
 		"/ui/organisations/{orgID}/projects/{projectID}/portal-links/{portalLinkID}/revoke",
 		uiMiddlewares.HandlerFunc(dh.RevokePortalLink))
 
+	r.Get("/ui/configuration/is_signup_enabled", dh.IsSignUpEnabled)
+
 	r.Method(GET,
 		"/ui/configuration", uiMiddlewares.HandlerFunc(dh.LoadConfiguration))
 

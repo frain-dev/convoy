@@ -1,0 +1,33 @@
+{
+    "multiple_tenants": false,
+    "queue": {
+        "type": "redis",
+        "redis": {
+            "dsn": "abc"
+        }
+    },
+    "auth": {
+        "is_signup_enabled": false,
+        "jwt": {
+            "enabled": true
+        }
+    },
+    "server": {
+        "http": {
+            "port": 80
+        }
+    },
+    "group": {
+        "strategy": {
+            "type": "default",
+            "default": {
+                "intervalSeconds": 125,
+                "retryLimit": 15
+            }
+        },
+        "signature": {
+            "header": "X-Company-Event-WebHook-Signature",
+            "hash": "SHA256"
+        }
+    }
+}

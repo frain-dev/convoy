@@ -8,7 +8,7 @@ import { LoginService } from './login.service';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { PrivateService } from 'src/app/private/private.service';
 import { ORGANIZATION_DATA } from 'src/app/models/organisation.model';
-import { PROJECT } from 'src/app/models/project.model';
+import { SignupService } from '../signup/signup.service';
 
 @Component({
 	selector: 'app-login',
@@ -25,11 +25,27 @@ export class LoginComponent implements OnInit {
 		password: ['', Validators.required]
 	});
 	isLoadingProject = false;
+	isFetchingConfig = false;
+	isSignupEnabled = false;
 	organisations?: ORGANIZATION_DATA[];
 
-	constructor(private formBuilder: FormBuilder, public router: Router, private loginService: LoginService, private privateService: PrivateService) {}
+	constructor(private formBuilder: FormBuilder, public router: Router, private loginService: LoginService, private signupService:SignupService, private privateService: PrivateService) {}
 
-	ngOnInit(): void {}
+	ngOnInit() {
+		this.getSignUpConfig();
+	}
+
+	async getSignUpConfig() {
+		this.isFetchingConfig = true;
+		try {
+			const response = await this.signupService.getSignupConfig();
+			this.isSignupEnabled = response.data;
+			this.isFetchingConfig = false;
+		} catch (error) {
+			this.isFetchingConfig = false;
+			return error;
+		}
+	}
 
 	async login() {
 		if (this.loginForm.invalid) return this.loginForm.markAllAsTouched();
@@ -40,12 +56,6 @@ export class LoginComponent implements OnInit {
 			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
 			localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
 
-			// get previous location in localstorage
-			// const lastLoacation = localStorage.getItem('CONVOY_LAST_AUTH_LOCATION');
-
-			// check active local project
-			// const localProject = localStorage.getItem('CONVOY_PROJECT');
-			// if (localProject) return lastLoacation ? (location.href = lastLoacation) : this.router.navigate([`/projects/${JSON.parse(localProject).uid}`]);
 			this.isLoadingProject = true;
 			return this.getOrganisations();
 		} catch {
