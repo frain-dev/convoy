@@ -135,8 +135,12 @@ const (
 	AND deleted_at IS NULL
 	`
 	hardDeleteProjectEvents = `
-	DELETE FROM convoy.events WHERE project_id = $1 AND created_at
-	>= $2 AND created_at <= $3 AND deleted_at IS NULL
+	DELETE FROM convoy.events WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3
+	AND deleted_at IS NULL AND NOT EXISTS (
+    SELECT 1
+    FROM convoy.event_deliveries
+    WHERE event_id = convoy.events.id
+    )
 	`
 )
 
