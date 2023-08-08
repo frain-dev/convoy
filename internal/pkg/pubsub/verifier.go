@@ -32,8 +32,10 @@ type KafkaPubSub struct {
 
 type KafkaAuth struct {
 	Type     string `json:"type" valid:"optional,in(plain|scram)~unsupported auth type"`
+	Hash     string `json:"hash" valid:"optional,in(SHA256|SHA512)~unsupported hashing algorithm"`
 	Username string `json:"username"`
 	Password string `json:"password"`
+	TLS      bool   `json:"tls"`
 }
 
 type PS struct {
@@ -116,8 +118,10 @@ func Validate(cfg *datastore.PubSubConfig) error {
 		if cfg.Kafka.Auth != nil {
 			kPubSub.Auth = &KafkaAuth{
 				Type:     cfg.Kafka.Auth.Type,
+				Hash:     cfg.Kafka.Auth.Hash,
 				Username: cfg.Kafka.Auth.Username,
 				Password: cfg.Kafka.Auth.Password,
+				TLS:      cfg.Kafka.Auth.TLS,
 			}
 		}
 

@@ -2,6 +2,8 @@ package kafka
 
 import (
 	"context"
+	"crypto/tls"
+	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -11,6 +13,8 @@ import (
 	"github.com/segmentio/kafka-go/sasl/scram"
 	"time"
 )
+
+var ErrInvalidCredentials = errors.New("your kafka credentials are invalid. please verify you're providing the correct credentials")
 
 type Kafka struct {
 	Cfg     *datastore.KafkaPubSubConfig
@@ -44,7 +48,7 @@ func (k *Kafka) Start() {
 	}
 }
 
-func (k *Kafka) auth() (sasl.Mechanism, error) {
+func (k *Kafka) dialer() (*kafka.Dialer, error) {
 	var mechanism sasl.Mechanism
 	var err error
 
@@ -53,25 +57,41 @@ func (k *Kafka) auth() (sasl.Mechanism, error) {
 		return nil, nil
 	}
 
+	if auth.Type != "plain" && auth.Type != "scram" {
+		return nil, fmt.Errorf("auth type: %s is not supported", auth.Type)
+	}
+
 	if auth.Type == "plain" {
 		mechanism = plain.Mechanism{
 			Username: auth.Username,
 			Password: auth.Password,
 		}
-
-		return mechanism, nil
 	}
 
 	if auth.Type == "scram" {
-		mechanism, err = scram.Mechanism(scram.SHA512, auth.Username, auth.Password)
+		algo := scram.SHA512
+
+		if auth.Hash == "SHA256" {
+			algo = scram.SHA256
+		}
+
+		mechanism, err = scram.Mechanism(algo, auth.Username, auth.Password)
 		if err != nil {
 			return nil, err
 		}
-
-		return mechanism, nil
 	}
 
-	return nil, fmt.Errorf("auth type: %s is not supported", auth.Type)
+	dialer := &kafka.Dialer{
+		Timeout:       15 * time.Second,
+		DualStack:     true,
+		SASLMechanism: mechanism,
+	}
+
+	if auth.TLS {
+		dialer.TLS = &tls.Config{}
+	}
+
+	return dialer, nil
 }
 
 func (k *Kafka) cancelled() bool {
@@ -84,19 +104,14 @@ func (k *Kafka) cancelled() bool {
 }
 
 func (k *Kafka) Verify() error {
-	auth, err := k.auth()
+	dialer, err := k.dialer()
 	if err != nil {
 		return err
 	}
 
-	dialer := &kafka.Dialer{
-		Timeout:       10 * time.Second,
-		DualStack:     true,
-		SASLMechanism: auth,
-	}
-
 	_, err = dialer.DialContext(context.Background(), "tcp", k.Cfg.Brokers[0])
 	if err != nil {
+		log.WithError(err).Error("failed to connect to kafka instance")
 		return err
 	}
 
@@ -105,7 +120,7 @@ func (k *Kafka) Verify() error {
 }
 
 func (k *Kafka) Consume() {
-	auth, err := k.auth()
+	dialer, err := k.dialer()
 	if err != nil {
 		log.WithError(err).Error("failed to fetch kafka auth")
 		return
@@ -116,11 +131,7 @@ func (k *Kafka) Consume() {
 		Brokers: k.Cfg.Brokers,
 		GroupID: k.Cfg.ConsumerGroupID,
 		Topic:   k.Cfg.TopicName,
-		Dialer: &kafka.Dialer{
-			Timeout:       15 * time.Second,
-			DualStack:     true,
-			SASLMechanism: auth,
-		},
+		Dialer:  dialer,
 	})
 
 	defer k.handleError(r)

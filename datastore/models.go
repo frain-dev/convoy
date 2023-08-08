@@ -1063,6 +1063,8 @@ type KafkaPubSubConfig struct {
 
 type KafkaAuth struct {
 	Type     string `json:"type" db:"type"`
+	Hash     string `json:"hash" db:"hash"`
+	TLS      bool   `json:"tls" db:"tls"`
 	Username string `json:"username" db:"username"`
 	Password string `json:"password" db:"password"`
 }

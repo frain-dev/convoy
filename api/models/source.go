@@ -330,8 +330,10 @@ func (kc *KafkaPubSubConfig) transform() *datastore.KafkaPubSubConfig {
 
 type KafkaAuth struct {
 	Type     string `json:"type"`
+	Hash     string `json:"hash"`
 	Username string `json:"username"`
 	Password string `json:"password"`
+	TLS      bool   `json:"tls"`
 }
 
 func (ka *KafkaAuth) transform() *datastore.KafkaAuth {
@@ -343,6 +345,8 @@ func (ka *KafkaAuth) transform() *datastore.KafkaAuth {
 		Type:     ka.Type,
 		Username: ka.Username,
 		Password: ka.Password,
+		Hash:     ka.Hash,
+		TLS:      ka.TLS,
 	}
 }
 
