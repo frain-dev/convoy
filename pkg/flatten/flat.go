@@ -157,6 +157,7 @@ func isKeyValidOperator(op string) bool {
 		"$or",
 		"$and",
 		"$exist",
+		"$regex",
 	}
 
 	for _, o := range operators {
