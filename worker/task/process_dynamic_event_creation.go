@@ -163,8 +163,10 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 
 		if eventDelivery.Status != datastore.DiscardedEventStatus {
 			payload := EventDelivery{
-				EventDeliveryID: eventDelivery.UID,
-				ProjectID:       project.UID,
+				Endpoint:      endpoint,
+				Project:       project,
+				Subscription:  s,
+				EventDelivery: eventDelivery,
 			}
 
 			data, err := json.Marshal(payload)

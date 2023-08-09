@@ -151,8 +151,10 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 
 			if eventDelivery.Status != datastore.DiscardedEventStatus {
 				payload := EventDelivery{
-					EventDeliveryID: eventDelivery.UID,
-					ProjectID:       project.UID,
+					Subscription:  &s,
+					Project:       project,
+					Endpoint:      s.Endpoint,
+					EventDelivery: eventDelivery,
 				}
 
 				data, err := json.Marshal(payload)
