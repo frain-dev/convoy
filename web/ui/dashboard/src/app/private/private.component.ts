@@ -6,6 +6,7 @@ import { PrivateService } from './private.service';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { differenceInSeconds } from 'date-fns';
+import { Subscription } from 'rxjs';
 
 @Component({
 	selector: 'app-private',
@@ -14,7 +15,7 @@ import { differenceInSeconds } from 'date-fns';
 })
 export class PrivateComponent implements OnInit {
 	@ViewChild('orgDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
-    @ViewChild('verifyEmailDialog', { static: true }) verifyEmailDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('verifyEmailDialog', { static: true }) verifyEmailDialog!: ElementRef<HTMLDialogElement>;
 
 	showDropdown = false;
 	showOrgDropdown = false;
@@ -27,19 +28,25 @@ export class PrivateComponent implements OnInit {
 	userOrganization?: ORGANIZATION_DATA;
 	convoyVersion: string = '';
 	isLoadingOrganisations = false;
-	showCreateOrganisationModal = this.privateService.showCreateOrgModal;
 	addOrganisationForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required]
 	});
 	creatingOrganisation = false;
 	checkTokenInterval: any;
 	private jwtHelper: JwtHelperService = new JwtHelperService();
+	private shouldShowOrgSubscription: Subscription | undefined;
 
 	constructor(private generalService: GeneralService, private router: Router, public privateService: PrivateService, private formBuilder: FormBuilder) {}
 
 	async ngOnInit() {
+		this.shouldShowOrgModal();
+
 		this.checkIfTokenIsExpired();
 		await Promise.all([this.getConfiguration(), this.getUserDetails(), this.getOrganizations()]);
+	}
+
+	ngOnDestroy() {
+		if (this.shouldShowOrgSubscription) this.shouldShowOrgSubscription.unsubscribe();
 	}
 
 	async logout() {
@@ -91,6 +98,9 @@ export class PrivateComponent implements OnInit {
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		this.showOrgDropdown = false;
 		this.privateService.getProjectsHelper({ refresh: true });
+		setInterval(() => {
+			this.isLoadingOrganisations = false;
+		}, 1000);
 	}
 
 	checkForSelectedOrganisation() {
@@ -136,8 +146,6 @@ export class PrivateComponent implements OnInit {
 
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.creatingOrganisation = false;
-			this.showCreateOrganisationModal = false;
-			this.privateService.showCreateOrgModal = false;
 			this.dialog.nativeElement.close();
 
 			await this.getOrganizations(true);
@@ -172,6 +180,17 @@ export class PrivateComponent implements OnInit {
 
 			this.inTimeoutCheck(expiryPeriodInSeconds - 600);
 		}
+	}
+
+	shouldShowOrgModal() {
+		this.shouldShowOrgSubscription = this.privateService.showOrgModal.subscribe(
+			(val: boolean) => {
+				if (val) this.dialog?.nativeElement?.showModal();
+			},
+			error => {
+				return error;
+			}
+		);
 	}
 
 	inTimeoutCheck(time: number) {
