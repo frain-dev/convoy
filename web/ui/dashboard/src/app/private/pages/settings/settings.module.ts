@@ -19,6 +19,7 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
+import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 
 const routes: Routes = [{ path: '', component: SettingsComponent }];
 
@@ -45,7 +46,8 @@ const routes: Routes = [{ path: '', component: SettingsComponent }];
 		InputFieldDirective,
 		InputErrorComponent,
 		InputDirective,
-		LabelComponent
+		LabelComponent,
+        DialogDirective
 	]
 })
 export class SettingsModule {}
