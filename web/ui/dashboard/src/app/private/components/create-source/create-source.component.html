@@ -159,21 +159,12 @@
 					</button>
 				</div>
 
-				<p class="text-12 text-new.gray-400 mt-24px flex items-center">
-					Key locations
-					<convoy-tooltip size="sm" position="right" class="ml-4px">JSON location of idempotency key, add multiple locations for different locations</convoy-tooltip>
-				</p>
-				<div (click)="focusInput()" class="w-full font-medium text-14 text-new.gray-800 border border-new.primary-25 outline-none rounded-4px bg-white-100 pt-12px pb-8px px-12px mt-8px relative flex flex-row flex-wrap items-center">
-					<div *ngFor="let key of idempotencyKeys" class="border border-new.gray-200 py-4px px-8px font-medium text-12 text-new.gray-400 mr-1 mb-1 rounded-22px flex items-center">
-						{{ key }}
-						<button convoy-button (click)="removeIdempotencyKey(key)" fill="text" type="button" class="py-0 px-0 ml-4px">
-							<svg width="14" height="14">
-								<use xlink:href="#close-icon-2"></use>
-							</svg>
-						</button>
-					</div>
-					<input type="text" id="keyInput" (input)="addKey()" required class="text-12 bg-transparent focus:outline-none focus:border-none min-w-[200px]" autocomplete="off" />
-				</div>
+				<convoy-multi-input
+					label="Key locations"
+					tooltip="JSON location of idempotency key, add multiple locations for different locations"
+					[prefilledKeys]="sourceDetails.idempotency_keys"
+					(inputValues)="sourceForm.get('idempotency_keys')?.patchValue($event)"
+				></convoy-multi-input>
 				<span class="text-new.gray-400 font-normal italic text-10 mb-24px">The order matters. Set the value of each input with a coma (,)</span>
 			</div>
 
@@ -188,11 +179,7 @@
 		</ng-container>
 
 		<div formGroupName="pub_sub" *ngIf="privateService.getProjectDetails?.type === 'outgoing'">
-			<h2 class="mb-6px font-semibold">Pub/Sub Type</h2>
-			<p class="text-14 text-grey-60 mb-24px">Connect your Google Pub/Sub service to automatically trigger a webhook event to an endpoint as soon as a message drops into your Pub/Sub queue.</p>
-			<div class="grid grid-cols-2 gap-6">
-				<convoy-radio *ngFor="let pubSubType of pubSubTypes" formControlName="type" [label]="pubSubType.viewValue" [_name]="pubSubType.value" [value]="pubSubType.value" [_id]="pubSubType.value" [checked]="sourceForm.value.pub_sub.type === pubSubType.value"></convoy-radio>
-			</div>
+			<convoy-select label="Source Type" name="type" formControlName="type" [options]="pubSubTypes" errorMessage="Select source type" [required]="true" className="mb-0" (selectedOption)="sourceForm.get('pub_sub.type')?.patchValue($event)"></convoy-select>
 
 			<convoy-input-field class="mt-24px">
 				<label for="workers" required="true" convoy-label required="true" tooltip="This specifies the number of consumers you want polling messages from your queue.">Workers</label>
@@ -262,23 +249,71 @@
 					</convoy-input-field>
 				</div>
 			</ng-container>
-			<ng-container *ngIf="sourceForm.value.pub_sub.type === 'kafka'">
-				<h2 class="font-semibold mb-20px">Configure Kafka</h2>
+			<ng-container formGroupName="kafka" *ngIf="sourceForm.value.pub_sub.type === 'kafka'">
+				<h2 class="text-16 text-new.gray-600 font-semibold mb-20px">Configure Kafka</h2>
 
-				<div class="grid grid-cols-2 gap-6" formGroupName="kafka">
-					<convoy-input-field>
+				<convoy-multi-input label="Broker Addresses" required="true" [prefilledKeys]="brokerAddresses" (inputValues)="addBrokers($event)"></convoy-multi-input>
+
+				<div class="grid grid-cols-2 gap-6 mt-24px">
+					<convoy-input-field [className]="'mb-0'">
 						<label for="topic_name" required="true" convoy-label required="true">Topic Name</label>
 						<input type="text" id="topic_name" convoy-input autocomplete="topic_name" formControlName="topic_name" placeholder="Topic name" />
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.topic_name')?.touched && sourceForm.get('pub_sub.kafka.topic_name')?.invalid">Enter topic name</convoy-input-error>
 					</convoy-input-field>
 
-					<convoy-input-field>
-						<label for="consumer_group_id" required="true" convoy-label required="true">Consumer Group ID</label>
+					<convoy-input-field [className]="'mb-0'">
+						<label for="consumer_group_id" required="true" convoy-label required="true">Consumer ID</label>
 						<input type="text" id="consumer_group_id" convoy-input autocomplete="consumer_group_id" formControlName="consumer_group_id" placeholder="Consumer Group Id" />
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.consumer_group_id')?.touched && sourceForm.get('pub_sub.kafka.consumer_group_id')?.invalid">Enter consumer group ID</convoy-input-error>
 					</convoy-input-field>
 				</div>
-				<convoy-multi-input label="Brokers" (inputValues)="addBrokers($event)"></convoy-multi-input>
+
+				<div class="border-l border-new.primary-25 pl-16px mt-24px">
+					<div class="flex justify-between items-center mb-24px">
+						<p class="text-14 text-gray-600 font-semibold">Authentication</p>
+						<convoy-toggle [className]="'!mb-0'" (onChange)="addKafkaAuthentication = !addKafkaAuthentication"></convoy-toggle>
+					</div>
+
+					<ng-container formGroupName="auth" *ngIf="addKafkaAuthentication">
+						<label convoy-label>Authentication Type</label>
+						<div class="grid grid-cols-2 gap-6">
+							<convoy-radio *ngFor="let authType of authTypes" formControlName="type" [label]="authType" [_name]="authType" [value]="authType" [_id]="authType" [checked]="sourceForm.value.pub_sub.kafka.auth.type === authType"></convoy-radio>
+						</div>
+						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.auth.type')?.touched && sourceForm.get('pub_sub.kafka.auth.type')?.invalid">Please select an authentication type</convoy-input-error>
+
+						<div class="grid grid-cols-2 gap-6 my-24px">
+							<convoy-input-field class="mb-0">
+								<label for="username" required="true" convoy-label required="true">Username</label>
+								<input type="text" id="username" convoy-input autocomplete="username" formControlName="username" placeholder="Username" />
+								<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.auth.username')?.touched && sourceForm.get('pub_sub.kafka.auth.username')?.invalid">Enter user</convoy-input-error>
+							</convoy-input-field>
+
+							<convoy-input-field class="mb-0">
+								<label for="password" required="true" convoy-label required="true">Password</label>
+								<input type="text" id="password" convoy-input autocomplete="password" formControlName="password" placeholder="********" />
+								<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.auth.password')?.touched && sourceForm.get('pub_sub.kafka.auth.password')?.invalid">Enter password</convoy-input-error>
+							</convoy-input-field>
+
+							<ng-container *ngIf="sourceForm.value.pub_sub.kafka.auth.type == 'scram'">
+								<convoy-select
+									label="Hash"
+									name="hash"
+									formControlName="hash"
+									[options]="hashAlgorithms"
+									errorMessage="Please select hash"
+									[required]="true"
+									className="mb-0"
+									(selectedOption)="sourceForm.get('pub_sub.kafka.auth.hash')?.patchValue($event)"
+								></convoy-select>
+							</ng-container>
+						</div>
+
+						<div class="flex justify-between items-center mb-24px">
+							<label class="text-14 text-new.gray-600">Enable TLS Encryption?</label>
+							<convoy-toggle name="enabelTLSEncryption" formControlName="tls" [className]="'!mb-0 mt-6px'"></convoy-toggle>
+						</div>
+					</ng-container>
+				</div>
 			</ng-container>
 		</div>
 
