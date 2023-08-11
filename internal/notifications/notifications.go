@@ -2,7 +2,6 @@ package notifications
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -37,7 +36,7 @@ type SlackNotification struct {
 
 // NOTIFICATIONS
 
-func SendEndpointNotification(ctx context.Context,
+func SendEndpointNotification(_ context.Context,
 	endpoint *datastore.Endpoint,
 	project *datastore.Project,
 	status datastore.EndpointStatus,
@@ -93,14 +92,14 @@ func SendEndpointNotification(ctx context.Context,
 			continue
 		}
 
-		buf, err := json.Marshal(v)
+		buf, err := util.EncodeMsgPack(v)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to marshal %v notification payload", v.NotificationType)
 			continue
 		}
 
 		job := &queue.Job{
-			Payload: json.RawMessage(buf),
+			Payload: buf,
 			Delay:   0,
 		}
 

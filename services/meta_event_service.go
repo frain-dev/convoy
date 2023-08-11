@@ -2,8 +2,8 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -30,7 +30,7 @@ func (m *MetaEventService) Run(ctx context.Context, metaEvent *datastore.MetaEve
 		ProjectID:   metaEvent.ProjectID,
 	}
 
-	data, err := json.Marshal(payload)
+	bytes, err := util.EncodeMsgPack(payload)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to marshal meta event payload")
 		return err
@@ -38,7 +38,7 @@ func (m *MetaEventService) Run(ctx context.Context, metaEvent *datastore.MetaEve
 
 	err = m.Queue.Write(convoy.MetaEventProcessor, convoy.MetaEventQueue, &queue.Job{
 		ID:      metaEvent.UID,
-		Payload: data,
+		Payload: bytes,
 	})
 	if err != nil {
 		return fmt.Errorf("error occurred re-enqueing meta event - %s: %v", metaEvent.UID, err)

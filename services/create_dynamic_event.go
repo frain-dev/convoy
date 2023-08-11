@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"github.com/frain-dev/convoy"
@@ -30,16 +29,14 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) error {
 
 	taskName := convoy.CreateDynamicEventProcessor
 
-	eventByte, err := json.Marshal(e.DynamicEvent)
+	eventByte, err := util.EncodeMsgPack(e.DynamicEvent)
 	if err != nil {
 		return util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	payload := json.RawMessage(eventByte)
-
 	job := &queue.Job{
 		ID:      uuid.NewString(),
-		Payload: payload,
+		Payload: eventByte,
 		Delay:   0,
 	}
 

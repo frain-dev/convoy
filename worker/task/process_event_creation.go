@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/util"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -27,9 +28,12 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 		var createEvent CreateEvent
 		var event datastore.Event
 
-		err := json.Unmarshal(t.Payload(), &createEvent)
+		err := util.DecodeMsgPack(t.Payload(), &createEvent)
 		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
+			err := json.Unmarshal(t.Payload(), &createEvent)
+			if err != nil {
+				return &EndpointError{Err: err, delay: defaultDelay}
+			}
 		}
 
 		var project *datastore.Project
@@ -157,7 +161,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 					EventDelivery: eventDelivery,
 				}
 
-				data, err := json.Marshal(payload)
+				data, err := util.EncodeMsgPack(payload)
 				if err != nil {
 					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}
@@ -182,7 +186,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			}
 		}
 
-		eBytes, err := json.Marshal(event)
+		eBytes, err := util.EncodeMsgPack(event)
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred marshalling event to be indexed")
 		}

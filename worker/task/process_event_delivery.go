@@ -49,9 +49,12 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
 
-		err := json.Unmarshal(t.Payload(), &data)
+		err := util.DecodeMsgPack(t.Payload(), &data)
 		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
+			err := json.Unmarshal(t.Payload(), &data)
+			if err != nil {
+				return &EndpointError{Err: err, delay: defaultDelay}
+			}
 		}
 
 		cfg, err := config.Get()

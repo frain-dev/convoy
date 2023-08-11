@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"io"
 	"net/http"
 	"time"
@@ -171,7 +170,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		Event: *event,
 	}
 
-	eventByte, err := json.Marshal(createEvent)
+	eventByte, err := util.EncodeMsgPack(createEvent)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return

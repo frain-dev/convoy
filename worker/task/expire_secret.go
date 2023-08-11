@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/hibiken/asynq"
@@ -17,9 +18,13 @@ type Payload struct {
 func ExpireSecret(a datastore.EndpointRepository) func(ctx context.Context, t *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var payload Payload
-		err := json.Unmarshal(t.Payload(), &payload)
+
+		err := util.DecodeMsgPack(t.Payload(), &payload)
 		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
+			err := json.Unmarshal(t.Payload(), &payload)
+			if err != nil {
+				return &EndpointError{Err: err, delay: defaultDelay}
+			}
 		}
 
 		endpoint, err := a.FindEndpointByID(ctx, payload.EndpointID, payload.ProjectID)

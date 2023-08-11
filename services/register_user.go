@@ -2,9 +2,9 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/util"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -117,14 +117,14 @@ func sendUserVerificationEmail(ctx context.Context, baseURL string, user *datast
 }
 
 func queueEmail(ctx context.Context, em *email.Message, q queue.Queuer) error {
-	buf, err := json.Marshal(em)
+	bytes, err := util.EncodeMsgPack(em)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to marshal notification payload")
 		return err
 	}
 
 	job := &queue.Job{
-		Payload: json.RawMessage(buf),
+		Payload: bytes,
 		Delay:   0,
 	}
 

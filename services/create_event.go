@@ -137,16 +137,14 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
 	}
 
-	eventByte, err := json.Marshal(createEvent)
+	eventByte, err := util.EncodeMsgPack(createEvent)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
-	payload := json.RawMessage(eventByte)
-
 	job := &queue.Job{
 		ID:      event.UID,
-		Payload: payload,
+		Payload: eventByte,
 		Delay:   0,
 	}
 	err = queuer.Write(taskName, convoy.CreateEventQueue, job)

@@ -2,7 +2,6 @@ package task
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
@@ -80,14 +79,14 @@ func sendNotificationEmail(source datastore.Source, endpoint *datastore.Endpoint
 		},
 	}
 
-	buf, err := json.Marshal(em)
+	bytes, err := util.EncodeMsgPack(em)
 	if err != nil {
 		log.WithError(err).Error("failed to marshal notification payload")
 		return err
 	}
 
 	job := &queue.Job{
-		Payload: json.RawMessage(buf),
+		Payload: bytes,
 		Delay:   0,
 	}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
@@ -15,8 +16,13 @@ var ErrInvalidEmailPayload = errors.New("invalid email payload")
 func ProcessEmails(sc smtp.SmtpClient) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var message email.Message
-		if err := json.Unmarshal(t.Payload(), &message); err != nil {
-			return ErrInvalidEmailPayload
+
+		err := util.DecodeMsgPack(t.Payload(), &message)
+		if err != nil {
+			err := json.Unmarshal(t.Payload(), &message)
+			if err != nil {
+				return ErrInvalidEmailPayload
+			}
 		}
 
 		newEmail := email.NewEmail(sc)

@@ -2,8 +2,8 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"github.com/frain-dev/convoy/util"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -68,7 +68,7 @@ func requeueEventDelivery(ctx context.Context, eventDelivery *datastore.EventDel
 		ProjectID:       g.UID,
 	}
 
-	data, err := json.Marshal(payload)
+	bytes, err := util.EncodeMsgPack(payload)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to marshal process event delivery payload")
 		return &ServiceError{ErrMsg: "error occurred marshaling event delivery payload", Err: err}
@@ -76,7 +76,7 @@ func requeueEventDelivery(ctx context.Context, eventDelivery *datastore.EventDel
 
 	job := &queue.Job{
 		ID:      eventDelivery.UID,
-		Payload: data,
+		Payload: bytes,
 		Delay:   1 * time.Second,
 	}
 

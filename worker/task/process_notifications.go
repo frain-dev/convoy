@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/util"
 	"strconv"
 	"time"
 
@@ -23,12 +24,13 @@ var ErrInvalidNotificationType = errors.New("invalid notification type")
 
 func ProcessNotifications(sc smtp.SmtpClient) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
-		buf := t.Payload()
-
 		n := &notification.Notification{}
-		err := json.Unmarshal(buf, n)
+		err := util.DecodeMsgPack(t.Payload(), &n)
 		if err != nil {
-			return ErrInvalidNotificationPayload
+			err := json.Unmarshal(t.Payload(), &n)
+			if err != nil {
+				return &EndpointError{Err: err, delay: defaultDelay}
+			}
 		}
 
 		bufP, err := json.Marshal(n.Payload)

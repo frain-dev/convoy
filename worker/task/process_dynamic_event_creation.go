@@ -26,9 +26,12 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 	return func(ctx context.Context, t *asynq.Task) error {
 		var dynamicEvent models.DynamicEvent
 
-		err := json.Unmarshal(t.Payload(), &dynamicEvent)
+		err := util.DecodeMsgPack(t.Payload(), &dynamicEvent)
 		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
+			err := json.Unmarshal(t.Payload(), &dynamicEvent)
+			if err != nil {
+				return &EndpointError{Err: err, delay: defaultDelay}
+			}
 		}
 
 		var project *datastore.Project
@@ -169,7 +172,7 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 				EventDelivery: eventDelivery,
 			}
 
-			data, err := json.Marshal(payload)
+			data, err := util.EncodeMsgPack(payload)
 			if err != nil {
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
@@ -195,7 +198,7 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 			}
 		}
 
-		eBytes, err := json.Marshal(event)
+		eBytes, err := util.EncodeMsgPack(event)
 		if err != nil {
 			log.Errorf("[asynq]: an error occurred marshalling event to be indexed %s", err)
 		}

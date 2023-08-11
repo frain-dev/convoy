@@ -31,7 +31,7 @@ const (
 	COALESCE(source_id, '') AS source_id,
 	COALESCE(idempotency_key, '') AS idempotency_key,
 	COALESCE(url_query_params, '') AS url_query_params
-	FROM convoy.events WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
+	FROM convoy.evenths WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	fetchEventsByIdempotencyKey = `
@@ -122,7 +122,7 @@ const (
 	searchFilter = ` AND search_token @@ websearch_to_tsquery('english',:query) `
 
 	baseCountPrevEvents = `
-	SELECT COUNT(DISTINCT(ev.id)) AS count
+	SELECT COUNT(DISTINCT(ev.id)) AS COUNT
 	FROM convoy.events ev
 	LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
 	WHERE ev.deleted_at IS NULL

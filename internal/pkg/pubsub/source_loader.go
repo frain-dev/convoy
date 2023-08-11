@@ -179,14 +179,14 @@ func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, ms
 		CreateSubscription: !util.IsStringEmpty(ev.EndpointID),
 	}
 
-	eventByte, err := json.Marshal(createEvent)
+	eventByte, err := util.EncodeMsgPack(createEvent)
 	if err != nil {
 		return err
 	}
 
 	job := &queue.Job{
 		ID:      event.UID,
-		Payload: json.RawMessage(eventByte),
+		Payload: eventByte,
 		Delay:   0,
 	}
 
