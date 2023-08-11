@@ -281,7 +281,14 @@
 						</div>
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.auth.type')?.touched && sourceForm.get('pub_sub.kafka.auth.type')?.invalid">Please select an authentication type</convoy-input-error>
 
-						<div class="grid grid-cols-2 gap-6 my-24px">
+						<label convoy-label class="mt-24px">TLS</label>
+						<div class="grid grid-cols-2 gap-6">
+							<convoy-radio formControlName="tls" label="Enabled" _name="enableTLS" [value]="true" _id="enableTLS"></convoy-radio>
+							<convoy-radio formControlName="tls" label="Disabled" _name="disableTLS" [value]="false" _id="enableTLS"></convoy-radio>
+						</div>
+						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.auth.tls')?.touched && sourceForm.get('pub_sub.kafka.auth.tls')?.invalid">Disable/enable tls encryption</convoy-input-error>
+
+                        <div class="grid grid-cols-2 gap-6 my-24px">
 							<convoy-input-field class="mb-0">
 								<label for="username" required="true" convoy-label required="true">Username</label>
 								<input type="text" id="username" convoy-input autocomplete="username" formControlName="username" placeholder="Username" />
@@ -308,10 +315,6 @@
 							</ng-container>
 						</div>
 
-						<div class="flex justify-between items-center mb-24px">
-							<label class="text-14 text-new.gray-600">Enable TLS Encryption?</label>
-							<convoy-toggle name="enabelTLSEncryption" formControlName="tls" [className]="'!mb-0 mt-6px'"></convoy-toggle>
-						</div>
 					</ng-container>
 				</div>
 			</ng-container>
