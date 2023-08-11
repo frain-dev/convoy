@@ -283,12 +283,12 @@
 
 						<label convoy-label class="mt-24px">TLS</label>
 						<div class="grid grid-cols-2 gap-6">
-							<convoy-radio formControlName="tls" label="Enabled" _name="enableTLS" [value]="true" _id="enableTLS"></convoy-radio>
-							<convoy-radio formControlName="tls" label="Disabled" _name="disableTLS" [value]="false" _id="enableTLS"></convoy-radio>
+							<convoy-radio formControlName="tls" label="Enabled" _name="tls" [value]="true" _id="enable"></convoy-radio>
+							<convoy-radio formControlName="tls" label="Disabled" _name="tls" [value]="false" _id="disable"></convoy-radio>
 						</div>
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.auth.tls')?.touched && sourceForm.get('pub_sub.kafka.auth.tls')?.invalid">Disable/enable tls encryption</convoy-input-error>
 
-                        <div class="grid grid-cols-2 gap-6 my-24px">
+						<div class="grid grid-cols-2 gap-6 my-24px">
 							<convoy-input-field class="mb-0">
 								<label for="username" required="true" convoy-label required="true">Username</label>
 								<input type="text" id="username" convoy-input autocomplete="username" formControlName="username" placeholder="Username" />
@@ -314,7 +314,6 @@
 								></convoy-select>
 							</ng-container>
 						</div>
-
 					</ng-container>
 				</div>
 			</ng-container>

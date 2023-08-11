@@ -147,7 +147,7 @@ export class CreateSourceComponent implements OnInit {
 		{ uid: 'custom_response', name: 'Custom Response', show: false },
 		{ uid: 'idempotency', name: 'Idempotency', show: false }
 	];
-	idempotencyKeys: string[] = [];
+
 	brokerAddresses: string[] = [];
 	private rbacService = inject(RbacService);
 
