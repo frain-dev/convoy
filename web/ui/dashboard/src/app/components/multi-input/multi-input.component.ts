@@ -13,9 +13,10 @@ export class MultiInputComponent implements OnInit {
 	@Output() inputValues = new EventEmitter<string[]>();
 	@Input('prefilledKeys') prefilledKeys?: string[];
 	@Input('label') label?: string;
+	@Input('tooltip') tooltip?: string;
 	@Input('action') action!: 'view' | 'create' | 'update';
 
-	keys!: string[];
+	keys: string[] = [];
 
 	constructor() {}
 
@@ -23,9 +24,10 @@ export class MultiInputComponent implements OnInit {
 		if (this.prefilledKeys?.length) this.keys = this.prefilledKeys;
 	}
 
-	addField() {
+	addKey() {
 		const inputField = document.getElementById('input');
 		const inputValue = document.getElementById('input') as HTMLInputElement;
+
 		inputField?.addEventListener('keydown', e => {
 			const key = e.keyCode || e.charCode;
 			if (key == 8) {
@@ -33,9 +35,9 @@ export class MultiInputComponent implements OnInit {
 				if (this.keys.length > 0 && !inputValue?.value) this.keys.splice(-1);
 			}
 			if (e.which === 188 || e.key == ' ') {
-				if (this.keys.includes(inputValue?.value)) {
+				if (this.keys?.includes(inputValue?.value)) {
 					inputValue.value = '';
-					this.keys = this.keys.filter(e => String(e).trim());
+					this.keys = this.keys?.filter(e => String(e).trim());
 				} else {
 					this.keys.push(inputValue?.value);
 					inputValue.value = '';
@@ -47,7 +49,7 @@ export class MultiInputComponent implements OnInit {
 		});
 	}
 
-	removeValue(key: string) {
+	removeKey(key: string) {
 		this.keys = this.keys.filter(e => e !== key);
 		this.inputValues.emit(this.keys);
 	}
