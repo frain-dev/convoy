@@ -1,7 +1,9 @@
-
-<label for="input" class="text-12 text-new.gray-400 mt-24px flex items-center" *ngIf="label">
-    {{ label }}
-    <convoy-tooltip size="sm" position="right" class="ml-4px" *ngIf="tooltip">{{tooltip}}</convoy-tooltip>
+<label for="input" class="text-12 text-new.gray-400 mt-24px flex items-center justify-between" *ngIf="label">
+	<div class="flex items-center">
+		{{ label }}
+		<convoy-tooltip size="sm" position="right" class="ml-4px" *ngIf="tooltip">{{ tooltip }}</convoy-tooltip>
+	</div>
+	<span *ngIf="required === 'true'" class="text-10 text-new.gray-400 px-6px rounded-22px font-medium bg-new.gray-100">required</span>
 </label>
 
 <div (click)="focusInput()" class="w-full font-medium text-14 text-new.gray-800 border border-new.primary-25 outline-none rounded-4px bg-white-100 pt-12px pb-8px px-12px mt-8px relative flex flex-row flex-wrap items-center">

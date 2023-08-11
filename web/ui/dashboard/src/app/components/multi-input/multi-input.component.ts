@@ -14,6 +14,7 @@ export class MultiInputComponent implements OnInit {
 	@Input('prefilledKeys') prefilledKeys?: string[];
 	@Input('label') label?: string;
 	@Input('tooltip') tooltip?: string;
+	@Input('required') required: 'true' | 'false' = 'false'
 	@Input('action') action!: 'view' | 'create' | 'update';
 
 	keys: string[] = [];
