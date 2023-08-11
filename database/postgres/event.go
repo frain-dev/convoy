@@ -31,7 +31,7 @@ const (
 	COALESCE(source_id, '') AS source_id,
 	COALESCE(idempotency_key, '') AS idempotency_key,
 	COALESCE(url_query_params, '') AS url_query_params
-	FROM convoy.evenths WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
+	FROM convoy.events WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	fetchEventsByIdempotencyKey = `
