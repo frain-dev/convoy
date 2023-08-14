@@ -19,7 +19,7 @@
 				<h1 class="text-20 font-bold text-grey-100">{{ step.step }}</h1>
 				<p class="my-16px text-16 text-grey-80 max-w-[95%]">{{ step.description }}</p>
 
-				<button convoy-button size="sm" (click)="i > 0 ? router.navigateByUrl('/projects/new') : (privateService.showCreateOrgModal = true)">
+				<button convoy-button size="sm" (click)="i > 0 ? router.navigateByUrl('/projects/new') : (privateService.setShowOrgModal(true))">
 					Get Started
 					<svg width="16" height="16" class="ml-8px fill-white-100">
 						<use xlink:href="#white-arrow-icon"></use>

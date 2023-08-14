@@ -17,7 +17,7 @@ import { FormsModule } from '@angular/forms';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { fromEvent, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
-import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
+import { DialogDirective, DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';
@@ -39,27 +39,30 @@ import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 		ListItemComponent,
 		CopyButtonComponent,
 		DeleteModalComponent,
-		ModalComponent,
-		ModalHeaderComponent,
+		DialogHeaderComponent,
 		TooltipComponent,
 		PaginationComponent,
 		PermissionDirective,
-		LoaderModule
+		LoaderModule,
+		DialogDirective
 	],
 	templateUrl: './portal-links.component.html',
 	styleUrls: ['./portal-links.component.scss']
 })
 export class PortalLinksComponent implements OnInit {
+	@ViewChild('portalLinkDialog', { static: true }) portalLinkDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('deleteDialog', { static: true }) deleteDialog!: ElementRef<HTMLDialogElement>;
+
 	showCreatePortalLinkModal = this.router.url.split('/')[4] === 'new';
 	showEditPortalLinkModal = this.router.url.split('/')[5] === 'edit';
 	isLoadingPortalLinks = false;
-	showDeleteModal = false;
 	isRevokingLink = false;
 	linkEndpoint?: string = this.route.snapshot.queryParams.linksEndpoint;
 	linkSearchString!: string;
 	linksTableHead = ['Link Name', 'Endpoints', 'URL', 'Created', ''];
 	portalLinks?: { pagination: PAGINATION; content: PORTAL_LINK[] };
 	activeLink?: PORTAL_LINK;
+	action: 'create' | 'update' = 'create';
 	@ViewChild('linksEndpointFilter', { static: true }) linksEndpointFilter!: ElementRef;
 	linksEndpointFilter$!: Observable<ENDPOINT[]>;
 
@@ -67,11 +70,17 @@ export class PortalLinksComponent implements OnInit {
 
 	ngOnInit() {
 		this.getPortalLinks();
+
+		const urlParam = this.route.snapshot.params.id;
+		if (urlParam) {
+			urlParam === 'new' ? (this.action = 'create') : (this.action = 'update');
+			this.portalLinkDialog.nativeElement.showModal();
+		}
 	}
 
 	ngAfterViewInit() {
 		this.linksEndpointFilter$ = fromEvent<any>(this.linksEndpointFilter?.nativeElement, 'keyup').pipe(
-			map(event => event.target.value),
+			map(event => event?.target?.value),
 			startWith(''),
 			debounceTime(500),
 			distinctUntilChanged(),
@@ -100,7 +109,7 @@ export class PortalLinksComponent implements OnInit {
 			const response = await this.portalLinksService.revokePortalLink({ linkId: this.activeLink?.uid });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.isRevokingLink = false;
-			this.showDeleteModal = false;
+			this.deleteDialog.nativeElement.close();
 			this.getPortalLinks();
 		} catch {
 			this.isRevokingLink = false;

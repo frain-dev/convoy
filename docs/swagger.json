@@ -1543,6 +1543,11 @@
                     },
                     {
                         "type": "string",
+                        "name": "idempotencyKey",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "example": "01H0JA5MEES38RRK3HTEJC647K",
                         "description": "A pagination cursor to fetch the next page of a list",
                         "name": "next_page_cursor",
@@ -1576,6 +1581,11 @@
                         },
                         "description": "A list of event delivery statuses to filter by",
                         "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "subscriptionId",
                         "in": "query"
                     }
                 ],
@@ -1717,6 +1727,11 @@
                         },
                         "description": "A list of event delivery statuses to filter by",
                         "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "subscriptionId",
                         "in": "query"
                     }
                 ],
@@ -2414,6 +2429,11 @@
                     },
                     {
                         "type": "string",
+                        "name": "idempotencyKey",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "example": "01H0JA5MEES38RRK3HTEJC647K",
                         "description": "A pagination cursor to fetch the next page of a list",
                         "name": "next_page_cursor",
@@ -2435,7 +2455,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "Any arbitary value to filter the events payload",
+                        "description": "Any arbitrary value to filter the events payload",
                         "name": "query",
                         "in": "query"
                     },
@@ -2699,6 +2719,11 @@
                     },
                     {
                         "type": "string",
+                        "name": "idempotencyKey",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "name": "ownerID",
                         "in": "query"
                     },
@@ -2710,6 +2735,11 @@
                     {
                         "type": "string",
                         "name": "sourceID",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "subscriptionID",
                         "in": "query"
                     }
                 ],
@@ -5805,9 +5835,11 @@
                 "headers": {
                     "$ref": "#/definitions/httpheader.HTTPHeader"
                 },
-                "matched_endpoints": {
-                    "description": "TODO(all) remove this field",
-                    "type": "integer"
+                "idempotency_key": {
+                    "type": "string"
+                },
+                "is_duplicate_event": {
+                    "type": "boolean"
                 },
                 "project_id": {
                     "type": "string"
@@ -6338,9 +6370,6 @@
                         "type": "string"
                     }
                 },
-                "idempotency_ttl": {
-                    "type": "string"
-                },
                 "is_disabled": {
                     "type": "boolean"
                 },
@@ -6632,9 +6661,6 @@
                 },
                 "idempotency_key": {
                     "type": "string"
-                },
-                "idempotency_ttl": {
-                    "type": "string"
                 }
             }
         },
@@ -6823,6 +6849,9 @@
                 "event_type": {
                     "type": "string"
                 },
+                "idempotency_key": {
+                    "type": "string"
+                },
                 "project_id": {
                     "type": "string"
                 }
@@ -6960,6 +6989,9 @@
                 "headers": {
                     "$ref": "#/definitions/httpheader.HTTPHeader"
                 },
+                "idempotency_key": {
+                    "type": "string"
+                },
                 "metadata": {
                     "$ref": "#/definitions/datastore.Metadata"
                 },
@@ -7024,9 +7056,11 @@
                 "headers": {
                     "$ref": "#/definitions/httpheader.HTTPHeader"
                 },
-                "matched_endpoints": {
-                    "description": "TODO(all) remove this field",
-                    "type": "integer"
+                "idempotency_key": {
+                    "type": "string"
+                },
+                "is_duplicate_event": {
+                    "type": "boolean"
                 },
                 "project_id": {
                     "type": "string"
@@ -7090,6 +7124,9 @@
                     }
                 },
                 "event_type": {
+                    "type": "string"
+                },
+                "idempotency_key": {
                     "type": "string"
                 },
                 "owner_id": {
@@ -7496,9 +7533,6 @@
                     "items": {
                         "type": "string"
                     }
-                },
-                "idempotency_ttl": {
-                    "type": "string"
                 },
                 "is_disabled": {
                     "type": "boolean"

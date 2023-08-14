@@ -1,20 +1,15 @@
-<div convoy-modal-header>
-	<div class="flex items-center">
-		<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="close.emit()">
-			<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
-		</button>
-
-		<h2 class="font-semibold text-16 capitalize ml-16px">Subscription Filter</h2>
-	</div>
-
-	<div class="flex items-center justify-end">
-		<button convoy-button size="sm" fill="outline" class="mr-16px" (click)="testFilter()">
-			Test Filter
-			<svg width="16" height="16" class="ml-8px" class="ml-6px">
-				<use xlink:href="#test-icon"></use>
-			</svg>
-		</button>
-		<button convoy-button size="sm" type="button" class="" [disabled]="!isFilterTestPassed" (click)="setSubscriptionFilter()">Save</button>
+<div convoy-dialog-header fullscreen="custom" (closeDialog)="close.emit()">
+	<div class="flex items-center justify-between w-full">
+		<h2 class="font-semibold text-16 capitalize">Subscription Filter</h2>
+		<div class="flex items-center justify-end">
+			<button convoy-button size="sm" fill="outline" class="mr-16px" (click)="testFilter()">
+				Test Filter
+				<svg width="16" height="16" class="ml-8px" class="ml-6px">
+					<use xlink:href="#test-icon"></use>
+				</svg>
+			</button>
+			<button convoy-button size="sm" type="button" class="" [disabled]="!isFilterTestPassed" (click)="setSubscriptionFilter()">Save</button>
+		</div>
 	</div>
 </div>
 

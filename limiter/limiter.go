@@ -2,7 +2,6 @@ package limiter
 
 import (
 	"context"
-
 	"github.com/frain-dev/convoy/config"
 	rlimiter "github.com/frain-dev/convoy/limiter/redis"
 	"github.com/go-redis/redis_rate/v10"

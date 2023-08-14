@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, ViewChild, inject, ElementRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PAGINATION } from 'src/app/models/global.model';
@@ -16,10 +16,11 @@ import { TEAM } from 'src/app/models/organisation.model';
 })
 export class TeamsComponent implements OnInit {
 	@ViewChild(DropdownComponent) dropdownComponent!: DropdownComponent;
+	@ViewChild('teamsDialog', { static: true }) teamsDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('deleteDialog', { static: true }) deleteDialog!: ElementRef<HTMLDialogElement>;
+
 	tableHead: string[] = ['Name', 'Role', 'Projects', ''];
 	filterOptions: ['active', 'pending'] = ['active', 'pending'];
-	showInviteTeamMemberModal = this.router.url.split('/')[2]?.includes('new');
-	showDeactivateModal = false;
 	showCancelInviteModal = false;
 	cancelingInvite = false;
 	selectedMember?: TEAM;
@@ -59,6 +60,7 @@ export class TeamsComponent implements OnInit {
 	];
 	showUpdateMember = false;
 	userDetails = this.privateService.getUserProfile;
+	action: 'create' | 'update' = 'create';
 	private rbacService = inject(RbacService);
 
 	constructor(private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private teamService: TeamsService, private formBuilder: FormBuilder, private privateService: PrivateService) {}
@@ -115,7 +117,7 @@ export class TeamsComponent implements OnInit {
 		};
 		try {
 			const response = await this.teamService.deactivateTeamMember(requestOptions);
-			this.showDeactivateModal = false;
+			this.deleteDialog.nativeElement.close();
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.fetchTeamMembers();
 			this.deactivatingUser = false;
@@ -138,6 +140,7 @@ export class TeamsComponent implements OnInit {
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.inviteUserForm.reset();
 			this.invitingUser = false;
+			this.teamsDialog.nativeElement.close();
 			this.router.navigate(['/team'], { queryParams: { inviteType: 'pending' } });
 		} catch {
 			this.invitingUser = false;
@@ -153,7 +156,8 @@ export class TeamsComponent implements OnInit {
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.memberForm.reset();
 			this.updatingMember = false;
-			this.showUpdateMember = false;
+			this.action = 'create';
+			this.teamsDialog.nativeElement.close();
 		} catch {
 			this.updatingMember = false;
 		}
@@ -175,26 +179,18 @@ export class TeamsComponent implements OnInit {
 			const response = await this.teamService.cancelPendingInvite(this.selectedMember.uid);
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.fetchPendingTeamMembers();
-			this.showCancelInviteModal = false;
+			this.deleteDialog.nativeElement.close();
 			this.cancelingInvite = false;
 		} catch {
 			this.cancelingInvite = false;
 		}
 	}
 
-	goToTeams() {
-		this.showUpdateMember = false;
-		this.router.navigateByUrl('/team');
-	}
 
-	openCreateTeamModal() {
-		this.router.navigateByUrl('/team/new');
-	}
-
-	showUpdateMemberModal() {
-		if (this.selectedMember) {
-			this.memberForm.patchValue(this.selectedMember);
-			this.showUpdateMember = true;
-		}
+	showUpdateMemberModal(member: TEAM) {
+		this.selectedMember = member;
+		this.memberForm.patchValue(member);
+		this.action = 'update';
+		this.teamsDialog.nativeElement.showModal();
 	}
 }

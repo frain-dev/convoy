@@ -16,10 +16,10 @@ import { ConfigurationsComponent } from './configurations/configurations.compone
 import { RouterModule, Routes } from '@angular/router';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { TagComponent } from 'src/app/components/tag/tag.component';
-import { ModalComponent } from 'src/app/components/modal/modal.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
+import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 
 const routes: Routes = [{ path: '', component: SettingsComponent }];
 
@@ -39,7 +39,6 @@ const routes: Routes = [{ path: '', component: SettingsComponent }];
 		ButtonComponent,
 		SkeletonLoaderComponent,
 		TagComponent,
-		ModalComponent,
 		CopyButtonComponent,
 		DatePickerComponent,
 		StatusColorModule,
@@ -47,7 +46,8 @@ const routes: Routes = [{ path: '', component: SettingsComponent }];
 		InputFieldDirective,
 		InputErrorComponent,
 		InputDirective,
-		LabelComponent
+		LabelComponent,
+        DialogDirective
 	]
 })
 export class SettingsModule {}

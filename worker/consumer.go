@@ -18,8 +18,18 @@ type Consumer struct {
 }
 
 func NewConsumer(q queue.Queuer, lo log.StdLogger) *Consumer {
+	var opts asynq.RedisConnOpt
+
+	if len(q.Options().RedisAddress) == 1 {
+		opts = q.Options().RedisClient
+	} else {
+		opts = asynq.RedisClusterClientOpt{
+			Addrs: q.Options().RedisAddress,
+		}
+	}
+
 	srv := asynq.NewServer(
-		q.Options().RedisClient,
+		opts,
 		asynq.Config{
 			Concurrency: convoy.Concurrency,
 			BaseContext: func() context.Context {

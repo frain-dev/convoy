@@ -10,11 +10,11 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { FileInputComponent } from 'src/app/components/file-input/file-input.component';
 import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.component';
 import { TokenModalComponent } from '../token-modal/token-modal.component';
-import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { PermissionDirective } from '../permission/permission.directive';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { MultiInputComponent } from 'src/app/components/multi-input/multi-input.component';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
+import { DialogDirective, DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
 
 @NgModule({
 	declarations: [CreateSourceComponent],
@@ -31,13 +31,13 @@ import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 		LabelComponent,
 		FileInputComponent,
 		FormLoaderComponent,
-		ModalComponent,
-		ModalHeaderComponent,
+		DialogHeaderComponent,
 		TokenModalComponent,
 		PermissionDirective,
-        TooltipComponent,
-        ToggleComponent,
-        MultiInputComponent
+    TooltipComponent,
+    ToggleComponent,
+    MultiInputComponent
+    DialogDirective
 	],
 	exports: [CreateSourceComponent]
 })

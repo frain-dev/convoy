@@ -25,6 +25,9 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ingest",
 		Short: "Ingest webhook events from Pub/Sub streams",
+		Annotations: map[string]string{
+			"ShouldBootstrap": "false",
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// override config with cli flags
 			cliConfig, err := buildCliFlagConfiguration(cmd)

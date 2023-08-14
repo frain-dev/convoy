@@ -1,6 +1,6 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
+import { DialogHeaderComponent, DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { CreateSourceModule } from '../../components/create-source/create-source.module';
@@ -20,7 +20,7 @@ import { LoaderModule } from '../../components/loader/loader.module';
 @Component({
 	selector: 'convoy-setup-project',
 	standalone: true,
-	imports: [CommonModule, ModalComponent, ModalHeaderComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, CardComponent],
+	imports: [CommonModule, DialogHeaderComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, CardComponent, DialogDirective],
 	templateUrl: './setup-project.component.html',
 	styleUrls: ['./setup-project.component.scss']
 })
@@ -28,6 +28,8 @@ export class SetupProjectComponent implements OnInit {
 	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
 	@ViewChild(CreateSubscriptionComponent) createSubscriptionForm!: CreateSubscriptionComponent;
+    @ViewChild('projectSetupDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
+
 	activeProjectId = this.route.snapshot.params.id;
 	projectType: 'incoming' | 'outgoing' = 'outgoing';
 
@@ -42,6 +44,7 @@ export class SetupProjectComponent implements OnInit {
 	constructor(public privateService: PrivateService, private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private subscriptionService: CreateSubscriptionService) {}
 
 	async ngOnInit() {
+        this.dialog.nativeElement.showModal()
 		if (!this.privateService.getProjectDetails?.uid) {
 			this.showLoader = true;
 			await this.privateService.getProjectDetails;
@@ -53,7 +56,12 @@ export class SetupProjectComponent implements OnInit {
 		}
 	}
 
+    ngOnDestroy(){
+        this.dialog.nativeElement.close()
+    }
+
 	cancel() {
+        this.dialog.nativeElement.close()
 		this.privateService.getProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid) : this.router.navigateByUrl('/projects/' + this.activeProjectId);
 	}
 

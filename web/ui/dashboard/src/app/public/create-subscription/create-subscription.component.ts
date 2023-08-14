@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 
 @Component({
 	selector: 'app-create-subscription-public',
@@ -6,11 +6,16 @@ import { Component, OnInit } from '@angular/core';
 	styleUrls: ['./create-subscription.component.scss']
 })
 export class CreateSubscriptionComponent implements OnInit {
-	constructor() {}
+	@ViewChild('dialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
+
+	constructor() {
+		this.dialog.nativeElement.showModal();
+	}
 
 	ngOnInit(): void {}
 
 	closeCreateSubscriptionModal() {
+		this.dialog.nativeElement.close();
 		window.parent.document.querySelector('#convoy-create-subscription-modal')!.remove();
 	}
 }

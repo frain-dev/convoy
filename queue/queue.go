@@ -23,6 +23,6 @@ type QueueOptions struct {
 	Names             map[string]int
 	Type              string
 	RedisClient       *rdb.Redis
-	RedisAddress      string
+	RedisAddress      []string
 	PrometheusAddress string
 }

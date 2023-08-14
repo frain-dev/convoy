@@ -211,9 +211,10 @@ components:
           type: string
         headers:
           $ref: '#/components/schemas/httpheader.HTTPHeader'
-        matched_endpoints:
-          description: TODO(all) remove this field
-          type: integer
+        idempotency_key:
+          type: string
+        is_duplicate_event:
+          type: boolean
         project_id:
           type: string
         raw:
@@ -570,8 +571,6 @@ components:
           items:
             type: string
           type: array
-        idempotency_ttl:
-          type: string
         is_disabled:
           type: boolean
         mask_id:
@@ -774,8 +773,6 @@ components:
           type: string
         idempotency_key:
           type: string
-        idempotency_ttl:
-          type: string
       type: object
     models.CreateProject:
       properties:
@@ -900,6 +897,8 @@ components:
           type: array
         event_type:
           type: string
+        idempotency_key:
+          type: string
         project_id:
           type: string
       type: object
@@ -990,6 +989,8 @@ components:
           $ref: '#/components/schemas/datastore.Event'
         headers:
           $ref: '#/components/schemas/httpheader.HTTPHeader'
+        idempotency_key:
+          type: string
         metadata:
           $ref: '#/components/schemas/datastore.Metadata'
         project_id:
@@ -1035,9 +1036,10 @@ components:
           type: string
         headers:
           $ref: '#/components/schemas/httpheader.HTTPHeader'
-        matched_endpoints:
-          description: TODO(all) remove this field
-          type: integer
+        idempotency_key:
+          type: string
+        is_duplicate_event:
+          type: boolean
         project_id:
           type: string
         raw:
@@ -1081,6 +1083,8 @@ components:
             type: integer
           type: array
         event_type:
+          type: string
+        idempotency_key:
           type: string
         owner_id:
           type: string
@@ -1346,8 +1350,6 @@ components:
           items:
             type: string
           type: array
-        idempotency_ttl:
-          type: string
         is_disabled:
           type: boolean
         mask_id:
@@ -2480,6 +2482,10 @@ paths:
         name: eventId
         schema:
           type: string
+      - in: query
+        name: idempotencyKey
+        schema:
+          type: string
       - description: A pagination cursor to fetch the next page of a list
         in: query
         name: next_page_cursor
@@ -2507,6 +2513,10 @@ paths:
           items:
             type: string
           type: array
+      - in: query
+        name: subscriptionId
+        schema:
+          type: string
       responses:
         "200":
           content:
@@ -2864,6 +2874,10 @@ paths:
           items:
             type: string
           type: array
+      - in: query
+        name: subscriptionId
+        schema:
+          type: string
       responses:
         "200":
           content:
@@ -3009,6 +3023,10 @@ paths:
           items:
             type: string
           type: array
+      - in: query
+        name: idempotencyKey
+        schema:
+          type: string
       - description: A pagination cursor to fetch the next page of a list
         in: query
         name: next_page_cursor
@@ -3024,7 +3042,7 @@ paths:
         name: prev_page_cursor
         schema:
           type: string
-      - description: Any arbitary value to filter the events payload
+      - description: Any arbitrary value to filter the events payload
         in: query
         name: query
         schema:
@@ -3319,6 +3337,10 @@ paths:
         schema:
           type: string
       - in: query
+        name: idempotencyKey
+        schema:
+          type: string
+      - in: query
         name: ownerID
         schema:
           type: string
@@ -3328,6 +3350,10 @@ paths:
           type: string
       - in: query
         name: sourceID
+        schema:
+          type: string
+      - in: query
+        name: subscriptionID
         schema:
           type: string
       responses:

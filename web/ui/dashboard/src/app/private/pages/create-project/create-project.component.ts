@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
@@ -11,9 +11,17 @@ export type STAGES = 'createProject' | 'setupSDK' | 'createSource' | 'createAppl
 	styleUrls: ['./create-project.component.scss']
 })
 export class CreateProjectComponent implements OnInit {
+	@ViewChild('projectDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
+
 	constructor(private router: Router, public privateService: PrivateService, private location: Location) {}
 
-	ngOnInit() {}
+	ngOnInit() {
+		this.dialog.nativeElement.showModal();
+	}
+
+	ngOnDestroy() {
+		this.dialog.nativeElement.close();
+	}
 
 	async createProject(newProjectData: { action: string; data: PROJECT }) {
 		const projectId = newProjectData.data.uid;
@@ -22,5 +30,6 @@ export class CreateProjectComponent implements OnInit {
 
 	cancel() {
 		this.location.back();
+        this.dialog.nativeElement.close();
 	}
 }

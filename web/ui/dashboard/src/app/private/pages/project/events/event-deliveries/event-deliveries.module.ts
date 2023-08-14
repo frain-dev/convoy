@@ -11,7 +11,7 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
-import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
@@ -37,7 +37,6 @@ import { PaginationComponent } from 'src/app/private/components/pagination/pagin
 		EmptyStateComponent,
 		TagComponent,
 		StatusColorModule,
-		ModalComponent,
 		TableHeadComponent,
 		TableHeadCellComponent,
 		TableRowComponent,
@@ -47,7 +46,8 @@ import { PaginationComponent } from 'src/app/private/components/pagination/pagin
 		DatePickerComponent,
 		DropdownOptionDirective,
 		TooltipComponent,
-		PaginationComponent
+		PaginationComponent,
+        DialogDirective
 	],
 	exports: [EventDeliveriesComponent],
 	providers: [DatePipe]

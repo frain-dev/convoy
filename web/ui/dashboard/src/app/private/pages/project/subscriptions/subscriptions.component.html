@@ -89,7 +89,7 @@
 							</li>
 
 							<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-								<button convoy-dropdown-option convoy-button size="sm" color="danger" class="w-full !justify-start" fill="text" (click)="activeSubscription = subscription; showDeleteSubscriptionModal = true">
+								<button convoy-dropdown-option convoy-button size="sm" color="danger" class="w-full !justify-start" fill="text" (click)="activeSubscription = subscription; deleteDialog.showModal()">
 									<svg width="14" height="14" class="fill-transparent stroke-new.error-400 mr-8px">
 										<use xlink:href="#delete-icon2"></use>
 									</svg>
@@ -107,34 +107,26 @@
 	<convoy-pagination *ngIf="subscriptions?.pagination?.has_next_page || subscriptions?.pagination?.has_prev_page" [pagination]="subscriptions?.pagination" (paginate)="getSubscriptions($event)"></convoy-pagination>
 </div>
 
-<div convoy-modal *ngIf="shouldShowCreateSubscriptionModal || showUpdateSubscriptionModal" position="full" [id]="'subscriptionForm'" (closeModal)="createSubscription('cancel')">
-	<div convoy-modal-header fullscreen="true">
-		<div class="flex items-center">
-			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="createSubscription('cancel')">
-				<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
-			</button>
-
-			<h2 class="font-semibold text-16 capitalize ml-16px">{{ showUpdateSubscriptionModal ? 'Update Subscription' : 'Create Subscription' }}</h2>
-		</div>
+<!-- subscription form  -->
+<dialog #subscriptionDialog convoy-dialog id="subscriptionForm" position="full">
+	<div convoy-dialog-header fullscreen="true" (closeDialog)="createSubscription('cancel')">
+		<h2 class="font-semibold text-16 capitalize">{{ action === 'update' ? 'Update Subscription' : 'Create Subscription' }}</h2>
 	</div>
 
-	<div class="max-w-[770px] m-auto">
-		<convoy-create-subscription showAction="true" (onAction)="createSubscription($event.action)" [action]="showUpdateSubscriptionModal ? 'update' : 'create'"></convoy-create-subscription>
-	</div>
-</div>
+	<div class="w-full h-full">
+        <div class="max-w-[770px] m-auto">
+            <convoy-create-subscription showAction="true" (onAction)="createSubscription($event.action)" [action]="action === 'update' ? 'update' : 'create'"></convoy-create-subscription>
+        </div>
+    </div>
+</dialog>
 
-<app-delete-modal *ngIf="showDeleteSubscriptionModal" [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="showDeleteSubscriptionModal = false" (deleteData)="deleteSubscripton()"></app-delete-modal>
-
-<div convoy-modal *ngIf="!isLoadindingSubscriptions && showSubscriptionDetails" position="right" [id]="'subscription-details'" (closeModal)="closeModal()">
-	<div convoy-modal-header>
+<!-- subscription details dialog  -->
+<dialog #detailsDialog convoy-dialog id="subscription-details">
+	<div convoy-dialog-header (closeDialog)="closeModal()">
 		<h2 class="font-semibold capitalize max-w-[356px] overflow-ellipsis overflow-hidden whitespace-nowrap">{{ activeSubscription?.name || 'Subscription Details' }}</h2>
-
-		<button convoy-button texture="light" size="sm" class="px-8px !py-10px" (click)="closeModal()">
-			<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
-		</button>
 	</div>
 
-	<div class="p-20px">
+	<div class="p-20px h-full">
 		<ng-container *ngIf="projectDetails?.type === 'incoming'">
 			<h2 class="font-medium mb-10px text-14 text-grey-40">Source</h2>
 			<div convoy-card hover="true" class="w-full cursor-pointer py-20px mb-24px">
@@ -209,4 +201,8 @@
 			</div>
 		</ng-container>
 	</div>
-</div>
+</dialog>
+
+<dialog #deleteDialog convoy-dialog position="center" size="sm">
+	<app-delete-modal [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="deleteDialog.close()" (deleteData)="deleteSubscripton()"></app-delete-modal>
+</dialog>

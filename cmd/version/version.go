@@ -6,9 +6,12 @@ import (
 
 func AddVersionCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:              "version",
-		Short:            "Print the version",
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {},
+		Use:   "version",
+		Short: "Print the version",
+		Annotations: map[string]string{
+			"CheckMigration":  "true",
+			"ShouldBootstrap": "false",
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			root := cmd.Root()
 			root.SetArgs([]string{"--version"})

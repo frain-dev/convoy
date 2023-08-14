@@ -17,6 +17,42 @@ func TestCompare(t *testing.T) {
 		want    bool
 	}{
 		{
+			name: "regex",
+			payload: map[string]interface{}{
+				"event": "qwerty",
+			},
+			filter: map[string]interface{}{
+				"event": map[string]interface{}{
+					"$regex": "^[a-zA-Z]+$",
+				},
+			},
+			want: true,
+		},
+		{
+			name: "regex - with prefix",
+			payload: map[string]interface{}{
+				"event": "cs_qwerty",
+			},
+			filter: map[string]interface{}{
+				"event": map[string]interface{}{
+					"$regex": "^cs_[a-zA-Z]+$",
+				},
+			},
+			want: true,
+		},
+		{
+			name: "regex - overly complex example",
+			payload: map[string]interface{}{
+				"event": "https://admin:admin@mfs-registry-stg.g4.app.cloud.comcast.net/eureka/apps/MFSAGENT/mfsagent:e1432431e46cf610d06e2dbcda13b069?status=UP&lastDirtyTimestamp=1643797857108",
+			},
+			filter: map[string]interface{}{
+				"event": map[string]interface{}{
+					"$regex": "^(?P<scheme>[^:\\/?#]+):(?:\\/\\/)?(?:(?:(?P<login>[^:]+)(?::(?P<password>[^@]+)?)?@)?(?P<host>[^@\\/?#:]*)(?::(?P<port>\\d+)?)?)?(?P<path>[^?#]*)(?:\\?(?P<query>[^#]*))?(?:#(?P<fragment>.*))?",
+				},
+			},
+			want: true,
+		},
+		{
 			name: "equal",
 			payload: map[string]interface{}{
 				"person": map[string]interface{}{

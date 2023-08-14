@@ -37,6 +37,7 @@ export class EventDeliveriesComponent implements OnInit {
 	eventsDelEndpointFilter$!: Observable<ENDPOINT[]>;
 	@ViewChild('eventDelsEndpointFilter', { static: true }) eventDelsEndpointFilter!: ElementRef;
 	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
+	@ViewChild('batchRetryDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
 	portalToken = this.route.snapshot.queryParams?.token;
 	filterSources: SOURCE[] = [];
 	queryParams?: FILTER_QUERY_PARAM;
@@ -217,7 +218,7 @@ export class EventDeliveriesComponent implements OnInit {
 
 			this.batchRetryCount = response.data.num;
 			this.fetchingCount = false;
-			this.showBatchRetryModal = true;
+			this.dialog.nativeElement.showModal();
 		} catch (error) {
 			this.fetchingCount = false;
 		}
@@ -284,7 +285,7 @@ export class EventDeliveriesComponent implements OnInit {
 			const response = await this.eventsService.batchRetryEvent(this.queryParams);
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.showBatchRetryModal = false;
+			this.dialog.nativeElement.close();
 			this.isRetrying = false;
 			return;
 		} catch (error) {

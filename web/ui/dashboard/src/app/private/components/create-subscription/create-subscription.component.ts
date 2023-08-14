@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewChild, inject, ElementRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/endpoint.model';
@@ -24,6 +24,8 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
 	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;
+	@ViewChild('filterDialog', { static: true }) filterDialog!: ElementRef<HTMLDialogElement>;
+
 	subscriptionForm: FormGroup = this.formBuilder.group({
 		name: [null, Validators.required],
 		source_id: [''],
@@ -62,7 +64,6 @@ export class CreateSubscriptionComponent implements OnInit {
 	isLoadingPortalProject = false;
 	token: string = this.route.snapshot.queryParams.token;
 	showError = false;
-	confirmModal = false;
 
 	configurations = [
 		{ uid: 'filter_config', name: 'Filter', show: false },
@@ -83,7 +84,6 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (this.projectType === 'incoming') {
 			this.subscriptionForm.get('source_id')?.addValidators(Validators.required);
 			this.subscriptionForm.get('source_id')?.updateValueAndValidity();
-			this.configurations.pop();
 		} else {
 			this.configurations.push({ uid: 'events', name: 'Event Types', show: false });
 		}
@@ -264,25 +264,20 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
-	cancel() {
-		document.getElementById(this.router.url.includes('/configure') ? 'configureProjectForm' : 'subscriptionForm')?.scroll({ top: 0, behavior: 'smooth' });
-		this.confirmModal = true;
-	}
-
 	goToSubsriptionsPage() {
 		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid + '/subscriptions');
 	}
 
 	setupFilter() {
 		document.getElementById(this.showAction === 'true' ? 'subscriptionForm' : 'configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
-		this.showFilterForm = true;
+		this.filterDialog.nativeElement.showModal();
 	}
 
 	getFilterSchema(schema: any) {
 		if (schema.headerSchema) this.subscriptionForm.get('filter_config.filter.headers')?.patchValue(schema.headerSchema);
 		if (schema.bodySchema) this.subscriptionForm.get('filter_config.filter.body')?.patchValue(schema.bodySchema);
 
-		this.showFilterForm = false;
+		this.filterDialog.nativeElement.close();
 	}
 
 	get shouldShowBorder(): number {

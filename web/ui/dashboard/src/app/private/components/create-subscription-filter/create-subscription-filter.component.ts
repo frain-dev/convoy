@@ -7,12 +7,12 @@ import { CreateSubscriptionService } from '../create-subscription/create-subscri
 import { GeneralService } from 'src/app/services/general/general.service';
 import { MonacoComponent } from '../monaco/monaco.component';
 import { ActivatedRoute } from '@angular/router';
-import { ModalHeaderComponent } from 'src/app/components/modal/modal.component';
+import { DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
 
 @Component({
 	selector: 'convoy-create-subscription-filter',
 	standalone: true,
-	imports: [CommonModule, CardComponent, ReactiveFormsModule, ButtonComponent, MonacoComponent, ModalHeaderComponent],
+	imports: [CommonModule, CardComponent, ReactiveFormsModule, ButtonComponent, MonacoComponent, DialogHeaderComponent],
 	templateUrl: './create-subscription-filter.component.html',
 	styleUrls: ['./create-subscription-filter.component.scss']
 })

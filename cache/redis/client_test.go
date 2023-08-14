@@ -18,7 +18,7 @@ type data struct {
 	Name string
 }
 
-func getDSN() string {
+func getDSN() []string {
 	port, _ := strconv.Atoi(os.Getenv("TEST_REDIS_PORT"))
 	c := config.RedisConfiguration{
 		Scheme: "redis",

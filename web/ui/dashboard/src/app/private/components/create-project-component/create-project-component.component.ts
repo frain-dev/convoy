@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject, ViewChild, ElementRef } from '@angular/core';
 import { FormGroup, Validators, FormBuilder, FormArray } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PROJECT, VERSIONS } from 'src/app/models/project.model';
@@ -13,6 +13,12 @@ import { RbacService } from 'src/app/services/rbac/rbac.service';
 	styleUrls: ['./create-project-component.component.scss']
 })
 export class CreateProjectComponent implements OnInit {
+	@ViewChild('disableEndpointsDialog', { static: true }) disableEndpointsDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('metaEventsDialog', { static: true }) metaEventsDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('confirmationDialog', { static: true }) confirmationDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('newSignatureDialog', { static: true }) newSignatureDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('tokenDialog', { static: true }) tokenDialog!: ElementRef<HTMLDialogElement>;
+
 	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding'];
 	projectForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
@@ -50,13 +56,8 @@ export class CreateProjectComponent implements OnInit {
 		hash: [null]
 	});
 	isCreatingProject = false;
-	showApiKey = false;
 	enableMoreConfig = false;
-	confirmModal = false;
-	confirmRegenerateKey = false;
-	showNewSignatureModal = false;
 	regeneratingKey = false;
-	showMetaEventPrompt = false;
 	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512'];
 	retryLogicTypes = [
@@ -66,7 +67,7 @@ export class CreateProjectComponent implements OnInit {
 	encodings = ['base64', 'hex'];
 	@Output('onAction') onAction = new EventEmitter<any>();
 	@Input('action') action: 'create' | 'update' = 'create';
-	projectDetails?: PROJECT;
+	projectDetails!: PROJECT;
 	signatureVersions!: { date: string; content: VERSIONS[] }[];
 	configurations = [
 		{ uid: 'retry-config', name: 'Retry Config', show: false },
@@ -75,7 +76,6 @@ export class CreateProjectComponent implements OnInit {
 		{ uid: 'signature', name: 'Signature Format', show: false }
 	];
 	public rbacService = inject(RbacService);
-	disableEndpointsModal = false;
 	tabs: string[] = ['project config', 'signature history', 'endpoints config', 'meta events'];
 	activeTab = 'project config';
 	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed'];
@@ -121,21 +121,21 @@ export class CreateProjectComponent implements OnInit {
 		this.enableMoreConfig = true;
 
 		try {
-			const projectDetails = this.privateService.getProjectDetails;
+			this.projectDetails = this.privateService.getProjectDetails;
 
-			if (projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab !== 'signature history');
+			if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab !== 'signature history');
 
-			this.projectForm.patchValue(projectDetails);
-			this.projectForm.get('config.strategy')?.patchValue(projectDetails.config.strategy);
-			this.projectForm.get('config.signature')?.patchValue(projectDetails.config.signature);
-			this.projectForm.get('config.ratelimit')?.patchValue(projectDetails.config.ratelimit);
+			this.projectForm.patchValue(this.projectDetails);
+			this.projectForm.get('config.strategy')?.patchValue(this.projectDetails.config.strategy);
+			this.projectForm.get('config.signature')?.patchValue(this.projectDetails.config.signature);
+			this.projectForm.get('config.ratelimit')?.patchValue(this.projectDetails.config.ratelimit);
 
 			this.configurations.forEach(config => {
-				if (projectDetails?.type === 'outgoing') this.toggleConfigForm(config.uid);
+				if (this.projectDetails?.type === 'outgoing') this.toggleConfigForm(config.uid);
 				else if (config.uid !== 'signature') this.toggleConfigForm(config.uid);
 			});
 
-			const versions = projectDetails.config.signature.versions;
+			const versions = this.projectDetails.config.signature.versions;
 			if (!versions?.length) return;
 			this.signatureVersions = this.generalService.setContentDisplayed(versions);
 			versions.forEach((version: { encoding: any; hash: any }, index: number) => {
@@ -184,7 +184,7 @@ export class CreateProjectComponent implements OnInit {
 			this.apiKey = response.data.api_key.key;
 			this.projectDetails = response.data.project;
 			if (projectFormModal) projectFormModal.style.overflowY = 'hidden';
-			this.showApiKey = true;
+			this.tokenDialog.nativeElement.showModal();
 		} catch (error) {
 			this.isCreatingProject = false;
 		}
@@ -212,14 +212,14 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async regenerateKey() {
-		this.confirmRegenerateKey = false;
+		this.confirmationDialog.nativeElement.close();
 		this.regeneratingKey = true;
 		try {
 			const response = await this.createProjectService.regenerateKey();
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.regeneratingKey = false;
 			this.apiKey = response.data.key;
-			this.showApiKey = true;
+			this.tokenDialog.nativeElement.showModal();
 			return;
 		} catch (error) {
 			this.regeneratingKey = false;
@@ -233,7 +233,7 @@ export class CreateProjectComponent implements OnInit {
 		this.versions.at(i).patchValue(this.newSignatureForm.value);
 		await this.updateProject();
 		this.newSignatureForm.reset();
-		this.showNewSignatureModal = false;
+		this.newSignatureDialog.nativeElement.showModal();
 	}
 
 	checkProjectConfig() {
@@ -272,14 +272,14 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	cancel() {
-		this.confirmModal = true;
+		this.confirmationDialog.nativeElement.showModal();
 		document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
 	}
 
 	confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints') {
 		const disableValue = event.target.checked;
-		if (actionType !== 'metaEvents') disableValue ? this.updateProject() : (this.disableEndpointsModal = true);
-		else if (!disableValue && actionType === 'metaEvents') this.showMetaEventPrompt = true;
+		if (actionType !== 'metaEvents') disableValue ? this.updateProject() : this.disableEndpointsDialog.nativeElement.showModal();
+		else if (!disableValue && actionType === 'metaEvents') this.metaEventsDialog.nativeElement.showModal();
 	}
 
 	switchTab(tab: string) {

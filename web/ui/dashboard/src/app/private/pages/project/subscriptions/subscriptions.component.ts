@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { PROJECT } from 'src/app/models/project.model';
@@ -12,6 +12,10 @@ import { GeneralService } from 'src/app/services/general/general.service';
 	styleUrls: ['./subscriptions.component.scss']
 })
 export class SubscriptionsComponent implements OnInit {
+	@ViewChild('subscriptionDialog', { static: true }) subscriptionDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('detailsDialog', { static: true }) detailsDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('deleteDialog', { static: true }) deleteDialog!: ElementRef<HTMLDialogElement>;
+
 	activeSubscription?: SUBSCRIPTION;
 	shouldShowCreateSubscriptionModal = false;
 	subscriptions?: { content: SUBSCRIPTION[]; pagination?: PAGINATION };
@@ -25,18 +29,21 @@ export class SubscriptionsComponent implements OnInit {
 	endpointsTableHead = ['Name', 'Status', '', '', '', '', '', ''];
 	showSubscriptionDetails = false;
 	projectDetails?: PROJECT;
+	action: 'create' | 'update' = 'create';
 
-	constructor(private route: ActivatedRoute, public privateService: PrivateService, public router: Router, private generalService: GeneralService) {
-		const urlParam = route.snapshot.params.id;
-		if (urlParam && urlParam === 'new') this.shouldShowCreateSubscriptionModal = true;
-		if (urlParam && urlParam !== 'new') this.showUpdateSubscriptionModal = true;
-	}
+	constructor(private route: ActivatedRoute, public privateService: PrivateService, public router: Router, private generalService: GeneralService) {}
 
 	async ngOnInit() {
+        const urlParam = this.route.snapshot.params.id;
+		if (urlParam) {
+			urlParam === 'new' ? (this.action = 'create') : (this.action = 'update');
+			this.subscriptionDialog.nativeElement.showModal();
+		}
+
 		await this.getSubscriptions();
 
 		this.route.queryParams.subscribe(params => {
-			this.showSubscriptionDetails = !!params.id;
+			if (params.id) this.detailsDialog.nativeElement.showModal();
 			this.activeSubscription = this.subscriptions?.content.find(subscription => subscription.uid === params?.id);
 		});
 	}
@@ -56,6 +63,7 @@ export class SubscriptionsComponent implements OnInit {
 	}
 
 	closeModal() {
+		this.detailsDialog.nativeElement.close();
 		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid + '/subscriptions');
 	}
 
@@ -72,7 +80,7 @@ export class SubscriptionsComponent implements OnInit {
 			this.generalService.showNotification({ message: response?.message, style: 'success' });
 			this.getSubscriptions();
 			delete this.activeSubscription;
-			this.showDeleteSubscriptionModal = false;
+            this.deleteDialog.nativeElement.close();
 			this.isDeletingSubscription = false;
 		} catch (error) {
 			this.isDeletingSubscription = false;

@@ -87,7 +87,7 @@
 
 							<ul dropdownOptions class="p-10px">
 								<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-									<button convoy-dropdown-option convoy-button color="grey" size="sm" fill="text" class="w-full !justify-start" [routerLink]="'./' + link?.uid + '/edit'">
+									<button convoy-dropdown-option convoy-button color="grey" size="sm" fill="text" class="w-full !justify-start" [routerLink]="'./' + link?.uid">
 										<svg width="17" height="16" class="fill-new.gray-600 mr-8px">
 											<use xlink:href="#edit-icon"></use>
 										</svg>
@@ -95,7 +95,7 @@
 									</button>
 								</li>
 								<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-									<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="danger" class="w-full !justify-start" (click)="activeLink = link; showDeleteModal = true">
+									<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="danger" class="w-full !justify-start" (click)="activeLink = link; deleteDialog.nativeElement.showModal()">
 										<svg width="16" height="16" class="mr-8px fill-danger-100">
 											<use xlink:href="#delete-icon"></use>
 										</svg>
@@ -123,6 +123,12 @@
 <!-- Pagination -->
 <convoy-pagination *ngIf="portalLinks?.pagination?.has_next_page || portalLinks?.pagination?.has_prev_page" [pagination]="portalLinks?.pagination" (paginate)="getPortalLinks($event)"></convoy-pagination>
 
-<convoy-create-portal-link *ngIf="showCreatePortalLinkModal || showEditPortalLinkModal"></convoy-create-portal-link>
+<dialog #portalLinkDialog convoy-dialog position="full">
+	<div class="w-full h-full">
+        <convoy-create-portal-link [action]="action"></convoy-create-portal-link>
+    </div>
+</dialog>
 
-<app-delete-modal *ngIf="showDeleteModal" [isLoading]="isRevokingLink" [deleteText]="'revoke “' + activeLink?.name + '”'" (closeModal)="showDeleteModal = false" (deleteData)="revokeLink()"></app-delete-modal>
+<dialog #deleteModal convoy-dialog position="center" size="sm">
+	<app-delete-modal [isLoading]="isRevokingLink" [deleteText]="'revoke “' + activeLink?.name + '”'" (closeModal)="deleteDialog.nativeElement.close()" (deleteData)="revokeLink()"></app-delete-modal>
+</dialog>

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -26,6 +27,7 @@ func defaultCompareMap() map[string]CompareFunc {
 		"$or":    or,
 		"$and":   and,
 		"$exist": exist,
+		"$regex": regex,
 	}
 }
 
@@ -148,6 +150,29 @@ func compare(payload map[string]interface{}, filter map[string]interface{}) (boo
 	}
 
 	return passReduced, nil
+}
+
+func regex(payload, filter interface{}) (bool, error) {
+	f, ok := filter.(string)
+	if !ok {
+		fmt.Printf("filter %v is not valid string\n", filter)
+		return false, fmt.Errorf("filter %v is not valid json\n", filter)
+	}
+
+	p, ok := payload.(string)
+	if !ok {
+		fmt.Printf("payload %v is not valid string\n", payload)
+		return false, fmt.Errorf("payload %v is not valid json\n", payload)
+	}
+
+	r, err := regexp.Compile(f)
+	if err != nil {
+		return false, err
+	}
+
+	match := r.FindAllString(p, -1)
+
+	return len(match) > 0, nil
 }
 
 func gte(payload, filter interface{}) (bool, error) {

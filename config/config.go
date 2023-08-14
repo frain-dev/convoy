@@ -132,17 +132,22 @@ type PrometheusConfiguration struct {
 }
 
 type RedisConfiguration struct {
-	Scheme   string `json:"scheme" envconfig:"CONVOY_REDIS_SCHEME"`
-	Host     string `json:"host" envconfig:"CONVOY_REDIS_HOST"`
-	Username string `json:"username" envconfig:"CONVOY_REDIS_USERNAME"`
-	Password string `json:"password" envconfig:"CONVOY_REDIS_PASSWORD"`
-	Database string `json:"database" envconfig:"CONVOY_REDIS_DATABASE"`
-	Port     int    `json:"port" envconfig:"CONVOY_REDIS_PORT"`
+	Scheme    string `json:"scheme" envconfig:"CONVOY_REDIS_SCHEME"`
+	Host      string `json:"host" envconfig:"CONVOY_REDIS_HOST"`
+	Username  string `json:"username" envconfig:"CONVOY_REDIS_USERNAME"`
+	Password  string `json:"password" envconfig:"CONVOY_REDIS_PASSWORD"`
+	Database  string `json:"database" envconfig:"CONVOY_REDIS_DATABASE"`
+	Port      int    `json:"port" envconfig:"CONVOY_REDIS_PORT"`
+	Addresses string `json:"addresses" envconfig:"CONVOY_REDIS_CLUSTER_ADDRESSES"`
 }
 
-func (rc RedisConfiguration) BuildDsn() string {
+func (rc RedisConfiguration) BuildDsn() []string {
+	if len(strings.TrimSpace(rc.Addresses)) != 0 {
+		return strings.Split(rc.Addresses, ",")
+	}
+
 	if rc.Scheme == "" {
-		return ""
+		return []string{}
 	}
 
 	authPart := ""
@@ -155,7 +160,7 @@ func (rc RedisConfiguration) BuildDsn() string {
 		dbPart = fmt.Sprintf("/%s", rc.Database)
 	}
 
-	return fmt.Sprintf("%s://%s%s:%d%s", rc.Scheme, authPart, rc.Host, rc.Port, dbPart)
+	return []string{fmt.Sprintf("%s://%s%s:%d%s", rc.Scheme, authPart, rc.Host, rc.Port, dbPart)}
 }
 
 type FileRealmOption struct {
@@ -397,7 +402,7 @@ func ensureSSL(s ServerConfiguration) error {
 }
 
 func ensureQueueConfig(queueCfg RedisConfiguration) error {
-	if queueCfg.BuildDsn() == "" {
+	if len(queueCfg.BuildDsn()) == 0 {
 		return errors.New("redis queue dsn is empty")
 	}
 

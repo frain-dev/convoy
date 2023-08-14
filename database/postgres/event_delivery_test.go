@@ -447,7 +447,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 	}
 
 	dbEventDeliveries, _, err := edRepo.LoadEventDeliveriesPaged(
-		context.Background(), project.UID, []string{endpoint.UID}, event.UID,
+		context.Background(), project.UID, []string{endpoint.UID}, event.UID, sub.UID,
 		[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus},
 		datastore.SearchParams{
 			CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
