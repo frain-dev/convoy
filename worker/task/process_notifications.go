@@ -29,7 +29,7 @@ func ProcessNotifications(sc smtp.SmtpClient) func(context.Context, *asynq.Task)
 		if err != nil {
 			err := json.Unmarshal(t.Payload(), &n)
 			if err != nil {
-				return &EndpointError{Err: err, delay: defaultDelay}
+				return ErrInvalidNotificationPayload
 			}
 		}
 
