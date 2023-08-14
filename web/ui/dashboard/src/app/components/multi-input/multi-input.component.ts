@@ -33,7 +33,7 @@ export class MultiInputComponent implements OnInit {
 			const key = e.keyCode || e.charCode;
 			if (key == 8) {
 				e.stopImmediatePropagation();
-				if (this.keys.length > 0 && !inputValue?.value) this.keys.splice(-1);
+				if (this.keys?.length > 0 && !inputValue?.value) this.keys.splice(-1);
 			}
 			if (e.which === 188 || e.key == ' ') {
 				if (this.keys?.includes(inputValue?.value)) {
