@@ -55,17 +55,31 @@ export class CreateSourceComponent implements OnInit {
 				access_key_id: [''],
 				secret_key: [''],
 				default_region: ['']
+			}),
+			kafka: this.formBuilder.group({
+				brokers: [null],
+				consumer_group_id: [null],
+				topic_name: [null],
+				auth: this.formBuilder.group({
+					type: [null],
+					tls: [null],
+					username: [null],
+					password: [null],
+					hash: [null]
+				})
 			})
 		})
 	});
+	authTypes = ['plain', 'scram'];
 	sourceTypes = [
 		{ value: 'http', viewValue: 'Ingestion HTTP', description: 'Trigger webhook event from a thirdparty webhook event' },
 		{ value: 'pub_sub', viewValue: 'Pub/Sub (Coming Soon)', description: 'Trigger webhook event from your Pub/Sub messaging system' },
 		{ value: 'db_change_stream', viewValue: 'DB Change Stream (Coming Soon)', description: 'Trigger webhook event from your DB change stream' }
 	];
 	pubSubTypes = [
-		{ value: 'google', viewValue: 'Google Pub/Sub' },
-		{ value: 'sqs', viewValue: 'SQS' }
+		{ uid: 'google', name: 'Google Pub/Sub' },
+		{ uid: 'kafka', name: 'Kafka Pub/Sub' },
+		{ uid: 'sqs', name: 'AWS SQS' }
 	];
 	httpTypes = [
 		{ value: 'noop', viewValue: 'None' },
@@ -124,6 +138,7 @@ export class CreateSourceComponent implements OnInit {
 	sourceId = this.route.snapshot.params.id;
 	isloading = false;
 	confirmModal = false;
+	addKafkaAuthentication = false;
 	sourceDetails!: SOURCE;
 	sourceCreated: boolean = false;
 	showSourceUrl = false;
@@ -132,7 +147,8 @@ export class CreateSourceComponent implements OnInit {
 		{ uid: 'custom_response', name: 'Custom Response', show: false },
 		{ uid: 'idempotency', name: 'Idempotency', show: false }
 	];
-	idempotencyKeys: string[] = [];
+
+	brokerAddresses: string[] = [];
 	private rbacService = inject(RbacService);
 
 	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
@@ -157,7 +173,8 @@ export class CreateSourceComponent implements OnInit {
 
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
 
-			this.idempotencyKeys = response.data.idempotency_keys;
+			if (response.data.pub_sub.kafka.auth.type) this.addKafkaAuthentication = true;
+			if (response.data.pub_sub.kafka.brokers) this.brokerAddresses = response.data.pub_sub.kafka.brokers;
 			this.isloading = false;
 
 			return;
@@ -182,8 +199,7 @@ export class CreateSourceComponent implements OnInit {
 				verifier: {
 					type: verifier,
 					[verifier]: { ...this.sourceForm.get('verifier.' + verifier)?.value }
-				},
-				idempotency_keys: this.idempotencyKeys
+				}
 			};
 		} else {
 			delete this.sourceForm.value.verifier;
@@ -284,37 +300,6 @@ export class CreateSourceComponent implements OnInit {
 
 	setRegionValue(value: any) {
 		this.sourceForm.get('pub_sub.sqs')?.patchValue({ default_region: value });
-	}
-
-	focusInput() {
-		document.getElementById('keyInput')?.focus();
-	}
-
-	removeIdempotencyKey(key: string) {
-		this.idempotencyKeys = this.idempotencyKeys.filter(e => e !== key);
-	}
-
-	addKey() {
-		const addKeyInput = document.getElementById('keyInput');
-		const addKeyInputValue = document.getElementById('keyInput') as HTMLInputElement;
-		addKeyInput?.addEventListener('keydown', e => {
-			const key = e.keyCode || e.charCode;
-			if (key == 8) {
-				e.stopImmediatePropagation();
-				if (this.idempotencyKeys?.length > 0 && !addKeyInputValue?.value) this.idempotencyKeys?.splice(-1);
-			}
-			if (e.which === 188 || e.key == ' ') {
-				if (this.idempotencyKeys?.includes(addKeyInputValue?.value)) {
-					addKeyInputValue.value = '';
-					this.idempotencyKeys = this.idempotencyKeys?.filter(e => String(e).trim());
-				} else {
-					this.idempotencyKeys.push(addKeyInputValue?.value);
-					addKeyInputValue.value = '';
-					this.idempotencyKeys = this.idempotencyKeys?.filter(e => String(e).trim());
-				}
-				e.preventDefault();
-			}
-		});
 	}
 
 	async runSourceFormValidation() {
@@ -423,6 +408,42 @@ export class CreateSourceComponent implements OnInit {
 				this.sourceForm.get('pub_sub.sqs.secret_key')?.updateValueAndValidity();
 				this.sourceForm.get('pub_sub.sqs.default_region')?.updateValueAndValidity();
 			}
+
+			if (this.sourceForm.get('pub_sub')?.value.type === 'kafka') {
+				this.sourceForm.get('pub_sub.kafka.brokers')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.consumer_group_id')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.topic_name')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.brokers')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.consumer_group_id')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.topic_name')?.updateValueAndValidity();
+			} else {
+				this.sourceForm.get('pub_sub.kafka.brokers')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.consumer_group_id')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.topic_name')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.brokers')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.consumer_group_id')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.topic_name')?.updateValueAndValidity();
+			}
+
+			if (this.addKafkaAuthentication) {
+				this.sourceForm.get('pub_sub.kafka.auth.type')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.auth.tls')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.auth.username')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.auth.password')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.auth.type')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.auth.tls')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.auth.username')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.auth.password')?.updateValueAndValidity();
+			} else {
+				this.sourceForm.get('pub_sub.kafka.auth.type')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.auth.tls')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.auth.username')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.auth.password')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.auth.type')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.auth.tls')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.auth.username')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.auth.password')?.updateValueAndValidity();
+			}
 		} else {
 			this.sourceForm.get('pub_sub.workers')?.removeValidators(Validators.required);
 			this.sourceForm.get('pub_sub.workers')?.updateValueAndValidity();
@@ -431,5 +452,13 @@ export class CreateSourceComponent implements OnInit {
 		}
 
 		return;
+	}
+
+	addBrokers(brokers: string[]) {
+		this.sourceForm.patchValue({
+			pub_sub: {
+				kafka: { brokers }
+			}
+		});
 	}
 }

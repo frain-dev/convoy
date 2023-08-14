@@ -45,6 +45,18 @@ export interface SOURCE {
 			queue_name: string;
 			secret_key: string;
 		};
+		kafka: {
+			brokers: string[];
+			consumer_group_id: string;
+			topic_name: string;
+			auth: {
+				type: string;
+				tls: boolean;
+				username: string;
+				password: string;
+				hash: string;
+			};
+		};
 		type: string;
 		workers: number;
 	};

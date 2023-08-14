@@ -13,6 +13,8 @@ import { TokenModalComponent } from '../token-modal/token-modal.component';
 import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
 import { PermissionDirective } from '../permission/permission.directive';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
+import { MultiInputComponent } from 'src/app/components/multi-input/multi-input.component';
+import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 
 @NgModule({
 	declarations: [CreateSourceComponent],
@@ -33,7 +35,9 @@ import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 		ModalHeaderComponent,
 		TokenModalComponent,
 		PermissionDirective,
-        TooltipComponent
+        TooltipComponent,
+        ToggleComponent,
+        MultiInputComponent
 	],
 	exports: [CreateSourceComponent]
 })
