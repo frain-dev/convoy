@@ -253,6 +253,7 @@
 				<h2 class="text-16 text-new.gray-600 font-semibold mb-20px">Configure Kafka</h2>
 
 				<convoy-multi-input label="Broker Addresses" required="true" [prefilledKeys]="brokerAddresses" (inputValues)="addBrokers($event)"></convoy-multi-input>
+                <convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.brokers')?.touched && sourceForm.get('pub_sub.kafka.brokers')?.invalid">Please add at least one broker address</convoy-input-error>
 
 				<div class="grid grid-cols-2 gap-6 mt-24px">
 					<convoy-input-field [className]="'mb-0'">
