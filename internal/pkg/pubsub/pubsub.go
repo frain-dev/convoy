@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/google"
+	"github.com/frain-dev/convoy/internal/pkg/pubsub/kafka"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/sqs"
 	"github.com/frain-dev/convoy/pkg/log"
 )
@@ -60,6 +61,11 @@ func (p *PubSubSource) getHash() string {
 	if source.PubSub.Type == datastore.GooglePubSub {
 		gq := source.PubSub.Google
 		hash = fmt.Sprintf("%s,%s,%s,%v", gq.ServiceAccount, gq.ProjectID, gq.SubscriptionID, source.PubSub.Workers)
+	}
+
+	if source.PubSub.Type == datastore.KafkaPubSub {
+		kq := source.PubSub.Kafka
+		hash = fmt.Sprintf("%s,%s,%s,%v,%v", kq.Brokers, kq.ConsumerGroupID, kq.TopicName, kq.Auth, source.PubSub.Workers)
 	}
 
 	h := md5.Sum([]byte(hash))
@@ -118,6 +124,10 @@ func NewPubSubClient(source *datastore.Source, handler datastore.PubSubHandler, 
 
 	if source.PubSub.Type == datastore.GooglePubSub {
 		return google.New(source, handler, log), nil
+	}
+
+	if source.PubSub.Type == datastore.KafkaPubSub {
+		return kafka.New(source, handler, log), nil
 	}
 
 	return nil, fmt.Errorf("pub sub type %s is not supported", source.PubSub.Type)

@@ -105,6 +105,7 @@ func init() {
 		pubsubs := map[string]bool{
 			string(datastore.SqsPubSub):    true,
 			string(datastore.GooglePubSub): true,
+			string(datastore.KafkaPubSub):  true,
 		}
 
 		if _, ok := pubsubs[pubsub]; !ok {

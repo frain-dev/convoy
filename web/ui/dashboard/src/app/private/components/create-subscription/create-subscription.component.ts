@@ -217,6 +217,8 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async saveSubscription(setup?: boolean) {
 		this.toggleFormsLoaders(true);
+		if (this.eventTags.length === 0) this.subscriptionForm.patchValue({ filter_config: { event_types: ['*'] } });
+
 		await this.runSubscriptionValidation();
 
 		if (this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('retry_config')?.invalid || this.subscriptionForm.get('filter_config')?.invalid) {
@@ -250,38 +252,6 @@ export class CreateSubscriptionComponent implements OnInit {
 			this.createdSubscription = false;
 			this.isCreatingSubscription = false;
 		}
-	}
-
-	removeEventTag(tag: string) {
-		this.eventTags = this.eventTags.filter(e => e !== tag);
-	}
-
-	addTag() {
-		const addTagInput = document.getElementById('tagInput');
-		const addTagInputValue = document.getElementById('tagInput') as HTMLInputElement;
-		addTagInput?.addEventListener('keydown', e => {
-			const key = e.keyCode || e.charCode;
-			if (key == 8) {
-				e.stopImmediatePropagation();
-				if (this.eventTags.length > 0 && !addTagInputValue?.value) this.eventTags.splice(-1);
-			}
-			if (e.which === 188 || e.key == ' ') {
-				if (this.eventTags.includes(addTagInputValue?.value)) {
-					addTagInputValue.value = '';
-					this.eventTags = this.eventTags.filter(e => String(e).trim());
-				} else {
-					this.eventTags.push(addTagInputValue?.value);
-					addTagInputValue.value = '';
-					this.eventTags = this.eventTags.filter(e => String(e).trim());
-					this.subscriptionForm.patchValue({ filter_config: { event_types: this.eventTags } });
-				}
-				e.preventDefault();
-			}
-		});
-	}
-
-	focusInput() {
-		document.getElementById('tagInput')?.focus();
 	}
 
 	modifyEndpointData(endpoints?: ENDPOINT[]) {

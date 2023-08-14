@@ -112,6 +112,7 @@ func (s *Sqs) Consume() {
 
 		if err != nil {
 			s.log.WithError(err).Error("failed to fetch message - sqs")
+			continue
 		}
 
 		var wg sync.WaitGroup
