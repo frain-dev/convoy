@@ -34,10 +34,10 @@ import { DialogDirective, DialogHeaderComponent } from 'src/app/components/dialo
 		DialogHeaderComponent,
 		TokenModalComponent,
 		PermissionDirective,
-    TooltipComponent,
-    ToggleComponent,
-    MultiInputComponent
-    DialogDirective
+		TooltipComponent,
+		ToggleComponent,
+		MultiInputComponent,
+		DialogDirective
 	],
 	exports: [CreateSourceComponent]
 })
