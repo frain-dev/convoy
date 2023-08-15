@@ -172,6 +172,11 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		attemptStatus := false
 		start := time.Now()
 
+		if p.Config.AddEventIDTraceHeaders {
+			ed.Headers["X-Convoy-Event-Delivery-ID"] = []string{ed.UID}
+			ed.Headers["X-Convoy-Event-ID"] = []string{ed.EventID}
+		}
+
 		resp, err := dispatch.SendRequest(targetURL, string(convoy.HttpPost), sig.Payload, p.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), ed.Headers, ed.IdempotencyKey)
 		status := "-"
 		statusCode := 0
