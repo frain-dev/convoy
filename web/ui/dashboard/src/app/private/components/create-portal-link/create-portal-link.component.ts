@@ -15,11 +15,12 @@ import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { RadioComponent } from 'src/app/components/radio/radio.component';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
+import { NotificationComponent } from 'src/app/components/notification/notification.component';
 
 @Component({
 	selector: 'convoy-create-portal-link',
 	standalone: true,
-	imports: [CommonModule, DialogHeaderComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, SelectComponent, CardComponent, ButtonComponent, ReactiveFormsModule, CopyButtonComponent, RadioComponent, ToggleComponent],
+	imports: [CommonModule, DialogHeaderComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, SelectComponent, CardComponent, ButtonComponent, ReactiveFormsModule, CopyButtonComponent, RadioComponent, ToggleComponent, NotificationComponent],
 	templateUrl: './create-portal-link.component.html',
 	styleUrls: ['./create-portal-link.component.scss']
 })

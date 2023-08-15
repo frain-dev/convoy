@@ -16,11 +16,12 @@ import { PermissionDirective } from '../permission/permission.directive';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { EndpointsService } from '../../pages/project/endpoints/endpoints.service';
+import { NotificationComponent } from 'src/app/components/notification/notification.component';
 
 @Component({
 	selector: 'convoy-create-endpoint',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, ButtonComponent, RadioComponent, TooltipComponent, CardComponent, ToggleComponent, FormLoaderComponent, PermissionDirective],
+	imports: [CommonModule, ReactiveFormsModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, ButtonComponent, RadioComponent, TooltipComponent, CardComponent, ToggleComponent, FormLoaderComponent, PermissionDirective, NotificationComponent],
 	templateUrl: './create-endpoint.component.html',
 	styleUrls: ['./create-endpoint.component.scss']
 })
