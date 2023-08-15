@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/oklog/ulid/v2"
-	"gopkg.in/guregu/null.v4"
 	"math"
 	"net/http"
 	"time"
+
+	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
@@ -248,6 +249,7 @@ var (
 		ReplayAttacks:            false,
 		IsRetentionPolicyEnabled: false,
 		DisableEndpoint:          false,
+		AddEventIDTraceHeaders:   false,
 		RateLimit:                &DefaultRateLimitConfig,
 		Strategy:                 &DefaultStrategyConfig,
 		Signature:                GetDefaultSignatureConfig(),
@@ -484,6 +486,7 @@ type ProjectConfig struct {
 	MaxIngestSize            uint64                        `json:"max_payload_read_size" db:"max_payload_read_size"`
 	ReplayAttacks            bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
 	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
+	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
 	DisableEndpoint          bool                          `json:"disable_endpoint" db:"disable_endpoint"`
 	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
