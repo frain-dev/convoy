@@ -208,7 +208,7 @@ func Test_LoadEndpointsPaged(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		endpoint := generateEndpoint(project)
 		if i == 1 || i == 2 || i == 4 {
-			endpoint.Title += fmt.Sprintf(" daniel-%+v", ulid.Make().String())
+			endpoint.Title += " daniel"
 		}
 
 		fmt.Printf("%+v\n", endpoint.Title)
@@ -568,7 +568,7 @@ func generateEndpoint(project *datastore.Project) *datastore.Endpoint {
 		ProjectID:          project.UID,
 		OwnerID:            ulid.Make().String(),
 		TargetURL:          faker.New().Address().StreetAddress(),
-		Title:              "Next application name",
+		Title:              fmt.Sprintf("%s-%s", faker.New().Company().Name(), ulid.Make().String()),
 		AdvancedSignatures: true,
 		Description:        "testing",
 		SlackWebhookURL:    "https:/gggggg",
