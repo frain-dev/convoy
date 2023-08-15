@@ -36,8 +36,8 @@ import { DialogDirective, DialogHeaderComponent } from 'src/app/components/dialo
 		PermissionDirective,
     TooltipComponent,
     ToggleComponent,
-    MultiInputComponent
-    DialogDirective
+    MultiInputComponent,
+    DialogDirective,
 	],
 	exports: [CreateSourceComponent]
 })

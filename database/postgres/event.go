@@ -119,10 +119,10 @@ const (
 
 	endpointFilter = ` AND ee.endpoint_id IN (:endpoint_ids) `
 
-	searchFilter = ` AND search_token @@ websearch_to_tsquery('english',:query) `
+	//searchFilter = ` AND search_token @@ websearch_to_tsquery('english',:query) `
 
 	baseCountPrevEvents = `
-	SELECT COUNT(DISTINCT(ev.id)) AS count
+	SELECT COUNT(DISTINCT(ev.id)) AS COUNT
 	FROM convoy.events ev
 	LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
 	WHERE ev.deleted_at IS NULL
@@ -335,9 +335,9 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		filterQuery += endpointFilter
 	}
 
-	if len(filter.Query) > 0 {
-		filterQuery += searchFilter
-	}
+	//if len(filter.Query) > 0 {
+	//	filterQuery += searchFilter
+	//}
 
 	query = fmt.Sprintf(baseQueryPagination, baseEventsPaged, filterQuery)
 	query, args, err = sqlx.Named(query, arg)
