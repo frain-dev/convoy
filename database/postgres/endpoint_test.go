@@ -208,8 +208,10 @@ func Test_LoadEndpointsPaged(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		endpoint := generateEndpoint(project)
 		if i == 1 || i == 2 || i == 4 {
-			endpoint.Title += "daniel-8998979797979"
+			endpoint.Title += fmt.Sprintf(" daniel-%+v", ulid.Make().String())
 		}
+
+		fmt.Printf("%+v\n", endpoint.Title)
 
 		err := endpointRepo.CreateEndpoint(context.Background(), endpoint, project.UID)
 		require.NoError(t, err)
