@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/httpheader"
+
 	"github.com/frain-dev/convoy/pkg/url"
 
 	"github.com/frain-dev/convoy/limiter"
@@ -173,7 +175,10 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		start := time.Now()
 
 		if p.Config.AddEventIDTraceHeaders {
-			ed.Headers["X-Convoy-Event-Delivery-ID"] = []string{ed.UID}
+			if ed.Headers == nil {
+				ed.Headers = httpheader.HTTPHeader{}
+			}
+			ed.Headers["X-Convoy-EventDelivery-ID"] = []string{ed.UID}
 			ed.Headers["X-Convoy-Event-ID"] = []string{ed.EventID}
 		}
 
