@@ -1,3 +1,28 @@
+## 23.08.1
+
+-   [Feature] Check if signup is enabled in the instance config with this new API #1710
+-   [Feature] New support added for Redis clusters #1700
+-   [Feature] Add healthcheck for ingest command #1709
+-   [Feature] New subscription filter based on regex #1725
+-   [Feature] Integration added for Kafka sources #1708
+-   [Enhancement] Add source ID header to ingested events #1715
+-   [Enhancement] Get event deliveries based on subscription ID #1717
+-   [Enhancement] Made improvements to Convoy's UI Modals #1711
+-   [Enhancement] Display event types on event deliveries table #1691
+-   [Enhancement] Use of a separate struct when building meta events to preserve the event delivery attempts #1693
+-   [Enhancement] Update how events and event deliveries are fetched regular intervals #1705
+-   [Enhancement] Prevent other non-server entry points from modifying instance config #1724
+-   [Enhancement] Ensure that endpoint titles are unique #1730
+-   [Bugfix] Resolved a console error when creating a source #1690
+-   [Bugfix] Display of event types on the portal page. #1692
+-   [Bugfix] Fixed Endpoints page loading state and other issues #1697
+-   [Bugfix] Fixed portal link card spacing, scroll and token timeout issues #1707
+-   [Bugfix] Resolved memory consumption issues when the retention policy job runs #1706
+-   [Bugfix] Fixed issues encountered during onboarding related to subscriptions #1713
+-   [Bugfix] The copy button on the project details page has been fixed #1722
+-   [Bugfix] Events with active deliveries are now ignored in retention policies #1723
+-   [Bugfix] Fixed an issue where the organization modal fails to open and the project page keeps loading after creating the first organization #1727
+
 ## 23.06.3
 
 -   [Feature] Add support for Webhooks Idempotency #1651 #1688
