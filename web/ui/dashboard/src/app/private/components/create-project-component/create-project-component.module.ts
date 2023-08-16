@@ -14,6 +14,7 @@ import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellCom
 import { CardComponent } from 'src/app/components/card/card.component';
 import { TokenModalComponent } from '../token-modal/token-modal.component';
 import { PermissionDirective } from '../permission/permission.directive';
+import { NotificationComponent } from 'src/app/components/notification/notification.component';
 
 @NgModule({
 	declarations: [CreateProjectComponent],
@@ -42,7 +43,8 @@ import { PermissionDirective } from '../permission/permission.directive';
 		LabelComponent,
 		TokenModalComponent,
 		PermissionDirective,
-        DialogDirective
+        DialogDirective,
+        NotificationComponent
 	],
 	exports: [CreateProjectComponent]
 })

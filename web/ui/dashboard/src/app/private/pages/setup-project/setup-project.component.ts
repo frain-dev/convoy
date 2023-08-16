@@ -16,11 +16,12 @@ import { CreateSourceComponent } from '../../components/create-source/create-sou
 import { CreateSubscriptionComponent } from '../../components/create-subscription/create-subscription.component';
 import { CreateSubscriptionService } from '../../components/create-subscription/create-subscription.service';
 import { LoaderModule } from '../../components/loader/loader.module';
+import { NotificationComponent } from 'src/app/components/notification/notification.component';
 
 @Component({
 	selector: 'convoy-setup-project',
 	standalone: true,
-	imports: [CommonModule, DialogHeaderComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, CardComponent, DialogDirective],
+	imports: [CommonModule, DialogHeaderComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, CardComponent, DialogDirective, NotificationComponent],
 	templateUrl: './setup-project.component.html',
 	styleUrls: ['./setup-project.component.scss']
 })
