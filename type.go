@@ -89,6 +89,7 @@ const (
 	MetaEventProcessor           TaskName = "MetaEventProcessor"
 	NotificationProcessor        TaskName = "NotificationProcessor"
 	IndexDocument                TaskName = "index document"
+	TokenizeSearch               TaskName = "tokenize search"
 	DailyAnalytics               TaskName = "daily analytics"
 	StreamCliEventsProcessor     TaskName = "StreamCliEventsProcessor"
 	MonitorTwitterSources        TaskName = "monitor twitter sources"

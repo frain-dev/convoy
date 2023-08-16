@@ -188,6 +188,7 @@ func StartConvoyServer(a *cli.App) error {
 
 	// register daily analytic task
 	s.RegisterTask("55 23 * * *", convoy.ScheduleQueue, convoy.DailyAnalytics)
+	s.RegisterTask("0 */1 * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
 	s.RegisterTask("58 23 * * *", convoy.ScheduleQueue, convoy.DeleteArchivedTasksProcessor)
 
 	// Start scheduler

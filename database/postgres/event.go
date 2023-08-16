@@ -88,7 +88,7 @@ const (
 	ev.updated_at, ev.deleted_at,
 	COALESCE(s.id, '') AS "source_metadata.id",
 	COALESCE(s.name, '') AS "source_metadata.name"
-    FROM convoy.events ev
+    FROM convoy.events_search ev
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
 	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
@@ -119,11 +119,11 @@ const (
 
 	endpointFilter = ` AND ee.endpoint_id IN (:endpoint_ids) `
 
-	//searchFilter = ` AND search_token @@ websearch_to_tsquery('english',:query) `
+	searchFilter = ` AND search_token @@ websearch_to_tsquery('simple',:query) `
 
 	baseCountPrevEvents = `
 	SELECT COUNT(DISTINCT(ev.id)) AS COUNT
-	FROM convoy.events ev
+	FROM convoy.events_search ev
 	LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
 	WHERE ev.deleted_at IS NULL
 	`
@@ -142,6 +142,10 @@ const (
     WHERE event_id = convoy.events.id
     )
 	`
+
+	tokenizeEvents = `
+    SELECT copy_rows();
+    `
 )
 
 type eventRepo struct {
@@ -335,9 +339,9 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		filterQuery += endpointFilter
 	}
 
-	//if len(filter.Query) > 0 {
-	//	filterQuery += searchFilter
-	//}
+	if !util.IsStringEmpty(filter.Query) {
+		filterQuery += searchFilter
+	}
 
 	query = fmt.Sprintf(baseQueryPagination, baseEventsPaged, filterQuery)
 	query, args, err = sqlx.Named(query, arg)
@@ -427,6 +431,15 @@ func (e *eventRepo) DeleteProjectEvents(ctx context.Context, projectID string, f
 	}
 
 	_, err := e.db.ExecContext(ctx, query, projectID, startDate, endDate)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (e *eventRepo) TokenizeEvents(ctx context.Context) error {
+	_, err := e.db.ExecContext(ctx, tokenizeEvents)
 	if err != nil {
 		return err
 	}
