@@ -306,6 +306,8 @@ type Configuration struct {
 
 type PyroscopeConfiguration struct {
 	URL       string `json:"url" envconfig:"CONVOY_PYROSCOPE_URL"`
+	Username  string `json:"username" envconfig:"CONVOY_PYROSCOPE_USERNAME"`
+	Password  string `json:"password" envconfig:"CONVOY_PYROSCOPE_PASSWORD"`
 	ProfileID string `json:"profile_id" envconfig:"CONVOY_PYROSCOPE_PROFILE_ID"`
 	AuthToken string `json:"auth_token" envconfig:"CONVOY_PYROSCOPE_AUTH_TOKEN"`
 }

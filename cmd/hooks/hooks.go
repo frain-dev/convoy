@@ -464,7 +464,9 @@ func enableProfiling(cfg config.Configuration) error {
 		// Logger: pyroscope.StandardLogger,
 		Logger: nil,
 		// optionally, if authentication is enabled, specify the API key:
-		AuthToken: cfg.Pyroscope.AuthToken,
+		AuthToken:         cfg.Pyroscope.AuthToken,
+		BasicAuthUser:     cfg.Pyroscope.Username,
+		BasicAuthPassword: cfg.Pyroscope.Password,
 		// but you can select the ones you want to use:
 		ProfileTypes: []pyroscope.ProfileType{
 			pyroscope.ProfileCPU,
