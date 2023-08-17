@@ -50,7 +50,7 @@ $$
 DECLARE
     cs CURSOR FOR
         SELECT * FROM convoy.events
-        WHERE created_at >= NOW() - INTERVAL '1 minute';
+        WHERE created_at >= NOW() - INTERVAL '1 hour';
     row_data RECORD;
 BEGIN
     OPEN cs;
