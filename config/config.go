@@ -301,6 +301,13 @@ type Configuration struct {
 	FeatureFlag        FeatureFlagConfiguration   `json:"feature_flag"`
 	Analytics          AnalyticsConfiguration     `json:"analytics"`
 	StoragePolicy      StoragePolicyConfiguration `json:"storage_policy"`
+	Pyroscope          PyroscopeConfiguration     `json:"pyroscope"`
+}
+
+type PyroscopeConfiguration struct {
+	URL       string `json:"url" envconfig:"CONVOY_PYROSCOPE_URL"`
+	ProfileID string `json:"profile_id" envconfig:"CONVOY_PYROSCOPE_PROFILE_ID"`
+	AuthToken string `json:"auth_token" envconfig:"CONVOY_PYROSCOPE_AUTH_TOKEN"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called

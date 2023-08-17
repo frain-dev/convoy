@@ -4,13 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"time"
+
+	"github.com/pyroscope-io/client/pyroscope"
+
 	dbhook "github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
-	"os"
-	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
@@ -99,6 +102,18 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		if cfg.Tracer.Type == config.NewRelicTracerProvider {
 			tr, err = tracer.NewTracer(cfg, lo.WithLogger())
+			if err != nil {
+				return err
+			}
+		}
+
+		profiling, err := cmd.Flags().GetBool("enable-profiling")
+		if err != nil {
+			return err
+		}
+
+		if profiling {
+			err = enableProfiling(cfg)
 			if err != nil {
 				return err
 			}
@@ -437,4 +452,28 @@ func ensureDefaultUser(ctx context.Context, a *cli.App) error {
 	a.Logger.Infof("Created Superuser with username: %s and password: %s", defaultUser.Email, p.Plaintext)
 
 	return nil
+}
+
+func enableProfiling(cfg config.Configuration) error {
+	_, err := pyroscope.Start(pyroscope.Config{
+		ApplicationName: "convoy-" + cfg.Pyroscope.ProfileID,
+
+		// replace this with the address of pyroscope server
+		ServerAddress: cfg.Pyroscope.URL,
+		// you can disable logging by setting this to nil
+		// Logger: pyroscope.StandardLogger,
+		Logger: nil,
+		// optionally, if authentication is enabled, specify the API key:
+		AuthToken: cfg.Pyroscope.AuthToken,
+		// but you can select the ones you want to use:
+		ProfileTypes: []pyroscope.ProfileType{
+			pyroscope.ProfileCPU,
+			pyroscope.ProfileAllocObjects,
+			pyroscope.ProfileAllocSpace,
+			pyroscope.ProfileInuseObjects,
+			pyroscope.ProfileInuseSpace,
+			pyroscope.ProfileGoroutines,
+		},
+	})
+	return err
 }

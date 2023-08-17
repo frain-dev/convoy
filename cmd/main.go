@@ -52,6 +52,7 @@ func main() {
 	var redisUsername string
 	var redisPassword string
 	var redisDatabase string
+	var enableProfiling bool
 
 	var configFile string
 
@@ -66,6 +67,7 @@ func main() {
 	c.Flags().StringVar(&dbDatabase, "db-database", "", "Database Database")
 	c.Flags().StringVar(&dbDatabase, "db-options", "", "Database Options")
 	c.Flags().IntVar(&dbPort, "db-port", 0, "Database Port")
+	c.Flags().BoolVar(&enableProfiling, "enable-profiling", false, "Enable profiling and exporting profile data to pyroscope")
 
 	// redis config
 	c.Flags().StringVar(&redisHost, "redis-host", "", "Redis Host")
