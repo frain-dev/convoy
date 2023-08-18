@@ -126,7 +126,14 @@
 				</button>
 			</div>
 
-			<button convoy-button size="sm" fill="outline" class="ml-14px px-10px border-primary-400 h-36px" [disabled]="(!queryParams?.startDate || !queryParams?.endDate) && !queryParams?.endpointId && !queryParams?.eventId && !queryParams?.status && !queryParams?.sourceId" (click)="fetchRetryCount()">
+			<button
+				convoy-button
+				size="sm"
+				fill="outline"
+				class="ml-14px px-10px border-primary-400 h-36px"
+				[disabled]="(!queryParams?.startDate || !queryParams?.endDate) && !queryParams?.endpointId && !queryParams?.eventId && !queryParams?.status && !queryParams?.sourceId"
+				(click)="fetchRetryCount()"
+			>
 				Batch Retry
 			</button>
 		</div>
@@ -170,7 +177,7 @@
 						<td convoy-table-cell [forDate]="true"></td>
 					</tr>
 					<ng-container *ngFor="let eventDelivery of eventDeliveriesGroup.content; let index = index">
-						<tr convoy-table-row *ngFor="let event of eventDelivery.eventDeliveries; let index = index" [id]="'eventDel' + i" [routerLink]="['./event-deliveries/' + event.uid]" [queryParams]="{ token: portalToken }">
+						<tr class="cursor-pointer" convoy-table-row *ngFor="let event of eventDelivery.eventDeliveries; let index = index" [id]="'eventDel' + i" [routerLink]="['./event-deliveries/' + event.uid]" [queryParams]="{ token: portalToken }">
 							<td convoy-table-cell class="pl-16px relative w-140px">
 								<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="assets/img/retry-icon.svg" alt="retry icon" title="manually retried" class="w-12px absolute top-[50%] -translate[3px] -translate-y-[50%] opacity-50" />
 								<convoy-tag className="ml-20px" [color]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
@@ -237,8 +244,8 @@
 </div>
 
 <!-- batch retry modal  -->
-<dialog #batchRetryDialog convoy-dialog position="center" size="sm" >
-    <div class="text-center py-30px">
+<dialog #batchRetryDialog convoy-dialog position="center" size="sm">
+	<div class="text-center py-30px">
 		<img src="/assets/img/filter.gif" alt="filter icon" class="w-50px m-auto mb-16px" />
 		<div class="text-center text-16 font-medium text-grey-60 mb-8px">The filters applied will affect</div>
 		<div class="text-center text-16 font-semibold mb-32px">{{ batchRetryCount || 0 }} event deliver{{ batchRetryCount > 1 ? 'ies' : 'y' }}</div>
@@ -246,4 +253,3 @@
 		<button convoy-button fill="clear" class="font-semibold m-auto" (click)="dialog.nativeElement.close()">No, Cancel</button>
 	</div>
 </dialog>
-
