@@ -37,7 +37,7 @@ export class DialogHeaderComponent {
 @Directive({
 	selector: '[convoy-dialog]',
 	standalone: true,
-	host: { class: 'backdrop:bg-black backdrop:bg-opacity-50 p-0', '[class]': 'classes', '[id]': 'id' }
+	host: { class: 'backdrop:bg-black backdrop:bg-opacity-50 p-0 fixed top-0 left-0 right-0', '[class]': 'classes', '[id]': 'id' }
 })
 export class DialogDirective implements OnInit {
 	@Input('position') position: 'full' | 'right' | 'center' = 'right';
