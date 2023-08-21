@@ -128,13 +128,6 @@ export class EventLogsComponent implements OnInit {
 		this.refetchEvents(data);
 	}
 
-	setDateForFilter(requestDetails: { startDate: any; endDate: any; startTime?: string; endTime?: string }) {
-		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
-		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-MM-dd')}${requestDetails?.startTime || 'T00:00:00'}` : '';
-		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}${requestDetails?.endTime || 'T23:59:59'}` : '';
-		return { startDate, endDate };
-	}
-
 	// fetch filters from url
 	getFiltersFromURL() {
 		const filters = this.route.snapshot.queryParams;
@@ -254,14 +247,13 @@ export class EventLogsComponent implements OnInit {
 	}
 
 	async fetchRetryCount() {
-		const { startDate, endDate } = this.setDateForFilter(this.eventsDateFilterFromURL);
 		const page = this.route.snapshot.queryParams.page || 1;
 		this.fetchingCount = true;
 		try {
 			const response = await this.eventsLogService.getRetryCount({
 				page: page,
-				startDate: startDate,
-				endDate: endDate,
+				startDate: this.eventsDateFilterFromURL.startDate,
+				endDate: this.eventsDateFilterFromURL.endDate,
 				sourceId: this.eventSource || ''
 			});
 
@@ -284,15 +276,14 @@ export class EventLogsComponent implements OnInit {
 	}
 
 	async batchRetryEvent() {
-		const { startDate, endDate } = this.setDateForFilter(this.eventsDateFilterFromURL);
 		const page = this.route.snapshot.queryParams.page || 1;
 		this.isRetrying = true;
 
 		try {
 			const response = await this.eventsLogService.batchRetryEvent({
 				page: page || 1,
-				startDate: startDate,
-				endDate: endDate,
+				startDate: this.eventsDateFilterFromURL.startDate,
+				endDate: this.eventsDateFilterFromURL.endDate,
 				sourceId: this.eventSource || ''
 			});
 

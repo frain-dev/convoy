@@ -68,7 +68,7 @@
 			fill="outline"
 			class="ml-14px px-10px border-primary-400 h-36px whitespace-nowrap"
 			[disabled]="(eventsDateFilterFromURL.startDate == '' || eventsDateFilterFromURL.endDate == '') && (eventSource?.length == 0 || eventSource == undefined)"
-			(click)="fetchRetryCount(); batchDialog.showModal()"
+			(click)="fetchRetryCount()"
 		>
 			Batch Replay
 		</button>
