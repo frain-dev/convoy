@@ -135,9 +135,8 @@
 		<div class="flex justify-between items-center pb-12px border-b border-new.primary-25">
 			<h3 class="font-semibold text-new.gray-800 text-16" *ngIf="eventDeliveryAtempts?.length">Delivery Attempts</h3>
 			<button
+				*ngIf="eventDelsDetails && (eventDelsDetails.status === 'Failure' || eventDelsDetails.status === 'Success' || eventDelsDetails.status === 'Retry'); else disabledButton"
 				convoy-button
-				*ngIf="eventDelsDetails"
-				[disabled]="eventDelsDetails.status !== 'Failure' && eventDelsDetails.status !== 'Success'"
 				size="xs"
 				class="text-new.gray-500 bg-new.gray-100"
 				(click)="eventDelsDetails.status === 'Success' ? forceRetryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid }) : retryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid })"
@@ -147,6 +146,18 @@
 				</svg>
 				{{ eventDelsDetails.status === 'Success' ? 'Force Retry' : 'Retry' }}
 			</button>
+			<ng-template #disabledButton>
+				<convoy-tooltip size="sm" position="left" type="white" [withIcon]="false">
+					<p class="w-250px">You can not retry an event when it is scheduled or still processing.</p>
+
+					<button convoy-button tooltipToggle size="xs" texture="light" disabled>
+						<svg width="16" height="16" class="mr-10px">
+							<use xlink:href="#refresh-icon-2"></use>
+						</svg>
+						{{ eventDelsDetails?.status === 'Success' ? 'Force Retry' : 'Retry' }}
+					</button>
+				</convoy-tooltip>
+			</ng-template>
 		</div>
 
 		<!-- empty state  -->

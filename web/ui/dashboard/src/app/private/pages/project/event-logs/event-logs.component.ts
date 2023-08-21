@@ -265,17 +265,20 @@ export class EventLogsComponent implements OnInit {
 		}
 	}
 
-	async retryEvent(requestDetails: { eventId: string }) {
+	async replayEvent(requestDetails: { eventId: string }) {
+		this.isRetrying = true;
 		try {
 			const response = await this.eventsLogService.retryEvent({ eventId: requestDetails.eventId });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.isRetrying = false;
 			return;
 		} catch (error) {
+			this.isRetrying = true;
 			return error;
 		}
 	}
 
-	async batchRetryEvent() {
+	async batchReplayEvent() {
 		const page = this.route.snapshot.queryParams.page || 1;
 		this.isRetrying = true;
 

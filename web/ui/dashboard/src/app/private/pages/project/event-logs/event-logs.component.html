@@ -155,7 +155,7 @@
 			<!-- event details  -->
 			<ng-container *ngIf="!isloadingEvents && displayedEvents">
 				<div class="border-b border-new.primary-25 pb-24px">
-					<button convoy-button size="xs" fill="soft" (click)="retryEvent({ eventId: eventsDetailsItem.uid })">
+					<button convoy-button size="xs" fill="soft" (click)="replayEvent({ eventId: eventsDetailsItem.uid })" [disabled]="isRetrying">
 						<svg width="16" height="16" class="mr-10px scale-75">
 							<use xlink:href="#refresh-icon"></use>
 						</svg>
@@ -314,7 +314,7 @@
 		<img src="/assets/img/filter.gif" alt="filter icon" class="w-50px m-auto mb-16px" />
 		<div class="text-center text-16 font-medium text-grey-60 mb-8px">The filters applied will affect</div>
 		<div class="text-center text-16 font-semibold mb-32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ? 's' : '' }}</div>
-		<button convoy-button [disabled]="isRetrying || batchRetryCount == 0" class="m-auto" (click)="batchRetryEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
+		<button convoy-button [disabled]="isRetrying || batchRetryCount == 0" class="m-auto" (click)="batchReplayEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
 		<button convoy-button fill="clear" class="font-semibold m-auto" (click)="batchDialog.close()">No, Cancel</button>
 	</div>
 </dialog>
