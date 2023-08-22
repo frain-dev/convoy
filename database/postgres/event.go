@@ -88,6 +88,22 @@ const (
 	ev.updated_at, ev.deleted_at,
 	COALESCE(s.id, '') AS "source_metadata.id",
 	COALESCE(s.name, '') AS "source_metadata.name"
+    FROM convoy.events ev
+	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
+	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+	LEFT JOIN convoy.sources s ON s.id = ev.source_id
+    WHERE ev.deleted_at IS NULL`
+
+	baseEventsSearch = `
+	SELECT ev.id, ev.project_id,
+	ev.id AS event_type, ev.is_duplicate_event,
+	COALESCE(ev.source_id, '') AS source_id,
+	ev.headers, ev.raw, ev.data, ev.created_at,
+	COALESCE(idempotency_key, '') AS idempotency_key,
+	COALESCE(url_query_params, '') AS url_query_params,
+	ev.updated_at, ev.deleted_at,
+	COALESCE(s.id, '') AS "source_metadata.id",
+	COALESCE(s.name, '') AS "source_metadata.name"
     FROM convoy.events_search ev
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
 	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
@@ -323,6 +339,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		"idempotency_key": filter.IdempotencyKey,
 	}
 
+	var base = baseEventsPaged
 	var baseQueryPagination string
 	if filter.Pageable.Direction == datastore.Next {
 		baseQueryPagination = baseEventsPagedForward
@@ -337,9 +354,10 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 
 	if !util.IsStringEmpty(filter.Query) {
 		filterQuery += searchFilter
+		base = baseEventsSearch
 	}
 
-	query = fmt.Sprintf(baseQueryPagination, baseEventsPaged, filterQuery)
+	query = fmt.Sprintf(baseQueryPagination, base, filterQuery)
 	query, args, err = sqlx.Named(query, arg)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err

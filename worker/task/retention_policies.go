@@ -186,7 +186,7 @@ func ExportCollection(
 
 	err = searcher.Remove(tableName, sf)
 	if err != nil {
-		log.WithError(err).Error("typesense: an error occured deleting typesense record")
+		log.WithError(err).Error("typesense: an error occurred deleting typesense record")
 	}
 
 	return nil
