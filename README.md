@@ -13,7 +13,7 @@
 
 Convoy provides several key features:
 
-- **Webhooks Gateway:** As a webhooks gateway, Convoy lives at the edge of your network to stream webhooks from your micoservices, and send them out to your users as well as receive webhooks from your providers and route them to the required services. With this your internal systems are never exposed to the public internet.
+- **Webhooks Gateway:** As a webhooks gateway, Convoy lives at the edge of your network to stream webhooks from your microservices, and send them out to your users as well as receive webhooks from your providers and route them to the required services. With this your internal systems are never exposed to the public internet.
 
 - **Scalability:** Convoy acts as a dedicated message queue for webhooks, and was designed to be horizontally scalable. It includes several components like the `api server`, `workers`, `scheduler`, and `socket server` which can be scaled independently to fit the need.
 
