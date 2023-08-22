@@ -42,7 +42,6 @@ type EventRepository interface {
 	CountEvents(ctx context.Context, projectID string, f *Filter) (int64, error)
 	LoadEventsPaged(ctx context.Context, projectID string, f *Filter) ([]Event, PaginationData, error)
 	DeleteProjectEvents(ctx context.Context, projectID string, f *EventFilter, hardDelete bool) error
-	TokenizeEvents(ctx context.Context) error
 	FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) ([]Event, error)
 	FindFirstEventWithIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) (*Event, error)
 }
@@ -53,6 +52,7 @@ type ProjectRepository interface {
 	UpdateProject(context.Context, *Project) error
 	DeleteProject(ctx context.Context, uid string) error
 	FetchProjectByID(context.Context, string) (*Project, error)
+	GetProjectsWithEvents(ctx context.Context, interval string) ([]ProjectEvents, error)
 	FillProjectsStatistics(ctx context.Context, project *Project) error
 }
 

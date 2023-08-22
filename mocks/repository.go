@@ -526,20 +526,6 @@ func (mr *MockEventRepositoryMockRecorder) LoadEventsPaged(ctx, projectID, f int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventsPaged", reflect.TypeOf((*MockEventRepository)(nil).LoadEventsPaged), ctx, projectID, f)
 }
 
-// TokenizeEvents mocks base method.
-func (m *MockEventRepository) TokenizeEvents(ctx context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TokenizeEvents", ctx)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// TokenizeEvents indicates an expected call of TokenizeEvents.
-func (mr *MockEventRepositoryMockRecorder) TokenizeEvents(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TokenizeEvents", reflect.TypeOf((*MockEventRepository)(nil).TokenizeEvents), ctx)
-}
-
 // MockProjectRepository is a mock of ProjectRepository interface.
 type MockProjectRepository struct {
 	ctrl     *gomock.Controller
@@ -618,6 +604,21 @@ func (m *MockProjectRepository) FillProjectsStatistics(ctx context.Context, proj
 func (mr *MockProjectRepositoryMockRecorder) FillProjectsStatistics(ctx, project interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FillProjectsStatistics", reflect.TypeOf((*MockProjectRepository)(nil).FillProjectsStatistics), ctx, project)
+}
+
+// GetProjectsWithEvents mocks base method.
+func (m *MockProjectRepository) GetProjectsWithEvents(ctx context.Context, interval string) ([]datastore.ProjectEvents, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProjectsWithEvents", ctx, interval)
+	ret0, _ := ret[0].([]datastore.ProjectEvents)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProjectsWithEvents indicates an expected call of GetProjectsWithEvents.
+func (mr *MockProjectRepositoryMockRecorder) GetProjectsWithEvents(ctx, interval interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProjectsWithEvents", reflect.TypeOf((*MockProjectRepository)(nil).GetProjectsWithEvents), ctx, interval)
 }
 
 // LoadProjects mocks base method.

@@ -142,10 +142,6 @@ const (
     WHERE event_id = convoy.events.id
     )
 	`
-
-	tokenizeEvents = `
-    SELECT copy_rows();
-    `
 )
 
 type eventRepo struct {
@@ -431,15 +427,6 @@ func (e *eventRepo) DeleteProjectEvents(ctx context.Context, projectID string, f
 	}
 
 	_, err := e.db.ExecContext(ctx, query, projectID, startDate, endDate)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (e *eventRepo) TokenizeEvents(ctx context.Context) error {
-	_, err := e.db.ExecContext(ctx, tokenizeEvents)
 	if err != nil {
 		return err
 	}

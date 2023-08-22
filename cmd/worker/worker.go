@@ -136,13 +136,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, cfg, rd))
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 
-			//indexDocument, err := task.NewIndexDocument(cfg)
-			//if err != nil {
-			//	return err
-			//}
-			//consumer.RegisterHandlers(convoy.IndexDocument, indexDocument.ProcessTask)
-
-			consumer.RegisterHandlers(convoy.TokenizeSearch, task.SearchTokenizer(eventRepo))
+			consumer.RegisterHandlers(convoy.TokenizeSearch, task.SearchTokenizer(projectRepo))
 			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 			consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo))
 			consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd))

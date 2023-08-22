@@ -461,6 +461,11 @@ type ProjectMetadata struct {
 	RetainedEvents int `json:"retained_events" bson:"retained_events"`
 }
 
+type ProjectEvents struct {
+	Id          string `json:"id" db:"id"`
+	EventsCount int    `json:"events_count" db:"events_count"`
+}
+
 type SignatureVersions []SignatureVersion
 
 func (s *SignatureVersions) Scan(v interface{}) error {

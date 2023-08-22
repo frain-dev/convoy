@@ -541,8 +541,6 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEventsPaged() {
 	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint2.UID})
 	require.NoError(s.T(), err)
 
-	eventRepo := postgres.NewEventRepo(s.ConvoyApp.A.DB)
-	err = eventRepo.TokenizeEvents(context.TODO())
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/portal-api/events?endpointId=%s&sourceId=%s&token=%s", endpoint1.UID, sourceID, portalLink.Token)
@@ -599,8 +597,6 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	d2, err := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event2, endpoint2, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
 	require.NoError(s.T(), err)
 
-	eventRepo := postgres.NewEventRepo(s.ConvoyApp.A.DB)
-	err = eventRepo.TokenizeEvents(context.TODO())
 	require.NoError(s.T(), err)
 
 	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint2.UID})

@@ -112,7 +112,6 @@ const (
 	EventQueue       QueueName = "EventQueue"
 	CreateEventQueue QueueName = "CreateEventQueue"
 	MetaEventQueue   QueueName = "MetaEventQueue"
-	// todo(raymond): remove this and it's references
 	SearchIndexQueue QueueName = "SearchIndexQueue"
 	StreamQueue      QueueName = "StreamQueue"
 	ScheduleQueue    QueueName = "ScheduleQueue"

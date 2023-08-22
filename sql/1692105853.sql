@@ -45,12 +45,13 @@ CREATE INDEX IF NOT EXISTS idx_events_search_source_id_key
 
 -- +migrate Up
 -- +migrate StatementBegin
-CREATE OR REPLACE FUNCTION copy_rows() RETURNS VOID AS
+CREATE OR REPLACE FUNCTION copy_rows(pid varchar, dur interval) RETURNS VOID AS
 $$
 DECLARE
     cs CURSOR FOR
         SELECT * FROM convoy.events
-        WHERE created_at >= NOW() - INTERVAL '1 hour';
+        WHERE project_id = pid
+        AND created_at >= NOW() - dur;
     row_data RECORD;
 BEGIN
     OPEN cs;

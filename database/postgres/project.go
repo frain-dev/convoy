@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/frain-dev/convoy/util"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -64,7 +65,7 @@ const (
 		meta_events_url = $17,
 		meta_events_secret = $18,
 		meta_events_pub_sub = $19,
-		updated_at = now()
+		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 	fetchProjectById = `
@@ -76,24 +77,24 @@ const (
 		p.logo_url,
 		p.organisation_id,
 		p.project_configuration_id,
-		c.retention_policy_policy as "config.retention_policy.policy",
-		c.max_payload_read_size as "config.max_payload_read_size",
-		c.replay_attacks_prevention_enabled as "config.replay_attacks_prevention_enabled",
-		c.retention_policy_enabled as "config.retention_policy_enabled",
-		c.ratelimit_count as "config.ratelimit.count",
-		c.ratelimit_duration as "config.ratelimit.duration",
-		c.strategy_type as "config.strategy.type",
-		c.strategy_duration as "config.strategy.duration",
-		c.strategy_retry_count as "config.strategy.retry_count",
-		c.signature_header as "config.signature.header",
-		c.signature_versions as "config.signature.versions",
-		c.disable_endpoint as "config.disable_endpoint",
-		c.meta_events_enabled as "config.meta_event.is_enabled",
-		COALESCE(c.meta_events_type, '') as "config.meta_event.type",
-		c.meta_events_event_type as "config.meta_event.event_type",
-		COALESCE(c.meta_events_url, '') as "config.meta_event.url",
-		COALESCE(c.meta_events_secret, '') as "config.meta_event.secret",
-		c.meta_events_pub_sub as "config.meta_event.pub_sub",
+		c.retention_policy_policy AS "config.retention_policy.policy",
+		c.max_payload_read_size AS "config.max_payload_read_size",
+		c.replay_attacks_prevention_enabled AS "config.replay_attacks_prevention_enabled",
+		c.retention_policy_enabled AS "config.retention_policy_enabled",
+		c.ratelimit_count AS "config.ratelimit.count",
+		c.ratelimit_duration AS "config.ratelimit.duration",
+		c.strategy_type AS "config.strategy.type",
+		c.strategy_duration AS "config.strategy.duration",
+		c.strategy_retry_count AS "config.strategy.retry_count",
+		c.signature_header AS "config.signature.header",
+		c.signature_versions AS "config.signature.versions",
+		c.disable_endpoint AS "config.disable_endpoint",
+		c.meta_events_enabled AS "config.meta_event.is_enabled",
+		COALESCE(c.meta_events_type, '') AS "config.meta_event.type",
+		c.meta_events_event_type AS "config.meta_event.event_type",
+		COALESCE(c.meta_events_url, '') AS "config.meta_event.url",
+		COALESCE(c.meta_events_secret, '') AS "config.meta_event.secret",
+		c.meta_events_pub_sub AS "config.meta_event.pub_sub",
 		p.created_at,
 		p.updated_at,
 		p.deleted_at
@@ -112,23 +113,23 @@ const (
 	p.logo_url,
 	p.organisation_id,
 	p.project_configuration_id,
-	c.retention_policy_policy as "config.retention_policy.policy",
-	c.max_payload_read_size as "config.max_payload_read_size",
-	c.replay_attacks_prevention_enabled as "config.replay_attacks_prevention_enabled",
-	c.retention_policy_enabled as "config.retention_policy_enabled",
-	c.ratelimit_count as "config.ratelimit.count",
-	c.ratelimit_duration as "config.ratelimit.duration",
-	c.strategy_type as "config.strategy.type",
-	c.strategy_duration as "config.strategy.duration",
-	c.strategy_retry_count as "config.strategy.retry_count",
-	c.signature_header as "config.signature.header",
-	c.signature_versions as "config.signature.versions",
-	c.meta_events_enabled as "config.meta_event.is_enabled",
-	COALESCE(c.meta_events_type, '') as "config.meta_event.type",
-	c.meta_events_event_type as "config.meta_event.event_type",
-	COALESCE(c.meta_events_url, '') as "config.meta_event.url",
-	COALESCE(c.meta_events_secret, '') as "config.meta_event.secret",
-	c.meta_events_pub_sub as "config.meta_event.pub_sub",
+	c.retention_policy_policy AS "config.retention_policy.policy",
+	c.max_payload_read_size AS "config.max_payload_read_size",
+	c.replay_attacks_prevention_enabled AS "config.replay_attacks_prevention_enabled",
+	c.retention_policy_enabled AS "config.retention_policy_enabled",
+	c.ratelimit_count AS "config.ratelimit.count",
+	c.ratelimit_duration AS "config.ratelimit.duration",
+	c.strategy_type AS "config.strategy.type",
+	c.strategy_duration AS "config.strategy.duration",
+	c.strategy_retry_count AS "config.strategy.retry_count",
+	c.signature_header AS "config.signature.header",
+	c.signature_versions AS "config.signature.versions",
+	c.meta_events_enabled AS "config.meta_event.is_enabled",
+	COALESCE(c.meta_events_type, '') AS "config.meta_event.type",
+	c.meta_events_event_type AS "config.meta_event.event_type",
+	COALESCE(c.meta_events_url, '') AS "config.meta_event.url",
+	COALESCE(c.meta_events_secret, '') AS "config.meta_event.secret",
+	c.meta_events_pub_sub AS "config.meta_event.pub_sub",
 	p.created_at,
 	p.updated_at,
 	p.deleted_at
@@ -143,45 +144,55 @@ const (
 	name = $2,
 	logo_url = $3,
 	retained_events = $4,
-	updated_at = now()
+	updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	deleteProject = `
 	UPDATE convoy.projects SET
-	deleted_at = now()
+	deleted_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	deleteProjectEndpoints = `
 	UPDATE convoy.endpoints SET
-	deleted_at = now()
+	deleted_at = NOW()
 	WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 
 	deleteProjectEvents = `
 	UPDATE convoy.events
-	SET deleted_at = now()
+	SET deleted_at = NOW()
 	WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 	deleteProjectEndpointSubscriptions = `
 	UPDATE convoy.subscriptions SET
-	deleted_at = now()
+	deleted_at = NOW()
 	WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 
 	projectStatistics = `
 	SELECT
-	(SELECT count(*) FROM convoy.subscriptions WHERE project_id = $1 AND deleted_at IS NULL) AS total_subscriptions,
-	(SELECT count(*) FROM convoy.endpoints WHERE project_id = $1 AND deleted_at IS NULL) AS total_endpoints,
-	(SELECT count(*) FROM convoy.sources WHERE project_id = $1 AND deleted_at IS NULL) AS total_sources,
-	(SELECT count(*) FROM convoy.events WHERE project_id = $1 AND deleted_at IS NULL) AS messages_sent;
+	(SELECT COUNT(*) FROM convoy.subscriptions WHERE project_id = $1 AND deleted_at IS NULL) AS total_subscriptions,
+	(SELECT COUNT(*) FROM convoy.endpoints WHERE project_id = $1 AND deleted_at IS NULL) AS total_endpoints,
+	(SELECT COUNT(*) FROM convoy.sources WHERE project_id = $1 AND deleted_at IS NULL) AS total_sources,
+	(SELECT COUNT(*) FROM convoy.events WHERE project_id = $1 AND deleted_at IS NULL) AS messages_sent;
 	`
 
 	updateProjectEndpointStatus = `
-	UPDATE convoy.endpoints SET status = ?, updated_at = now()
+	UPDATE convoy.endpoints SET status = ?, updated_at = NOW()
 	WHERE project_id = ? AND status IN (?) AND deleted_at IS NULL;
 	`
+
+	getProjectsWithEvents = `
+    SELECT p.id AS id, COUNT(e.id) AS events_count
+    FROM convoy.projects p
+    LEFT JOIN convoy.events e ON p.id = e.project_id
+    WHERE e.created_at >= NOW() - MAKE_INTERVAL(hours := $1)
+    AND p.deleted_at IS NULL
+    GROUP BY p.id
+    ORDER BY events_count DESC;
+    `
 )
 
 type projectRepo struct {
@@ -407,4 +418,29 @@ func (p *projectRepo) DeleteProject(ctx context.Context, id string) error {
 	}
 
 	return tx.Commit()
+}
+
+func (p *projectRepo) GetProjectsWithEvents(ctx context.Context, interval string) ([]datastore.ProjectEvents, error) {
+	if util.IsStringEmpty(interval) {
+		interval = "10"
+	}
+
+	var projects []datastore.ProjectEvents
+	rows, err := p.db.QueryxContext(ctx, getProjectsWithEvents, interval)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var proj datastore.ProjectEvents
+
+		err = rows.StructScan(&proj)
+		if err != nil {
+			return nil, err
+		}
+
+		projects = append(projects, proj)
+	}
+
+	return projects, rows.Close()
 }

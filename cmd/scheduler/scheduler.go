@@ -51,6 +51,7 @@ func AddSchedulerCommand(a *cli.App) *cobra.Command {
 			// register tasks
 			s.RegisterTask("30 * * * *", convoy.ScheduleQueue, convoy.MonitorTwitterSources)
 			s.RegisterTask(exportCronSpec, convoy.ScheduleQueue, convoy.RetentionPolicies)
+			s.RegisterTask("* * * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
 
 			// Start scheduler
 			s.Start()
