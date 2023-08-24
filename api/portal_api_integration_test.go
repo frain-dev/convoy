@@ -541,8 +541,6 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEventsPaged() {
 	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint2.UID})
 	require.NoError(s.T(), err)
 
-	require.NoError(s.T(), err)
-
 	url := fmt.Sprintf("/portal-api/events?endpointId=%s&sourceId=%s&token=%s", endpoint1.UID, sourceID, portalLink.Token)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()

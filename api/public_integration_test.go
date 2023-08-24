@@ -1174,8 +1174,6 @@ func (s *PublicEventIntegrationTestSuite) Test_GetEventsPaged() {
 	_, err = testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint2, s.DefaultProject.UID, ulid.Make().String(), "*", sourceID, []byte(`{}`))
 	require.NoError(s.T(), err)
 
-	require.NoError(s.T(), err)
-
 	url := fmt.Sprintf("/api/v1/projects/%s/events?endpointId=%s&sourceId=%s", s.DefaultProject.UID, endpoint1.UID, sourceID)
 	req := createRequest(http.MethodGet, url, s.APIKey, nil)
 	w := httptest.NewRecorder()

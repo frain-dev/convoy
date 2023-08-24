@@ -1759,8 +1759,6 @@ func (s *EventIntegrationTestSuite) Test_GetEventsPaged() {
 	_, err = testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint2, s.DefaultProject.UID, ulid.Make().String(), "*", sourceID, []byte(`{}`))
 	require.NoError(s.T(), err)
 
-	require.NoError(s.T(), err)
-
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/events?endpointId=%s&sourceId=%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpoint1.UID, sourceID)
 	req := createRequest(http.MethodGet, url, "", nil)
 
