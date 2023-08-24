@@ -44,6 +44,7 @@ type EventRepository interface {
 	DeleteProjectEvents(ctx context.Context, projectID string, f *EventFilter, hardDelete bool) error
 	FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) ([]Event, error)
 	FindFirstEventWithIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) (*Event, error)
+	CopyRows(ctx context.Context, projectID string, interval int) error
 }
 
 type ProjectRepository interface {
@@ -52,7 +53,7 @@ type ProjectRepository interface {
 	UpdateProject(context.Context, *Project) error
 	DeleteProject(ctx context.Context, uid string) error
 	FetchProjectByID(context.Context, string) (*Project, error)
-	GetProjectsWithEvents(ctx context.Context, interval string) ([]ProjectEvents, error)
+	GetProjectsWithEventsInTheInterval(ctx context.Context, interval int) ([]ProjectEvents, error)
 	FillProjectsStatistics(ctx context.Context, project *Project) error
 }
 

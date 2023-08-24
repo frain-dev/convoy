@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/frain-dev/convoy/util"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -184,7 +183,7 @@ const (
 	WHERE project_id = ? AND status IN (?) AND deleted_at IS NULL;
 	`
 
-	getProjectsWithEvents = `
+	getProjectsWithEventsInTheInterval = `
     SELECT p.id AS id, COUNT(e.id) AS events_count
     FROM convoy.projects p
     LEFT JOIN convoy.events e ON p.id = e.project_id
@@ -420,13 +419,13 @@ func (p *projectRepo) DeleteProject(ctx context.Context, id string) error {
 	return tx.Commit()
 }
 
-func (p *projectRepo) GetProjectsWithEvents(ctx context.Context, interval string) ([]datastore.ProjectEvents, error) {
-	if util.IsStringEmpty(interval) {
-		interval = "10"
+func (p *projectRepo) GetProjectsWithEventsInTheInterval(ctx context.Context, interval int) ([]datastore.ProjectEvents, error) {
+	if interval == 0 {
+		interval = 100
 	}
 
 	var projects []datastore.ProjectEvents
-	rows, err := p.db.QueryxContext(ctx, getProjectsWithEvents, interval)
+	rows, err := p.db.QueryxContext(ctx, getProjectsWithEventsInTheInterval, interval)
 	if err != nil {
 		return nil, err
 	}

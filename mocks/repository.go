@@ -392,6 +392,20 @@ func (m *MockEventRepository) EXPECT() *MockEventRepositoryMockRecorder {
 	return m.recorder
 }
 
+// CopyRows mocks base method.
+func (m *MockEventRepository) CopyRows(ctx context.Context, projectID string, interval int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CopyRows", ctx, projectID, interval)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CopyRows indicates an expected call of CopyRows.
+func (mr *MockEventRepositoryMockRecorder) CopyRows(ctx, projectID, interval interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyRows", reflect.TypeOf((*MockEventRepository)(nil).CopyRows), ctx, projectID, interval)
+}
+
 // CountEvents mocks base method.
 func (m *MockEventRepository) CountEvents(ctx context.Context, projectID string, f *datastore.Filter) (int64, error) {
 	m.ctrl.T.Helper()
@@ -606,19 +620,19 @@ func (mr *MockProjectRepositoryMockRecorder) FillProjectsStatistics(ctx, project
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FillProjectsStatistics", reflect.TypeOf((*MockProjectRepository)(nil).FillProjectsStatistics), ctx, project)
 }
 
-// GetProjectsWithEvents mocks base method.
-func (m *MockProjectRepository) GetProjectsWithEvents(ctx context.Context, interval string) ([]datastore.ProjectEvents, error) {
+// GetProjectsWithEventsInTheInterval mocks base method.
+func (m *MockProjectRepository) GetProjectsWithEventsInTheInterval(ctx context.Context, interval int) ([]datastore.ProjectEvents, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetProjectsWithEvents", ctx, interval)
+	ret := m.ctrl.Call(m, "GetProjectsWithEventsInTheInterval", ctx, interval)
 	ret0, _ := ret[0].([]datastore.ProjectEvents)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetProjectsWithEvents indicates an expected call of GetProjectsWithEvents.
-func (mr *MockProjectRepositoryMockRecorder) GetProjectsWithEvents(ctx, interval interface{}) *gomock.Call {
+// GetProjectsWithEventsInTheInterval indicates an expected call of GetProjectsWithEventsInTheInterval.
+func (mr *MockProjectRepositoryMockRecorder) GetProjectsWithEventsInTheInterval(ctx, interval interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProjectsWithEvents", reflect.TypeOf((*MockProjectRepository)(nil).GetProjectsWithEvents), ctx, interval)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProjectsWithEventsInTheInterval", reflect.TypeOf((*MockProjectRepository)(nil).GetProjectsWithEventsInTheInterval), ctx, interval)
 }
 
 // LoadProjects mocks base method.

@@ -150,6 +150,7 @@ const (
 	WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3
 	AND deleted_at IS NULL
 	`
+
 	hardDeleteProjectEvents = `
 	DELETE FROM convoy.events WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3
 	AND deleted_at IS NULL AND NOT EXISTS (
@@ -158,6 +159,16 @@ const (
     WHERE event_id = convoy.events.id
     )
 	`
+
+	hardDeleteTokenizedEvents = `
+	DELETE FROM convoy.events_search
+    WHERE project_id = $1
+	AND deleted_at IS NULL
+	`
+
+	copyRowsFromEventsToEventsSearch = `
+    SELECT copy_rows($1, $2)
+    `
 )
 
 type eventRepo struct {
@@ -450,6 +461,26 @@ func (e *eventRepo) DeleteProjectEvents(ctx context.Context, projectID string, f
 	}
 
 	return nil
+}
+
+func (e *eventRepo) CopyRows(ctx context.Context, projectID string, interval int) error {
+	tx, err := e.db.BeginTxx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer rollbackTx(tx)
+
+	_, err = tx.ExecContext(ctx, hardDeleteTokenizedEvents, projectID)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.ExecContext(ctx, copyRowsFromEventsToEventsSearch, projectID, interval)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func getCreatedDateFilter(startDate, endDate int64) (time.Time, time.Time) {
