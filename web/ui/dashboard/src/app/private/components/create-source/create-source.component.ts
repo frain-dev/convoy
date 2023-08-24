@@ -78,7 +78,7 @@ export class CreateSourceComponent implements OnInit {
 	];
 	pubSubTypes = [
 		{ uid: 'google', name: 'Google Pub/Sub' },
-		{ uid: 'kafka', name: 'Kafka Pub/Sub' },
+		{ uid: 'kafka', name: 'Kafka' },
 		{ uid: 'sqs', name: 'AWS SQS' }
 	];
 	httpTypes = [
