@@ -88,7 +88,7 @@ export class EventDeliveriesComponent implements OnInit {
 	getEventDeliveriesAtInterval(requestDetails?: FILTER_QUERY_PARAM) {
 		this.getEventDeliveriesInterval = setInterval(() => {
 			this.getEventDeliveries({ ...requestDetails });
-		}, 4000);
+		}, 7000);
 	}
 
 	async getEventDeliveries(requestDetails?: FILTER_QUERY_PARAM): Promise<HTTP_RESPONSE> {
@@ -172,14 +172,14 @@ export class EventDeliveriesComponent implements OnInit {
 	getSelectedDateRange(dateRange: { startDate: string; endDate: string }) {
 		const data = this.addFilterToURL(dateRange);
 		clearInterval(this.getEventDeliveriesInterval);
-		this.getEventDeliveries({ ...data, showLoader: true }).then(() => this.getEventDeliveriesAtInterval(data));
+		this.getEventDeliveries({ ...data, showLoader: true });
 	}
 
 	getSelectedStatusFilter() {
 		const eventDelsStatus = this.eventDeliveryFilteredByStatus.length > 0 ? JSON.stringify(this.eventDeliveryFilteredByStatus) : '';
 		const data = this.addFilterToURL({ status: eventDelsStatus });
 		clearInterval(this.getEventDeliveriesInterval);
-		this.getEventDeliveries({ ...data, showLoader: true }).then(() => this.getEventDeliveriesAtInterval(data));
+		this.getEventDeliveries({ ...data, showLoader: true });
 	}
 
 	clearFilters(filterType?: 'startDate' | 'endDate' | 'eventId' | 'endpointId' | 'status' | 'sourceId' | 'next_page_cursor' | 'prev_page_cursor' | 'direction') {
@@ -206,7 +206,8 @@ export class EventDeliveriesComponent implements OnInit {
 		}
 
 		clearInterval(this.getEventDeliveriesInterval);
-		this.getEventDeliveries({ ...this.queryParams, showLoader: true }).then(() => this.getEventDeliveriesAtInterval(this.queryParams));
+		if (Object.keys(this.queryParams).length === 0) this.getEventDeliveries({ ...this.queryParams, showLoader: true }).then(() => this.getEventDeliveriesAtInterval(this.queryParams));
+		else this.getEventDeliveries({ ...this.queryParams, showLoader: true });
 	}
 
 	async fetchRetryCount() {
@@ -240,13 +241,19 @@ export class EventDeliveriesComponent implements OnInit {
 	updateEndpointFilter() {
 		const data = this.addFilterToURL({ endpointId: this.eventDeliveriesEndpoint });
 		clearInterval(this.getEventDeliveriesInterval);
-		this.getEventDeliveries({ ...data, showLoader: true }).then(() => this.getEventDeliveriesAtInterval(data));
+		this.getEventDeliveries({ ...data, showLoader: true });
 	}
 
 	updateSourceFilter() {
 		const data = this.addFilterToURL({ sourceId: this.eventDeliveriesSource });
 		clearInterval(this.getEventDeliveriesInterval);
-		this.getEventDeliveries({ ...data, showLoader: true }).then(() => this.getEventDeliveriesAtInterval(data));
+		this.getEventDeliveries({ ...data, showLoader: true });
+	}
+
+	paginateEvents(event: CURSOR) {
+		const data = this.addFilterToURL({ next_page_cursor: event.next_page_cursor, prev_page_cursor: event.prev_page_cursor });
+		clearInterval(this.getEventDeliveriesInterval);
+		this.getEventDeliveries({ ...data, showLoader: true });
 	}
 
 	async retryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
@@ -292,11 +299,5 @@ export class EventDeliveriesComponent implements OnInit {
 			this.isRetrying = false;
 			return error;
 		}
-	}
-
-	paginateEvents(event: CURSOR) {
-		this.addFilterToURL({ next_page_cursor: event.next_page_cursor, prev_page_cursor: event.prev_page_cursor });
-		clearInterval(this.getEventDeliveriesInterval);
-		this.getEventDeliveries({ ...event, showLoader: true }).then(() => this.getEventDeliveriesAtInterval(event));
 	}
 }
