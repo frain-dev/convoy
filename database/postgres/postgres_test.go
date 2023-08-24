@@ -47,7 +47,7 @@ func getConfig() config.Configuration {
 
 var (
 	once = sync.Once{}
-	db   *Postgres
+	_db  *Postgres
 )
 
 func getDB(t *testing.T) (database.Database, func()) {
@@ -57,12 +57,12 @@ func getDB(t *testing.T) (database.Database, func()) {
 		dbHooks := hooks.Init()
 		dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}) {})
 
-		db, err = NewDB(getConfig())
+		_db, err = NewDB(getConfig())
 		require.NoError(t, err)
 	})
 
-	return db, func() {
-		require.NoError(t, db.truncateTables())
+	return _db, func() {
+		require.NoError(t, _db.truncateTables())
 	}
 }
 

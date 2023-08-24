@@ -136,6 +136,18 @@ type DeviceRepository interface {
 	LoadDevicesPaged(ctx context.Context, projectID string, filter *ApiKeyFilter, pageable Pageable) ([]Device, PaginationData, error)
 }
 
+type JobRepository interface {
+	CreateJob(ctx context.Context, job *Job) error
+	MarkJobAsStarted(ctx context.Context, uid, projectID string) error
+	MarkJobAsCompleted(ctx context.Context, uid, projectID string) error
+	MarkJobAsFailed(ctx context.Context, uid, projectID string) error
+	DeleteJob(ctx context.Context, uid string, projectID string) error
+	FetchJobById(ctx context.Context, uid string, projectID string) (*Job, error)
+	FetchRunningJobsByProjectId(ctx context.Context, projectID string) ([]Job, error)
+	FetchJobsByProjectId(ctx context.Context, projectID string) ([]Job, error)
+	LoadJobsPaged(ctx context.Context, projectID string, pageable Pageable) ([]Job, PaginationData, error)
+}
+
 type UserRepository interface {
 	CreateUser(context.Context, *User) error
 	UpdateUser(ctx context.Context, user *User) error

@@ -3,10 +3,12 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/hibiken/asynq"
+	"github.com/oklog/ulid/v2"
 	"time"
 )
 
@@ -15,7 +17,7 @@ type SearchIndexParams struct {
 	Interval  int    `json:"interval"`
 }
 
-func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, eventRepo datastore.EventRepository) func(context.Context, *asynq.Task) error {
+func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, eventRepo datastore.EventRepository, jobRepo datastore.JobRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		projectEvents, err := projectRepository.GetProjectsWithEventsInTheInterval(ctx, 0)
 		if err != nil {
@@ -23,7 +25,7 @@ func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, even
 		}
 
 		for _, p := range projectEvents {
-			err = Tokenize(ctx, eventRepo, p.Id, 100)
+			err = Tokenize(ctx, eventRepo, jobRepo, p.Id, 100)
 			if err != nil {
 				log.WithError(err).Errorf("failed to tokenize events for project with id %s", p.Id)
 				continue
@@ -36,7 +38,7 @@ func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, even
 	}
 }
 
-func TokenizerHandler(eventRepo datastore.EventRepository) func(context.Context, *asynq.Task) error {
+func TokenizerHandler(eventRepo datastore.EventRepository, jobRepo datastore.JobRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data SearchIndexParams
 		err := json.Unmarshal(t.Payload(), &data)
@@ -45,7 +47,7 @@ func TokenizerHandler(eventRepo datastore.EventRepository) func(context.Context,
 			return &EndpointError{Err: err, delay: time.Second * 30}
 		}
 
-		err = Tokenize(ctx, eventRepo, data.ProjectID, data.Interval)
+		err = Tokenize(ctx, eventRepo, jobRepo, data.ProjectID, data.Interval)
 		if err != nil {
 			return err
 		}
@@ -54,17 +56,52 @@ func TokenizerHandler(eventRepo datastore.EventRepository) func(context.Context,
 	}
 }
 
-func Tokenize(ctx context.Context, eventRepo datastore.EventRepository, projectId string, interval int) error {
+func Tokenize(ctx context.Context, eventRepo datastore.EventRepository, jobRepo datastore.JobRepository, projectId string, interval int) error {
 	// check if a job for a given project is currently running
+	jobs, err := jobRepo.FetchRunningJobsByProjectId(ctx, projectId)
+	if err != nil {
+		return err
+	}
 
 	// if a job is in progress, exit
+	if len(jobs) > 0 {
+		return errors.New("there are currently running jobs")
+	}
+
+	job := &datastore.Job{
+		UID:       ulid.Make().String(),
+		Type:      "search_tokenizer",
+		Status:    "ready",
+		ProjectID: projectId,
+	}
+
+	err = jobRepo.CreateJob(ctx, job)
+	if err != nil {
+		return err
+	}
+
+	err = jobRepo.MarkJobAsStarted(ctx, job.UID, projectId)
+	if err != nil {
+		return err
+	}
 
 	// if a job is not currently running start a new job
-	return eventRepo.CopyRows(ctx, projectId, interval)
+	err = eventRepo.CopyRows(ctx, projectId, interval)
+	if err != nil {
+		err = jobRepo.MarkJobAsFailed(ctx, job.UID, projectId)
+		if err != nil {
+			return err
+		}
 
-	// if the function returned an error, make the job as complete and failed
+		return err
+	}
 
 	// if the rows were copied without an error, mark the job as complete and successful
+	err = jobRepo.MarkJobAsCompleted(ctx, job.UID, projectId)
+	if err != nil {
+		return err
+	}
 
 	// exit
+	return nil
 }

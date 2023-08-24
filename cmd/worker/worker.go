@@ -79,6 +79,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			metaEventRepo := postgres.NewMetaEventRepo(a.DB)
 			endpointRepo := postgres.NewEndpointRepo(a.DB)
 			eventRepo := postgres.NewEventRepo(a.DB)
+			jobRepo := postgres.NewJobRepo(a.DB)
 			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 			subRepo := postgres.NewSubscriptionRepo(a.DB)
 			deviceRepo := postgres.NewDeviceRepo(a.DB)
@@ -136,7 +137,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, cfg, rd))
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 
-			consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo))
+			consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo))
 			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 			consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo))
 			consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd))

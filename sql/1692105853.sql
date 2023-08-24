@@ -74,4 +74,4 @@ $$ LANGUAGE plpgsql;
 DROP TABLE IF EXISTS convoy.events_search;
 
 -- +migrate Down
-DROP FUNCTION copy_rows();
+DROP FUNCTION IF EXISTS copy_rows(VARCHAR, INTEGER);

@@ -145,6 +145,7 @@ const (
 )
 
 const (
+	ProjectUpdated       HookEventType = "project.updated"
 	EndpointCreated      HookEventType = "endpoint.created"
 	EndpointUpdated      HookEventType = "endpoint.updated"
 	EndpointDeleted      HookEventType = "endpoint.deleted"
@@ -1250,6 +1251,28 @@ const (
 	DeviceStatusOffline  DeviceStatus = "offline"
 	DeviceStatusOnline   DeviceStatus = "online"
 	DeviceStatusDisabled DeviceStatus = "disabled"
+)
+
+type Job struct {
+	UID         string    `json:"uid" db:"id"`
+	Type        string    `json:"type" db:"type"`
+	Status      JobStatus `json:"status,omitempty" db:"status"`
+	ProjectID   string    `json:"project_id,omitempty" db:"project_id"`
+	FailedAt    time.Time `json:"failed_at,omitempty" db:"failed_at,omitempty" swaggertype:"string"`
+	StartedAt   time.Time `json:"started_at,omitempty" db:"started_at,omitempty" swaggertype:"string"`
+	CompletedAt time.Time `json:"completed_at,omitempty" db:"completed_at,omitempty" swaggertype:"string"`
+	CreatedAt   time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt   time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt   null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+type JobStatus string
+
+const (
+	JobStatusOffline   JobStatus = "ready"
+	JobStatusRunning   JobStatus = "running"
+	JobStatusFailed    JobStatus = "failed"
+	JobStatusCompleted JobStatus = "completed"
 )
 
 type UserMetadata struct {
