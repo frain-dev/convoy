@@ -53,12 +53,12 @@ func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datast
 func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.CreateProject, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Project, *models.APIKeyResponse, error) {
 	projectName := newProject.Name
 
-	config := newProject.Config.Transform()
-	if config == nil {
-		config = &datastore.DefaultProjectConfig
+	projectConfig := newProject.Config.Transform()
+	if projectConfig == nil {
+		projectConfig = &datastore.DefaultProjectConfig
 	} else {
-		checkSignatureVersions(config.Signature.Versions)
-		err := validateMetaEvent(config.MetaEvent)
+		checkSignatureVersions(projectConfig.Signature.Versions)
+		err := validateMetaEvent(projectConfig.MetaEvent)
 		if err != nil {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
@@ -69,7 +69,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		Name:           projectName,
 		Type:           datastore.ProjectType(newProject.Type),
 		OrganisationID: org.UID,
-		Config:         config,
+		Config:         projectConfig,
 		LogoURL:        newProject.LogoURL,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
@@ -78,7 +78,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 	err := ps.projectRepo.CreateProject(ctx, project)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create project")
-		if err == datastore.ErrDuplicateProjectName {
+		if errors.Is(err, datastore.ErrDuplicateProjectName) {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
 

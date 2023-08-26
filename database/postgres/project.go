@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/frain-dev/convoy/database/hooks"
+	"github.com/r3labs/diff/v3"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -28,8 +30,8 @@ const (
 
 	createProjectConfiguration = `
 	INSERT INTO convoy.project_configurations (
-		id, retention_policy_policy, max_payload_read_size,
-		replay_attacks_prevention_enabled,
+		id, retention_policy_policy, search_policy,
+        max_payload_read_size, replay_attacks_prevention_enabled,
 		retention_policy_enabled, ratelimit_count,
 		ratelimit_duration, strategy_type,
 		strategy_duration, strategy_retry_count,
@@ -64,6 +66,7 @@ const (
 		meta_events_url = $17,
 		meta_events_secret = $18,
 		meta_events_pub_sub = $19,
+		search_policy = $20,
 		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -77,6 +80,7 @@ const (
 		p.organisation_id,
 		p.project_configuration_id,
 		c.retention_policy_policy AS "config.retention_policy.policy",
+		c.search_policy AS "config.retention_policy.search_policy",
 		c.max_payload_read_size AS "config.max_payload_read_size",
 		c.replay_attacks_prevention_enabled AS "config.replay_attacks_prevention_enabled",
 		c.retention_policy_enabled AS "config.retention_policy_enabled",
@@ -113,6 +117,7 @@ const (
 	p.organisation_id,
 	p.project_configuration_id,
 	c.retention_policy_policy AS "config.retention_policy.policy",
+    c.search_policy AS "config.retention_policy.search_policy",
 	c.max_payload_read_size AS "config.max_payload_read_size",
 	c.replay_attacks_prevention_enabled AS "config.replay_attacks_prevention_enabled",
 	c.retention_policy_enabled AS "config.retention_policy_enabled",
@@ -195,11 +200,12 @@ const (
 )
 
 type projectRepo struct {
-	db *sqlx.DB
+	db   *sqlx.DB
+	hook *hooks.Hook
 }
 
 func NewProjectRepo(db database.Database) datastore.ProjectRepository {
-	return &projectRepo{db: db.GetDB()}
+	return &projectRepo{db: db.GetDB(), hook: db.GetHook()}
 }
 
 func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Project) error {
@@ -219,6 +225,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 	result, err := tx.ExecContext(ctx, createProjectConfiguration,
 		configID,
 		rc.Policy,
+		rc.SearchPolicy,
 		project.Config.MaxIngestSize,
 		project.Config.ReplayAttacks,
 		project.Config.IsRetentionPolicyEnabled,
@@ -293,6 +300,16 @@ func (p *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFilt
 }
 
 func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Project) error {
+	pro, err := p.FetchProjectByID(ctx, project.UID)
+	if err != nil {
+		return err
+	}
+
+	changelog, err := diff.Diff(pro, project)
+	if err != nil {
+		return err
+	}
+
 	tx, err := p.db.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -334,6 +351,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		me.URL,
 		me.Secret,
 		me.PubSub,
+		project.Config.RetentionPolicy.SearchPolicy,
 	)
 	if err != nil {
 		return err
@@ -362,7 +380,13 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		}
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	go p.hook.Fire(datastore.ProjectUpdated, project, changelog)
+	return nil
 }
 
 func (p *projectRepo) FetchProjectByID(ctx context.Context, id string) (*datastore.Project, error) {

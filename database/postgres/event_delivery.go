@@ -44,19 +44,19 @@ const (
         COALESCE(ed.url_query_params, '') AS url_query_params,
         COALESCE(ed.idempotency_key, '') AS idempotency_key,
         ed.description,ed.created_at,ed.updated_at,
-        COALESCE(ed.device_id,'') as "device_id",
-        COALESCE(ed.endpoint_id,'') as "endpoint_id",
-        COALESCE(ep.id, '') as "endpoint_metadata.id",
-        COALESCE(ep.title, '') as "endpoint_metadata.title",
-        COALESCE(ep.project_id, '') as "endpoint_metadata.project_id",
-        COALESCE(ep.support_email, '') as "endpoint_metadata.support_email",
-        COALESCE(ep.target_url, '') as "endpoint_metadata.target_url",
-        ev.id as "event_metadata.id",
-        ev.event_type as "event_metadata.event_type",
+        COALESCE(ed.device_id,'') AS "device_id",
+        COALESCE(ed.endpoint_id,'') AS "endpoint_id",
+        COALESCE(ep.id, '') AS "endpoint_metadata.id",
+        COALESCE(ep.title, '') AS "endpoint_metadata.title",
+        COALESCE(ep.project_id, '') AS "endpoint_metadata.project_id",
+        COALESCE(ep.support_email, '') AS "endpoint_metadata.support_email",
+        COALESCE(ep.target_url, '') AS "endpoint_metadata.target_url",
+        ev.id AS "event_metadata.id",
+        ev.event_type AS "event_metadata.event_type",
 
-		COALESCE(d.id,'') as "device_metadata.id",
-		COALESCE(d.status,'') as "device_metadata.status",
-		COALESCE(d.host_name,'') as "device_metadata.host_name",
+		COALESCE(d.id,'') AS "device_metadata.id",
+		COALESCE(d.status,'') AS "device_metadata.status",
+		COALESCE(d.host_name,'') AS "device_metadata.host_name",
 
 		COALESCE(s.id, '') AS "source_metadata.id",
 		COALESCE(s.name, '') AS "source_metadata.name",
@@ -100,7 +100,7 @@ const (
 	AND ed.deleted_at IS NULL`
 
 	countPrevEventDeliveries = `
-	SELECT count(distinct(ed.id)) as count
+	SELECT COUNT(DISTINCT(ed.id)) AS count
 	FROM convoy.event_deliveries ed
 	WHERE ed.deleted_at IS NULL
 	%s
@@ -108,10 +108,10 @@ const (
 
 	loadEventDeliveriesIntervals = `
     SELECT
-        date_trunc('%s', created_at) as "data.group_only",
-        to_char(date_trunc('%s', created_at), '%s') as "data.total_time",
-        extract(%s from created_at) as "data.index",
-        count(*) as count
+        DATE_TRUNC('%s', created_at) AS "data.group_only",
+        TO_CHAR(DATE_TRUNC('%s', created_at), '%s') AS "data.total_time",
+        EXTRACT(%S FROM created_at) AS "data.index",
+        COUNT(*) AS count
         FROM
             convoy.event_deliveries
         WHERE
@@ -132,9 +132,9 @@ const (
         COALESCE(ed.idempotency_key, '') AS idempotency_key,
         COALESCE(url_query_params, '') AS url_query_params,
         description,created_at,updated_at,
-        COALESCE(device_id,'') as "device_id",
-        COALESCE(endpoint_id,'') as "endpoint_id"
-    FROM convoy.event_deliveries ed WHERE %s AND deleted_at IS NULL;
+        COALESCE(device_id,'') AS "device_id",
+        COALESCE(endpoint_id,'') AS "endpoint_id"
+    FROM convoy.event_deliveries ed WHERE %S AND deleted_at IS NULL;
     `
 
 	fetchDiscardedEventDeliveries = `
@@ -144,7 +144,7 @@ const (
         COALESCE(idempotency_key, '') AS idempotency_key,
         COALESCE(url_query_params, '') AS url_query_params,
         description,created_at,updated_at,
-        COALESCE(device_id,'') as "device_id"
+        COALESCE(device_id,'') AS "device_id"
     FROM convoy.event_deliveries
 	WHERE status=$1 AND project_id = $2 AND device_id = $3
 	AND created_at >= $4 AND created_at <= $5
@@ -160,15 +160,15 @@ const (
     `
 
 	updateEventDeliveriesStatus = `
-    UPDATE convoy.event_deliveries SET status = ?, updated_at = now() WHERE (project_id = ? OR ? = '')AND id IN (?) AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET status = ?, updated_at = NOW() WHERE (project_id = ? OR ? = '')AND id IN (?) AND deleted_at IS NULL;
     `
 
 	updateEventDeliveryAttempts = `
-    UPDATE convoy.event_deliveries SET attempts = $1, status = $2, metadata = $3,  updated_at = now() WHERE id = $4 AND project_id = $5 AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET attempts = $1, status = $2, metadata = $3,  updated_at = NOW() WHERE id = $4 AND project_id = $5 AND deleted_at IS NULL;
     `
 
 	softDeleteProjectEventDeliveries = `
-    UPDATE convoy.event_deliveries SET deleted_at = now() WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3 AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET deleted_at = NOW() WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3 AND deleted_at IS NULL;
     `
 
 	hardDeleteProjectEventDeliveries = `
@@ -384,7 +384,7 @@ func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, 
 		return ErrEventDeliveryAttemptsNotUpdated
 	}
 
-	go e.hook.Fire(datastore.EventDeliveryUpdated, &delivery)
+	go e.hook.Fire(datastore.EventDeliveryUpdated, &delivery, nil)
 	return nil
 }
 

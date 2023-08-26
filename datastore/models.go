@@ -284,7 +284,8 @@ var (
 	}
 
 	DefaultRetentionPolicy = RetentionPolicyConfiguration{
-		Policy: "720h",
+		Policy:       "720h",
+		SearchPolicy: "720h",
 	}
 )
 
@@ -467,6 +468,11 @@ type ProjectEvents struct {
 	EventsCount int    `json:"events_count" db:"events_count"`
 }
 
+type SearchIndexParams struct {
+	ProjectID string `json:"project_id"`
+	Interval  int    `json:"interval"`
+}
+
 type SignatureVersions []SignatureVersion
 
 func (s *SignatureVersions) Scan(v interface{}) error {
@@ -568,7 +574,8 @@ type MetaEventConfiguration struct {
 }
 
 type RetentionPolicyConfiguration struct {
-	Policy string `json:"policy" db:"policy" valid:"required~please provide a valid retention policy"`
+	Policy       string `json:"policy" db:"policy" valid:"required~please provide a valid retention policy"`
+	SearchPolicy string `json:"search_policy" db:"search_policy"`
 }
 
 type ProjectStatistics struct {

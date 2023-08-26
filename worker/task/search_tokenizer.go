@@ -12,11 +12,6 @@ import (
 	"time"
 )
 
-type SearchIndexParams struct {
-	ProjectID string `json:"project_id"`
-	Interval  int    `json:"interval"`
-}
-
 func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, eventRepo datastore.EventRepository, jobRepo datastore.JobRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		projectEvents, err := projectRepository.GetProjectsWithEventsInTheInterval(ctx, 0)
@@ -25,7 +20,7 @@ func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, even
 		}
 
 		for _, p := range projectEvents {
-			err = Tokenize(ctx, eventRepo, jobRepo, p.Id, 100)
+			err = tokenize(ctx, eventRepo, jobRepo, p.Id, 100)
 			if err != nil {
 				log.WithError(err).Errorf("failed to tokenize events for project with id %s", p.Id)
 				continue
@@ -40,14 +35,16 @@ func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, even
 
 func TokenizerHandler(eventRepo datastore.EventRepository, jobRepo datastore.JobRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
-		var data SearchIndexParams
-		err := json.Unmarshal(t.Payload(), &data)
+		var params datastore.SearchIndexParams
+		err := json.Unmarshal(t.Payload(), &params)
 		if err != nil {
 			log.WithError(err).Error("failed to unmarshal tokenizer handler payload")
 			return &EndpointError{Err: err, delay: time.Second * 30}
 		}
 
-		err = Tokenize(ctx, eventRepo, jobRepo, data.ProjectID, data.Interval)
+		fmt.Printf("params: %+v\n", params)
+
+		err = tokenize(ctx, eventRepo, jobRepo, params.ProjectID, params.Interval)
 		if err != nil {
 			return err
 		}
@@ -56,7 +53,7 @@ func TokenizerHandler(eventRepo datastore.EventRepository, jobRepo datastore.Job
 	}
 }
 
-func Tokenize(ctx context.Context, eventRepo datastore.EventRepository, jobRepo datastore.JobRepository, projectId string, interval int) error {
+func tokenize(ctx context.Context, eventRepo datastore.EventRepository, jobRepo datastore.JobRepository, projectId string, interval int) error {
 	// check if a job for a given project is currently running
 	jobs, err := jobRepo.FetchRunningJobsByProjectId(ctx, projectId)
 	if err != nil {

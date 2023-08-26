@@ -1,5 +1,5 @@
 -- +migrate Up
-ALTER TABLE convoy.project_configurations ADD COLUMN search_policy text;
+ALTER TABLE convoy.project_configurations ADD COLUMN search_policy text DEFAULT '720h';
 
 -- +migrate Up
 CREATE TABLE IF NOT EXISTS convoy.jobs(

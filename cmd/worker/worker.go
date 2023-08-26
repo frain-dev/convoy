@@ -138,6 +138,8 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 
 			consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo))
+			consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo))
+
 			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 			consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo))
 			consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd))

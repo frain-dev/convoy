@@ -90,6 +90,7 @@ const (
 	// todo(raymond): remove this and it's references
 	IndexDocument                TaskName = "index document"
 	TokenizeSearch               TaskName = "tokenize search"
+	TokenizeSearchForProject     TaskName = "tokenize search for project"
 	DailyAnalytics               TaskName = "daily analytics"
 	StreamCliEventsProcessor     TaskName = "StreamCliEventsProcessor"
 	MonitorTwitterSources        TaskName = "monitor twitter sources"
