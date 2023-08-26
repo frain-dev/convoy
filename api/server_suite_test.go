@@ -70,7 +70,7 @@ func getDB() database.Database {
 	_ = os.Setenv("TZ", "") // Use UTC by default :)
 
 	dbHooks := hooks.Init()
-	dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}) {})
+	dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}, changelog interface{}) {})
 
 	return db
 }

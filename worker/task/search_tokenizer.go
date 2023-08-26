@@ -42,8 +42,6 @@ func TokenizerHandler(eventRepo datastore.EventRepository, jobRepo datastore.Job
 			return &EndpointError{Err: err, delay: time.Second * 30}
 		}
 
-		fmt.Printf("params: %+v\n", params)
-
 		err = tokenize(ctx, eventRepo, jobRepo, params.ProjectID, params.Interval)
 		if err != nil {
 			return err

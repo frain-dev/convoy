@@ -110,7 +110,7 @@ const (
     SELECT
         DATE_TRUNC('%s', created_at) AS "data.group_only",
         TO_CHAR(DATE_TRUNC('%s', created_at), '%s') AS "data.total_time",
-        EXTRACT(%S FROM created_at) AS "data.index",
+        EXTRACT('%s' FROM created_at) AS "data.index",
         COUNT(*) AS count
         FROM
             convoy.event_deliveries
@@ -134,7 +134,7 @@ const (
         description,created_at,updated_at,
         COALESCE(device_id,'') AS "device_id",
         COALESCE(endpoint_id,'') AS "endpoint_id"
-    FROM convoy.event_deliveries ed WHERE %S AND deleted_at IS NULL;
+    FROM convoy.event_deliveries ed
     `
 
 	fetchDiscardedEventDeliveries = `
@@ -230,8 +230,9 @@ func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, projectID
 
 func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, projectID string, ids []string) ([]datastore.EventDelivery, error) {
 	eventDeliveries := make([]datastore.EventDelivery, 0)
+	query := fetchEventDeliveries + " WHERE id IN (?) AND project_id = ? AND deleted_at IS NULL"
 
-	query, args, err := sqlx.In(fmt.Sprintf(fetchEventDeliveries, "id IN (?) AND project_id = ?"), ids, projectID)
+	query, args, err := sqlx.In(query, ids, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +260,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, projec
 func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, projectID string, eventID string) ([]datastore.EventDelivery, error) {
 	eventDeliveries := make([]datastore.EventDelivery, 0)
 
-	q := fmt.Sprintf(fetchEventDeliveries, "event_id = $1 AND project_id = $2")
+	q := fetchEventDeliveries + " WHERE event_id = $1 AND project_id = $2 AND deleted_at IS NULL"
 	rows, err := e.db.QueryxContext(ctx, q, eventID, projectID)
 	if err != nil {
 		return nil, err
