@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	MaxResponseSizeKb = 50                       // in kilobytes
-	MaxResponseSize   = MaxResponseSizeKb * 1024 // in bytes
-
-	DefaultHost = "localhost:5005"
+	MaxResponseSizeKb                 = 50    // in kilobytes
+	MaxResponseSize                   = 51200 // in bytes
+	DefaultHost                       = "localhost:5005"
+	DefaultSearchTokenizationInterval = 1
 )
 
 var cfgSingleton atomic.Value

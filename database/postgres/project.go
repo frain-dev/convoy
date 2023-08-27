@@ -444,10 +444,6 @@ func (p *projectRepo) DeleteProject(ctx context.Context, id string) error {
 }
 
 func (p *projectRepo) GetProjectsWithEventsInTheInterval(ctx context.Context, interval int) ([]datastore.ProjectEvents, error) {
-	if interval == 0 {
-		interval = 100
-	}
-
 	var projects []datastore.ProjectEvents
 	rows, err := p.db.QueryxContext(ctx, getProjectsWithEventsInTheInterval, interval)
 	if err != nil {

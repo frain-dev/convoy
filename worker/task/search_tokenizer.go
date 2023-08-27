@@ -20,7 +20,7 @@ func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, even
 		}
 
 		for _, p := range projectEvents {
-			err = tokenize(ctx, eventRepo, jobRepo, p.Id, 100)
+			err = tokenize(ctx, eventRepo, jobRepo, p.Id, 1)
 			if err != nil {
 				log.WithError(err).Errorf("failed to tokenize events for project with id %s", p.Id)
 				continue

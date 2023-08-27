@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/config"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
@@ -470,11 +471,12 @@ func (e *eventRepo) CopyRows(ctx context.Context, projectID string, interval int
 	}
 	defer rollbackTx(tx)
 
-	_, err = tx.ExecContext(ctx, hardDeleteTokenizedEvents, projectID)
-	if err != nil {
-		return err
+	if interval != config.DefaultSearchTokenizationInterval {
+		_, err = tx.ExecContext(ctx, hardDeleteTokenizedEvents, projectID)
+		if err != nil {
+			return err
+		}
 	}
-
 	_, err = tx.ExecContext(ctx, copyRowsFromEventsToEventsSearch, projectID, interval)
 	if err != nil {
 		return err
