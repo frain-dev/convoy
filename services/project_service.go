@@ -63,6 +63,14 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 			projectConfig.Signature = datastore.DefaultProjectConfig.Signature
 		}
 
+		if projectConfig.RateLimit == nil {
+			projectConfig.RateLimit = datastore.DefaultProjectConfig.RateLimit
+		}
+
+		if projectConfig.Strategy == nil {
+			projectConfig.Strategy = datastore.DefaultProjectConfig.Strategy
+		}
+
 		err := validateMetaEvent(projectConfig.MetaEvent)
 		if err != nil {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
