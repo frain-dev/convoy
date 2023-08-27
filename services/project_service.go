@@ -63,14 +63,20 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
 
-		_, err = time.ParseDuration(projectConfig.RetentionPolicy.SearchPolicy)
-		if err != nil {
-			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
-		}
+		if projectConfig.RetentionPolicy != nil {
+			if !util.IsStringEmpty(projectConfig.RetentionPolicy.SearchPolicy) {
+				_, err = time.ParseDuration(projectConfig.RetentionPolicy.SearchPolicy)
+				if err != nil {
+					return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
+				}
+			}
 
-		_, err = time.ParseDuration(projectConfig.RetentionPolicy.Policy)
-		if err != nil {
-			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
+			if !util.IsStringEmpty(projectConfig.RetentionPolicy.Policy) {
+				_, err = time.ParseDuration(projectConfig.RetentionPolicy.Policy)
+				if err != nil {
+					return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
+				}
+			}
 		}
 	}
 
@@ -139,19 +145,25 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 	}
 
 	if update.Config != nil {
-		_, err := time.ParseDuration(update.Config.RetentionPolicy.SearchPolicy)
-		if err != nil {
-			return nil, util.NewServiceError(http.StatusBadRequest, err)
-		}
+		if update.Config.RetentionPolicy != nil {
+			if !util.IsStringEmpty(update.Config.RetentionPolicy.SearchPolicy) {
+				_, err := time.ParseDuration(update.Config.RetentionPolicy.SearchPolicy)
+				if err != nil {
+					return nil, util.NewServiceError(http.StatusBadRequest, err)
+				}
+			}
 
-		_, err = time.ParseDuration(update.Config.RetentionPolicy.Policy)
-		if err != nil {
-			return nil, util.NewServiceError(http.StatusBadRequest, err)
+			if !util.IsStringEmpty(update.Config.RetentionPolicy.Policy) {
+				_, err := time.ParseDuration(update.Config.RetentionPolicy.Policy)
+				if err != nil {
+					return nil, util.NewServiceError(http.StatusBadRequest, err)
+				}
+			}
 		}
 
 		project.Config = update.Config.Transform()
 		checkSignatureVersions(project.Config.Signature.Versions)
-		err = validateMetaEvent(project.Config.MetaEvent)
+		err := validateMetaEvent(project.Config.MetaEvent)
 		if err != nil {
 			return nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
