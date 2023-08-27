@@ -138,6 +138,7 @@
 				convoy-button
 				*ngIf="eventDelsDetails"
 				[disabled]="eventDelsDetails.status !== 'Failure' && eventDelsDetails.status !== 'Success'"
+				[title]="eventDelsDetails.status !== 'Failure' && eventDelsDetails.status !== 'Success' ? 'You can not retry an event when it is scheduled or still processing.' : ''"
 				size="xs"
 				class="text-new.gray-500 bg-new.gray-100"
 				(click)="eventDelsDetails.status === 'Success' ? forceRetryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid }) : retryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid })"

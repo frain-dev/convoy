@@ -217,6 +217,7 @@
 									size="xs"
 									texture="light"
 									[disabled]="event.status !== 'Success' && event.status !== 'Failure' && event.status !== 'Discarded'"
+									[title]="event.status !== 'Failure' && event.status !== 'Success' && event.status !== 'Discarded' ? 'You can not retry an event when it is scheduled or still processing.' : ''"
 									(click)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
 								>
 									<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
