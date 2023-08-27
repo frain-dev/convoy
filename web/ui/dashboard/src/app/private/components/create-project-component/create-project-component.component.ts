@@ -227,15 +227,16 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	getProjectData() {
-		const configKeys = Object.keys(this.projectForm.value.config).slice(0, -1);
+		const configKeys = Object.keys(this.projectForm.value.config);
 		const projectData = this.projectForm.value;
 		configKeys.forEach(configKey => {
 			if (!this.showConfig(configKey)) delete projectData.config[configKey];
 		});
-		if (!projectData.config.is_retention_policy_enabled) {
-			delete projectData.config.is_retention_policy_enabled;
-			delete projectData.config.retention_policy;
-		} else projectData.config.retention_policy.search_policy = typeof projectData.config.retention_policy.search_policy === 'string' ? projectData.config.retention_policy.search_policy : `${projectData.config.retention_policy.search_policy}h`;
+
+		if (this.showConfig('retention_policy')) {
+			projectData.config.is_retention_policy_enabled = true;
+			projectData.config.retention_policy.search_policy = typeof projectData.config.retention_policy.search_policy === 'string' ? projectData.config.retention_policy.search_policy : `${projectData.config.retention_policy.search_policy}h`;
+		}
 
 		return projectData;
 	}
