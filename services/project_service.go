@@ -57,7 +57,12 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 	if projectConfig == nil {
 		projectConfig = &datastore.DefaultProjectConfig
 	} else {
-		checkSignatureVersions(projectConfig.Signature.Versions)
+		if projectConfig.Signature != nil {
+			checkSignatureVersions(projectConfig.Signature.Versions)
+		} else {
+			projectConfig.Signature = datastore.DefaultProjectConfig.Signature
+		}
+
 		err := validateMetaEvent(projectConfig.MetaEvent)
 		if err != nil {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
