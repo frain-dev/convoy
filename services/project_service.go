@@ -62,6 +62,16 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		if err != nil {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
+
+		_, err = time.ParseDuration(projectConfig.RetentionPolicy.SearchPolicy)
+		if err != nil {
+			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
+		}
+
+		_, err = time.ParseDuration(projectConfig.RetentionPolicy.Policy)
+		if err != nil {
+			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
+		}
 	}
 
 	project := &datastore.Project{
@@ -129,9 +139,19 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 	}
 
 	if update.Config != nil {
+		_, err := time.ParseDuration(update.Config.RetentionPolicy.SearchPolicy)
+		if err != nil {
+			return nil, util.NewServiceError(http.StatusBadRequest, err)
+		}
+
+		_, err = time.ParseDuration(update.Config.RetentionPolicy.Policy)
+		if err != nil {
+			return nil, util.NewServiceError(http.StatusBadRequest, err)
+		}
+
 		project.Config = update.Config.Transform()
 		checkSignatureVersions(project.Config.Signature.Versions)
-		err := validateMetaEvent(project.Config.MetaEvent)
+		err = validateMetaEvent(project.Config.MetaEvent)
 		if err != nil {
 			return nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
