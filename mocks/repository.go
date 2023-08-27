@@ -464,6 +464,20 @@ func (mr *MockEventRepositoryMockRecorder) DeleteProjectEvents(ctx, projectID, f
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProjectEvents", reflect.TypeOf((*MockEventRepository)(nil).DeleteProjectEvents), ctx, projectID, f, hardDelete)
 }
 
+// DeleteProjectTokenizedEvents mocks base method.
+func (m *MockEventRepository) DeleteProjectTokenizedEvents(ctx context.Context, projectID string, filter *datastore.EventFilter) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteProjectTokenizedEvents", ctx, projectID, filter)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteProjectTokenizedEvents indicates an expected call of DeleteProjectTokenizedEvents.
+func (mr *MockEventRepositoryMockRecorder) DeleteProjectTokenizedEvents(ctx, projectID, filter interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProjectTokenizedEvents", reflect.TypeOf((*MockEventRepository)(nil).DeleteProjectTokenizedEvents), ctx, projectID, filter)
+}
+
 // FindEventByID mocks base method.
 func (m *MockEventRepository) FindEventByID(ctx context.Context, projectID, id string) (*datastore.Event, error) {
 	m.ctrl.T.Helper()
@@ -1691,6 +1705,160 @@ func (m *MockDeviceRepository) UpdateDeviceLastSeen(ctx context.Context, device 
 func (mr *MockDeviceRepositoryMockRecorder) UpdateDeviceLastSeen(ctx, device, appID, projectID, status interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeviceLastSeen", reflect.TypeOf((*MockDeviceRepository)(nil).UpdateDeviceLastSeen), ctx, device, appID, projectID, status)
+}
+
+// MockJobRepository is a mock of JobRepository interface.
+type MockJobRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockJobRepositoryMockRecorder
+}
+
+// MockJobRepositoryMockRecorder is the mock recorder for MockJobRepository.
+type MockJobRepositoryMockRecorder struct {
+	mock *MockJobRepository
+}
+
+// NewMockJobRepository creates a new mock instance.
+func NewMockJobRepository(ctrl *gomock.Controller) *MockJobRepository {
+	mock := &MockJobRepository{ctrl: ctrl}
+	mock.recorder = &MockJobRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockJobRepository) EXPECT() *MockJobRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateJob mocks base method.
+func (m *MockJobRepository) CreateJob(ctx context.Context, job *datastore.Job) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateJob", ctx, job)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateJob indicates an expected call of CreateJob.
+func (mr *MockJobRepositoryMockRecorder) CreateJob(ctx, job interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateJob", reflect.TypeOf((*MockJobRepository)(nil).CreateJob), ctx, job)
+}
+
+// DeleteJob mocks base method.
+func (m *MockJobRepository) DeleteJob(ctx context.Context, uid, projectID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteJob", ctx, uid, projectID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteJob indicates an expected call of DeleteJob.
+func (mr *MockJobRepositoryMockRecorder) DeleteJob(ctx, uid, projectID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteJob", reflect.TypeOf((*MockJobRepository)(nil).DeleteJob), ctx, uid, projectID)
+}
+
+// FetchJobById mocks base method.
+func (m *MockJobRepository) FetchJobById(ctx context.Context, uid, projectID string) (*datastore.Job, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchJobById", ctx, uid, projectID)
+	ret0, _ := ret[0].(*datastore.Job)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchJobById indicates an expected call of FetchJobById.
+func (mr *MockJobRepositoryMockRecorder) FetchJobById(ctx, uid, projectID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchJobById", reflect.TypeOf((*MockJobRepository)(nil).FetchJobById), ctx, uid, projectID)
+}
+
+// FetchJobsByProjectId mocks base method.
+func (m *MockJobRepository) FetchJobsByProjectId(ctx context.Context, projectID string) ([]datastore.Job, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchJobsByProjectId", ctx, projectID)
+	ret0, _ := ret[0].([]datastore.Job)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchJobsByProjectId indicates an expected call of FetchJobsByProjectId.
+func (mr *MockJobRepositoryMockRecorder) FetchJobsByProjectId(ctx, projectID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchJobsByProjectId", reflect.TypeOf((*MockJobRepository)(nil).FetchJobsByProjectId), ctx, projectID)
+}
+
+// FetchRunningJobsByProjectId mocks base method.
+func (m *MockJobRepository) FetchRunningJobsByProjectId(ctx context.Context, projectID string) ([]datastore.Job, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchRunningJobsByProjectId", ctx, projectID)
+	ret0, _ := ret[0].([]datastore.Job)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchRunningJobsByProjectId indicates an expected call of FetchRunningJobsByProjectId.
+func (mr *MockJobRepositoryMockRecorder) FetchRunningJobsByProjectId(ctx, projectID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchRunningJobsByProjectId", reflect.TypeOf((*MockJobRepository)(nil).FetchRunningJobsByProjectId), ctx, projectID)
+}
+
+// LoadJobsPaged mocks base method.
+func (m *MockJobRepository) LoadJobsPaged(ctx context.Context, projectID string, pageable datastore.Pageable) ([]datastore.Job, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadJobsPaged", ctx, projectID, pageable)
+	ret0, _ := ret[0].([]datastore.Job)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadJobsPaged indicates an expected call of LoadJobsPaged.
+func (mr *MockJobRepositoryMockRecorder) LoadJobsPaged(ctx, projectID, pageable interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadJobsPaged", reflect.TypeOf((*MockJobRepository)(nil).LoadJobsPaged), ctx, projectID, pageable)
+}
+
+// MarkJobAsCompleted mocks base method.
+func (m *MockJobRepository) MarkJobAsCompleted(ctx context.Context, uid, projectID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkJobAsCompleted", ctx, uid, projectID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MarkJobAsCompleted indicates an expected call of MarkJobAsCompleted.
+func (mr *MockJobRepositoryMockRecorder) MarkJobAsCompleted(ctx, uid, projectID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkJobAsCompleted", reflect.TypeOf((*MockJobRepository)(nil).MarkJobAsCompleted), ctx, uid, projectID)
+}
+
+// MarkJobAsFailed mocks base method.
+func (m *MockJobRepository) MarkJobAsFailed(ctx context.Context, uid, projectID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkJobAsFailed", ctx, uid, projectID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MarkJobAsFailed indicates an expected call of MarkJobAsFailed.
+func (mr *MockJobRepositoryMockRecorder) MarkJobAsFailed(ctx, uid, projectID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkJobAsFailed", reflect.TypeOf((*MockJobRepository)(nil).MarkJobAsFailed), ctx, uid, projectID)
+}
+
+// MarkJobAsStarted mocks base method.
+func (m *MockJobRepository) MarkJobAsStarted(ctx context.Context, uid, projectID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkJobAsStarted", ctx, uid, projectID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MarkJobAsStarted indicates an expected call of MarkJobAsStarted.
+func (mr *MockJobRepositoryMockRecorder) MarkJobAsStarted(ctx, uid, projectID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkJobAsStarted", reflect.TypeOf((*MockJobRepository)(nil).MarkJobAsStarted), ctx, uid, projectID)
 }
 
 // MockUserRepository is a mock of UserRepository interface.
