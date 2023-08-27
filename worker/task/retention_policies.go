@@ -158,6 +158,11 @@ func ExportCollection(
 			return err
 		}
 
+		err = eventRepo.DeleteProjectTokenizedEvents(ctx, project.UID, eventFilter)
+		if err != nil {
+			return err
+		}
+
 		project.RetainedEvents += int(numDocs)
 		err = projectRepo.UpdateProject(ctx, project)
 		if err != nil {

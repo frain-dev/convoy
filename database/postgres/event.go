@@ -464,6 +464,19 @@ func (e *eventRepo) DeleteProjectEvents(ctx context.Context, projectID string, f
 	return nil
 }
 
+func (e *eventRepo) DeleteProjectTokenizedEvents(ctx context.Context, projectID string, filter *datastore.EventFilter) error {
+	startDate, endDate := getCreatedDateFilter(filter.CreatedAtStart, filter.CreatedAtEnd)
+
+	query := hardDeleteTokenizedEvents + " AND created_at >= $2 AND created_at <= $3"
+
+	_, err := e.db.ExecContext(ctx, query, projectID, startDate, endDate)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (e *eventRepo) CopyRows(ctx context.Context, projectID string, interval int) error {
 	tx, err := e.db.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
