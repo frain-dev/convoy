@@ -38,7 +38,7 @@ export class CreateProjectComponent implements OnInit {
 			}),
 			retention_policy: this.formBuilder.group({
 				policy: ['720h'],
-				search_policy: [null]
+				search_policy: [720]
 			}),
 			disable_endpoint: [false, Validators.required],
 			meta_event: this.formBuilder.group({
