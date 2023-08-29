@@ -70,7 +70,7 @@ func getDB() database.Database {
 	_ = os.Setenv("TZ", "") // Use UTC by default :)
 
 	dbHooks := hooks.Init()
-	dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}) {})
+	dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}, changelog interface{}) {})
 
 	return db
 }
@@ -85,7 +85,6 @@ func getQueueOptions() (queue.QueueOptions, error) {
 	queueNames := map[string]int{
 		string(convoy.EventQueue):       3,
 		string(convoy.CreateEventQueue): 3,
-		string(convoy.SearchIndexQueue): 1,
 		string(convoy.ScheduleQueue):    1,
 		string(convoy.DefaultQueue):     1,
 		string(convoy.StreamQueue):      1,

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/config"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
@@ -94,6 +95,22 @@ const (
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
     WHERE ev.deleted_at IS NULL`
 
+	baseEventsSearch = `
+	SELECT ev.id, ev.project_id,
+	ev.id AS event_type, ev.is_duplicate_event,
+	COALESCE(ev.source_id, '') AS source_id,
+	ev.headers, ev.raw, ev.data, ev.created_at,
+	COALESCE(idempotency_key, '') AS idempotency_key,
+	COALESCE(url_query_params, '') AS url_query_params,
+	ev.updated_at, ev.deleted_at,
+	COALESCE(s.id, '') AS "source_metadata.id",
+	COALESCE(s.name, '') AS "source_metadata.name"
+    FROM convoy.events_search ev
+	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
+	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+	LEFT JOIN convoy.sources s ON s.id = ev.source_id
+    WHERE ev.deleted_at IS NULL`
+
 	baseEventsPagedForward = `%s %s AND ev.id <= :cursor
 	GROUP BY ev.id, s.id
 	ORDER BY ev.id DESC
@@ -119,11 +136,11 @@ const (
 
 	endpointFilter = ` AND ee.endpoint_id IN (:endpoint_ids) `
 
-	//searchFilter = ` AND search_token @@ websearch_to_tsquery('english',:query) `
+	searchFilter = ` AND search_token @@ websearch_to_tsquery('simple',:query) `
 
 	baseCountPrevEvents = `
 	SELECT COUNT(DISTINCT(ev.id)) AS COUNT
-	FROM convoy.events ev
+	FROM convoy.events_search ev
 	LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
 	WHERE ev.deleted_at IS NULL
 	`
@@ -134,6 +151,7 @@ const (
 	WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3
 	AND deleted_at IS NULL
 	`
+
 	hardDeleteProjectEvents = `
 	DELETE FROM convoy.events WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3
 	AND deleted_at IS NULL AND NOT EXISTS (
@@ -142,6 +160,16 @@ const (
     WHERE event_id = convoy.events.id
     )
 	`
+
+	hardDeleteTokenizedEvents = `
+	DELETE FROM convoy.events_search
+    WHERE project_id = $1
+	AND deleted_at IS NULL
+	`
+
+	copyRowsFromEventsToEventsSearch = `
+    SELECT convoy.copy_rows($1, $2)
+    `
 )
 
 type eventRepo struct {
@@ -323,6 +351,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		"idempotency_key": filter.IdempotencyKey,
 	}
 
+	var base = baseEventsPaged
 	var baseQueryPagination string
 	if filter.Pageable.Direction == datastore.Next {
 		baseQueryPagination = baseEventsPagedForward
@@ -335,11 +364,12 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		filterQuery += endpointFilter
 	}
 
-	//if len(filter.Query) > 0 {
-	//	filterQuery += searchFilter
-	//}
+	if !util.IsStringEmpty(filter.Query) {
+		filterQuery += searchFilter
+		base = baseEventsSearch
+	}
 
-	query = fmt.Sprintf(baseQueryPagination, baseEventsPaged, filterQuery)
+	query = fmt.Sprintf(baseQueryPagination, base, filterQuery)
 	query, args, err = sqlx.Named(query, arg)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
@@ -432,6 +462,40 @@ func (e *eventRepo) DeleteProjectEvents(ctx context.Context, projectID string, f
 	}
 
 	return nil
+}
+
+func (e *eventRepo) DeleteProjectTokenizedEvents(ctx context.Context, projectID string, filter *datastore.EventFilter) error {
+	startDate, endDate := getCreatedDateFilter(filter.CreatedAtStart, filter.CreatedAtEnd)
+
+	query := hardDeleteTokenizedEvents + " AND created_at >= $2 AND created_at <= $3"
+
+	_, err := e.db.ExecContext(ctx, query, projectID, startDate, endDate)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (e *eventRepo) CopyRows(ctx context.Context, projectID string, interval int) error {
+	tx, err := e.db.BeginTxx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer rollbackTx(tx)
+
+	if interval != config.DefaultSearchTokenizationInterval {
+		_, err = tx.ExecContext(ctx, hardDeleteTokenizedEvents, projectID)
+		if err != nil {
+			return err
+		}
+	}
+	_, err = tx.ExecContext(ctx, copyRowsFromEventsToEventsSearch, projectID, interval)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func getCreatedDateFilter(startDate, endDate int64) (time.Time, time.Time) {

@@ -2,7 +2,6 @@ package convoy
 
 import (
 	"embed"
-	"fmt"
 	"strings"
 )
 
@@ -82,13 +81,16 @@ func GetVersionFromFS(fs embed.FS) string {
 }
 
 const (
-	EventProcessor               TaskName = "EventProcessor"
-	DeadLetterProcessor          TaskName = "DeadLetterProcessor"
-	CreateEventProcessor         TaskName = "CreateEventProcessor"
-	CreateDynamicEventProcessor  TaskName = "CreateDynamicEventProcessor"
-	MetaEventProcessor           TaskName = "MetaEventProcessor"
-	NotificationProcessor        TaskName = "NotificationProcessor"
+	EventProcessor              TaskName = "EventProcessor"
+	DeadLetterProcessor         TaskName = "DeadLetterProcessor"
+	CreateEventProcessor        TaskName = "CreateEventProcessor"
+	CreateDynamicEventProcessor TaskName = "CreateDynamicEventProcessor"
+	MetaEventProcessor          TaskName = "MetaEventProcessor"
+	NotificationProcessor       TaskName = "NotificationProcessor"
+	// todo(raymond): remove this and it's references
 	IndexDocument                TaskName = "index document"
+	TokenizeSearch               TaskName = "tokenize search"
+	TokenizeSearchForProject     TaskName = "tokenize search for project"
 	DailyAnalytics               TaskName = "daily analytics"
 	StreamCliEventsProcessor     TaskName = "StreamCliEventsProcessor"
 	MonitorTwitterSources        TaskName = "monitor twitter sources"
@@ -130,5 +132,3 @@ const (
 const (
 	Concurrency = 100
 )
-
-var ErrUnsupportedDatebase = fmt.Errorf("unsupported database for search detected, remove search configuration or use a supported database (postgres)")

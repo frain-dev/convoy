@@ -195,7 +195,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		return ErrEndpointNotCreated
 	}
 
-	go e.hook.Fire(datastore.EndpointCreated, endpoint)
+	go e.hook.Fire(datastore.EndpointCreated, endpoint, nil)
 	return nil
 }
 
@@ -266,7 +266,7 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 		return ErrEndpointNotUpdated
 	}
 
-	go e.hook.Fire(datastore.EndpointUpdated, endpoint)
+	go e.hook.Fire(datastore.EndpointUpdated, endpoint, nil)
 	return nil
 }
 
@@ -315,7 +315,7 @@ func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 
-	go e.hook.Fire(datastore.EndpointDeleted, endpoint)
+	go e.hook.Fire(datastore.EndpointDeleted, endpoint, nil)
 	return nil
 }
 

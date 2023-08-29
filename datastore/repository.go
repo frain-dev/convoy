@@ -42,8 +42,10 @@ type EventRepository interface {
 	CountEvents(ctx context.Context, projectID string, f *Filter) (int64, error)
 	LoadEventsPaged(ctx context.Context, projectID string, f *Filter) ([]Event, PaginationData, error)
 	DeleteProjectEvents(ctx context.Context, projectID string, f *EventFilter, hardDelete bool) error
+	DeleteProjectTokenizedEvents(ctx context.Context, projectID string, filter *EventFilter) error
 	FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) ([]Event, error)
 	FindFirstEventWithIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) (*Event, error)
+	CopyRows(ctx context.Context, projectID string, interval int) error
 }
 
 type ProjectRepository interface {
@@ -52,6 +54,7 @@ type ProjectRepository interface {
 	UpdateProject(context.Context, *Project) error
 	DeleteProject(ctx context.Context, uid string) error
 	FetchProjectByID(context.Context, string) (*Project, error)
+	GetProjectsWithEventsInTheInterval(ctx context.Context, interval int) ([]ProjectEvents, error)
 	FillProjectsStatistics(ctx context.Context, project *Project) error
 }
 
@@ -132,6 +135,18 @@ type DeviceRepository interface {
 	FetchDeviceByID(ctx context.Context, uid string, appID, projectID string) (*Device, error)
 	FetchDeviceByHostName(ctx context.Context, hostName string, appID, projectID string) (*Device, error)
 	LoadDevicesPaged(ctx context.Context, projectID string, filter *ApiKeyFilter, pageable Pageable) ([]Device, PaginationData, error)
+}
+
+type JobRepository interface {
+	CreateJob(ctx context.Context, job *Job) error
+	MarkJobAsStarted(ctx context.Context, uid, projectID string) error
+	MarkJobAsCompleted(ctx context.Context, uid, projectID string) error
+	MarkJobAsFailed(ctx context.Context, uid, projectID string) error
+	DeleteJob(ctx context.Context, uid string, projectID string) error
+	FetchJobById(ctx context.Context, uid string, projectID string) (*Job, error)
+	FetchRunningJobsByProjectId(ctx context.Context, projectID string) ([]Job, error)
+	FetchJobsByProjectId(ctx context.Context, projectID string) ([]Job, error)
+	LoadJobsPaged(ctx context.Context, projectID string, pageable Pageable) ([]Job, PaginationData, error)
 }
 
 type UserRepository interface {

@@ -137,8 +137,6 @@ func TestProcessEventCreated(t *testing.T) {
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
-
-				q.EXPECT().Write(convoy.IndexDocument, convoy.SearchIndexQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -210,8 +208,6 @@ func TestProcessEventCreated(t *testing.T) {
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
-
-				q.EXPECT().Write(convoy.IndexDocument, convoy.SearchIndexQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -293,8 +289,6 @@ func TestProcessEventCreated(t *testing.T) {
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(2).Return(nil)
-
-				q.EXPECT().Write(convoy.IndexDocument, convoy.SearchIndexQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -381,8 +375,6 @@ func TestProcessEventCreated(t *testing.T) {
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 
 				q.EXPECT().Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, gomock.Any()).Times(2).Return(nil)
-
-				q.EXPECT().Write(convoy.IndexDocument, convoy.SearchIndexQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -453,8 +445,6 @@ func TestProcessEventCreated(t *testing.T) {
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
-
-				q.EXPECT().Write(convoy.IndexDocument, convoy.SearchIndexQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
