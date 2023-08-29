@@ -109,23 +109,27 @@ export class EventLogsComponent implements OnInit {
 
 	searchEvents() {
 		const data = this.addFilterToURL({ query: this.eventsSearchString });
-		this.refetchEvents(data);
+		clearInterval(this.getEventsInterval);
+		this.getEventLogs({ ...data, showLoader: true });
 	}
 
 	paginateEvents(event: CURSOR) {
 		const data = this.addFilterToURL(event);
-		this.refetchEvents(data);
+		clearInterval(this.getEventsInterval);
+		this.getEventLogs({ ...data, showLoader: true });
 	}
 
 	updateSourceFilter() {
 		const data = this.addFilterToURL({ sourceId: this.eventSource });
-		this.refetchEvents(data);
+		clearInterval(this.getEventsInterval);
+		this.getEventLogs({ ...data, showLoader: true });
 	}
 
 	getSelectedDateRange(dateRange: { startDate: string; endDate: string }) {
 		this.eventsDateFilterFromURL = dateRange;
 		const data = this.addFilterToURL(dateRange);
-		this.refetchEvents(data);
+		clearInterval(this.getEventsInterval);
+		this.getEventLogs({ ...data, showLoader: true });
 	}
 
 	// fetch filters from url
@@ -135,9 +139,9 @@ export class EventLogsComponent implements OnInit {
 
 		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams };
 
-		this.eventsDateFilterFromURL = { startDate: filters.eventsStartDate || '', endDate: filters.eventsEndDate || '' };
-		this.eventsSearchString = filters.eventsSearch ?? undefined;
-		this.eventSource = filters.eventSource;
+		this.eventsDateFilterFromURL = { startDate: this.queryParams?.startDate || '', endDate: this.queryParams?.endDate || '' };
+		this.eventsSearchString = this.queryParams.query ?? undefined;
+		this.eventSource = this.queryParams.sourceId;
 
 		return this.queryParams;
 	}
@@ -170,23 +174,28 @@ export class EventLogsComponent implements OnInit {
 		} else {
 			this.datePicker.clearDate();
 			this.queryParams = {};
+			this.eventsDateFilterFromURL = { startDate: '', endDate: '' };
 			this.eventsSearchString = '';
 			this.eventSource = '';
 			this._location.go(`${location.pathname}`);
 		}
-		this.refetchEvents(this.queryParams);
+
+		clearInterval(this.getEventsInterval);
+		if (Object.keys(this.queryParams).length === 0) this.refetchEvents(this.queryParams);
+		else {
+			this.getEventLogs({ ...this.queryParams, showLoader: true });
+		}
 	}
 
 	getEventsAtInterval(requestDetails?: FILTER_QUERY_PARAM) {
 		this.getEventsInterval = setInterval(() => {
 			this.getEventLogs({ ...requestDetails });
-		}, 4000);
+		}, 7000);
 	}
 
-	async refetchEvents(data?: FILTER_QUERY_PARAM) {
+	refetchEvents(data?: FILTER_QUERY_PARAM) {
 		delete this.eventsDetailsItem;
-		clearInterval(this.getEventsInterval);
-		await this.getEventLogs({ ...data, showLoader: true }).then(() => this.getEventsAtInterval({ ...data }));
+		this.getEventLogs({ ...data, showLoader: true }).then(() => this.getEventsAtInterval({ ...data }));
 	}
 
 	async getEventLogs(requestDetails?: FILTER_QUERY_PARAM) {
@@ -197,6 +206,7 @@ export class EventLogsComponent implements OnInit {
 			this.events = eventsResponse.data;
 
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
+			this.isloadingEvents = false;
 
 			if (this.eventsDetailsItem) return;
 			else {
@@ -207,7 +217,6 @@ export class EventLogsComponent implements OnInit {
 				} else this.isLoadingSidebarDeliveries = false;
 			}
 
-			this.isloadingEvents = false;
 			return eventsResponse;
 		} catch (error: any) {
 			this.isloadingEvents = false;
