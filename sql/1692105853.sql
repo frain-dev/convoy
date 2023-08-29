@@ -45,13 +45,13 @@ CREATE INDEX IF NOT EXISTS idx_events_search_source_id_key
 
 -- +migrate Up
 -- +migrate StatementBegin
-CREATE OR REPLACE FUNCTION copy_rows(pid varchar, dur interval) RETURNS VOID AS
+CREATE OR REPLACE FUNCTION convoy.copy_rows(pid VARCHAR, dur INTEGER) RETURNS VOID AS
 $$
 DECLARE
     cs CURSOR FOR
         SELECT * FROM convoy.events
         WHERE project_id = pid
-        AND created_at >= NOW() - dur;
+        AND created_at >= NOW() - MAKE_INTERVAL(hours := dur);
     row_data RECORD;
 BEGIN
     OPEN cs;
@@ -74,4 +74,4 @@ $$ LANGUAGE plpgsql;
 DROP TABLE IF EXISTS convoy.events_search;
 
 -- +migrate Down
-DROP FUNCTION IF EXISTS copy_rows(VARCHAR, INTEGER);
+DROP FUNCTION IF EXISTS convoy.copy_rows(VARCHAR, INTEGER);

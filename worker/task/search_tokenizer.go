@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/hibiken/asynq"
@@ -14,13 +15,13 @@ import (
 
 func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, eventRepo datastore.EventRepository, jobRepo datastore.JobRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
-		projectEvents, err := projectRepository.GetProjectsWithEventsInTheInterval(ctx, 0)
+		projectEvents, err := projectRepository.GetProjectsWithEventsInTheInterval(ctx, config.DefaultSearchTokenizationInterval)
 		if err != nil {
 			return err
 		}
 
 		for _, p := range projectEvents {
-			err = tokenize(ctx, eventRepo, jobRepo, p.Id, 1)
+			err = tokenize(ctx, eventRepo, jobRepo, p.Id, config.DefaultSearchTokenizationInterval)
 			if err != nil {
 				log.WithError(err).Errorf("failed to tokenize events for project with id %s", p.Id)
 				continue

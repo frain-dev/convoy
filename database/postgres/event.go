@@ -168,7 +168,7 @@ const (
 	`
 
 	copyRowsFromEventsToEventsSearch = `
-    SELECT copy_rows($1, $2)
+    SELECT convoy.copy_rows($1, $2)
     `
 )
 
