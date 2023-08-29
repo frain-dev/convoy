@@ -37,9 +37,9 @@ export class CreateProjectComponent implements OnInit {
 				duration: [null]
 			}),
 			retention_policy: this.formBuilder.group({
-				policy: ['720h']
+				policy: ['720h'],
+				search_policy: [720]
 			}),
-			is_retention_policy_enabled: [true],
 			disable_endpoint: [false, Validators.required],
 			meta_event: this.formBuilder.group({
 				is_enabled: [true, Validators.required],
@@ -47,7 +47,8 @@ export class CreateProjectComponent implements OnInit {
 				event_type: [[], Validators.required],
 				url: ['', Validators.required],
 				secret: [null]
-			})
+			}),
+			is_retention_policy_enabled: [true]
 		}),
 		type: [null, Validators.required]
 	});
@@ -70,9 +71,9 @@ export class CreateProjectComponent implements OnInit {
 	projectDetails!: PROJECT;
 	signatureVersions!: { date: string; content: VERSIONS[] }[];
 	configurations = [
-		{ uid: 'retry-config', name: 'Retry Config', show: false },
-		{ uid: 'rate-limit', name: 'Rate Limit', show: false },
-		{ uid: 'retention', name: 'Retention Policy', show: false },
+		{ uid: 'strategy', name: 'Retry Config', show: false },
+		{ uid: 'ratelimit', name: 'Rate Limit', show: false },
+		{ uid: 'retention_policy', name: 'Retention Policy', show: false },
 		{ uid: 'signature', name: 'Signature Format', show: false }
 	];
 	public rbacService = inject(RbacService);
@@ -118,8 +119,6 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async getProjectDetails() {
-		this.enableMoreConfig = true;
-
 		try {
 			this.projectDetails = this.privateService.getProjectDetails;
 
@@ -129,6 +128,8 @@ export class CreateProjectComponent implements OnInit {
 			this.projectForm.get('config.strategy')?.patchValue(this.projectDetails.config.strategy);
 			this.projectForm.get('config.signature')?.patchValue(this.projectDetails.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(this.projectDetails.config.ratelimit);
+			const digits = this.projectDetails.config.retention_policy.search_policy.match(/\d+/g);
+			this.projectForm.get('config.retention_policy.search_policy')?.patchValue(digits);
 
 			this.configurations.forEach(config => {
 				if (this.projectDetails?.type === 'outgoing') this.toggleConfigForm(config.uid);
@@ -151,29 +152,17 @@ export class CreateProjectComponent implements OnInit {
 	async createProject() {
 		const projectFormModal = document.getElementById('projectForm');
 
-		if (this.enableMoreConfig) {
-			if (this.newSignatureForm.invalid || this.projectForm.invalid) {
-				this.newSignatureForm.markAllAsTouched();
-				this.projectForm.markAllAsTouched();
-				projectFormModal?.scroll({ top: 0 });
-				return;
-			}
-
-			this.versions.at(0).patchValue(this.newSignatureForm.value);
-		}
-
-		if (!this.enableMoreConfig && this.projectForm.get('name')?.invalid && this.projectForm.get('type')?.invalid) {
+		if (this.projectForm.get('name')?.invalid && this.projectForm.get('type')?.invalid) {
 			projectFormModal?.scroll({ top: 0 });
 			return this.projectForm.markAllAsTouched();
 		}
-		const dataForNoConfig = this.projectForm.value;
-		if (!this.enableMoreConfig) delete dataForNoConfig.config;
+		const projectData = this.getProjectData();
 
 		this.isCreatingProject = true;
 
 		try {
 			// this createProject service also updates project as active project in localstorage
-			const response = await this.createProjectService.createProject(this.enableMoreConfig ? this.projectForm.value : dataForNoConfig);
+			const response = await this.createProjectService.createProject(projectData);
 			await this.privateService.getProjectStat({ refresh: true });
 
 			this.privateService.getProjects({ refresh: true });
@@ -197,6 +186,7 @@ export class CreateProjectComponent implements OnInit {
 		if (typeof this.projectForm.value.config.strategy.duration === 'string') this.projectForm.value.config.strategy.duration = this.getTimeValue(this.projectForm.value.config.strategy.duration);
 		if (typeof this.projectForm.value.config.strategy.retry_count === 'string') this.projectForm.value.config.strategy.retry_count = parseInt(this.projectForm.value.config.strategy.retry_count);
 		if (typeof this.projectForm.value.config.ratelimit.count === 'string') this.projectForm.value.config.ratelimit.count = parseInt(this.projectForm.value.config.ratelimit.count);
+		this.projectForm.value.config.retention_policy.search_policy = `${this.projectForm.value.config.retention_policy.search_policy}h`;
 		this.isCreatingProject = true;
 
 		try {
@@ -236,15 +226,19 @@ export class CreateProjectComponent implements OnInit {
 		this.newSignatureDialog.nativeElement.showModal();
 	}
 
-	checkProjectConfig() {
-		const configDetails = this.projectForm.value.config;
-		const configKeys = Object.keys(configDetails).slice(0, -1);
+	getProjectData() {
+		const configKeys = Object.keys(this.projectForm.value.config);
+		const projectData = this.projectForm.value;
 		configKeys.forEach(configKey => {
-			const configKeyValues = configDetails[configKey] ? Object.values(configDetails[configKey]) : [];
-			if (configKeyValues.every(item => item === null)) delete this.projectForm.value.config[configKey];
+			if (!this.showConfig(configKey)) delete projectData.config[configKey];
 		});
 
-		if (this.projectForm.value.config.is_retention_policy_enabled === null) delete this.projectForm.value.config.is_retention_policy_enabled;
+		if (this.showConfig('retention_policy')) {
+			projectData.config.is_retention_policy_enabled = true;
+			projectData.config.retention_policy.search_policy = typeof projectData.config.retention_policy.search_policy === 'string' ? projectData.config.retention_policy.search_policy : `${projectData.config.retention_policy.search_policy}h`;
+		}
+
+		return projectData;
 	}
 
 	checkMetaEventsConfig() {
