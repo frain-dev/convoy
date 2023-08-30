@@ -860,7 +860,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 			},
 			wantRateLimitConfig: &datastore.RateLimitConfiguration{
 				Count:    100,
-				Duration: 1,
+				Duration: uint64(time.Second),
 			},
 			wantDisableEndpoint: true,
 		},
@@ -888,7 +888,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 			},
 			wantRateLimitConfig: &datastore.RateLimitConfiguration{
 				Count:    100,
-				Duration: 10,
+				Duration: uint64(time.Second * 10),
 			},
 			wantDisableEndpoint: false,
 		},
@@ -912,7 +912,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 				rlc := evConfig.rateLimitConfig()
 
 				assert.Equal(t, tc.wantRateLimitConfig.Count, rlc.Count)
-				assert.Equal(t, tc.wantRateLimitConfig.Duration, rlc.Duration)
+				assert.Equal(t, tc.wantRateLimitConfig.Duration, uint64(rlc.Duration))
 			}
 		})
 	}

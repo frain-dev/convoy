@@ -67,7 +67,7 @@ const (
 	`
 
 	fetchJobsByProjectId = `
-	SELECT * FROM convoy.jobs WHERE project_id = $2 AND deleted_at IS NULL;
+	SELECT * FROM convoy.jobs WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 
 	fetchJobsPaginated = `
@@ -114,8 +114,8 @@ func NewJobRepo(db database.Database) datastore.JobRepository {
 	return &jobRepo{db: db.GetDB()}
 }
 
-func (d *jobRepo) CreateJob(ctx context.Context, job *datastore.Job) error {
-	r, err := d.db.ExecContext(ctx, createJob,
+func (j *jobRepo) CreateJob(ctx context.Context, job *datastore.Job) error {
+	r, err := j.db.ExecContext(ctx, createJob,
 		job.UID,
 		job.Type,
 		job.Status,
@@ -137,8 +137,8 @@ func (d *jobRepo) CreateJob(ctx context.Context, job *datastore.Job) error {
 	return nil
 }
 
-func (d *jobRepo) MarkJobAsStarted(ctx context.Context, uid, projectID string) error {
-	r, err := d.db.ExecContext(ctx, updateJobStartedAt, uid, projectID)
+func (j *jobRepo) MarkJobAsStarted(ctx context.Context, uid, projectID string) error {
+	r, err := j.db.ExecContext(ctx, updateJobStartedAt, uid, projectID)
 	if err != nil {
 		return err
 	}
@@ -155,8 +155,8 @@ func (d *jobRepo) MarkJobAsStarted(ctx context.Context, uid, projectID string) e
 	return nil
 }
 
-func (d *jobRepo) MarkJobAsCompleted(ctx context.Context, uid, projectID string) error {
-	r, err := d.db.ExecContext(ctx, updateJobCompletedAt, uid, projectID)
+func (j *jobRepo) MarkJobAsCompleted(ctx context.Context, uid, projectID string) error {
+	r, err := j.db.ExecContext(ctx, updateJobCompletedAt, uid, projectID)
 	if err != nil {
 		return err
 	}
@@ -173,8 +173,8 @@ func (d *jobRepo) MarkJobAsCompleted(ctx context.Context, uid, projectID string)
 	return nil
 }
 
-func (d *jobRepo) MarkJobAsFailed(ctx context.Context, uid, projectID string) error {
-	r, err := d.db.ExecContext(ctx, updateJobFailedAt, uid, projectID)
+func (j *jobRepo) MarkJobAsFailed(ctx context.Context, uid, projectID string) error {
+	r, err := j.db.ExecContext(ctx, updateJobFailedAt, uid, projectID)
 	if err != nil {
 		return err
 	}
@@ -191,8 +191,8 @@ func (d *jobRepo) MarkJobAsFailed(ctx context.Context, uid, projectID string) er
 	return nil
 }
 
-func (d *jobRepo) DeleteJob(ctx context.Context, uid string, projectID string) error {
-	r, err := d.db.ExecContext(ctx, deleteJob, uid, projectID)
+func (j *jobRepo) DeleteJob(ctx context.Context, uid string, projectID string) error {
+	r, err := j.db.ExecContext(ctx, deleteJob, uid, projectID)
 	if err != nil {
 		return err
 	}
@@ -209,9 +209,9 @@ func (d *jobRepo) DeleteJob(ctx context.Context, uid string, projectID string) e
 	return nil
 }
 
-func (d *jobRepo) FetchJobById(ctx context.Context, uid string, projectID string) (*datastore.Job, error) {
-	var job *datastore.Job
-	err := d.db.QueryRowxContext(ctx, fetchJobById, uid, projectID).StructScan(&job)
+func (j *jobRepo) FetchJobById(ctx context.Context, uid string, projectID string) (*datastore.Job, error) {
+	job := &datastore.Job{}
+	err := j.db.QueryRowxContext(ctx, fetchJobById, uid, projectID).StructScan(job)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrJobNotFound
@@ -222,9 +222,9 @@ func (d *jobRepo) FetchJobById(ctx context.Context, uid string, projectID string
 	return job, nil
 }
 
-func (d *jobRepo) FetchRunningJobsByProjectId(ctx context.Context, projectID string) ([]datastore.Job, error) {
+func (j *jobRepo) FetchRunningJobsByProjectId(ctx context.Context, projectID string) ([]datastore.Job, error) {
 	var jobs []datastore.Job
-	rows, err := d.db.QueryxContext(ctx, fetchRunningJobsByProjectId, projectID)
+	rows, err := j.db.QueryxContext(ctx, fetchRunningJobsByProjectId, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -243,9 +243,9 @@ func (d *jobRepo) FetchRunningJobsByProjectId(ctx context.Context, projectID str
 	return jobs, nil
 }
 
-func (d *jobRepo) FetchJobsByProjectId(ctx context.Context, projectID string) ([]datastore.Job, error) {
+func (j *jobRepo) FetchJobsByProjectId(ctx context.Context, projectID string) ([]datastore.Job, error) {
 	var jobs []datastore.Job
-	rows, err := d.db.QueryxContext(ctx, fetchJobsByProjectId, projectID)
+	rows, err := j.db.QueryxContext(ctx, fetchJobsByProjectId, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func (d *jobRepo) FetchJobsByProjectId(ctx context.Context, projectID string) ([
 	return jobs, nil
 }
 
-func (d *jobRepo) LoadJobsPaged(ctx context.Context, projectID string, pageable datastore.Pageable) ([]datastore.Job, datastore.PaginationData, error) {
+func (j *jobRepo) LoadJobsPaged(ctx context.Context, projectID string, pageable datastore.Pageable) ([]datastore.Job, datastore.PaginationData, error) {
 	var query, filterQuery string
 	var args []interface{}
 	var err error
@@ -295,9 +295,9 @@ func (d *jobRepo) LoadJobsPaged(ctx context.Context, projectID string, pageable 
 		return nil, datastore.PaginationData{}, err
 	}
 
-	query = d.db.Rebind(query)
+	query = j.db.Rebind(query)
 
-	rows, err := d.db.QueryxContext(ctx, query, args...)
+	rows, err := j.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -328,10 +328,10 @@ func (d *jobRepo) LoadJobsPaged(ctx context.Context, projectID string, pageable 
 			return nil, datastore.PaginationData{}, err
 		}
 
-		countQuery = d.db.Rebind(countQuery)
+		countQuery = j.db.Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := d.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err := j.db.QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}

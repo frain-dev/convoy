@@ -353,7 +353,7 @@ type RetryConfig struct {
 
 type RateLimitConfig struct {
 	Count    int
-	Duration uint64
+	Duration time.Duration
 }
 
 func (ec *EventDeliveryConfig) retryConfig() (*RetryConfig, error) {
@@ -377,10 +377,10 @@ func (ec *EventDeliveryConfig) rateLimitConfig() *RateLimitConfig {
 
 	if ec.subscription.RateLimitConfig != nil {
 		rlc.Count = ec.subscription.RateLimitConfig.Count
-		rlc.Duration = ec.subscription.RateLimitConfig.Duration
+		rlc.Duration = time.Second * time.Duration(ec.subscription.RateLimitConfig.Duration)
 	} else {
 		rlc.Count = ec.project.Config.RateLimit.Count
-		rlc.Duration = ec.project.Config.RateLimit.Duration
+		rlc.Duration = time.Second * time.Duration(ec.project.Config.RateLimit.Duration)
 	}
 
 	return rlc
