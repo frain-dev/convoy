@@ -238,15 +238,15 @@ func TestJobRepo_DeleteJob(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	deviceRepo := NewJobRepo(db)
-	device := generateJob(t, db)
+	jobRepo := NewJobRepo(db)
+	job := generateJob(t, db)
 
-	require.NoError(t, deviceRepo.CreateJob(context.Background(), device))
+	require.NoError(t, jobRepo.CreateJob(context.Background(), job))
 
-	err := deviceRepo.DeleteJob(context.Background(), device.UID, device.ProjectID)
+	err := jobRepo.DeleteJob(context.Background(), job.UID, job.ProjectID)
 	require.NoError(t, err)
 
-	_, err = deviceRepo.FetchJobById(context.Background(), device.UID, device.ProjectID)
+	_, err = jobRepo.FetchJobById(context.Background(), job.UID, job.ProjectID)
 	require.Equal(t, ErrJobNotFound, err)
 }
 
@@ -262,7 +262,7 @@ func Test_LoadJobsPaged(t *testing.T) {
 		expected Expected
 	}{
 		{
-			name:     "Load Devices Paged - 10 records",
+			name:     "Load Jobs Paged - 10 records",
 			pageData: datastore.Pageable{PerPage: 3},
 			count:    10,
 			expected: Expected{
@@ -273,7 +273,7 @@ func Test_LoadJobsPaged(t *testing.T) {
 		},
 
 		{
-			name:     "Load Devices Paged - 12 records",
+			name:     "Load Jobs Paged - 12 records",
 			pageData: datastore.Pageable{PerPage: 4},
 			count:    12,
 			expected: Expected{
@@ -284,7 +284,7 @@ func Test_LoadJobsPaged(t *testing.T) {
 		},
 
 		{
-			name:     "Load Devices Paged - 5 records",
+			name:     "Load Jobs Paged - 5 records",
 			pageData: datastore.Pageable{PerPage: 3},
 			count:    5,
 			expected: Expected{
@@ -295,7 +295,7 @@ func Test_LoadJobsPaged(t *testing.T) {
 		},
 
 		{
-			name:     "Load Devices Paged - 1 record",
+			name:     "Load Jobs Paged - 1 record",
 			pageData: datastore.Pageable{PerPage: 3},
 			count:    1,
 			expected: Expected{
@@ -338,7 +338,7 @@ func generateJob(t *testing.T, db database.Database) *datastore.Job {
 	return &datastore.Job{
 		UID:       ulid.Make().String(),
 		Type:      "search_tokenizer",
-		Status:    "ready",
+		Status:    datastore.JobStatusReady,
 		ProjectID: project.UID,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
