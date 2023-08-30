@@ -413,7 +413,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 
 		baseCountEvents := baseCountPrevEvents
 		if !util.IsStringEmpty(filter.Query) {
-			base = baseCountPrevEventSearch
+			baseCountEvents = baseCountPrevEventSearch
 		}
 
 		cq := baseCountEvents + filterQuery + countPrevEvents
