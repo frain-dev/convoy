@@ -140,6 +140,13 @@ const (
 
 	baseCountPrevEvents = `
 	SELECT COUNT(DISTINCT(ev.id)) AS COUNT
+	FROM convoy.events ev
+	LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
+	WHERE ev.deleted_at IS NULL
+	`
+
+	baseCountPrevEventSearch = `
+	SELECT COUNT(DISTINCT(ev.id)) AS COUNT
 	FROM convoy.events_search ev
 	LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
 	WHERE ev.deleted_at IS NULL
@@ -404,7 +411,12 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		qarg := arg
 		qarg["cursor"] = first.UID
 
-		cq := baseCountPrevEvents + filterQuery + countPrevEvents
+		baseCountEvents := baseCountPrevEvents
+		if !util.IsStringEmpty(filter.Query) {
+			baseCountEvents = baseCountPrevEventSearch
+		}
+
+		cq := baseCountEvents + filterQuery + countPrevEvents
 		countQuery, qargs, err = sqlx.Named(cq, qarg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
