@@ -130,23 +130,42 @@
 				convoy-button
 				size="sm"
 				fill="outline"
-				class="ml-14px px-10px border-primary-400 h-36px"
+				class="mx-14px px-10px border-primary-400 h-36px"
 				[disabled]="(!queryParams?.startDate || !queryParams?.endDate) && !queryParams?.endpointId && !queryParams?.eventId && !queryParams?.status && !queryParams?.sourceId"
 				(click)="fetchRetryCount()"
 			>
 				Batch Retry
 			</button>
+
+			<button
+				convoy-button
+				fill="outline"
+				size="sm"
+                class="h-36px"
+				(click)="eventDeliveriesSource = ''; eventDeliveryFilteredByStatus = []; clearFilters()"
+				*ngIf="queryParams?.startDate || queryParams?.endDate || queryParams?.endpointId || queryParams?.eventId || queryParams?.status || queryParams?.sourceId"
+			>
+				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<path
+						d="M10.9104 3.50033L10.5003 3.09031C10.3864 2.97641 10.2018 2.97641 10.0879 3.09031L7.00033 6.17781L3.91281 3.09031C3.79891 2.97641 3.61424 2.97641 3.50033 3.09031L3.09031 3.50033C2.97641 3.61423 2.97641 3.79891 3.09031 3.91281L6.17783 7.00031L3.09032 10.0879C2.97641 10.2018 2.97641 10.3864 3.09032 10.5003L3.50034 10.9104C3.61424 11.0243 3.79891 11.0243 3.91282 10.9104L7.00033 7.82281L10.0879 10.9103C10.2018 11.0242 10.3864 11.0242 10.5003 10.9103L10.9104 10.5003C11.0243 10.3864 11.0243 10.2017 10.9104 10.0878L7.82283 7.00031L10.9104 3.91281C11.0243 3.79891 11.0243 3.61423 10.9104 3.50033Z"
+						fill="#477DB3"
+					/>
+				</svg>
+			</button>
 		</div>
 
-		<button
-			convoy-button
-			fill="outline"
-			size="sm"
-			(click)="eventDeliveriesSource = ''; eventDeliveryFilteredByStatus = []; clearFilters()"
-			*ngIf="queryParams?.startDate || queryParams?.endDate || queryParams?.endpointId || queryParams?.eventId || queryParams?.status || queryParams?.sourceId"
-		>
-			Clear Filters
-		</button>
+		<div class="flex items-center relative">
+			<label class="text-16 text-new.gray-500 block w-full capitalize whitespace-nowrap mr-6px" for="tailMode">Tail Events</label>
+			<input
+				type="checkbox"
+				class="peer w-24px h-18px border border-new.primary-50 rounded-4px checked:border-new.primary-400 checked:bg-new.primary-25 focus:bottom-2 focus:border-new.primary-400 checked:bg bg-white-100"
+				name="enableTailMode"
+				[checked]="enableTailMode"
+				id="tailMode"
+				(change)="toggleTailMode($event)"
+			/>
+			<img src="assets/img/check-icon-primary.svg" class="w-12px hidden peer-checked:block absolute top-[26%] right-[3px]" alt="check icon" />
+		</div>
 	</div>
 
 	<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
