@@ -92,7 +92,7 @@ export class EventLogsComponent implements OnInit {
 
 	async ngOnInit() {
 		const data = this.getFiltersFromURL();
-		this.checkIfTailModeIsEnabled(data);
+		this.checkIfTailModeIsEnabled() ? this.refetchEvents(data) : this.getEventLogs({ ...data, showLoader: true });
 		if (!this.portalToken) this.getSourcesForFilter();
 	}
 
@@ -116,20 +116,20 @@ export class EventLogsComponent implements OnInit {
 	paginateEvents(event: CURSOR) {
 		const data = this.addFilterToURL(event);
 		clearInterval(this.getEventsInterval);
-		this.checkIfTailModeIsEnabled(data);
+		this.checkIfTailModeIsEnabled() ? this.refetchEvents(data) : this.getEventLogs({ ...data, showLoader: true });
 	}
 
 	updateSourceFilter() {
 		const data = this.addFilterToURL({ sourceId: this.eventSource });
 		clearInterval(this.getEventsInterval);
-		this.checkIfTailModeIsEnabled(data);
+		this.checkIfTailModeIsEnabled() ? this.refetchEvents(data) : this.getEventLogs({ ...data, showLoader: true });
 	}
 
 	getSelectedDateRange(dateRange: { startDate: string; endDate: string }) {
 		this.eventsDateFilterFromURL = dateRange;
 		const data = this.addFilterToURL(dateRange);
 		clearInterval(this.getEventsInterval);
-		this.checkIfTailModeIsEnabled(data);
+		this.checkIfTailModeIsEnabled() ? this.refetchEvents(data) : this.getEventLogs({ ...data, showLoader: true });
 	}
 
 	// fetch filters from url
@@ -181,14 +181,13 @@ export class EventLogsComponent implements OnInit {
 		}
 
 		clearInterval(this.getEventsInterval);
-		this.checkIfTailModeIsEnabled(this.queryParams);
+		this.checkIfTailModeIsEnabled() ? this.refetchEvents(this.queryParams) : this.getEventLogs({ ...this.queryParams, showLoader: true });
 	}
 
-	checkIfTailModeIsEnabled(data?: FILTER_QUERY_PARAM) {
+	checkIfTailModeIsEnabled() {
 		const tailModeConfig = localStorage.getItem('EVENT_LOGS_TAIL_MODE');
 		this.enableTailMode = tailModeConfig ? JSON.parse(tailModeConfig) : false;
-		if (this.enableTailMode) this.getEventLogs({ ...data, showLoader: true }).then(() => this.getEventsAtInterval({ ...data }));
-		else this.getEventLogs({ ...data, showLoader: true });
+		return this.enableTailMode;
 	}
 
 	toggleTailMode(e: any) {
@@ -201,6 +200,11 @@ export class EventLogsComponent implements OnInit {
 			clearInterval(this.getEventsInterval);
 			this.getEventLogs({ ...data, showLoader: true });
 		}
+	}
+
+	refetchEvents(data?: FILTER_QUERY_PARAM) {
+		delete this.eventsDetailsItem;
+		this.getEventLogs({ ...data, showLoader: true }).then(() => this.getEventsAtInterval({ ...data }));
 	}
 
 	getEventsAtInterval(requestDetails?: FILTER_QUERY_PARAM) {

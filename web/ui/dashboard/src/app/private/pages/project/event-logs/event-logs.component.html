@@ -77,8 +77,9 @@
 	</div>
 
 	<div class="flex items-center relative">
-		<label class="text-16 text-new.gray-500 block w-full capitalize whitespace-nowrap mr-6px" for="tailMode">Tail Events</label>
+		<label class="text-12 text-new.gray-500 block w-full capitalize whitespace-nowrap mr-6px" for="tailMode">Tail Events</label>
 		<input
+			#tailModeToggle
 			type="checkbox"
 			class="peer w-24px h-18px border border-new.primary-50 rounded-4px checked:border-new.primary-400 checked:bg-new.primary-25 focus:bottom-2 focus:border-new.primary-400 checked:bg bg-white-100"
 			name="enableTailMode"
@@ -86,7 +87,7 @@
 			id="tailMode"
 			(change)="toggleTailMode($event)"
 		/>
-		<img src="assets/img/check-icon-primary.svg" class="w-12px hidden peer-checked:block absolute top-[26%] right-[3px]" alt="check icon" />
+		<img src="assets/img/check-icon-primary.svg" class="w-12px hidden peer-checked:block absolute top-[20%] right-[3px]" alt="check icon" (click)="tailModeToggle.click()" />
 	</div>
 </div>
 

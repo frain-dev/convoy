@@ -60,7 +60,11 @@ export class EventDeliveriesComponent implements OnInit {
 
 	ngOnInit() {
 		const data = this.getFiltersFromURL();
-		this.checkIfTailModeIsEnabled(data);
+		this.checkIfTailModeIsEnabled()
+			? this.getEventDeliveries({ ...data, showLoader: true }).then(() => {
+					this.getEventDeliveriesAtInterval(data);
+			  })
+			: this.getEventDeliveries({ ...data, showLoader: true });
 
 		if (!this.portalToken || this.projectService.activeProjectDetails?.type == 'incoming') this.getSourcesForFilter();
 	}
@@ -84,14 +88,11 @@ export class EventDeliveriesComponent implements OnInit {
 		return this.queryParams;
 	}
 
-	checkIfTailModeIsEnabled(data?: FILTER_QUERY_PARAM) {
+	checkIfTailModeIsEnabled() {
 		const tailModeConfig = localStorage.getItem('EVENTS_TAIL_MODE');
 		this.enableTailMode = tailModeConfig ? JSON.parse(tailModeConfig) : false;
-		if (this.enableTailMode)
-			this.getEventDeliveries({ ...data, showLoader: true }).then(() => {
-				this.getEventDeliveriesAtInterval(data);
-			});
-		else this.getEventDeliveries({ ...data, showLoader: true });
+
+		return this.enableTailMode;
 	}
 
 	toggleTailMode(e: any) {
@@ -196,14 +197,22 @@ export class EventDeliveriesComponent implements OnInit {
 	getSelectedDateRange(dateRange: { startDate: string; endDate: string }) {
 		const data = this.addFilterToURL(dateRange);
 		clearInterval(this.getEventDeliveriesInterval);
-		this.checkIfTailModeIsEnabled(data);
+		this.checkIfTailModeIsEnabled()
+			? this.getEventDeliveries({ ...data, showLoader: true }).then(() => {
+					this.getEventDeliveriesAtInterval(data);
+			  })
+			: this.getEventDeliveries({ ...data, showLoader: true });
 	}
 
 	getSelectedStatusFilter() {
 		const eventDelsStatus = this.eventDeliveryFilteredByStatus.length > 0 ? JSON.stringify(this.eventDeliveryFilteredByStatus) : '';
 		const data = this.addFilterToURL({ status: eventDelsStatus });
 		clearInterval(this.getEventDeliveriesInterval);
-		this.checkIfTailModeIsEnabled(data);
+		this.checkIfTailModeIsEnabled()
+			? this.getEventDeliveries({ ...data, showLoader: true }).then(() => {
+					this.getEventDeliveriesAtInterval(data);
+			  })
+			: this.getEventDeliveries({ ...data, showLoader: true });
 	}
 
 	clearFilters(filterType?: 'startDate' | 'endDate' | 'eventId' | 'endpointId' | 'status' | 'sourceId' | 'next_page_cursor' | 'prev_page_cursor' | 'direction') {
@@ -230,7 +239,11 @@ export class EventDeliveriesComponent implements OnInit {
 		}
 
 		clearInterval(this.getEventDeliveriesInterval);
-		this.checkIfTailModeIsEnabled(this.queryParams);
+		this.checkIfTailModeIsEnabled()
+			? this.getEventDeliveries({ ...this.queryParams, showLoader: true }).then(() => {
+					this.getEventDeliveriesAtInterval(this.queryParams);
+			  })
+			: this.getEventDeliveries({ ...this.queryParams, showLoader: true });
 	}
 
 	async fetchRetryCount() {
@@ -264,19 +277,31 @@ export class EventDeliveriesComponent implements OnInit {
 	updateEndpointFilter() {
 		const data = this.addFilterToURL({ endpointId: this.eventDeliveriesEndpoint });
 		clearInterval(this.getEventDeliveriesInterval);
-		this.checkIfTailModeIsEnabled(data);
+		this.checkIfTailModeIsEnabled()
+			? this.getEventDeliveries({ ...data, showLoader: true }).then(() => {
+					this.getEventDeliveriesAtInterval(data);
+			  })
+			: this.getEventDeliveries({ ...data, showLoader: true });
 	}
 
 	updateSourceFilter() {
 		const data = this.addFilterToURL({ sourceId: this.eventDeliveriesSource });
 		clearInterval(this.getEventDeliveriesInterval);
-		this.checkIfTailModeIsEnabled(data);
+		this.checkIfTailModeIsEnabled()
+			? this.getEventDeliveries({ ...data, showLoader: true }).then(() => {
+					this.getEventDeliveriesAtInterval(data);
+			  })
+			: this.getEventDeliveries({ ...data, showLoader: true });
 	}
 
 	paginateEvents(event: CURSOR) {
 		const data = this.addFilterToURL({ next_page_cursor: event.next_page_cursor, prev_page_cursor: event.prev_page_cursor });
 		clearInterval(this.getEventDeliveriesInterval);
-		this.checkIfTailModeIsEnabled(data);
+		this.checkIfTailModeIsEnabled()
+			? this.getEventDeliveries({ ...data, showLoader: true }).then(() => {
+					this.getEventDeliveriesAtInterval(data);
+			  })
+			: this.getEventDeliveries({ ...data, showLoader: true });
 	}
 
 	async retryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
