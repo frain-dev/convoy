@@ -86,13 +86,13 @@ export class EventLogsComponent implements OnInit {
 	batchRetryCount: any;
 	getEventsInterval: any;
 	queryParams?: FILTER_QUERY_PARAM;
+	enableTailMode = false;
 
 	constructor(private eventsLogService: EventLogsService, public generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService, private _location: Location) {}
 
 	async ngOnInit() {
 		const data = this.getFiltersFromURL();
-		this.getEventLogs({ ...data, showLoader: true }).then(() => this.getEventsAtInterval({ ...data }));
-
+		this.checkIfTailModeIsEnabled(data);
 		if (!this.portalToken) this.getSourcesForFilter();
 	}
 
@@ -116,20 +116,20 @@ export class EventLogsComponent implements OnInit {
 	paginateEvents(event: CURSOR) {
 		const data = this.addFilterToURL(event);
 		clearInterval(this.getEventsInterval);
-		this.getEventLogs({ ...data, showLoader: true });
+		this.checkIfTailModeIsEnabled(data);
 	}
 
 	updateSourceFilter() {
 		const data = this.addFilterToURL({ sourceId: this.eventSource });
 		clearInterval(this.getEventsInterval);
-		this.getEventLogs({ ...data, showLoader: true });
+		this.checkIfTailModeIsEnabled(data);
 	}
 
 	getSelectedDateRange(dateRange: { startDate: string; endDate: string }) {
 		this.eventsDateFilterFromURL = dateRange;
 		const data = this.addFilterToURL(dateRange);
 		clearInterval(this.getEventsInterval);
-		this.getEventLogs({ ...data, showLoader: true });
+		this.checkIfTailModeIsEnabled(data);
 	}
 
 	// fetch filters from url
@@ -181,21 +181,32 @@ export class EventLogsComponent implements OnInit {
 		}
 
 		clearInterval(this.getEventsInterval);
-		if (Object.keys(this.queryParams).length === 0) this.refetchEvents(this.queryParams);
+		this.checkIfTailModeIsEnabled(this.queryParams);
+	}
+
+	checkIfTailModeIsEnabled(data?: FILTER_QUERY_PARAM) {
+		const tailModeConfig = localStorage.getItem('EVENT_LOGS_TAIL_MODE');
+		this.enableTailMode = tailModeConfig ? JSON.parse(tailModeConfig) : false;
+		if (this.enableTailMode) this.getEventLogs({ ...data, showLoader: true }).then(() => this.getEventsAtInterval({ ...data }));
+		else this.getEventLogs({ ...data, showLoader: true });
+	}
+
+	toggleTailMode(e: any) {
+		const tailModeConfig = e.target.checked;
+		this.enableTailMode = tailModeConfig;
+		localStorage.setItem('EVENT_LOGS_TAIL_MODE', JSON.stringify(tailModeConfig));
+		const data = this.getFiltersFromURL();
+		if (tailModeConfig) this.getEventLogs({ ...data, showLoader: true }).then(() => this.getEventsAtInterval({ ...data }));
 		else {
-			this.getEventLogs({ ...this.queryParams, showLoader: true });
+			clearInterval(this.getEventsInterval);
+			this.getEventLogs({ ...data, showLoader: true });
 		}
 	}
 
 	getEventsAtInterval(requestDetails?: FILTER_QUERY_PARAM) {
 		this.getEventsInterval = setInterval(() => {
 			this.getEventLogs({ ...requestDetails });
-		}, 7000);
-	}
-
-	refetchEvents(data?: FILTER_QUERY_PARAM) {
-		delete this.eventsDetailsItem;
-		this.getEventLogs({ ...data, showLoader: true }).then(() => this.getEventsAtInterval({ ...data }));
+		}, 5000);
 	}
 
 	async getEventLogs(requestDetails?: FILTER_QUERY_PARAM) {
