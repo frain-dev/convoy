@@ -60,13 +60,18 @@ export class EventDeliveriesComponent implements OnInit {
 
 	ngOnInit() {
 		const data = this.getFiltersFromURL();
-		this.checkIfTailModeIsEnabled()
-			? this.getEventDeliveries({ ...data, showLoader: true }).then(() => {
-					this.getEventDeliveriesAtInterval(data);
-			  })
-			: this.getEventDeliveries({ ...data, showLoader: true });
+		this.checkIfTailModeIsEnabled() ? this.startTailing() : this.getEventDeliveries({ ...data, showLoader: true });
 
 		if (!this.portalToken || this.projectService.activeProjectDetails?.type == 'incoming') this.getSourcesForFilter();
+	}
+
+	startTailing() {
+		this.isloadingEventDeliveries = true;
+		setTimeout(() => {
+			this.isloadingEventDeliveries = false;
+			const data = this.getFiltersFromURL();
+			this.getEventDeliveriesAtInterval(data);
+		}, 3000);
 	}
 
 	ngOnDestroy() {
@@ -100,10 +105,7 @@ export class EventDeliveriesComponent implements OnInit {
 		this.enableTailMode = tailModeConfig;
 		localStorage.setItem('EVENTS_TAIL_MODE', JSON.stringify(tailModeConfig));
 		const data = this.getFiltersFromURL();
-		if (tailModeConfig)
-			this.getEventDeliveries({ ...data, showLoader: true }).then(() => {
-				this.getEventDeliveriesAtInterval(data);
-			});
+		if (tailModeConfig) this.startTailing();
 		else {
 			clearInterval(this.getEventDeliveriesInterval);
 			this.getEventDeliveries({ ...data, showLoader: true });
