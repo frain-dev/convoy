@@ -92,7 +92,7 @@ export class EventLogsComponent implements OnInit {
 
 	async ngOnInit() {
 		const data = this.getFiltersFromURL();
-		this.checkIfTailModeIsEnabled() ? this.refetchEvents(data) : this.getEventLogs({ ...data, showLoader: true });
+		this.checkIfTailModeIsEnabled() ? this.startTailing() : this.getEventLogs({ ...data, showLoader: true });
 		if (!this.portalToken) this.getSourcesForFilter();
 	}
 
@@ -116,20 +116,20 @@ export class EventLogsComponent implements OnInit {
 	paginateEvents(event: CURSOR) {
 		const data = this.addFilterToURL(event);
 		clearInterval(this.getEventsInterval);
-		this.checkIfTailModeIsEnabled() ? this.refetchEvents(data) : this.getEventLogs({ ...data, showLoader: true });
+		this.checkIfTailModeIsEnabled() ? this.startTailing() : this.getEventLogs({ ...data, showLoader: true });
 	}
 
 	updateSourceFilter() {
 		const data = this.addFilterToURL({ sourceId: this.eventSource });
 		clearInterval(this.getEventsInterval);
-		this.checkIfTailModeIsEnabled() ? this.refetchEvents(data) : this.getEventLogs({ ...data, showLoader: true });
+		this.checkIfTailModeIsEnabled() ? this.startTailing() : this.getEventLogs({ ...data, showLoader: true });
 	}
 
 	getSelectedDateRange(dateRange: { startDate: string; endDate: string }) {
 		this.eventsDateFilterFromURL = dateRange;
 		const data = this.addFilterToURL(dateRange);
 		clearInterval(this.getEventsInterval);
-		this.checkIfTailModeIsEnabled() ? this.refetchEvents(data) : this.getEventLogs({ ...data, showLoader: true });
+		this.checkIfTailModeIsEnabled() ? this.startTailing() : this.getEventLogs({ ...data, showLoader: true });
 	}
 
 	// fetch filters from url
@@ -181,7 +181,7 @@ export class EventLogsComponent implements OnInit {
 		}
 
 		clearInterval(this.getEventsInterval);
-		this.checkIfTailModeIsEnabled() ? this.refetchEvents(this.queryParams) : this.getEventLogs({ ...this.queryParams, showLoader: true });
+		this.checkIfTailModeIsEnabled() ? this.startTailing() : this.getEventLogs({ ...this.queryParams, showLoader: true });
 	}
 
 	checkIfTailModeIsEnabled() {
@@ -195,16 +195,23 @@ export class EventLogsComponent implements OnInit {
 		this.enableTailMode = tailModeConfig;
 		localStorage.setItem('EVENT_LOGS_TAIL_MODE', JSON.stringify(tailModeConfig));
 		const data = this.getFiltersFromURL();
-		if (tailModeConfig) this.getEventLogs({ ...data, showLoader: true }).then(() => this.getEventsAtInterval({ ...data }));
+		if (tailModeConfig) this.startTailing();
 		else {
 			clearInterval(this.getEventsInterval);
 			this.getEventLogs({ ...data, showLoader: true });
 		}
 	}
 
-	refetchEvents(data?: FILTER_QUERY_PARAM) {
-		delete this.eventsDetailsItem;
-		this.getEventLogs({ ...data, showLoader: true }).then(() => this.getEventsAtInterval({ ...data }));
+	startTailing() {
+        delete this.eventsDetailsItem;
+		this.isloadingEvents = true;
+		this.isLoadingSidebarDeliveries = true;
+		setTimeout(() => {
+			this.isloadingEvents = false;
+			this.isLoadingSidebarDeliveries = false;
+			const data = this.getFiltersFromURL();
+			this.getEventsAtInterval(data);
+		}, 3000);
 	}
 
 	getEventsAtInterval(requestDetails?: FILTER_QUERY_PARAM) {
