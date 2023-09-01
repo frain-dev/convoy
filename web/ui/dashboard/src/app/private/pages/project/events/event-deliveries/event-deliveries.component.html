@@ -155,17 +155,18 @@
 		</div>
 
 		<div class="flex items-center relative">
-			<label class="text-12 text-new.gray-500 block w-full capitalize whitespace-nowrap mr-6px" for="tailMode">Tail Events</label>
-			<input
-				#tailModeToggle
-				type="checkbox"
-				class="peer w-24px h-18px border border-new.primary-50 rounded-4px checked:border-new.primary-400 checked:bg-new.primary-25 focus:bottom-2 focus:border-new.primary-400 checked:bg bg-white-100"
-				name="enableTailMode"
-				[checked]="enableTailMode"
-				id="tailMode"
-				(change)="toggleTailMode($event)"
-			/>
-			<img src="assets/img/check-icon-primary.svg" class="w-12px hidden peer-checked:block absolute top-[20%] right-[3px]" alt="check icon" (click)="tailModeToggle.click()" />
+            <label class="text-12 text-new.gray-500 w-full capitalize whitespace-nowrap mr-6px flex justify-between gap-12px cursor-pointer" tabindex="0" for="tailMode">Tail Events
+                <input
+                    #tailModeToggle
+                    type="checkbox"
+                    class="peer hidden"
+                    name="enableTailMode"
+                    [checked]="enableTailMode"
+                    id="tailMode"
+                    (change)="toggleTailMode($event)"
+                />
+                <div class="transition-all w-18px h-18px border border-new.primary-50 rounded-4px peer-checked:border-new.primary-400 peer-checked:bg-new.primary-25 focus:bottom-2 focus:border-new.primary-400 peer-checked:bg bg-white-100 peer-checked:bg-[url('assets/img/check-icon-primary.svg')] bg-cover"></div>
+            </label>
 		</div>
 	</div>
 
