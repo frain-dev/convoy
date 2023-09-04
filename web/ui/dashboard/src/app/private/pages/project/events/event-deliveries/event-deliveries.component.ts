@@ -1,8 +1,7 @@
 import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { format, parseISO } from 'date-fns';
 import { fromEvent, Observable } from 'rxjs';
-import { debounceTime, distinctUntilChanged, filter, map, startWith, switchMap } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { EVENT_DELIVERY, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
@@ -60,18 +59,10 @@ export class EventDeliveriesComponent implements OnInit {
 
 	ngOnInit() {
 		const data = this.getFiltersFromURL();
-		this.checkIfTailModeIsEnabled() ? this.startTailing() : this.getEventDeliveries({ ...data, showLoader: true });
+		this.getEventDeliveries({ ...data, showLoader: true });
+		if (this.checkIfTailModeIsEnabled()) this.getEventDeliveriesAtInterval();
 
 		if (!this.portalToken || this.projectService.activeProjectDetails?.type == 'incoming') this.getSourcesForFilter();
-	}
-
-	startTailing() {
-		this.isloadingEventDeliveries = true;
-		setTimeout(() => {
-			this.isloadingEventDeliveries = false;
-			const data = this.getFiltersFromURL();
-			this.getEventDeliveriesAtInterval(data);
-		}, 3000);
 	}
 
 	ngOnDestroy() {
@@ -79,9 +70,6 @@ export class EventDeliveriesComponent implements OnInit {
 	}
 
 	getFiltersFromURL() {
-		const filters = this.route.snapshot.queryParams;
-		if (Object.keys(filters).length == 0) return;
-
 		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams };
 
 		// set filter status if any exists in URL
@@ -100,21 +88,22 @@ export class EventDeliveriesComponent implements OnInit {
 		return this.enableTailMode;
 	}
 
-	toggleTailMode(e: any) {
-		const tailModeConfig = e.target.checked;
+	toggleTailMode(e?: any, status?: 'on' | 'off') {
+		let tailModeConfig: boolean;
+		if (status) tailModeConfig = status === 'on';
+		else tailModeConfig = e.target.checked;
+
 		this.enableTailMode = tailModeConfig;
 		localStorage.setItem('EVENTS_TAIL_MODE', JSON.stringify(tailModeConfig));
-		const data = this.getFiltersFromURL();
-		if (tailModeConfig) this.startTailing();
-		else {
-			clearInterval(this.getEventDeliveriesInterval);
-			this.getEventDeliveries({ ...data, showLoader: true });
-		}
+
+		clearInterval(this.getEventDeliveriesInterval);
+		if (tailModeConfig) this.getEventDeliveriesAtInterval();
 	}
 
-	getEventDeliveriesAtInterval(requestDetails?: FILTER_QUERY_PARAM) {
+	getEventDeliveriesAtInterval() {
 		this.getEventDeliveriesInterval = setInterval(() => {
-			this.getEventDeliveries({ ...requestDetails });
+			const data = { ...this.queryParams, ...this.route.snapshot.queryParams };
+			this.getEventDeliveries(data);
 		}, 5000);
 	}
 
@@ -198,15 +187,15 @@ export class EventDeliveriesComponent implements OnInit {
 
 	getSelectedDateRange(dateRange: { startDate: string; endDate: string }) {
 		const data = this.addFilterToURL(dateRange);
-		clearInterval(this.getEventDeliveriesInterval);
-		this.checkIfTailModeIsEnabled() ? this.startTailing() : this.getEventDeliveries({ ...data, showLoader: true });
+		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
+		this.getEventDeliveries({ ...data, showLoader: true });
 	}
 
 	getSelectedStatusFilter() {
 		const eventDelsStatus = this.eventDeliveryFilteredByStatus.length > 0 ? JSON.stringify(this.eventDeliveryFilteredByStatus) : '';
 		const data = this.addFilterToURL({ status: eventDelsStatus });
-		clearInterval(this.getEventDeliveriesInterval);
-		this.checkIfTailModeIsEnabled() ? this.startTailing() : this.getEventDeliveries({ ...data, showLoader: true });
+		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
+		this.getEventDeliveries({ ...data, showLoader: true });
 	}
 
 	clearFilters(filterType?: 'startDate' | 'endDate' | 'eventId' | 'endpointId' | 'status' | 'sourceId' | 'next_page_cursor' | 'prev_page_cursor' | 'direction') {
@@ -232,8 +221,8 @@ export class EventDeliveriesComponent implements OnInit {
 			this._location.go(`${location.pathname}`);
 		}
 
-		clearInterval(this.getEventDeliveriesInterval);
-		this.checkIfTailModeIsEnabled() ? this.startTailing() : this.getEventDeliveries({ ...this.queryParams, showLoader: true });
+		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
+		this.getEventDeliveries({ showLoader: true });
 	}
 
 	async fetchRetryCount() {
@@ -266,20 +255,20 @@ export class EventDeliveriesComponent implements OnInit {
 
 	updateEndpointFilter() {
 		const data = this.addFilterToURL({ endpointId: this.eventDeliveriesEndpoint });
-		clearInterval(this.getEventDeliveriesInterval);
-		this.checkIfTailModeIsEnabled() ? this.startTailing() : this.getEventDeliveries({ ...data, showLoader: true });
+		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
+		this.getEventDeliveries({ ...data, showLoader: true });
 	}
 
 	updateSourceFilter() {
 		const data = this.addFilterToURL({ sourceId: this.eventDeliveriesSource });
-		clearInterval(this.getEventDeliveriesInterval);
-		this.checkIfTailModeIsEnabled() ? this.startTailing() : this.getEventDeliveries({ ...data, showLoader: true });
+		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
+		this.getEventDeliveries({ ...data, showLoader: true });
 	}
 
 	paginateEvents(event: CURSOR) {
 		const data = this.addFilterToURL({ next_page_cursor: event.next_page_cursor, prev_page_cursor: event.prev_page_cursor });
-		clearInterval(this.getEventDeliveriesInterval);
-		this.checkIfTailModeIsEnabled() ? this.startTailing() : this.getEventDeliveries({ ...data, showLoader: true });
+		if (this.checkIfTailModeIsEnabled()) this.toggleTailMode(false, 'off');
+		this.getEventDeliveries({ ...data, showLoader: true });
 	}
 
 	async retryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
@@ -325,5 +314,9 @@ export class EventDeliveriesComponent implements OnInit {
 			this.isRetrying = false;
 			return error;
 		}
+	}
+
+	toggleSouceFilter(event: any, sourceId: string) {
+		this.eventDeliveriesSource = event.target.checked ? sourceId : '';
 	}
 }

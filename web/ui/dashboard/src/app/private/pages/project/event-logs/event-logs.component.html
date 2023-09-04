@@ -12,8 +12,8 @@
 
 <!-- filters  -->
 <div class="flex py-24px items-center justify-between">
-	<div class="flex">
-		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-transparent" [ngClass]="{ 'text-primary-100 !bg-primary-500': eventsSearchString != undefined && eventsSearchString != '' }">
+	<div class="flex items-center w-full">
+		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[200px] w-full rounded-[10px] flex items-center bg-transparent" [ngClass]="{ 'text-primary-100 !bg-primary-500': eventsSearchString != undefined && eventsSearchString != '' }">
 			<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
 			<input
 				type="search"
@@ -61,14 +61,14 @@
 							[value]="source.uid"
 							[id]="source.uid + 'event'"
 							[checked]="source.uid === eventSource"
-							(change)="eventSource = source.uid"
+							(change)="toggleSouceFilter($event, source.uid)"
 						/>
 					</li>
 				</ul>
 
 				<div class="flex items-center justify-end mt-10px p-10px">
 					<button convoy-button convoy-dropdown-option size="sm" fill="outline" color="danger" class="mr-14px" *ngIf="queryParams?.sourceId" (click)="clearEventFilters('sourceId')">Clear</button>
-					<button convoy-dropdown-option convoy-button size="sm" (click)="eventSource ? updateSourceFilter() : false">Apply</button>
+					<button convoy-dropdown-option convoy-button size="sm" (click)="updateSourceFilter()">Apply</button>
 				</div>
 			</div>
 		</div>
@@ -77,14 +77,9 @@
 			Batch Replay
 		</button>
 
-		<button convoy-button fill="outline" size="sm" class="h-36px" (click)="clearEventFilters()" *ngIf="queryParams?.startDate || queryParams?.endDate || queryParams?.sourceId || queryParams?.query">
-			<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-				<path
-					d="M10.9104 3.50033L10.5003 3.09031C10.3864 2.97641 10.2018 2.97641 10.0879 3.09031L7.00033 6.17781L3.91281 3.09031C3.79891 2.97641 3.61424 2.97641 3.50033 3.09031L3.09031 3.50033C2.97641 3.61423 2.97641 3.79891 3.09031 3.91281L6.17783 7.00031L3.09032 10.0879C2.97641 10.2018 2.97641 10.3864 3.09032 10.5003L3.50034 10.9104C3.61424 11.0243 3.79891 11.0243 3.91282 10.9104L7.00033 7.82281L10.0879 10.9103C10.2018 11.0242 10.3864 11.0242 10.5003 10.9103L10.9104 10.5003C11.0243 10.3864 11.0243 10.2017 10.9104 10.0878L7.82283 7.00031L10.9104 3.91281C11.0243 3.79891 11.0243 3.61423 10.9104 3.50033Z"
-					fill="#477DB3"
-				/>
-			</svg>
-		</button>
+		<div class="h-22px w-[1px] bg-new.primary-50" *ngIf="queryParams?.startDate || queryParams?.endDate || queryParams?.sourceId || queryParams?.query"></div>
+
+		<button convoy-button fill="clear" size="sm" class="h-36px w-fit px-14px" (click)="clearEventFilters()" *ngIf="queryParams?.startDate || queryParams?.endDate || queryParams?.sourceId || queryParams?.query">Clear Filters</button>
 	</div>
 
 	<div class="flex items-center relative">
@@ -275,7 +270,7 @@
 				</div>
 
 				<!-- event delieveries -->
-				<ul *ngIf="sidebarEventDeliveries.length > 0" class="border-b border-new.primary-25 mb-24px">
+				<ul *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length > 0" class="border-b border-new.primary-25 mb-24px">
 					<li
 						convoy-list-item
 						*ngFor="let delivery of sidebarEventDeliveries"
