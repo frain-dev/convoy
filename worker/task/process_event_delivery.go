@@ -94,9 +94,9 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		res, err := rateLimiter.ShouldAllow(ctx, endpoint.TargetURL, rlc.Count, int(rlc.Duration))
+		res, err := rateLimiter.Allow(ctx, endpoint.TargetURL, rlc.Count, int(rlc.Duration))
 		if err != nil {
-			return nil
+			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
 		if res.Remaining <= 0 {
@@ -105,11 +105,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 			var delayDuration time.Duration = retrystrategies.NewRetryStrategyFromMetadata(*ed.Metadata).NextDuration(ed.Metadata.NumTrials)
 			return &RateLimitError{Err: ErrRateLimit, delay: delayDuration}
-		}
-
-		_, err = rateLimiter.Allow(ctx, endpoint.TargetURL, rlc.Count, int(rlc.Duration))
-		if err != nil {
-			return nil
 		}
 
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, p.UID, *ed, datastore.ProcessingEventStatus)
@@ -284,6 +279,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(ctx, p.UID, *ed, attempt)
 		if err != nil {
 			log.WithError(err).Error("failed to update message ", ed.UID)
+			return &EndpointError{Err: ErrDeliveryAttemptFailed, delay: delayDuration}
 		}
 
 		if !done && ed.Metadata.NumTrials < ed.Metadata.RetryLimit {
