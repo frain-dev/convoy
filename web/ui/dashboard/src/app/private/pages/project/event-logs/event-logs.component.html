@@ -12,8 +12,8 @@
 
 <!-- filters  -->
 <div class="flex py-24px items-center justify-between">
-	<div class="flex">
-		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-transparent" [ngClass]="{ 'text-primary-100 !bg-primary-500': eventsSearchString != undefined && eventsSearchString != '' }">
+	<div class="flex items-center w-full">
+		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[200px] w-full rounded-[10px] flex items-center bg-transparent" [ngClass]="{ 'text-primary-100 !bg-primary-500': eventsSearchString != undefined && eventsSearchString != '' }">
 			<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
 			<input
 				type="search"
@@ -44,30 +44,67 @@
 						<label class="py-10px pl-20px text-12 block w-full capitalize" [for]="source.uid + 'event'">{{ source.name }}</label>
 						<input
 							type="checkbox"
-							class="peer w-20px h-18px border border-new.primary-50 rounded-4px checked:border-new.primary-400 checked:bg-new.primary-25 focus:bottom-2 focus:border-new.primary-400 checked:bg bg-white-100"
+							class="
+								peer
+								w-20px
+								h-18px
+								border border-new.primary-50
+								rounded-4px
+								checked:border-new.primary-400
+								checked:bg-new.primary-25 checked:bg-[url(assets/img/check-icon-primary.svg)] checked:bg-[length:12px] checked:bg-center checked:bg-no-repeat
+								focus:bottom-2
+								focus:border-new.primary-400
+								checked:bg
+								bg-white-100
+							"
 							name="source"
 							[value]="source.uid"
 							[id]="source.uid + 'event'"
 							[checked]="source.uid === eventSource"
-							(change)="eventSource = source.uid"
+							(change)="toggleSouceFilter($event, source.uid)"
 						/>
-						<img src="assets/img/check-icon-primary.svg" class="w-12px hidden peer-checked:block absolute top-[50%] translate-y-[-50%] right-[23px]" alt="check icon" />
 					</li>
 				</ul>
 
 				<div class="flex items-center justify-end mt-10px p-10px">
 					<button convoy-button convoy-dropdown-option size="sm" fill="outline" color="danger" class="mr-14px" *ngIf="queryParams?.sourceId" (click)="clearEventFilters('sourceId')">Clear</button>
-					<button convoy-dropdown-option convoy-button size="sm" (click)="eventSource ? updateSourceFilter() : false">Apply</button>
+					<button convoy-dropdown-option convoy-button size="sm" (click)="updateSourceFilter()">Apply</button>
 				</div>
 			</div>
 		</div>
 
-		<button convoy-button size="sm" fill="outline" class="ml-14px px-10px border-primary-400 h-36px whitespace-nowrap" [disabled]="!(queryParams?.startDate || queryParams?.endDate || queryParams?.sourceId || queryParams?.query)" (click)="fetchRetryCount()">
+		<button convoy-button size="sm" fill="outline" class="mx-14px px-10px border-primary-400 h-36px whitespace-nowrap" [disabled]="!(queryParams?.startDate || queryParams?.endDate || queryParams?.sourceId || queryParams?.query)" (click)="fetchRetryCount()">
 			Batch Replay
 		</button>
+
+		<div class="h-22px w-[1px] bg-new.primary-50" *ngIf="queryParams?.startDate || queryParams?.endDate || queryParams?.sourceId || queryParams?.query"></div>
+
+		<button convoy-button fill="clear" size="sm" class="h-36px w-fit px-14px" (click)="clearEventFilters()" *ngIf="queryParams?.startDate || queryParams?.endDate || queryParams?.sourceId || queryParams?.query">Clear Filters</button>
 	</div>
 
-	<button convoy-button fill="outline" size="sm" (click)="clearEventFilters()" *ngIf="queryParams?.startDate || queryParams?.endDate || queryParams?.sourceId || queryParams?.query">Clear Filters</button>
+	<div class="flex items-center relative">
+		<label class="text-12 text-new.gray-500 block w-full capitalize whitespace-nowrap mr-6px" for="tailMode">Tail Events</label>
+		<input
+			type="checkbox"
+			class="
+				peer
+				w-24px
+				h-18px
+				border border-new.primary-50
+				rounded-4px
+				checked:border-new.primary-400
+				checked:bg-new.primary-25 checked:bg-[url(assets/img/check-icon-primary.svg)] checked:bg-[length:12px] checked:bg-center checked:bg-no-repeat
+				focus:bottom-2
+				focus:border-new.primary-400
+				checked:bg
+				bg-white-100
+			"
+			name="enableTailMode"
+			[checked]="enableTailMode"
+			id="tailMode"
+			(change)="toggleTailMode($event)"
+		/>
+	</div>
 </div>
 
 <!-- empty state  -->
@@ -233,7 +270,7 @@
 				</div>
 
 				<!-- event delieveries -->
-				<ul *ngIf="sidebarEventDeliveries.length > 0" class="border-b border-new.primary-25 mb-24px">
+				<ul *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length > 0" class="border-b border-new.primary-25 mb-24px">
 					<li
 						convoy-list-item
 						*ngFor="let delivery of sidebarEventDeliveries"
