@@ -42,6 +42,8 @@ export class CreateEndpointComponent implements OnInit {
 		http_timeout: [null, Validators.pattern('^[-+]?[0-9]+$')],
 		description: [null],
 		owner_id: [null],
+		rate_limit: [null],
+		rate_limit_duration: [null],
 		authentication: this.formBuilder.group({
 			type: ['api_key'],
 			api_key: this.formBuilder.group({
@@ -69,7 +71,8 @@ export class CreateEndpointComponent implements OnInit {
 	) {}
 
 	async ngOnInit() {
-		if (this.type !== 'portal') this.configurations.push({ uid: 'alert-config', name: 'Alert Configuration', show: false }, { uid: 'auth', name: 'Authentication', show: false }, { uid: 'signature', name: 'Signature Format', show: false });
+		if (this.type !== 'portal')
+			this.configurations.push({ uid: 'rate_limit', name: 'Rate Limit ', show: false }, { uid: 'alert-config', name: 'Alert Configuration', show: false }, { uid: 'auth', name: 'Authentication', show: false }, { uid: 'signature', name: 'Signature Format', show: false });
 		if (this.endpointUid && this.editMode) this.getEndpointDetails();
 		if (!(await this.rbacService.userCanAccess('Endpoints|MANAGE'))) this.addNewEndpointForm.disable();
 	}
@@ -111,6 +114,7 @@ export class CreateEndpointComponent implements OnInit {
 
 		if (!this.addNewEndpointForm.value.authentication.api_key.header_name && !this.addNewEndpointForm.value.authentication.api_key.header_value) delete endpointValue.authentication;
 		if (this.addNewEndpointForm.get('http_timeout')?.value) endpointValue.http_timeout = endpointValue.http_timeout + 's';
+		if (this.addNewEndpointForm.get('rate_limit_duration')?.value) endpointValue.rate_limit_duration = endpointValue.rate_limit_duration + 's';
 
 		try {
 			const response = this.endpointUid && this.editMode ? await this.createEndpointService.editEndpoint({ endpointId: this.endpointUid || '', body: endpointValue }) : await this.createEndpointService.addNewEndpoint({ body: endpointValue });
@@ -132,10 +136,13 @@ export class CreateEndpointComponent implements OnInit {
 		try {
 			const response = await this.endpointService.getEndpoint(this.endpointUid);
 			const endpointDetails: ENDPOINT = response.data;
+			if (endpointDetails.rate_limit_duration) this.toggleConfigForm('rate_limit');
+			const duration = this.getDurationInSeconds(endpointDetails.rate_limit_duration);
 			this.addNewEndpointForm.patchValue(endpointDetails);
 			this.addNewEndpointForm.patchValue({
 				name: endpointDetails.title,
-				url: endpointDetails.target_url
+				url: endpointDetails.target_url,
+				rate_limit_duration: duration
 			});
 
 			if (endpointDetails.support_email) this.toggleConfigForm('alert-config');
@@ -161,6 +168,23 @@ export class CreateEndpointComponent implements OnInit {
 		} catch {
 			this.isLoadingEndpoints = false;
 		}
+	}
+
+	getDurationInSeconds(timeString: string) {
+		const timeParts = timeString.split('m');
+		let minutes = 0;
+		let seconds = 0;
+
+		if (timeParts.length > 0) {
+			minutes = parseInt(timeParts[0], 10);
+		}
+
+		if (timeParts.length > 1) {
+			seconds = parseInt(timeParts[1].replace('s', ''), 10);
+		}
+		const totalSeconds = minutes * 60 + seconds;
+
+		return totalSeconds;
 	}
 
 	toggleConfigForm(configValue: string) {
