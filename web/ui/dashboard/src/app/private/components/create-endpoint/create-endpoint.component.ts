@@ -72,32 +72,32 @@ export class CreateEndpointComponent implements OnInit {
 
 	async ngOnInit() {
 		if (this.type !== 'portal')
-			this.configurations.push({ uid: 'rate_limit', name: 'Rate Limit ', show: false }, { uid: 'alert-config', name: 'Alert Configuration', show: false }, { uid: 'auth', name: 'Authentication', show: false }, { uid: 'signature', name: 'Signature Format', show: false });
+			this.configurations.push({ uid: 'rate_limit', name: 'Rate Limit ', show: false }, { uid: 'alert_config', name: 'Alert Configuration', show: false }, { uid: 'auth', name: 'Authentication', show: false }, { uid: 'signature', name: 'Signature Format', show: false });
 		if (this.endpointUid && this.editMode) this.getEndpointDetails();
 		if (!(await this.rbacService.userCanAccess('Endpoints|MANAGE'))) this.addNewEndpointForm.disable();
 	}
 
 	async runEndpointValidation() {
-		if (this.configurations[0].show) {
-			this.addNewEndpointForm.get('http_timeout')?.addValidators(Validators.required);
-			this.addNewEndpointForm.get('http_timeout')?.updateValueAndValidity();
-		} else {
-			this.addNewEndpointForm.get('http_timeout')?.removeValidators(Validators.required);
-			this.addNewEndpointForm.get('http_timeout')?.updateValueAndValidity();
-		}
-
-		if (this.configurations[2].show) {
-			this.addNewEndpointForm.get('authentication.api_key.header_name')?.addValidators(Validators.required);
-			this.addNewEndpointForm.get('authentication.api_key.header_value')?.addValidators(Validators.required);
-			this.addNewEndpointForm.get('authentication.api_key.header_name')?.updateValueAndValidity();
-			this.addNewEndpointForm.get('authentication.api_key.header_value')?.updateValueAndValidity();
-		} else {
-			this.addNewEndpointForm.get('authentication.api_key.header_name')?.removeValidators(Validators.required);
-			this.addNewEndpointForm.get('authentication.api_key.header_value')?.removeValidators(Validators.required);
-			this.addNewEndpointForm.get('authentication.api_key.header_name')?.updateValueAndValidity();
-			this.addNewEndpointForm.get('authentication.api_key.header_value')?.updateValueAndValidity();
-		}
-
+		const configFields: any = {
+			http_timeout: ['http_timeout'],
+			rate_limit: ['rate_limit', 'rate_limit_duration'],
+			alert_config: ['support_email', 'slack_webhook_url'],
+			auth: ['authentication.api_key.header_name', 'authentication.api_key.header_value']
+		};
+		this.configurations.forEach(config => {
+			const fields = configFields[config.uid];
+			if (this.showConfig(config.uid)) {
+				fields?.forEach((item: string) => {
+					this.addNewEndpointForm.get(item)?.addValidators(Validators.required);
+					this.addNewEndpointForm.get(item)?.updateValueAndValidity();
+				});
+			} else {
+				fields?.forEach((item: string) => {
+					this.addNewEndpointForm.get(item)?.removeValidators(Validators.required);
+					this.addNewEndpointForm.get(item)?.updateValueAndValidity();
+				});
+			}
+		});
 		return;
 	}
 
@@ -111,6 +111,7 @@ export class CreateEndpointComponent implements OnInit {
 
 		this.savingEndpoint = true;
 		const endpointValue = structuredClone(this.addNewEndpointForm.value);
+
 
 		if (!this.addNewEndpointForm.value.authentication.api_key.header_name && !this.addNewEndpointForm.value.authentication.api_key.header_value) delete endpointValue.authentication;
 		if (this.addNewEndpointForm.get('http_timeout')?.value) endpointValue.http_timeout = endpointValue.http_timeout + 's';
@@ -145,7 +146,7 @@ export class CreateEndpointComponent implements OnInit {
 				rate_limit_duration: duration
 			});
 
-			if (endpointDetails.support_email) this.toggleConfigForm('alert-config');
+			if (endpointDetails.support_email) this.toggleConfigForm('alert_config');
 			if (endpointDetails.authentication.api_key.header_value || endpointDetails.authentication.api_key.header_name) this.toggleConfigForm('auth');
 			if (endpointDetails.http_timeout) {
 				this.toggleConfigForm('http_timeout');
