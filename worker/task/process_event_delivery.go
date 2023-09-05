@@ -96,10 +96,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		res, err := rateLimiter.Allow(ctx, endpoint.TargetURL, rlc.Count, int(rlc.Duration))
 		if err != nil {
-			return &EndpointError{Err: err, delay: delayDuration}
-		}
-
-		if res.Remaining <= 0 {
 			err := fmt.Errorf("too many events to %s, limit of %v would be reached", endpoint.TargetURL, res.Limit)
 			log.WithError(ErrRateLimit).Error(err.Error())
 
