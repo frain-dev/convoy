@@ -14,6 +14,7 @@ type Transformer struct {
 }
 
 func NewTransformer(runtime *goja.Runtime) *Transformer {
+	runtime.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
 	return &Transformer{vm: runtime}
 }
 
@@ -28,7 +29,9 @@ func closeWithError(closer io.Closer) {
 	}
 }
 
-func loadUnderscoreJs() ([]byte, error) {
+// TransformUsingUnderscoreJs downloads the underscore js library and then mutates the payload by the passed function.
+// The output of TransformUsingUnderscoreJs should be idempotent
+func (t *Transformer) TransformUsingUnderscoreJs(function string, payload interface{}) (interface{}, error) {
 	res, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -40,28 +43,35 @@ func loadUnderscoreJs() ([]byte, error) {
 		return nil, err
 	}
 
-	return data, err
+	_, err = t.vm.RunString(string(data))
+	if err != nil {
+		return nil, err
+	}
+
+	return t.Transform(function, payload)
+}
+
+func (t *Transformer) RunStringUnsafe(function string, payload interface{}) (interface{}, error) {
+	err := t.vm.Set("payload", payload)
+	if err != nil {
+		return nil, err
+	}
+
+	value, err := t.vm.RunString(function)
+	if err != nil {
+		return nil, err
+	}
+
+	return value, nil
 }
 
 // Transform mutates the payload by the passed function
 // The output of Transform should be idempotent
 func (t *Transformer) Transform(function string, payload interface{}) (interface{}, error) {
-	underscore, err := loadUnderscoreJs()
-	if err != nil {
-		return nil, err
-	}
-
-	t.vm.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
-
-	_, err = t.vm.RunString(string(underscore))
-	if err != nil {
-		return nil, err
-	}
-
 	new(require.Registry).Enable(t.vm)
 	console.Enable(t.vm)
 
-	_, err = t.vm.RunString(function)
+	_, err := t.vm.RunString(function)
 	if err != nil {
 		return nil, err
 	}
