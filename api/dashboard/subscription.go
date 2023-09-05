@@ -114,7 +114,7 @@ func (a *DashboardHandler) CreateSubscription(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	cs := services.CreateSubcriptionService{
+	cs := services.CreateSubscriptionService{
 		SubRepo:         postgres.NewSubscriptionRepo(a.A.DB),
 		EndpointRepo:    postgres.NewEndpointRepo(a.A.DB),
 		SourceRepo:      postgres.NewSourceRepo(a.A.DB),

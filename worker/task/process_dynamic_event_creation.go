@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/dop251/goja"
+	"github.com/frain-dev/convoy/pkg/transform"
 	"net/http"
 	"time"
 
@@ -121,14 +123,38 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
+		raw := event.Raw
+		data := event.Data
+
+		if !util.IsStringEmpty(s.Function) {
+			var payload map[string]interface{}
+			err = json.Unmarshal(event.Data, &payload)
+			if err != nil {
+				return &EndpointError{Err: err, delay: 10 * time.Second}
+			}
+
+			transformer := transform.NewTransformer(goja.New())
+			mutated, err := transformer.Transform(s.Function, payload)
+			if err != nil {
+				return &EndpointError{Err: err, delay: 10 * time.Second}
+			}
+
+			bytes, err := json.Marshal(mutated)
+			if err != nil {
+				return &EndpointError{Err: err, delay: 10 * time.Second}
+			}
+
+			raw = string(bytes)
+			data = bytes
+		}
+
 		metadata := &datastore.Metadata{
-			NumTrials:       0,
-			RetryLimit:      rc.RetryCount,
-			Data:            event.Data,
-			Raw:             event.Raw,
-			IntervalSeconds: rc.Duration,
+			Raw:             raw,
+			Data:            data,
 			Strategy:        rc.Type,
 			NextSendTime:    time.Now(),
+			IntervalSeconds: rc.Duration,
+			RetryLimit:      rc.RetryCount,
 		}
 
 		eventDelivery := &datastore.EventDelivery{
@@ -200,8 +226,8 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo datastore.EndpointRepository, newEndpoint *models.DynamicEndpoint) (*datastore.Endpoint, error) {
 	endpoint, err := endpointRepo.FindEndpointByTargetURL(ctx, project.UID, newEndpoint.URL)
 
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		if !util.IsStringEmpty(newEndpoint.Description) {
 			endpoint.Description = newEndpoint.Description
 		}
@@ -257,8 +283,7 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 			log.WithError(err).Error("failed to update endpoint")
 			return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 		}
-
-	case datastore.ErrEndpointNotFound:
+	case errors.Is(err, datastore.ErrEndpointNotFound):
 		if newEndpoint.RateLimit == 0 {
 			newEndpoint.RateLimit = convoy.RATE_LIMIT
 		}
@@ -367,8 +392,8 @@ func findDynamicSubscription(ctx context.Context, newSubscription *models.Dynami
 		err = datastore.ErrSubscriptionNotFound
 	}
 
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		subscription = &subscriptions[0]
 
 		if newSubscription.AlertConfig != nil {
@@ -426,7 +451,7 @@ func findDynamicSubscription(ctx context.Context, newSubscription *models.Dynami
 		if err != nil {
 			return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 		}
-	case datastore.ErrSubscriptionNotFound:
+	case errors.Is(err, datastore.ErrSubscriptionNotFound):
 		retryConfig, err := getRetryConfig(newSubscription.RetryConfig)
 		if err != nil {
 			return nil, util.NewServiceError(http.StatusBadRequest, err)

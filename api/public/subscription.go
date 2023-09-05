@@ -13,7 +13,7 @@ import (
 
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
-    "github.com/go-chi/render"
+	"github.com/go-chi/render"
 )
 
 // GetSubscriptions
@@ -29,26 +29,26 @@ import (
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/subscriptions [get]
 func (a *PublicHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
-    var q *models.QueryListSubscription
-    project, err := a.retrieveProject(r)
-    if err != nil {
-        _ = render.Render(w, r, util.NewServiceErrResponse(err))
-        return
-    }
+	var q *models.QueryListSubscription
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-    data := q.Transform(r)
-    subscriptions, paginationData, err := postgres.NewSubscriptionRepo(a.A.DB).LoadSubscriptionsPaged(r.Context(), project.UID, data.FilterBy, data.Pageable)
-    if err != nil {
-        log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching subscriptions")
-        _ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching subscriptions", http.StatusInternalServerError))
-        return
-    }
+	data := q.Transform(r)
+	subscriptions, paginationData, err := postgres.NewSubscriptionRepo(a.A.DB).LoadSubscriptionsPaged(r.Context(), project.UID, data.FilterBy, data.Pageable)
+	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching subscriptions")
+		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching subscriptions", http.StatusInternalServerError))
+		return
+	}
 
-    if subscriptions == nil {
-        subscriptions = make([]datastore.Subscription, 0)
-    }
+	if subscriptions == nil {
+		subscriptions = make([]datastore.Subscription, 0)
+	}
 
-    org, err := a.retrieveOrganisation(r)
+	org, err := a.retrieveOrganisation(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -61,21 +61,21 @@ func (a *PublicHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request)
 		customDomain = org.CustomDomain.ValueOrZero()
 	}
 
-    baseUrl, err := a.retrieveHost()
-    if err != nil {
-        _ = render.Render(w, r, util.NewServiceErrResponse(err))
-        return
-    }
+	baseUrl, err := a.retrieveHost()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-    for i := range subscriptions {
-        fillSourceURL(subscriptions[i].Source, baseUrl, customDomain)
-    }
+	for i := range subscriptions {
+		fillSourceURL(subscriptions[i].Source, baseUrl, customDomain)
+	}
 
-    resp := models.NewListResponse(subscriptions, func(subscription datastore.Subscription) models.SubscriptionResponse {
-        return models.SubscriptionResponse{Subscription: &subscription}
-    })
-    _ = render.Render(w, r, util.NewServerResponse("Subscriptions fetched successfully",
-        pagedResponse{Content: &resp, Pagination: &paginationData}, http.StatusOK))
+	resp := models.NewListResponse(subscriptions, func(subscription datastore.Subscription) models.SubscriptionResponse {
+		return models.SubscriptionResponse{Subscription: &subscription}
+	})
+	_ = render.Render(w, r, util.NewServerResponse("Subscriptions fetched successfully",
+		pagedResponse{Content: &resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 // GetSubscription
@@ -98,18 +98,18 @@ func (a *PublicHandler) GetSubscription(w http.ResponseWriter, r *http.Request) 
 	}
 
 	subscription, err := postgres.NewSubscriptionRepo(a.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
-    if err != nil {
-        log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
-        if errors.Is(err, datastore.ErrSubscriptionNotFound) {
-            _ = render.Render(w, r, util.NewErrorResponse("failed to find subscription", http.StatusNotFound))
-            return
-        }
-        _ = render.Render(w, r, util.NewServiceErrResponse(err))
-        return
-    }
+	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
+		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
+			_ = render.Render(w, r, util.NewErrorResponse("failed to find subscription", http.StatusNotFound))
+			return
+		}
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-    resp := &models.SubscriptionResponse{Subscription: subscription}
-    _ = render.Render(w, r, util.NewServerResponse("Subscription fetched successfully", resp, http.StatusOK))
+	resp := &models.SubscriptionResponse{Subscription: subscription}
+	_ = render.Render(w, r, util.NewServerResponse("Subscription fetched successfully", resp, http.StatusOK))
 }
 
 // CreateSubscription
@@ -125,42 +125,42 @@ func (a *PublicHandler) GetSubscription(w http.ResponseWriter, r *http.Request) 
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/subscriptions [post]
 func (a *PublicHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
-    project, err := a.retrieveProject(r)
-    if err != nil {
-        _ = render.Render(w, r, util.NewServiceErrResponse(err))
-        return
-    }
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-    var sub models.CreateSubscription
-    err = util.ReadJSON(r, &sub)
-    if err != nil {
-        _ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-        return
-    }
+	var sub models.CreateSubscription
+	err = util.ReadJSON(r, &sub)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
 
-    err = sub.Validate()
-    if err != nil {
-        _ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-        return
-    }
+	err = sub.Validate()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
 
-    cs := services.CreateSubcriptionService{
-        SubRepo:         postgres.NewSubscriptionRepo(a.A.DB),
-        EndpointRepo:    postgres.NewEndpointRepo(a.A.DB),
-        SourceRepo:      postgres.NewSourceRepo(a.A.DB),
-        Project:         project,
-        NewSubscription: &sub,
-    }
+	cs := services.CreateSubscriptionService{
+		SubRepo:         postgres.NewSubscriptionRepo(a.A.DB),
+		EndpointRepo:    postgres.NewEndpointRepo(a.A.DB),
+		SourceRepo:      postgres.NewSourceRepo(a.A.DB),
+		Project:         project,
+		NewSubscription: &sub,
+	}
 
-    subscription, err := cs.Run(r.Context())
-    if err != nil {
-        a.A.Logger.WithError(err).Error("failed to create subscription")
-        _ = render.Render(w, r, util.NewServiceErrResponse(err))
-        return
-    }
+	subscription, err := cs.Run(r.Context())
+	if err != nil {
+		a.A.Logger.WithError(err).Error("failed to create subscription")
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-    resp := models.SubscriptionResponse{Subscription: subscription}
-    _ = render.Render(w, r, util.NewServerResponse("Subscription created successfully", resp, http.StatusCreated))
+	resp := models.SubscriptionResponse{Subscription: subscription}
+	_ = render.Render(w, r, util.NewServerResponse("Subscription created successfully", resp, http.StatusCreated))
 }
 
 // DeleteSubscription
@@ -217,43 +217,43 @@ func (a *PublicHandler) DeleteSubscription(w http.ResponseWriter, r *http.Reques
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/subscriptions/{subscriptionID} [put]
 func (a *PublicHandler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
-    var update models.UpdateSubscription
-    err := util.ReadJSON(r, &update)
-    if err != nil {
-        a.A.Logger.WithError(err).Error(err.Error())
-        _ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-        return
-    }
+	var update models.UpdateSubscription
+	err := util.ReadJSON(r, &update)
+	if err != nil {
+		a.A.Logger.WithError(err).Error(err.Error())
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
 
-    err = update.Validate()
-    if err != nil {
-        _ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-        return
-    }
+	err = update.Validate()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
 
-    project, err := a.retrieveProject(r)
-    if err != nil {
-        _ = render.Render(w, r, util.NewServiceErrResponse(err))
-        return
-    }
+	project, err := a.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-    us := services.UpdateSubscriptionService{
-        SubRepo:        postgres.NewSubscriptionRepo(a.A.DB),
-        EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
+	us := services.UpdateSubscriptionService{
+		SubRepo:        postgres.NewSubscriptionRepo(a.A.DB),
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
 		SourceRepo:     postgres.NewSourceRepo(a.A.DB),
 		ProjectId:      project.UID,
-        SubscriptionId: chi.URLParam(r, "subscriptionID"),
-        Update:         &update,
-    }
+		SubscriptionId: chi.URLParam(r, "subscriptionID"),
+		Update:         &update,
+	}
 
-    sub, err := us.Run(r.Context())
-    if err != nil {
-        _ = render.Render(w, r, util.NewServiceErrResponse(err))
-        return
-    }
+	sub, err := us.Run(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
-    resp := models.SubscriptionResponse{Subscription: sub}
-    _ = render.Render(w, r, util.NewServerResponse("Subscription updated successfully", resp, http.StatusAccepted))
+	resp := models.SubscriptionResponse{Subscription: sub}
+	_ = render.Render(w, r, util.NewServerResponse("Subscription updated successfully", resp, http.StatusAccepted))
 }
 
 func (a *PublicHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {

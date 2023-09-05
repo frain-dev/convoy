@@ -14,6 +14,7 @@ type CreateSubscription struct {
 	SourceID   string `json:"source_id"`
 	AppID      string `json:"app_id"` // Deprecated but necessary for backward compatibility
 	EndpointID string `json:"endpoint_id" valid:"required~please provide a valid endpoint id"`
+	Function   string `json:"function"`
 
 	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty"`
 	RetryConfig     *RetryConfiguration     `json:"retry_config,omitempty"`

@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -31,7 +32,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// 2. Retrieve source using mask ID.
 	source, err := postgres.NewSourceRepo(a.A.DB).FindSourceByMaskID(r.Context(), maskID)
 	if err != nil {
-		if err == datastore.ErrSourceNotFound {
+		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
@@ -227,7 +228,7 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 	if source == nil {
 		source, err = postgres.NewSourceRepo(a.A.DB).FindSourceByMaskID(r.Context(), maskID)
 		if err != nil {
-			if err == datastore.ErrSourceNotFound {
+			if errors.Is(err, datastore.ErrSourceNotFound) {
 				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 				return
 			}
