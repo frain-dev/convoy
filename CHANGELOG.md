@@ -1,3 +1,14 @@
+## 23.08.2
+
+- [Feature] Postgres Full Text Search Reimplementation #1734 #1751 #1750 
+- [Feature] Add tail mode for events and event deliveries #1753
+- [Enhancement] Paused events polling when searching and filtering on the Event Log #1744
+- [Enhancement] Added an edit endpoint button in event delivery page #1738
+- [Enhancement] Added a tooltip for Retry and Force Retry buttons #1741
+- [Fix] Fixed a bug where the subscription filter editor UI was unresponsive #1747
+- [Fix] Fixed a bug where the Batch Replay button on the events log would not replay events #1740
+- [Fix] Fixed a bug in the process event delivery handler that caused events to stay in the `Scheduled` state #1756
+
 ## 23.08.1
 
 -   [Feature] Check if signup is enabled in the instance config with this new API #1710
