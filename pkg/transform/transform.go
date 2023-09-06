@@ -1,6 +1,7 @@
 package transform
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dop251/goja"
 	"github.com/dop251/goja_nodejs/console"
@@ -8,6 +9,8 @@ import (
 	"io"
 	"net/http"
 )
+
+var ErrFunctionNotFound = errors.New("transform function not found, please define it or rename the existing function")
 
 type Transformer struct {
 	vm *goja.Runtime
@@ -19,8 +22,6 @@ func NewTransformer(runtime *goja.Runtime) *Transformer {
 }
 
 const url = "https://underscorejs.org/underscore-min.js"
-
-var transform func(interface{}) interface{}
 
 func closeWithError(closer io.Closer) {
 	err := closer.Close()
@@ -76,10 +77,21 @@ func (t *Transformer) Transform(function string, payload interface{}) (interface
 		return nil, err
 	}
 
-	err = t.vm.ExportTo(t.vm.Get("transform"), &transform)
+	f := t.vm.Get("transform")
+	if f == nil {
+		return nil, ErrFunctionNotFound
+	}
+
+	var transform func(interface{}) (interface{}, error)
+	err = t.vm.ExportTo(f, &transform)
 	if err != nil {
 		return nil, err
 	}
 
-	return transform(payload), err
+	value, err := transform(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return value, err
 }

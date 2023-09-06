@@ -76,6 +76,11 @@ type TestFilter struct {
 	Schema  FilterSchema `json:"schema"`
 }
 
+type TestWebhookFunction struct {
+	Payload  map[string]interface{} `json:"payload"`
+	Function string                 `json:"function"`
+}
+
 type AlertConfiguration struct {
 	Count     int    `json:"count"`
 	Threshold string `json:"threshold" valid:"duration~please provide a valid time duration"`

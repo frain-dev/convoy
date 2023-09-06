@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dop251/goja"
-	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/util"
 	"time"
 
@@ -122,8 +120,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}
 
-				transformer := transform.NewTransformer(goja.New())
-				mutated, err := transformer.Transform(s.Function, payload)
+				mutated, err := subRepo.TransformPayload(ctx, s.Function, payload)
 				if err != nil {
 					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}

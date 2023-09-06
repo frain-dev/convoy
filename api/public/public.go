@@ -93,6 +93,7 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 				projectSubRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 					subscriptionRouter.Post("/", a.CreateSubscription)
 					subscriptionRouter.Post("/test_filter", a.TestSubscriptionFilter)
+					subscriptionRouter.Post("/test_function", a.TestSubscriptionFunction)
 					subscriptionRouter.With(middleware.Pagination).Get("/", a.GetSubscriptions)
 					subscriptionRouter.Delete("/{subscriptionID}", a.DeleteSubscription)
 					subscriptionRouter.Get("/{subscriptionID}", a.GetSubscription)
