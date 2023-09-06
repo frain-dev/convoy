@@ -134,20 +134,39 @@
 	<ng-container *ngIf="!isloadingDeliveryAttempts">
 		<div class="flex justify-between items-center pb-12px border-b border-new.primary-25">
 			<h3 class="font-semibold text-new.gray-800 text-16" *ngIf="eventDeliveryAtempts?.length">Delivery Attempts</h3>
-			<button
-				convoy-button
-				*ngIf="eventDelsDetails"
-				[disabled]="eventDelsDetails.status !== 'Failure' && eventDelsDetails.status !== 'Success'"
-				[title]="eventDelsDetails.status !== 'Failure' && eventDelsDetails.status !== 'Success' ? 'You can not retry an event when it is scheduled or still processing.' : ''"
-				size="xs"
-				class="text-new.gray-500 bg-new.gray-100"
-				(click)="eventDelsDetails.status === 'Success' ? forceRetryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid }) : retryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid })"
-			>
-				<svg width="16" height="16" class="mr-10px">
-					<use xlink:href="#refresh-icon-2"></use>
-				</svg>
-				{{ eventDelsDetails.status === 'Success' ? 'Force Retry' : 'Retry' }}
-			</button>
+			<div convoy-button-group *ngIf="eventDelsDetails" class="text-new.gray-500 bg-new.gray-100">
+				<button
+					convoy-button
+					[disabled]="eventDelsDetails.status !== 'Failure' && eventDelsDetails.status !== 'Success'"
+					[title]="eventDelsDetails.status !== 'Failure' && eventDelsDetails.status !== 'Success' ? 'You can not retry an event when it is scheduled or still processing.' : ''"
+					size="xs"
+					class="text-new.gray-500 bg-transparent"
+					(click)="eventDelsDetails.status === 'Success' ? forceRetryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid }) : retryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid })"
+				>
+					<svg width="16" height="16" class="mr-10px">
+						<use xlink:href="#refresh-icon-2"></use>
+					</svg>
+					{{ eventDelsDetails.status === 'Success' ? 'Force Retry' : 'Retry' }}
+				</button>
+				<div class="h-22px w-[1px] bg-new.gray-200"></div>
+
+				<div convoy-dropdown>
+					<button dropdownTrigger convoy-button size="xs" class="text-new.gray-500 bg-transparent">
+						<img src="/assets/img/angle-arrow-right.svg" class="h-14px rotate-90" alt="arrow down icon" />
+					</button>
+
+					<ul dropdownOptions>
+						<li class="mb-4px rounded-8px pt-10px pb-6px px-16px hover:bg-new.primary-25 duration-300 transition-all">
+							<button convoy-dropdown-option convoy-button color="grey" size="sm" class="w-full !justify-start" fill="text" (click)="viewEvent(eventDelsDetails.event_id)">
+								<svg width="16" height="16" class="mr-8px">
+									<use xlink:href="#arrow-up-right-icon"></use>
+								</svg>
+								View Event
+							</button>
+						</li>
+					</ul>
+				</div>
+			</div>
 		</div>
 
 		<!-- empty state  -->

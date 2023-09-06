@@ -45,6 +45,6 @@ export class DropdownComponent implements OnInit {
     constructor() {}
 
     ngOnInit(): void {
-		this.dropdownTriggerContainer.nativeElement.children[0].addEventListener('click', () => (this.show = !this.show));
+		this.dropdownTriggerContainer.nativeElement.children[0]?.addEventListener('click', () => (this.show = !this.show));
     }
 }
