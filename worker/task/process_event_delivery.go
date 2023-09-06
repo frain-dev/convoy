@@ -214,8 +214,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		// Request failed but statusCode is 200 <= x <= 299
 		if err != nil {
-			log.Errorf("%s failed. Reason: %s", ed.UID, err)
-			return &EndpointError{Err: err, delay: delayDuration}
+			log.FromContext(ctx).WithError(err).Errorf("%s failed. Reason: %s", ed.UID, err)
 		}
 
 		if done && e.Status == datastore.PendingEndpointStatus && p.Config.DisableEndpoint {
