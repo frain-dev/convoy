@@ -94,22 +94,13 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		res, err := rateLimiter.ShouldAllow(ctx, endpoint.TargetURL, rlc.Count, int(rlc.Duration))
+		res, err := rateLimiter.Allow(ctx, endpoint.TargetURL, rlc.Count, int(rlc.Duration))
 		if err != nil {
-			return nil
-		}
-
-		if res.Remaining <= 0 {
 			err := fmt.Errorf("too many events to %s, limit of %v would be reached", endpoint.TargetURL, res.Limit)
-			log.WithError(ErrRateLimit).Error(err.Error())
+			log.FromContext(ctx).WithError(ErrRateLimit).Error(err.Error())
 
 			var delayDuration time.Duration = retrystrategies.NewRetryStrategyFromMetadata(*ed.Metadata).NextDuration(ed.Metadata.NumTrials)
 			return &RateLimitError{Err: ErrRateLimit, delay: delayDuration}
-		}
-
-		_, err = rateLimiter.Allow(ctx, endpoint.TargetURL, rlc.Count, int(rlc.Duration))
-		if err != nil {
-			return nil
 		}
 
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, p.UID, *ed, datastore.ProcessingEventStatus)
@@ -192,16 +183,16 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		duration := time.Since(start)
 		// log request details
-		requestLogger := log.WithFields(log.Fields{
-			"status":   status,
-			"uri":      targetURL,
-			"method":   convoy.HttpPost,
-			"duration": duration,
+		requestLogger := log.FromContext(ctx).WithFields(log.Fields{
+			"status":          status,
+			"uri":             targetURL,
+			"method":          convoy.HttpPost,
+			"duration":        duration,
+			"eventDeliveryID": ed.UID,
 		})
 
 		if err == nil && statusCode >= 200 && statusCode <= 299 {
-			requestLogger.Infof("%s", ed.UID)
-			log.Infof("%s sent", ed.UID)
+			requestLogger.Info("event sent")
 			attemptStatus = true
 			// e.Sent = true
 
@@ -223,7 +214,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		// Request failed but statusCode is 200 <= x <= 299
 		if err != nil {
-			log.Errorf("%s failed. Reason: %s", ed.UID, err)
+			log.FromContext(ctx).WithError(err).Errorf("%s failed. Reason: %s", ed.UID, err)
 		}
 
 		if done && e.Status == datastore.PendingEndpointStatus && p.Config.DisableEndpoint {
@@ -236,7 +227,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			// send endpoint reactivation notification
 			err = notifications.SendEndpointNotification(ctx, endpoint, p, endpointStatus, notificationQueue, false, resp.Error, string(resp.Body), resp.StatusCode)
 			if err != nil {
-				log.WithError(err).Error("failed to send notification")
+				log.FromContext(ctx).WithError(err).Error("failed to send notification")
 			}
 		}
 
@@ -284,6 +275,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(ctx, p.UID, *ed, attempt)
 		if err != nil {
 			log.WithError(err).Error("failed to update message ", ed.UID)
+			return &EndpointError{Err: ErrDeliveryAttemptFailed, delay: delayDuration}
 		}
 
 		if !done && ed.Metadata.NumTrials < ed.Metadata.RetryLimit {

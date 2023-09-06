@@ -3,8 +3,9 @@ package worker
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"net/http"
+
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/analytics"
