@@ -136,6 +136,7 @@
 								*ngFor="let event of eventGroup.content; let index = index"
 								(click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid); getDuplicateEvents(event)"
 								class="cursor-pointer"
+                                routerLink="./" [queryParams]="{ id: event.uid }"
 								[active]="event.uid === eventsDetailsItem?.uid"
 							>
 								<td convoy-table-cell class="w-130px pl-16px pr-30px relative">
