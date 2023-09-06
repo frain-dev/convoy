@@ -86,6 +86,7 @@ export class EventLogsComponent implements OnInit {
 	getEventsInterval: any;
 	queryParams?: FILTER_QUERY_PARAM;
 	enableTailMode = false;
+	eventId = this.route.snapshot.queryParams?.id;
 
 	constructor(private eventsLogService: EventLogsService, public generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService, private _location: Location) {}
 
@@ -216,12 +217,13 @@ export class EventLogsComponent implements OnInit {
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
 			this.isloadingEvents = false;
 
-			if (this.eventsDetailsItem) return;
+			if (this.eventsDetailsItem && this.eventsDetailsItem?.uid === this.eventId) return;
 			else {
-				this.eventsDetailsItem = this.events?.content[0];
+				this.eventsDetailsItem = this.eventId ? this.events?.content.find(event => event.uid === this.eventId) : this.events?.content[0];
+
 				if (this.eventsDetailsItem?.uid) {
-					this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
-					this.getDuplicateEvents(this.eventsDetailsItem);
+					this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid, requestDetails?.showLoader);
+					this.getDuplicateEvents(this.eventsDetailsItem, requestDetails?.showLoader);
 				} else this.isLoadingSidebarDeliveries = false;
 			}
 
@@ -232,10 +234,10 @@ export class EventLogsComponent implements OnInit {
 		}
 	}
 
-	async getDuplicateEvents(event: EVENT) {
+	async getDuplicateEvents(event: EVENT, showLoader?: boolean) {
 		if (!event.is_duplicate_event || !event.idempotency_key) return;
 
-		this.isFetchingDuplicateEvents = true;
+		if (showLoader) this.isFetchingDuplicateEvents = true;
 		try {
 			const eventsResponse = await this.eventsService.getEvents({
 				idempotencyKey: event?.idempotency_key
@@ -247,8 +249,8 @@ export class EventLogsComponent implements OnInit {
 		}
 	}
 
-	async getEventDeliveriesForSidebar(eventId: string) {
-		this.isLoadingSidebarDeliveries = true;
+	async getEventDeliveriesForSidebar(eventId: string, showLoader?: boolean) {
+		if (showLoader) this.isLoadingSidebarDeliveries = true;
 		this.sidebarEventDeliveries = [];
 
 		try {
