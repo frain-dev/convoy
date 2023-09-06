@@ -217,7 +217,7 @@ export class EventLogsComponent implements OnInit {
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
 			this.isloadingEvents = false;
 
-			if (this.eventsDetailsItem && this.eventsDetailsItem?.uid === this.eventId) return;
+			if (this.eventsDetailsItem || (this.eventId && this.eventsDetailsItem?.uid === this.eventId)) return;
 			else {
 				this.eventsDetailsItem = this.eventId ? this.events?.content.find(event => event.uid === this.eventId) : this.events?.content[0];
 
