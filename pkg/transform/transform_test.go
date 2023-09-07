@@ -4,6 +4,7 @@ import (
 	"github.com/dop251/goja"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"strings"
 	"testing"
 )
 
@@ -39,6 +40,84 @@ func TestTransform(t *testing.T) {
 	for i := 0; i < len(want); i++ {
 		assert.Equal(t, result.([]interface{})[i], want[i])
 	}
+}
+
+func TestTransformJsSyntaxError(t *testing.T) {
+	p := Payload{
+		Name: "A B C",
+		FullName: &Name{
+			FirstName: "A",
+			LastName:  "B",
+		},
+	}
+
+	function := `function transform(){var i = 0;for (;;) {i++;} return 0;`
+	transformer := NewTransformer(goja.New())
+	_, err := transformer.Transform(function, p)
+	require.True(t, strings.Contains(err.Error(), "SyntaxError"))
+}
+
+func TestTransformMissingFunction(t *testing.T) {
+	p := Payload{
+		Name: "A B C",
+		FullName: &Name{
+			FirstName: "A",
+			LastName:  "B",
+		},
+	}
+
+	function := `var i = 0; i++`
+	transformer := NewTransformer(goja.New())
+	_, err := transformer.Transform(function, p)
+	require.ErrorIs(t, ErrFunctionNotFound, err)
+}
+
+func TestTransformFunctionNotFound(t *testing.T) {
+	p := Payload{
+		Name: "A B C",
+		FullName: &Name{
+			FirstName: "A",
+			LastName:  "B",
+		},
+	}
+
+	function := `function run(){var i = 0;for (;;) {i++;} return 0;}`
+
+	transformer := NewTransformer(goja.New())
+	_, err := transformer.Transform(function, p)
+	require.ErrorIs(t, ErrFunctionNotFound, err)
+}
+
+func TestTransformScriptTimeout(t *testing.T) {
+	p := Payload{
+		Name: "A B C",
+		FullName: &Name{
+			FirstName: "A",
+			LastName:  "B",
+		},
+	}
+
+	function := `function transform(){var i = 0;for (;;) {i++;} return 0;}`
+
+	transformer := NewTransformer(goja.New())
+	_, err := transformer.Transform(function, p)
+	require.True(t, strings.Contains(err.Error(), ErrMaxExecutionTimeElapsed.Error()))
+
+}
+
+func TestTransformScriptTimeoutMalformedScript(t *testing.T) {
+	p := Payload{
+		Name: "A B C",
+		FullName: &Name{
+			FirstName: "A",
+			LastName:  "B",
+		},
+	}
+
+	function := `var i = 0;for (;;) {i++;}`
+	transformer := NewTransformer(goja.New())
+	_, err := transformer.Transform(function, p)
+	require.True(t, strings.Contains(err.Error(), ErrMaxExecutionTimeElapsed.Error()))
 }
 
 func BenchmarkRunStringRaw(b *testing.B) {

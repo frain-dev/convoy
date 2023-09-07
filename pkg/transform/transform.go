@@ -8,20 +8,23 @@ import (
 	"github.com/dop251/goja_nodejs/require"
 	"io"
 	"net/http"
+	"time"
 )
 
 var ErrFunctionNotFound = errors.New("transform function not found, please define it or rename the existing function")
+var ErrMaxExecutionTimeElapsed = errors.New("script execution time elapsed 10 seconds")
 
 type Transformer struct {
-	vm *goja.Runtime
+	rt *goja.Runtime
 }
 
-func NewTransformer(runtime *goja.Runtime) *Transformer {
-	runtime.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
-	return &Transformer{vm: runtime}
+func NewTransformer(r *goja.Runtime) *Transformer {
+	r.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
+	return &Transformer{rt: r}
 }
 
 const url = "https://underscorejs.org/underscore-min.js"
+const deadline = time.Second * 10
 
 func closeWithError(closer io.Closer) {
 	err := closer.Close()
@@ -44,7 +47,11 @@ func (t *Transformer) TransformUsingUnderscoreJs(function string, payload interf
 		return nil, err
 	}
 
-	_, err = t.vm.RunString(string(data))
+	time.AfterFunc(deadline, func() {
+		t.rt.Interrupt(ErrMaxExecutionTimeElapsed)
+	})
+
+	_, err = t.rt.RunString(string(data))
 	if err != nil {
 		return nil, err
 	}
@@ -53,12 +60,16 @@ func (t *Transformer) TransformUsingUnderscoreJs(function string, payload interf
 }
 
 func (t *Transformer) RunStringUnsafe(function string, payload interface{}) (interface{}, error) {
-	err := t.vm.Set("payload", payload)
+	err := t.rt.Set("payload", payload)
 	if err != nil {
 		return nil, err
 	}
 
-	value, err := t.vm.RunString(function)
+	time.AfterFunc(deadline, func() {
+		t.rt.Interrupt(ErrMaxExecutionTimeElapsed)
+	})
+
+	value, err := t.rt.RunString(function)
 	if err != nil {
 		return nil, err
 	}
@@ -69,24 +80,32 @@ func (t *Transformer) RunStringUnsafe(function string, payload interface{}) (int
 // Transform mutates the payload by the passed function
 // The output of Transform should be idempotent
 func (t *Transformer) Transform(function string, payload interface{}) (interface{}, error) {
-	new(require.Registry).Enable(t.vm)
-	console.Enable(t.vm)
+	new(require.Registry).Enable(t.rt)
+	console.Enable(t.rt)
 
-	_, err := t.vm.RunString(function)
+	time.AfterFunc(deadline, func() {
+		t.rt.Interrupt(ErrMaxExecutionTimeElapsed)
+	})
+
+	_, err := t.rt.RunString(function)
 	if err != nil {
 		return nil, err
 	}
 
-	f := t.vm.Get("transform")
+	f := t.rt.Get("transform")
 	if f == nil {
 		return nil, ErrFunctionNotFound
 	}
 
 	var transform func(interface{}) (interface{}, error)
-	err = t.vm.ExportTo(f, &transform)
+	err = t.rt.ExportTo(f, &transform)
 	if err != nil {
 		return nil, err
 	}
+
+	time.AfterFunc(deadline, func() {
+		t.rt.Interrupt(ErrMaxExecutionTimeElapsed)
+	})
 
 	value, err := transform(payload)
 	if err != nil {
