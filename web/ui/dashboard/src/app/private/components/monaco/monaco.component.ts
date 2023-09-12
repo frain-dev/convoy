@@ -15,7 +15,7 @@ export class MonacoComponent implements AfterViewInit {
 	public _editor: any;
 	@Input('className') class!: string;
 	@Input('editorValue') editorValue: any;
-	@Input('format') format: 'json' | 'string' = 'json';
+	@Input('format') format: 'json' | 'javascript' | 'string' = 'json';
 	@ViewChild('editorContainer', { static: true }) _editorContainer!: ElementRef;
 
 	constructor(private monacoService: MonacoService) {}
@@ -48,7 +48,7 @@ export class MonacoComponent implements AfterViewInit {
 		});
 
 		this._editor = monaco.editor.create(this._editorContainer.nativeElement, {
-			value: JSON.stringify(this.editorValue, null, '\t') || '{}',
+			value: this.format == 'json' ? JSON.stringify(this.editorValue, null, '\t') : this.editorValue || '{}',
 			language: this.format,
 			formatOnPaste: true,
 			formatOnType: true,

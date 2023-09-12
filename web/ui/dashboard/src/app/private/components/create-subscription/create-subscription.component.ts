@@ -29,6 +29,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		name: [null, Validators.required],
 		source_id: [''],
 		endpoint_id: [null, Validators.required],
+		function: [null],
 		retry_config: this.formBuilder.group({
 			type: [],
 			retry_count: [null, Validators.pattern('^[-+]?[0-9]+$')],
@@ -66,11 +67,13 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	configurations = [
 		{ uid: 'filter_config', name: 'Filter', show: false },
+		{ uid: 'tranform_config', name: 'Transform', show: false },
 		{ uid: 'retry_config', name: 'Retry Logic', show: false }
 	];
 	createdSubscription = false;
 	private rbacService = inject(RbacService);
-    showFilterDialog = false
+	showFilterDialog = false;
+	showTransformDialog = false;
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router) {}
 
@@ -273,10 +276,23 @@ export class CreateSubscriptionComponent implements OnInit {
 		this.showFilterDialog = true;
 	}
 
+	setupTransformDialog() {
+		document.getElementById(this.showAction === 'true' ? 'subscriptionForm' : 'configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
+		this.showTransformDialog = true;
+	}
+
 	getFilterSchema(schema: any) {
 		if (schema.headerSchema) this.subscriptionForm.get('filter_config.filter.headers')?.patchValue(schema.headerSchema);
 		if (schema.bodySchema) this.subscriptionForm.get('filter_config.filter.body')?.patchValue(schema.bodySchema);
-        this.showFilterDialog = false;
+		this.showFilterDialog = false;
+	}
+
+	getFunction(subscriptionFunction: any) {
+		if (subscriptionFunction)
+			this.subscriptionForm.patchValue({
+				function: subscriptionFunction
+			});
+		this.showTransformDialog = false;
 	}
 
 	get shouldShowBorder(): number {
