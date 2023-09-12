@@ -122,6 +122,30 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 			wantErrMsg:  "failed to fetch api project key",
 		},
 		{
+			name: "should_error_for_non_superuser",
+			dbFn: func(ss *RegenerateProjectAPIKeyService) {},
+			args: args{
+				ctx: ctx,
+				project: &datastore.Project{
+					UID:            "1234",
+					Name:           "test_project",
+					OrganisationID: "org1",
+				},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "org1",
+					Role: auth.Role{
+						Type:     auth.RoleAdmin,
+						Project:  "1234",
+						Endpoint: "",
+					},
+				},
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  "unauthorized to access project",
+		},
+		{
 			name: "should_fail_to_revoke_api_key",
 			dbFn: func(ss *RegenerateProjectAPIKeyService) {
 				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
