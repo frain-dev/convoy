@@ -238,3 +238,22 @@ func (a *DashboardHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http
 
 	_ = render.Render(w, r, util.NewServerResponse("Subscriptions filter validated successfully", isValid, http.StatusCreated))
 }
+
+func (a *DashboardHandler) TestSubscriptionFunction(w http.ResponseWriter, r *http.Request) {
+	var test models.TestWebhookFunction
+	err := util.ReadJSON(r, &test)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
+	mutatedPayload, err := subRepo.TransformPayload(r.Context(), test.Function, test.Payload)
+	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to transform payload")
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Subscriptions function run successfully", mutatedPayload, http.StatusOK))
+}
