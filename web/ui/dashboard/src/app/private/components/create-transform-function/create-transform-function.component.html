@@ -16,29 +16,35 @@
 	</div>
 </div>
 
-<div class="max-w-[1192px] m-auto mt-40px" convoy-card>
-	<div class="flex">
-		<div class="flex flex-col w-full border-r border-r-new.gray-100">
+<div class="max-w-[1192px] m-auto mt-40px mb-100px flex" convoy-card>
+	<div class="flex flex-col w-full border-r border-r-new.gray-100">
+		<div>
 			<div class="text-12 text-new.gray-500 border-b border-b-grey-20 px-12px py-6px rounded-tl-8px">Input</div>
-			<convoy-monaco [editorValue]="payload" #payloadEditor></convoy-monaco>
+			<convoy-monaco [editorValue]="payload" className="h-300px w-[96%]" #payloadEditor></convoy-monaco>
 		</div>
-		<div class="flex flex-col w-full">
-			<div class="text-12 text-new.gray-500 border-b border-b-grey-20 px-12px py-6px rounded-tr-8px flex items-center justify-between">
-				Javascript
-				<button convoy-button size="xs" type="button" fill="outline" class="py-0" [disabled]="isTestingFunction" (click)="testTransformFunction()">
-					<svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-6px">
-						<path
-							d="M1.66797 5.5004V4.01707C1.66797 2.1754 2.97214 1.42124 4.56797 2.34207L5.85547 3.08374L7.14297 3.8254C8.7388 4.74624 8.7388 6.25457 7.14297 7.1754L5.85547 7.91707L4.56797 8.65874C2.97214 9.57957 1.66797 8.8254 1.66797 6.98374V5.5004Z"
-							stroke="#477DB3"
-							stroke-miterlimit="10"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-					</svg>
-					Run
-				</button>
-			</div>
-			<convoy-monaco format="javascript" [editorValue]="setFunction" #functionEditor></convoy-monaco>
+		<div class="min-h-[320px]">
+			<div class="text-12 text-new.gray-500 border-y border-y-grey-20 px-12px py-6px">Output</div>
+			<ng-container *ngIf="output && !isTestingFunction">
+				<convoy-monaco className="h-300px w-[96%]" [editorValue]="output" #outputEditor></convoy-monaco>
+			</ng-container>
 		</div>
+	</div>
+	<div class="flex flex-col w-full">
+		<div class="text-12 text-new.gray-500 border-b border-b-grey-20 px-12px py-6px rounded-tr-8px flex items-center justify-between">
+			Javascript
+			<button convoy-button size="xs" type="button" fill="outline" class="py-0" [disabled]="isTestingFunction" (click)="testTransformFunction()">
+				<svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-6px">
+					<path
+						d="M1.66797 5.5004V4.01707C1.66797 2.1754 2.97214 1.42124 4.56797 2.34207L5.85547 3.08374L7.14297 3.8254C8.7388 4.74624 8.7388 6.25457 7.14297 7.1754L5.85547 7.91707L4.56797 8.65874C2.97214 9.57957 1.66797 8.8254 1.66797 6.98374V5.5004Z"
+						stroke="#477DB3"
+						stroke-miterlimit="10"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					/>
+				</svg>
+				Run
+			</button>
+		</div>
+		<convoy-monaco className="h-[600px] w-[96%]" format="javascript" [editorValue]="setFunction" #functionEditor></convoy-monaco>
 	</div>
 </div>

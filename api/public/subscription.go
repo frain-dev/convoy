@@ -329,5 +329,5 @@ func (a *PublicHandler) TestSubscriptionFunction(w http.ResponseWriter, r *http.
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Subscriptions filter validated successfully", mutatedPayload, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Subscriptions function run validated successfully", mutatedPayload, http.StatusOK))
 }

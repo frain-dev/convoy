@@ -40,7 +40,7 @@ export class MonacoComponent implements AfterViewInit {
 			inherit: true,
 			rules: [],
 			colors: {
-				'editor.background': '#FCFCFC',
+				'editor.background': '#ffffff',
 				'editor.lineHighlightBorder': '#F4F4F4',
 				'scrollbarSlider.background': '#ebebeb66',
 				'scrollbarSlider.hoverBackground': '#e8e8e866'

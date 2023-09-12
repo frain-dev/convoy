@@ -19,6 +19,7 @@ export class CreateTransformFunctionComponent implements OnInit {
 	@Output('close') close: EventEmitter<any> = new EventEmitter();
 	@ViewChild('payloadEditor') payloadEditor!: MonacoComponent;
 	@ViewChild('functionEditor') functionEditor!: MonacoComponent;
+	@ViewChild('outputEditor') outputEditor!: MonacoComponent;
 	@Output('subscriptionFunction') subscriptionFunction: EventEmitter<any> = new EventEmitter();
 	transformForm: FormGroup = this.formBuilder.group({
 		payload: [null],
@@ -28,6 +29,7 @@ export class CreateTransformFunctionComponent implements OnInit {
 	isTestingFunction = false;
 	payload: any;
 	setFunction: any;
+	output: any;
 
 	constructor(private createSubscriptionService: CreateSubscriptionService, private generalService: GeneralService, private formBuilder: FormBuilder) {}
 
@@ -45,8 +47,8 @@ export class CreateTransformFunctionComponent implements OnInit {
 
 		try {
 			const response = await this.createSubscriptionService.testTransformFunction(this.transformForm.value);
-			console.log(response);
-			// this.isTransformFunctionPassed = true;
+			this.output = response.data;
+			this.isTransformFunctionPassed = true;
 			this.isTestingFunction = false;
 		} catch (error) {
 			this.isTestingFunction = false;

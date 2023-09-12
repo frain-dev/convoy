@@ -162,7 +162,7 @@
 				<convoy-multi-input
 					label="Key locations"
 					tooltip="JSON location of idempotency key, add multiple locations for different locations"
-					[prefilledKeys]="sourceDetails.idempotency_keys"
+					[prefilledKeys]="sourceDetails && sourceDetails.idempotency_keys ? sourceDetails.idempotency_keys : []"
 					(inputValues)="sourceForm.get('idempotency_keys')?.patchValue($event)"
 				></convoy-multi-input>
 				<span class="text-new.gray-400 font-normal italic text-10 mb-24px">The order matters. Set the value of each input with a coma (,)</span>
@@ -253,7 +253,7 @@
 				<h2 class="text-16 text-new.gray-600 font-semibold mb-20px">Configure Kafka</h2>
 
 				<convoy-multi-input label="Broker Addresses" required="true" [prefilledKeys]="brokerAddresses" (inputValues)="addBrokers($event)"></convoy-multi-input>
-                <convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.brokers')?.touched && sourceForm.get('pub_sub.kafka.brokers')?.invalid">Please add at least one broker address</convoy-input-error>
+				<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.brokers')?.touched && sourceForm.get('pub_sub.kafka.brokers')?.invalid">Please add at least one broker address</convoy-input-error>
 				<span class="text-new.gray-400 font-normal italic text-10 mb-24px">Set the value of each input with a comma or space (,)</span>
 
 				<div class="grid grid-cols-2 gap-6 mt-24px">
