@@ -45,6 +45,10 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		subscription.SourceID = s.Update.SourceID
 	}
 
+	if !util.IsStringEmpty(s.Update.Function) {
+		subscription.Function = s.Update.Function
+	}
+
 	if !util.IsStringEmpty(s.Update.EndpointID) {
 		subscription.EndpointID = s.Update.EndpointID
 	}

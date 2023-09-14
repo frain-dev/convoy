@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -19,8 +19,7 @@ export class CreateTransformFunctionComponent implements OnInit {
 	@Output('close') close: EventEmitter<any> = new EventEmitter();
 	@ViewChild('payloadEditor') payloadEditor!: MonacoComponent;
 	@ViewChild('functionEditor') functionEditor!: MonacoComponent;
-	@ViewChild('outputEditor') outputEditor!: MonacoComponent;
-	@ViewChild('outputDiffEditor') outputDiffEditor!: MonacoComponent;
+	@Input('transformFunction') transformFunction: any;
 	@Output('subscriptionFunction') subscriptionFunction: EventEmitter<any> = new EventEmitter();
 	tabs = ['output', 'diff'];
 	activeTab = 'output';
@@ -51,7 +50,7 @@ function transform(e) {
 	async testTransformFunction() {
 		this.isTransformFunctionPassed = false;
 		this.isTestingFunction = true;
-		this.payload = this.generalService.convertStringToJson(this.payloadEditor.getValue())
+		this.payload = this.generalService.convertStringToJson(this.payloadEditor.getValue());
 		this.transformForm.patchValue({
 			payload: this.generalService.convertStringToJson(this.payloadEditor.getValue()),
 			function: this.functionEditor.getValue()
@@ -81,9 +80,11 @@ function transform(e) {
 	}
 
 	checkForExistingData() {
+		if (this.transformFunction) this.setFunction = this.transformFunction;
+
 		const payload = localStorage.getItem('PAYLOAD');
 		const subscriptionFunction = localStorage.getItem('FUNCTION');
 		if (payload && payload !== 'undefined') this.payload = JSON.parse(payload);
-		if (subscriptionFunction && subscriptionFunction !== 'undefined') this.setFunction = subscriptionFunction;
+		if (subscriptionFunction && subscriptionFunction !== 'undefined' && !this.transformFunction) this.setFunction = subscriptionFunction;
 	}
 }

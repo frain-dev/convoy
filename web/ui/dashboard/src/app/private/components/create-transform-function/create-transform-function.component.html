@@ -32,10 +32,10 @@
 			</ul>
 			<ng-container *ngIf="output && !isTestingFunction">
 				<div [ngClass]="{ 'h-0 overflow-hidden': activeTab !== 'output' }">
-					<convoy-monaco className="h-300px w-[96%]" [editorValue]="output" #outputEditor></convoy-monaco>
+					<convoy-monaco className="h-300px w-[96%]" [editorValue]="output" ></convoy-monaco>
 				</div>
 				<div [ngClass]="{ 'h-0 overflow-hidden': activeTab === 'output' }">
-					<convoy-monaco className="h-300px w-[96%]" [editorValue]="payload" [modifiedEditorValue]="output" #outputDiffEditor></convoy-monaco>
+					<convoy-monaco className="h-300px w-[96%]" [editorValue]="payload" [modifiedEditorValue]="output" ></convoy-monaco>
 				</div>
 			</ng-container>
 		</div>

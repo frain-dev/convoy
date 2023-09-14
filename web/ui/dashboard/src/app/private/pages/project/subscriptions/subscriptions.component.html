@@ -114,10 +114,10 @@
 	</div>
 
 	<div class="w-full h-full">
-        <div class="max-w-[770px] m-auto">
-            <convoy-create-subscription showAction="true" (onAction)="createSubscription($event.action)" [action]="action === 'update' ? 'update' : 'create'"></convoy-create-subscription>
-        </div>
-    </div>
+		<div class="max-w-[770px] m-auto">
+			<convoy-create-subscription showAction="true" (onAction)="createSubscription($event.action)" [action]="action === 'update' ? 'update' : 'create'"></convoy-create-subscription>
+		</div>
+	</div>
 </dialog>
 
 <!-- subscription details dialog  -->
@@ -181,7 +181,7 @@
 		<ng-container *ngIf="!activeSubscription?.device_metadata?.uid">
 			<hr class="border-t border-grey-20 mt-24px mb-4px" />
 
-			<convoy-create-subscription action="view"></convoy-create-subscription>
+			<convoy-create-subscription action="view" [subscriptionId]="activeSubscription?.uid"></convoy-create-subscription>
 
 			<hr class="border-t border-grey-20 my-24px" />
 
