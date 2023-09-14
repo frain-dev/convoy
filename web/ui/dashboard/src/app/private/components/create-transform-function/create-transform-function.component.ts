@@ -20,15 +20,26 @@ export class CreateTransformFunctionComponent implements OnInit {
 	@ViewChild('payloadEditor') payloadEditor!: MonacoComponent;
 	@ViewChild('functionEditor') functionEditor!: MonacoComponent;
 	@ViewChild('outputEditor') outputEditor!: MonacoComponent;
+	@ViewChild('outputDiffEditor') outputDiffEditor!: MonacoComponent;
 	@Output('subscriptionFunction') subscriptionFunction: EventEmitter<any> = new EventEmitter();
+	tabs = ['output', 'diff'];
+	activeTab = 'output';
 	transformForm: FormGroup = this.formBuilder.group({
 		payload: [null],
 		function: [null]
 	});
 	isTransformFunctionPassed = false;
 	isTestingFunction = false;
-	payload: any;
-	setFunction: any;
+	payload: any = {
+		id: 'Sample-1',
+		name: 'Sample 1',
+		description: 'This is sample data #1'
+	};
+	setFunction = `// Transform only supports one method, and the function must be named transform as provided below
+// An argument e must be passed into the function which represents the payload to be transformed
+function transform(e) {
+    // Transform function here
+}`;
 	output: any;
 
 	constructor(private createSubscriptionService: CreateSubscriptionService, private generalService: GeneralService, private formBuilder: FormBuilder) {}
@@ -40,6 +51,7 @@ export class CreateTransformFunctionComponent implements OnInit {
 	async testTransformFunction() {
 		this.isTransformFunctionPassed = false;
 		this.isTestingFunction = true;
+		this.payload = this.generalService.convertStringToJson(this.payloadEditor.getValue())
 		this.transformForm.patchValue({
 			payload: this.generalService.convertStringToJson(this.payloadEditor.getValue()),
 			function: this.functionEditor.getValue()

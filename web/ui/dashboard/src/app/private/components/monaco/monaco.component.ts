@@ -13,8 +13,10 @@ declare var monaco: typeof import('monaco-editor');
 })
 export class MonacoComponent implements AfterViewInit {
 	public _editor: any;
+	private _modifiedEditor: any;
 	@Input('className') class!: string;
 	@Input('editorValue') editorValue: any;
+	@Input('modifiedEditorValue') modifiedEditorValue: any;
 	@Input('format') format: 'json' | 'javascript' | 'string' = 'json';
 	@ViewChild('editorContainer', { static: true }) _editorContainer!: ElementRef;
 
@@ -23,6 +25,15 @@ export class MonacoComponent implements AfterViewInit {
 	ngAfterViewInit(): void {
 		this.initMonaco();
 		this.monacoService.load();
+	}
+
+	ngOnDestroy(): void {
+		if (this._editor) {
+			this._editor.dispose();
+		}
+		if (this._modifiedEditor) {
+			this._modifiedEditor.dispose();
+		}
 	}
 
 	private initMonaco(): void {
@@ -47,14 +58,30 @@ export class MonacoComponent implements AfterViewInit {
 			}
 		});
 
-		this._editor = monaco.editor.create(this._editorContainer.nativeElement, {
-			value: this.format == 'json' ? JSON.stringify(this.editorValue, null, '\t') : this.editorValue || '{}',
-			language: this.format,
-			formatOnPaste: true,
-			formatOnType: true,
-			minimap: { enabled: false },
-			theme: 'custom-theme'
-		});
+		if (!this.modifiedEditorValue)
+			this._editor = monaco.editor.create(this._editorContainer.nativeElement, {
+				value: this.format == 'json' ? JSON.stringify(this.editorValue, null, '\t') : this.editorValue || '{}',
+				language: this.format,
+				formatOnPaste: true,
+				formatOnType: true,
+				minimap: { enabled: false, autohide: this.modifiedEditorValue ? false : true },
+				theme: 'custom-theme'
+			});
+
+		if (this.modifiedEditorValue) {
+			this._editor = monaco.editor.createModel(this.format == 'json' ? JSON.stringify(this.editorValue, null, '\t') : this.editorValue || '{}', this.format);
+			this._modifiedEditor = monaco.editor.createModel(this.format == 'json' ? JSON.stringify(this.modifiedEditorValue, null, '\t') : this.modifiedEditorValue || '{}', this.format);
+
+			const diffEditor = monaco.editor.createDiffEditor(this._editorContainer.nativeElement, {
+				readOnly: true,
+				renderSideBySide: true
+			});
+
+			diffEditor.setModel({
+				original: this._editor,
+				modified: this._modifiedEditor
+			});
+		}
 	}
 
 	// call this.monacoComponent.getValue() to get value of the editor

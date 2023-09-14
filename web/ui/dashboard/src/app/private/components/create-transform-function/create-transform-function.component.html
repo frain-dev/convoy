@@ -19,13 +19,24 @@
 <div class="max-w-[1192px] m-auto mt-40px mb-100px flex" convoy-card>
 	<div class="flex flex-col w-full border-r border-r-new.gray-100">
 		<div>
-			<div class="text-12 text-new.gray-500 border-b border-b-grey-20 px-12px py-6px rounded-tl-8px">Input</div>
+			<div class="text-12 text-new.gray-500 border-b border-b-grey-20 px-12px py-6px rounded-tl-8px">Payload</div>
 			<convoy-monaco [editorValue]="payload" className="h-300px w-[96%]" #payloadEditor></convoy-monaco>
 		</div>
 		<div class="min-h-[320px]">
-			<div class="text-12 text-new.gray-500 border-y border-y-grey-20 px-12px py-6px">Output</div>
+			<ul class="flex flex-row w-full border-y-[.5px] border-y-grey-20">
+				<li *ngFor="let tab of tabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
+					<button class="py-6px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="activeTab = tab">
+						<span class="text-12 text-new.gray-500 capitalize tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
+					</button>
+				</li>
+			</ul>
 			<ng-container *ngIf="output && !isTestingFunction">
-				<convoy-monaco className="h-300px w-[96%]" [editorValue]="output" #outputEditor></convoy-monaco>
+				<div [ngClass]="{ 'h-0 overflow-hidden': activeTab !== 'output' }">
+					<convoy-monaco className="h-300px w-[96%]" [editorValue]="output" #outputEditor></convoy-monaco>
+				</div>
+				<div [ngClass]="{ 'h-0 overflow-hidden': activeTab === 'output' }">
+					<convoy-monaco className="h-300px w-[96%]" [editorValue]="payload" [modifiedEditorValue]="output" #outputDiffEditor></convoy-monaco>
+				</div>
 			</ng-container>
 		</div>
 	</div>
