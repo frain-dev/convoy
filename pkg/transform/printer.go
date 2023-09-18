@@ -3,17 +3,20 @@ package transform
 import (
 	"bytes"
 	"fmt"
+	"strings"
 )
+
+const newLine = " \r\n"
 
 func NewBufferPrinter() *BuffPrinter {
 	bufferLogger := &bytes.Buffer{}
 	return &BuffPrinter{
 		Buff: bufferLogger,
 		BuffOutPrint: func(s string) {
-			bufferLogger.WriteString(fmt.Sprintf("%s\n", s))
+			bufferLogger.WriteString(fmt.Sprintf("%s%s", s, newLine))
 		},
 		BuffErrPrint: func(s string) {
-			bufferLogger.WriteString(fmt.Sprintf("%s\n", s))
+			bufferLogger.WriteString(fmt.Sprintf("%s%s", s, newLine))
 		},
 	}
 }
@@ -41,6 +44,6 @@ func (b *BuffPrinter) Error(s string) {
 	b.BuffErrPrint(s)
 }
 
-func (b *BuffPrinter) String() string {
-	return string(b.Buff.Bytes())
+func (b *BuffPrinter) Format() []string {
+	return strings.Split(string(b.Buff.Bytes()), newLine)
 }

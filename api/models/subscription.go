@@ -158,7 +158,7 @@ func (fs *FS) Transform() datastore.FilterSchema {
 
 type SubscriptionFunctionResponse struct {
 	Payload interface{} `json:"payload"`
-	Log     string      `json:"log"`
+	Log     []string    `json:"log"`
 }
 
 type DynamicSubscription struct {

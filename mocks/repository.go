@@ -1443,11 +1443,11 @@ func (mr *MockSubscriptionRepositoryMockRecorder) TestSubscriptionFilter(ctx, pa
 }
 
 // TransformPayload mocks base method.
-func (m *MockSubscriptionRepository) TransformPayload(ctx context.Context, function string, payload map[string]interface{}) (interface{}, string, error) {
+func (m *MockSubscriptionRepository) TransformPayload(ctx context.Context, function string, payload map[string]interface{}) (interface{}, []string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TransformPayload", ctx, function, payload)
 	ret0, _ := ret[0].(interface{})
-	ret1, _ := ret[1].(string)
+	ret1, _ := ret[1].([]string)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }

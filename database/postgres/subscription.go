@@ -486,11 +486,11 @@ func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload, fi
 	return compare.Compare(p, f)
 }
 
-func (s *subscriptionRepo) TransformPayload(_ context.Context, function string, payload map[string]interface{}) (interface{}, string, error) {
+func (s *subscriptionRepo) TransformPayload(_ context.Context, function string, payload map[string]interface{}) (interface{}, []string, error) {
 	transformer := transform.NewTransformer(goja.New())
 	mutated, consoleLog, err := transformer.Transform(function, payload)
 	if err != nil {
-		return nil, "", err
+		return nil, []string{}, err
 	}
 
 	return mutated, consoleLog, nil
