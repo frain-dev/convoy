@@ -309,7 +309,7 @@ func (a *PublicHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Re
 // @Produce json
 // @Param projectID path string true "Project ID"
 // @Param filter body models.TestWebhookFunction true "Function Details"
-// @Success 200 {object} util.ServerResponse{data=boolean}
+// @Success 200 {object} util.ServerResponse{data=models.SubscriptionFunctionResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/subscriptions/test_function [post]
@@ -322,12 +322,17 @@ func (a *PublicHandler) TestSubscriptionFunction(w http.ResponseWriter, r *http.
 	}
 
 	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
-	mutatedPayload, err := subRepo.TransformPayload(r.Context(), test.Function, test.Payload)
+	mutatedPayload, consoleLog, err := subRepo.TransformPayload(r.Context(), test.Function, test.Payload)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to transform payload")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Subscriptions function run validated successfully", mutatedPayload, http.StatusOK))
+	functionResponse := models.SubscriptionFunctionResponse{
+		Payload: mutatedPayload,
+		Log:     consoleLog,
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Subscription transformer function run successfully", functionResponse, http.StatusOK))
 }

@@ -156,6 +156,11 @@ func (fs *FS) Transform() datastore.FilterSchema {
 	}
 }
 
+type SubscriptionFunctionResponse struct {
+	Payload interface{} `json:"payload"`
+	Log     string      `json:"log"`
+}
+
 type DynamicSubscription struct {
 	Name            string                  `json:"name"`
 	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty"`

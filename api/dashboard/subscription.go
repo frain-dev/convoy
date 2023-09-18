@@ -248,12 +248,17 @@ func (a *DashboardHandler) TestSubscriptionFunction(w http.ResponseWriter, r *ht
 	}
 
 	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
-	mutatedPayload, err := subRepo.TransformPayload(r.Context(), test.Function, test.Payload)
+	mutatedPayload, consoleLog, err := subRepo.TransformPayload(r.Context(), test.Function, test.Payload)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to transform payload")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Subscriptions function run successfully", mutatedPayload, http.StatusOK))
+	functionResponse := models.SubscriptionFunctionResponse{
+		Payload: mutatedPayload,
+		Log:     consoleLog,
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Subscription transformer function run successfully", functionResponse, http.StatusOK))
 }
