@@ -1,7 +1,6 @@
 package transform
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 )
@@ -9,7 +8,7 @@ import (
 const newLine = " \r\n"
 
 func NewBufferPrinter() *BuffPrinter {
-	bufferLogger := &bytes.Buffer{}
+	bufferLogger := &strings.Builder{}
 	return &BuffPrinter{
 		Buff: bufferLogger,
 		BuffOutPrint: func(s string) {
@@ -24,7 +23,7 @@ func NewBufferPrinter() *BuffPrinter {
 // BuffPrinter implements the console.Printer interface
 // that writes to a buffer.
 type BuffPrinter struct {
-	Buff         *bytes.Buffer
+	Buff         *strings.Builder
 	BuffOutPrint func(s string)
 	BuffErrPrint func(s string)
 }
@@ -45,5 +44,5 @@ func (b *BuffPrinter) Error(s string) {
 }
 
 func (b *BuffPrinter) Format() []string {
-	return strings.Split(string(b.Buff.Bytes()), newLine)
+	return strings.Split(b.Buff.String(), newLine)
 }
