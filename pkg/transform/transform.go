@@ -12,7 +12,7 @@ import (
 )
 
 var ErrFunctionNotFound = errors.New("the transform function is not found, please define it or rename the existing function")
-var ErrMaxExecutionTimeElapsed = errors.New("script execution time elapsed 1 second")
+var ErrMaxExecutionTimeElapsed = errors.New("script execution time elapsed 10 seconds")
 
 type Transformer struct {
 	rt *goja.Runtime
@@ -24,7 +24,7 @@ func NewTransformer(r *goja.Runtime) *Transformer {
 }
 
 const url = "https://underscorejs.org/underscore-min.js"
-const deadline = time.Second * 1
+const deadline = time.Second * 10
 
 func closeWithError(closer io.Closer) {
 	err := closer.Close()
