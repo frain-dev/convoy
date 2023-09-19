@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -117,7 +117,7 @@ func sendUserVerificationEmail(ctx context.Context, baseURL string, user *datast
 }
 
 func queueEmail(ctx context.Context, em *email.Message, q queue.Queuer) error {
-	bytes, err := util.EncodeMsgPack(em)
+	bytes, err := msgpack.EncodeMsgPack(em)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to marshal notification payload")
 		return err

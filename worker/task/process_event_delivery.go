@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -51,7 +52,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
 
-		err := util.DecodeMsgPack(t.Payload(), &data)
+		err := msgpack.DecodeMsgPack(t.Payload(), &data)
 		if err != nil {
 			err := json.Unmarshal(t.Payload(), &data)
 			if err != nil {

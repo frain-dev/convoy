@@ -2,11 +2,10 @@ package services
 
 import (
 	"context"
-	"github.com/frain-dev/convoy/util"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker/task"
 )
@@ -25,7 +24,7 @@ func (e *ReplayEventService) Run(ctx context.Context) error {
 		Event: *e.Event,
 	}
 
-	eventByte, err := util.EncodeMsgPack(createEvent)
+	eventByte, err := msgpack.EncodeMsgPack(createEvent)
 	if err != nil {
 		return &ServiceError{ErrMsg: err.Error()}
 	}

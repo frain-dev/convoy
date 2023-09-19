@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"net/http"
 	"time"
 
@@ -26,7 +27,7 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 	return func(ctx context.Context, t *asynq.Task) error {
 		var dynamicEvent models.DynamicEvent
 
-		err := util.DecodeMsgPack(t.Payload(), &dynamicEvent)
+		err := msgpack.DecodeMsgPack(t.Payload(), &dynamicEvent)
 		if err != nil {
 			err := json.Unmarshal(t.Payload(), &dynamicEvent)
 			if err != nil {
@@ -172,7 +173,7 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 				EventDelivery: eventDelivery,
 			}
 
-			data, err := util.EncodeMsgPack(payload)
+			data, err := msgpack.EncodeMsgPack(payload)
 			if err != nil {
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}

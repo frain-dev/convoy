@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -85,7 +85,7 @@ func (m *MetaEvent) Run(eventType string, projectID string, data interface{}) er
 		ProjectID:   projectID,
 	}
 
-	bytes, err := util.EncodeMsgPack(s)
+	bytes, err := msgpack.EncodeMsgPack(s)
 	if err != nil {
 		return err
 	}

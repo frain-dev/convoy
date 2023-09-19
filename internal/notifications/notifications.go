@@ -3,6 +3,7 @@ package notifications
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"strconv"
 
 	"github.com/frain-dev/convoy"
@@ -92,7 +93,7 @@ func SendEndpointNotification(_ context.Context,
 			continue
 		}
 
-		buf, err := util.EncodeMsgPack(v)
+		buf, err := msgpack.EncodeMsgPack(v)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to marshal %v notification payload", v.NotificationType)
 			continue

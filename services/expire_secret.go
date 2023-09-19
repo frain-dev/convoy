@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"net/http"
 	"time"
 
@@ -52,7 +53,7 @@ func (a *ExpireSecretService) Run(ctx context.Context) (*datastore.Endpoint, err
 		ProjectID:  a.Project.UID,
 	}
 
-	bytes, err := util.EncodeMsgPack(body)
+	bytes, err := msgpack.EncodeMsgPack(body)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/frain-dev/convoy/internal/pkg/dedup"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/util"
 	"time"
 
@@ -32,7 +33,7 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data MetaEvent
 
-		err := util.DecodeMsgPack(t.Payload(), &data)
+		err := msgpack.DecodeMsgPack(t.Payload(), &data)
 		if err != nil {
 			log.WithError(err).Error("failed to unmarshal process process meta event payload")
 			err := json.Unmarshal(t.Payload(), &data)

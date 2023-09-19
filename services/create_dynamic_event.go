@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"net/http"
 
 	"github.com/frain-dev/convoy"
@@ -29,7 +30,7 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) error {
 
 	taskName := convoy.CreateDynamicEventProcessor
 
-	eventByte, err := util.EncodeMsgPack(e.DynamicEvent)
+	eventByte, err := msgpack.EncodeMsgPack(e.DynamicEvent)
 	if err != nil {
 		return util.NewServiceError(http.StatusBadRequest, err)
 	}

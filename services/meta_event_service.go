@@ -3,11 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/util"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker/task"
 )
@@ -30,7 +29,7 @@ func (m *MetaEventService) Run(ctx context.Context, metaEvent *datastore.MetaEve
 		ProjectID:   metaEvent.ProjectID,
 	}
 
-	bytes, err := util.EncodeMsgPack(payload)
+	bytes, err := msgpack.EncodeMsgPack(payload)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to marshal meta event payload")
 		return err

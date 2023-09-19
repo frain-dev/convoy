@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"strings"
 	"time"
 
@@ -80,7 +80,7 @@ func sendInviteEmail(_ context.Context, iv *datastore.OrganisationInvite, user *
 		},
 	}
 
-	bytes, err := util.EncodeMsgPack(em)
+	bytes, err := msgpack.EncodeMsgPack(em)
 	if err != nil {
 		return nil
 	}

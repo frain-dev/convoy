@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -137,7 +138,7 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
 	}
 
-	eventByte, err := util.EncodeMsgPack(createEvent)
+	eventByte, err := msgpack.EncodeMsgPack(createEvent)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}

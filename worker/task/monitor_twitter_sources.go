@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
@@ -79,7 +80,7 @@ func sendNotificationEmail(source datastore.Source, endpoint *datastore.Endpoint
 		},
 	}
 
-	bytes, err := util.EncodeMsgPack(em)
+	bytes, err := msgpack.EncodeMsgPack(em)
 	if err != nil {
 		log.WithError(err).Error("failed to marshal notification payload")
 		return err

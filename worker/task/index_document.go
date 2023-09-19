@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
 	"github.com/frain-dev/convoy/config"
@@ -34,7 +34,7 @@ func NewIndexDocument(cfg config.Configuration) (*IndexDocument, error) {
 
 func (id *IndexDocument) ProcessTask(_ context.Context, t *asynq.Task) error {
 	var event map[string]interface{}
-	err := util.DecodeMsgPack(t.Payload(), &event)
+	err := msgpack.DecodeMsgPack(t.Payload(), &event)
 	if err != nil {
 		err := json.Unmarshal(t.Payload(), &event)
 		if err != nil {
