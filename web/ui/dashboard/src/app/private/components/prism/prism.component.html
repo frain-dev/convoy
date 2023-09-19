@@ -37,10 +37,10 @@
 </div>
 
 <div *ngIf="type === 'display'">
-	<div class="flex items-start px-12px pt-12px ">
-		<div class="text-12 text-new.gray-600">LOG:</div>
+	<div class="flex items-start px-12px pt-12px">
+		<div class="text-12 text-new.gray-600 pr-10px">LOG:</div>
 		<pre *ngIf="language" class="language-{{ language }} log-display">
-     <code #codeEle class="language-{{ language }}">{{code}}</code>
-     </pre>
+<code #codeEle class="language-{{ language }}">{{code}}</code>
+</pre>
 	</div>
 </div>
