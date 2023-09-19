@@ -47,7 +47,6 @@ func getConfig() config.Configuration {
 	_ = os.Setenv("CONVOY_DB_USERNAME", os.Getenv("TEST_DB_USERNAME"))
 	_ = os.Setenv("CONVOY_DB_PASSWORD", os.Getenv("TEST_DB_PASSWORD"))
 	_ = os.Setenv("CONVOY_DB_DATABASE", os.Getenv("TEST_DB_DATABASE"))
-	_ = os.Setenv("CONVOY_DB_OPTIONS", os.Getenv("TEST_DB_OPTIONS"))
 	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
 
 	err := config.LoadConfig("")
@@ -55,7 +54,10 @@ func getConfig() config.Configuration {
 		log.Fatal(err)
 	}
 
-	cfg, _ := config.Get()
+	cfg, err := config.Get()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return cfg
 }
@@ -68,7 +70,7 @@ func getDB() database.Database {
 	_ = os.Setenv("TZ", "") // Use UTC by default :)
 
 	dbHooks := hooks.Init()
-	dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}) {})
+	dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}, changelog interface{}) {})
 
 	return db
 }
@@ -83,7 +85,6 @@ func getQueueOptions() (queue.QueueOptions, error) {
 	queueNames := map[string]int{
 		string(convoy.EventQueue):       3,
 		string(convoy.CreateEventQueue): 3,
-		string(convoy.SearchIndexQueue): 1,
 		string(convoy.ScheduleQueue):    1,
 		string(convoy.DefaultQueue):     1,
 		string(convoy.StreamQueue):      1,

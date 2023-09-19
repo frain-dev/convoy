@@ -17,6 +17,8 @@ import { CreateSubscriptionFilterComponent } from '../create-subscription-filter
 import { CreateEndpointComponent } from '../create-endpoint/create-endpoint.component';
 import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.component';
 import { PermissionDirective } from '../permission/permission.directive';
+import { MultiInputComponent } from 'src/app/components/multi-input/multi-input.component';
+import { NotificationComponent } from 'src/app/components/notification/notification.component';
 
 @NgModule({
 	declarations: [CreateSubscriptionComponent],
@@ -40,8 +42,10 @@ import { PermissionDirective } from '../permission/permission.directive';
 		InputDirective,
 		LabelComponent,
 		FormLoaderComponent,
+		MultiInputComponent,
 		PermissionDirective,
-        DialogDirective
+		DialogDirective,
+		NotificationComponent
 	],
 	exports: [CreateSubscriptionComponent]
 })

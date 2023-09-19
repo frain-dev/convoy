@@ -1408,7 +1408,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLi
 
 	// Just Before
 	for i := 0; i < totalLinks; i++ {
-		endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "title", "", false, datastore.ActiveEndpointStatus)
+		endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
 		require.NoError(s.T(), err)
 
 		_, err = testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
@@ -1438,7 +1438,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLi
 
 	// Just Before
 	for i := 0; i < totalLinks; i++ {
-		endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "title", "", false, datastore.ActiveEndpointStatus)
+		endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
 		require.NoError(s.T(), err)
 
 		_, err = testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})

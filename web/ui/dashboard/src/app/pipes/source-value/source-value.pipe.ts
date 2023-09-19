@@ -19,7 +19,8 @@ export class SourceValuePipe implements PipeTransform {
 
 	pubSubTypes = [
 		{ value: 'google', viewValue: 'Google Pub/Sub' },
-		{ value: 'sqs', viewValue: 'AWS SQS' }
+		{ value: 'sqs', viewValue: 'AWS SQS' },
+		{ value: 'kafka', viewValue: 'Kafka' }
 	];
 
 	transform(value: string, type: 'sourceType' | 'verifier' | 'pub_sub'): string {

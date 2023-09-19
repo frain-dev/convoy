@@ -3,8 +3,9 @@ package worker
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"net/http"
+
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/analytics"
@@ -79,6 +80,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			metaEventRepo := postgres.NewMetaEventRepo(a.DB)
 			endpointRepo := postgres.NewEndpointRepo(a.DB)
 			eventRepo := postgres.NewEventRepo(a.DB)
+			jobRepo := postgres.NewJobRepo(a.DB)
 			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 			subRepo := postgres.NewSubscriptionRepo(a.DB)
 			deviceRepo := postgres.NewDeviceRepo(a.DB)
@@ -136,11 +138,8 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, cfg, rd))
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 
-			indexDocument, err := task.NewIndexDocument(cfg)
-			if err != nil {
-				return err
-			}
-			consumer.RegisterHandlers(convoy.IndexDocument, indexDocument.ProcessTask)
+			consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo))
+			consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo))
 
 			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 			consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo))

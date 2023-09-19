@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
@@ -19,6 +20,7 @@ var (
 	ErrEndpointNotCreated       = errors.New("endpoint could not be created")
 	ErrEndpointNotUpdated       = errors.New("endpoint could not be updated")
 	ErrEndpointSecretNotDeleted = errors.New("endpoint secret could not be deleted")
+	ErrEndpointExists           = errors.New("an endpoint with that name already exists")
 )
 
 const (
@@ -78,8 +80,8 @@ const (
 	slack_webhook_url = $12, support_email = $13,
 	authentication_type = $14, authentication_type_api_key_header_name = $15,
 	authentication_type_api_key_header_value = $16, secrets = $17,
-	updated_at = now()
-	WHERE id = $1 AND project_id = $2 AND deleted_at is NULL;
+	updated_at = NOW()
+	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	updateEndpointStatus = `
@@ -89,22 +91,22 @@ const (
 
 	updateEndpointSecrets = `
 	UPDATE convoy.endpoints SET
-	    secrets = $3, updated_at = now()
+	    secrets = $3, updated_at = NOW()
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	deleteEndpoint = `
-	UPDATE convoy.endpoints SET deleted_at = now()
+	UPDATE convoy.endpoints SET deleted_at = NOW()
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	deleteEndpointSubscriptions = `
-	UPDATE convoy.subscriptions SET deleted_at = now()
+	UPDATE convoy.subscriptions SET deleted_at = NOW()
 	WHERE endpoint_id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	countProjectEndpoints = `
-	SELECT count(*) as count from convoy.endpoints
+	SELECT COUNT(*) AS count FROM convoy.endpoints
 	WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 
@@ -146,7 +148,7 @@ const (
 	`
 
 	countPrevEndpoints = `
-	SELECT count(distinct(s.id)) as count
+	SELECT COUNT(DISTINCT(s.id)) AS count
 	FROM convoy.endpoints s
 	WHERE s.deleted_at IS NULL
 	AND s.project_id = :project_id
@@ -178,6 +180,9 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 
 	result, err := e.db.ExecContext(ctx, createEndpoint, args...)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			return ErrEndpointExists
+		}
 		return err
 	}
 
@@ -190,7 +195,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		return ErrEndpointNotCreated
 	}
 
-	go e.hook.Fire(datastore.EndpointCreated, endpoint)
+	go e.hook.Fire(datastore.EndpointCreated, endpoint, nil)
 	return nil
 }
 
@@ -261,7 +266,7 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 		return ErrEndpointNotUpdated
 	}
 
-	go e.hook.Fire(datastore.EndpointUpdated, endpoint)
+	go e.hook.Fire(datastore.EndpointUpdated, endpoint, nil)
 	return nil
 }
 
@@ -310,7 +315,7 @@ func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 
-	go e.hook.Fire(datastore.EndpointDeleted, endpoint)
+	go e.hook.Fire(datastore.EndpointDeleted, endpoint, nil)
 	return nil
 }
 

@@ -158,6 +158,11 @@ func ExportCollection(
 			return err
 		}
 
+		err = eventRepo.DeleteProjectTokenizedEvents(ctx, project.UID, eventFilter)
+		if err != nil {
+			return err
+		}
+
 		project.RetainedEvents += int(numDocs)
 		err = projectRepo.UpdateProject(ctx, project)
 		if err != nil {
@@ -186,7 +191,7 @@ func ExportCollection(
 
 	err = searcher.Remove(tableName, sf)
 	if err != nil {
-		log.WithError(err).Error("typesense: an error occured deleting typesense record")
+		log.WithError(err).Error("typesense: an error occurred deleting typesense record")
 	}
 
 	return nil

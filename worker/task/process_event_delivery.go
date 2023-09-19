@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/httpheader"
+
 	"github.com/frain-dev/convoy/pkg/url"
 
 	"github.com/frain-dev/convoy/limiter"
@@ -111,21 +113,12 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		res, err := rateLimiter.ShouldAllow(ctx, endpoint.TargetURL, rlc.Count, int(rlc.Duration))
+		res, err := rateLimiter.Allow(ctx, endpoint.TargetURL, rlc.Count, int(rlc.Duration))
 		if err != nil {
-			return nil
-		}
-
-		if res.Remaining <= 0 {
 			err := fmt.Errorf("too many events to %s, limit of %v would be reached", endpoint.TargetURL, res.Limit)
-			log.WithError(ErrRateLimit).Error(err.Error())
+			log.FromContext(ctx).WithError(ErrRateLimit).Error(err.Error())
 
 			return &RateLimitError{Err: ErrRateLimit, delay: delayDuration}
-		}
-
-		_, err = rateLimiter.Allow(ctx, endpoint.TargetURL, rlc.Count, int(rlc.Duration))
-		if err != nil {
-			return nil
 		}
 
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)
@@ -189,6 +182,14 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		attemptStatus := false
 		start := time.Now()
 
+		if project.Config.AddEventIDTraceHeaders {
+			if eventDelivery.Headers == nil {
+				eventDelivery.Headers = httpheader.HTTPHeader{}
+			}
+			eventDelivery.Headers["X-Convoy-EventDelivery-ID"] = []string{eventDelivery.UID}
+			eventDelivery.Headers["X-Convoy-Event-ID"] = []string{eventDelivery.EventID}
+		}
+
 		resp, err := dispatch.SendRequest(targetURL, string(convoy.HttpPost), sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey)
 		status := "-"
 		statusCode := 0
@@ -199,11 +200,12 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		duration := time.Since(start)
 		// log request details
-		requestLogger := log.WithFields(log.Fields{
-			"status":   status,
-			"uri":      targetURL,
-			"method":   convoy.HttpPost,
-			"duration": duration,
+		requestLogger := log.FromContext(ctx).WithFields(log.Fields{
+			"status":          status,
+			"uri":             targetURL,
+			"method":          convoy.HttpPost,
+			"duration":        duration,
+			"eventDeliveryID": eventDelivery.UID,
 		})
 
 		if err == nil && statusCode >= 200 && statusCode <= 299 {
@@ -243,7 +245,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			// send endpoint reactivation notification
 			err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, notificationQueue, false, resp.Error, string(resp.Body), resp.StatusCode)
 			if err != nil {
-				log.WithError(err).Error("failed to send notification")
+				log.FromContext(ctx).WithError(err).Error("failed to send notification")
 			}
 		}
 
@@ -291,6 +293,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(ctx, project.UID, *eventDelivery, attempt)
 		if err != nil {
 			log.WithError(err).Error("failed to update message ", eventDelivery.UID)
+			return &EndpointError{Err: ErrDeliveryAttemptFailed, delay: delayDuration}
 		}
 
 		if !done && eventDelivery.Metadata.NumTrials < eventDelivery.Metadata.RetryLimit {
@@ -360,7 +363,7 @@ type RetryConfig struct {
 
 type RateLimitConfig struct {
 	Count    int
-	Duration uint64
+	Duration time.Duration
 }
 
 func (ec *EventDeliveryConfig) retryConfig() (*RetryConfig, error) {
@@ -384,10 +387,10 @@ func (ec *EventDeliveryConfig) rateLimitConfig() *RateLimitConfig {
 
 	if ec.subscription.RateLimitConfig != nil {
 		rlc.Count = ec.subscription.RateLimitConfig.Count
-		rlc.Duration = ec.subscription.RateLimitConfig.Duration
+		rlc.Duration = time.Second * time.Duration(ec.subscription.RateLimitConfig.Duration)
 	} else {
 		rlc.Count = ec.project.Config.RateLimit.Count
-		rlc.Duration = ec.project.Config.RateLimit.Duration
+		rlc.Duration = time.Second * time.Duration(ec.project.Config.RateLimit.Duration)
 	}
 
 	return rlc

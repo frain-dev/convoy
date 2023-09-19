@@ -1,11 +1,12 @@
 package models
 
 import (
+	"time"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 	"github.com/lib/pq"
-	"time"
 )
 
 type CreateProject struct {
@@ -35,6 +36,7 @@ type ProjectConfig struct {
 	MaxIngestSize            uint64                        `json:"max_payload_read_size"`
 	ReplayAttacks            bool                          `json:"replay_attacks_prevention_enabled"`
 	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled"`
+	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
 	DisableEndpoint          bool                          `json:"disable_endpoint"`
 	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy"`
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit"`
@@ -53,6 +55,7 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 		ReplayAttacks:            pc.ReplayAttacks,
 		IsRetentionPolicyEnabled: pc.IsRetentionPolicyEnabled,
 		DisableEndpoint:          pc.DisableEndpoint,
+		AddEventIDTraceHeaders:   pc.AddEventIDTraceHeaders,
 		RetentionPolicy:          pc.RetentionPolicy.transform(),
 		RateLimit:                pc.RateLimit.Transform(),
 		Strategy:                 pc.Strategy.transform(),
@@ -62,7 +65,8 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 }
 
 type RetentionPolicyConfiguration struct {
-	Policy string `json:"policy" valid:"duration~please provide a valid retention policy time duration"`
+	Policy       string `json:"policy" valid:"duration~please provide a valid retention policy time duration"`
+	SearchPolicy string `json:"search_policy" db:"search_policy"`
 }
 
 func (r *RetentionPolicyConfiguration) transform() *datastore.RetentionPolicyConfiguration {
@@ -70,7 +74,7 @@ func (r *RetentionPolicyConfiguration) transform() *datastore.RetentionPolicyCon
 		return nil
 	}
 
-	return &datastore.RetentionPolicyConfiguration{Policy: r.Policy}
+	return &datastore.RetentionPolicyConfiguration{Policy: r.Policy, SearchPolicy: r.SearchPolicy}
 }
 
 type RateLimitConfiguration struct {

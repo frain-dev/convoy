@@ -76,7 +76,6 @@ func initializeQueue(configFile string, _ string, t *testing.T) queue.Queuer {
 		t.Fatalf("Failed to load new client: %v", err)
 	}
 	queueNames := map[string]int{
-		string(convoy.SearchIndexQueue): 6,
 		string(convoy.EventQueue):       2,
 		string(convoy.CreateEventQueue): 2,
 	}

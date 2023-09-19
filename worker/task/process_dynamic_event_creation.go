@@ -198,22 +198,6 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 			}
 		}
 
-		eBytes, err := util.EncodeMsgPack(event)
-		if err != nil {
-			log.Errorf("[asynq]: an error occurred marshalling event to be indexed %s", err)
-		}
-
-		job := &queue.Job{
-			ID:      event.UID,
-			Payload: eBytes,
-			Delay:   5 * time.Second,
-		}
-
-		err = eventQueue.Write(convoy.IndexDocument, convoy.SearchIndexQueue, job)
-		if err != nil {
-			log.Errorf("[asynq]: an error occurred sending event to be indexed %s", err)
-		}
-
 		return nil
 	}
 }

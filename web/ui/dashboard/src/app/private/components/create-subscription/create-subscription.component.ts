@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, ViewChild, inject, ElementRef } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/endpoint.model';
@@ -24,7 +24,6 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
 	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;
-	@ViewChild('filterDialog', { static: true }) filterDialog!: ElementRef<HTMLDialogElement>;
 
 	subscriptionForm: FormGroup = this.formBuilder.group({
 		name: [null, Validators.required],
@@ -71,6 +70,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	];
 	createdSubscription = false;
 	private rbacService = inject(RbacService);
+    showFilterDialog = false
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router) {}
 
@@ -217,6 +217,8 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async saveSubscription(setup?: boolean) {
 		this.toggleFormsLoaders(true);
+		if (this.eventTags.length === 0) this.subscriptionForm.patchValue({ filter_config: { event_types: ['*'] } });
+
 		await this.runSubscriptionValidation();
 
 		if (this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('retry_config')?.invalid || this.subscriptionForm.get('filter_config')?.invalid) {
@@ -252,38 +254,6 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
-	removeEventTag(tag: string) {
-		this.eventTags = this.eventTags.filter(e => e !== tag);
-	}
-
-	addTag() {
-		const addTagInput = document.getElementById('tagInput');
-		const addTagInputValue = document.getElementById('tagInput') as HTMLInputElement;
-		addTagInput?.addEventListener('keydown', e => {
-			const key = e.keyCode || e.charCode;
-			if (key == 8) {
-				e.stopImmediatePropagation();
-				if (this.eventTags.length > 0 && !addTagInputValue?.value) this.eventTags.splice(-1);
-			}
-			if (e.which === 188 || e.key == ' ') {
-				if (this.eventTags.includes(addTagInputValue?.value)) {
-					addTagInputValue.value = '';
-					this.eventTags = this.eventTags.filter(e => String(e).trim());
-				} else {
-					this.eventTags.push(addTagInputValue?.value);
-					addTagInputValue.value = '';
-					this.eventTags = this.eventTags.filter(e => String(e).trim());
-					this.subscriptionForm.patchValue({ filter_config: { event_types: this.eventTags } });
-				}
-				e.preventDefault();
-			}
-		});
-	}
-
-	focusInput() {
-		document.getElementById('tagInput')?.focus();
-	}
-
 	modifyEndpointData(endpoints?: ENDPOINT[]) {
 		if (endpoints) {
 			const endpointData = endpoints;
@@ -300,14 +270,13 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	setupFilter() {
 		document.getElementById(this.showAction === 'true' ? 'subscriptionForm' : 'configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
-		this.filterDialog.nativeElement.showModal();
+		this.showFilterDialog = true;
 	}
 
 	getFilterSchema(schema: any) {
 		if (schema.headerSchema) this.subscriptionForm.get('filter_config.filter.headers')?.patchValue(schema.headerSchema);
 		if (schema.bodySchema) this.subscriptionForm.get('filter_config.filter.body')?.patchValue(schema.bodySchema);
-
-		this.filterDialog.nativeElement.close();
+        this.showFilterDialog = false;
 	}
 
 	get shouldShowBorder(): number {

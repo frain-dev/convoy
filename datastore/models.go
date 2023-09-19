@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/oklog/ulid/v2"
-	"gopkg.in/guregu/null.v4"
 	"math"
 	"net/http"
 	"time"
+
+	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
@@ -145,6 +146,7 @@ const (
 )
 
 const (
+	ProjectUpdated       HookEventType = "project.updated"
 	EndpointCreated      HookEventType = "endpoint.created"
 	EndpointUpdated      HookEventType = "endpoint.updated"
 	EndpointDeleted      HookEventType = "endpoint.deleted"
@@ -166,6 +168,7 @@ const (
 const (
 	SqsPubSub    PubSubType = "sqs"
 	GooglePubSub PubSubType = "google"
+	KafkaPubSub  PubSubType = "kafka"
 )
 
 func (s SourceProvider) IsValid() bool {
@@ -247,6 +250,7 @@ var (
 		ReplayAttacks:            false,
 		IsRetentionPolicyEnabled: false,
 		DisableEndpoint:          false,
+		AddEventIDTraceHeaders:   false,
 		RateLimit:                &DefaultRateLimitConfig,
 		Strategy:                 &DefaultStrategyConfig,
 		Signature:                GetDefaultSignatureConfig(),
@@ -282,7 +286,8 @@ var (
 	}
 
 	DefaultRetentionPolicy = RetentionPolicyConfiguration{
-		Policy: "720h",
+		Policy:       "720h",
+		SearchPolicy: "720h",
 	}
 )
 
@@ -460,6 +465,16 @@ type ProjectMetadata struct {
 	RetainedEvents int `json:"retained_events" bson:"retained_events"`
 }
 
+type ProjectEvents struct {
+	Id          string `json:"id" db:"id"`
+	EventsCount int    `json:"events_count" db:"events_count"`
+}
+
+type SearchIndexParams struct {
+	ProjectID string `json:"project_id"`
+	Interval  int    `json:"interval"`
+}
+
 type SignatureVersions []SignatureVersion
 
 func (s *SignatureVersions) Scan(v interface{}) error {
@@ -483,6 +498,7 @@ type ProjectConfig struct {
 	MaxIngestSize            uint64                        `json:"max_payload_read_size" db:"max_payload_read_size"`
 	ReplayAttacks            bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
 	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
+	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
 	DisableEndpoint          bool                          `json:"disable_endpoint" db:"disable_endpoint"`
 	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
@@ -561,7 +577,8 @@ type MetaEventConfiguration struct {
 }
 
 type RetentionPolicyConfiguration struct {
-	Policy string `json:"policy" db:"policy" valid:"required~please provide a valid retention policy"`
+	Policy       string `json:"policy" db:"policy" valid:"required~please provide a valid retention policy"`
+	SearchPolicy string `json:"search_policy" db:"search_policy"`
 }
 
 type ProjectStatistics struct {
@@ -1012,6 +1029,7 @@ type PubSubConfig struct {
 	Workers int                 `json:"workers" db:"workers"`
 	Sqs     *SQSPubSubConfig    `json:"sqs" db:"sqs"`
 	Google  *GooglePubSubConfig `json:"google" db:"google"`
+	Kafka   *KafkaPubSubConfig  `json:"kafka" db:"kafka"`
 }
 
 func (p *PubSubConfig) Scan(value interface{}) error {
@@ -1050,6 +1068,21 @@ type GooglePubSubConfig struct {
 	SubscriptionID string `json:"subscription_id" db:"subscription_id"`
 	ServiceAccount []byte `json:"service_account" db:"service_account"`
 	ProjectID      string `json:"project_id" db:"project_id"`
+}
+
+type KafkaPubSubConfig struct {
+	Brokers         []string   `json:"brokers" db:"brokers"`
+	ConsumerGroupID string     `json:"consumer_group_id" db:"consumer_group_id"`
+	TopicName       string     `json:"topic_name" db:"topic_name"`
+	Auth            *KafkaAuth `json:"auth" db:"auth"`
+}
+
+type KafkaAuth struct {
+	Type     string `json:"type" db:"type"`
+	Hash     string `json:"hash" db:"hash"`
+	TLS      bool   `json:"tls" db:"tls"`
+	Username string `json:"username" db:"username"`
+	Password string `json:"password" db:"password"`
 }
 
 type User struct {
@@ -1228,6 +1261,28 @@ const (
 	DeviceStatusOffline  DeviceStatus = "offline"
 	DeviceStatusOnline   DeviceStatus = "online"
 	DeviceStatusDisabled DeviceStatus = "disabled"
+)
+
+type Job struct {
+	UID         string    `json:"uid" db:"id"`
+	Type        string    `json:"type" db:"type"`
+	Status      JobStatus `json:"status,omitempty" db:"status"`
+	ProjectID   string    `json:"project_id,omitempty" db:"project_id"`
+	FailedAt    null.Time `json:"failed_at,omitempty" db:"failed_at,omitempty" swaggertype:"string"`
+	StartedAt   null.Time `json:"started_at,omitempty" db:"started_at,omitempty" swaggertype:"string"`
+	CompletedAt null.Time `json:"completed_at,omitempty" db:"completed_at,omitempty" swaggertype:"string"`
+	CreatedAt   time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt   time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt   null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+type JobStatus string
+
+const (
+	JobStatusReady     JobStatus = "ready"
+	JobStatusRunning   JobStatus = "running"
+	JobStatusFailed    JobStatus = "failed"
+	JobStatusCompleted JobStatus = "completed"
 )
 
 type UserMetadata struct {

@@ -45,7 +45,7 @@ func NewEventDeliveryListener(queue queue.Queuer, projectRepo datastore.ProjectR
 	return &EventDeliveryListener{mEvent: mEvent}
 }
 
-func (e *EventDeliveryListener) AfterUpdate(data interface{}) {
+func (e *EventDeliveryListener) AfterUpdate(data interface{}, _ interface{}) {
 	eventDelivery, ok := data.(*datastore.EventDelivery)
 	if !ok {
 		log.Error("invalid type for event - eventdelivery.updated")

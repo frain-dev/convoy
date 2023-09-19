@@ -11,7 +11,6 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellComponent, TableHeadComponent } from 'src/app/components/table/table.component';
 import { EventLogsService } from './event-logs.service';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { format } from 'date-fns';
 import { SOURCE } from 'src/app/models/source.model';
 import { EVENT, EVENT_DELIVERY, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
@@ -86,13 +85,14 @@ export class EventLogsComponent implements OnInit {
 	batchRetryCount: any;
 	getEventsInterval: any;
 	queryParams?: FILTER_QUERY_PARAM;
+	enableTailMode = false;
 
 	constructor(private eventsLogService: EventLogsService, public generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService, private _location: Location) {}
 
 	async ngOnInit() {
 		const data = this.getFiltersFromURL();
-		this.getEventLogs({ ...data, showLoader: true }).then(() => this.getEventsAtInterval({ ...data }));
-
+		this.getEventLogs({ ...data, showLoader: true });
+		if (this.checkIfTailModeIsEnabled()) this.getEventsAtInterval();
 		if (!this.portalToken) this.getSourcesForFilter();
 	}
 
@@ -109,42 +109,36 @@ export class EventLogsComponent implements OnInit {
 
 	searchEvents() {
 		const data = this.addFilterToURL({ query: this.eventsSearchString });
-		this.refetchEvents(data);
+		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
+		this.getEventLogs({ ...data, showLoader: true });
 	}
 
 	paginateEvents(event: CURSOR) {
 		const data = this.addFilterToURL(event);
-		this.refetchEvents(data);
+		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
+		this.getEventLogs({ ...data, showLoader: true });
 	}
 
 	updateSourceFilter() {
 		const data = this.addFilterToURL({ sourceId: this.eventSource });
-		this.refetchEvents(data);
+		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
+		this.getEventLogs({ ...data, showLoader: true });
 	}
 
 	getSelectedDateRange(dateRange: { startDate: string; endDate: string }) {
 		this.eventsDateFilterFromURL = dateRange;
 		const data = this.addFilterToURL(dateRange);
-		this.refetchEvents(data);
-	}
-
-	setDateForFilter(requestDetails: { startDate: any; endDate: any; startTime?: string; endTime?: string }) {
-		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
-		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-MM-dd')}${requestDetails?.startTime || 'T00:00:00'}` : '';
-		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}${requestDetails?.endTime || 'T23:59:59'}` : '';
-		return { startDate, endDate };
+		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
+		this.getEventLogs({ ...data, showLoader: true });
 	}
 
 	// fetch filters from url
 	getFiltersFromURL() {
-		const filters = this.route.snapshot.queryParams;
-		if (Object.keys(filters).length == 0) return;
-
 		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams };
 
-		this.eventsDateFilterFromURL = { startDate: filters.eventsStartDate || '', endDate: filters.eventsEndDate || '' };
-		this.eventsSearchString = filters.eventsSearch ?? undefined;
-		this.eventSource = filters.eventSource;
+		this.eventsDateFilterFromURL = { startDate: this.queryParams?.startDate || '', endDate: this.queryParams?.endDate || '' };
+		this.eventsSearchString = this.queryParams.query ?? undefined;
+		this.eventSource = this.queryParams.sourceId;
 
 		return this.queryParams;
 	}
@@ -177,23 +171,39 @@ export class EventLogsComponent implements OnInit {
 		} else {
 			this.datePicker.clearDate();
 			this.queryParams = {};
+			this.eventsDateFilterFromURL = { startDate: '', endDate: '' };
 			this.eventsSearchString = '';
 			this.eventSource = '';
 			this._location.go(`${location.pathname}`);
 		}
-		this.refetchEvents(this.queryParams);
+
+		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
+		this.getEventLogs({ showLoader: true });
 	}
 
-	getEventsAtInterval(requestDetails?: FILTER_QUERY_PARAM) {
-		this.getEventsInterval = setInterval(() => {
-			this.getEventLogs({ ...requestDetails });
-		}, 4000);
+	checkIfTailModeIsEnabled() {
+		const tailModeConfig = localStorage.getItem('EVENT_LOGS_TAIL_MODE');
+		this.enableTailMode = tailModeConfig ? JSON.parse(tailModeConfig) : false;
+		return this.enableTailMode;
 	}
 
-	async refetchEvents(data?: FILTER_QUERY_PARAM) {
-		delete this.eventsDetailsItem;
+	toggleTailMode(e: any, status?: 'on' | 'off') {
+		let tailModeConfig: boolean;
+		if (status) tailModeConfig = status === 'on';
+		else tailModeConfig = e.target.checked;
+
+		this.enableTailMode = tailModeConfig;
+		localStorage.setItem('EVENT_LOGS_TAIL_MODE', JSON.stringify(tailModeConfig));
+
 		clearInterval(this.getEventsInterval);
-		await this.getEventLogs({ ...data, showLoader: true }).then(() => this.getEventsAtInterval({ ...data }));
+		if (tailModeConfig) this.getEventsAtInterval();
+	}
+
+	getEventsAtInterval() {
+		this.getEventsInterval = setInterval(() => {
+			const data = { ...this.queryParams, ...this.route.snapshot.queryParams };
+			this.getEventLogs(data);
+		}, 5000);
 	}
 
 	async getEventLogs(requestDetails?: FILTER_QUERY_PARAM) {
@@ -204,6 +214,7 @@ export class EventLogsComponent implements OnInit {
 			this.events = eventsResponse.data;
 
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
+			this.isloadingEvents = false;
 
 			if (this.eventsDetailsItem) return;
 			else {
@@ -214,7 +225,6 @@ export class EventLogsComponent implements OnInit {
 				} else this.isLoadingSidebarDeliveries = false;
 			}
 
-			this.isloadingEvents = false;
 			return eventsResponse;
 		} catch (error: any) {
 			this.isloadingEvents = false;
@@ -254,14 +264,13 @@ export class EventLogsComponent implements OnInit {
 	}
 
 	async fetchRetryCount() {
-		const { startDate, endDate } = this.setDateForFilter(this.eventsDateFilterFromURL);
 		const page = this.route.snapshot.queryParams.page || 1;
 		this.fetchingCount = true;
 		try {
 			const response = await this.eventsLogService.getRetryCount({
 				page: page,
-				startDate: startDate,
-				endDate: endDate,
+				startDate: this.eventsDateFilterFromURL.startDate,
+				endDate: this.eventsDateFilterFromURL.endDate,
 				sourceId: this.eventSource || ''
 			});
 
@@ -273,26 +282,28 @@ export class EventLogsComponent implements OnInit {
 		}
 	}
 
-	async retryEvent(requestDetails: { eventId: string }) {
+	async replayEvent(requestDetails: { eventId: string }) {
+		this.isRetrying = true;
 		try {
 			const response = await this.eventsLogService.retryEvent({ eventId: requestDetails.eventId });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.isRetrying = false;
 			return;
 		} catch (error) {
+			this.isRetrying = true;
 			return error;
 		}
 	}
 
-	async batchRetryEvent() {
-		const { startDate, endDate } = this.setDateForFilter(this.eventsDateFilterFromURL);
+	async batchReplayEvent() {
 		const page = this.route.snapshot.queryParams.page || 1;
 		this.isRetrying = true;
 
 		try {
 			const response = await this.eventsLogService.batchRetryEvent({
 				page: page || 1,
-				startDate: startDate,
-				endDate: endDate,
+				startDate: this.eventsDateFilterFromURL.startDate,
+				endDate: this.eventsDateFilterFromURL.endDate,
 				sourceId: this.eventSource || ''
 			});
 
@@ -316,5 +327,9 @@ export class EventLogsComponent implements OnInit {
 		if (filterByIdempotencyKey) queryParams['idempotencyKey'] = event.idempotency_key;
 
 		this.router.navigate([`/projects/${this.privateService.getProjectDetails?.uid}/events`], { queryParams });
+	}
+
+	toggleSouceFilter(event: any, sourceId: string) {
+		this.eventSource = event.target.checked ? sourceId : '';
 	}
 }

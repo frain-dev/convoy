@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { EventEmitter, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { HttpService } from 'src/app/services/http/http.service';
@@ -12,6 +12,7 @@ import { PROJECT } from '../models/project.model';
 	providedIn: 'root'
 })
 export class PrivateService {
+	showOrgModal: EventEmitter<boolean> = new EventEmitter();
 	organisationDetails?: ORGANIZATION_DATA;
 	apiFlagResponse!: FLIPT_API_RESPONSE;
 	projects!: HTTP_RESPONSE;
@@ -33,6 +34,10 @@ export class PrivateService {
 	get getUserProfile(): USER | null {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
 		return authDetails ? JSON.parse(authDetails) : false;
+	}
+
+	setShowOrgModal(value: boolean) {
+		this.showOrgModal.emit(value);
 	}
 
 	urlFactory(level: 'org' | 'org_project'): string {

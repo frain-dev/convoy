@@ -24,6 +24,10 @@ export interface PROJECT {
 			type: string;
 			url: string;
 		};
+		retention_policy: {
+			policy: string;
+			search_policy: string;
+		};
 		DisableEndpoint: boolean;
 		replay_attacks: boolean;
 	};
