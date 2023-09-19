@@ -59,6 +59,7 @@
 
 					<div class="whitespace-nowrap flex">
 						<div convoy-tag [color]="hasFilter(subscription.filter_config.filter) ? 'primary' : 'gray'" class="mr-8px py-2px">Filter</div>
+						<div convoy-tag [color]="subscription.function ? 'primary' : 'gray'" class="mr-8px py-2px">Transform</div>
 						<div convoy-tag [color]="subscription.retry_config ? 'primary' : 'gray'" class="mr-8px py-2px">Retry Logic</div>
 						<div convoy-tag [color]="subscription.filter_config.event_types.length > 1 || subscription.filter_config.event_types[0] != '*' ? 'primary' : 'gray'" color="primary" class="py-2px">Event Types</div>
 					</div>

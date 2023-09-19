@@ -20,9 +20,9 @@
 	<div class="flex flex-col w-full border-r border-r-new.gray-100">
 		<div>
 			<div class="text-12 text-new.gray-500 border-b border-b-grey-20 px-12px py-6px rounded-tl-8px">Payload</div>
-			<convoy-monaco [editorValue]="payload" className="h-350px w-[96%]" #payloadEditor></convoy-monaco>
+			<convoy-monaco [editorValue]="payload" className="h-300px w-[96%]" #payloadEditor></convoy-monaco>
 		</div>
-		<div class="min-h-[320px]">
+		<div class="min-h-[370px]">
 			<ul class="flex flex-row w-full border-y-[.5px] border-y-grey-20">
 				<li *ngFor="let tab of tabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
 					<button class="py-6px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="activeTab = tab">
@@ -32,10 +32,10 @@
 			</ul>
 			<ng-container *ngIf="output && !isTestingFunction">
 				<div [ngClass]="{ 'h-0 overflow-hidden': activeTab !== 'output' }">
-					<convoy-monaco className="h-[350px] w-[96%]" [editorValue]="output"></convoy-monaco>
+					<convoy-monaco className="h-336px w-[96%]" [editorValue]="output"></convoy-monaco>
 				</div>
 				<div [ngClass]="{ 'h-0 overflow-hidden': activeTab === 'output' }">
-					<convoy-monaco className="h-[350px] w-[96%]" [editorValue]="payload" [modifiedEditorValue]="output"></convoy-monaco>
+					<convoy-monaco className="h-336px w-[96%]" [editorValue]="payload" [modifiedEditorValue]="output"></convoy-monaco>
 				</div>
 			</ng-container>
 		</div>
@@ -57,8 +57,9 @@
 			</button>
 		</div>
 
-        <convoy-monaco className="min-h-[500px] h-full w-[96%]" format="javascript" [editorValue]="setFunction" #functionEditor></convoy-monaco>
-
+		<div [class]="showConsole ? 'h-[500px]' : 'h-[630px]'">
+			<convoy-monaco className="h-[500px] w-[96%]" format="javascript" [editorValue]="setFunction" #functionEditor></convoy-monaco>
+		</div>
 		<div class="text-12 text-new.gray-500 border-y border-y-grey-20 px-12px py-6px flex items-center justify-between">
 			Console
 			<div class="flex items-center">
@@ -78,12 +79,12 @@
 						<path d="M7.03125 6.85449L7.71875 7.98367" stroke="#292D32" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
 					</svg>
 				</button>
-				<button convoy-button size="xs" type="button" fill="outline" texture="light" color="grey" class="p-2px ml-10px" [disabled]="isTestingFunction" (click)="showConsole = !showConsole">
+				<button convoy-button size="xs" type="button" fill="outline" texture="light" color="grey" class="p-2px ml-10px" [disabled]="isTestingFunction" (click)="logs = []; showConsole = !showConsole">
 					<img class="w-12px transition-all duration-300" [class]="{ 'rotate-180': showConsole }" src="/assets/img/angle-down.svg" alt="arrow down icon" />
 				</button>
 			</div>
 		</div>
-		<div class="bg-new.gray-50 w-full transition-all duration-300" [class]="showConsole ? 'max-h-194px h-full overflow-auto' : 'h-0 overflow-hidden'" *ngIf="output && !isTestingFunction">
+		<div class="bg-new.gray-50 w-full transition-all ease-in-out duration-300" [class]="showConsole ? 'max-h-132px h-full overflow-auto opacity-100' : 'h-0 overflow-hidden opacity-0'" *ngIf="output && !isTestingFunction">
 			<ng-container *ngFor="let log of logs">
 				<prism language="javascript" type="display" [code]="generalService.getCodeSnippetString('log', parseLog(log))"></prism>
 			</ng-container>
