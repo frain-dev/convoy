@@ -7,11 +7,12 @@ import { MonacoComponent } from '../monaco/monaco.component';
 import { DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
 import { CreateSubscriptionService } from '../create-subscription/create-subscription.service';
 import { GeneralService } from 'src/app/services/general/general.service';
+import { PrismModule } from '../prism/prism.module';
 
 @Component({
 	selector: 'convoy-create-transform-function',
 	standalone: true,
-	imports: [CommonModule, CardComponent, ReactiveFormsModule, ButtonComponent, MonacoComponent, DialogHeaderComponent],
+	imports: [CommonModule, CardComponent, ReactiveFormsModule, ButtonComponent, MonacoComponent, DialogHeaderComponent, PrismModule],
 	templateUrl: './create-transform-function.component.html',
 	styleUrls: ['./create-transform-function.component.scss']
 })
@@ -29,19 +30,23 @@ export class CreateTransformFunctionComponent implements OnInit {
 	});
 	isTransformFunctionPassed = false;
 	isTestingFunction = false;
+	showConsole = false;
+	logs: any;
 	payload: any = {
 		id: 'Sample-1',
 		name: 'Sample 1',
 		description: 'This is sample data #1'
 	};
-	setFunction = `// Transform only supports one method, and the function must be named transform as provided below
-// An argument e must be passed into the function which represents the payload to be transformed
+	setFunction = `// 1. While you can write multiple functions, the main function called for your transformation is the transform function
+// 2. The only argument acceptable in the transform function is the payload data.
+// 3. The transform method must return a value.
+// 4. To log, use this format: console.log('%j', output).
 function transform(e) {
     // Transform function here
 }`;
 	output: any;
 
-	constructor(private createSubscriptionService: CreateSubscriptionService, private generalService: GeneralService, private formBuilder: FormBuilder) {}
+	constructor(private createSubscriptionService: CreateSubscriptionService, public generalService: GeneralService, private formBuilder: FormBuilder) {}
 
 	ngOnInit(): void {
 		this.checkForExistingData();
@@ -58,7 +63,9 @@ function transform(e) {
 
 		try {
 			const response = await this.createSubscriptionService.testTransformFunction(this.transformForm.value);
-			this.output = response.data;
+			this.output = response.data.payload;
+			this.logs = response.data.log;
+			this.logs.length > 0 ? (this.showConsole = true) : (this.showConsole = false);
 			this.isTransformFunctionPassed = true;
 			this.isTestingFunction = false;
 		} catch (error) {
@@ -86,5 +93,9 @@ function transform(e) {
 		const subscriptionFunction = localStorage.getItem('FUNCTION');
 		if (payload && payload !== 'undefined') this.payload = JSON.parse(payload);
 		if (subscriptionFunction && subscriptionFunction !== 'undefined' && !this.transformFunction) this.setFunction = subscriptionFunction;
+	}
+
+	parseLog(log: string) {
+		return JSON.parse(log);
 	}
 }

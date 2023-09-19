@@ -1,6 +1,6 @@
 <h4 *ngIf="title" class="py-8px text-12 text-new.gray-400 -mb-2px">{{ title }}</h4>
 
-<div *ngIf="type !== 'headers'" class="border border-new.primary-25 rounded-8px mb-26px">
+<div *ngIf="type === 'default'" class="border border-new.primary-25 rounded-8px mb-26px">
 	<div class="">
 		<pre *ngIf="language" class="language-{{ language }} line-numbers" [class]="showPayload && code && code.length > 300 ? 'h-[520px] overflow-y-auto' : 'max-h-[300px] overflow-y-hidden'">
 <code #codeEle class="language-{{ language }} line-numbers">{{code}}</code>
@@ -33,5 +33,14 @@
 			</svg>
 			{{ showPayload ? 'Hide' : 'Show more' }} lines
 		</button>
+	</div>
+</div>
+
+<div *ngIf="type === 'display'">
+	<div class="flex items-start px-12px pt-12px ">
+		<div class="text-12 text-new.gray-600">LOG:</div>
+		<pre *ngIf="language" class="language-{{ language }} log-display">
+     <code #codeEle class="language-{{ language }}">{{code}}</code>
+     </pre>
 	</div>
 </div>

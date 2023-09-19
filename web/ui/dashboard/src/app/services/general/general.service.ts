@@ -110,7 +110,7 @@ export class GeneralService {
 		return displayedItems;
 	}
 
-	getCodeSnippetString(type: 'event_data' | 'res_body' | 'res_header' | 'req_header' | 'error', data: any) {
+	getCodeSnippetString(type: 'event_data' | 'res_body' | 'res_header' | 'req_header' | 'error' | 'log', data: any) {
 		let displayMessage = '';
 		switch (type) {
 			case 'event_data':

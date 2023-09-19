@@ -20,7 +20,7 @@
 	<div class="flex flex-col w-full border-r border-r-new.gray-100">
 		<div>
 			<div class="text-12 text-new.gray-500 border-b border-b-grey-20 px-12px py-6px rounded-tl-8px">Payload</div>
-			<convoy-monaco [editorValue]="payload" className="h-300px w-[96%]" #payloadEditor></convoy-monaco>
+			<convoy-monaco [editorValue]="payload" className="h-350px w-[96%]" #payloadEditor></convoy-monaco>
 		</div>
 		<div class="min-h-[320px]">
 			<ul class="flex flex-row w-full border-y-[.5px] border-y-grey-20">
@@ -32,10 +32,10 @@
 			</ul>
 			<ng-container *ngIf="output && !isTestingFunction">
 				<div [ngClass]="{ 'h-0 overflow-hidden': activeTab !== 'output' }">
-					<convoy-monaco className="h-300px w-[96%]" [editorValue]="output" ></convoy-monaco>
+					<convoy-monaco className="h-[350px] w-[96%]" [editorValue]="output"></convoy-monaco>
 				</div>
 				<div [ngClass]="{ 'h-0 overflow-hidden': activeTab === 'output' }">
-					<convoy-monaco className="h-300px w-[96%]" [editorValue]="payload" [modifiedEditorValue]="output" ></convoy-monaco>
+					<convoy-monaco className="h-[350px] w-[96%]" [editorValue]="payload" [modifiedEditorValue]="output"></convoy-monaco>
 				</div>
 			</ng-container>
 		</div>
@@ -56,6 +56,37 @@
 				Run
 			</button>
 		</div>
-		<convoy-monaco className="h-[600px] w-[96%]" format="javascript" [editorValue]="setFunction" #functionEditor></convoy-monaco>
+
+        <convoy-monaco className="min-h-[500px] h-full w-[96%]" format="javascript" [editorValue]="setFunction" #functionEditor></convoy-monaco>
+
+		<div class="text-12 text-new.gray-500 border-y border-y-grey-20 px-12px py-6px flex items-center justify-between">
+			Console
+			<div class="flex items-center">
+				<button convoy-button size="xs" type="button" fill="outline" texture="light" color="grey" class="p-2px" [disabled]="isTestingFunction" (click)="logs = []">
+					<svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M4.11328 2.86262L2.68828 3.7293L2.03828 2.66263C1.80078 2.27096 1.92578 1.7543 2.31745 1.5168C2.70911 1.2793 3.22578 1.40429 3.46328 1.79596L4.11328 2.86262Z" stroke="#292D32" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+						<path
+							d="M4.92334 4.31666L3.60667 5.11668C2.84001 5.58335 2.60667 6.52501 2.9775 7.27501L3.83167 9.01668C4.10667 9.57918 4.77334 9.775 5.30667 9.44583L7.98584 7.81667C8.52334 7.49167 8.65251 6.81251 8.28167 6.30834L7.12751 4.75001C6.62751 4.07501 5.69001 3.85 4.92334 4.31666Z"
+							stroke="#292D32"
+							stroke-width="0.8"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
+						<path d="M4.48291 2.62455L2.34766 3.9248L3.21449 5.3483L5.34974 4.04805L4.48291 2.62455Z" stroke="#292D32" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+						<path d="M5.96484 7.50391L6.65235 8.63308" stroke="#292D32" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+						<path d="M4.89453 8.1543L5.58203 9.28347" stroke="#292D32" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+						<path d="M7.03125 6.85449L7.71875 7.98367" stroke="#292D32" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+					</svg>
+				</button>
+				<button convoy-button size="xs" type="button" fill="outline" texture="light" color="grey" class="p-2px ml-10px" [disabled]="isTestingFunction" (click)="showConsole = !showConsole">
+					<img class="w-12px transition-all duration-300" [class]="{ 'rotate-180': showConsole }" src="/assets/img/angle-down.svg" alt="arrow down icon" />
+				</button>
+			</div>
+		</div>
+		<div class="bg-new.gray-50 w-full transition-all duration-300" [class]="showConsole ? 'max-h-194px h-full overflow-auto' : 'h-0 overflow-hidden'" *ngIf="output && !isTestingFunction">
+			<ng-container *ngFor="let log of logs">
+				<prism language="javascript" type="display" [code]="generalService.getCodeSnippetString('log', parseLog(log))"></prism>
+			</ng-container>
+		</div>
 	</div>
 </div>
