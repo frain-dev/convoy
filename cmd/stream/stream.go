@@ -73,8 +73,7 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 			lo.SetLevel(lvl)
 
 			handler := socket.BuildRoutes(h, r)
-
-			consumer := worker.NewConsumer(a.Queue, lo)
+			consumer := worker.NewConsumer(c.ConsumerPoolSize, a.Queue, lo)
 			consumer.RegisterHandlers(convoy.StreamCliEventsProcessor, h.EventDeliveryCLiHandler(r))
 
 			// start worker

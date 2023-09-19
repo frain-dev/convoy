@@ -17,11 +17,12 @@ type Consumer struct {
 	log   log.StdLogger
 }
 
-func NewConsumer(q queue.Queuer, lo log.StdLogger) *Consumer {
+func NewConsumer(consumerPoolSize int, q queue.Queuer, lo log.StdLogger) *Consumer {
+	lo.Infof("The consumer pool size has been set to %d.", consumerPoolSize)
 	srv := asynq.NewServer(
 		q.Options().RedisClient,
 		asynq.Config{
-			Concurrency: convoy.Concurrency,
+			Concurrency: consumerPoolSize,
 			BaseContext: func() context.Context {
 				return log.NewContext(context.Background(), lo, nil)
 			},

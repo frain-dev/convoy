@@ -9,6 +9,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -22,7 +23,10 @@ type CreateEvent struct {
 	CreateSubscription bool
 }
 
-func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
+func ProcessEventCreation(
+	endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository,
+	eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer,
+	subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, cfg config.Configuration) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var createEvent CreateEvent
 		var event datastore.Event
@@ -175,27 +179,30 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			}
 		}
 
-		eBytes, err := json.Marshal(event)
-		if err != nil {
-			log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred marshalling event to be indexed")
-		}
+		if cfg.Search.Type == config.TypesenseSearchProvider {
+			eBytes, err := json.Marshal(event)
+			if err != nil {
+				log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred marshalling event to be indexed")
+			}
 
-		job := &queue.Job{
-			ID:      event.UID,
-			Payload: eBytes,
-			Delay:   5 * time.Second,
-		}
+			job := &queue.Job{
+				ID:      event.UID,
+				Payload: eBytes,
+				Delay:   5 * time.Second,
+			}
 
-		err = eventQueue.Write(convoy.IndexDocument, convoy.SearchIndexQueue, job)
-		if err != nil {
-			log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event to be indexed")
+			err = eventQueue.Write(convoy.IndexDocument, convoy.SearchIndexQueue, job)
+			if err != nil {
+				log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event to be indexed")
+			}
 		}
 
 		return nil
 	}
 }
 
-func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepository, cache cache.Cache, subRepo datastore.SubscriptionRepository, project *datastore.Project, createEvent *CreateEvent) ([]datastore.Subscription, error) {
+func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepository, cache cache.Cache,
+	subRepo datastore.SubscriptionRepository, project *datastore.Project, createEvent *CreateEvent) ([]datastore.Subscription, error) {
 	var subscriptions []datastore.Subscription
 	var err error
 
@@ -249,12 +256,19 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 			subscriptions = append(subscriptions, subs...)
 		}
 	} else if project.Type == datastore.IncomingProject {
-		subs, err := subRepo.FindSubscriptionsBySourceID(ctx, project.UID, event.SourceID)
-		if err != nil {
-			return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
+
+		cacheKey := fmt.Sprintf("subscriptions:%s:%s", project.UID, event.SourceID)
+		cache.Get(ctx, cacheKey, &subscriptions)
+
+		if len(subscriptions) == 0 {
+			subscriptions, err = subRepo.FindSubscriptionsBySourceID(ctx, project.UID, event.SourceID)
+			if err != nil {
+				return nil, &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
+			}
+			cache.Set(ctx, cacheKey, &subscriptions, time.Minute*2)
 		}
 
-		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs)
+		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions)
 		if err != nil {
 			log.WithError(err).Error("error find a matching subscription for this source")
 			return subscriptions, &EndpointError{Err: errors.New("error find a matching subscription for this source"), delay: 10 * time.Second}

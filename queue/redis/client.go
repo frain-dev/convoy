@@ -6,7 +6,6 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
 	"github.com/oklog/ulid/v2"
-	"time"
 )
 
 type RedisQueue struct {
@@ -30,7 +29,8 @@ func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName,
 		job.ID = ulid.Make().String()
 	}
 	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(string(queueName)), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
-	_, err := q.client.Enqueue(t, asynq.Retention(24*time.Hour))
+	// According to the documentation, the Retention time will keep the message in Redis after completion. :F:
+	_, err := q.client.Enqueue(t)
 	return err
 }
 

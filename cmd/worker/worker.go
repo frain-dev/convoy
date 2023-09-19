@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
+	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
@@ -26,6 +27,7 @@ import (
 func AddWorkerCommand(a *cli.App) *cobra.Command {
 	var workerPort uint32
 	var logLevel string
+	var consumerPoolSize int
 
 	cmd := &cobra.Command{
 		Use:   "worker",
@@ -65,7 +67,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			ctx := context.Background()
 
 			// register worker.
-			consumer := worker.NewConsumer(a.Queue, lo)
+			consumer := worker.NewConsumer(cfg.ConsumerPoolSize, a.Queue, lo)
 			projectRepo := postgres.NewProjectRepo(a.DB)
 			metaEventRepo := postgres.NewMetaEventRepo(a.DB)
 			endpointRepo := postgres.NewEndpointRepo(a.DB)
@@ -75,6 +77,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			deviceRepo := postgres.NewDeviceRepo(a.DB)
 			configRepo := postgres.NewConfigRepo(a.DB)
 			searchBackend, err := searcher.NewSearchClient(cfg)
+			rateLimiter, err := limiter.NewLimiter(cfg.Redis)
 			if err != nil {
 				a.Logger.Debug("Failed to initialise search backend")
 			}
@@ -84,7 +87,8 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				eventDeliveryRepo,
 				projectRepo,
 				subRepo,
-				a.Queue))
+				a.Queue,
+				rateLimiter))
 
 			consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
 				endpointRepo,
@@ -94,7 +98,8 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				a.Cache,
 				a.Queue,
 				subRepo,
-				deviceRepo))
+				deviceRepo,
+				cfg))
 
 			consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
 				endpointRepo,
@@ -125,11 +130,13 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, cfg))
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 
-			indexDocument, err := task.NewIndexDocument(cfg)
-			if err != nil {
-				return err
+			if cfg.Search.Type == config.TypesenseSearchProvider {
+				indexDocument, err := task.NewIndexDocument(cfg)
+				if err != nil {
+					return err
+				}
+				consumer.RegisterHandlers(convoy.IndexDocument, indexDocument.ProcessTask)
 			}
-			consumer.RegisterHandlers(convoy.IndexDocument, indexDocument.ProcessTask)
 
 			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
 			consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo))
@@ -165,6 +172,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 
 	cmd.Flags().Uint32Var(&workerPort, "worker-port", 5006, "Worker port")
 	cmd.Flags().StringVar(&logLevel, "log-level", "", "scheduler log level")
+	cmd.Flags().IntVar(&consumerPoolSize, "consumers", -1, "Size of the consumers pool.")
 
 	return cmd
 }
@@ -181,6 +189,12 @@ func buildWorkerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		c.Logger.Level = logLevel
 	}
 
+	// CONVOY_WORKER_POOL_SIZE
+	consumerPoolSize, err := cmd.Flags().GetInt("consumers")
+	if err != nil {
+		return nil, err
+	}
+
 	workerPort, err := cmd.Flags().GetUint32("worker-port")
 	if err != nil {
 		return nil, err
@@ -191,6 +205,10 @@ func buildWorkerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 	}
 
 	c.Server.HTTP.WorkerPort = workerPort
+
+	if consumerPoolSize >= 0 {
+		c.ConsumerPoolSize = consumerPoolSize
+	}
 
 	return c, nil
 }

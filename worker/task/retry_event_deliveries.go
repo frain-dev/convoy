@@ -16,11 +16,12 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDuration string, db database.Database, eventQueue queue.Queuer) {
-	if statuses == nil {
+func RetryEventDeliveries(db database.Database, eventQueue queue.Queuer, statuses []datastore.EventDeliveryStatus, lookBackDuration string, eventId string) {
+	if len(statuses) == 1 && util.IsStringEmpty(string(statuses[0])) {
 		statuses = []datastore.EventDeliveryStatus{"Retry", "Scheduled", "Processing"}
 	}
 
+	log.Printf("Status após parse: %#v | %d", statuses, len(statuses))
 	if util.IsStringEmpty(lookBackDuration) {
 		// TODO(subomi): Setup configuration
 		lookBackDuration = "5h"
@@ -34,6 +35,7 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 	then := now.Add(-d)
 
 	for _, status := range statuses {
+		log.Printf("Searching for events with status %s", status)
 		searchParams := datastore.SearchParams{
 			CreatedAtStart: then.Unix(),
 			CreatedAtEnd:   now.Unix(),
@@ -70,7 +72,9 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 		log.Infof("Total number of event deliveries to requeue is %d", counter)
 
 		for {
-			deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", []string{}, "", []datastore.EventDeliveryStatus{status}, searchParams, pageable)
+			deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(
+				ctx, "", []string{}, eventId, []datastore.EventDeliveryStatus{status}, searchParams, pageable,
+			)
 			if err != nil {
 				log.WithError(err).Errorf("successfully fetched %d event deliveries", count)
 				close(deliveryChan)

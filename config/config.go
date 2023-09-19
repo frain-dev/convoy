@@ -71,6 +71,7 @@ var DefaultConfiguration = Configuration{
 			Enabled: true,
 		},
 	},
+	ConsumerPoolSize: 100,
 }
 
 type DatabaseConfiguration struct {
@@ -296,6 +297,7 @@ type Configuration struct {
 	FeatureFlag        FeatureFlagConfiguration   `json:"feature_flag"`
 	Analytics          AnalyticsConfiguration     `json:"analytics"`
 	StoragePolicy      StoragePolicyConfiguration `json:"storage_policy"`
+	ConsumerPoolSize   int                        `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called

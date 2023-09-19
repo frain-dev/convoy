@@ -409,8 +409,26 @@ func (a *DashboardHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request
 		pagedResponse{Content: &m, Pagination: &paginationData}, http.StatusOK))
 }
 
+func parseStatus(rawStatus string) []datastore.EventDeliveryStatus {
+	var parsedStatus []string
+	err := json.Unmarshal([]byte(rawStatus), &parsedStatus)
+
+	if err != nil {
+		log.Errorf("Invalid status filter received => %+v", rawStatus)
+	}
+
+	statusList := make([]datastore.EventDeliveryStatus, 0)
+	for _, v := range parsedStatus {
+		if !util.IsStringEmpty(v) {
+			statusList = append(statusList, datastore.EventDeliveryStatus(v))
+		}
+	}
+
+	return statusList
+}
+
 func (a *DashboardHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
-	status := make([]datastore.EventDeliveryStatus, 0)
+	status := parseStatus(r.URL.Query().Get("status"))
 	for _, s := range r.URL.Query()["status"] {
 		if !util.IsStringEmpty(s) {
 			status = append(status, datastore.EventDeliveryStatus(s))

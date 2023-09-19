@@ -38,7 +38,8 @@ type EventDelivery struct {
 	ProjectID       string
 }
 
-func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, projectRepo datastore.ProjectRepository, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer) func(context.Context, *asynq.Task) error {
+func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
+	projectRepo datastore.ProjectRepository, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
 
@@ -58,6 +59,13 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
+		// if the event delivery status is Success, we just return
+		switch ed.Status {
+		case datastore.ProcessingEventStatus,
+			datastore.SuccessEventStatus:
+			return nil
+		}
+
 		endpoint, err := endpointRepo.FindEndpointByID(context.Background(), ed.EndpointID, ed.ProjectID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: 10 * time.Second}
@@ -75,16 +83,9 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		switch ed.Status {
-		case datastore.ProcessingEventStatus,
-			datastore.SuccessEventStatus:
-			return nil
-		}
-
 		ec := &EventDeliveryConfig{subscription: subscription, project: p}
 		rlc := ec.rateLimitConfig()
 
-		rateLimiter, err := limiter.NewLimiter(cfg.Redis)
 		if err != nil {
 			log.WithError(err).Error("failed to initialise redis rate limiter")
 			return &EndpointError{Err: err, delay: delayDuration}
@@ -241,22 +242,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				log.Errorf("%s retry limit exceeded ", ed.UID)
 				ed.Description = "Retry limit exceeded"
 				ed.Status = datastore.FailureEventStatus
-			}
-
-			// TODO(all): this block of code is unnecessary L215 - L 221 already caters for this case
-			if e.Status != datastore.PendingEndpointStatus && p.Config.DisableEndpoint {
-				endpointStatus := datastore.InactiveEndpointStatus
-
-				err := endpointRepo.UpdateEndpointStatus(context.Background(), p.UID, e.UID, endpointStatus)
-				if err != nil {
-					log.WithError(err).Error("failed to deactivate endpoint after failed retry")
-				}
-
-				// send endpoint deactivation notification
-				err = notifications.SendEndpointNotification(context.Background(), endpoint, p, endpointStatus, notificationQueue, true, resp.Error, string(resp.Body), resp.StatusCode)
-				if err != nil {
-					log.WithError(err).Error("failed to send notification")
-				}
 			}
 		}
 

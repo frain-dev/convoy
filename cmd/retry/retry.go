@@ -13,6 +13,7 @@ import (
 func AddRetryCommand(a *cli.App) *cobra.Command {
 	var status string
 	var timeInterval string
+	var eventId string
 
 	cmd := &cobra.Command{
 		Use:   "retry",
@@ -28,11 +29,12 @@ func AddRetryCommand(a *cli.App) *cobra.Command {
 			}
 
 			statuses := []datastore.EventDeliveryStatus{datastore.EventDeliveryStatus(status)}
-			task.RetryEventDeliveries(statuses, timeInterval, a.DB, a.Queue)
+			task.RetryEventDeliveries(a.DB, a.Queue, statuses, timeInterval, eventId)
 		},
 	}
 
 	cmd.Flags().StringVar(&status, "status", "", "Status of event deliveries to requeue")
 	cmd.Flags().StringVar(&timeInterval, "time", "", "Time interval")
+	cmd.Flags().StringVar(&eventId, "eventid", "", "Requeue the informed eventId")
 	return cmd
 }

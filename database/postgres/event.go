@@ -89,7 +89,8 @@ const (
 	`
 
 	baseEventFilter = ` AND ev.project_id = :project_id 
-	AND (ev.source_id = :source_id OR :source_id = '') 
+	AND (ev.source_id = :source_id OR :source_id = '')
+	AND (ev.id = :event_id OR :event_id = '') 
 	AND ev.created_at >= :start_date 
 	AND ev.created_at <= :end_date`
 
@@ -245,6 +246,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		"start_date":   startDate,
 		"end_date":     endDate,
 		"cursor":       filter.Pageable.Cursor(),
+		"event_id":     filter.Query,
 	}
 
 	var baseQueryPagination string
