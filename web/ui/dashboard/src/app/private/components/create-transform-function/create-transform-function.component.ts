@@ -37,12 +37,17 @@ export class CreateTransformFunctionComponent implements OnInit {
 		name: 'Sample 1',
 		description: 'This is sample data #1'
 	};
-	setFunction = `/* 1. While you can write multiple functions, the main
-function called for your transformation is the transform function.
-2. The only argument acceptable in the transform function is the payload data.
+	setFunction = `/* 1. While you can write multiple functions, the main function
+    called for your transformation is the transform function.
+
+2. The only argument acceptable in the transform function is
+    the payload data.
+
 3. The transform method must return a value.
-4. Console logs lust be written like this console.log('%j', logged_item)
-to get printed in the log below. */
+
+4. Console logs lust be written like this
+    console.log('%j', logged_item) to get printed in the log below. */
+
 function transform(payload) {
     // Transform function here
 }`;
@@ -67,7 +72,7 @@ function transform(payload) {
 			const response = await this.createSubscriptionService.testTransformFunction(this.transformForm.value);
 			this.output = response.data.payload;
 			this.logs = response.data.log;
-			this.logs.length > 0 ? (this.showConsole = true) : (this.showConsole = false);
+			if (this.logs.length > 0) this.showConsole = true;
 			this.isTransformFunctionPassed = true;
 			this.isTestingFunction = false;
 		} catch (error) {

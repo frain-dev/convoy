@@ -19,7 +19,7 @@
 <div class="max-w-[1192px] m-auto mt-40px mb-100px flex" convoy-card>
 	<div class="flex flex-col w-full border-r border-r-new.gray-100">
 		<div>
-			<div class="text-12 text-new.gray-500 border-b border-b-grey-20 px-12px py-6px rounded-tl-8px">Payload</div>
+			<div class="text-12 text-new.gray-500 border-b border-b-grey-20 px-12px py-6px rounded-tl-8px">Input</div>
 			<convoy-monaco [editorValue]="payload" className="h-300px w-[96%]" #payloadEditor></convoy-monaco>
 		</div>
 		<div class="min-h-[370px]">
@@ -42,7 +42,7 @@
 	</div>
 	<div class="flex flex-col w-full">
 		<div class="text-12 text-new.gray-500 border-b border-b-grey-20 px-12px py-6px rounded-tr-8px flex items-center justify-between">
-			Javascript
+			Transform Function
 			<button convoy-button size="xs" type="button" fill="outline" class="py-0" [disabled]="isTestingFunction" (click)="testTransformFunction()">
 				<svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-6px">
 					<path
@@ -64,23 +64,29 @@
 			Console
 			<div class="flex items-center">
 				<button convoy-button size="xs" type="button" fill="outline" texture="light" color="grey" class="p-2px" [disabled]="isTestingFunction" (click)="logs = []">
-					<svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path d="M4.11328 2.86262L2.68828 3.7293L2.03828 2.66263C1.80078 2.27096 1.92578 1.7543 2.31745 1.5168C2.70911 1.2793 3.22578 1.40429 3.46328 1.79596L4.11328 2.86262Z" stroke="#292D32" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+					<svg width="19" height="19" viewBox="0 0 19 19" fill="none" xmlns="http://www.w3.org/2000/svg">
 						<path
-							d="M4.92334 4.31666L3.60667 5.11668C2.84001 5.58335 2.60667 6.52501 2.9775 7.27501L3.83167 9.01668C4.10667 9.57918 4.77334 9.775 5.30667 9.44583L7.98584 7.81667C8.52334 7.49167 8.65251 6.81251 8.28167 6.30834L7.12751 4.75001C6.62751 4.07501 5.69001 3.85 4.92334 4.31666Z"
-							stroke="#292D32"
+							d="M7.90273 4.75233L5.33773 6.31234L4.16773 4.39235C3.74023 3.68735 3.96523 2.75735 4.67023 2.32985C5.37523 1.90235 6.30523 2.12733 6.73273 2.83233L7.90273 4.75233Z"
+							stroke="#667085"
 							stroke-width="0.8"
 							stroke-linecap="round"
 							stroke-linejoin="round"
 						/>
-						<path d="M4.48291 2.62455L2.34766 3.9248L3.21449 5.3483L5.34974 4.04805L4.48291 2.62455Z" stroke="#292D32" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
-						<path d="M5.96484 7.50391L6.65235 8.63308" stroke="#292D32" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
-						<path d="M4.89453 8.1543L5.58203 9.28347" stroke="#292D32" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
-						<path d="M7.03125 6.85449L7.71875 7.98367" stroke="#292D32" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+						<path
+							d="M9.36436 7.36921L6.99436 8.80924C5.61436 9.64924 5.19435 11.3442 5.86185 12.6942L7.39935 15.8292C7.89435 16.8417 9.09436 17.1942 10.0544 16.6017L14.8769 13.6692C15.8444 13.0842 16.0769 11.8617 15.4094 10.9542L13.3319 8.14924C12.4319 6.93424 10.7444 6.52921 9.36436 7.36921Z"
+							stroke="#667085"
+							stroke-width="0.8"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
+						<path d="M8.56806 4.32361L4.72461 6.66406L6.28491 9.22636L10.1284 6.88591L8.56806 4.32361Z" stroke="#667085" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+						<path d="M11.2344 13.1074L12.4719 15.1399" stroke="#667085" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+						<path d="M9.3125 14.2773L10.55 16.3099" stroke="#667085" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+						<path d="M13.1562 11.9375L14.3938 13.97" stroke="#667085" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
 					</svg>
 				</button>
 				<button convoy-button size="xs" type="button" fill="outline" texture="light" color="grey" class="p-2px ml-10px" [disabled]="isTestingFunction" (click)="logs = []; showConsole = !showConsole">
-					<img class="w-12px transition-all duration-300" [class]="{ 'rotate-180': showConsole }" src="/assets/img/angle-down.svg" alt="arrow down icon" />
+					<img class="w-18px transition-all duration-300" [class]="{ 'rotate-180': !showConsole }" src="/assets/img/angle-down.svg" alt="arrow down icon" />
 				</button>
 			</div>
 		</div>
