@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -84,14 +85,14 @@ func (m *MetaEvent) Run(eventType string, projectID string, data interface{}) er
 		ProjectID:   projectID,
 	}
 
-	mE, err := json.Marshal(s)
+	bytes, err := msgpack.EncodeMsgPack(s)
 	if err != nil {
 		return err
 	}
 
 	err = m.queue.Write(convoy.MetaEventProcessor, convoy.MetaEventQueue, &queue.Job{
 		ID:      metaEvent.UID,
-		Payload: mE,
+		Payload: bytes,
 	})
 
 	if err != nil {

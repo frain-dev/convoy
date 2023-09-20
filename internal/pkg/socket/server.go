@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/frain-dev/convoy/internal/pkg/apm"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"sync"
 	"time"
 
@@ -146,7 +147,7 @@ func (e *EndpointError) Delay() time.Duration {
 func (h *Hub) EventDeliveryCLiHandler(r *Repo) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
-		err := json.Unmarshal(t.Payload(), &data)
+		err := msgpack.DecodeMsgPack(t.Payload(), &data)
 		if err != nil {
 			log.WithError(err).Error("failed to unmarshal process event delivery payload")
 			return &EndpointError{Err: err, delay: time.Second}

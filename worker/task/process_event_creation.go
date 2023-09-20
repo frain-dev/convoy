@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -27,9 +28,12 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 		var createEvent CreateEvent
 		var event datastore.Event
 
-		err := json.Unmarshal(t.Payload(), &createEvent)
+		err := msgpack.DecodeMsgPack(t.Payload(), &createEvent)
 		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
+			err := json.Unmarshal(t.Payload(), &createEvent)
+			if err != nil {
+				return &EndpointError{Err: err, delay: defaultDelay}
+			}
 		}
 
 		var project *datastore.Project
@@ -151,11 +155,13 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 
 			if eventDelivery.Status != datastore.DiscardedEventStatus {
 				payload := EventDelivery{
-					EventDeliveryID: eventDelivery.UID,
-					ProjectID:       project.UID,
+					Subscription:  &s,
+					Project:       project,
+					Endpoint:      s.Endpoint,
+					EventDelivery: eventDelivery,
 				}
 
-				data, err := json.Marshal(payload)
+				data, err := msgpack.EncodeMsgPack(payload)
 				if err != nil {
 					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}
