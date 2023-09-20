@@ -30,7 +30,7 @@ export class CreateTransformFunctionComponent implements OnInit {
 	});
 	isTransformFunctionPassed = false;
 	isTestingFunction = false;
-	showConsole = false;
+	showConsole = true;
 	logs: any;
 	payload: any = {
 		id: 'Sample-1',
