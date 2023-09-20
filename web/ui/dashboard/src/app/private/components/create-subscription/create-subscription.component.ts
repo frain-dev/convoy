@@ -229,6 +229,7 @@ export class CreateSubscriptionComponent implements OnInit {
 			const response = this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: subscriptionData, id: this.subscriptionId }) : await this.createSubscriptionService.createSubscription(subscriptionData);
 			if (setup) await this.privateService.getProjectStat({ refresh: true });
 			this.privateService.getSubscriptions();
+			localStorage.removeItem('FUNCTION');
 			this.onAction.emit({ data: response.data, action: this.action == 'update' ? 'update' : 'create' });
 			this.createdSubscription = true;
 		} catch (error) {

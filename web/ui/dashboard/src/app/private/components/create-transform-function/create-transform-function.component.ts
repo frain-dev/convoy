@@ -71,7 +71,7 @@ function transform(payload) {
 		try {
 			const response = await this.createSubscriptionService.testTransformFunction(this.transformForm.value);
 			this.output = response.data.payload;
-			this.logs = response.data.log;
+			this.logs = response.data.log.reverse();
 			if (this.logs.length > 0) this.showConsole = true;
 			this.isTransformFunctionPassed = true;
 			this.isTestingFunction = false;
