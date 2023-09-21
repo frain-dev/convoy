@@ -87,10 +87,15 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			subRepo := postgres.NewSubscriptionRepo(a.DB)
 			deviceRepo := postgres.NewDeviceRepo(a.DB)
 			configRepo := postgres.NewConfigRepo(a.DB)
+
 			searchBackend, err := searcher.NewSearchClient(cfg)
-			rateLimiter, err := limiter.NewLimiter(cfg.Redis)
 			if err != nil {
 				a.Logger.Debug("Failed to initialise search backend")
+			}
+
+			rateLimiter, err := limiter.NewLimiter(cfg.Redis)
+			if err != nil {
+				a.Logger.Debug("Failed to initialise rate limiter")
 			}
 
 			rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
@@ -114,8 +119,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				a.Cache,
 				a.Queue,
 				subRepo,
-				deviceRepo,
-				cfg))
+				deviceRepo))
 
 			consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
 				endpointRepo,

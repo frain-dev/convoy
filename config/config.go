@@ -27,6 +27,7 @@ var DefaultConfiguration = Configuration{
 	Host:            DefaultHost,
 	Environment:     OSSEnvironment,
 	MaxResponseSize: MaxResponseSizeKb,
+
 	Server: ServerConfiguration{
 		HTTP: HTTPServerConfiguration{
 			SSL:        false,
@@ -40,7 +41,7 @@ var DefaultConfiguration = Configuration{
 		Host:               "localhost",
 		Username:           "postgres",
 		Password:           "postgres",
-		Database:           "convoy",
+		Database:           "test",
 		Options:            "sslmode=disable&connect_timeout=30",
 		Port:               5432,
 		SetConnMaxLifetime: 3600,

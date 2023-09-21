@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"io"
 	"net/http"
@@ -115,10 +116,13 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	// passivel de cache
 	var project *datastore.Project
 
-	a.A.Cache.Get(r.Context(), source.ProjectID, &project)
+	err = a.A.Cache.Get(r.Context(), source.ProjectID, &project)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
 
 	if project == nil {
 		// 2. Retrieve source using mask ID.
@@ -128,7 +132,13 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return
 		}
-		a.A.Cache.Set(r.Context(), source.ProjectID, &projectFromDb, time.Minute*2)
+
+		err = a.A.Cache.Set(r.Context(), source.ProjectID, &projectFromDb, time.Minute*2)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
 		project = projectFromDb
 	}
 
@@ -258,7 +268,7 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 	source, err := retrieveSourceConfigurationFromMaskId(a, r.Context(), sourceCacheKey)
 
 	if err != nil {
-		if err == datastore.ErrSourceNotFound {
+		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}

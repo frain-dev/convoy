@@ -100,7 +100,8 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/valid-convoy.json",
 			},
 			wantCfg: Configuration{
-				Host: "localhost:5005",
+				Host:             "localhost:5005",
+				ConsumerPoolSize: 100,
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
 					Scheme:             "postgres",
@@ -157,7 +158,8 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/valid-convoy-redis-cluster.json",
 			},
 			wantCfg: Configuration{
-				Host: "localhost:5005",
+				Host:             "localhost:5005",
+				ConsumerPoolSize: 100,
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
 					Scheme:             "postgres",
@@ -215,7 +217,8 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/zero-max-response-size-convoy.json",
 			},
 			wantCfg: Configuration{
-				Host: "localhost:5005",
+				Host:             "localhost:5005",
+				ConsumerPoolSize: 100,
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
 					Scheme:             "postgres",

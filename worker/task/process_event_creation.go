@@ -10,7 +10,6 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -27,7 +26,7 @@ type CreateEvent struct {
 func ProcessEventCreation(
 	endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer,
-	subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, cfg config.Configuration) func(context.Context, *asynq.Task) error {
+	subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var createEvent CreateEvent
 		var event datastore.Event
@@ -249,16 +248,22 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 			subscriptions = append(subscriptions, subs...)
 		}
 	} else if project.Type == datastore.IncomingProject {
-
 		cacheKey := fmt.Sprintf("subscriptions:%s:%s", project.UID, event.SourceID)
-		cache.Get(ctx, cacheKey, &subscriptions)
+		err := cache.Get(ctx, cacheKey, &subscriptions)
+		if err != nil {
+			return nil, &EndpointError{Err: err, delay: 10 * time.Second}
+		}
 
 		if len(subscriptions) == 0 {
 			subscriptions, err = subRepo.FindSubscriptionsBySourceID(ctx, project.UID, event.SourceID)
 			if err != nil {
-				return nil, &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
+				return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 			}
-			cache.Set(ctx, cacheKey, &subscriptions, time.Minute*2)
+
+			err = cache.Set(ctx, cacheKey, &subscriptions, time.Minute*2)
+			if err != nil {
+				return nil, &EndpointError{Err: err, delay: 10 * time.Second}
+			}
 		}
 
 		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions)
