@@ -24,6 +24,7 @@ const (
 
 func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, exportRepo datastore.ExportRepository, searcher searcher.Searcher) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
+		c := time.Now()
 		config, err := configRepo.LoadConfiguration(ctx)
 		if err != nil {
 			if errors.Is(err, datastore.ErrConfigNotFound) {
@@ -64,6 +65,7 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 				}
 			}
 		}
+		fmt.Printf("Retention policy job took %f minutes to run", time.Since(c).Minutes())
 		return nil
 	}
 }
@@ -156,6 +158,11 @@ func ExportCollection(
 			return err
 		}
 
+		err = eventRepo.DeleteProjectTokenizedEvents(ctx, project.UID, eventFilter)
+		if err != nil {
+			return err
+		}
+
 		project.RetainedEvents += int(numDocs)
 		err = projectRepo.UpdateProject(ctx, project)
 		if err != nil {
@@ -184,7 +191,7 @@ func ExportCollection(
 
 	err = searcher.Remove(tableName, sf)
 	if err != nil {
-		log.WithError(err).Error("typesense: an error occured deleting typesense record")
+		log.WithError(err).Error("typesense: an error occurred deleting typesense record")
 	}
 
 	return nil

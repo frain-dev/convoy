@@ -34,7 +34,7 @@ func main() {
 	app.Version = convoy.GetVersionFromFS(ee.F)
 	db := &postgres.Postgres{}
 
-	c := cli.NewCli(app, db)
+	c := cli.NewCli(app)
 
 	var dbPort int
 	var dbType string

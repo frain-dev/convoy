@@ -1,6 +1,7 @@
 package socket
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -42,7 +43,7 @@ func TestGoOffline(t *testing.T) {
 	dev.EXPECT().UpdateDevice(gomock.Any(), c.Device, gomock.Any(), gomock.Any()).
 		Return(nil)
 
-	c.GoOffline()
+	c.GoOffline(context.Background())
 
 	require.Equal(t, datastore.DeviceStatusOffline, c.Device.Status)
 }
@@ -79,7 +80,7 @@ func TestUpdateEventDeliveryStatus(t *testing.T) {
 	evd.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil)
 
-	c.UpdateEventDeliveryStatus(c.deviceID, c.Device.ProjectID)
+	c.UpdateEventDeliveryStatus(context.Background(), c.deviceID, c.Device.ProjectID)
 }
 
 func TestResendEventDeliveries(t *testing.T) {
@@ -113,7 +114,7 @@ func TestResendEventDeliveries(t *testing.T) {
 	evd.EXPECT().FindDiscardedEventDeliveries(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return([]datastore.EventDelivery{wantEd}, nil)
 
-	c.ResendEventDeliveries(time.Now(), evts)
+	c.ResendEventDeliveries(context.Background(), time.Now(), evts)
 
 	ev := <-evts
 	require.Equal(t, wantEd.UID, ev.UID)
@@ -154,8 +155,8 @@ func TestPingHandler_Success(t *testing.T) {
 	dev.EXPECT().UpdateDeviceLastSeen(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil)
 
-	err := c.pingHandler("")
-	require.NoError(t, err)
+	h := c.pingHandler(context.Background())
+	require.NoError(t, h(""))
 }
 
 func TestPingHandler_FailedToUpdateDevice(t *testing.T) {
@@ -180,8 +181,8 @@ func TestPingHandler_FailedToUpdateDevice(t *testing.T) {
 	dev.EXPECT().UpdateDeviceLastSeen(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(ErrFailedToUpdateDevice)
 
-	err := c.pingHandler("")
-	require.Error(t, ErrFailedToUpdateDevice, err)
+	h := c.pingHandler(context.Background())
+	require.Error(t, ErrFailedToUpdateDevice, h(""))
 }
 
 func TestPingHandler_FailedToSendPongMessage(t *testing.T) {
@@ -209,8 +210,8 @@ func TestPingHandler_FailedToSendPongMessage(t *testing.T) {
 	dev.EXPECT().UpdateDeviceLastSeen(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil)
 
-	err := c.pingHandler("")
-	require.Error(t, ErrFailedToSendPongMessage, err)
+	h := c.pingHandler(context.Background())
+	require.Error(t, ErrFailedToSendPongMessage, h(""))
 }
 
 func TestProcessMessage(t *testing.T) {
@@ -280,7 +281,7 @@ func TestProcessMessage(t *testing.T) {
 
 			client := provideClient(r, c)
 
-			client.processMessage(tt.args.messageType, tt.args.message, tt.args.err, tt.args.unreg)
+			client.processMessage(context.Background(), tt.args.messageType, tt.args.message, tt.args.unreg)
 		})
 	}
 }

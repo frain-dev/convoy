@@ -30,6 +30,8 @@
 			</button>
 		</form>
 
-		<button convoy-button fill="link" class="mt-12px w-full" (click)="router.navigateByUrl('/signup')" size="sm">Signup</button>
+		<button *ngIf="isSignupEnabled" convoy-button fill="link" class="mt-12px w-full" (click)="router.navigateByUrl('/signup')" size="sm">Signup</button>
 	</section>
 </div>
+
+<convoy-loader [isTransparent]="false" *ngIf="isLoadingProject || isFetchingConfig"></convoy-loader>

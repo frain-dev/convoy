@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/lib/pq"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/datastore"
@@ -31,31 +33,34 @@ var (
 
 const (
 	createEventDelivery = `
-    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,created_at,updated_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14);
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,idempotency_key,created_at,updated_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16);
     `
 
 	baseFetchEventDelivery = `
     SELECT
         ed.id,ed.project_id,ed.event_id,ed.subscription_id,
         ed.headers,ed.attempts,ed.status,ed.metadata,ed.cli_metadata,
+        COALESCE(ed.url_query_params, '') AS url_query_params,
+        COALESCE(ed.idempotency_key, '') AS idempotency_key,
         ed.description,ed.created_at,ed.updated_at,
-        COALESCE(ed.device_id,'') as "device_id",
-        COALESCE(ed.endpoint_id,'') as "endpoint_id",
-        COALESCE(ep.id, '') as "endpoint_metadata.id",
-        COALESCE(ep.title, '') as "endpoint_metadata.title",
-        COALESCE(ep.project_id, '') as "endpoint_metadata.project_id",
-        COALESCE(ep.support_email, '') as "endpoint_metadata.support_email",
-        COALESCE(ep.target_url, '') as "endpoint_metadata.target_url",
-        ev.id as "event_metadata.id",
-        ev.event_type as "event_metadata.event_type",
+        COALESCE(ed.device_id,'') AS "device_id",
+        COALESCE(ed.endpoint_id,'') AS "endpoint_id",
+        COALESCE(ep.id, '') AS "endpoint_metadata.id",
+        COALESCE(ep.title, '') AS "endpoint_metadata.title",
+        COALESCE(ep.project_id, '') AS "endpoint_metadata.project_id",
+        COALESCE(ep.support_email, '') AS "endpoint_metadata.support_email",
+        COALESCE(ep.target_url, '') AS "endpoint_metadata.target_url",
+        ev.id AS "event_metadata.id",
+        ev.event_type AS "event_metadata.event_type",
 
-		COALESCE(d.id,'') as "device_metadata.id",
-		COALESCE(d.status,'') as "device_metadata.status",
-		COALESCE(d.host_name,'') as "device_metadata.host_name",
+		COALESCE(d.id,'') AS "device_metadata.id",
+		COALESCE(d.status,'') AS "device_metadata.status",
+		COALESCE(d.host_name,'') AS "device_metadata.host_name",
 
 		COALESCE(s.id, '') AS "source_metadata.id",
-		COALESCE(s.name, '') AS "source_metadata.name"
+		COALESCE(s.name, '') AS "source_metadata.name",
+		COALESCE(s.idempotency_keys, '{}') AS "source_metadata.idempotency_keys"
     FROM convoy.event_deliveries ed
 	LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id
 	LEFT JOIN convoy.events ev ON ed.event_id = ev.id
@@ -95,7 +100,7 @@ const (
 	AND ed.deleted_at IS NULL`
 
 	countPrevEventDeliveries = `
-	SELECT count(distinct(ed.id)) as count
+	SELECT COUNT(DISTINCT(ed.id)) AS count
 	FROM convoy.event_deliveries ed
 	WHERE ed.deleted_at IS NULL
 	%s
@@ -103,10 +108,10 @@ const (
 
 	loadEventDeliveriesIntervals = `
     SELECT
-        date_trunc('%s', created_at) as "data.group_only",
-        to_char(date_trunc('%s', created_at), '%s') as "data.total_time",
-        extract(%s from created_at) as "data.index",
-        count(*) as count
+        DATE_TRUNC('%s', created_at) AS "data.group_only",
+        TO_CHAR(DATE_TRUNC('%s', created_at), '%s') AS "data.total_time",
+        EXTRACT('%s' FROM created_at) AS "data.index",
+        COUNT(*) AS count
         FROM
             convoy.event_deliveries
         WHERE
@@ -117,25 +122,29 @@ const (
     GROUP BY
         "data.group_only", "data.index"
     ORDER BY
-        "data.total_time" ASC;
+        "data.total_time";
     `
 
 	fetchEventDeliveries = `
     SELECT
         id,project_id,event_id,subscription_id,
         headers,attempts,status,metadata,cli_metadata,
+        COALESCE(ed.idempotency_key, '') AS idempotency_key,
+        COALESCE(url_query_params, '') AS url_query_params,
         description,created_at,updated_at,
-        COALESCE(device_id,'') as "device_id",
-        COALESCE(endpoint_id,'') as "endpoint_id"
-    FROM convoy.event_deliveries ed WHERE %s AND deleted_at IS NULL;
+        COALESCE(device_id,'') AS "device_id",
+        COALESCE(endpoint_id,'') AS "endpoint_id"
+    FROM convoy.event_deliveries ed
     `
 
 	fetchDiscardedEventDeliveries = `
     SELECT
         id,project_id,event_id,subscription_id,
         headers,attempts,status,metadata,cli_metadata,
+        COALESCE(idempotency_key, '') AS idempotency_key,
+        COALESCE(url_query_params, '') AS url_query_params,
         description,created_at,updated_at,
-        COALESCE(device_id,'') as "device_id"
+        COALESCE(device_id,'') AS "device_id"
     FROM convoy.event_deliveries
 	WHERE status=$1 AND project_id = $2 AND device_id = $3
 	AND created_at >= $4 AND created_at <= $5
@@ -151,15 +160,15 @@ const (
     `
 
 	updateEventDeliveriesStatus = `
-    UPDATE convoy.event_deliveries SET status = ?, updated_at = now() WHERE (project_id = ? OR ? = '')AND id IN (?) AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET status = ?, updated_at = NOW() WHERE (project_id = ? OR ? = '')AND id IN (?) AND deleted_at IS NULL;
     `
 
 	updateEventDeliveryAttempts = `
-    UPDATE convoy.event_deliveries SET attempts = $1, status = $2, metadata = $3,  updated_at = now() WHERE id = $4 AND project_id = $5 AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET attempts = $1, status = $2, metadata = $3,  updated_at = NOW() WHERE id = $4 AND project_id = $5 AND deleted_at IS NULL;
     `
 
 	softDeleteProjectEventDeliveries = `
-    UPDATE convoy.event_deliveries SET deleted_at = now() WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3 AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET deleted_at = NOW() WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3 AND deleted_at IS NULL;
     `
 
 	hardDeleteProjectEventDeliveries = `
@@ -187,7 +196,8 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 		ctx, createEventDelivery, delivery.UID, delivery.ProjectID,
 		delivery.EventID, endpointID, deviceID,
 		delivery.SubscriptionID, delivery.Headers, delivery.DeliveryAttempts, delivery.Status,
-		delivery.Metadata, delivery.CLIMetadata, delivery.Description, delivery.CreatedAt, delivery.UpdatedAt,
+		delivery.Metadata, delivery.CLIMetadata, delivery.Description, delivery.URLQueryParams, delivery.IdempotencyKey,
+		delivery.CreatedAt, delivery.UpdatedAt,
 	)
 	if err != nil {
 		return err
@@ -220,8 +230,9 @@ func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, projectID
 
 func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, projectID string, ids []string) ([]datastore.EventDelivery, error) {
 	eventDeliveries := make([]datastore.EventDelivery, 0)
+	query := fetchEventDeliveries + " WHERE id IN (?) AND project_id = ? AND deleted_at IS NULL"
 
-	query, args, err := sqlx.In(fmt.Sprintf(fetchEventDeliveries, "id IN (?) AND project_id = ?"), ids, projectID)
+	query, args, err := sqlx.In(query, ids, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +243,6 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, projec
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var ed datastore.EventDelivery
@@ -244,18 +254,17 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, projec
 		eventDeliveries = append(eventDeliveries, ed)
 	}
 
-	return eventDeliveries, nil
+	return eventDeliveries, rows.Close()
 }
 
 func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, projectID string, eventID string) ([]datastore.EventDelivery, error) {
 	eventDeliveries := make([]datastore.EventDelivery, 0)
 
-	q := fmt.Sprintf(fetchEventDeliveries, "event_id = $1 AND project_id = $2")
+	q := fetchEventDeliveries + " WHERE event_id = $1 AND project_id = $2 AND deleted_at IS NULL"
 	rows, err := e.db.QueryxContext(ctx, q, eventID, projectID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var ed datastore.EventDelivery
@@ -267,7 +276,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, pr
 		eventDeliveries = append(eventDeliveries, ed)
 	}
 
-	return eventDeliveries, nil
+	return eventDeliveries, rows.Close()
 }
 
 func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, projectID string, status datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
@@ -345,7 +354,6 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, pr
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var ed datastore.EventDelivery
@@ -357,7 +365,7 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, pr
 		eventDeliveries = append(eventDeliveries, ed)
 	}
 
-	return eventDeliveries, nil
+	return eventDeliveries, rows.Close()
 }
 
 func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, delivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
@@ -377,7 +385,7 @@ func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, 
 		return ErrEventDeliveryAttemptsNotUpdated
 	}
 
-	go e.hook.Fire(datastore.EventDeliveryUpdated, &delivery)
+	go e.hook.Fire(datastore.EventDeliveryUpdated, &delivery, nil)
 	return nil
 }
 
@@ -451,21 +459,23 @@ func (e *eventDeliveryRepo) DeleteProjectEventDeliveries(ctx context.Context, pr
 	return nil
 }
 
-func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable, idempotencyKey string) ([]datastore.EventDelivery, datastore.PaginationData, error) {
 	eventDeliveriesP := make([]EventDeliveryPaginated, 0)
 
 	start := time.Unix(params.CreatedAtStart, 0)
 	end := time.Unix(params.CreatedAtEnd, 0)
 
 	arg := map[string]interface{}{
-		"endpoint_ids": endpointIDs,
-		"project_id":   projectID,
-		"limit":        pageable.Limit(),
-		"start_date":   start,
-		"event_id":     eventID,
-		"end_date":     end,
-		"status":       status,
-		"cursor":       pageable.Cursor(),
+		"endpoint_ids":    endpointIDs,
+		"project_id":      projectID,
+		"limit":           pageable.Limit(),
+		"subscription_id": subscriptionID,
+		"start_date":      start,
+		"event_id":        eventID,
+		"end_date":        end,
+		"status":          status,
+		"cursor":          pageable.Cursor(),
+		"idempotency_key": idempotencyKey,
 	}
 
 	var query, filterQuery string
@@ -482,6 +492,10 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 
 	if len(status) > 0 {
 		filterQuery += ` AND ed.status IN (:status)`
+	}
+
+	if !util.IsStringEmpty(subscriptionID) {
+		filterQuery += ` AND ed.subscription_id = :subscription_id`
 	}
 
 	query = fmt.Sprintf(query, baseFetchEventDelivery, filterQuery)
@@ -532,7 +546,9 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 			EndpointID:     ev.EndpointID,
 			DeviceID:       ev.DeviceID,
 			SubscriptionID: ev.SubscriptionID,
+			IdempotencyKey: ev.IdempotencyKey,
 			Headers:        ev.Headers,
+			URLQueryParams: ev.URLQueryParams,
 			Endpoint: &datastore.Endpoint{
 				UID:          ev.Endpoint.UID.ValueOrZero(),
 				ProjectID:    ev.Endpoint.ProjectID.ValueOrZero(),
@@ -541,8 +557,9 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 				SupportEmail: ev.Endpoint.SupportEmail.ValueOrZero(),
 			},
 			Source: &datastore.Source{
-				UID:  ev.Source.UID.ValueOrZero(),
-				Name: ev.Source.Name.ValueOrZero(),
+				UID:             ev.Source.UID.ValueOrZero(),
+				Name:            ev.Source.Name.ValueOrZero(),
+				IdempotencyKeys: ev.Source.IdempotencyKeys,
 			},
 			Device: &datastore.Device{
 				UID:      ev.Device.UID.ValueOrZero(),
@@ -593,7 +610,10 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		rows.Close()
+		err = rows.Close()
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
 	}
 
 	ids := make([]string, len(eventDeliveries))
@@ -618,7 +638,7 @@ const (
 	yearlyIntervalFormat  = "yyyy"              // 1 month
 )
 
-func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, t int) ([]datastore.EventInterval, error) {
+func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period) ([]datastore.EventInterval, error) {
 	intervals := make([]datastore.EventInterval, 0)
 
 	start := time.Unix(params.CreatedAtStart, 0)
@@ -746,8 +766,9 @@ type EventMetadata struct {
 }
 
 type SourceMetadata struct {
-	UID  null.String `db:"id"`
-	Name null.String `db:"name"`
+	UID             null.String    `db:"id"`
+	Name            null.String    `db:"name"`
+	IdempotencyKeys pq.StringArray `db:"idempotency_keys"`
 }
 
 type DeviceMetadata struct {
@@ -769,6 +790,8 @@ type EventDeliveryPaginated struct {
 	DeviceID       string                `json:"device_id" db:"device_id"`
 	SubscriptionID string                `json:"subscription_id,omitempty" db:"subscription_id"`
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
+	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
+	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
 
 	Endpoint *EndpointMetadata `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *EventMetadata    `json:"event_metadata,omitempty" db:"event_metadata"`

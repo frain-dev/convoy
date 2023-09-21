@@ -1,15 +1,3 @@
-<div class="text-12 font-medium flex items-center uppercase mb-24px">
-	<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
-	<svg width="16" height="16" class="mx-4px">
-		<use xlink:href="#arrow-right-icon"></use>
-	</svg>
-	{{ privateService.activeProjectDetails?.name }}
-	<svg width="16" height="16" class="mx-4px">
-		<use xlink:href="#arrow-right-icon"></use>
-	</svg>
-	<span class="text-primary-100 font-medium">Meta Events</span>
-</div>
-
 <!-- header  -->
 <div class="flex justify-between items-end border-b border-b-grey-10 pb-20px mb-24px">
 	<div class="flex items-center">
@@ -37,11 +25,11 @@
 							</tr>
 							<tr convoy-table-row class="group" *ngFor="let event of eventGroup.content; let index = index" (click)="selectedMetaEvent = event" [active]="selectedMetaEvent?.uid === event.uid">
 								<td convoy-table-cell class="w-130px pl-16px pr-30px relative">
-									<convoy-tag [type]="event.status | statuscolor">{{ event.status }}</convoy-tag>
+									<convoy-tag [color]="event.status | statuscolor">{{ event.status }}</convoy-tag>
 								</td>
 
 								<td convoy-table-cell>
-									<convoy-tag type="grey">{{ event.event_type }}</convoy-tag>
+									<convoy-tag color="gray">{{ event.event_type }}</convoy-tag>
 								</td>
 
 								<td convoy-table-cell class="">{{ event.metadata.num_trials }}</td>

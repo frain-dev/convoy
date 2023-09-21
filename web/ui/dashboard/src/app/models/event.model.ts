@@ -9,6 +9,8 @@ export interface EVENT {
 	uid: string;
 	updated_at: string;
 	app_id?: string;
+    idempotency_key: string;
+	is_duplicate_event: boolean;
 	event_type: string;
 	data: any;
 	matched_endpoints: number;
@@ -34,6 +36,7 @@ export interface EVENT_DELIVERY {
 		event_type: string;
 		host_name: string;
 	};
+	idempotency_key: string;
 	metadata: {
 		interval_seconds: number;
 		next_send_time: string;
@@ -42,10 +45,12 @@ export interface EVENT_DELIVERY {
 		strategy: string;
 		data: any;
 	};
+	source_metadata: SOURCE;
 	endpoint_metadata: ENDPOINT;
 	app_metadata: APP;
 	event_metadata: EVENT;
 	device_metadata: DEVICE;
+	endpoint_id: string;
 }
 
 export interface EVENT_DELIVERY_ATTEMPT {
@@ -61,4 +66,20 @@ export interface EVENT_DELIVERY_ATTEMPT {
 	request_http_header: any;
 	uid: string;
 	error?: string;
+}
+
+
+export interface FILTER_QUERY_PARAM {
+	startDate?: string;
+	endDate?: string;
+	eventId?: string;
+	endpointId?: string;
+	idempotencyKey?: string;
+	status?: string;
+	sourceId?: string;
+	next_page_cursor?: string;
+	prev_page_cursor?: string;
+	direction?: 'next' | 'prev';
+	showLoader?: boolean;
+    query?:string;
 }

@@ -18,17 +18,20 @@ import { RbacService } from 'src/app/services/rbac/rbac.service';
 export class CreateSubscriptionComponent implements OnInit {
 	@Output() onAction = new EventEmitter();
 	@Input('action') action: 'update' | 'create' | 'view' = 'create';
+	@Input('isPortal') isPortal: 'true' | 'false' = 'false';
+	@Input('subscriptionId') subscriptionId = this.route.snapshot.params.id || this.route.snapshot.queryParams.id;
 	@Input('showAction') showAction: 'true' | 'false' = 'false';
 
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
 	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;
+
 	subscriptionForm: FormGroup = this.formBuilder.group({
 		name: [null, Validators.required],
 		source_id: [''],
 		endpoint_id: [null, Validators.required],
 		retry_config: this.formBuilder.group({
 			type: [],
-			retry_count: [],
+			retry_count: [null, Validators.pattern('^[-+]?[0-9]+$')],
 			duration: []
 		}),
 		filter_config: this.formBuilder.group({
@@ -55,34 +58,34 @@ export class CreateSubscriptionComponent implements OnInit {
 	];
 	isCreatingSubscription = false;
 
-	projectType?: 'incoming' | 'outgoing' = this.privateService.activeProjectDetails?.type;
+	projectType?: 'incoming' | 'outgoing' = this.privateService.getProjectDetails?.type;
 	isLoadingForm = true;
-	subscriptionId = this.route.snapshot.params.id || this.route.snapshot.queryParams.id;
 	isLoadingPortalProject = false;
 	token: string = this.route.snapshot.queryParams.token;
 	showError = false;
-	confirmModal = false;
 
 	configurations = [
 		{ uid: 'filter_config', name: 'Filter', show: false },
-		{ uid: 'retry_config', name: 'Retry Logic', show: false },
-		{ uid: 'events', name: 'Event Types', show: false }
+		{ uid: 'retry_config', name: 'Retry Logic', show: false }
 	];
 	createdSubscription = false;
 	private rbacService = inject(RbacService);
+    showFilterDialog = false
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router) {}
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
-		await this.getSubscriptionDetails();
+		if (this.isPortal !== 'true' && this.showAction === 'true') await Promise.all([this.getEndpoints(), this.getSources()]);
+		if (this.action === 'update') await this.getSubscriptionDetails();
 		this.isLoadingForm = false;
 
 		// add required validation on source input for incoming projects
 		if (this.projectType === 'incoming') {
 			this.subscriptionForm.get('source_id')?.addValidators(Validators.required);
 			this.subscriptionForm.get('source_id')?.updateValueAndValidity();
-			this.configurations.splice(2, 1);
+		} else {
+			this.configurations.push({ uid: 'events', name: 'Event Types', show: false });
 		}
 
 		if (this.configSetting) this.toggleConfigForm(this.configSetting, true);
@@ -90,7 +93,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	toggleConfig(configValue: string) {
-		this.action === 'view' ? this.router.navigate(['/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions/' + this.subscriptionId], { queryParams: { configSetting: configValue } }) : this.toggleConfigForm(configValue);
+		this.action === 'view' ? this.router.navigate(['/projects/' + this.privateService.getProjectDetails?.uid + '/subscriptions/' + this.subscriptionId], { queryParams: { configSetting: configValue } }) : this.toggleConfigForm(configValue);
 	}
 
 	toggleConfigForm(configValue: string, value?: boolean) {
@@ -106,14 +109,14 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async getSubscriptionDetails() {
-		await Promise.all([this.getEndpoints(), this.getSources()]);
-		if (this.action === 'create') return;
-
 		try {
 			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId);
 			this.subscriptionForm.patchValue(response.data);
 			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
-			response.data.filter_config?.event_types ? (this.eventTags = response.data.filter_config?.event_types) : (this.eventTags = []);
+			if (response.data.filter_config?.event_types) {
+				this.eventTags = response.data.filter_config?.event_types;
+				if (this.eventTags.length > 1 || this.eventTags[0] !== '*') this.toggleConfigForm('events');
+			} else this.eventTags = [];
 			const filterConfig = response.data.filter_config?.filter;
 
 			if (this.action === 'update' && (Object.keys(filterConfig.body).length > 0 || Object.keys(filterConfig.headers).length > 0)) {
@@ -136,13 +139,14 @@ export class CreateSubscriptionComponent implements OnInit {
 			const response = await this.privateService.getEndpoints();
 			this.endpoints = this.token ? response.data : response.data.content;
 			this.modifyEndpointData(this.token ? response.data : response.data.content);
+			return;
 		} catch (error) {
 			return error;
 		}
 	}
 
 	async getSources() {
-		if (this.privateService.activeProjectDetails?.type === 'outgoing' || this.token) return;
+		if (this.privateService.getProjectDetails?.type === 'outgoing' || this.token) return;
 
 		try {
 			const sourcesResponse = await this.privateService.getSources();
@@ -154,13 +158,13 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async onCreateSource(newSource: SOURCE) {
-		await this.getSources();
 		this.subscriptionForm.patchValue({ source_id: newSource.uid });
+		await this.getSources();
 	}
 
 	async onCreateEndpoint(newEndpoint: ENDPOINT) {
-		await this.getEndpoints();
 		this.subscriptionForm.patchValue({ endpoint_id: newEndpoint.uid });
+		await this.getEndpoints();
 	}
 
 	onToggleConfig() {
@@ -175,26 +179,56 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
-	async saveSubscription(setup?: boolean) {
-		this.isCreatingSubscription = true;
+	toggleFormsLoaders(loaderState: boolean) {
+		this.isCreatingSubscription = loaderState;
+		if (this.createEndpointForm) this.createEndpointForm.savingEndpoint = loaderState;
+		if (this.createSourceForm) this.createSourceForm.isloading = loaderState;
+	}
 
-		// if subscription service has subscription data, use it to update subscription form, else, create endpoint and source
-		if (this.createSubscriptionService.subscriptionData) {
-			this.subscriptionForm.patchValue(this.createSubscriptionService.subscriptionData);
+	async runSubscriptionValidation() {
+		if (this.configurations[1]?.show) {
+			this.subscriptionForm.get('retry_config.type')?.addValidators(Validators.required);
+			this.subscriptionForm.get('retry_config.retry_count')?.addValidators(Validators.required);
+			this.subscriptionForm.get('retry_config.duration')?.addValidators(Validators.required);
+			this.subscriptionForm.get('retry_config.type')?.updateValueAndValidity();
+			this.subscriptionForm.get('retry_config.retry_count')?.updateValueAndValidity();
+			this.subscriptionForm.get('retry_config.duration')?.updateValueAndValidity();
 		} else {
-			// trigger create endpoint and source together
-			const [endpointDetails, sourceDetails] = await Promise.allSettled([
-				this.showCreateEndpointForm && !this.createEndpointForm.endpointCreated ? this.createEndpointForm.saveEndpoint() : false,
-				this.showCreateSourceForm && !this.createSourceForm.sourceCreated ? this.createSourceForm.saveSource() : false
-			]);
-			if (endpointDetails.status === 'fulfilled' && typeof endpointDetails.value !== 'boolean') this.subscriptionForm.patchValue({ endpoint_id: endpointDetails.value?.data.uid });
-			if (sourceDetails.status === 'fulfilled' && typeof sourceDetails.value !== 'boolean') this.subscriptionForm.patchValue({ source_id: sourceDetails.value?.data.uid });
+			this.subscriptionForm.get('retry_config.type')?.removeValidators(Validators.required);
+			this.subscriptionForm.get('retry_config.retry_count')?.removeValidators(Validators.required);
+			this.subscriptionForm.get('retry_config.duration')?.removeValidators(Validators.required);
+			this.subscriptionForm.get('retry_config.type')?.updateValueAndValidity();
+			this.subscriptionForm.get('retry_config.retry_count')?.updateValueAndValidity();
+			this.subscriptionForm.get('retry_config.duration')?.updateValueAndValidity();
 		}
 
-		// set filter config
-		this.subscriptionForm.patchValue({
-			filter_config: { event_types: this.eventTags.length > 0 ? this.eventTags : ['*'] }
-		});
+		if (this.configurations.length > 2) {
+			if (this.configurations[2]?.show) {
+				this.subscriptionForm.get('filter_config.event_types')?.addValidators(Validators.required);
+				this.subscriptionForm.get('filter_config.event_types')?.updateValueAndValidity();
+			} else {
+				this.subscriptionForm.get('filter_config.event_types')?.removeValidators(Validators.required);
+				this.subscriptionForm.get('filter_config.event_types')?.updateValueAndValidity();
+			}
+		}
+
+		return;
+	}
+
+	async saveSubscription(setup?: boolean) {
+		this.toggleFormsLoaders(true);
+		if (this.eventTags.length === 0) this.subscriptionForm.patchValue({ filter_config: { event_types: ['*'] } });
+
+		await this.runSubscriptionValidation();
+
+		if (this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('retry_config')?.invalid || this.subscriptionForm.get('filter_config')?.invalid) {
+			this.toggleFormsLoaders(false);
+			this.subscriptionForm.markAllAsTouched();
+			return;
+		}
+
+		if (this.createEndpointForm && !this.createEndpointForm.endpointCreated) await this.createEndpointForm.saveEndpoint();
+		if (this.createSourceForm && !this.createSourceForm.sourceCreated) await this.createSourceForm.saveSource();
 
 		// check subscription form validation
 		if (this.subscriptionForm.invalid) {
@@ -205,7 +239,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		// check if configs are added, else delete the properties
 		const subscriptionData = structuredClone(this.subscriptionForm.value);
 		const retryDuration = this.subscriptionForm.get('retry_config.duration');
-		this.configurations[1].show ? (subscriptionData.retry_config.duration = retryDuration?.value + 's') : delete subscriptionData.retry_config;
+		this.configurations[1]?.show ? (subscriptionData.retry_config.duration = retryDuration?.value + 's') : delete subscriptionData.retry_config;
 
 		// create subscription
 		try {
@@ -220,37 +254,6 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
-	removeEventTag(tag: string) {
-		this.eventTags = this.eventTags.filter(e => e !== tag);
-	}
-
-	addTag() {
-		const addTagInput = document.getElementById('tagInput');
-		const addTagInputValue = document.getElementById('tagInput') as HTMLInputElement;
-		addTagInput?.addEventListener('keydown', e => {
-			const key = e.keyCode || e.charCode;
-			if (key == 8) {
-				e.stopImmediatePropagation();
-				if (this.eventTags.length > 0 && !addTagInputValue?.value) this.eventTags.splice(-1);
-			}
-			if (e.which === 188 || e.key == ' ') {
-				if (this.eventTags.includes(addTagInputValue?.value)) {
-					addTagInputValue.value = '';
-					this.eventTags = this.eventTags.filter(e => String(e).trim());
-				} else {
-					this.eventTags.push(addTagInputValue?.value);
-					addTagInputValue.value = '';
-					this.eventTags = this.eventTags.filter(e => String(e).trim());
-				}
-				e.preventDefault();
-			}
-		});
-	}
-
-	focusInput() {
-		document.getElementById('tagInput')?.focus();
-	}
-
 	modifyEndpointData(endpoints?: ENDPOINT[]) {
 		if (endpoints) {
 			const endpointData = endpoints;
@@ -261,24 +264,22 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
-	cancel() {
-		document.getElementById(this.router.url.includes('/configure') ? 'configureProjectForm' : 'subscriptionForm')?.scroll({ top: 0, behavior: 'smooth' });
-		this.confirmModal = true;
-	}
-
 	goToSubsriptionsPage() {
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/subscriptions');
+		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid + '/subscriptions');
 	}
 
 	setupFilter() {
 		document.getElementById(this.showAction === 'true' ? 'subscriptionForm' : 'configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
-		this.showFilterForm = true;
+		this.showFilterDialog = true;
 	}
 
 	getFilterSchema(schema: any) {
 		if (schema.headerSchema) this.subscriptionForm.get('filter_config.filter.headers')?.patchValue(schema.headerSchema);
 		if (schema.bodySchema) this.subscriptionForm.get('filter_config.filter.body')?.patchValue(schema.bodySchema);
+        this.showFilterDialog = false;
+	}
 
-		this.showFilterForm = false;
+	get shouldShowBorder(): number {
+		return this.configurations.filter(config => config.show).length;
 	}
 }

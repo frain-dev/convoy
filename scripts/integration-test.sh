@@ -1,4 +1,5 @@
 export TEST_DB_SCHEME=postgres
+export TEST_DB_OPTIONS="sslmode=disable&connect_timeout=30"
 export TEST_DB_HOST=localhost
 export TEST_DB_USERNAME=postgres
 export TEST_DB_PASSWORD=postgres

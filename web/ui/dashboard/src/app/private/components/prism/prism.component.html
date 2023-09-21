@@ -1,11 +1,37 @@
-<div>
+<h4 *ngIf="title" class="py-8px text-12 text-new.gray-400 -mb-2px">{{ title }}</h4>
+
+<div *ngIf="type !== 'headers'" class="border border-new.primary-25 rounded-8px mb-26px">
 	<div class="">
-		<h4 *ngIf="title" class="bg-[#f3f3f8] py-8px px-22px rounded-tl-8px rounded-tr-8px -mb-2px text-14">{{ title }}</h4>
 		<pre *ngIf="language" class="language-{{ language }} line-numbers" [class]="showPayload && code && code.length > 300 ? 'h-[520px] overflow-y-auto' : 'max-h-[300px] overflow-y-hidden'">
 <code #codeEle class="language-{{ language }} line-numbers">{{code}}</code>
 </pre>
 	</div>
-	<div class="flex justify-end" *ngIf="code && code.length > 300">
-		<button convoy-button size="sm" fill="text" (click)="showPayload = !showPayload">{{ showPayload ? 'Hide' : 'Show more' }} lines</button>
+	<div class="flex py-8px px-16px border-t border-new.primary-25" *ngIf="code && code.length > 300">
+		<button convoy-button size="sm" fill="text" (click)="showPayload = !showPayload">
+			<svg width="14" height="14" class="mr-10px">
+				<use xlink:href="#shrink-icon"></use>
+			</svg>
+			{{ showPayload ? 'Hide' : 'Show more' }} lines
+		</button>
+	</div>
+</div>
+
+<div *ngIf="type === 'headers'" class="border border-new.primary-25 rounded-8px mb-26px">
+	<div *ngFor="let header of getHeaders()?.headers; let i = index" class="flex border-b border-new.primary-25 last-of-type:border-none p-12px text-12 text-new.gray-800">
+		<div class="w-2/5 font-medium uppercase text-new.gray-500">
+			{{ header.header }}
+		</div>
+		<div class="w-3/5 whitespace-nowrap overflow-hidden text-ellipsis">
+			{{ header.value }}
+		</div>
+	</div>
+
+	<div *ngIf="getHeaders()?.headersLength > 6" class="flex py-8px px-16px border-t border-new.primary-25">
+		<button convoy-button size="sm" fill="text" (click)="showPayload = !showPayload">
+			<svg width="14" height="14" class="mr-10px">
+				<use xlink:href="#shrink-icon"></use>
+			</svg>
+			{{ showPayload ? 'Hide' : 'Show more' }} lines
+		</button>
 	</div>
 </div>

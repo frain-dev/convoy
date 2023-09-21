@@ -1,36 +1,4 @@
 <div convoy-page>
-	<ng-container *ngIf="isLoadingProjects">
-		<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-20 mb-20px"></div>
-		<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60 mb-24px"></div>
-
-		<div class="grid grid-cols-3 desktop:grid-cols-2 gap-6">
-			<div *ngFor="let index of projectsLoaderIndex" class="rounded-8px bg-white-100 block border border-grey-10">
-				<div class="px-6 py-4 flex items-center justify-between border-b border-b-grey-10">
-					<div class="flex items-center">
-						<div class="bg-primary-500 w-6 h-6 rounded-[50px] mr-2 flex items-center justify-center">
-							<svg width="16" height="16" fill="#477db3" stroke="#477db3">
-								<use xlink:href="#top-right-icon"></use>
-							</svg>
-						</div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-140px"></div>
-					</div>
-
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-16"></div>
-				</div>
-
-				<div class="flex items-center p-0">
-					<div class="py-2 px-6 w-2/5">
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-18"></div>
-					</div>
-					<div class="py-2 px-6 w-3/5 flex items-center justify-between border-l border-l-grey-10">
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-16"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-10"></div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</ng-container>
-
 	<ng-container *ngIf="!isLoadingProjects && projects.length">
 		<h3 class="mb-2 font-semibold">Projects</h3>
 		<p class="text-grey-40 text-14 font-medium mb-24px">All your project's summary at a glance</p>
@@ -44,7 +12,7 @@
 			</a>
 
 			<ng-container *ngFor="let project of projects">
-				<button (click)="getProjectCompleteDetails(project.uid)" class="rounded-8px bg-white-100 block border border-grey-10 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)] text-left">
+				<button (click)="getProjectCompleteDetails(project)" class="rounded-8px bg-white-100 block border border-grey-10 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)] text-left">
 					<div class="px-6 py-4 flex items-center justify-between border-b border-b-grey-10">
 						<div class="flex items-center">
 							<div class="bg-primary-500 w-6 h-6 rounded-[50px] mr-2 flex items-center justify-center">

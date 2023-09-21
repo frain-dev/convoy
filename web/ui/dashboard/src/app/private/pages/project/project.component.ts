@@ -1,6 +1,7 @@
 import { Component, HostListener, OnInit } from '@angular/core';
 import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
+import { Router } from '@angular/router';
 
 @Component({
 	selector: 'app-project',
@@ -29,11 +30,6 @@ export class ProjectComponent implements OnInit {
 			name: 'Endpoints',
 			icon: 'endpoint',
 			route: '/endpoints'
-		},
-		{
-			name: 'Portal Links',
-			icon: 'portal',
-			route: '/portal-links'
 		}
 	];
 	secondarySideBarItems = [
@@ -49,31 +45,39 @@ export class ProjectComponent implements OnInit {
 		}
 	];
 	shouldShowFullSideBar = true;
-	projectDetails!: PROJECT;
+	projectDetails?: PROJECT;
 	isLoadingProjectDetails: boolean = true;
 	showHelpDropdown = false;
+	projects: PROJECT[] = [];
 
-	constructor(private privateService: PrivateService) {}
+	constructor(private privateService: PrivateService, private router: Router) {}
 
 	ngOnInit() {
-		Promise.all([this.checkScreenSize(), this.getProjectDetails()]);
+		Promise.all([this.checkScreenSize(), this.getProjectDetails(), this.getProjects()]);
 	}
 
 	async getProjectDetails() {
 		this.isLoadingProjectDetails = true;
 
 		try {
-			const projectDetails = await this.privateService.getProjectDetails();
-			this.projectDetails = projectDetails.data;
-			if (this.projectDetails.type === 'incoming') this.sideBarItems.splice(4, 1);
+			const projectDetails = await this.privateService.getProjectDetails;
+			this.projectDetails = projectDetails;
+			if (this.projectDetails?.type === 'outgoing') this.sideBarItems.push({ name: 'Portal Links', icon: 'portal', route: '/portal-links' });
 			this.isLoadingProjectDetails = false;
 		} catch (error) {
 			this.isLoadingProjectDetails = false;
 		}
 	}
 
+	async getProjects() {
+		try {
+			const response = await this.privateService.getProjects();
+			this.projects = response.data;
+		} catch (error) {}
+	}
+
 	isOutgoingProject(): boolean {
-		return this.projectDetails.type === 'outgoing';
+		return this.projectDetails?.type === 'outgoing';
 	}
 
 	checkScreenSize() {
@@ -91,5 +95,22 @@ export class ProjectComponent implements OnInit {
 		const checkForStrokeIcon = menuIcons.some(menuIcon => icon.includes(menuIcon));
 
 		return checkForStrokeIcon;
+	}
+
+	async getProjectCompleteDetails(project: PROJECT) {
+		this.isLoadingProjectDetails = true;
+
+		try {
+			this.projectDetails = project;
+			localStorage.setItem('CONVOY_PROJECT', JSON.stringify(this.projectDetails));
+
+			if (this.projectDetails?.type === 'outgoing' && this.sideBarItems[this.sideBarItems.length - 1].icon === 'endpoint') this.sideBarItems.push({ name: 'Portal Links', icon: 'portal', route: '/portal-links' });
+			if (this.projectDetails?.type === 'incoming' && this.sideBarItems[this.sideBarItems.length - 1].icon === 'portal') this.sideBarItems.pop();
+			await this.privateService.getProjectStat({ refresh: true });
+			this.isLoadingProjectDetails = false;
+			this.router.navigate([`/projects/${project.uid}`]);
+		} catch (error) {
+			this.isLoadingProjectDetails = false;
+		}
 	}
 }

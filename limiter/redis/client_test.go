@@ -6,17 +6,18 @@ package rlimiter
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/config"
 	"os"
 	"strconv"
 	"testing"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/frain-dev/convoy/config"
+
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 )
 
-func getDSN() string {
+func getDSN() []string {
 	port, _ := strconv.Atoi(os.Getenv("TEST_REDIS_PORT"))
 	c := config.RedisConfiguration{
 		Scheme: "redis",
@@ -46,8 +47,7 @@ func Test_RateLimitAllow(t *testing.T) {
 
 	for _, duration := range vals {
 		t.Run(fmt.Sprintf(" %v", duration), func(t *testing.T) {
-
-			err := flushRedis(dsn)
+			err := flushRedis(dsn[0])
 			require.NoError(t, err)
 
 			limiter, err := NewRedisLimiter(dsn)

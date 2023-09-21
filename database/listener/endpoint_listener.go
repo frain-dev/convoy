@@ -16,15 +16,15 @@ func NewEndpointListener(queue queue.Queuer, projectRepo datastore.ProjectReposi
 	return &EndpointListener{mEvent: mEvent}
 }
 
-func (e *EndpointListener) AfterCreate(data interface{}) {
+func (e *EndpointListener) AfterCreate(data interface{}, _ interface{}) {
 	e.metaEvent(string(datastore.EndpointCreated), data)
 }
 
-func (e *EndpointListener) AfterUpdate(data interface{}) {
+func (e *EndpointListener) AfterUpdate(data interface{}, _ interface{}) {
 	e.metaEvent(string(datastore.EndpointUpdated), data)
 }
 
-func (e *EndpointListener) AfterDelete(data interface{}) {
+func (e *EndpointListener) AfterDelete(data interface{}, _ interface{}) {
 	e.metaEvent(string(datastore.EndpointDeleted), data)
 }
 

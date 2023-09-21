@@ -3,6 +3,7 @@ export interface SOURCE {
 	deleted_at: number;
 	group_id: string;
 	is_disabled: boolean;
+	idempotency_keys: string[];
 	mask_id: string;
 	name: string;
 	type: string;
@@ -11,6 +12,10 @@ export interface SOURCE {
 	url: string;
 	provider: string;
 	provider_config?: { twitter: { crc_verified_at: Date } };
+	custom_response: {
+		body: string;
+		content_type: string;
+	};
 	verifier: {
 		api_key: {
 			header_name: string;
@@ -39,6 +44,18 @@ export interface SOURCE {
 			default_region: string;
 			queue_name: string;
 			secret_key: string;
+		};
+		kafka: {
+			brokers: string[];
+			consumer_group_id: string;
+			topic_name: string;
+			auth: {
+				type: string;
+				tls: boolean;
+				username: string;
+				password: string;
+				hash: string;
+			};
 		};
 		type: string;
 		workers: number;

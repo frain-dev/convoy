@@ -10,7 +10,7 @@ export class DropdownContainerComponent implements OnInit {
 	@Input('size') size: 'sm' | 'md' | 'lg' | 'xl' | 'full' = 'md';
 	@Input('show') show = false;
 	@Input('className') class!: string;
-	sizes = { sm: 'w-[140px]', md: 'w-[200px]', lg: 'w-[249px]', xl: 'w-[350px]', full: 'w-full' };
+	sizes = { sm: 'w-[140px]', md: 'w-[200px]', lg: 'w-[249px]', xl: 'w-fit min-w-[200px] max-w-[300px]', full: 'w-full' };
 
 	constructor() {}
 
@@ -22,6 +22,6 @@ export class DropdownContainerComponent implements OnInit {
 			left: 'left-[5%]',
 			center: 'left-0'
 		};
-		return `${this.sizes[this.size]} ${positions[this.position]} ${this.show ? 'opacity-100 h-fit overflow-y-auto pointer-events-auto' : 'opacity-0 h-0 overflow-hidden pointer-events-none'} ${this.class}`;
+		return `${this.sizes[this.size]} ${positions[this.position]} ${this.show ? 'opacity-100 h-fit pointer-events-auto overflow-y-auto overflow-x-hidden' : 'opacity-0 h-0 overflow-hidden pointer-events-none'} ${this.class}`;
 	}
 }

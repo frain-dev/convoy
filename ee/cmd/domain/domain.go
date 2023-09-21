@@ -29,6 +29,9 @@ func AddDomainCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "domain",
 		Short: "Start a server that forwards requests from a custom domain",
+		Annotations: map[string]string{
+			"ShouldBootstrap": "false",
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := config.Get()
 			if err != nil {

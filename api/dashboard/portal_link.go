@@ -17,13 +17,6 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-func createPortalLinkService(a *DashboardHandler) *services.PortalLinkService {
-	portalRepo := postgres.NewPortalLinkRepo(a.A.DB)
-	endpointService := createEndpointService(a)
-
-	return services.NewPortalLinkService(portalRepo, endpointService)
-}
-
 func (a *DashboardHandler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 	var newPortalLink models.PortalLink
 	if err := util.ReadJSON(r, &newPortalLink); err != nil {
@@ -42,16 +35,22 @@ func (a *DashboardHandler) CreatePortalLink(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	portalLinkService := createPortalLinkService(a)
-	portalLink, err := portalLinkService.CreatePortalLink(r.Context(), &newPortalLink, project)
+	cp := services.CreatePortalLinkService{
+		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB),
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
+		Portal:         &newPortalLink,
+		Project:        project,
+	}
+
+	portalLink, err := cp.Run(r.Context())
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	baseUrl, err := a.retrieveHost()
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -106,7 +105,6 @@ func (a *DashboardHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	portalLinkService := createPortalLinkService(a)
 	portalLink, err := postgres.NewPortalLinkRepo(a.A.DB).FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
 		if err == datastore.ErrPortalLinkNotFound {
@@ -118,7 +116,15 @@ func (a *DashboardHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	portalLink, err = portalLinkService.UpdatePortalLink(r.Context(), project, &updatePortalLink, portalLink)
+	upl := services.UpdatePortalLinkService{
+		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB),
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
+		Project:        project,
+		Update:         &updatePortalLink,
+		PortalLink:     portalLink,
+	}
+
+	portalLink, err = upl.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -212,8 +218,10 @@ func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.Portal
 		Name:              pl.Name,
 		URL:               fmt.Sprintf("%s/portal?token=%s", baseUrl, pl.Token),
 		Token:             pl.Token,
+		OwnerID:           pl.OwnerID,
 		Endpoints:         pl.Endpoints,
-		EndpointCount:     len(pl.Endpoints),
+		EndpointCount:     len(pl.EndpointsMetadata),
+		CanManageEndpoint: pl.CanManageEndpoint,
 		EndpointsMetadata: pl.EndpointsMetadata,
 		CreatedAt:         pl.CreatedAt,
 		UpdatedAt:         pl.UpdatedAt,

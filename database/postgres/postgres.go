@@ -11,7 +11,7 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
+	_ "github.com/newrelic/go-agent/v3/integrations/nrpq"
 )
 
 const pkgName = "postgres"
@@ -27,7 +27,7 @@ type Postgres struct {
 
 func NewDB(cfg config.Configuration) (*Postgres, error) {
 	dbConfig := cfg.Database
-	db, err := sqlx.Connect("postgres", dbConfig.BuildDsn())
+	db, err := sqlx.Connect("nrpostgres", dbConfig.BuildDsn())
 	if err != nil {
 		return nil, fmt.Errorf("[%s]: failed to open database - %v", pkgName, err)
 	}

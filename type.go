@@ -2,7 +2,6 @@ package convoy
 
 import (
 	"embed"
-	"fmt"
 	"strings"
 )
 
@@ -88,13 +87,17 @@ const (
 	CreateDynamicEventProcessor TaskName = "CreateDynamicEventProcessor"
 	MetaEventProcessor          TaskName = "MetaEventProcessor"
 	NotificationProcessor       TaskName = "NotificationProcessor"
-	IndexDocument               TaskName = "index document"
-	DailyAnalytics              TaskName = "daily analytics"
-	StreamCliEventsProcessor    TaskName = "StreamCliEventsProcessor"
-	MonitorTwitterSources       TaskName = "monitor twitter sources"
-	RetentionPolicies           TaskName = "retention_policies"
-	EmailProcessor              TaskName = "EmailProcessor"
-	ExpireSecretsProcessor      TaskName = "ExpireSecretsProcessor"
+	// todo(raymond): remove this and it's references
+	IndexDocument                TaskName = "index document"
+	TokenizeSearch               TaskName = "tokenize search"
+	TokenizeSearchForProject     TaskName = "tokenize search for project"
+	DailyAnalytics               TaskName = "daily analytics"
+	StreamCliEventsProcessor     TaskName = "StreamCliEventsProcessor"
+	MonitorTwitterSources        TaskName = "monitor twitter sources"
+	RetentionPolicies            TaskName = "retention_policies"
+	EmailProcessor               TaskName = "EmailProcessor"
+	ExpireSecretsProcessor       TaskName = "ExpireSecretsProcessor"
+	DeleteArchivedTasksProcessor TaskName = "DeleteArchivedTasksProcessor"
 
 	EndpointsCacheKey          CacheKey = "endpoints"
 	OrganisationsCacheKey      CacheKey = "organisations"
@@ -102,6 +105,7 @@ const (
 	ProjectsCacheKey           CacheKey = "projects"
 	TokenCacheKey              CacheKey = "tokens"
 	SourceCacheKey             CacheKey = "sources"
+	IdempotencyCacheKey        CacheKey = "dedup"
 )
 
 // queues
@@ -128,5 +132,3 @@ const (
 const (
 	Concurrency = 100
 )
-
-var ErrUnsupportedDatebase = fmt.Errorf("unsupported database for search detected, remove search configuration or use a supported database (postgres)")

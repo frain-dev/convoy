@@ -1,0 +1,17 @@
+<div class="flex justify-center max-w-[1100px] w-full mx-auto">
+	<div class="max-w-[770px] w-full">
+		<h2 class="font-medium text-14 text-new.gray-400 mt-40px -mb-6px">Endpoint</h2>
+		<convoy-create-endpoint type="portal" [endpointId]="endpoint?.uid || ''" [editMode]="true"></convoy-create-endpoint>
+
+		<h2 class="font-medium text-14 text-new.gray-400 mt-40px -mb-6px flex items-center">
+			Subscription Configurations
+			<convoy-tooltip class="ml-4px" size="sm" type="white" tooltipContent="Configure how and what events this endpoint should receive" position="right"></convoy-tooltip>
+		</h2>
+		<convoy-create-subscription [action]="endpoint ? 'update' : 'create'" isPortal="true" [subscriptionId]="endpoint?.subscription?.uid || ''"></convoy-create-subscription>
+
+		<div class="flex justify-end items-center">
+			<button convoy-button color="danger" fill="outline" class="mr-30px" (click)="onAction.emit({ action: 'close' })">Close</button>
+			<button convoy-button (click)="endpoint ? updateEndpoint() : createEndpoint()">{{ endpoint ? 'Updat' : 'Creat' }}{{ isCreatingEndpoint ? 'ing Endpoint...' : 'e Endpoint' }}</button>
+		</div>
+	</div>
+</div>

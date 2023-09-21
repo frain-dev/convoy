@@ -20,6 +20,11 @@ type RegenerateProjectAPIKeyService struct {
 }
 
 func (ss *RegenerateProjectAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, string, error) {
+	// does the organisation member have access to this project they're trying to regenerate an api key for?
+	if !ss.Member.Role.Type.Is(auth.RoleSuperUser) {
+		return nil, "", &ServiceError{ErrMsg: "unauthorized to access project"}
+	}
+
 	apiKey, err := ss.APIKeyRepo.FindAPIKeyByProjectID(ctx, ss.Project.UID)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch project api key")

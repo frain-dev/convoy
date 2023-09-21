@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"net/http"
 	"time"
 
@@ -26,9 +27,12 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 	return func(ctx context.Context, t *asynq.Task) error {
 		var dynamicEvent models.DynamicEvent
 
-		err := json.Unmarshal(t.Payload(), &dynamicEvent)
+		err := msgpack.DecodeMsgPack(t.Payload(), &dynamicEvent)
 		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
+			err := json.Unmarshal(t.Payload(), &dynamicEvent)
+			if err != nil {
+				return &EndpointError{Err: err, delay: defaultDelay}
+			}
 		}
 
 		var project *datastore.Project
@@ -67,14 +71,25 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 			return err
 		}
 
+		var isDuplicate bool
+		if len(dynamicEvent.Event.IdempotencyKey) > 0 {
+			events, err := eventRepo.FindEventsByIdempotencyKey(ctx, dynamicEvent.Event.ProjectID, dynamicEvent.Event.IdempotencyKey)
+			if err != nil {
+				return &EndpointError{Err: err, delay: 10 * time.Second}
+			}
+
+			isDuplicate = len(events) > 0
+		}
+
 		event := &datastore.Event{
 			UID:              ulid.Make().String(),
 			EventType:        datastore.EventType(dynamicEvent.Event.EventType),
-			MatchedEndpoints: 1,
 			ProjectID:        project.UID,
 			Endpoints:        []string{endpoint.UID},
 			Headers:          getCustomHeaders(dynamicEvent.Event.CustomHeaders),
 			Data:             dynamicEvent.Event.Data,
+			IdempotencyKey:   dynamicEvent.Event.IdempotencyKey,
+			IsDuplicateEvent: isDuplicate,
 			Raw:              string(dynamicEvent.Event.Data),
 			CreatedAt:        time.Now(),
 			UpdatedAt:        time.Now(),
@@ -85,7 +100,11 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
-		event.MatchedEndpoints = 1
+		if event.IsDuplicateEvent {
+			log.FromContext(ctx).Infof("[asynq]: duplicate event with idempotency key %v will not be sent", event.IdempotencyKey)
+			return nil
+		}
+
 		ec := &EventDeliveryConfig{project: project}
 
 		ec.subscription = s
@@ -125,6 +144,7 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 			EndpointID:     s.EndpointID,
 			DeviceID:       s.DeviceID,
 			Headers:        headers,
+			IdempotencyKey: event.IdempotencyKey,
 
 			Status:           getEventDeliveryStatus(ctx, s, s.Endpoint, deviceRepo),
 			DeliveryAttempts: []datastore.DeliveryAttempt{},
@@ -147,11 +167,13 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 
 		if eventDelivery.Status != datastore.DiscardedEventStatus {
 			payload := EventDelivery{
-				EventDeliveryID: eventDelivery.UID,
-				ProjectID:       project.UID,
+				Endpoint:      endpoint,
+				Project:       project,
+				Subscription:  s,
+				EventDelivery: eventDelivery,
 			}
 
-			data, err := json.Marshal(payload)
+			data, err := msgpack.EncodeMsgPack(payload)
 			if err != nil {
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
@@ -175,22 +197,6 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 					log.WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
 				}
 			}
-		}
-
-		eBytes, err := json.Marshal(event)
-		if err != nil {
-			log.Errorf("[asynq]: an error occurred marshalling event to be indexed %s", err)
-		}
-
-		job := &queue.Job{
-			ID:      event.UID,
-			Payload: eBytes,
-			Delay:   5 * time.Second,
-		}
-
-		err = eventQueue.Write(convoy.IndexDocument, convoy.SearchIndexQueue, job)
-		if err != nil {
-			log.Errorf("[asynq]: an error occurred sending event to be indexed %s", err)
 		}
 
 		return nil
@@ -239,7 +245,7 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 			endpoint.HttpTimeout = newEndpoint.HttpTimeout
 		}
 
-		auth, err := ValidateEndpointAuthentication(newEndpoint.Authentication)
+		auth, err := ValidateEndpointAuthentication(newEndpoint.Authentication.Transform())
 		if err != nil {
 			return nil, err
 		}
@@ -440,8 +446,8 @@ func findDynamicSubscription(ctx context.Context, newSubscription *models.Dynami
 			EndpointID: endpoint.UID,
 
 			RetryConfig:     retryConfig,
-			AlertConfig:     newSubscription.AlertConfig,
-			RateLimitConfig: newSubscription.RateLimitConfig,
+			AlertConfig:     newSubscription.AlertConfig.Transform(),
+			RateLimitConfig: newSubscription.RateLimitConfig.Transform(),
 
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),

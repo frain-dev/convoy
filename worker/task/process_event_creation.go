@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -31,9 +32,12 @@ func ProcessEventCreation(
 		var createEvent CreateEvent
 		var event datastore.Event
 
-		err := json.Unmarshal(t.Payload(), &createEvent)
+		err := msgpack.DecodeMsgPack(t.Payload(), &createEvent)
 		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
+			err := json.Unmarshal(t.Payload(), &createEvent)
+			if err != nil {
+				return &EndpointError{Err: err, delay: defaultDelay}
+			}
 		}
 
 		var project *datastore.Project
@@ -61,7 +65,7 @@ func ProcessEventCreation(
 
 		subscriptions, err = findSubscriptions(ctx, endpointRepo, cache, subRepo, project, &createEvent)
 		if err != nil {
-			return err
+			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
 		_, err = eventRepo.FindEventByID(ctx, project.UID, event.UID)
@@ -82,7 +86,11 @@ func ProcessEventCreation(
 			}
 		}
 
-		event.MatchedEndpoints = len(subscriptions)
+		if event.IsDuplicateEvent {
+			log.FromContext(ctx).Infof("[asynq]: duplicate event with idempotency key %v will not be sent", event.IdempotencyKey)
+			return nil
+		}
+
 		ec := &EventDeliveryConfig{project: project}
 
 		for _, s := range subscriptions {
@@ -120,15 +128,16 @@ func ProcessEventCreation(
 			}
 
 			eventDelivery := &datastore.EventDelivery{
-				UID:            ulid.Make().String(),
-				SubscriptionID: s.UID,
-				Metadata:       metadata,
-				ProjectID:      project.UID,
-				EventID:        event.UID,
-				EndpointID:     s.EndpointID,
-				DeviceID:       s.DeviceID,
-				Headers:        headers,
-
+				UID:              ulid.Make().String(),
+				SubscriptionID:   s.UID,
+				Metadata:         metadata,
+				ProjectID:        project.UID,
+				EventID:          event.UID,
+				EndpointID:       s.EndpointID,
+				DeviceID:         s.DeviceID,
+				Headers:          headers,
+				IdempotencyKey:   event.IdempotencyKey,
+				URLQueryParams:   event.URLQueryParams,
 				Status:           getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
 				DeliveryAttempts: []datastore.DeliveryAttempt{},
 				CreatedAt:        time.Now(),
@@ -150,11 +159,13 @@ func ProcessEventCreation(
 
 			if eventDelivery.Status != datastore.DiscardedEventStatus {
 				payload := EventDelivery{
-					EventDeliveryID: eventDelivery.UID,
-					ProjectID:       project.UID,
+					Subscription:  &s,
+					Project:       project,
+					Endpoint:      s.Endpoint,
+					EventDelivery: eventDelivery,
 				}
 
-				data, err := json.Marshal(payload)
+				data, err := msgpack.EncodeMsgPack(payload)
 				if err != nil {
 					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}
@@ -176,24 +187,6 @@ func ProcessEventCreation(
 						log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
 					}
 				}
-			}
-		}
-
-		if cfg.Search.Type == config.TypesenseSearchProvider {
-			eBytes, err := json.Marshal(event)
-			if err != nil {
-				log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred marshalling event to be indexed")
-			}
-
-			job := &queue.Job{
-				ID:      event.UID,
-				Payload: eBytes,
-				Delay:   5 * time.Second,
-			}
-
-			err = eventQueue.Write(convoy.IndexDocument, convoy.SearchIndexQueue, job)
-			if err != nil {
-				log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event to be indexed")
 			}
 		}
 

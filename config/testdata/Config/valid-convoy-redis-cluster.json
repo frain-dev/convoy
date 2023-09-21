@@ -1,0 +1,20 @@
+{
+    "database": {
+        "scheme": "postgres",
+        "host": "inside-config-file",
+        "username": "postgres",
+        "password": "postgres",
+        "database": "convoy",
+        "options": "sslmode=disable&connect_timeout=30",
+        "port": 5432
+    },
+    "redis": {
+        "addresses": "localhost:7001,localhost:7002,localhost:7003,localhost:7004,localhost:7005,localhost:7006"
+    },
+    "max_response_size": 40,
+    "server": {
+        "http": {
+            "port": 80
+        }
+    }
+}

@@ -437,17 +437,11 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 	require.NotEmpty(t, dbSub.UpdatedAt)
 
 	dbSub.CreatedAt, dbSub.UpdatedAt = time.Time{}, time.Time{}
-	require.Equal(t, dbSub.Endpoint.UID, endpoint.UID)
-	require.Equal(t, dbSub.Endpoint.Title, endpoint.Title)
-	require.Equal(t, dbSub.Endpoint.ProjectID, endpoint.ProjectID)
-	require.Equal(t, dbSub.Endpoint.SupportEmail, endpoint.SupportEmail)
+	require.Nil(t, dbSub.Endpoint)
+	require.Nil(t, dbSub.Source)
 
-	require.Equal(t, dbSub.Source.UID, source.UID)
-	require.Equal(t, dbSub.Source.Name, source.Name)
-	require.Equal(t, dbSub.Source.Type, source.Type)
-	require.Equal(t, dbSub.Source.MaskID, source.MaskID)
-	require.Equal(t, dbSub.Source.ProjectID, source.ProjectID)
-	require.Equal(t, dbSub.Source.IsDisabled, source.IsDisabled)
+	require.Equal(t, device.UID, dbSub.Device.UID)
+	require.Equal(t, device.HostName, dbSub.Device.HostName)
 
 	dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 

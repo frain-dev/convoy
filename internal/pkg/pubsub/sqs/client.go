@@ -1,6 +1,7 @@
 package sqs
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -111,6 +112,7 @@ func (s *Sqs) Consume() {
 
 		if err != nil {
 			s.log.WithError(err).Error("failed to fetch message - sqs")
+			continue
 		}
 
 		var wg sync.WaitGroup
@@ -121,7 +123,7 @@ func (s *Sqs) Consume() {
 
 				defer s.handleError()
 
-				if err := s.handler(s.source, *m.Body); err != nil {
+				if err := s.handler(context.Background(), s.source, *m.Body); err != nil {
 					s.log.WithError(err).Error("failed to write message to create event queue")
 				} else {
 					_, err = svc.DeleteMessage(&sqs.DeleteMessageInput{

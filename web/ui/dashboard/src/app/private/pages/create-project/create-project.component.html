@@ -1,15 +1,13 @@
-<div convoy-modal position="full" [id]="'projectForm'" (closeModal)="cancel()">
-	<div convoy-modal-header fullscreen="true">
-		<div class="flex items-center">
-			<button convoy-button size="sm" texture="light" class="px-10px !py-10px" (click)="cancel()">
-				<img src="/assets/img/modal-close-icon.svg" class="w-12px" alt="close icon" />
-			</button>
+<dialog #projectDialog convoy-dialog id="projectForm" position="full">
+	<div convoy-dialog-header fullscreen="true" (closeDialog)="cancel()">
+		<h2 class="font-semibold capitalize">Create Project</h2>
+	</div>
 
-			<h2 class="font-semibold capitalize ml-2">Create Project</h2>
+	<div class="h-full w-full">
+		<div class="pt-40px pb-60px max-w-[770px] m-auto">
+			<p class="text-14 text-grey-60 mb-24px max-w-[500px]">A project represents the top level namespace for grouping event sources, applications, endpoints and events.</p>
+
+			<app-create-project-component (onAction)="$event?.action == 'cancel' ? cancel() : createProject($event)"></app-create-project-component>
 		</div>
 	</div>
-
-	<div class="pt-40px pb-60px max-w-[834px] m-auto">
-		<app-create-project-component (onAction)="$event?.action == 'cancel' ? cancel() : createProject($event)"></app-create-project-component>
-	</div>
-</div>
+</dialog>

@@ -21,7 +21,6 @@ func RetryEventDeliveries(db database.Database, eventQueue queue.Queuer, statuse
 		statuses = []datastore.EventDeliveryStatus{"Retry", "Scheduled", "Processing"}
 	}
 
-	log.Printf("Status após parse: %#v | %d", statuses, len(statuses))
 	if util.IsStringEmpty(lookBackDuration) {
 		// TODO(subomi): Setup configuration
 		lookBackDuration = "5h"
@@ -72,9 +71,7 @@ func RetryEventDeliveries(db database.Database, eventQueue queue.Queuer, statuse
 		log.Infof("Total number of event deliveries to requeue is %d", counter)
 
 		for {
-			deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(
-				ctx, "", []string{}, eventId, []datastore.EventDeliveryStatus{status}, searchParams, pageable,
-			)
+			deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", []string{}, eventId, "", []datastore.EventDeliveryStatus{status}, searchParams, pageable, "")
 			if err != nil {
 				log.WithError(err).Errorf("successfully fetched %d event deliveries", count)
 				close(deliveryChan)

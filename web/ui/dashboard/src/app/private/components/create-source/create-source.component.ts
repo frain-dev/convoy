@@ -20,47 +20,66 @@ export class CreateSourceComponent implements OnInit {
 		name: ['', Validators.required],
 		is_disabled: [true, Validators.required],
 		type: ['', Validators.required],
+		custom_response: this.formBuilder.group({
+			body: [''],
+			content_type: ['']
+		}),
+		idempotency_keys: [null],
 		verifier: this.formBuilder.group({
 			api_key: this.formBuilder.group({
-				header_name: ['', Validators.required],
-				header_value: ['', Validators.required]
+				header_name: [''],
+				header_value: ['']
 			}),
 			basic_auth: this.formBuilder.group({
-				password: ['', Validators.required],
-				username: ['', Validators.required]
+				password: [''],
+				username: ['']
 			}),
 			hmac: this.formBuilder.group({
-				encoding: ['', Validators.required],
-				hash: ['', Validators.required],
-				header: ['', Validators.required],
-				secret: ['', Validators.required]
+				encoding: [''],
+				hash: [''],
+				header: [''],
+				secret: ['']
 			}),
 			type: ['', Validators.required]
 		}),
 		pub_sub: this.formBuilder.group({
-			type: ['', Validators.required],
-			workers: [null, Validators.required],
+			type: [''],
+			workers: [null],
 			google: this.formBuilder.group({
-				service_account: ['', Validators.required],
-				subscription_id: ['', Validators.required],
-				project_id: ['', Validators.required]
+				service_account: [''],
+				subscription_id: [''],
+				project_id: ['']
 			}),
 			sqs: this.formBuilder.group({
-				queue_name: ['', Validators.required],
-				access_key_id: ['', Validators.required],
-				secret_key: ['', Validators.required],
-				default_region: ['', Validators.required]
+				queue_name: [''],
+				access_key_id: [''],
+				secret_key: [''],
+				default_region: ['']
+			}),
+			kafka: this.formBuilder.group({
+				brokers: [null],
+				consumer_group_id: [null],
+				topic_name: [null],
+				auth: this.formBuilder.group({
+					type: [null],
+					tls: [null],
+					username: [null],
+					password: [null],
+					hash: [null]
+				})
 			})
 		})
 	});
+	authTypes = ['plain', 'scram'];
 	sourceTypes = [
 		{ value: 'http', viewValue: 'Ingestion HTTP', description: 'Trigger webhook event from a thirdparty webhook event' },
 		{ value: 'pub_sub', viewValue: 'Pub/Sub (Coming Soon)', description: 'Trigger webhook event from your Pub/Sub messaging system' },
 		{ value: 'db_change_stream', viewValue: 'DB Change Stream (Coming Soon)', description: 'Trigger webhook event from your DB change stream' }
 	];
 	pubSubTypes = [
-		{ value: 'google', viewValue: 'Google Pub/Sub' },
-		{ value: 'sqs', viewValue: 'SQS' }
+		{ uid: 'google', name: 'Google Pub/Sub' },
+		{ uid: 'kafka', name: 'Kafka' },
+		{ uid: 'sqs', name: 'AWS SQS' }
 	];
 	httpTypes = [
 		{ value: 'noop', viewValue: 'None' },
@@ -119,17 +138,24 @@ export class CreateSourceComponent implements OnInit {
 	sourceId = this.route.snapshot.params.id;
 	isloading = false;
 	confirmModal = false;
+	addKafkaAuthentication = false;
 	sourceDetails!: SOURCE;
 	sourceCreated: boolean = false;
 	showSourceUrl = false;
 	sourceData!: SOURCE;
+	configurations = [
+		{ uid: 'custom_response', name: 'Custom Response', show: false },
+		{ uid: 'idempotency', name: 'Idempotency', show: false }
+	];
+
+	brokerAddresses: string[] = [];
 	private rbacService = inject(RbacService);
 
 	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
 
 	async ngOnInit() {
 		if (this.action === 'update') this.getSourceDetails();
-		this.privateService.activeProjectDetails?.type === 'incoming' ? this.sourceForm.patchValue({ type: 'http' }) : this.sourceForm.patchValue({ type: 'pub_sub' });
+		this.privateService.getProjectDetails?.type === 'incoming' ? this.sourceForm.patchValue({ type: 'http' }) : this.sourceForm.patchValue({ type: 'pub_sub' });
 
 		if (!(await this.rbacService.userCanAccess('Sources|MANAGE'))) this.sourceForm.disable();
 	}
@@ -140,8 +166,15 @@ export class CreateSourceComponent implements OnInit {
 			const response = await this.createSourceService.getSourceDetails(this.sourceId);
 			this.sourceDetails = response.data;
 			const sourceProvider = response.data?.provider;
+
 			this.sourceForm.patchValue(response.data);
+			if (this.sourceDetails.custom_response.body || this.sourceDetails.custom_response.content_type) this.toggleConfigForm('custom_response');
+			if (this.sourceDetails.idempotency_keys.length) this.toggleConfigForm('idempotency');
+
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
+
+			if (response.data.pub_sub.kafka.auth.type) this.addKafkaAuthentication = true;
+			if (response.data.pub_sub.kafka.brokers) this.brokerAddresses = response.data.pub_sub.kafka.brokers;
 			this.isloading = false;
 
 			return;
@@ -152,7 +185,7 @@ export class CreateSourceComponent implements OnInit {
 	}
 
 	checkSourceSetup() {
-		if (this.privateService.activeProjectDetails?.type === 'incoming') {
+		if (this.privateService.getProjectDetails?.type === 'incoming') {
 			delete this.sourceForm.value.pub_sub;
 			const verifierType = this.sourceForm.get('verifier.type')?.value;
 			const verifier = this.isCustomSource(verifierType) ? 'hmac' : verifierType;
@@ -193,7 +226,6 @@ export class CreateSourceComponent implements OnInit {
 		};
 		fileReader.onerror = error => {
 			this.generalService.showNotification({ message: 'Please upload a JSON file', style: 'warning' });
-			console.log(error);
 		};
 	}
 
@@ -211,13 +243,18 @@ export class CreateSourceComponent implements OnInit {
 
 	async saveSource() {
 		const sourceData = this.checkSourceSetup();
-		if (!this.isSourceFormValid()) return this.sourceForm.markAllAsTouched();
+		await this.runSourceFormValidation();
+		if (!this.sourceForm.valid) {
+			this.isloading = false;
+			return this.sourceForm.markAllAsTouched();
+		}
 		this.isloading = true;
+
 		try {
 			const response = this.action === 'update' ? await this.createSourceService.updateSource({ data: sourceData, id: this.sourceId }) : await this.createSourceService.createSource({ sourceData });
 			document.getElementById('configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
 			this.sourceData = response.data;
-			this.showAction === 'true' ? this.onAction.emit({ action: this.action, data: sourceData }) : (this.showSourceUrl = true);
+			this.onAction.emit({ action: this.action, data: response.data });
 			this.sourceCreated = true;
 			return response;
 		} catch (error) {
@@ -245,34 +282,177 @@ export class CreateSourceComponent implements OnInit {
 		return checkForCustomSource;
 	}
 
-	isSourceFormValid(): boolean {
-		if (this.sourceForm.get('name')?.invalid || this.sourceForm.get('type')?.invalid) return false;
-
-		if (this.privateService.activeProjectDetails?.type === 'incoming') {
-			if (this.sourceForm.get('verifier')?.value.type === 'noop') return true;
-
-			if (this.sourceForm.get('verifier')?.value.type === 'api_key' && this.sourceForm.get('verifier.api_key')?.valid) return true;
-
-			if (this.sourceForm.get('verifier')?.value.type === 'basic_auth' && this.sourceForm.get('verifier.basic_auth')?.valid) return true;
-
-			if ((this.sourceForm.get('verifier')?.value.type === 'hmac' || this.isCustomSource(this.sourceForm.get('verifier.type')?.value)) && this.sourceForm.get('verifier.hmac')?.valid) return true;
-		}
-
-		if (this.privateService.activeProjectDetails?.type === 'outgoing') {
-			if (this.sourceForm.get('pub_sub')?.value.type === 'google' && this.sourceForm.get('pub_sub.google')?.valid && this.sourceForm.get('pub_sub.workers')?.valid) return true;
-
-			if (this.sourceForm.get('pub_sub')?.value.type === 'sqs' && this.sourceForm.get('pub_sub.sqs')?.valid && this.sourceForm.get('pub_sub.workers')?.valid) return true;
-		}
-
-		return false;
+	toggleConfigForm(configValue: string, value?: boolean) {
+		this.configurations.forEach(config => {
+			if (config.uid === configValue) config.show = value ? value : !config.show;
+		});
 	}
 
-	cancel() {
-		document.getElementById(this.router.url.includes('/configure') ? 'configureProjectForm' : 'sourceForm')?.scroll({ top: 0, behavior: 'smooth' });
-		this.confirmModal = true;
+	showConfig(configValue: string): boolean {
+		return this.configurations.find(config => config.uid === configValue)?.show || false;
 	}
 
 	setRegionValue(value: any) {
 		this.sourceForm.get('pub_sub.sqs')?.patchValue({ default_region: value });
+	}
+
+	async runSourceFormValidation() {
+		if (this.configurations[0].show) {
+			this.sourceForm.get('custom_response.body')?.addValidators(Validators.required);
+			this.sourceForm.get('custom_response.body')?.updateValueAndValidity();
+			this.sourceForm.get('custom_response.content_type')?.addValidators(Validators.required);
+			this.sourceForm.get('custom_response.content_type')?.updateValueAndValidity();
+		} else {
+			this.sourceForm.get('custom_response.body')?.removeValidators(Validators.required);
+			this.sourceForm.get('custom_response.body')?.updateValueAndValidity();
+			this.sourceForm.get('custom_response.content_type')?.removeValidators(Validators.required);
+			this.sourceForm.get('custom_response.content_type')?.updateValueAndValidity();
+		}
+
+		if (this.privateService.getProjectDetails?.type === 'incoming') {
+			this.sourceForm.get('verifier.type')?.addValidators(Validators.required);
+			this.sourceForm.get('verifier.type')?.updateValueAndValidity();
+
+			if (this.sourceForm.get('verifier')?.value.type === 'api_key') {
+				this.sourceForm.get('verifier.api_key.header_name')?.addValidators(Validators.required);
+				this.sourceForm.get('verifier.api_key.header_value')?.addValidators(Validators.required);
+				this.sourceForm.get('verifier.api_key.header_name')?.updateValueAndValidity();
+				this.sourceForm.get('verifier.api_key.header_value')?.updateValueAndValidity();
+			} else {
+				this.sourceForm.get('verifier.api_key.header_name')?.removeValidators(Validators.required);
+				this.sourceForm.get('verifier.api_key.header_value')?.removeValidators(Validators.required);
+				this.sourceForm.get('verifier.api_key.header_name')?.updateValueAndValidity();
+				this.sourceForm.get('verifier.api_key.header_value')?.updateValueAndValidity();
+			}
+
+			if (this.sourceForm.get('verifier')?.value.type === 'basic_auth') {
+				this.sourceForm.get('verifier.basic_auth.password')?.addValidators(Validators.required);
+				this.sourceForm.get('verifier.basic_auth.username')?.addValidators(Validators.required);
+				this.sourceForm.get('verifier.basic_auth.password')?.updateValueAndValidity();
+				this.sourceForm.get('verifier.basic_auth.username')?.updateValueAndValidity();
+			} else {
+				this.sourceForm.get('verifier.basic_auth.password')?.removeValidators(Validators.required);
+				this.sourceForm.get('verifier.basic_auth.username')?.removeValidators(Validators.required);
+				this.sourceForm.get('verifier.basic_auth.password')?.updateValueAndValidity();
+				this.sourceForm.get('verifier.basic_auth.username')?.updateValueAndValidity();
+			}
+
+			if (this.sourceForm.get('verifier')?.value.type === 'hmac') {
+				this.sourceForm.get('verifier.hmac.encoding')?.addValidators(Validators.required);
+				this.sourceForm.get('verifier.hmac.hash')?.addValidators(Validators.required);
+				this.sourceForm.get('verifier.hmac.header')?.addValidators(Validators.required);
+				this.sourceForm.get('verifier.hmac.secret')?.addValidators(Validators.required);
+				this.sourceForm.get('verifier.hmac.encoding')?.updateValueAndValidity();
+				this.sourceForm.get('verifier.hmac.hash')?.updateValueAndValidity();
+				this.sourceForm.get('verifier.hmac.header')?.updateValueAndValidity();
+				this.sourceForm.get('verifier.hmac.secret')?.updateValueAndValidity();
+			} else {
+				this.sourceForm.get('verifier.hmac.encoding')?.removeValidators(Validators.required);
+				this.sourceForm.get('verifier.hmac.hash')?.removeValidators(Validators.required);
+				this.sourceForm.get('verifier.hmac.header')?.removeValidators(Validators.required);
+				this.sourceForm.get('verifier.hmac.secret')?.removeValidators(Validators.required);
+				this.sourceForm.get('verifier.hmac.encoding')?.updateValueAndValidity();
+				this.sourceForm.get('verifier.hmac.hash')?.updateValueAndValidity();
+				this.sourceForm.get('verifier.hmac.header')?.updateValueAndValidity();
+				this.sourceForm.get('verifier.hmac.secret')?.updateValueAndValidity();
+			}
+		} else {
+			this.sourceForm.get('verifier.type')?.removeValidators(Validators.required);
+			this.sourceForm.get('verifier.type')?.updateValueAndValidity();
+		}
+
+		if (this.privateService.getProjectDetails?.type === 'outgoing') {
+			this.sourceForm.get('pub_sub.workers')?.addValidators(Validators.required);
+			this.sourceForm.get('pub_sub.workers')?.updateValueAndValidity();
+			this.sourceForm.get('pub_sub.type')?.addValidators(Validators.required);
+			this.sourceForm.get('pub_sub.type')?.updateValueAndValidity();
+
+			if (this.sourceForm.get('pub_sub')?.value.type === 'google') {
+				this.sourceForm.get('pub_sub.google.service_account')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.google.subscription_id')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.google.project_id')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.google.service_account')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.google.subscription_id')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.google.project_id')?.updateValueAndValidity();
+			} else {
+				this.sourceForm.get('pub_sub.google.service_account')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.google.subscription_id')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.google.project_id')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.google.service_account')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.google.subscription_id')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.google.project_id')?.updateValueAndValidity();
+			}
+
+			if (this.sourceForm.get('pub_sub')?.value.type === 'sqs') {
+				this.sourceForm.get('pub_sub.sqs.queue_name')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.sqs.access_key_id')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.sqs.secret_key')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.sqs.default_region')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.sqs.queue_name')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.sqs.access_key_id')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.sqs.secret_key')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.sqs.default_region')?.updateValueAndValidity();
+			} else {
+				this.sourceForm.get('pub_sub.sqs.queue_name')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.sqs.access_key_id')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.sqs.secret_key')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.sqs.default_region')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.sqs.queue_name')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.sqs.access_key_id')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.sqs.secret_key')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.sqs.default_region')?.updateValueAndValidity();
+			}
+
+			if (this.sourceForm.get('pub_sub')?.value.type === 'kafka') {
+				this.sourceForm.get('pub_sub.kafka.brokers')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.consumer_group_id')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.topic_name')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.brokers')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.consumer_group_id')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.topic_name')?.updateValueAndValidity();
+			} else {
+				this.sourceForm.get('pub_sub.kafka.brokers')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.consumer_group_id')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.topic_name')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.brokers')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.consumer_group_id')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.topic_name')?.updateValueAndValidity();
+			}
+
+			if (this.addKafkaAuthentication) {
+				this.sourceForm.get('pub_sub.kafka.auth.type')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.auth.tls')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.auth.username')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.auth.password')?.addValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.auth.type')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.auth.tls')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.auth.username')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.auth.password')?.updateValueAndValidity();
+			} else {
+				this.sourceForm.get('pub_sub.kafka.auth.type')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.auth.tls')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.auth.username')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.auth.password')?.removeValidators(Validators.required);
+				this.sourceForm.get('pub_sub.kafka.auth.type')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.auth.tls')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.auth.username')?.updateValueAndValidity();
+				this.sourceForm.get('pub_sub.kafka.auth.password')?.updateValueAndValidity();
+			}
+		} else {
+			this.sourceForm.get('pub_sub.workers')?.removeValidators(Validators.required);
+			this.sourceForm.get('pub_sub.workers')?.updateValueAndValidity();
+			this.sourceForm.get('pub_sub.type')?.removeValidators(Validators.required);
+			this.sourceForm.get('pub_sub.type')?.updateValueAndValidity();
+		}
+
+		return;
+	}
+
+	addBrokers(brokers: string[]) {
+		this.sourceForm.patchValue({
+			pub_sub: {
+				kafka: { brokers }
+			}
+		});
 	}
 }

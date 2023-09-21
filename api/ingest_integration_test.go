@@ -94,7 +94,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NotHTTPSource() {
 			Encoding: "hex",
 		},
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "non-http", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "non-http", v, "", "")
 
 	// Arrange Request.
 	url := fmt.Sprintf("/ingest/%s", maskID)
@@ -123,7 +123,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_GoodHmac() {
 			Encoding: "hex",
 		},
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v, "", "")
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -159,7 +159,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadHmac() {
 			Encoding: "hex",
 		},
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v, "", "")
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -192,7 +192,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_GoodAPIKey() {
 			HeaderValue: "Convoy",
 		},
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v, "", "")
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -224,7 +224,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadAPIKey() {
 			HeaderValue: "Convoy",
 		},
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v, "", "")
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -256,7 +256,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_GoodBasicAuth() {
 			Password: "Convoy",
 		},
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v, "", "")
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -288,7 +288,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadBasicAuth() {
 			Password: "Convoy",
 		},
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v, "", "")
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -311,12 +311,12 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier() {
 	maskID := "123456"
 	sourceID := "123456789"
 	expectedStatusCode := http.StatusOK
-
+	resp := "[accepted]"
 	// Just Before
 	v := &datastore.VerifierConfig{
 		Type: datastore.NoopVerifier,
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v, resp, "")
 
 	bodyStr := `{ "name": "convoy" }`
 	body := serialize(bodyStr)
@@ -332,6 +332,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier() {
 
 	// Assert.
 	require.Equal(i.T(), expectedStatusCode, w.Code)
+	require.Equal(i.T(), w.Body.String(), resp)
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier_EmptyRequestBody() {
@@ -343,7 +344,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier_EmptyRequestB
 	v := &datastore.VerifierConfig{
 		Type: datastore.NoopVerifier,
 	}
-	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v)
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v, "", "")
 
 	bodyStr := ``
 	body := serialize(bodyStr)

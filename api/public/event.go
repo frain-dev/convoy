@@ -2,10 +2,10 @@ package public
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
-	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/searcher"
 
 	"github.com/frain-dev/convoy/pkg/log"
 
@@ -13,32 +13,11 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
-
-func createEventService(a *PublicHandler) (*services.EventService, error) {
-	sourceRepo := postgres.NewSourceRepo(a.A.DB)
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
-	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
-	eventRepo := postgres.NewEventRepo(a.A.DB)
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
-	deviceRepo := postgres.NewDeviceRepo(a.A.DB)
-
-	eventService, err := services.NewEventService(
-		endpointRepo, eventRepo, eventDeliveryRepo,
-		a.A.Queue, a.A.Cache, subRepo, sourceRepo, deviceRepo,
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return eventService, nil
-}
 
 // CreateEndpointEvent
 // @Summary Create an event
@@ -47,34 +26,51 @@ func createEventService(a *PublicHandler) (*services.EventService, error) {
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Param event body models.Event true "Event Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
+// @Param event body models.CreateEvent true "Event Details"
+// @Success 200 {object} util.ServerResponse{data=models.EventResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/events [post]
 func (a *PublicHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
-	var newMessage models.Event
+	var newMessage models.CreateEvent
 	err := util.ReadJSON(r, &newMessage)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
+	err = newMessage.Validate()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	project, err := a.retrieveProject(r)
-
-	eventService, err := createEventService(a)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	event, err := eventService.CreateEvent(r.Context(), &newMessage, project)
+	ce := services.CreateEventService{
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		EventRepo:    postgres.NewEventRepo(a.A.DB),
+		Queue:        a.A.Queue,
+		NewMessage:   &newMessage,
+		Project:      project,
+	}
+
+	event, err := ce.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", event, http.StatusCreated))
+	resp := &models.EventResponse{Event: event}
+	if event.IsDuplicateEvent {
+		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", resp, http.StatusCreated))
+	} else {
+		_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", resp, http.StatusCreated))
+	}
 }
 
 // CreateEndpointFanoutEvent
@@ -85,7 +81,7 @@ func (a *PublicHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Reque
 // @Produce json
 // @Param projectID path string true "Project ID"
 // @Param event body models.FanoutEvent true "Event Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
+// @Success 200 {object} util.ServerResponse{data=models.EventResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/events/fanout [post]
@@ -97,30 +93,44 @@ func (a *PublicHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http
 		return
 	}
 
+	err = newMessage.Validate()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	eventService, err := createEventService(a)
+	cf := services.CreateFanoutEventService{
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
+		EventRepo:      postgres.NewEventRepo(a.A.DB),
+		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB),
+		Queue:          a.A.Queue,
+		NewMessage:     &newMessage,
+		Project:        project,
+	}
+
+	event, err := cf.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	event, err := eventService.CreateFanoutEvent(r.Context(), &newMessage, project)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
+	resp := &models.EventResponse{Event: event}
+	if event.IsDuplicateEvent {
+		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", resp, http.StatusCreated))
+	} else {
+		_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", resp, http.StatusCreated))
 	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", event, http.StatusCreated))
 }
 
 // CreateDynamicEvent
-// @Summary Creates an event with supplied endpoint and subscription
-// @Description This endpoint Creates an event with supplied endpoint and subscription
+// @Summary Dynamic Events
+// @Description This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events
 // @Tags Events
 // @Accept json
 // @Produce json
@@ -144,13 +154,19 @@ func (a *PublicHandler) CreateDynamicEvent(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	eventService, err := createEventService(a)
+	err = newMessage.Validate()
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	err = eventService.CreateDynamicEvent(r.Context(), &newMessage, project)
+	cde := services.CreateDynamicEventService{
+		Queue:        a.A.Queue,
+		DynamicEvent: &newMessage,
+		Project:      project,
+	}
+
+	err = cde.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -167,36 +183,31 @@ func (a *PublicHandler) CreateDynamicEvent(w http.ResponseWriter, r *http.Reques
 // @Produce  json
 // @Param projectID path string true "Project ID"
 // @Param eventID path string true "event id"
-// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
+// @Success 200 {object} util.ServerResponse{data=models.EventResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/events/{eventID}/replay [put]
 func (a *PublicHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
 	event, err := a.retrieveEvent(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	eventService, err := createEventService(a)
+	rs := services.ReplayEventService{
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		Queue:        a.A.Queue,
+		Event:        event,
+	}
+
+	err = rs.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	err = eventService.ReplayEvent(r.Context(), event, project)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint event replayed successfully", event, http.StatusOK))
+	resp := &models.EventResponse{Event: event}
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint event replayed successfully", resp, http.StatusOK))
 }
 
 // BatchReplayEvents
@@ -206,45 +217,35 @@ func (a *PublicHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Reque
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Param startDate query string false "start date"
-// @Param endDate query string false "end date"
-// @Param source query string false "Source ID"
+// @Param request query models.QueryBatchReplayEventResponse false "Query Params"
 // @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/events/batchreplay [post]
 func (a *PublicHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
+	var q *models.QueryBatchReplayEvent
 	p, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	eventService, err := createEventService(a)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	searchParams, err := getSearchParams(r)
+	data, err := q.Transform(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	f := &datastore.Filter{
-		Project: p,
-		Pageable: datastore.Pageable{
-			Direction:  datastore.Next,
-			PerPage:    1000000000000, // large number so we get everything in most cases
-			NextCursor: datastore.DefaultCursor,
-		},
-		SourceID:     r.URL.Query().Get("sourceId"),
-		EndpointID:   r.URL.Query().Get("endpointId"),
-		SearchParams: searchParams,
+	data.Filter.Project = p
+
+	bs := services.BatchReplayEventService{
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		Queue:        a.A.Queue,
+		EventRepo:    postgres.NewEventRepo(a.A.DB),
+		Filter:       data.Filter,
 	}
 
-	successes, failures, err := eventService.BatchReplayEvents(r.Context(), f)
+	successes, failures, err := bs.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -261,7 +262,7 @@ func (a *PublicHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Request
 // @Produce  json
 // @Param projectID path string true "Project ID"
 // @Param eventID path string true "event id"
-// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
+// @Success 200 {object} util.ServerResponse{data=models.EventResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/events/{eventID} [get]
@@ -272,8 +273,9 @@ func (a *PublicHandler) GetEndpointEvent(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	resp := &models.EventResponse{Event: event}
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint event fetched successfully",
-		event, http.StatusOK))
+		resp, http.StatusOK))
 }
 
 // GetEventDelivery
@@ -284,7 +286,7 @@ func (a *PublicHandler) GetEndpointEvent(w http.ResponseWriter, r *http.Request)
 // @Produce json
 // @Param projectID path string true "Project ID"
 // @Param eventDeliveryID path string true "event delivery id"
-// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
+// @Success 200 {object} util.ServerResponse{data=models.EventDeliveryResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID} [get]
@@ -295,8 +297,9 @@ func (a *PublicHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	resp := &models.EventDeliveryResponse{EventDelivery: eventDelivery}
 	_ = render.Render(w, r, util.NewServerResponse("Event Delivery fetched successfully",
-		eventDelivery, http.StatusOK))
+		resp, http.StatusOK))
 }
 
 // ResendEventDelivery
@@ -307,7 +310,7 @@ func (a *PublicHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request)
 // @Produce  json
 // @Param projectID path string true "Project ID"
 // @Param eventDeliveryID path string true "event delivery id"
-// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
+// @Success 200 {object} util.ServerResponse{data=models.EventDeliveryResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend [put]
@@ -324,20 +327,23 @@ func (a *PublicHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	eventService, err := createEventService(a)
+	fr := services.RetryEventDeliveryService{
+		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.A.DB),
+		EndpointRepo:      postgres.NewEndpointRepo(a.A.DB),
+		Queue:             a.A.Queue,
+		EventDelivery:     eventDelivery,
+		Project:           project,
+	}
+
+	err = fr.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	err = eventService.ResendEventDelivery(r.Context(), eventDelivery, project)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
+	resp := &models.EventDeliveryResponse{EventDelivery: eventDelivery}
 	_ = render.Render(w, r, util.NewServerResponse("App event processed for retry successfully",
-		eventDelivery, http.StatusOK))
+		resp, http.StatusOK))
 }
 
 // BatchRetryEventDelivery
@@ -347,53 +353,37 @@ func (a *PublicHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Reque
 // @Accept json
 // @Produce json
 // @Param projectID path string true "Project ID"
-// @Param deliveryIds body Stub{ids=[]string} true "event delivery ids"
+// @Param request query models.QueryBatchRetryEventDelivery false "Query Params"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/eventdeliveries/batchretry [post]
 func (a *PublicHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
-	status := make([]datastore.EventDeliveryStatus, 0)
+	var q *models.QueryBatchRetryEventDelivery
 
-	for _, s := range r.URL.Query()["status"] {
-		if !util.IsStringEmpty(s) {
-			status = append(status, datastore.EventDeliveryStatus(s))
-		}
-	}
-
-	searchParams, err := getSearchParams(r)
+	data, err := q.Transform(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	endpointIDs := getEndpointIDs(r)
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	f := &datastore.Filter{
-		Project:     project,
-		EndpointIDs: endpointIDs,
-		EventID:     r.URL.Query().Get("eventId"),
-		Status:      status,
-		Pageable: datastore.Pageable{
-			Direction:  datastore.Next,
-			PerPage:    1000000000000, // large number so we get everything in most cases
-			NextCursor: datastore.DefaultCursor,
-		},
-		SearchParams: searchParams,
+	data.Filter.Project = project
+
+	br := services.BatchRetryEventDeliveryService{
+		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.A.DB),
+		EndpointRepo:      postgres.NewEndpointRepo(a.A.DB),
+		Queue:             a.A.Queue,
+		EventRepo:         postgres.NewEventRepo(a.A.DB),
+		Filter:            data.Filter,
 	}
 
-	eventService, err := createEventService(a)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	successes, failures, err := eventService.BatchRetryEventDelivery(r.Context(), f)
+	successes, failures, err := br.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -409,7 +399,7 @@ func (a *PublicHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.R
 // @Accept json
 // @Produce json
 // @Param projectID path string true "Project ID"
-// @Param deliveryIds body Stub{ids=[]string} true "event delivery ids"
+// @Param deliveryIds body Stub{ids=models.IDs} true "event delivery ids"
 // @Success 200 {object} util.ServerResponse{data=Stub}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
@@ -429,13 +419,15 @@ func (a *PublicHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *htt
 		return
 	}
 
-	eventService, err := createEventService(a)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
+	fr := services.ForceResendEventDeliveriesService{
+		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.A.DB),
+		EndpointRepo:      postgres.NewEndpointRepo(a.A.DB),
+		Queue:             a.A.Queue,
+		IDs:               eventDeliveryIDs.IDs,
+		Project:           project,
 	}
 
-	successes, failures, err := eventService.ForceResendEventDeliveries(r.Context(), eventDeliveryIDs.IDs, project)
+	successes, failures, err := fr.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -450,84 +442,75 @@ func (a *PublicHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *htt
 // @Tags Events
 // @Accept  json
 // @Produce  json
-// @Param appId query string false "application id"
 // @Param projectID path string true "Project ID"
-// @Param sourceId query string false "source id"
-// @Param startDate query string false "start date"
-// @Param endDate query string false "end date"
-// @Param perPage query string false "results per page"
-// @Param page query string false "page number"
-// @Param sort query string false "sort order"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.Event{data=Stub}}}
+// @Param request query models.QueryListEvent false "Query Params"
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.EventResponse}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/events [get]
 func (a *PublicHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
+	var q *models.QueryListEvent
 	cfg, err := config.Get()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	searchParams, err := getSearchParams(r)
+	data, err := q.Transform(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	pageable := m.GetPageableFromContext(r.Context())
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	query := r.URL.Query().Get("query")
-	endpointIDs := getEndpointIDs(r)
+	data.Filter.Project = project
 
-	var sourceID string
-	sourceIDs := getSourceIDs(r)
+	if cfg.Search.Type == config.TypesenseSearchProvider && !util.IsStringEmpty(data.Filter.Query) {
+		searchBackend, err := searcher.NewSearchClient(cfg)
+		if err != nil {
+			log.FromContext(r.Context()).WithError(err).Error("failed to initialise search backend")
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
 
-	if len(sourceIDs) > 0 {
-		sourceID = sourceIDs[0]
-	}
+		se := services.SearchEventService{
+			EventRepo: postgres.NewEventRepo(a.A.DB),
+			Searcher:  searchBackend,
+			Filter:    data.Filter,
+		}
 
-	f := &datastore.Filter{
-		Query:        query,
-		Project:      project,
-		EndpointIDs:  endpointIDs,
-		SourceID:     sourceID,
-		Pageable:     pageable,
-		SearchParams: searchParams,
-	}
-
-	eventService, err := createEventService(a)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	if cfg.Search.Type == config.TypesenseSearchProvider && !util.IsStringEmpty(query) {
-		m, paginationData, err := eventService.Search(r.Context(), f)
+		events, paginationData, err := se.Run(r.Context())
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
 		}
+
+		resp := models.NewListResponse(events, func(event datastore.Event) models.EventResponse {
+			return models.EventResponse{Event: &event}
+		})
 		_ = render.Render(w, r, util.NewServerResponse("Endpoint events fetched successfully",
-			pagedResponse{Content: &m, Pagination: &paginationData}, http.StatusOK))
+			pagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 
 		return
 	}
 
-	m, paginationData, err := postgres.NewEventRepo(a.A.DB).LoadEventsPaged(r.Context(), project.UID, f)
+	eventsPaged, paginationData, err := postgres.NewEventRepo(a.A.DB).LoadEventsPaged(r.Context(), project.UID, data.Filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch events")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 		return
 	}
 
+	resp := models.NewListResponse(eventsPaged, func(event datastore.Event) models.EventResponse {
+		return models.EventResponse{Event: &event}
+	})
 	_ = render.Render(w, r, util.NewServerResponse("App events fetched successfully",
-		pagedResponse{Content: &m, Pagination: &paginationData}, http.StatusOK))
+		pagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 // GetEventDeliveriesPaged
@@ -536,34 +519,14 @@ func (a *PublicHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 // @Tags Event Deliveries
 // @Accept json
 // @Produce json
-// @Param appId query string false "application id"
 // @Param projectID path string true "Project ID"
-// @Param eventId query string false "event id"
-// @Param startDate query string false "start date"
-// @Param endDate query string false "end date"
-// @Param perPage query string false "results per page"
-// @Param page query string false "page number"
-// @Param sort query string false "sort order"
-// @Param status query []string false "status"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]datastore.EventDelivery{data=Stub}}}
+// @Param request query models.QueryListEventDelivery false "Query Params"
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.EventDeliveryResponse}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/eventdeliveries [get]
 func (a *PublicHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
-	status := make([]datastore.EventDeliveryStatus, 0)
-	for _, s := range r.URL.Query()["status"] {
-		if !util.IsStringEmpty(s) {
-			status = append(status, datastore.EventDeliveryStatus(s))
-		}
-	}
-
-	searchParams, err := getSearchParams(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	endpointIDs := getEndpointIDs(r)
+	var q *models.QueryListEventDelivery
 
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -571,24 +534,36 @@ func (a *PublicHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	f := &datastore.Filter{
-		Project:      project,
-		EventID:      r.URL.Query().Get("eventId"),
-		EndpointIDs:  endpointIDs,
-		Status:       status,
-		Pageable:     m.GetPageableFromContext(r.Context()),
-		SearchParams: searchParams,
+	data, err := q.Transform(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
 	}
 
-	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams, f.Pageable)
+	// if the idempotency key query is set, find the first event with the key
+	if len(data.IdempotencyKey) > 0 {
+		event, err := postgres.NewEventRepo(a.A.DB).FindFirstEventWithIdempotencyKey(r.Context(), project.UID, data.IdempotencyKey)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+		data.EventID = event.UID
+	}
+
+	f := data.Filter
+	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch event deliveries")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
 		return
 	}
 
+	resp := models.NewListResponse(ed, func(ed datastore.EventDelivery) models.EventDeliveryResponse {
+		return models.EventDeliveryResponse{EventDelivery: &ed}
+	})
+
 	_ = render.Render(w, r, util.NewServerResponse("Event deliveries fetched successfully",
-		pagedResponse{Content: &ed, Pagination: &paginationData}, http.StatusOK))
+		pagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 func (a *PublicHandler) retrieveEvent(r *http.Request) (*datastore.Event, error) {
@@ -613,46 +588,6 @@ func (a *PublicHandler) retrieveEventDelivery(r *http.Request) (*datastore.Event
 	return eventDeliveryRepo.FindEventDeliveryByID(r.Context(), project.UID, eventDeliveryID)
 }
 
-func getSearchParams(r *http.Request) (datastore.SearchParams, error) {
-	var searchParams datastore.SearchParams
-	format := "2006-01-02T15:04:05"
-	startDate := r.URL.Query().Get("startDate")
-	endDate := r.URL.Query().Get("endDate")
-
-	var err error
-
-	var startT time.Time
-	if len(startDate) == 0 {
-		startT = time.Unix(0, 0)
-	} else {
-		startT, err = time.Parse(format, startDate)
-		if err != nil {
-			return searchParams, errors.New("please specify a startDate in the format " + format)
-		}
-	}
-	var endT time.Time
-	if len(endDate) == 0 {
-		now := time.Now()
-		endT = time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location())
-	} else {
-		endT, err = time.Parse(format, endDate)
-		if err != nil {
-			return searchParams, errors.New("please specify a correct endDate in the format " + format + " or none at all")
-		}
-	}
-
-	if err := m.EnsurePeriod(startT, endT); err != nil {
-		return searchParams, err
-	}
-
-	searchParams = datastore.SearchParams{
-		CreatedAtStart: startT.Unix(),
-		CreatedAtEnd:   endT.Unix(),
-	}
-
-	return searchParams, nil
-}
-
 func getEndpointIDs(r *http.Request) []string {
 	var endpoints []string
 
@@ -663,16 +598,4 @@ func getEndpointIDs(r *http.Request) []string {
 	}
 
 	return endpoints
-}
-
-func getSourceIDs(r *http.Request) []string {
-	var sourceIDs []string
-
-	for _, id := range r.URL.Query()["sourceId"] {
-		if !util.IsStringEmpty(id) {
-			sourceIDs = append(sourceIDs, id)
-		}
-	}
-
-	return sourceIDs
 }

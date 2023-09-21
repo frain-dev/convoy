@@ -133,4 +133,14 @@ export class GeneralService {
 		if (data) return JSON.stringify(data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
 		return displayMessage;
 	}
+
+	convertStringToJson(str: string) {
+		try {
+			const jsonObject = JSON.parse(str);
+			return jsonObject;
+		} catch {
+			this.showNotification({ message: 'Data is not entered in correct JSON format', style: 'error' });
+			return false;
+		}
+	}
 }

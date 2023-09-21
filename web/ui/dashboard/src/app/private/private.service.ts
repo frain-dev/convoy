@@ -1,22 +1,21 @@
-import { Injectable } from '@angular/core';
+import { EventEmitter, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { HttpService } from 'src/app/services/http/http.service';
 import { FLIPT_API_RESPONSE } from '../models/flipt.model';
 import { CURSOR } from '../models/global.model';
-import { PROJECT } from '../models/project.model';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
-import { ProjectService } from './pages/project/project.service';
 import { USER } from '../models/user.model';
+import { PROJECT } from '../models/project.model';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class PrivateService {
-	activeProjectDetails?: PROJECT; // we should depricate this
-	organisationDetails!: ORGANIZATION_DATA;
+	showOrgModal: EventEmitter<boolean> = new EventEmitter();
+	organisationDetails?: ORGANIZATION_DATA;
 	apiFlagResponse!: FLIPT_API_RESPONSE;
-	projects: PROJECT[] = [];
+	projects!: HTTP_RESPONSE;
 	organisations!: HTTP_RESPONSE;
 	membership!: HTTP_RESPONSE;
 	configutation!: HTTP_RESPONSE;
@@ -25,7 +24,7 @@ export class PrivateService {
 	profileDetails!: HTTP_RESPONSE;
 	projectStats!: HTTP_RESPONSE;
 
-	constructor(private http: HttpService, private router: Router, private projectService: ProjectService) {}
+	constructor(private http: HttpService, private router: Router) {}
 
 	get getOrganisation(): ORGANIZATION_DATA | null {
 		let org = localStorage.getItem('CONVOY_ORG');
@@ -37,6 +36,10 @@ export class PrivateService {
 		return authDetails ? JSON.parse(authDetails) : false;
 	}
 
+	setShowOrgModal(value: boolean) {
+		this.showOrgModal.emit(value);
+	}
+
 	urlFactory(level: 'org' | 'org_project'): string {
 		const orgId = this.getOrganisation?.uid;
 
@@ -44,7 +47,7 @@ export class PrivateService {
 			case 'org':
 				return `/organisations/${orgId}`;
 			case 'org_project':
-				return `/organisations/${orgId}/projects/${this.activeProjectDetails?.uid}`;
+				return `/organisations/${orgId}/projects/${this.getProjectDetails?.uid}`;
 			default:
 				return '';
 		}
@@ -84,10 +87,10 @@ export class PrivateService {
 		});
 	}
 
-	getSubscriptions(requestDetails?: CURSOR): Promise<HTTP_RESPONSE> {
+	getSubscriptions(requestDetails?: any): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				if (!requestDetails) requestDetails = { next_page_cursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF", direction: 'next' };
+				if (!requestDetails) requestDetails = { next_page_cursor: 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF', direction: 'next' };
 
 				const subscriptionsResponse = await this.http.request({
 					url: `/subscriptions`,
@@ -103,23 +106,28 @@ export class PrivateService {
 		});
 	}
 
-	getProjectDetails(requestDetails?: { refresh?: boolean; projectId?: string }): Promise<HTTP_RESPONSE> {
-		const projectId = this.router.url.split('/')[2];
+	get getProjectDetails() {
+		const localProject = localStorage.getItem('CONVOY_PROJECT');
+		if (localProject) return JSON.parse(localProject);
 
+		return this.getProject().then(project => {
+			return project.data;
+		});
+	}
+
+	getProject(requestDetails?: { refresh?: boolean; projectId?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			if (this.projectDetails && !requestDetails?.refresh) return resolve(this.projectDetails);
 
 			try {
 				const projectResponse = await this.http.request({
-					url: `/projects/${requestDetails?.projectId || this.activeProjectDetails?.uid || projectId}`,
+					url: `/projects/${requestDetails?.projectId}`,
 					method: 'get',
 					level: 'org'
 				});
 
-				this.activeProjectDetails = projectResponse.data; // we should depricate this
-				this.projectService.activeProjectDetails = projectResponse.data;
-
 				this.projectDetails = projectResponse;
+				localStorage.setItem('CONVOY_PROJECT', JSON.stringify(projectResponse.data));
 				return resolve(projectResponse);
 			} catch (error) {
 				return reject(error);
@@ -219,8 +227,10 @@ export class PrivateService {
 		});
 	}
 
-	getProjects(): Promise<HTTP_RESPONSE> {
+	getProjects(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
+			if (this.projects && !requestDetails?.refresh) return resolve(this.projects);
+
 			try {
 				const projectsResponse = await this.http.request({
 					url: `/projects`,
@@ -228,7 +238,7 @@ export class PrivateService {
 					level: 'org'
 				});
 
-				this.projects = projectsResponse.data;
+				this.projects = projectsResponse;
 				return resolve(projectsResponse);
 			} catch (error) {
 				return reject(error);
@@ -253,7 +263,7 @@ export class PrivateService {
 					flagKey: key,
 					entityId: key,
 					context: {
-						group_id: this.activeProjectDetails?.uid || '',
+						group_id: this.getProjectDetails?.uid || '',
 						organisation_id: organisationId
 					}
 				})
@@ -300,7 +310,7 @@ export class PrivateService {
 	getEndpoints(requestDetails?: CURSOR & { q?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				if (!requestDetails?.next_page_cursor && !requestDetails?.prev_page_cursor) requestDetails = { next_page_cursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF", direction: 'next', q: requestDetails?.q };
+				if (!requestDetails?.next_page_cursor && !requestDetails?.prev_page_cursor) requestDetails = { next_page_cursor: 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF', direction: 'next', q: requestDetails?.q };
 
 				const response = await this.http.request({
 					url: `/endpoints`,
@@ -319,7 +329,7 @@ export class PrivateService {
 	getSources(requestDetails?: CURSOR): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
-				if (!requestDetails) requestDetails = { next_page_cursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF", direction: 'next' };
+				if (!requestDetails) requestDetails = { next_page_cursor: 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF', direction: 'next' };
 
 				const sourcesResponse = await this.http.request({
 					url: `/sources`,
@@ -374,5 +384,61 @@ export class PrivateService {
 				return reject(error);
 			}
 		});
+	}
+
+	deleteProject(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const sourceResponse = await this.http.request({
+					url: ``,
+					method: 'delete',
+					level: 'org_project'
+				});
+
+				return resolve(sourceResponse);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	deleteEndpoint(endpointId: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/endpoints/${endpointId}`,
+					method: 'delete',
+					level: 'org_project'
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	async updateProjectDetails(projects: PROJECT[]) {
+		localStorage.setItem('CONVOY_PROJECT', JSON.stringify(projects[0]));
+		await this.getProjectStat({ refresh: true });
+
+		this.router.navigateByUrl(`/projects/${projects[0].uid}`);
+	}
+
+	checkForSelectedProject(projects: PROJECT[]) {
+		const selectedProject = localStorage.getItem('CONVOY_PROJECT');
+		if (!selectedProject) return this.updateProjectDetails(projects);
+
+		const projectDetails = JSON.parse(selectedProject);
+		return projects.find(project => project.uid === projectDetails.uid) ? this.router.navigateByUrl(`/projects/${projectDetails.uid}`) : this.updateProjectDetails(projects);
+	}
+
+	async getProjectsHelper(requestDetails?: { refresh: boolean }): Promise<any> {
+		try {
+			const response = await this.getProjects(requestDetails);
+			return response.data.length === 0 ? this.router.navigateByUrl('/projects') : this.checkForSelectedProject(response.data);
+		} catch (error) {
+			return error;
+		}
 	}
 }

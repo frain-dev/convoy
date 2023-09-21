@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, EventEmitter, HostListener, OnInit, Output } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
 import { EventDeliveryDetailsService } from './event-delivery-details.service';
@@ -12,9 +12,10 @@ import { PrivateService } from 'src/app/private/private.service';
 	styleUrls: ['./event-delivery-details.component.scss']
 })
 export class EventDeliveryDetailsComponent implements OnInit {
+	@Output('onViewEndpoint') onViewEndpoint = new EventEmitter<any>();
 	eventDelsDetails?: EVENT_DELIVERY;
 	eventDeliveryAtempt?: EVENT_DELIVERY_ATTEMPT;
-	eventDeliveryAtempts!: EVENT_DELIVERY_ATTEMPT[];
+	eventDeliveryAtempts: EVENT_DELIVERY_ATTEMPT[] = [];
 	selectedDeliveryAttempt?: EVENT_DELIVERY_ATTEMPT;
 	isLoadingDeliveryDetails = false;
 	isloadingDeliveryAttempts = false;
@@ -76,7 +77,6 @@ export class EventDeliveryDetailsComponent implements OnInit {
 			const response = await this.eventDeliveryDetailsService.getEventDeliveryAttempts({ eventId });
 			const deliveries = response.data;
 			this.eventDeliveryAtempts = deliveries.reverse();
-			this.selectedDeliveryAttempt = this.eventDeliveryAtempts[0];
 			this.eventDeliveryAtempt = this.eventDeliveryAtempts[this.eventDeliveryAtempts.length - 1];
 
 			this.isloadingDeliveryAttempts = false;
@@ -86,7 +86,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 	}
 
 	viewEndpoint(endpointId: string) {
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid + '/endpoints/' + endpointId);
+		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid + '/endpoints/' + endpointId);
 	}
 
 	checkScreenSize() {

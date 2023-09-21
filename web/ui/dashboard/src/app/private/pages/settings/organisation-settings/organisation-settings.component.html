@@ -11,8 +11,8 @@
 		<convoy-input-error *ngIf="editOrganisationForm.get('name')?.touched && editOrganisationForm.get('name')?.invalid">Please enter a name for your organisation</convoy-input-error>
 	</convoy-input-field>
 	<label convoy-label>Organisation Id</label>
-	<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px">
-		<span class="text-16 text-grey-60 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ organisationId }}</span>
+	<div class="flex items-center justify-between w-full h-50px bg-white-100 border border-new.primary-25 rounded-[6px] px-16px">
+		<span class="text-16 text-new.gray-600 font-normal whitespace-nowrap w-250px overflow-hidden text-ellipsis">{{ organisationId }}</span>
 		<convoy-copy-button [text]="organisationId" notificationText="Organisation ID has been copied to your clipboard"></convoy-copy-button>
 	</div>
 </form>
@@ -20,11 +20,14 @@
 <div convoy-card color="danger" class="p-26px my-24px">
 	<h2 class="text-danger font-semibold mb-20px">Danger zone</h2>
 	<p class="text-14">Deleting your organisation means you will lose all workspaces created by you and all your every other organisation information.</p>
-	<button convoy-button [disabled]="editOrganisationForm.disabled" color="danger" size="sm" class="mt-32px" (click)="showDeleteModal = !showDeleteModal">
+	<button convoy-button color="danger" size="sm" class="mt-32px" [disabled]="editOrganisationForm.disabled" (click)="deleteDialog.showModal()">
 		<svg width="18" height="18" class="mr-2 fill-white-100">
 			<use xlink:href="#delete-icon"></use>
 		</svg>
 		Delete Organisation
 	</button>
 </div>
-<app-delete-modal *ngIf="showDeleteModal" [isLoading]="isDeletingOrganisation" [deleteText]="'deactivate “' + organisationName + '”'" [deleteButtonText]="'Deactivate'" (closeModal)="showDeleteModal = false" (deleteData)="deleteOrganisation()"></app-delete-modal>
+
+<dialog #deleteDialog convoy-dialog position="center" size="sm">
+	<app-delete-modal [isLoading]="isDeletingOrganisation" [deleteText]="'deactivate “' + organisationName + '”'" [deleteButtonText]="'Deactivate'" (closeModal)="deleteDialog.close()" (deleteData)="deleteOrganisation()"></app-delete-modal>
+</dialog>

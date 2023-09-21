@@ -11,18 +11,11 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
-
-func createSourceService(a *PublicHandler) *services.SourceService {
-	sourceRepo := postgres.NewSourceRepo(a.A.DB)
-
-	return services.NewSourceService(sourceRepo, a.A.Cache)
-}
 
 // CreateSource
 // @Summary Create a source
@@ -31,14 +24,19 @@ func createSourceService(a *PublicHandler) *services.SourceService {
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Param source body models.Source true "Source Details"
-// @Success 200 {object} util.ServerResponse{data=models.Source}
+// @Param source body models.CreateSource true "Source Details"
+// @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/sources [post]
 func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
-	var newSource models.Source
+	var newSource models.CreateSource
 	if err := util.ReadJSON(r, &newSource); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if err := newSource.Validate(); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -49,8 +47,14 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sourceService := createSourceService(a)
-	source, err := sourceService.CreateSource(r.Context(), &newSource, project)
+	cs := services.CreateSourceService{
+		SourceRepo: postgres.NewSourceRepo(a.A.DB),
+		Cache:      a.A.Cache,
+		NewSource:  &newSource,
+		Project:    project,
+	}
+
+	source, err := cs.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -70,7 +74,9 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
-	_ = render.Render(w, r, util.NewServerResponse("Source created successfully", source, http.StatusCreated))
+	resp := &models.SourceResponse{Source: source}
+
+	_ = render.Render(w, r, util.NewServerResponse("Source created successfully", resp, http.StatusCreated))
 }
 
 // GetSourceByID
@@ -81,7 +87,7 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param projectID path string true "Project ID"
 // @Param sourceID path string true "Source ID"
-// @Success 200 {object} util.ServerResponse{data=models.Source}
+// @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/sources/{sourceID} [get]
@@ -117,7 +123,9 @@ func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
-	_ = render.Render(w, r, util.NewServerResponse("Source fetched successfully", source, http.StatusOK))
+	resp := &models.SourceResponse{Source: source}
+
+	_ = render.Render(w, r, util.NewServerResponse("Source fetched successfully", resp, http.StatusOK))
 }
 
 // UpdateSource
@@ -128,8 +136,8 @@ func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param projectID path string true "Project ID"
 // @Param sourceID path string true "source id"
-// @Param source body models.Source true "Source Details"
-// @Success 200 {object} util.ServerResponse{data=models.Source}
+// @Param source body models.UpdateSource true "Source Details"
+// @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/sources/{sourceID} [put]
@@ -141,13 +149,16 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := sourceUpdate.Validate(); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
-
-	sourceService := createSourceService(a)
 
 	source, err := postgres.NewSourceRepo(a.A.DB).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
@@ -160,7 +171,15 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	source, err = sourceService.UpdateSource(r.Context(), project, &sourceUpdate, source)
+	us := services.UpdateSourceService{
+		SourceRepo:   postgres.NewSourceRepo(a.A.DB),
+		Cache:        a.A.Cache,
+		Project:      project,
+		SourceUpdate: &sourceUpdate,
+		Source:       source,
+	}
+
+	source, err = us.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -180,7 +199,9 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
-	_ = render.Render(w, r, util.NewServerResponse("Source updated successfully", source, http.StatusAccepted))
+	resp := &models.SourceResponse{Source: source}
+
+	_ = render.Render(w, r, util.NewServerResponse("Source updated successfully", resp, http.StatusAccepted))
 }
 
 // DeleteSource
@@ -240,26 +261,21 @@ func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Param perPage query string false "results per page"
-// @Param page query string false "page number"
-// @Param sort query string false "sort order"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.Source}}
+// @Param request query models.QueryListSource false "Query Params"
+// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.SourceResponse}}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/sources [get]
 func (a *PublicHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
-	pageable := m.GetPageableFromContext(r.Context())
+	var q *models.QueryListSource
 	project, err := a.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	f := &datastore.SourceFilter{
-		Type: r.URL.Query().Get("type"),
-	}
-
-	sources, paginationData, err := postgres.NewSourceRepo(a.A.DB).LoadSourcesPaged(r.Context(), project.UID, f, pageable)
+	data := q.Transform(r)
+	sources, paginationData, err := postgres.NewSourceRepo(a.A.DB).LoadSourcesPaged(r.Context(), project.UID, data.SourceFilter, data.Pageable)
 	if err != nil {
 		log.WithError(err).Error("an error occurred while fetching sources")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching sources", http.StatusBadRequest))
@@ -289,7 +305,10 @@ func (a *PublicHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request)
 		fillSourceURL(&sources[i], baseUrl, customDomain)
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Sources fetched successfully", pagedResponse{Content: sources, Pagination: &paginationData}, http.StatusOK))
+	resp := models.NewListResponse(sources, func(source datastore.Source) models.SourceResponse {
+		return models.SourceResponse{Source: &source}
+	})
+	_ = render.Render(w, r, util.NewServerResponse("Sources fetched successfully", pagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 func fillSourceURL(s *datastore.Source, baseUrl string, customDomain string) {

@@ -6,10 +6,11 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/log"
 	"os"
 	"sync"
 	"testing"
+
+	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
@@ -29,7 +30,6 @@ func getConfig() config.Configuration {
 	_ = os.Setenv("CONVOY_DB_USERNAME", os.Getenv("TEST_DB_USERNAME"))
 	_ = os.Setenv("CONVOY_DB_PASSWORD", os.Getenv("TEST_DB_PASSWORD"))
 	_ = os.Setenv("CONVOY_DB_DATABASE", os.Getenv("TEST_DB_DATABASE"))
-	_ = os.Setenv("CONVOY_DB_OPTIONS", os.Getenv("TEST_DB_OPTIONS"))
 	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
 
 	err := config.LoadConfig("")
@@ -37,14 +37,17 @@ func getConfig() config.Configuration {
 		log.Fatal(err)
 	}
 
-	cfg, _ := config.Get()
+	cfg, err := config.Get()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return cfg
 }
 
 var (
 	once = sync.Once{}
-	db   *Postgres
+	_db  *Postgres
 )
 
 func getDB(t *testing.T) (database.Database, func()) {
@@ -52,14 +55,14 @@ func getDB(t *testing.T) (database.Database, func()) {
 		var err error
 
 		dbHooks := hooks.Init()
-		dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}) {})
+		dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}, changelog interface{}) {})
 
-		db, err = NewDB(getConfig())
+		_db, err = NewDB(getConfig())
 		require.NoError(t, err)
 	})
 
-	return db, func() {
-		require.NoError(t, db.truncateTables())
+	return _db, func() {
+		require.NoError(t, _db.truncateTables())
 	}
 }
 

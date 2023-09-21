@@ -14,7 +14,9 @@ export interface ENDPOINT {
 	uid: string;
 	title: string;
 	advanced_signatures: boolean;
-	authentication: any;
+	authentication: {
+		api_key: { header_value: string; header_name: string };
+	};
 	created_at: string;
 	description: string;
 	events?: any;
@@ -23,8 +25,8 @@ export interface ENDPOINT {
 	name?: string;
 	target_url: string;
 	updated_at: string;
-	rate_limit?: number;
-	rate_limit_duration?: string;
+	rate_limit: number;
+	rate_limit_duration: string;
 	http_timeout?: string;
 	support_email: string;
 }
@@ -46,7 +48,9 @@ export interface PORTAL_LINK {
 	endpoint_count: number;
 	endpoint: string[];
 	endpoints_metadata: ENDPOINT[];
+	can_manage_endpoint: boolean;
 	name: string;
+	owner_id: string;
 	url: string;
 	created_at: string;
 	updated_at: string;

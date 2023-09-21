@@ -3,7 +3,7 @@
 # git hook that runs before a commit
 # this script will regenerate the swagger docs(openapi v3 soon) file
 
-echo $(pwd)
+pwd
 
 changed=$(git status -s | grep api/public)
 

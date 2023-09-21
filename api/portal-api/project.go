@@ -1,6 +1,7 @@
 package portalapi
 
 import (
+	"github.com/frain-dev/convoy/api/models"
 	"net/http"
 
 	"github.com/frain-dev/convoy/util"
@@ -14,5 +15,6 @@ func (a *PortalLinkHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Project fetched successfully", project, http.StatusOK))
+	resp := &models.ProjectResponse{Project: project}
+	_ = render.Render(w, r, util.NewServerResponse("Project fetched successfully", resp, http.StatusOK))
 }

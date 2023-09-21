@@ -2,41 +2,54 @@ package rdb
 
 import (
 	"errors"
-
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-redis/redis/v8"
-	"github.com/newrelic/go-agent/v3/integrations/nrredis-v8"
+	"github.com/newrelic/go-agent/v3/integrations/nrredis-v9"
+	"github.com/redis/go-redis/v9"
 )
 
 // Redis is our wrapper logic to instrument redis calls
 type Redis struct {
-	dsn    string
-	client *redis.Client
+	addresses []string
+	client    redis.UniversalClient
 }
 
 // NewClient is used to create new Redis type. This type
 // encapsulates our interaction with redis and provides instrumentation with new relic.
-func NewClient(dsn string) (*Redis, error) {
-	if util.IsStringEmpty(dsn) {
-		return nil, errors.New("redis dsn cannot be empty")
+func NewClient(addresses []string) (*Redis, error) {
+	if len(addresses) == 0 {
+		return nil, errors.New("redis addresses list cannot be empty")
 	}
 
-	opts, err := redis.ParseURL(dsn)
-
-	if err != nil {
-		return nil, err
+	for _, dsn := range addresses {
+		if util.IsStringEmpty(dsn) {
+			return nil, errors.New("dsn cannot be empty")
+		}
 	}
 
-	client := redis.NewClient(opts)
+	var client redis.UniversalClient
 
-	// Add Instrumentation
-	client.AddHook(nrredis.NewHook(opts))
+	if len(addresses) == 1 {
+		opts, err := redis.ParseURL(addresses[0])
+		if err != nil {
+			return nil, err
+		}
 
-	return &Redis{dsn: dsn, client: client}, nil
+		client = redis.NewClient(opts)
+		// Add Instrumentation
+		client.AddHook(nrredis.NewHook(opts))
+	} else {
+		client = redis.NewUniversalClient(&redis.UniversalOptions{
+			Addrs: addresses,
+		})
+		// Add Instrumentation
+		client.AddHook(nrredis.NewHook(nil))
+	}
+
+	return &Redis{addresses: addresses, client: client}, nil
 }
 
 // Client is to return underlying redis interface
-func (r *Redis) Client() *redis.Client {
+func (r *Redis) Client() redis.UniversalClient {
 	return r.client
 }
 

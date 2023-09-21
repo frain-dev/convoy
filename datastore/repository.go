@@ -2,7 +2,7 @@ package datastore
 
 import (
 	"context"
-	"encoding/json"
+	"io"
 	"time"
 )
 
@@ -30,8 +30,8 @@ type EventDeliveryRepository interface {
 	UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, eventDelivery EventDelivery, attempt DeliveryAttempt) error
 	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
 	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error
-	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable) ([]EventDelivery, PaginationData, error)
-	LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params SearchParams, period Period, interval int) ([]EventInterval, error)
+	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable, idempotencyKey string) ([]EventDelivery, PaginationData, error)
+	LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params SearchParams, period Period) ([]EventInterval, error)
 }
 
 type EventRepository interface {
@@ -42,6 +42,10 @@ type EventRepository interface {
 	CountEvents(ctx context.Context, projectID string, f *Filter) (int64, error)
 	LoadEventsPaged(ctx context.Context, projectID string, f *Filter) ([]Event, PaginationData, error)
 	DeleteProjectEvents(ctx context.Context, projectID string, f *EventFilter, hardDelete bool) error
+	DeleteProjectTokenizedEvents(ctx context.Context, projectID string, filter *EventFilter) error
+	FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) ([]Event, error)
+	FindFirstEventWithIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) (*Event, error)
+	CopyRows(ctx context.Context, projectID string, interval int) error
 }
 
 type ProjectRepository interface {
@@ -50,6 +54,7 @@ type ProjectRepository interface {
 	UpdateProject(context.Context, *Project) error
 	DeleteProject(ctx context.Context, uid string) error
 	FetchProjectByID(context.Context, string) (*Project, error)
+	GetProjectsWithEventsInTheInterval(ctx context.Context, interval int) ([]ProjectEvents, error)
 	FillProjectsStatistics(ctx context.Context, project *Project) error
 }
 
@@ -85,7 +90,7 @@ type OrganisationMemberRepository interface {
 
 type EndpointRepository interface {
 	CreateEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
-	FindEndpointByID(çtx context.Context, id string, projectID string) (*Endpoint, error)
+	FindEndpointByID(ctx context.Context, id string, projectID string) (*Endpoint, error)
 	FindEndpointsByID(ctx context.Context, ids []string, projectID string) ([]Endpoint, error)
 	FindEndpointsByAppID(ctx context.Context, appID string, projectID string) ([]Endpoint, error)
 	FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]Endpoint, error)
@@ -132,6 +137,18 @@ type DeviceRepository interface {
 	LoadDevicesPaged(ctx context.Context, projectID string, filter *ApiKeyFilter, pageable Pageable) ([]Device, PaginationData, error)
 }
 
+type JobRepository interface {
+	CreateJob(ctx context.Context, job *Job) error
+	MarkJobAsStarted(ctx context.Context, uid, projectID string) error
+	MarkJobAsCompleted(ctx context.Context, uid, projectID string) error
+	MarkJobAsFailed(ctx context.Context, uid, projectID string) error
+	DeleteJob(ctx context.Context, uid string, projectID string) error
+	FetchJobById(ctx context.Context, uid string, projectID string) (*Job, error)
+	FetchRunningJobsByProjectId(ctx context.Context, projectID string) ([]Job, error)
+	FetchJobsByProjectId(ctx context.Context, projectID string) ([]Job, error)
+	LoadJobsPaged(ctx context.Context, projectID string, pageable Pageable) ([]Job, PaginationData, error)
+}
+
 type UserRepository interface {
 	CreateUser(context.Context, *User) error
 	UpdateUser(ctx context.Context, user *User) error
@@ -152,13 +169,14 @@ type PortalLinkRepository interface {
 	CreatePortalLink(context.Context, *PortalLink) error
 	UpdatePortalLink(ctx context.Context, projectID string, portal *PortalLink) error
 	FindPortalLinkByID(ctx context.Context, projectID string, id string) (*PortalLink, error)
+	FindPortalLinkByOwnerID(ctx context.Context, projectID string, id string) (*PortalLink, error)
 	FindPortalLinkByToken(ctx context.Context, token string) (*PortalLink, error)
 	LoadPortalLinksPaged(ctx context.Context, projectID string, f *FilterBy, pageable Pageable) ([]PortalLink, PaginationData, error)
 	RevokePortalLink(ctx context.Context, projectID string, id string) error
 }
 
 type ExportRepository interface {
-	ExportRecords(ctx context.Context, tableName, projectID string, createdAt time.Time) (json.RawMessage, int64, error)
+	ExportRecords(ctx context.Context, tableName, projectID string, createdAt time.Time, w io.Writer) (int64, error)
 }
 
 type MetaEventRepository interface {

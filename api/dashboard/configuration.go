@@ -4,6 +4,9 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -12,14 +15,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 )
-
-func createConfigService(a *DashboardHandler) *services.ConfigService {
-	configRepo := postgres.NewConfigRepo(a.A.DB)
-
-	return services.NewConfigService(
-		configRepo,
-	)
-}
 
 func (a *DashboardHandler) LoadConfiguration(w http.ResponseWriter, r *http.Request) {
 	config, err := postgres.NewConfigRepo(a.A.DB).LoadConfiguration(r.Context())
@@ -39,14 +34,8 @@ func (a *DashboardHandler) LoadConfiguration(w http.ResponseWriter, r *http.Requ
 		}
 
 		c := &models.ConfigurationResponse{
-			UID:                config.UID,
-			IsAnalyticsEnabled: config.IsAnalyticsEnabled,
-			IsSignupEnabled:    config.IsSignupEnabled,
-			StoragePolicy:      config.StoragePolicy,
-			ApiVersion:         convoy.GetVersion(),
-			CreatedAt:          config.CreatedAt,
-			UpdatedAt:          config.UpdatedAt,
-			DeletedAt:          config.DeletedAt,
+			Configuration: config,
+			ApiVersion:    convoy.GetVersion(),
 		}
 
 		configResponse = append(configResponse, c)
@@ -62,22 +51,25 @@ func (a *DashboardHandler) CreateConfiguration(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	configService := createConfigService(a)
-	config, err := configService.CreateConfiguration(r.Context(), &newConfig)
+	if err := newConfig.Validate(); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	cc := services.CreateConfigService{
+		ConfigRepo: postgres.NewConfigRepo(a.A.DB),
+		NewConfig:  &newConfig,
+	}
+
+	config, err := cc.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	c := &models.ConfigurationResponse{
-		UID:                config.UID,
-		IsAnalyticsEnabled: config.IsAnalyticsEnabled,
-		IsSignupEnabled:    config.IsSignupEnabled,
-		StoragePolicy:      config.StoragePolicy,
-		ApiVersion:         convoy.GetVersion(),
-		CreatedAt:          config.CreatedAt,
-		UpdatedAt:          config.UpdatedAt,
-		DeletedAt:          config.DeletedAt,
+		Configuration: config,
+		ApiVersion:    convoy.GetVersion(),
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Configuration created successfully", c, http.StatusCreated))
@@ -90,23 +82,37 @@ func (a *DashboardHandler) UpdateConfiguration(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	configService := createConfigService(a)
-	config, err := configService.UpdateConfiguration(r.Context(), &newConfig)
+	if err := newConfig.Validate(); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	uc := services.UpdateConfigService{
+		ConfigRepo: postgres.NewConfigRepo(a.A.DB),
+		Config:     &newConfig,
+	}
+
+	config, err := uc.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	c := &models.ConfigurationResponse{
-		UID:                config.UID,
-		IsAnalyticsEnabled: config.IsAnalyticsEnabled,
-		IsSignupEnabled:    config.IsSignupEnabled,
-		StoragePolicy:      config.StoragePolicy,
-		ApiVersion:         convoy.GetVersion(),
-		CreatedAt:          config.CreatedAt,
-		UpdatedAt:          config.UpdatedAt,
-		DeletedAt:          config.DeletedAt,
+		Configuration: config,
+		ApiVersion:    convoy.GetVersion(),
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Configuration updated successfully", c, http.StatusAccepted))
+}
+
+func (a *DashboardHandler) IsSignUpEnabled(w http.ResponseWriter, r *http.Request) {
+	cfg, err := config.Get()
+	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to load configuration")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to load configuration", http.StatusBadRequest))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Configuration loaded successfully", cfg.Auth.IsSignupEnabled, http.StatusOK))
 }

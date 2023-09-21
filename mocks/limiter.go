@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	redis_rate "github.com/go-redis/redis_rate/v9"
+	redis_rate "github.com/go-redis/redis_rate/v10"
 	gomock "github.com/golang/mock/gomock"
 )
 

@@ -63,7 +63,8 @@ func generateEventDelivery(project *datastore.Project, endpoint *datastore.Endpo
 		DeliveryAttempts: []datastore.DeliveryAttempt{
 			{UID: ulid.Make().String()},
 		},
-		Status: datastore.SuccessEventStatus,
+		URLQueryParams: "name=ref&category=food",
+		Status:         datastore.SuccessEventStatus,
 		Metadata: &datastore.Metadata{
 			Data:            []byte(`{"name": "10x"}`),
 			Raw:             `{"name": "10x"}`,
@@ -446,7 +447,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 	}
 
 	dbEventDeliveries, _, err := edRepo.LoadEventDeliveriesPaged(
-		context.Background(), project.UID, []string{endpoint.UID}, event.UID,
+		context.Background(), project.UID, []string{endpoint.UID}, event.UID, sub.UID,
 		[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus},
 		datastore.SearchParams{
 			CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
@@ -455,6 +456,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 		datastore.Pageable{
 			PerPage: 10,
 		},
+		"",
 	)
 
 	require.NoError(t, err)

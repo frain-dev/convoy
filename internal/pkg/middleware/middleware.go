@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"errors"
@@ -9,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/frain-dev/convoy/internal/pkg/apm"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -245,18 +248,21 @@ func LogHttpRequest(a *types.APIOptions) func(next http.Handler) http.Handler {
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 			start := time.Now()
 
+			wbuf := &bytes.Buffer{}
+			ww.Tee(wbuf)
+
 			defer func() {
+				lvl, err := statusLevel(ww.Status()).ToLogrusLevel()
+				if err != nil {
+					log.FromContext(r.Context()).WithError(err).Error("Failed to generate status level")
+				}
+
 				requestFields := requestLogFields(r)
-				responseFields := responseLogFields(ww, start)
+				responseFields := responseLogFields(ww, wbuf, start, lvl)
 
 				logFields := map[string]interface{}{
 					"httpRequest":  requestFields,
 					"httpResponse": responseFields,
-				}
-
-				lvl, err := statusLevel(ww.Status()).ToLogrusLevel()
-				if err != nil {
-					log.FromContext(r.Context()).WithError(err).Error("Failed to generate status level")
 				}
 
 				log.FromContext(r.Context()).WithFields(logFields).Log(lvl, requestFields["requestURL"])
@@ -306,22 +312,23 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 		txn := newrelic.FromContext(r.Context()).GetLinkingMetadata()
 
 		if cfg.Tracer.NewRelic.DistributedTracerEnabled {
-			requestFields["traceID"] = txn.TraceID
-			requestFields["spanID"] = txn.SpanID
+			requestFields["traceId"] = txn.TraceID
+			requestFields["spanId"] = txn.SpanID
 		}
 
-		requestFields["entityGUID"] = txn.EntityGUID
-		requestFields["entityType"] = txn.EntityType
+		requestFields["entity.guid"] = txn.EntityGUID
+		requestFields["entity.name"] = txn.EntityName
 	}
 
 	return requestFields
 }
 
-func responseLogFields(w middleware.WrapResponseWriter, t time.Time) map[string]interface{} {
+func responseLogFields(w middleware.WrapResponseWriter, wbuf *bytes.Buffer, t time.Time, lvl logrus.Level) map[string]interface{} {
 	responseFields := map[string]interface{}{
 		"status":  w.Status(),
 		"byes":    w.BytesWritten(),
 		"latency": time.Since(t),
+		"body":    wbuf.String(),
 	}
 
 	if len(w.Header()) > 0 {

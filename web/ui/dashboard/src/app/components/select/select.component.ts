@@ -1,16 +1,17 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, EventEmitter, forwardRef, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { ControlContainer, ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
-import { fromEvent, Observable } from 'rxjs';
-import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
+import { fromEvent } from 'rxjs';
+import { debounceTime, distinctUntilChanged, map, startWith } from 'rxjs/operators';
 import { ButtonComponent } from '../button/button.component';
 import { DropdownComponent, DropdownOptionDirective } from '../dropdown/dropdown.component';
 import { TooltipComponent } from '../tooltip/tooltip.component';
+import { InputDirective, LabelComponent } from '../input/input.component';
 
 @Component({
 	selector: 'convoy-select',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, TooltipComponent, DropdownComponent, ButtonComponent, DropdownOptionDirective],
+	imports: [CommonModule, ReactiveFormsModule, TooltipComponent, DropdownComponent, ButtonComponent, DropdownOptionDirective, LabelComponent, InputDirective],
 	templateUrl: './select.component.html',
 	styleUrls: ['./select.component.scss'],
 	providers: [
@@ -33,8 +34,6 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	@Input('placeholder') placeholder!: string;
 	@Input('className') class!: string;
 	@Input('value') value!: any;
-	@Input('tooltipPosition') tooltipPosition: 'left' | 'right' = 'left';
-	@Input('tooltipSize') tooltipSize: 'sm' | 'md' = 'md';
 	@Input('tooltipContent') tooltipContent!: string;
 	@Input('searchable') searchable: boolean = false;
 	@Output('selectedOption') selectedOption = new EventEmitter<any>();

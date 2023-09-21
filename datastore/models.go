@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"context"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
@@ -9,14 +10,15 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/lib/pq"
-	"github.com/oklog/ulid/v2"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/guregu/null.v4"
 )
 
 type Pageable struct {
@@ -28,8 +30,10 @@ type Pageable struct {
 
 type PageDirection string
 
-const Next PageDirection = "next"
-const Prev PageDirection = "prev"
+const (
+	Next PageDirection = "next"
+	Prev PageDirection = "prev"
+)
 
 func (p Pageable) Cursor() string {
 	if p.Direction == Next {
@@ -122,7 +126,7 @@ type (
 	StorageType      string
 	KeyType          string
 	PubSubType       string
-	PubSubHandler    func(*Source, string) error
+	PubSubHandler    func(context.Context, *Source, string) error
 	MetaEventType    string
 	HookEventType    string
 )
@@ -142,6 +146,7 @@ const (
 )
 
 const (
+	ProjectUpdated       HookEventType = "project.updated"
 	EndpointCreated      HookEventType = "endpoint.created"
 	EndpointUpdated      HookEventType = "endpoint.updated"
 	EndpointDeleted      HookEventType = "endpoint.deleted"
@@ -163,6 +168,7 @@ const (
 const (
 	SqsPubSub    PubSubType = "sqs"
 	GooglePubSub PubSubType = "google"
+	KafkaPubSub  PubSubType = "kafka"
 )
 
 func (s SourceProvider) IsValid() bool {
@@ -244,6 +250,7 @@ var (
 		ReplayAttacks:            false,
 		IsRetentionPolicyEnabled: false,
 		DisableEndpoint:          false,
+		AddEventIDTraceHeaders:   false,
 		RateLimit:                &DefaultRateLimitConfig,
 		Strategy:                 &DefaultStrategyConfig,
 		Signature:                GetDefaultSignatureConfig(),
@@ -279,7 +286,8 @@ var (
 	}
 
 	DefaultRetentionPolicy = RetentionPolicyConfiguration{
-		Policy: "30d",
+		Policy:       "720h",
+		SearchPolicy: "720h",
 	}
 )
 
@@ -457,6 +465,16 @@ type ProjectMetadata struct {
 	RetainedEvents int `json:"retained_events" bson:"retained_events"`
 }
 
+type ProjectEvents struct {
+	Id          string `json:"id" db:"id"`
+	EventsCount int    `json:"events_count" db:"events_count"`
+}
+
+type SearchIndexParams struct {
+	ProjectID string `json:"project_id"`
+	Interval  int    `json:"interval"`
+}
+
 type SignatureVersions []SignatureVersion
 
 func (s *SignatureVersions) Scan(v interface{}) error {
@@ -480,6 +498,7 @@ type ProjectConfig struct {
 	MaxIngestSize            uint64                        `json:"max_payload_read_size" db:"max_payload_read_size"`
 	ReplayAttacks            bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
 	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
+	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
 	DisableEndpoint          bool                          `json:"disable_endpoint" db:"disable_endpoint"`
 	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
@@ -558,7 +577,8 @@ type MetaEventConfiguration struct {
 }
 
 type RetentionPolicyConfiguration struct {
-	Policy string `json:"policy" db:"policy" valid:"required~please provide a valid retention policy"`
+	Policy       string `json:"policy" db:"policy" valid:"required~please provide a valid retention policy"`
+	SearchPolicy string `json:"search_policy" db:"search_policy"`
 }
 
 type ProjectStatistics struct {
@@ -589,6 +609,7 @@ func (o *Project) IsDeleted() bool { return o.DeletedAt.Valid }
 func (o *Project) IsOwner(e *Endpoint) bool { return o.UID == e.ProjectID }
 
 var (
+	ErrSignupDisabled                = errors.New("user registration is disabled")
 	ErrUserNotFound                  = errors.New("user not found")
 	ErrSourceNotFound                = errors.New("source not found")
 	ErrEventNotFound                 = errors.New("event not found")
@@ -599,7 +620,6 @@ var (
 	ErrEventDeliveryNotFound         = errors.New("event delivery not found")
 	ErrEventDeliveryAttemptNotFound  = errors.New("event delivery attempt not found")
 	ErrPortalLinkNotFound            = errors.New("portal link not found")
-	ErrDuplicateEndpointName         = errors.New("an endpoint with this name exists")
 	ErrNotAuthorisedToAccessDocument = errors.New("your credentials cannot access or modify this resource")
 	ErrConfigNotFound                = errors.New("config not found")
 	ErrDuplicateProjectName          = errors.New("a project with this name already exists")
@@ -639,9 +659,8 @@ func (s *EndpointMetadata) Scan(v interface{}) error {
 
 // Event defines a payload to be sent to an application
 type Event struct {
-	UID              string    `json:"uid" db:"id"`
-	EventType        EventType `json:"event_type" db:"event_type"`
-	MatchedEndpoints int       `json:"matched_endpoints" db:"matched_enpoints"` // TODO(all) remove this field
+	UID       string    `json:"uid" db:"id"`
+	EventType EventType `json:"event_type" db:"event_type"`
 
 	SourceID         string                `json:"source_id,omitempty" db:"source_id"`
 	AppID            string                `json:"app_id,omitempty" db:"app_id"` // Deprecated
@@ -650,6 +669,9 @@ type Event struct {
 	Headers          httpheader.HTTPHeader `json:"headers" db:"headers"`
 	EndpointMetadata EndpointMetadata      `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Source           *Source               `json:"source_metadata,omitempty" db:"source_metadata"`
+	URLQueryParams   string                `json:"url_query_params" db:"url_query_params"`
+	IdempotencyKey   string                `json:"idempotency_key" db:"idempotency_key"`
+	IsDuplicateEvent bool                  `json:"is_duplicate_event" db:"is_duplicate_event"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
@@ -843,6 +865,8 @@ type EventDelivery struct {
 	DeviceID       string                `json:"device_id" db:"device_id"`
 	SubscriptionID string                `json:"subscription_id,omitempty" db:"subscription_id"`
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
+	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
+	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
 
 	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`
@@ -973,20 +997,27 @@ func (s *Subscription) GetRateLimitConfig() RateLimitConfiguration {
 	return RateLimitConfiguration{}
 }
 
+type CustomResponse struct {
+	Body        string `json:"body" db:"body"`
+	ContentType string `json:"content_type" db:"content_type"`
+}
+
 type Source struct {
-	UID            string          `json:"uid" db:"id"`
-	ProjectID      string          `json:"project_id" db:"project_id"`
-	MaskID         string          `json:"mask_id" db:"mask_id"`
-	Name           string          `json:"name" db:"name"`
-	URL            string          `json:"url" db:"-"`
-	Type           SourceType      `json:"type" db:"type"`
-	Provider       SourceProvider  `json:"provider" db:"provider"`
-	IsDisabled     bool            `json:"is_disabled" db:"is_disabled"`
-	VerifierID     string          `json:"-" db:"source_verifier_id"`
-	Verifier       *VerifierConfig `json:"verifier" db:"verifier"`
-	ProviderConfig *ProviderConfig `json:"provider_config" db:"provider_config"`
-	ForwardHeaders pq.StringArray  `json:"forward_headers" db:"forward_headers"`
-	PubSub         *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
+	UID             string          `json:"uid" db:"id"`
+	ProjectID       string          `json:"project_id" db:"project_id"`
+	MaskID          string          `json:"mask_id" db:"mask_id"`
+	Name            string          `json:"name" db:"name"`
+	URL             string          `json:"url" db:"-"`
+	Type            SourceType      `json:"type" db:"type"`
+	Provider        SourceProvider  `json:"provider" db:"provider"`
+	IsDisabled      bool            `json:"is_disabled" db:"is_disabled"`
+	VerifierID      string          `json:"-" db:"source_verifier_id"`
+	Verifier        *VerifierConfig `json:"verifier" db:"verifier"`
+	CustomResponse  CustomResponse  `json:"custom_response" db:"custom_response"`
+	ProviderConfig  *ProviderConfig `json:"provider_config" db:"provider_config"`
+	ForwardHeaders  pq.StringArray  `json:"forward_headers" db:"forward_headers"`
+	PubSub          *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
+	IdempotencyKeys pq.StringArray  `json:"idempotency_keys" db:"idempotency_keys"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
@@ -998,6 +1029,7 @@ type PubSubConfig struct {
 	Workers int                 `json:"workers" db:"workers"`
 	Sqs     *SQSPubSubConfig    `json:"sqs" db:"sqs"`
 	Google  *GooglePubSubConfig `json:"google" db:"google"`
+	Kafka   *KafkaPubSubConfig  `json:"kafka" db:"kafka"`
 }
 
 func (p *PubSubConfig) Scan(value interface{}) error {
@@ -1036,6 +1068,21 @@ type GooglePubSubConfig struct {
 	SubscriptionID string `json:"subscription_id" db:"subscription_id"`
 	ServiceAccount []byte `json:"service_account" db:"service_account"`
 	ProjectID      string `json:"project_id" db:"project_id"`
+}
+
+type KafkaPubSubConfig struct {
+	Brokers         []string   `json:"brokers" db:"brokers"`
+	ConsumerGroupID string     `json:"consumer_group_id" db:"consumer_group_id"`
+	TopicName       string     `json:"topic_name" db:"topic_name"`
+	Auth            *KafkaAuth `json:"auth" db:"auth"`
+}
+
+type KafkaAuth struct {
+	Type     string `json:"type" db:"type"`
+	Hash     string `json:"hash" db:"hash"`
+	TLS      bool   `json:"tls" db:"tls"`
+	Username string `json:"username" db:"username"`
+	Password string `json:"password" db:"password"`
 }
 
 type User struct {
@@ -1216,6 +1263,28 @@ const (
 	DeviceStatusDisabled DeviceStatus = "disabled"
 )
 
+type Job struct {
+	UID         string    `json:"uid" db:"id"`
+	Type        string    `json:"type" db:"type"`
+	Status      JobStatus `json:"status,omitempty" db:"status"`
+	ProjectID   string    `json:"project_id,omitempty" db:"project_id"`
+	FailedAt    null.Time `json:"failed_at,omitempty" db:"failed_at,omitempty" swaggertype:"string"`
+	StartedAt   null.Time `json:"started_at,omitempty" db:"started_at,omitempty" swaggertype:"string"`
+	CompletedAt null.Time `json:"completed_at,omitempty" db:"completed_at,omitempty" swaggertype:"string"`
+	CreatedAt   time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt   time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt   null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+type JobStatus string
+
+const (
+	JobStatusReady     JobStatus = "ready"
+	JobStatusRunning   JobStatus = "running"
+	JobStatusFailed    JobStatus = "failed"
+	JobStatusCompleted JobStatus = "completed"
+)
+
 type UserMetadata struct {
 	UserID    string `json:"-" db:"user_id"`
 	FirstName string `json:"first_name" db:"first_name"`
@@ -1255,8 +1324,10 @@ type PortalLink struct {
 	Name              string           `json:"name" db:"name"`
 	ProjectID         string           `json:"project_id" db:"project_id"`
 	Token             string           `json:"-" db:"token"`
+	OwnerID           string           `json:"owner_id" db:"owner_id"`
 	Endpoints         pq.StringArray   `json:"endpoints" db:"endpoints"`
 	EndpointsMetadata EndpointMetadata `json:"endpoints_metadata" db:"endpoints_metadata"`
+	CanManageEndpoint bool             `json:"can_manage_endpoint" db:"can_manage_endpoint"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`

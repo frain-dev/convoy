@@ -30,13 +30,13 @@
 		<div>
 			<div class="flex items-center">
 				<p class="font-medium text-12 mr-14px">{{ key.name }}</p>
-				<convoy-tag [type]="getKeyStatus(key.expires_at) | statuscolor">{{ getKeyStatus(key.expires_at) }}</convoy-tag>
+				<convoy-tag [color]="getKeyStatus(key.expires_at) | statuscolor">{{ getKeyStatus(key.expires_at) }}</convoy-tag>
 			</div>
 			<p class="text-grey-40 text-10 mt-8px">
 				<span *ngIf="key.expires_at">Expires At: ({{ key.expires_at | date: 'mediumDate' }})</span>
 			</p>
 		</div>
-		<button convoy-button size="sm" fill="text" color="danger" (click)="selectedKey = key; showRevokeKeyModal = true" *ngIf="getKeyStatus(key.expires_at) === 'active'">
+		<button convoy-button size="sm" fill="text" color="danger" (click)="selectedKey = key; settingsDialog.showModal()" *ngIf="getKeyStatus(key.expires_at) === 'active'">
 			<svg width="16" height="16" class="mr-8px fill-danger-100">
 				<use xlink:href="#delete-icon"></use>
 			</svg>
@@ -103,14 +103,17 @@
 </div>
 
 <!-- token generated  -->
-<convoy-token-modal
-	*ngIf="showAccessKey"
-	title="Generate Token"
-	description="Your personal API key has been generated successfully"
-	notificationText="Personal API key has been copied to your clipboard."
-	[token]="accessKey"
-	(closeModal)="showAccessKey = false; fetchPersonalKeys()"
-></convoy-token-modal>
+<dialog #tokenDialog convoy-dialog position="center" size="sm">
+	<convoy-token-modal
+		title="Generate Token"
+		description="Your personal API key has been generated successfully"
+		notificationText="Personal API key has been copied to your clipboard."
+		[token]="accessKey"
+		(closeModal)="tokenDialog.close(); fetchPersonalKeys()"
+	></convoy-token-modal>
+</dialog>
 
 <!-- revoke token modal  -->
-<app-delete-modal *ngIf="showRevokeKeyModal" [isLoading]="isRevokingKey" [deleteText]="'revoke “' + selectedKey?.name + 'api key”'" deleteButtonText="revoke" (closeModal)="showRevokeKeyModal = false" (deleteData)="revokeKey()"></app-delete-modal>
+<dialog #settingsDialog convoy-dialog position="center" size="sm">
+	<app-delete-modal [isLoading]="isRevokingKey" [deleteText]="'revoke “' + selectedKey?.name + 'api key”'" deleteButtonText="revoke" (closeModal)="settingsDialog.close()" (deleteData)="revokeKey()"></app-delete-modal>
+</dialog>

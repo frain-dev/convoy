@@ -3,6 +3,8 @@ package socket
 import (
 	"context"
 	"encoding/json"
+	"github.com/frain-dev/convoy/internal/pkg/apm"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"sync"
 	"time"
 
@@ -64,58 +66,64 @@ func NewHub() *Hub {
 	}
 }
 
-func (h *Hub) Start() {
+func (h *Hub) Start(ctx context.Context) {
 	go h.StartRegister()
 	go h.StartUnregister()
-	go h.StartEventSender()
-	go h.StartClientStatusWatcher()
+	go h.StartEventSender(ctx)
+	go h.StartClientStatusWatcher(ctx)
 }
 
-func (h *Hub) StartEventSender() {
+func (h *Hub) StartEventSender(ctx context.Context) {
 	for {
 		select {
 		case ev := <-events:
-			h.lock.RLock()
-			client := h.deviceClients[ev.DeviceID]
-			h.lock.RUnlock()
-
-			// there is no valid client for this event delivery, so skip it
-			if client == nil {
-				continue
-			}
-
-			// fmt.Printf("\n client: %+v %+v\n\n", client.IsOnline(), ev)
-
-			if !client.IsOnline() {
-				client.GoOffline()
-				client.Close(unregister)
-				continue
-			}
-
-			if client.Device.ProjectID != ev.ProjectID {
-				continue
-			}
-
-			if !util.IsStringEmpty(client.sourceID) {
-				if client.sourceID != ev.SourceID {
-					continue
-				}
-			}
-
-			j, err := json.Marshal(ev)
-			if err != nil {
-				log.WithError(err).Error("failed to marshal cli event")
-				continue
-			}
-
-			err = client.conn.WriteMessage(websocket.BinaryMessage, j)
-			if err != nil {
-				log.WithError(err).Error("failed to write event to socket")
-			}
+			h.sendEvent(ctx, ev)
 		case <-h.close:
 			return
 		}
 	}
+}
+
+func (h *Hub) sendEvent(ctx context.Context, ev *CLIEvent) {
+	txn, innerCtx := apm.StartTransaction(ctx, "sendEvent")
+	defer txn.End()
+
+	h.lock.RLock()
+	client := h.deviceClients[ev.DeviceID]
+	h.lock.RUnlock()
+
+	// there is no valid client for this event delivery, so skip it
+	if client == nil {
+		return
+	}
+
+	if !client.IsOnline() {
+		client.GoOffline(innerCtx)
+		client.Close(unregister)
+		return
+	}
+
+	if client.Device.ProjectID != ev.ProjectID {
+		return
+	}
+
+	if !util.IsStringEmpty(client.sourceID) {
+		if client.sourceID != ev.SourceID {
+			return
+		}
+	}
+
+	j, err := json.Marshal(ev)
+	if err != nil {
+		log.WithError(err).Error("failed to marshal cli event")
+		return
+	}
+
+	err = client.conn.WriteMessage(websocket.BinaryMessage, j)
+	if err != nil {
+		log.WithError(err).Error("failed to write event to socket")
+	}
+
 }
 
 type EventDelivery struct {
@@ -139,13 +147,13 @@ func (e *EndpointError) Delay() time.Duration {
 func (h *Hub) EventDeliveryCLiHandler(r *Repo) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
-		err := json.Unmarshal(t.Payload(), &data)
+		err := msgpack.DecodeMsgPack(t.Payload(), &data)
 		if err != nil {
 			log.WithError(err).Error("failed to unmarshal process event delivery payload")
 			return &EndpointError{Err: err, delay: time.Second}
 		}
 
-		ed, err := r.EventDeliveryRepo.FindEventDeliveryByID(context.Background(), data.ProjectID, data.EventDeliveryID)
+		ed, err := r.EventDeliveryRepo.FindEventDeliveryByID(ctx, data.ProjectID, data.EventDeliveryID)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to load event - %s", data.EventDeliveryID)
 			return &EndpointError{Err: err, delay: time.Second * 5}
@@ -197,25 +205,31 @@ func (h *Hub) StartUnregister() {
 	}
 }
 
-func (h *Hub) StartClientStatusWatcher() {
+func (h *Hub) StartClientStatusWatcher(ctx context.Context) {
 	h.ticker = time.NewTicker(time.Second * 30)
 	defer h.ticker.Stop()
-
 	for {
 		select {
 		case <-h.ticker.C:
-			for k, v := range h.deviceClients {
-				h.lock.Lock()
-				if !h.deviceClients[k].IsOnline() {
-					h.deviceClients[k].GoOffline()
-					h.deviceClients[k].Close(unregister)
-					log.Printf("%s has be set to offline after inactivity for 30 seconds", v.Device.HostName)
-				}
-				h.lock.Unlock()
-			}
+			h.checkDeviceStatus(ctx)
 		case <-h.close:
 			return
 		}
+	}
+}
+
+func (h *Hub) checkDeviceStatus(ctx context.Context) {
+	txn, innerCtx := apm.StartTransaction(ctx, "checkDeviceStatus")
+	defer txn.End()
+
+	for k, v := range h.deviceClients {
+		h.lock.Lock()
+		if !h.deviceClients[k].IsOnline() {
+			h.deviceClients[k].GoOffline(innerCtx)
+			h.deviceClients[k].Close(unregister)
+			log.Printf("%s has be set to offline after inactivity for 30 seconds", v.Device.HostName)
+		}
+		h.lock.Unlock()
 	}
 }
 

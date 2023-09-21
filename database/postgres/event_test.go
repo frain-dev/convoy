@@ -361,7 +361,7 @@ func Test_SoftDeleteProjectEvents(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, eventRepo.DeleteProjectEvents(ctx, event.ProjectID, &datastore.EventFilter{
-		CreatedAtStart: time.Now().Unix(),
+		CreatedAtStart: event.CreatedAt.Unix(),
 		CreatedAtEnd:   time.Now().Add(5 * time.Minute).Unix(),
 	}, false))
 
@@ -406,15 +406,16 @@ func generateEvent(t *testing.T, db database.Database) *datastore.Event {
 	}`))
 
 	return &datastore.Event{
-		UID:       ulid.Make().String(),
-		EventType: "test-event",
-		Endpoints: []string{endpoint.UID},
-		ProjectID: project.UID,
-		Headers:   httpheader.HTTPHeader{},
-		Raw:       string(data),
-		Data:      data,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		UID:            ulid.Make().String(),
+		EventType:      "test-event",
+		Endpoints:      []string{endpoint.UID},
+		URLQueryParams: "name=ref&category=food",
+		ProjectID:      project.UID,
+		Headers:        httpheader.HTTPHeader{},
+		Raw:            string(data),
+		Data:           data,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 }
 

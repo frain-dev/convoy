@@ -67,14 +67,15 @@ func TestProcessEventCreated(t *testing.T) {
 			name: "should_process_event_for_outgoing_project",
 			event: &CreateEvent{
 				Event: datastore.Event{
-					UID:       ulid.Make().String(),
-					EventType: "*",
-					SourceID:  "source-id-1",
-					ProjectID: "project-id-1",
-					Endpoints: []string{"endpoint-id-1"},
-					Data:      []byte(`{}`),
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					UID:            ulid.Make().String(),
+					EventType:      "*",
+					SourceID:       "source-id-1",
+					ProjectID:      "project-id-1",
+					Endpoints:      []string{"endpoint-id-1"},
+					Data:           []byte(`{}`),
+					URLQueryParams: "name=ref&category=food",
+					CreatedAt:      time.Now(),
+					UpdatedAt:      time.Now(),
 				},
 			},
 			dbFn: func(args *args) {
@@ -136,8 +137,6 @@ func TestProcessEventCreated(t *testing.T) {
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
-
-				q.EXPECT().Write(convoy.IndexDocument, convoy.SearchIndexQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -209,8 +208,6 @@ func TestProcessEventCreated(t *testing.T) {
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
-
-				q.EXPECT().Write(convoy.IndexDocument, convoy.SearchIndexQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -292,8 +289,6 @@ func TestProcessEventCreated(t *testing.T) {
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(2).Return(nil)
-
-				q.EXPECT().Write(convoy.IndexDocument, convoy.SearchIndexQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -380,8 +375,6 @@ func TestProcessEventCreated(t *testing.T) {
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 
 				q.EXPECT().Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, gomock.Any()).Times(2).Return(nil)
-
-				q.EXPECT().Write(convoy.IndexDocument, convoy.SearchIndexQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -452,8 +445,6 @@ func TestProcessEventCreated(t *testing.T) {
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
-
-				q.EXPECT().Write(convoy.IndexDocument, convoy.SearchIndexQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},

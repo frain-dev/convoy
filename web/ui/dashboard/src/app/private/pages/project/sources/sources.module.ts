@@ -8,7 +8,7 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { CardComponent } from 'src/app/components/card/card.component';
-import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
+import { DialogHeaderComponent, DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { SourceValueModule } from 'src/app/pipes/source-value/source-value.module';
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
@@ -17,6 +17,7 @@ import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skel
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';
+import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 
 const routes: Routes = [{ path: '', component: SourcesComponent }];
 
@@ -32,8 +33,7 @@ const routes: Routes = [{ path: '', component: SourcesComponent }];
 		ListItemComponent,
 		EmptyStateComponent,
 		CardComponent,
-		ModalComponent,
-		ModalHeaderComponent,
+		DialogHeaderComponent,
 		CopyButtonComponent,
 		SourceValueModule,
 		DropdownComponent,
@@ -41,7 +41,9 @@ const routes: Routes = [{ path: '', component: SourcesComponent }];
 		SkeletonLoaderComponent,
 		TooltipComponent,
 		PaginationComponent,
-		PermissionDirective
+		PermissionDirective,
+		LoaderModule,
+		DialogDirective
 	]
 })
 export class SourcesModule {}

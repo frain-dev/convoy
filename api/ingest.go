@@ -2,10 +2,14 @@ package api
 
 import (
 	"context"
-	"encoding/json"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/dedup"
+	"github.com/go-chi/chi/v5"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -15,19 +19,10 @@ import (
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/verifier"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/oklog/ulid/v2"
 )
-
-func createSourceService(a *ApplicationHandler) *services.SourceService {
-	sourceRepo := postgres.NewSourceRepo(a.A.DB)
-
-	return services.NewSourceService(sourceRepo, a.A.Cache)
-}
 
 func retrieveSourceConfigurationFromMaskId(a *ApplicationHandler, ctx context.Context, maskId string) (*datastore.Source, error) {
 	var source *datastore.Source
@@ -153,6 +148,25 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		maxIngestSize = cfg.MaxResponseSize
 	}
 
+	var checksum string
+	var isDuplicate bool
+	if len(source.IdempotencyKeys) > 0 {
+		duper := dedup.NewDeDuper(r.Context(), r, postgres.NewEventRepo(a.A.DB))
+		exists, err := duper.Exists(source.Name, source.ProjectID, source.IdempotencyKeys)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+
+		isDuplicate = exists
+
+		checksum, err = duper.GenerateChecksum(source.Name, source.IdempotencyKeys)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+	}
+
 	// 3.1 On Failure
 	// Return 400 Bad Request.
 	body := io.LimitReader(r.Body, int64(maxIngestSize))
@@ -175,22 +189,27 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// Attach Source to Event.
 	// Write Event to the Ingestion Queue.
 	event := &datastore.Event{
-		UID:       ulid.Make().String(),
-		EventType: datastore.EventType(maskID),
-		SourceID:  source.UID,
-		ProjectID: source.ProjectID,
-		Raw:       string(payload),
-		Data:      payload,
-		Headers:   httpheader.HTTPHeader(r.Header),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		UID:              ulid.Make().String(),
+		EventType:        datastore.EventType(maskID),
+		SourceID:         source.UID,
+		ProjectID:        source.ProjectID,
+		Raw:              string(payload),
+		Data:             payload,
+		IsDuplicateEvent: isDuplicate,
+		URLQueryParams:   r.URL.RawQuery,
+		IdempotencyKey:   checksum,
+		Headers:          httpheader.HTTPHeader(r.Header),
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
 	}
+
+	event.Headers["X-Convoy-Source-Id"] = []string{source.MaskID}
 
 	createEvent := task.CreateEvent{
 		Event: *event,
 	}
 
-	eventByte, err := json.Marshal(createEvent)
+	eventByte, err := msgpack.EncodeMsgPack(createEvent)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -210,7 +229,26 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 4. Return 200
-	_ = render.Render(w, r, util.NewServerResponse("Event received", len(payload), http.StatusOK))
+	if !util.IsStringEmpty(source.CustomResponse.Body) {
+		// send back custom response
+		if !util.IsStringEmpty(source.CustomResponse.ContentType) {
+			w.Header().Set("Content-Type", source.CustomResponse.ContentType)
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(source.CustomResponse.Body))
+			return
+		}
+
+		render.Status(r, http.StatusOK)
+		render.PlainText(w, r, source.CustomResponse.Body)
+		return
+
+	}
+
+	if event.IsDuplicateEvent {
+		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", len(payload), http.StatusOK))
+	} else {
+		_ = render.Render(w, r, util.NewServerResponse("Event received", len(payload), http.StatusOK))
+	}
 }
 
 func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Request) {

@@ -30,7 +30,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
 		ctx        context.Context
-		newProject *models.Project
+		newProject *models.CreateProject
 		org        *datastore.Organisation
 		member     *datastore.OrganisationMember
 	}
@@ -47,20 +47,20 @@ func TestProjectService_CreateProject(t *testing.T) {
 			name: "should_create_outgoing_project",
 			args: args{
 				ctx: ctx,
-				newProject: &models.Project{
+				newProject: &models.CreateProject{
 					Name:    "test_project",
 					Type:    "outgoing",
 					LogoURL: "https://google.com",
-					Config: &datastore.ProjectConfig{
-						Signature: &datastore.SignatureConfiguration{
+					Config: &models.ProjectConfig{
+						Signature: &models.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
-						Strategy: &datastore.StrategyConfiguration{
+						Strategy: &models.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
 						},
-						RateLimit: &datastore.RateLimitConfiguration{
+						RateLimit: &models.RateLimitConfiguration{
 							Count:    1000,
 							Duration: 60,
 						},
@@ -112,20 +112,20 @@ func TestProjectService_CreateProject(t *testing.T) {
 			name: "should_create_incoming_project",
 			args: args{
 				ctx: ctx,
-				newProject: &models.Project{
+				newProject: &models.CreateProject{
 					Name:    "test_project",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config: &datastore.ProjectConfig{
-						Signature: &datastore.SignatureConfiguration{
+					Config: &models.ProjectConfig{
+						Signature: &models.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
-						Strategy: &datastore.StrategyConfiguration{
+						Strategy: &models.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
 						},
-						RateLimit: &datastore.RateLimitConfiguration{
+						RateLimit: &models.RateLimitConfiguration{
 							Count:    1000,
 							Duration: 60,
 						},
@@ -177,7 +177,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 			name: "should_create_incoming_project_with_defaults",
 			args: args{
 				ctx: ctx,
-				newProject: &models.Project{
+				newProject: &models.CreateProject{
 					Name:    "test_project_1",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
@@ -229,7 +229,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 			name: "should_create_outgoing_project_with_defaults",
 			args: args{
 				ctx: ctx,
-				newProject: &models.Project{
+				newProject: &models.CreateProject{
 					Name:    "test_project",
 					Type:    "outgoing",
 					LogoURL: "https://google.com",
@@ -282,15 +282,15 @@ func TestProjectService_CreateProject(t *testing.T) {
 			name: "should_fail_to_create_project",
 			args: args{
 				ctx: ctx,
-				newProject: &models.Project{
+				newProject: &models.CreateProject{
 					Name:    "test_project",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config: &datastore.ProjectConfig{
-						Signature: &datastore.SignatureConfiguration{
+					Config: &models.ProjectConfig{
+						Signature: &models.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
-						Strategy: &datastore.StrategyConfiguration{
+						Strategy: &models.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
@@ -353,15 +353,15 @@ func TestProjectService_CreateProject(t *testing.T) {
 			name: "should_error_for_duplicate_project_name",
 			args: args{
 				ctx: ctx,
-				newProject: &models.Project{
+				newProject: &models.CreateProject{
 					Name:    "test_project",
 					Type:    "incoming",
 					LogoURL: "https://google.com",
-					Config: &datastore.ProjectConfig{
-						Signature: &datastore.SignatureConfiguration{
+					Config: &models.ProjectConfig{
+						Signature: &models.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
-						Strategy: &datastore.StrategyConfiguration{
+						Strategy: &models.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
@@ -469,16 +469,19 @@ func TestProjectService_UpdateProject(t *testing.T) {
 				update: &models.UpdateProject{
 					Name:    "test_project",
 					LogoURL: "https://google.com",
-					Config: &datastore.ProjectConfig{
-						Signature: &datastore.SignatureConfiguration{
+					Config: &models.ProjectConfig{
+						Signature: &models.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
-						Strategy: &datastore.StrategyConfiguration{
+						Strategy: &models.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,
 						},
-						RateLimit:     &datastore.DefaultRateLimitConfig,
+						RateLimit: &models.RateLimitConfiguration{
+							Count:    datastore.DefaultRateLimitConfig.Count,
+							Duration: datastore.DefaultRateLimitConfig.Duration,
+						},
 						ReplayAttacks: true,
 					},
 				},
@@ -509,31 +512,7 @@ func TestProjectService_UpdateProject(t *testing.T) {
 				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 			},
 		},
-		{
-			name: "should_error_for_empty_name",
-			args: args{
-				ctx:     ctx,
-				project: &datastore.Project{UID: "12345"},
-				update: &models.UpdateProject{
-					Name:    "",
-					LogoURL: "https://google.com",
-					Config: &datastore.ProjectConfig{
-						Signature: &datastore.SignatureConfiguration{
-							Header: "X-Convoy-Signature",
-						},
-						Strategy: &datastore.StrategyConfiguration{
-							Type:       "linear",
-							Duration:   20,
-							RetryCount: 4,
-						},
-						ReplayAttacks: true,
-					},
-				},
-			},
-			wantErr:     true,
-			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "name:please provide a valid name",
-		},
+
 		{
 			name: "should_fail_to_update_project",
 			args: args{
@@ -542,11 +521,11 @@ func TestProjectService_UpdateProject(t *testing.T) {
 				update: &models.UpdateProject{
 					Name:    "test_project",
 					LogoURL: "https://google.com",
-					Config: &datastore.ProjectConfig{
-						Signature: &datastore.SignatureConfiguration{
+					Config: &models.ProjectConfig{
+						Signature: &models.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
-						Strategy: &datastore.StrategyConfiguration{
+						Strategy: &models.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
 							RetryCount: 4,

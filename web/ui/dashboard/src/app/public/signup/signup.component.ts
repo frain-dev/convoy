@@ -4,19 +4,21 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router } from '@angular/router';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
+import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { HubspotService } from 'src/app/services/hubspot/hubspot.service';
 import { SignupService } from './signup.service';
 
 @Component({
 	selector: 'convoy-signup',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, InputFieldDirective],
+	imports: [CommonModule, ReactiveFormsModule, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, InputFieldDirective, LoaderModule],
 	templateUrl: './signup.component.html',
 	styleUrls: ['./signup.component.scss']
 })
 export class SignupComponent implements OnInit {
 	showSignupPassword = false;
 	disableSignupBtn = false;
+	isFetchingConfig = false;
 	signupForm: FormGroup = this.formBuilder.group({
 		email: ['', Validators.required],
 		first_name: ['', Validators.required],
@@ -40,10 +42,23 @@ export class SignupComponent implements OnInit {
 
 			if (window.location.hostname === 'dashboard.getconvoy.io') await this.hubspotService.sendWelcomeEmail({ email: this.signupForm.value.email, firstname: this.signupForm.value.first_name, lastname: this.signupForm.value.last_name });
 
-			this.router.navigateByUrl('/');
+			this.router.navigateByUrl('/get-started');
 			this.disableSignupBtn = false;
 		} catch {
 			this.disableSignupBtn = false;
+		}
+	}
+
+	async getSignUpConfig() {
+		this.isFetchingConfig = true;
+		try {
+			const response = await this.signupService.getSignupConfig();
+			const isSignupEnabled = response.data;
+			if (!isSignupEnabled) this.router.navigateByUrl('/login');
+			this.isFetchingConfig = false;
+		} catch (error) {
+			this.isFetchingConfig = false;
+			return error;
 		}
 	}
 }

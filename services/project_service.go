@@ -9,7 +9,6 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
@@ -51,40 +50,64 @@ func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datast
 	}, nil
 }
 
-func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.Project, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Project, *models.APIKeyResponse, error) {
-	err := util.Validate(newProject)
-	if err != nil {
-		return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
+func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.CreateProject, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Project, *models.APIKeyResponse, error) {
 	projectName := newProject.Name
 
-	config := newProject.Config
-	if config == nil {
-		config = &datastore.DefaultProjectConfig
+	projectConfig := newProject.Config.Transform()
+	if projectConfig == nil {
+		projectConfig = &datastore.DefaultProjectConfig
 	} else {
-		checkSignatureVersions(config.Signature.Versions)
-		err = validateMetaEvent(config.MetaEvent)
+		if projectConfig.Signature != nil {
+			checkSignatureVersions(projectConfig.Signature.Versions)
+		} else {
+			projectConfig.Signature = datastore.DefaultProjectConfig.Signature
+		}
+
+		if projectConfig.RateLimit == nil {
+			projectConfig.RateLimit = datastore.DefaultProjectConfig.RateLimit
+		}
+
+		if projectConfig.Strategy == nil {
+			projectConfig.Strategy = datastore.DefaultProjectConfig.Strategy
+		}
+
+		err := validateMetaEvent(projectConfig.MetaEvent)
 		if err != nil {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
+		}
+
+		if projectConfig.RetentionPolicy != nil {
+			if !util.IsStringEmpty(projectConfig.RetentionPolicy.SearchPolicy) {
+				_, err = time.ParseDuration(projectConfig.RetentionPolicy.SearchPolicy)
+				if err != nil {
+					return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
+				}
+			}
+
+			if !util.IsStringEmpty(projectConfig.RetentionPolicy.Policy) {
+				_, err = time.ParseDuration(projectConfig.RetentionPolicy.Policy)
+				if err != nil {
+					return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
+				}
+			}
 		}
 	}
 
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),
 		Name:           projectName,
-		Type:           newProject.Type,
+		Type:           datastore.ProjectType(newProject.Type),
 		OrganisationID: org.UID,
-		Config:         config,
+		Config:         projectConfig,
 		LogoURL:        newProject.LogoURL,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
 
-	err = ps.projectRepo.CreateProject(ctx, project)
+	err := ps.projectRepo.CreateProject(ctx, project)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create project")
-		if err == datastore.ErrDuplicateProjectName {
+		if errors.Is(err, datastore.ErrDuplicateProjectName) {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
 
@@ -130,20 +153,30 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 }
 
 func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.Project, update *models.UpdateProject) (*datastore.Project, error) {
-	err := util.Validate(update)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to validate project update")
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
 	if !util.IsStringEmpty(update.Name) {
 		project.Name = update.Name
 	}
 
 	if update.Config != nil {
-		project.Config = update.Config
+		if update.Config.RetentionPolicy != nil {
+			if !util.IsStringEmpty(update.Config.RetentionPolicy.SearchPolicy) {
+				_, err := time.ParseDuration(update.Config.RetentionPolicy.SearchPolicy)
+				if err != nil {
+					return nil, util.NewServiceError(http.StatusBadRequest, err)
+				}
+			}
+
+			if !util.IsStringEmpty(update.Config.RetentionPolicy.Policy) {
+				_, err := time.ParseDuration(update.Config.RetentionPolicy.Policy)
+				if err != nil {
+					return nil, util.NewServiceError(http.StatusBadRequest, err)
+				}
+			}
+		}
+
+		project.Config = update.Config.Transform()
 		checkSignatureVersions(project.Config.Signature.Versions)
-		err = validateMetaEvent(project.Config.MetaEvent)
+		err := validateMetaEvent(project.Config.MetaEvent)
 		if err != nil {
 			return nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
@@ -153,7 +186,7 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 		project.LogoURL = update.LogoURL
 	}
 
-	err = ps.projectRepo.UpdateProject(ctx, project)
+	err := ps.projectRepo.UpdateProject(ctx, project)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to to update project")
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
@@ -196,14 +229,6 @@ func validateMetaEvent(metaEvent *datastore.MetaEventConfiguration) error {
 			return err
 		}
 		metaEvent.URL = url
-	}
-
-	if metaEvent.Type == datastore.PubSubMetaEvent {
-		metaEvent.PubSub.Workers = 1
-		err := pubsub.Validate(metaEvent.PubSub)
-		if err != nil {
-			return err
-		}
 	}
 
 	if util.IsStringEmpty(metaEvent.Secret) {

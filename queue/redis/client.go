@@ -1,11 +1,18 @@
 package redis
 
 import (
+	"fmt"
+	"github.com/danvixent/asynqmon"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/hibiken/asynq"
-	"github.com/hibiken/asynqmon"
 	"github.com/oklog/ulid/v2"
+	"github.com/redis/go-redis/v9"
+)
+
+var (
+	ErrTaskNotFound  = fmt.Errorf("asynq: %w", asynq.ErrTaskNotFound)
+	ErrQueueNotFound = fmt.Errorf("asynq: %w", asynq.ErrQueueNotFound)
 )
 
 type RedisQueue struct {
@@ -15,8 +22,18 @@ type RedisQueue struct {
 }
 
 func NewQueue(opts queue.QueueOptions) queue.Queuer {
-	client := asynq.NewClient(opts.RedisClient)
-	inspector := asynq.NewInspector(opts.RedisClient)
+	var c asynq.RedisConnOpt
+	if len(opts.RedisAddress) == 1 {
+		var _ = opts.RedisClient.MakeRedisClient().(redis.UniversalClient)
+		c = opts.RedisClient
+	} else {
+		c = asynq.RedisClusterClientOpt{
+			Addrs: opts.RedisAddress,
+		}
+	}
+
+	client := asynq.NewClient(c)
+	inspector := asynq.NewInspector(c)
 	return &RedisQueue{
 		client:    client,
 		opts:      opts,
@@ -25,12 +42,33 @@ func NewQueue(opts queue.QueueOptions) queue.Queuer {
 }
 
 func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
+	s := string(queueName)
 	if job.ID == "" {
 		job.ID = ulid.Make().String()
 	}
-	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(string(queueName)), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
-	// According to the documentation, the Retention time will keep the message in Redis after completion. :F:
-	_, err := q.client.Enqueue(t)
+	t := asynq.NewTask(string(taskName), job.Payload, asynq.Queue(s), asynq.TaskID(job.ID), asynq.ProcessIn(job.Delay))
+
+	_, err := q.inspector.GetTaskInfo(s, job.ID)
+	if err != nil {
+		// If the task or queue does not yet exist, we can proceed
+		// to enqueuing the task
+		message := err.Error()
+		if ErrQueueNotFound.Error() == message || ErrTaskNotFound.Error() == message {
+			_, err := q.client.Enqueue(t, nil)
+			return err
+		}
+
+		return err
+	}
+
+	// At this point, the task is already on the queue based on its ID.
+	// We need to delete before enqueuing
+	err = q.inspector.DeleteTask(s, job.ID)
+	if err != nil {
+		return err
+	}
+
+	_, err = q.client.Enqueue(t, nil)
 	return err
 }
 

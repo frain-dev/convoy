@@ -38,7 +38,7 @@ func createProjectService(a *PublicHandler) (*services.ProjectService, error) {
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Success 200 {object} util.ServerResponse{data=datastore.Project}
+// @Success 200 {object} util.ServerResponse{data=models.ProjectResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID} [get]
@@ -49,7 +49,8 @@ func (a *PublicHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Project fetched successfully", project, http.StatusOK))
+	projectResponse := &models.ProjectResponse{Project: project}
+	_ = render.Render(w, r, util.NewServerResponse("Project fetched successfully", projectResponse, http.StatusOK))
 }
 
 // DeleteProject - this is a duplicate annotation for the api/v1 route of this handler
@@ -88,8 +89,8 @@ func (a *PublicHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param orgID query string true "Organisation id"
-// @Param project body models.Project true "Project Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Project}
+// @Param project body models.CreateProject true "Project Details"
+// @Success 200 {object} util.ServerResponse{data=models.CreateProjectResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects [post]
@@ -111,9 +112,14 @@ func (a *PublicHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var newProject models.Project
+	var newProject models.CreateProject
 	err = util.ReadJSON(r, &newProject)
 	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if err := newProject.Validate(); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -132,7 +138,7 @@ func (a *PublicHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 
 	resp := &models.CreateProjectResponse{
 		APIKey:  apiKey,
-		Project: project,
+		Project: &models.ProjectResponse{Project: project},
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Project created successfully", resp, http.StatusCreated))
@@ -145,8 +151,8 @@ func (a *PublicHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param projectID path string true "Project ID"
-// @Param project body models.Project true "Project Details"
-// @Success 200 {object} util.ServerResponse{data=datastore.Project}
+// @Param project body models.UpdateProject true "Project Details"
+// @Success 200 {object} util.ServerResponse{data=models.ProjectResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID} [put]
@@ -164,6 +170,11 @@ func (a *PublicHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := update.Validate(); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	projectService, err := createProjectService(a)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -176,7 +187,8 @@ func (a *PublicHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Project updated successfully", project, http.StatusAccepted))
+	resp := &models.ProjectResponse{Project: project}
+	_ = render.Render(w, r, util.NewServerResponse("Project updated successfully", resp, http.StatusAccepted))
 }
 
 // GetProjects - this is a duplicate annotation for the api/v1 route of this handler
@@ -187,7 +199,7 @@ func (a *PublicHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param name query string false "Project name"
 // @Param orgID query string true "organisation id"
-// @Success 200 {object} util.ServerResponse{data=[]datastore.Project}
+// @Success 200 {object} util.ServerResponse{data=[]models.ProjectResponse}
 // @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
 // @Security ApiKeyAuth
 // @Router /v1/projects [get]
@@ -207,7 +219,8 @@ func (a *PublicHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Projects fetched successfully", projects, http.StatusOK))
+	resp := models.NewListProjectResponse(projects)
+	_ = render.Render(w, r, util.NewServerResponse("Projects fetched successfully", resp, http.StatusOK))
 }
 
 func (a *PublicHandler) retrieveHeadlessOrganisation(r *http.Request) (*datastore.Organisation, error) {

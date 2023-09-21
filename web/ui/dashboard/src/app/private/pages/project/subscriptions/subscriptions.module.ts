@@ -4,7 +4,7 @@ import { SubscriptionsComponent } from './subscriptions.component';
 import { Routes, RouterModule } from '@angular/router';
 import { CreateSubscriptionModule } from 'src/app/private/components/create-subscription/create-subscription.module';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
+import { DialogHeaderComponent, DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
@@ -16,6 +16,9 @@ import { SourceValueModule } from 'src/app/pipes/source-value/source-value.modul
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';
+import { TableCellComponent, TableComponent, TableRowComponent } from 'src/app/components/table/table.component';
+import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
+import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 
 const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 
@@ -26,8 +29,7 @@ const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 		RouterModule.forChild(routes),
 		CreateSubscriptionModule,
 		ButtonComponent,
-		ModalComponent,
-		ModalHeaderComponent,
+		DialogHeaderComponent,
 		CardComponent,
 		ListItemComponent,
 		TagComponent,
@@ -39,7 +41,14 @@ const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 		TooltipComponent,
 		CardComponent,
 		PaginationComponent,
-		PermissionDirective
+		PermissionDirective,
+		TableCellComponent,
+		TableRowComponent,
+		TableComponent,
+		DropdownComponent,
+		DropdownOptionDirective,
+		LoaderModule,
+        DialogDirective
 	]
 })
 export class SubscriptionsModule {}

@@ -31,15 +31,20 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 	router.Use(middleware.JsonResponse)
 	router.Use(middleware.SetupCORS)
 
+	router.Get("/portal_link", a.GetPortalLink)
+
 	router.Route("/endpoints", func(endpointRouter chi.Router) {
 		endpointRouter.Get("/", a.GetPortalLinkEndpoints)
-
-		endpointRouter.Route("/{endpointID}", func(endpointSubRouter chi.Router) {
-			endpointSubRouter.Get("/", a.GetEndpoint)
-		})
+		endpointRouter.Post("/", a.CreateEndpoint)
+		endpointRouter.Get("/{endpointID}", a.GetEndpoint)
+		endpointRouter.With(canManageEndpoint(a)).Put("/{endpointID}", a.UpdateEndpoint)
+		endpointRouter.With(canManageEndpoint(a)).Delete("/{endpointID}", a.DeleteEndpoint)
+		endpointRouter.With(canManageEndpoint(a)).Put("/{endpointID}/pause", a.PauseEndpoint)
+		endpointRouter.With(canManageEndpoint(a)).Put("/{endpointID}/expire_secret", a.ExpireSecret)
 	})
 
 	router.Route("/events", func(eventRouter chi.Router) {
+		eventRouter.Post("/", a.CreateEndpointEvent)
 		eventRouter.With(middleware.Pagination).Get("/", a.GetEventsPaged)
 		eventRouter.Post("/batchreplay", a.BatchReplayEvents)
 		eventRouter.Get("/countbatchreplayevents", a.CountAffectedEvents)
@@ -158,6 +163,25 @@ func RequirePortalAccess(a *PortalLinkHandler) func(next http.Handler) http.Hand
 
 			err = a.A.Authz.Authorize(r.Context(), "project.get", project)
 			if err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func canManageEndpoint(a *PortalLinkHandler) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			portalLink, err := a.retrievePortalLink(r)
+			if err != nil {
+				_ = render.Render(w, r, util.NewServiceErrResponse(err))
+				return
+			}
+
+			if !portalLink.CanManageEndpoint {
 				_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 				return
 			}

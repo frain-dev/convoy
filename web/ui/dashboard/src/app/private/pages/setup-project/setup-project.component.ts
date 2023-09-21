@@ -1,6 +1,6 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ModalComponent, ModalHeaderComponent } from 'src/app/components/modal/modal.component';
+import { DialogHeaderComponent, DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { CreateSourceModule } from '../../components/create-source/create-source.module';
@@ -16,11 +16,12 @@ import { CreateSourceComponent } from '../../components/create-source/create-sou
 import { CreateSubscriptionComponent } from '../../components/create-subscription/create-subscription.component';
 import { CreateSubscriptionService } from '../../components/create-subscription/create-subscription.service';
 import { LoaderModule } from '../../components/loader/loader.module';
+import { NotificationComponent } from 'src/app/components/notification/notification.component';
 
 @Component({
 	selector: 'convoy-setup-project',
 	standalone: true,
-	imports: [CommonModule, ModalComponent, ModalHeaderComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, CardComponent],
+	imports: [CommonModule, DialogHeaderComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, CardComponent, DialogDirective, NotificationComponent],
 	templateUrl: './setup-project.component.html',
 	styleUrls: ['./setup-project.component.scss']
 })
@@ -28,6 +29,8 @@ export class SetupProjectComponent implements OnInit {
 	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
 	@ViewChild(CreateSubscriptionComponent) createSubscriptionForm!: CreateSubscriptionComponent;
+    @ViewChild('projectSetupDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
+
 	activeProjectId = this.route.snapshot.params.id;
 	projectType: 'incoming' | 'outgoing' = 'outgoing';
 
@@ -42,41 +45,72 @@ export class SetupProjectComponent implements OnInit {
 	constructor(public privateService: PrivateService, private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private subscriptionService: CreateSubscriptionService) {}
 
 	async ngOnInit() {
-		if (!this.privateService.activeProjectDetails?.uid) {
+        this.dialog.nativeElement.showModal()
+		if (!this.privateService.getProjectDetails?.uid) {
 			this.showLoader = true;
-			await this.privateService.getProjectDetails();
+			await this.privateService.getProjectDetails;
 			this.showLoader = false;
 		}
 
-		if (this.privateService.activeProjectDetails?.uid) {
-			this.projectType = this.privateService.activeProjectDetails?.type;
+		if (this.privateService.getProjectDetails?.uid) {
+			this.projectType = this.privateService.getProjectDetails?.type;
 		}
 	}
 
+    ngOnDestroy(){
+        this.dialog.nativeElement.close()
+    }
+
 	cancel() {
-		this.privateService.activeProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid) : this.router.navigateByUrl('/projects/' + this.activeProjectId);
+        this.dialog.nativeElement.close()
+		this.privateService.getProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid) : this.router.navigateByUrl('/projects/' + this.activeProjectId);
 	}
 
 	onProjectOnboardingComplete() {
-		this.generalService.showNotification({ message: `${this.privateService.activeProjectDetails?.type} configuration complete`, style: 'success', type: 'modal' });
+		this.generalService.showNotification({ message: `${this.privateService.getProjectDetails?.type} configuration complete`, style: 'success', type: 'modal' });
 
-		this.router.navigateByUrl('/projects/' + this.privateService.activeProjectDetails?.uid);
+		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid);
+	}
+
+	onCreateSource(newSource: SOURCE) {
+		this.createSubscriptionForm.subscriptionForm.patchValue({ source_id: newSource.uid });
+	}
+
+	onCreateEndpoint(newEndpoint: ENDPOINT) {
+		this.createSubscriptionForm.subscriptionForm.patchValue({ endpoint_id: newEndpoint.uid });
+	}
+
+	toggleFormsLoaders(loaderState: boolean) {
+		this.createSubscriptionForm.isCreatingSubscription = loaderState;
+		if (this.createEndpointForm) this.createEndpointForm.savingEndpoint = loaderState;
+		if (this.createSourceForm) this.createSourceForm.isloading = loaderState;
 	}
 
 	async saveProjectConfig() {
-		const [sourceDetails, endpointDetails] = await Promise.allSettled([this.createSourceForm && !this.createSourceForm?.sourceCreated ? this.createSourceForm.saveSource() : false, !this.createEndpointForm.endpointCreated ? this.createEndpointForm.saveEndpoint() : false]);
+		this.toggleFormsLoaders(true);
+		this.createSubscriptionForm.subscriptionForm.patchValue({ name: `${this.createEndpointForm.addNewEndpointForm.value.name}${this.projectType === 'incoming' ? ' → ' + this.createSourceForm.sourceForm.value.name : ''}'s Subscription` });
+		await this.createSubscriptionForm.runSubscriptionValidation();
 
-		if (this.projectType === 'incoming' && sourceDetails.status === 'fulfilled' && typeof sourceDetails.value !== 'boolean') {
-			this.newSource = sourceDetails.value?.data;
-			this.subscriptionService.subscriptionData = { source_id: sourceDetails.value?.data.uid };
+		if (this.createSubscriptionForm.subscriptionForm.get('name')?.invalid || this.createSubscriptionForm.subscriptionForm.get('retry_config')?.invalid || this.createSubscriptionForm.subscriptionForm.get('filter_config')?.invalid) {
+			this.toggleFormsLoaders(false);
+			this.createSubscriptionForm.subscriptionForm.markAllAsTouched();
+			return;
 		}
 
-		if (endpointDetails.status === 'fulfilled' && typeof endpointDetails.value !== 'boolean') {
-			this.newEndpoint = endpointDetails.value?.data;
-			this.subscriptionService.subscriptionData = { ...this.subscriptionService.subscriptionData, endpoint_id: endpointDetails.value?.data.uid };
+		if (this.createEndpointForm && !this.createEndpointForm.endpointCreated) await this.createEndpointForm.saveEndpoint();
+		if (this.createSourceForm && !this.createSourceForm.sourceCreated) await this.createSourceForm.saveSource();
+
+		if (this.projectType === 'outgoing' && this.connectPubSub && !this.createSourceForm.sourceCreated) return;
+
+		// check subscription form validation
+		if (this.createSubscriptionForm.subscriptionForm.invalid) {
+			this.createSubscriptionForm.isCreatingSubscription = false;
+			return this.createSubscriptionForm.subscriptionForm.markAllAsTouched();
 		}
 
-		if (this.automaticSubscription) this.subscriptionService.subscriptionData = { ...this.subscriptionService.subscriptionData, name: `${this.newEndpoint.title}${this.newSource ? ' → ' + this.newSource.name : ''}'s Subscription` };
-		await this.createSubscriptionForm.saveSubscription(true);
+		// create subscription
+		try {
+			this.createSubscriptionForm.saveSubscription(true);
+		} catch (error) {}
 	}
 }

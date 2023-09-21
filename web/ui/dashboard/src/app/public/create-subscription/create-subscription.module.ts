@@ -3,12 +3,12 @@ import { CommonModule } from '@angular/common';
 import { CreateSubscriptionComponent } from './create-subscription.component';
 import { RouterModule, Routes } from '@angular/router';
 import { CreateSubscriptionModule } from 'src/app/private/components/create-subscription/create-subscription.module';
-import { ModalComponent } from 'src/app/components/modal/modal.component';
+import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 
 const routes: Routes = [{ path: '', component: CreateSubscriptionComponent }];
 
 @NgModule({
 	declarations: [CreateSubscriptionComponent],
-	imports: [CommonModule, RouterModule.forChild(routes), CreateSubscriptionModule, ModalComponent]
+	imports: [CommonModule, RouterModule.forChild(routes), CreateSubscriptionModule, DialogDirective]
 })
 export class CreateSubscriptionPublicModule {}

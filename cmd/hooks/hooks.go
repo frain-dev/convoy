@@ -79,7 +79,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		queueNames := map[string]int{
 			string(convoy.EventQueue):       3,
 			string(convoy.CreateEventQueue): 3,
-			string(convoy.SearchIndexQueue): 1,
 			string(convoy.ScheduleQueue):    1,
 			string(convoy.DefaultQueue):     1,
 			string(convoy.StreamQueue):      1,
@@ -116,12 +115,17 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		*db = *postgresDB
 
+		hooks := dbhook.Init()
+
+		// the order matters here
+		projectListener := listener.NewProjectListener(q)
+		hooks.RegisterHook(datastore.ProjectUpdated, projectListener.AfterUpdate)
 		projectRepo := postgres.NewProjectRepo(postgresDB)
+
 		metaEventRepo := postgres.NewMetaEventRepo(postgresDB)
 		endpointListener := listener.NewEndpointListener(q, projectRepo, metaEventRepo)
 		eventDeliveryListener := listener.NewEventDeliveryListener(q, projectRepo, metaEventRepo)
 
-		hooks := dbhook.Init()
 		hooks.RegisterHook(datastore.EndpointCreated, endpointListener.AfterCreate)
 		hooks.RegisterHook(datastore.EndpointUpdated, endpointListener.AfterUpdate)
 		hooks.RegisterHook(datastore.EndpointDeleted, endpointListener.AfterDelete)

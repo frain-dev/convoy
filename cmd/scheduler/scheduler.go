@@ -24,6 +24,9 @@ func AddSchedulerCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "scheduler",
 		Short: "scheduler runs periodic tasks",
+		Annotations: map[string]string{
+			"ShouldBootstrap": "false",
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()
 			if err != nil {
@@ -42,13 +45,13 @@ func AddSchedulerCommand(a *cli.App) *cobra.Command {
 
 			ctx := context.Background()
 
-			//initialize scheduler
+			// initialize scheduler
 			s := worker.NewScheduler(a.Queue, lo)
 
-			//register tasks
+			// register tasks
 			s.RegisterTask("30 * * * *", convoy.ScheduleQueue, convoy.MonitorTwitterSources)
-			s.RegisterTask("55 23 * * *", convoy.ScheduleQueue, convoy.DailyAnalytics)
 			s.RegisterTask(exportCronSpec, convoy.ScheduleQueue, convoy.RetentionPolicies)
+			s.RegisterTask("0 * * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
 
 			// Start scheduler
 			s.Start()

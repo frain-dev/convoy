@@ -12,8 +12,10 @@ textarea.ng-invalid.ng-touched {
 	}
 }
 input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
+input::-webkit-inner-spin-button,
+input[type='checkbox'] {
 	-webkit-appearance: none;
+	appearance: none;
 }
 
 input[type='number'] {
@@ -23,6 +25,8 @@ input[type='number'] {
 input[type='search']::-webkit-search-decoration,
 input[type='search']::-webkit-search-cancel-button,
 input[type='search']::-webkit-search-results-button,
-input[type='search']::-webkit-search-results-decoration {
+input[type='search']::-webkit-search-results-decoration,
+input[type='time']::-webkit-calendar-picker-indicator {
 	display: none;
+	-webkit-appearance: none;
 }

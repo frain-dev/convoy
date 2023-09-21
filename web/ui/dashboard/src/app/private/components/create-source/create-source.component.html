@@ -1,6 +1,6 @@
 <form class="pb-40px" [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'" [formGroup]="sourceForm" (ngSubmit)="saveSource()">
 	<div convoy-card class="p-24px relative">
-		<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
+		<ng-container *ngIf="privateService.getProjectDetails?.type === 'incoming'">
 			<h4 class="font-medium mb-20px">Pre-configured Sources</h4>
 			<ul class="flex flex-row w-full mb-20px">
 				<li *ngFor="let source of preConfiguredSources" class="list-none mr-40px last-of-type:mr-0">
@@ -19,25 +19,34 @@
 					</button>
 				</li>
 			</ul>
-			<hr class="border-grey-20 border-t mb-26px" />
+			<hr class="border-new.primary-25 border-t mb-24px" />
 		</ng-container>
 
 		<convoy-input-field>
 			<label for="source-name" required="true" convoy-label required="true">Source name</label>
-			<input type="text" id="source-name" convoy-input autocomplete="source-name" formControlName="name" placeholder="Enter source name" />
+			<input type="text" id="source-name" convoy-input formControlName="name" placeholder="Enter source name" />
 			<convoy-input-error *ngIf="sourceForm.get('name')?.touched && sourceForm.get('name')?.invalid">Enter new source name</convoy-input-error>
 		</convoy-input-field>
 
-		<ng-container *ngIf="privateService.activeProjectDetails?.type === 'incoming'">
+		<ng-container *ngIf="privateService.getProjectDetails?.type === 'incoming'">
 			<div formGroupName="verifier">
-				<convoy-select label="Source Verification" name="type" formControlName="type" [options]="sourceVerifications" errorMessage="Select source verification" [required]="true" (selectedOption)="sourceForm.get('verifier.type')?.patchValue($event)"></convoy-select>
+				<convoy-select
+					label="Source Verification"
+					name="source-verification"
+					formControlName="type"
+					[options]="sourceVerifications"
+					errorMessage="Select source verification"
+					[required]="true"
+					(selectedOption)="sourceForm.get('verifier.type')?.patchValue($event)"
+				></convoy-select>
 
 				<div formGroupName="hmac" *ngIf="sourceForm.value.verifier.type === 'hmac' || isCustomSource(sourceForm.value.verifier.type)" class="mt-40px">
-					<h3 class="font-semibold mb-20px capitalize">
+					<h3 class="font-medium text-14 text-new.gray-500 mb-20px capitalize">
 						<span *ngIf="isCustomSource(sourceForm.value.verifier.type)">{{ sourceForm.value.verifier.type }} Credentials</span>
 						<span *ngIf="sourceForm.value.verifier.type === 'hmac'">Configure HMAC</span>
 					</h3>
-					<div class="grid grid-cols-2 gap-6">
+
+					<div class="grid gap-24px grid-cols-[repeat(auto-fit,minmax(340px,1fr))]">
 						<convoy-select
 							*ngIf="sourceForm.value.verifier.type === 'hmac'"
 							label="Encoding"
@@ -49,6 +58,7 @@
 							className="mb-0"
 							(selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ encoding: $event })"
 						></convoy-select>
+
 						<convoy-select
 							*ngIf="sourceForm.value.verifier.type === 'hmac'"
 							label="Hash Algorithm"
@@ -61,13 +71,13 @@
 							(selectedOption)="sourceForm.get('verifier.hmac')?.patchValue({ hash: $event })"
 						></convoy-select>
 
-						<convoy-input-field *ngIf="sourceForm.value.verifier.type === 'hmac'">
+						<convoy-input-field *ngIf="sourceForm.value.verifier.type === 'hmac'" class="mb-0">
 							<label for="header" required="true" convoy-label required="true">Header Value</label>
 							<input type="text" id="header" convoy-input autocomplete="header" formControlName="header" placeholder="Key goes here" />
 							<convoy-input-error *ngIf="sourceForm.get('hmac.header')?.touched && sourceForm.get('hmac.header')?.invalid">Enter header key</convoy-input-error>
 						</convoy-input-field>
 
-						<convoy-input-field>
+						<convoy-input-field class="mb-0">
 							<label for="secret" required="true" convoy-label required="true">Webhook signing secret</label>
 							<input type="text" id="secret" convoy-input autocomplete="secret" formControlName="secret" placeholder="Secret goes here" />
 							<convoy-input-error *ngIf="sourceForm.get('hmac.secret')?.touched && sourceForm.get('hmac.secret')?.invalid">Enter webhook signing secret</convoy-input-error>
@@ -76,15 +86,16 @@
 				</div>
 
 				<div formGroupName="basic_auth" *ngIf="sourceForm.value.verifier.type === 'basic_auth'" class="mt-40px">
-					<h3 class="font-semibold mb-20px">Configure Basic Auth</h3>
+					<h3 class="font-medium text-14 text-new.gray-500 mb-20px">Configure Basic Auth</h3>
 
 					<div class="grid grid-cols-2 gap-6">
-						<convoy-input-field>
+						<convoy-input-field class="mb-0">
 							<label for="username" required="true" convoy-label required="true">Username</label>
 							<input type="text" id="username" convoy-input autocomplete="username" formControlName="username" placeholder="Name goes here" />
 							<convoy-input-error *ngIf="sourceForm.get('basic_auth.username')?.touched && sourceForm.get('basic_auth.username')?.invalid">Enter basic auth username</convoy-input-error>
 						</convoy-input-field>
-						<convoy-input-field>
+
+						<convoy-input-field class="mb-0">
 							<label for="password" required="true" convoy-label required="true">Password</label>
 							<input type="text" id="password" convoy-input autocomplete="password" formControlName="password" placeholder="*******" />
 							<convoy-input-error *ngIf="sourceForm.get('basic_auth.password')?.touched && sourceForm.get('basic_auth.password')?.invalid">Enter basic auth password</convoy-input-error>
@@ -93,15 +104,16 @@
 				</div>
 
 				<div formGroupName="api_key" *ngIf="sourceForm.value.verifier.type === 'api_key'" class="mt-40px">
-					<h3 class="font-semibold mb-20px">Configure API Key</h3>
+					<h3 class="font-medium text-14 text-new.gray-500 mb-20px">Configure API Key</h3>
 
 					<div class="grid grid-cols-2 gap-6">
-						<convoy-input-field>
+						<convoy-input-field class="mb-0">
 							<label for="header_name" required="true" convoy-label required="true">Header Name</label>
 							<input type="text" id="header_name" convoy-input autocomplete="header_name" formControlName="header_name" placeholder="Header Name" />
 							<convoy-input-error *ngIf="sourceForm.get('verifier.header_name')?.touched && sourceForm.get('verifier.header_name')?.invalid">Enter api key header</convoy-input-error>
 						</convoy-input-field>
-						<convoy-input-field>
+
+						<convoy-input-field class="mb-0">
 							<label for="header_value" required="true" convoy-label required="true">Header Value</label>
 							<input type="text" id="header_value" convoy-input autocomplete="header_value" formControlName="header_value" placeholder="Key goes here" />
 							<convoy-input-error *ngIf="sourceForm.get('verifier.header_value')?.touched && sourceForm.get('verifier.header_value')?.invalid">Enter api key header value</convoy-input-error>
@@ -109,14 +121,66 @@
 					</div>
 				</div>
 			</div>
+
+			<hr class="border-t border-new.primary-25 my-40px" />
+
+			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('custom_response')">
+				<div class="flex justify-between items-center mb-16px">
+					<h4 class="text-12 text-new.gray-500 font-medium">Custom response</h4>
+					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="sourceForm.patchValue({ custom_response: { content_type: '', body: '' } }); toggleConfigForm('custom_response')">
+						<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
+							<use xlink:href="#delete-icon2"></use>
+						</svg>
+					</button>
+				</div>
+
+				<div formGroupName="custom_response">
+					<convoy-input-field>
+						<label for="content_type" required="true" convoy-label>Response Content Type</label>
+						<input type="text" id="content_type" convoy-input autocomplete="content_type" formControlName="content_type" placeholder="application/json, text/plain" />
+						<convoy-input-error *ngIf="sourceForm.get('custom_response.content_type')?.touched && sourceForm.get('custom_response.content_type')?.invalid">Enter content type</convoy-input-error>
+					</convoy-input-field>
+
+					<convoy-input-field>
+						<label convoy-label>Response Content</label>
+						<textarea formControlName="body" class="min-h-[20vh]" convoy-input name="body" id="body"></textarea>
+						<convoy-input-error *ngIf="sourceForm.get('custom_response.body')?.touched && sourceForm.get('custom_response.body')?.invalid">Enter reponse content</convoy-input-error>
+					</convoy-input-field>
+				</div>
+			</div>
+
+			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('idempotency')">
+				<div class="flex justify-between items-end mb-24px">
+					<p class="text-14 font-medium text-new.gray-600 flex items-center">Idempotency Config</p>
+					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('idempotency')">
+						<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
+							<use xlink:href="#delete-icon2"></use>
+						</svg>
+					</button>
+				</div>
+
+				<convoy-multi-input
+					label="Key locations"
+					tooltip="JSON location of idempotency key, add multiple locations for different locations"
+					[prefilledKeys]="sourceDetails.idempotency_keys"
+					(inputValues)="sourceForm.get('idempotency_keys')?.patchValue($event)"
+				></convoy-multi-input>
+				<span class="text-new.gray-400 font-normal italic text-10 mb-24px">The order matters. Set the value of each input with a coma (,)</span>
+			</div>
+
+			<div class="flex flex-wrap items-center">
+				<ng-container *ngFor="let config of configurations">
+					<button *ngIf="!config.show" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" class="mr-24px mb-10px" (click)="toggleConfigForm(config.uid)">
+						{{ config.name }}
+						<img src="assets/img/svg/plus-icon.svg" class="ml-24px" alt="plus icon" />
+					</button>
+				</ng-container>
+			</div>
 		</ng-container>
 
-		<div formGroupName="pub_sub" *ngIf="privateService.activeProjectDetails?.type === 'outgoing'">
-			<h2 class="mb-6px font-semibold">Pub/Sub Type</h2>
-			<p class="text-14 text-grey-60 mb-24px">Connect your Google Pub/Sub service to automatically trigger a webhook event to an endpoint as soon as a message drops into your Pub/Sub queue.</p>
-			<div class="grid grid-cols-2 gap-6">
-				<convoy-radio *ngFor="let pubSubType of pubSubTypes" formControlName="type" [label]="pubSubType.viewValue" [_name]="pubSubType.value" [value]="pubSubType.value" [_id]="pubSubType.value" [checked]="sourceForm.value.pub_sub.type === pubSubType.value"></convoy-radio>
-			</div>
+		<div formGroupName="pub_sub" *ngIf="privateService.getProjectDetails?.type === 'outgoing'">
+			<convoy-select label="Source Type" name="type" formControlName="type" [options]="pubSubTypes" errorMessage="Select source type" [required]="true" className="mb-0" (selectedOption)="sourceForm.get('pub_sub.type')?.patchValue($event)"></convoy-select>
+
 			<convoy-input-field class="mt-24px">
 				<label for="workers" required="true" convoy-label required="true" tooltip="This specifies the number of consumers you want polling messages from your queue.">Workers</label>
 				<input type="number" id="workers" convoy-input autocomplete="workers" formControlName="workers" placeholder="Workers" />
@@ -185,6 +249,76 @@
 					</convoy-input-field>
 				</div>
 			</ng-container>
+			<ng-container formGroupName="kafka" *ngIf="sourceForm.value.pub_sub.type === 'kafka'">
+				<h2 class="text-16 text-new.gray-600 font-semibold mb-20px">Configure Kafka</h2>
+
+				<convoy-multi-input label="Broker Addresses" required="true" [prefilledKeys]="brokerAddresses" (inputValues)="addBrokers($event)"></convoy-multi-input>
+                <convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.brokers')?.touched && sourceForm.get('pub_sub.kafka.brokers')?.invalid">Please add at least one broker address</convoy-input-error>
+				<span class="text-new.gray-400 font-normal italic text-10 mb-24px">Set the value of each input with a comma or space (,)</span>
+
+				<div class="grid grid-cols-2 gap-6 mt-24px">
+					<convoy-input-field [className]="'mb-0'">
+						<label for="topic_name" required="true" convoy-label required="true">Topic Name</label>
+						<input type="text" id="topic_name" convoy-input autocomplete="topic_name" formControlName="topic_name" placeholder="Topic name" />
+						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.topic_name')?.touched && sourceForm.get('pub_sub.kafka.topic_name')?.invalid">Enter topic name</convoy-input-error>
+					</convoy-input-field>
+
+					<convoy-input-field [className]="'mb-0'">
+						<label for="consumer_group_id" required="true" convoy-label required="true">Consumer ID</label>
+						<input type="text" id="consumer_group_id" convoy-input autocomplete="consumer_group_id" formControlName="consumer_group_id" placeholder="Consumer Group Id" />
+						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.consumer_group_id')?.touched && sourceForm.get('pub_sub.kafka.consumer_group_id')?.invalid">Enter consumer group ID</convoy-input-error>
+					</convoy-input-field>
+				</div>
+
+				<div class="border-l border-new.primary-25 pl-16px mt-24px">
+					<div class="flex justify-between items-center mb-24px">
+						<p class="text-14 text-gray-600 font-semibold">Authentication</p>
+						<convoy-toggle [className]="'!mb-0'" (onChange)="addKafkaAuthentication = !addKafkaAuthentication"></convoy-toggle>
+					</div>
+
+					<ng-container formGroupName="auth" *ngIf="addKafkaAuthentication">
+						<label convoy-label>Authentication Type</label>
+						<div class="grid grid-cols-2 gap-6">
+							<convoy-radio *ngFor="let authType of authTypes" formControlName="type" [label]="authType" [_name]="authType" [value]="authType" [_id]="authType" [checked]="sourceForm.value.pub_sub.kafka.auth.type === authType"></convoy-radio>
+						</div>
+						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.auth.type')?.touched && sourceForm.get('pub_sub.kafka.auth.type')?.invalid">Please select an authentication type</convoy-input-error>
+
+						<label convoy-label class="mt-24px">TLS</label>
+						<div class="grid grid-cols-2 gap-6">
+							<convoy-radio formControlName="tls" label="Enabled" _name="tls" [value]="true" _id="enable"></convoy-radio>
+							<convoy-radio formControlName="tls" label="Disabled" _name="tls" [value]="false" _id="disable"></convoy-radio>
+						</div>
+						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.auth.tls')?.touched && sourceForm.get('pub_sub.kafka.auth.tls')?.invalid">Disable/enable tls encryption</convoy-input-error>
+
+						<div class="grid grid-cols-2 gap-6 my-24px">
+							<convoy-input-field class="mb-0">
+								<label for="username" required="true" convoy-label required="true">Username</label>
+								<input type="text" id="username" convoy-input autocomplete="username" formControlName="username" placeholder="Username" />
+								<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.auth.username')?.touched && sourceForm.get('pub_sub.kafka.auth.username')?.invalid">Enter user</convoy-input-error>
+							</convoy-input-field>
+
+							<convoy-input-field class="mb-0">
+								<label for="password" required="true" convoy-label required="true">Password</label>
+								<input type="text" id="password" convoy-input autocomplete="password" formControlName="password" placeholder="********" />
+								<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.auth.password')?.touched && sourceForm.get('pub_sub.kafka.auth.password')?.invalid">Enter password</convoy-input-error>
+							</convoy-input-field>
+
+							<ng-container *ngIf="sourceForm.value.pub_sub.kafka.auth.type == 'scram'">
+								<convoy-select
+									label="Hash"
+									name="hash"
+									formControlName="hash"
+									[options]="hashAlgorithms"
+									errorMessage="Please select hash"
+									[required]="true"
+									className="mb-0"
+									(selectedOption)="sourceForm.get('pub_sub.kafka.auth.hash')?.patchValue($event)"
+								></convoy-select>
+							</ng-container>
+						</div>
+					</ng-container>
+				</div>
+			</ng-container>
 		</div>
 
 		<div class="empty:hidden">
@@ -195,7 +329,6 @@
 	</div>
 
 	<div class="flex justify-end mt-32px" [ngClass]="{ hidden: showAction === 'false' }">
-		<button convoy-button [disabled]="sourceForm.disabled" fill="outline" type="button" class="mr-16px transition-all duration-300 hover:text-danger-100 hover:border-danger-100" (click)="cancel()">Cancel</button>
 		<button convoy-button [disabled]="isloading || sourceForm.disabled">
 			{{ action === 'update' ? 'Update Source' : 'Create Source' }}
 			<svg width="24" height="24" class="ml-8px fill-white-100">
@@ -205,22 +338,4 @@
 	</div>
 </form>
 
-<convoy-token-modal
-	title="Source URL Generated"
-	description="Use this URL in your source platform to receive your webhook events."
-	notificationText="Source URL has been copied to your clipboard."
-	[token]="sourceData.url"
-	(closeModal)="showSourceUrl = false; onAction.emit({ action: this.action, data: sourceData })"
-	*ngIf="showSourceUrl"
-></convoy-token-modal>
-
-<div convoy-modal position="center" size="sm" *ngIf="confirmModal" (closeModal)="confirmModal = false">
-	<div class="px-20px py-30px">
-		<p class="text-16 font-semibold text-black mb-8px">Confirm Action</p>
-		<p class="text-14 font-medium text-grey-40 mb-24px">You are about to discard this process, please confirm this action.</p>
-		<div class="flex items-center">
-			<button convoy-button color="danger" class="mr-12px px-60px" (click)="onAction.emit({ action: 'close' })">Confirm</button>
-			<button convoy-button fill="clear" [color]="confirmModal ? 'primary' : 'danger'" class="font-semibold" (click)="confirmModal = false">Cancel</button>
-		</div>
-	</div>
-</div>
+<convoy-notification></convoy-notification>

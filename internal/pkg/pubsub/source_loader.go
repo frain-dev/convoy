@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"math"
-	"os"
-	"os/signal"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/apm"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -44,21 +45,17 @@ func NewSourceLoader(endpointRepo datastore.EndpointRepository, sourceRepo datas
 	}
 }
 
-func (s *SourceLoader) Run(interval int) {
+func (s *SourceLoader) Run(ctx context.Context, interval int, stop <-chan struct{}) {
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
-	exit := make(chan os.Signal, 1)
-
-	signal.Notify(exit, os.Interrupt)
 
 	for {
 		select {
 		case <-ticker.C:
-			err := s.fetchProjectSources()
+			err := s.fetchProjectSources(ctx)
 			if err != nil {
 				s.log.WithError(err).Error("failed to fetch sources")
 			}
-
-		case <-exit:
+		case <-stop:
 			// Stop the ticker
 			ticker.Stop()
 
@@ -69,7 +66,10 @@ func (s *SourceLoader) Run(interval int) {
 	}
 }
 
-func (s *SourceLoader) fetchSources(projectID string, cursor string) error {
+func (s *SourceLoader) fetchSources(ctx context.Context, projectID string, cursor string) error {
+	txn, innerCtx := apm.StartTransaction(ctx, "fetchSources")
+	defer txn.End()
+
 	filter := &datastore.SourceFilter{
 		Type: string(datastore.PubSubSource),
 	}
@@ -80,7 +80,7 @@ func (s *SourceLoader) fetchSources(projectID string, cursor string) error {
 		PerPage:    perPage,
 	}
 
-	sources, pagination, err := s.sourceRepo.LoadSourcesPaged(context.Background(), projectID, filter, pageable)
+	sources, pagination, err := s.sourceRepo.LoadSourcesPaged(innerCtx, projectID, filter, pageable)
 	if err != nil {
 		return err
 	}
@@ -99,17 +99,20 @@ func (s *SourceLoader) fetchSources(projectID string, cursor string) error {
 	}
 
 	cursor = pagination.NextPageCursor
-	return s.fetchSources(projectID, cursor)
+	return s.fetchSources(innerCtx, projectID, cursor)
 }
 
-func (s *SourceLoader) fetchProjectSources() error {
-	projects, err := s.projectRepo.LoadProjects(context.Background(), &datastore.ProjectFilter{})
+func (s *SourceLoader) fetchProjectSources(ctx context.Context) error {
+	txn, innerCtx := apm.StartTransaction(ctx, "fetchProjectSources")
+	defer txn.End()
+
+	projects, err := s.projectRepo.LoadProjects(innerCtx, &datastore.ProjectFilter{})
 	if err != nil {
 		return err
 	}
 
 	for _, project := range projects {
-		err := s.fetchSources(project.UID, fmt.Sprintf("%d", math.MaxInt))
+		err := s.fetchSources(innerCtx, project.UID, fmt.Sprintf("%d", math.MaxInt))
 		if err != nil {
 			s.log.WithError(err).Error("failed to load sources")
 			continue
@@ -119,7 +122,10 @@ func (s *SourceLoader) fetchProjectSources() error {
 	return nil
 }
 
-func (s *SourceLoader) handler(source *datastore.Source, msg string) error {
+func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, msg string) error {
+	txn, innerCtx := apm.StartTransaction(ctx, fmt.Sprintf("%v handler", source.Name))
+	defer txn.End()
+
 	ev := struct {
 		EndpointID    string            `json:"endpoint_id"`
 		OwnerID       string            `json:"owner_id"`
@@ -135,7 +141,7 @@ func (s *SourceLoader) handler(source *datastore.Source, msg string) error {
 	var endpoints []string
 
 	if !util.IsStringEmpty(ev.OwnerID) {
-		ownerIdEndpoints, err := s.endpointRepo.FindEndpointsByOwnerID(context.Background(), source.ProjectID, ev.OwnerID)
+		ownerIdEndpoints, err := s.endpointRepo.FindEndpointsByOwnerID(innerCtx, source.ProjectID, ev.OwnerID)
 		if err != nil {
 			return err
 		}
@@ -148,7 +154,7 @@ func (s *SourceLoader) handler(source *datastore.Source, msg string) error {
 			endpoints = append(endpoints, endpoint.UID)
 		}
 	} else {
-		endpoint, err := s.endpointRepo.FindEndpointByID(context.Background(), ev.EndpointID, source.ProjectID)
+		endpoint, err := s.endpointRepo.FindEndpointByID(innerCtx, ev.EndpointID, source.ProjectID)
 		if err != nil {
 			return err
 		}
@@ -174,14 +180,14 @@ func (s *SourceLoader) handler(source *datastore.Source, msg string) error {
 		CreateSubscription: !util.IsStringEmpty(ev.EndpointID),
 	}
 
-	eventByte, err := json.Marshal(createEvent)
+	eventByte, err := msgpack.EncodeMsgPack(createEvent)
 	if err != nil {
 		return err
 	}
 
 	job := &queue.Job{
 		ID:      event.UID,
-		Payload: json.RawMessage(eventByte),
+		Payload: eventByte,
 		Delay:   0,
 	}
 

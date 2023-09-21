@@ -1,6 +1,7 @@
 package pubsub
 
 import (
+	"context"
 	"io"
 	"testing"
 
@@ -17,9 +18,9 @@ func provideSourceLoader(ctrl *gomock.Controller) *SourceLoader {
 	projectRepo := mocks.NewMockProjectRepository(ctrl)
 	queue := mocks.NewMockQueuer(ctrl)
 	sourcePool := provideSourcePool()
-	log := log.NewLogger(io.Discard)
+	logger := log.NewLogger(io.Discard)
 
-	sourceLoader := NewSourceLoader(endpointRepo, sourceRepo, projectRepo, queue, sourcePool, log)
+	sourceLoader := NewSourceLoader(endpointRepo, sourceRepo, projectRepo, queue, sourcePool, logger)
 	return sourceLoader
 }
 
@@ -132,7 +133,7 @@ func TestSourceLoader_FetchSources(t *testing.T) {
 				tc.dbFn(sourceLoader)
 			}
 
-			err := sourceLoader.fetchProjectSources()
+			err := sourceLoader.fetchProjectSources(context.Background())
 
 			require.Nil(t, err)
 			require.Equal(t, tc.expectedPubSource, len(sourceLoader.sourcePool.sources))

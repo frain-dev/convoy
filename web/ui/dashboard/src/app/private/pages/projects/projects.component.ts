@@ -30,35 +30,30 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 	}
 
 	async ngOnInit() {
-		this.getProjects();
+		this.isLoadingProjects = true;
+		await this.getProjects();
+		this.isLoadingProjects = false;
 	}
 
 	ngOnDestroy(): void {
 		this.reloadSubscription?.unsubscribe();
 	}
 
-	async getProjects() {
+	async getProjects(): Promise<any> {
 		this.isLoadingProjects = true;
 
 		try {
-			const projectsResponse = await this.privateService.getProjects();
-			this.projects = projectsResponse.data;
-			delete this.privateService.activeProjectDetails;
-			this.isLoadingProjects = false;
+			const response = await this.privateService.getProjects();
+			return response.data.length === 0 ? (this.isLoadingProjects = false) : this.privateService.checkForSelectedProject(response.data);
 		} catch (error) {
-			this.isLoadingProjects = false;
+			return error;
 		}
 	}
 
 	// We're calling project details ahead because every page under project has a guard that requires project details to be present and to also prevent multiple calls
-	async getProjectCompleteDetails(projectId: string) {
+	async getProjectCompleteDetails(project: PROJECT) {
 		this.isLoadingProject = true;
 
-		try {
-			await this.privateService.getProjectDetails({ refresh: true, projectId }).then(() => this.privateService.getProjectStat({ refresh: true }));
-			this.router.navigate([`/projects/${projectId}`]);
-		} catch (error) {
-			this.isLoadingProject = false;
-		}
+		await this.privateService.updateProjectDetails([project]);
 	}
 }

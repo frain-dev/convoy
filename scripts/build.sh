@@ -43,9 +43,9 @@ buildConvoy() {
 	fi
 }
 
-while getopts ":b:" opt; do 
-	case "$opt" in 
-		b) 
+while getopts ":b:" opt; do
+	case "$opt" in
+		b)
 			build="$OPTARG"
 
 			if [[ "$build" == "ce" ]]; then

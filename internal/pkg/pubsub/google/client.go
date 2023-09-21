@@ -1,11 +1,10 @@
 package google
 
 import (
+	"cloud.google.com/go/pubsub"
 	"context"
 	"errors"
 	"fmt"
-
-	"cloud.google.com/go/pubsub"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"google.golang.org/api/option"
@@ -57,7 +56,7 @@ func (g *Google) Verify() error {
 		return ErrInvalidCredentials
 	}
 
-	defer client.Close()
+	defer g.handleError(client)
 
 	exists, err := client.Subscription(g.Cfg.SubscriptionID).Exists(ctx)
 	if err != nil {
@@ -79,18 +78,15 @@ func (g *Google) Consume() {
 		g.log.WithError(err).Error("failed to create new pubsub client")
 	}
 
-	defer client.Close()
-	defer g.handleError()
+	defer g.handleError(client)
 
 	sub := client.Subscription(g.Cfg.SubscriptionID)
 
-	// To enable concurrency settings
-	sub.ReceiveSettings.Synchronous = false
 	// NumGoroutines determines the number of goroutines sub.Receive will spawn to pull messages
 	sub.ReceiveSettings.NumGoroutines = g.workers
 
 	err = sub.Receive(g.ctx, func(ctx context.Context, m *pubsub.Message) {
-		if err := g.handler(g.source, string(m.Data)); err != nil {
+		if err := g.handler(ctx, g.source, string(m.Data)); err != nil {
 			g.log.WithError(err).Error("failed to write message to create event queue - google pub sub")
 		} else {
 			m.Ack()
@@ -103,7 +99,11 @@ func (g *Google) Consume() {
 	}
 }
 
-func (g *Google) handleError() {
+func (g *Google) handleError(client *pubsub.Client) {
+	if err := client.Close(); err != nil {
+		g.log.WithError(err).Error("an error occurred while closing the client")
+	}
+
 	if err := recover(); err != nil {
 		g.log.WithError(fmt.Errorf("sourceID: %s, Errror: %s", g.source.UID, err)).Error("google pubsub source crashed")
 	}

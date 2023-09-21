@@ -1,3 +1,78 @@
+## 23.08.2
+
+- [Feature] Postgres Full Text Search Reimplementation #1734 #1751 #1750 
+- [Feature] Add tail mode for events and event deliveries #1753
+- [Enhancement] Paused events polling when searching and filtering on the Event Log #1744
+- [Enhancement] Added an edit endpoint button in event delivery page #1738
+- [Enhancement] Added a tooltip for Retry and Force Retry buttons #1741
+- [Fix] Fixed a bug where the subscription filter editor UI was unresponsive #1747
+- [Fix] Fixed a bug where the Batch Replay button on the events log would not replay events #1740
+- [Fix] Fixed a bug in the process event delivery handler that caused events to stay in the `Scheduled` state #1756
+
+## 23.08.1
+
+-   [Feature] Check if signup is enabled in the instance config with this new API #1710
+-   [Feature] New support added for Redis clusters #1700
+-   [Feature] Add healthcheck for ingest command #1709
+-   [Feature] New subscription filter based on regex #1725
+-   [Feature] Integration added for Kafka sources #1708
+-   [Enhancement] Add source ID header to ingested events #1715
+-   [Enhancement] Get event deliveries based on subscription ID #1717
+-   [Enhancement] Made improvements to Convoy's UI Modals #1711
+-   [Enhancement] Display event types on event deliveries table #1691
+-   [Enhancement] Use of a separate struct when building meta events to preserve the event delivery attempts #1693
+-   [Enhancement] Update how events and event deliveries are fetched regular intervals #1705
+-   [Enhancement] Prevent other non-server entry points from modifying instance config #1724
+-   [Enhancement] Ensure that endpoint titles are unique #1730
+-   [Bugfix] Resolved a console error when creating a source #1690
+-   [Bugfix] Display of event types on the portal page. #1692
+-   [Bugfix] Fixed Endpoints page loading state and other issues #1697
+-   [Bugfix] Fixed portal link card spacing, scroll and token timeout issues #1707
+-   [Bugfix] Resolved memory consumption issues when the retention policy job runs #1706
+-   [Bugfix] Fixed issues encountered during onboarding related to subscriptions #1713
+-   [Bugfix] The copy button on the project details page has been fixed #1722
+-   [Bugfix] Events with active deliveries are now ignored in retention policies #1723
+-   [Bugfix] Fixed an issue where the organization modal fails to open and the project page keeps loading after creating the first organization #1727
+
+## 23.06.3
+
+-   [Feature] Add support for Webhooks Idempotency #1651 #1688
+-   [Enhancement] Add support for deleting archived tasks #1657
+-   [Enhancement] Improved list projects view #1669 #1678 #1683
+-   [Enhancement] Remove 50Kb limit on MaxResponseSize config #1675
+-   [Enhancement] Create Fanout Event if Owner ID is tied to a portal link #1682
+-   [Bugfix] Delete duplicate task ID when writing to queue #1660
+-   [Bugfix] Fixed view endpoint under portal link's event delivery page #1666
+-   [Bugfix] Fixed issue with closing google pub/sub client #1673
+-   [Bugfix] Fixed issue with overriding config with cli flags #1668
+-   [Bugfix] Fixed issue with HTTP timeout validation #1680
+
+
+## 23.06.2
+
+-   [Enhancement] Improved logging to include response body #1655
+-   [Enhancement] Improved Datetime filtering UX #1644
+-   [Bugfix] Fixed update project settings while switching tabs bug #1653
+-   [Bugfix] Fixed default retention policy #1652
+-   [Bugfix] Fix multi-tenancy issue on portal links with ownerID. #1654
+
+## 23.06.1
+
+-   [Feature] Add custom response to incoming project sources #1605
+-   [Feature] Enabled endpoint management on portal links #1616
+-   [Feature] Support ingest query parameters to incoming sources #1640
+-   [Enhancement] Improved New Relic Integration #1621
+-   [Enhancement] Enabled auto API docs syncing #1625
+-   [Enhancement] Add endpoint timeout config option to the dashboard #1614
+-   [Enhancement] Improved portal page responsiveness #1648
+-   [Enhancement] Improved request and response annotations #1608 #1619 #1627 #1622 #1630 #1611 #1636 #1632 #1637 #1631 #1641
+-   [Bugfix] Fixed FindSubscriptionByDeviceID query bug #1647
+-   [Bugfix] Coalesce url query parameters #1642
+-   [Bugfix] Fixed event delivery filtering by status #1626
+-   [Bugfix] Fixed index on organisations invite index #1603 #1607
+-   [Bugfix] Link ownerID to portal links without endpoints #1638
+ 
+
 ## 23.05.5
 
 -   [Enhancement] Optimise Migration Queries #1601

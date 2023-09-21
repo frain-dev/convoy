@@ -3,7 +3,6 @@ package cli
 import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/tracer"
@@ -25,7 +24,7 @@ type ConvoyCli struct {
 	cmd *cobra.Command
 }
 
-func NewCli(app *App, db *postgres.Postgres) *ConvoyCli {
+func NewCli(app *App) *ConvoyCli {
 	cmd := &cobra.Command{
 		Use:     "Convoy",
 		Version: app.Version,

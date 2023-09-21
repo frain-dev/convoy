@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	MaxResponseSizeKb = 50                       // in kilobytes
-	MaxResponseSize   = MaxResponseSizeKb * 1024 // in bytes
-
-	DefaultHost = "localhost:5005"
+	MaxResponseSizeKb                 = 50    // in kilobytes
+	MaxResponseSize                   = 51200 // in bytes
+	DefaultHost                       = "localhost:5005"
+	DefaultSearchTokenizationInterval = 1
 )
 
 var cfgSingleton atomic.Value
@@ -133,17 +133,22 @@ type PrometheusConfiguration struct {
 }
 
 type RedisConfiguration struct {
-	Scheme   string `json:"scheme" envconfig:"CONVOY_REDIS_SCHEME"`
-	Host     string `json:"host" envconfig:"CONVOY_REDIS_HOST"`
-	Username string `json:"username" envconfig:"CONVOY_REDIS_USERNAME"`
-	Password string `json:"password" envconfig:"CONVOY_REDIS_PASSWORD"`
-	Database string `json:"database" envconfig:"CONVOY_REDIS_DATABASE"`
-	Port     int    `json:"port" envconfig:"CONVOY_REDIS_PORT"`
+	Scheme    string `json:"scheme" envconfig:"CONVOY_REDIS_SCHEME"`
+	Host      string `json:"host" envconfig:"CONVOY_REDIS_HOST"`
+	Username  string `json:"username" envconfig:"CONVOY_REDIS_USERNAME"`
+	Password  string `json:"password" envconfig:"CONVOY_REDIS_PASSWORD"`
+	Database  string `json:"database" envconfig:"CONVOY_REDIS_DATABASE"`
+	Port      int    `json:"port" envconfig:"CONVOY_REDIS_PORT"`
+	Addresses string `json:"addresses" envconfig:"CONVOY_REDIS_CLUSTER_ADDRESSES"`
 }
 
-func (rc RedisConfiguration) BuildDsn() string {
+func (rc RedisConfiguration) BuildDsn() []string {
+	if len(strings.TrimSpace(rc.Addresses)) != 0 {
+		return strings.Split(rc.Addresses, ",")
+	}
+
 	if rc.Scheme == "" {
-		return ""
+		return []string{}
 	}
 
 	authPart := ""
@@ -156,7 +161,7 @@ func (rc RedisConfiguration) BuildDsn() string {
 		dbPart = fmt.Sprintf("/%s", rc.Database)
 	}
 
-	return fmt.Sprintf("%s://%s%s:%d%s", rc.Scheme, authPart, rc.Host, rc.Port, dbPart)
+	return []string{fmt.Sprintf("%s://%s%s:%d%s", rc.Scheme, authPart, rc.Host, rc.Port, dbPart)}
 }
 
 type FileRealmOption struct {
@@ -324,23 +329,34 @@ func Override(newCfg *Configuration) error {
 	ov := reflect.ValueOf(&c).Elem()
 	nv := reflect.ValueOf(newCfg).Elem()
 
-	for i := 0; i < ov.NumField(); i++ {
-		if !ov.Field(i).CanInterface() {
-			continue
-		}
-
-		fv := nv.Field(i).Interface()
-		isZero := reflect.ValueOf(fv).IsZero()
-
-		if isZero {
-			continue
-		}
-
-		ov.Field(i).Set(reflect.ValueOf(fv))
-	}
+	overrideFields(ov, nv)
 
 	cfgSingleton.Store(&c)
 	return nil
+}
+
+func overrideFields(ov, nv reflect.Value) {
+	for i := 0; i < ov.NumField(); i++ {
+		ovField := ov.Field(i)
+		if !ovField.CanInterface() {
+			continue
+		}
+
+		nvField := nv.Field(i)
+
+		if nvField.Kind() == reflect.Struct {
+			overrideFields(ovField, nvField)
+		} else {
+			fv := nvField.Interface()
+			isZero := reflect.ValueOf(fv).IsZero()
+
+			if isZero {
+				continue
+			}
+
+			ovField.Set(reflect.ValueOf(fv))
+		}
+	}
 }
 
 // LoadConfig is used to load the configuration from either the json config file
@@ -388,7 +404,7 @@ func ensureSSL(s ServerConfiguration) error {
 }
 
 func ensureQueueConfig(queueCfg RedisConfiguration) error {
-	if queueCfg.BuildDsn() == "" {
+	if len(queueCfg.BuildDsn()) == 0 {
 		return errors.New("redis queue dsn is empty")
 	}
 
@@ -399,9 +415,6 @@ func ensureMaxResponseSize(c *Configuration) {
 	bytes := c.MaxResponseSize * 1024
 
 	if bytes == 0 {
-		c.MaxResponseSize = MaxResponseSize
-	} else if bytes > MaxResponseSize {
-		log.Warnf("maximum response size of %dkb too large, using default value of %dkb", c.MaxResponseSize, MaxResponseSizeKb)
 		c.MaxResponseSize = MaxResponseSize
 	} else {
 		c.MaxResponseSize = bytes

@@ -430,6 +430,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID: "123",
+						TargetURL: "https://google.com?source=giphy",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
 						},
@@ -443,7 +444,8 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
-						Status: datastore.ScheduledEventStatus,
+						Status:         datastore.ScheduledEventStatus,
+						URLQueryParams: "name=ref&category=food",
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
 							Raw:             `{"event": "invoice.completed"}`,
@@ -493,7 +495,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			nFn: func() func() {
 				httpmock.Activate()
 
-				httpmock.RegisterResponder("POST", "https://google.com",
+				httpmock.RegisterResponder("POST", "https://google.com?category=food&name=ref&source=giphy",
 					httpmock.NewStringResponder(200, ``))
 
 				return func() {
@@ -858,7 +860,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 			},
 			wantRateLimitConfig: &datastore.RateLimitConfiguration{
 				Count:    100,
-				Duration: 1,
+				Duration: uint64(time.Second),
 			},
 			wantDisableEndpoint: true,
 		},
@@ -886,7 +888,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 			},
 			wantRateLimitConfig: &datastore.RateLimitConfiguration{
 				Count:    100,
-				Duration: 10,
+				Duration: uint64(time.Second * 10),
 			},
 			wantDisableEndpoint: false,
 		},
@@ -910,7 +912,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 				rlc := evConfig.rateLimitConfig()
 
 				assert.Equal(t, tc.wantRateLimitConfig.Count, rlc.Count)
-				assert.Equal(t, tc.wantRateLimitConfig.Duration, rlc.Duration)
+				assert.Equal(t, tc.wantRateLimitConfig.Duration, uint64(rlc.Duration))
 			}
 		})
 	}

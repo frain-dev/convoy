@@ -6,16 +6,18 @@ import (
 )
 
 type Filter struct {
-	Query        string
-	OwnerID      string
-	Project      *Project
-	EndpointID   string
-	EndpointIDs  []string
-	EventID      string
-	SourceID     string
-	Pageable     Pageable
-	Status       []EventDeliveryStatus
-	SearchParams SearchParams
+	Query          string
+	OwnerID        string
+	Project        *Project
+	EndpointID     string
+	EndpointIDs    []string
+	SubscriptionID string
+	EventID        string
+	SourceID       string
+	Pageable       Pageable
+	IdempotencyKey string
+	Status         []EventDeliveryStatus
+	SearchParams   SearchParams
 }
 
 type SourceFilter struct {
