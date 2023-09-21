@@ -41,7 +41,7 @@ var DefaultConfiguration = Configuration{
 		Host:               "localhost",
 		Username:           "postgres",
 		Password:           "postgres",
-		Database:           "test",
+		Database:           "convoy",
 		Options:            "sslmode=disable&connect_timeout=30",
 		Port:               5432,
 		SetConnMaxLifetime: 3600,
