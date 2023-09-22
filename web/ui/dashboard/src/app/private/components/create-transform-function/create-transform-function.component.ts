@@ -78,7 +78,6 @@ function transform(payload) {
 		} catch (error) {
 			this.isTestingFunction = false;
 			this.isTransformFunctionPassed = false;
-			return error;
 		}
 	}
 
