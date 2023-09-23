@@ -13,7 +13,7 @@
         "host": "redis_server"
     },
     "logger": {
-        "level": "fatal"
+        "level": "error"
     },
     "search": {
         "type": "typesense",
