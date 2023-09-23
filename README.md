@@ -40,7 +40,7 @@ $ git clone https://github.com/frain-dev/convoy.git
 $ cd convoy
 
 # Start Services
-docker compose -f configs/local/docker-compose.yml up
+$ docker compose -f configs/local/docker-compose.yml up
 ```
 ## Convoy Cloud
 Get started with our free Convoy Cloud version, request access: sales@getconvoy.io

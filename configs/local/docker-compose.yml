@@ -2,71 +2,74 @@ version: "3"
 
 services:
     web:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.1
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.2
         command: ["/start.sh"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
         ports:
           - "5005:5005"
+        healthcheck:
+          test: ["CMD-SHELL", "wget -q --spider localhost:5005/health"]
+          interval: 5s
+          timeout: 15s
+          retries: 3
+          start_period: 5s
         depends_on:
             - postgres
             - redis_server
             - typesense
 
     scheduler:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.1
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.2
         command: ["./cmd", "scheduler", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
         depends_on:
-            - postgres
-            - redis_server
-            - typesense
+          web:
+            condition: service_healthy
 
     worker:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.1
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.2
         command: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
         depends_on:
-            - postgres
-            - redis_server
-            - typesense
+          web:
+            condition: service_healthy
 
     stream:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.1
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.2
         command: ["./cmd", "stream", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
         depends_on:
-            - postgres
-            - redis_server
+          web:
+            condition: service_healthy
 
     ingest:
-      image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.1
-      command: ["./cmd", "ingest", "--config", "convoy.json"]
-      volumes:
-        - ./convoy.json:/convoy.json
-      restart: on-failure
-      depends_on:
-        - postgres
-        - redis_server
-        - typesense
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.2
+        command: ["./cmd", "ingest", "--config", "convoy.json"]
+        volumes:
+            - ./convoy.json:/convoy.json
+        restart: on-failure
+        depends_on:
+          web:
+            condition: service_healthy
 
     postgres:
-      image: postgres:15.2-alpine
-      restart: unless-stopped
-      environment:
-        POSTGRES_DB: convoy
-        POSTGRES_USER: convoy
-        POSTGRES_PASSWORD: convoy
-        PGDATA: /data/postgres
-      volumes:
-        - ./postgres_data:/data/postgres
+        image: postgres:15.2-alpine
+        restart: unless-stopped
+        environment:
+          POSTGRES_DB: convoy
+          POSTGRES_USER: convoy
+          POSTGRES_PASSWORD: convoy
+          PGDATA: /data/postgres
+        volumes:
+          - ./postgres_data:/data/postgres
 
     redis_server:
         image: redis:alpine
@@ -83,4 +86,3 @@ services:
             TYPESENSE_API_KEY: "convoy"
         volumes:
             - ./typesense_data:/data/typesense
-
