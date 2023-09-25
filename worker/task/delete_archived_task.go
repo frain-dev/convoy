@@ -58,10 +58,10 @@ func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis) func(context.Context, *a
 			return errors.New("invalid queue type")
 		}
 
-		for _, queue := range queues {
-			_, err := q.Inspector().DeleteAllArchivedTasks(queue)
+		for _, qu := range queues {
+			_, err := q.Inspector().DeleteAllArchivedTasks(qu)
 			if err != nil {
-				log.FromContext(ctx).WithError(err).Errorf("failed to delete archived task from queue - %s", queue)
+				log.FromContext(ctx).WithError(err).Errorf("failed to delete archived task from queue - %s", qu)
 				continue
 			}
 		}

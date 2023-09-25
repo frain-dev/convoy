@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"math"
 	"time"
 
@@ -179,14 +180,14 @@ func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, ms
 		CreateSubscription: !util.IsStringEmpty(ev.EndpointID),
 	}
 
-	eventByte, err := json.Marshal(createEvent)
+	eventByte, err := msgpack.EncodeMsgPack(createEvent)
 	if err != nil {
 		return err
 	}
 
 	job := &queue.Job{
 		ID:      event.UID,
-		Payload: json.RawMessage(eventByte),
+		Payload: eventByte,
 		Delay:   0,
 	}
 

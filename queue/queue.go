@@ -1,7 +1,6 @@
 package queue
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -14,9 +13,9 @@ type Queuer interface {
 }
 
 type Job struct {
-	ID      string          `json:"id"`
-	Payload json.RawMessage `json:"payload"`
-	Delay   time.Duration   `json:"delay"`
+	ID      string        `json:"id"`
+	Payload []byte        `json:"payload"`
+	Delay   time.Duration `json:"delay"`
 }
 
 type QueueOptions struct {

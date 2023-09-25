@@ -38,11 +38,40 @@
 
 			<hr class="border-new.primary-25 mb-40px" />
 
-			<ng-container *ngIf="showConfig('alert-config')">
+			<ng-container *ngIf="showConfig('rate_limit')">
+				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
+					<div class="flex justify-between items-center mb-16px">
+						<p class="text-12 text-new.gray-500 font-medium flex items-center">Rate Limit</p>
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('rate_limit')">
+							<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
+								<use xlink:href="#delete-icon2"></use>
+							</svg>
+						</button>
+					</div>
+
+					<div class="grid grid-cols-2 gap-24px">
+						<convoy-input-field className="mb-0">
+							<label for="rate-limit-duration" convoy-label>Duration</label>
+							<div class="relative">
+								<input type="number" id="rate-limit-duration" convoy-input autocomplete="rate-limit-duration" formControlName="rate_limit_duration" placeholder="e.g 50" />
+								<div class="absolute top-[50%] right-14px text-16 text-grey-100 opacity-40 translate-y-[-50%]">sec</div>
+							</div>
+							<convoy-input-error *ngIf="addNewEndpointForm.get('rate_limit_duration')?.touched && addNewEndpointForm.get('rate_limit_duration')?.invalid">Please enter a rate limit duration</convoy-input-error>
+						</convoy-input-field>
+						<convoy-input-field className="mb-0">
+							<label for="rate-limit-count" convoy-label>Limit</label>
+							<input type="number" id="rate-limit-count" convoy-input autocomplete="rate-limit-count" formControlName="rate_limit" placeholder="e.g 10" />
+							<convoy-input-error *ngIf="addNewEndpointForm.get('rate_limit')?.touched && addNewEndpointForm.get('rate_limit')?.invalid">Please enter a rate limit</convoy-input-error>
+						</convoy-input-field>
+					</div>
+				</div>
+			</ng-container>
+
+			<ng-container *ngIf="showConfig('alert_config')">
 				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
 					<div class="flex justify-between items-center mb-16px">
 						<p class="text-12 text-new.gray-500 font-medium flex items-center">Alert Configuration</p>
-						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('alert-config')">
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('alert_config')">
 							<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 								<use xlink:href="#delete-icon2"></use>
 							</svg>
@@ -133,7 +162,7 @@
 					<convoy-input-field>
 						<label for="http_timeout" convoy-label>Timeout Value</label>
 						<div class="relative">
-							<input id="http_timeout" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g 60" />
+							<input id="http_timeout" type="number" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g 60" />
 							<div class="absolute top-[50%] right-14px text-16 text-grey-100 opacity-40 translate-y-[-50%]">sec</div>
 						</div>
 						<convoy-input-error *ngIf="addNewEndpointForm.get('http_timeout')?.touched && addNewEndpointForm.get('http_timeout')?.invalid">Timeout value must be a whole number</convoy-input-error>

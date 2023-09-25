@@ -1,8 +1,8 @@
 package api
 
 import (
-	"encoding/json"
-	"errors"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+  "errors"
 	"io"
 	"net/http"
 	"time"
@@ -172,7 +172,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		Event: *event,
 	}
 
-	eventByte, err := json.Marshal(createEvent)
+	eventByte, err := msgpack.EncodeMsgPack(createEvent)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return

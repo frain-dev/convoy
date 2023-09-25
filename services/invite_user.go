@@ -2,8 +2,8 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"strings"
 	"time"
 
@@ -61,7 +61,7 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 	return iv, nil
 }
 
-func sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, user *datastore.User, org *datastore.Organisation, queuer queue.Queuer) error {
+func sendInviteEmail(_ context.Context, iv *datastore.OrganisationInvite, user *datastore.User, org *datastore.Organisation, queuer queue.Queuer) error {
 	cfg, err := config.Get()
 	if err != nil {
 		return err
@@ -80,13 +80,13 @@ func sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, user
 		},
 	}
 
-	buf, err := json.Marshal(em)
+	bytes, err := msgpack.EncodeMsgPack(em)
 	if err != nil {
 		return nil
 	}
 
 	job := &queue.Job{
-		Payload: json.RawMessage(buf),
+		Payload: bytes,
 		Delay:   0,
 	}
 

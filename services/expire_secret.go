@@ -2,9 +2,9 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"net/http"
 	"time"
 
@@ -53,16 +53,14 @@ func (a *ExpireSecretService) Run(ctx context.Context) (*datastore.Endpoint, err
 		ProjectID:  a.Project.UID,
 	}
 
-	jobByte, err := json.Marshal(body)
+	bytes, err := msgpack.EncodeMsgPack(body)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	payload := json.RawMessage(jobByte)
-
 	job := &queue.Job{
 		ID:      secret.UID,
-		Payload: payload,
+		Payload: bytes,
 		Delay:   time.Hour * time.Duration(a.S.Expiration),
 	}
 

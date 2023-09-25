@@ -2,11 +2,10 @@ package services
 
 import (
 	"context"
-	"encoding/json"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker/task"
 )
@@ -25,16 +24,14 @@ func (e *ReplayEventService) Run(ctx context.Context) error {
 		Event: *e.Event,
 	}
 
-	eventByte, err := json.Marshal(createEvent)
+	eventByte, err := msgpack.EncodeMsgPack(createEvent)
 	if err != nil {
 		return &ServiceError{ErrMsg: err.Error()}
 	}
 
-	payload := json.RawMessage(eventByte)
-
 	job := &queue.Job{
 		ID:      e.Event.UID,
-		Payload: payload,
+		Payload: eventByte,
 		Delay:   0,
 	}
 
