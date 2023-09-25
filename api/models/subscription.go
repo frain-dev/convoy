@@ -31,6 +31,7 @@ type UpdateSubscription struct {
 	AppID      string `json:"app_id,omitempty"`
 	SourceID   string `json:"source_id,omitempty"`
 	EndpointID string `json:"endpoint_id,omitempty"`
+	Function   string `json:"function"`
 
 	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty"`
 	RetryConfig     *RetryConfiguration     `json:"retry_config,omitempty"`
@@ -153,6 +154,11 @@ func (fs *FS) Transform() datastore.FilterSchema {
 		Headers: fs.Headers,
 		Body:    fs.Body,
 	}
+}
+
+type SubscriptionFunctionResponse struct {
+	Payload interface{} `json:"payload"`
+	Log     []string    `json:"log"`
 }
 
 type DynamicSubscription struct {

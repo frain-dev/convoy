@@ -34,7 +34,7 @@ func TestTransform(t *testing.T) {
 	}`
 
 	transformer := NewTransformer(goja.New())
-	result, err := transformer.Transform(function, p)
+	result, _, err := transformer.Transform(function, p)
 	require.NoError(t, err)
 
 	for i := 0; i < len(want); i++ {
@@ -53,7 +53,7 @@ func TestTransformJsSyntaxError(t *testing.T) {
 
 	function := `function transform(){var i = 0;for (;;) {i++;} return 0;`
 	transformer := NewTransformer(goja.New())
-	_, err := transformer.Transform(function, p)
+	_, _, err := transformer.Transform(function, p)
 	require.True(t, strings.Contains(err.Error(), "SyntaxError"))
 }
 
@@ -68,7 +68,7 @@ func TestTransformMissingFunction(t *testing.T) {
 
 	function := `var i = 0; i++`
 	transformer := NewTransformer(goja.New())
-	_, err := transformer.Transform(function, p)
+	_, _, err := transformer.Transform(function, p)
 	require.ErrorIs(t, ErrFunctionNotFound, err)
 }
 
@@ -84,7 +84,7 @@ func TestTransformFunctionNotFound(t *testing.T) {
 	function := `function run(){var i = 0;for (;;) {i++;} return 0;}`
 
 	transformer := NewTransformer(goja.New())
-	_, err := transformer.Transform(function, p)
+	_, _, err := transformer.Transform(function, p)
 	require.ErrorIs(t, ErrFunctionNotFound, err)
 }
 
@@ -100,7 +100,7 @@ func TestTransformScriptTimeout(t *testing.T) {
 	function := `function transform(){var i = 0;for (;;) {i++;} return 0;}`
 
 	transformer := NewTransformer(goja.New())
-	_, err := transformer.Transform(function, p)
+	_, _, err := transformer.Transform(function, p)
 	require.True(t, strings.Contains(err.Error(), ErrMaxExecutionTimeElapsed.Error()))
 
 }
@@ -116,7 +116,7 @@ func TestTransformScriptTimeoutMalformedScript(t *testing.T) {
 
 	function := `var i = 0;for (;;) {i++;}`
 	transformer := NewTransformer(goja.New())
-	_, err := transformer.Transform(function, p)
+	_, _, err := transformer.Transform(function, p)
 	require.True(t, strings.Contains(err.Error(), ErrMaxExecutionTimeElapsed.Error()))
 }
 
@@ -141,7 +141,7 @@ func BenchmarkRunStringRaw(b *testing.B) {
 	transformer := NewTransformer(goja.New())
 
 	for i := 0; i < b.N; i++ {
-		_, err := transformer.RunStringUnsafe(function, p)
+		_, _, err := transformer.RunStringUnsafe(function, p)
 		require.NoError(b, err)
 	}
 }
@@ -166,7 +166,7 @@ func BenchmarkRunStringRaw_NewVM(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		transformer := NewTransformer(goja.New())
-		_, err := transformer.RunStringUnsafe(function, p)
+		_, _, err := transformer.RunStringUnsafe(function, p)
 		require.NoError(b, err)
 	}
 }
@@ -191,7 +191,7 @@ func BenchmarkTransform(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, err := transformer.Transform(function, p)
+		_, _, err := transformer.Transform(function, p)
 		require.NoError(b, err)
 	}
 }
@@ -215,7 +215,7 @@ func BenchmarkTransform_NewVM(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		transformer := NewTransformer(goja.New())
-		_, err := transformer.Transform(function, p)
+		_, _, err := transformer.Transform(function, p)
 		require.NoError(b, err)
 	}
 }
@@ -240,7 +240,7 @@ func Benchmark_TransformUsingUnderscoreJs(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, err := transformer.TransformUsingUnderscoreJs(function, p)
+		_, _, err := transformer.TransformUsingUnderscoreJs(function, p)
 		require.NoError(b, err)
 	}
 }
@@ -264,7 +264,7 @@ func Benchmark_TransformUsingUnderscoreJs_NewVM(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		transformer := NewTransformer(goja.New())
-		_, err := transformer.TransformUsingUnderscoreJs(function, p)
+		_, _, err := transformer.TransformUsingUnderscoreJs(function, p)
 		require.NoError(b, err)
 	}
 }

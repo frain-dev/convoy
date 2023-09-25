@@ -120,7 +120,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}
 
-				mutated, err := subRepo.TransformPayload(ctx, s.Function, payload)
+				mutated, _, err := subRepo.TransformPayload(ctx, s.Function, payload)
 				if err != nil {
 					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}

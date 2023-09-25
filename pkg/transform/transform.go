@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-var ErrFunctionNotFound = errors.New("transform function not found, please define it or rename the existing function")
+var ErrFunctionNotFound = errors.New("the transform function is not found, please define it or rename the existing function")
 var ErrMaxExecutionTimeElapsed = errors.New("script execution time elapsed 10 seconds")
 
 type Transformer struct {
@@ -35,16 +35,16 @@ func closeWithError(closer io.Closer) {
 
 // TransformUsingUnderscoreJs downloads the underscore js library and then mutates the payload by the passed function.
 // The output of TransformUsingUnderscoreJs should be idempotent
-func (t *Transformer) TransformUsingUnderscoreJs(function string, payload interface{}) (interface{}, error) {
+func (t *Transformer) TransformUsingUnderscoreJs(function string, payload interface{}) (interface{}, []string, error) {
 	res, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		return nil, []string{}, err
 	}
 	defer closeWithError(res.Body)
 
 	data, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return nil, []string{}, err
 	}
 
 	time.AfterFunc(deadline, func() {
@@ -53,16 +53,24 @@ func (t *Transformer) TransformUsingUnderscoreJs(function string, payload interf
 
 	_, err = t.rt.RunString(string(data))
 	if err != nil {
-		return nil, err
+		return nil, []string{}, err
 	}
 
 	return t.Transform(function, payload)
 }
 
-func (t *Transformer) RunStringUnsafe(function string, payload interface{}) (interface{}, error) {
+func (t *Transformer) RunStringUnsafe(function string, payload interface{}) (interface{}, []string, error) {
+	new(require.Registry).Enable(t.rt)
+
+	printer := NewBufferPrinter()
+	require.RegisterCoreModule(console.ModuleName,
+		console.RequireWithPrinter(printer))
+
+	console.Enable(t.rt)
+
 	err := t.rt.Set("payload", payload)
 	if err != nil {
-		return nil, err
+		return nil, []string{}, err
 	}
 
 	time.AfterFunc(deadline, func() {
@@ -71,16 +79,23 @@ func (t *Transformer) RunStringUnsafe(function string, payload interface{}) (int
 
 	value, err := t.rt.RunString(function)
 	if err != nil {
-		return nil, err
+		return nil, []string{}, err
 	}
 
-	return value, nil
+	l := len(printer.Format())
+
+	return value, printer.Format()[:l-1], err
 }
 
 // Transform mutates the payload by the passed function
 // The output of Transform should be idempotent
-func (t *Transformer) Transform(function string, payload interface{}) (interface{}, error) {
+func (t *Transformer) Transform(function string, payload interface{}) (interface{}, []string, error) {
 	new(require.Registry).Enable(t.rt)
+
+	printer := NewBufferPrinter()
+	require.RegisterCoreModule(console.ModuleName,
+		console.RequireWithPrinter(printer))
+
 	console.Enable(t.rt)
 
 	time.AfterFunc(deadline, func() {
@@ -89,18 +104,18 @@ func (t *Transformer) Transform(function string, payload interface{}) (interface
 
 	_, err := t.rt.RunString(function)
 	if err != nil {
-		return nil, err
+		return nil, []string{}, err
 	}
 
 	f := t.rt.Get("transform")
 	if f == nil {
-		return nil, ErrFunctionNotFound
+		return nil, []string{}, ErrFunctionNotFound
 	}
 
 	var transform func(interface{}) (interface{}, error)
 	err = t.rt.ExportTo(f, &transform)
 	if err != nil {
-		return nil, err
+		return nil, []string{}, err
 	}
 
 	time.AfterFunc(deadline, func() {
@@ -109,8 +124,10 @@ func (t *Transformer) Transform(function string, payload interface{}) (interface
 
 	value, err := transform(payload)
 	if err != nil {
-		return nil, err
+		return nil, []string{}, err
 	}
 
-	return value, err
+	l := len(printer.Format())
+
+	return value, printer.Format()[:l-1], err
 }
