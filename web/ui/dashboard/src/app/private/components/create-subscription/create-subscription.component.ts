@@ -67,7 +67,6 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	configurations = [
 		{ uid: 'filter_config', name: 'Filter', show: false },
-		{ uid: 'tranform_config', name: 'Transform', show: false },
 		{ uid: 'retry_config', name: 'Retry Logic', show: false }
 	];
 	createdSubscription = false;
@@ -87,6 +86,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (this.projectType === 'incoming') {
 			this.subscriptionForm.get('source_id')?.addValidators(Validators.required);
 			this.subscriptionForm.get('source_id')?.updateValueAndValidity();
+			this.configurations.push({ uid: 'tranform_config', name: 'Transform', show: false });
 		} else {
 			this.configurations.push({ uid: 'events', name: 'Event Types', show: false });
 		}
