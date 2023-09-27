@@ -59,6 +59,7 @@
 
 					<div class="whitespace-nowrap flex">
 						<div convoy-tag [color]="hasFilter(subscription.filter_config.filter) ? 'primary' : 'gray'" class="mr-8px py-2px">Filter</div>
+						<div convoy-tag [color]="subscription.function ? 'primary' : 'gray'" class="mr-8px py-2px">Transform</div>
 						<div convoy-tag [color]="subscription.retry_config ? 'primary' : 'gray'" class="mr-8px py-2px">Retry Logic</div>
 						<div convoy-tag [color]="subscription.filter_config.event_types.length > 1 || subscription.filter_config.event_types[0] != '*' ? 'primary' : 'gray'" color="primary" class="py-2px">Event Types</div>
 					</div>
@@ -114,10 +115,10 @@
 	</div>
 
 	<div class="w-full h-full">
-        <div class="max-w-[770px] m-auto">
-            <convoy-create-subscription showAction="true" (onAction)="createSubscription($event.action)" [action]="action === 'update' ? 'update' : 'create'"></convoy-create-subscription>
-        </div>
-    </div>
+		<div class="max-w-[770px] m-auto">
+			<convoy-create-subscription showAction="true" (onAction)="createSubscription($event.action)" [action]="action === 'update' ? 'update' : 'create'"></convoy-create-subscription>
+		</div>
+	</div>
 </dialog>
 
 <!-- subscription details dialog  -->
@@ -181,7 +182,7 @@
 		<ng-container *ngIf="!activeSubscription?.device_metadata?.uid">
 			<hr class="border-t border-grey-20 mt-24px mb-4px" />
 
-			<convoy-create-subscription action="view"></convoy-create-subscription>
+			<convoy-create-subscription action="view" [subscriptionId]="activeSubscription?.uid"></convoy-create-subscription>
 
 			<hr class="border-t border-grey-20 my-24px" />
 

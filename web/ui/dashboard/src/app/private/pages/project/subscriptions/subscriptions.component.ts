@@ -43,8 +43,8 @@ export class SubscriptionsComponent implements OnInit {
 		await this.getSubscriptions();
 
 		this.route.queryParams.subscribe(params => {
-			if (params.id) this.detailsDialog.nativeElement.showModal();
 			this.activeSubscription = this.subscriptions?.content.find(subscription => subscription.uid === params?.id);
+			if (params.id) this.detailsDialog.nativeElement.showModal();
 		});
 	}
 

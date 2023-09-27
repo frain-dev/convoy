@@ -238,6 +238,10 @@ func (a *ApplicationHandler) RegisterDashboardRoutes(r *chi.Mux) {
 		"/ui/organisations/{orgID}/projects/{projectID}/subscriptions/test_filter",
 		uiMiddlewares.HandlerFunc(dh.TestSubscriptionFilter))
 
+	r.Method(POST,
+		"/ui/organisations/{orgID}/projects/{projectID}/subscriptions/test_function",
+		uiMiddlewares.HandlerFunc(dh.TestSubscriptionFunction))
+
 	r.Method(GET,
 		"/ui/organisations/{orgID}/projects/{projectID}/subscriptions",
 		uiMiddlewaresWithPagination.HandlerFunc(dh.GetSubscriptions))

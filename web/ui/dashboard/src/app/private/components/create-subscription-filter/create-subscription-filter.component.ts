@@ -39,7 +39,11 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 		})
 	});
 	isFilterTestPassed = false;
-	payload: any;
+	payload: any = {
+		id: 'Sample-1',
+		name: 'Sample 1',
+		description: 'This is sample data #1'
+	};
 	header: any;
 
 	constructor(private formBuilder: FormBuilder, private createSubscriptionService: CreateSubscriptionService, private generalService: GeneralService, private route: ActivatedRoute) {}

@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/nsf/jsondiff"
@@ -1134,9 +1133,6 @@ func TestFlattenArray(t *testing.T) {
 			if err != nil {
 				t.Errorf("failed to flatten: %+v", err)
 			}
-
-			expectedJson, _ := json.MarshalIndent(got, "", " ")
-			fmt.Printf("%v\n", string(expectedJson))
 
 			if !jsonEqual(got, test.want) {
 				t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", got, test.want)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
@@ -113,14 +114,37 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
+			raw := event.Raw
+			data := event.Data
+
+			if !util.IsStringEmpty(s.Function) {
+				var payload map[string]interface{}
+				err = json.Unmarshal(event.Data, &payload)
+				if err != nil {
+					return &EndpointError{Err: err, delay: 10 * time.Second}
+				}
+
+				mutated, _, err := subRepo.TransformPayload(ctx, s.Function, payload)
+				if err != nil {
+					return &EndpointError{Err: err, delay: 10 * time.Second}
+				}
+
+				bytes, err := json.Marshal(mutated)
+				if err != nil {
+					return &EndpointError{Err: err, delay: 10 * time.Second}
+				}
+
+				raw = string(bytes)
+				data = bytes
+			}
+
 			metadata := &datastore.Metadata{
-				NumTrials:       0,
-				RetryLimit:      rc.RetryCount,
-				Data:            event.Data,
-				Raw:             event.Raw,
-				IntervalSeconds: rc.Duration,
+				Raw:             raw,
+				Data:            data,
 				Strategy:        rc.Type,
 				NextSendTime:    time.Now(),
+				IntervalSeconds: rc.Duration,
+				RetryLimit:      rc.RetryCount,
 			}
 
 			eventDelivery := &datastore.EventDelivery{

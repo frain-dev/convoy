@@ -1,4 +1,4 @@
-<form class="relative" [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()">
+<form class="relative pb-100px" [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()">
 	<convoy-loader *ngIf="isLoadingForm"></convoy-loader>
 
 	<p *ngIf="action !== 'view' && !token" class="text-14 font-normal pb-20px max-w-[634px]">A subscription enable you to subscribe endpoints to events from any source, with extra configurations like event filters and retry logic</p>
@@ -85,13 +85,36 @@
 
 		<ng-container *ngIf="showConfig('filter_config')">
 			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px flex justify-between items-center">
-				<h4 class="text-new.gray-500 font-medium text-14">Events Filter</h4>
+				<div>
+					<h4 class="text-new.gray-500 font-medium text-12">Events Filter</h4>
+					<p class="text-10 text-new.gray-500 mt-4px">Filter events received by request body and header.</p>
+				</div>
 				<div class="flex items-center">
-					<button convoy-button fill="outline" color="grey" class="text-new.gray-500 border-new.gray-200" size="xs" type="button" (click)="setupFilter()">Open Editor</button>
+					<button convoy-button fill="outline" color="grey" class="!text-new.gray-500 border-new.gray-200 py-2px px-6px" size="xs" type="button" (click)="setupFilter()">Open Editor</button>
 
 					<div class="mx-10px h-16px w-[1px] bg-new.gray-200"></div>
 
 					<button convoy-button type="button" size="xs" *ngIf="action !== 'view'" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('filter_config')">
+						<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
+							<use xlink:href="#delete-icon2"></use>
+						</svg>
+					</button>
+				</div>
+			</div>
+		</ng-container>
+
+		<ng-container *ngIf="showConfig('tranform_config')">
+			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px flex justify-between items-center">
+				<div>
+					<h4 class="text-new.gray-500 font-medium text-12">Transform</h4>
+					<p class="text-10 text-new.gray-500 mt-4px">Transform request body of events with a javascript function.</p>
+				</div>
+				<div class="flex items-center">
+					<button convoy-button fill="outline" color="grey" class="!text-new.gray-500 border-new.gray-200 py-2px px-6px" size="xs" type="button" (click)="setupTransformDialog()">Open Editor</button>
+
+					<div class="mx-10px h-16px w-[1px] bg-new.gray-200"></div>
+
+					<button convoy-button type="button" size="xs" *ngIf="action !== 'view'" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('tranform_config')">
 						<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 							<use xlink:href="#delete-icon2"></use>
 						</svg>
@@ -177,8 +200,15 @@
 <!-- subscription filters form   -->
 <dialog open convoy-dialog position="full" *ngIf="showFilterDialog">
 	<div class="w-full h-full">
-        <convoy-create-subscription-filter (close)="showFilterDialog = false" [schema]="subscriptionForm.get('filter_config.filter')?.value" [action]="action" (filterSchema)="getFilterSchema($event)"></convoy-create-subscription-filter>
-    </div>
+		<convoy-create-subscription-filter (close)="showFilterDialog = false" [schema]="subscriptionForm.get('filter_config.filter')?.value" [action]="action" (filterSchema)="getFilterSchema($event)"></convoy-create-subscription-filter>
+	</div>
+</dialog>
+
+<!-- subscription tranform form   -->
+<dialog open convoy-dialog position="full" *ngIf="showTransformDialog">
+	<div class="w-full h-full overflow-y-auto">
+		<convoy-create-transform-function (close)="showTransformDialog = false" (subscriptionFunction)="getFunction($event)" [transformFunction]="subscriptionForm.get('function')?.value"></convoy-create-transform-function>
+	</div>
 </dialog>
 
 <convoy-notification></convoy-notification>

@@ -19,6 +19,7 @@ import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.
 import { PermissionDirective } from '../permission/permission.directive';
 import { MultiInputComponent } from 'src/app/components/multi-input/multi-input.component';
 import { NotificationComponent } from 'src/app/components/notification/notification.component';
+import { CreateTransformFunctionComponent } from '../create-transform-function/create-transform-function.component';
 
 @NgModule({
 	declarations: [CreateSubscriptionComponent],
@@ -45,7 +46,8 @@ import { NotificationComponent } from 'src/app/components/notification/notificat
 		MultiInputComponent,
 		PermissionDirective,
 		DialogDirective,
-		NotificationComponent
+		NotificationComponent,
+        CreateTransformFunctionComponent
 	],
 	exports: [CreateSubscriptionComponent]
 })
