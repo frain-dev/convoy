@@ -3,6 +3,9 @@ package stream
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/queue"
+	redisQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy"
@@ -94,8 +97,24 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 
 			handler := socket.BuildRoutes(r)
 
-			consumer := worker.NewConsumer(a.Queue, lo)
-			consumer.RegisterHandlers(convoy.StreamCliEventsProcessor, h.EventDeliveryCLiHandler(r))
+			redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
+			if err != nil {
+				return err
+			}
+			queueNames := map[string]int{
+				string(convoy.StreamQueue): 1,
+			}
+
+			opts := queue.QueueOptions{
+				Names:             queueNames,
+				RedisClient:       redis,
+				RedisAddress:      cfg.Redis.BuildDsn(),
+				Type:              string(config.RedisQueueProvider),
+				PrometheusAddress: cfg.Prometheus.Dsn,
+			}
+			q := redisQueue.NewQueue(opts)
+
+			consumer := worker.NewConsumer(q, lo)
 
 			// start worker
 			fmt.Println("Registering Stream Server Consumer...")
