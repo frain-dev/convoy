@@ -31,7 +31,7 @@ import (
 var (
 	ErrDeliveryAttemptFailed               = errors.New("error sending event")
 	ErrRateLimit                           = errors.New("rate limit error")
-	defaultDelay             time.Duration = 30
+	defaultDelay             time.Duration = 10
 )
 
 type SignatureValues struct {
@@ -71,12 +71,12 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		subscription := data.Subscription
 		eventDelivery := data.EventDelivery
 
-		if eventDelivery == nil {
-			eventDelivery, err = eventDeliveryRepo.FindEventDeliveryByID(ctx, data.ProjectID, data.EventDeliveryID)
-			if err != nil {
-				return &EndpointError{Err: err, delay: defaultDelay}
-			}
-		}
+		//if eventDelivery == nil {
+		//	eventDelivery, err = eventDeliveryRepo.FindEventDeliveryByID(ctx, data.ProjectID, data.EventDeliveryID)
+		//	if err != nil {
+		//		return &EndpointError{Err: err, delay: defaultDelay}
+		//	}
+		//}
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*eventDelivery.Metadata).NextDuration(eventDelivery.Metadata.NumTrials)
 
 		switch eventDelivery.Status {
@@ -85,26 +85,26 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return nil
 		}
 
-		if endpoint == nil {
-			endpoint, err = endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, eventDelivery.ProjectID)
-			if err != nil {
-				return &EndpointError{Err: err, delay: delayDuration}
-			}
-		}
-
-		if subscription == nil {
-			subscription, err = subRepo.FindSubscriptionByID(ctx, eventDelivery.ProjectID, eventDelivery.SubscriptionID)
-			if err != nil {
-				return &EndpointError{Err: err, delay: delayDuration}
-			}
-		}
-
-		if project == nil {
-			project, err = projectRepo.FetchProjectByID(ctx, endpoint.ProjectID)
-			if err != nil {
-				return &EndpointError{Err: err, delay: delayDuration}
-			}
-		}
+		//if endpoint == nil {
+		//	endpoint, err = endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, eventDelivery.ProjectID)
+		//	if err != nil {
+		//		return &EndpointError{Err: err, delay: delayDuration}
+		//	}
+		//}
+		//
+		//if subscription == nil {
+		//	subscription, err = subRepo.FindSubscriptionByID(ctx, eventDelivery.ProjectID, eventDelivery.SubscriptionID)
+		//	if err != nil {
+		//		return &EndpointError{Err: err, delay: delayDuration}
+		//	}
+		//}
+		//
+		//if project == nil {
+		//	project, err = projectRepo.FetchProjectByID(ctx, endpoint.ProjectID)
+		//	if err != nil {
+		//		return &EndpointError{Err: err, delay: delayDuration}
+		//	}
+		//}
 
 		ec := &EventDeliveryConfig{subscription: subscription, project: project}
 		rlc := ec.rateLimitConfig()

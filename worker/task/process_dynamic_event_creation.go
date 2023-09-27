@@ -373,8 +373,8 @@ func findDynamicSubscription(ctx context.Context, newSubscription *models.Dynami
 		err = datastore.ErrSubscriptionNotFound
 	}
 
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		subscription = &subscriptions[0]
 
 		if newSubscription.AlertConfig != nil {
@@ -432,7 +432,7 @@ func findDynamicSubscription(ctx context.Context, newSubscription *models.Dynami
 		if err != nil {
 			return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 		}
-	case datastore.ErrSubscriptionNotFound:
+	case errors.Is(err, datastore.ErrSubscriptionNotFound):
 		retryConfig, err := getRetryConfig(newSubscription.RetryConfig)
 		if err != nil {
 			return nil, util.NewServiceError(http.StatusBadRequest, err)

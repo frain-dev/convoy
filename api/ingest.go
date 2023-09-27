@@ -31,7 +31,6 @@ func retrieveSourceConfigurationFromMaskId(a *ApplicationHandler, ctx context.Co
 
 	// Tries to retrieve the source configuration from the cache service
 	err = a.A.Cache.Get(ctx, maskId, &source)
-
 	if err != nil {
 		a.A.Logger.WithError(err)
 	}
@@ -58,7 +57,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	source, err := retrieveSourceConfigurationFromMaskId(a, r.Context(), maskID)
 
 	if err != nil {
-		if err == datastore.ErrSourceNotFound {
+		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
@@ -133,7 +132,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		err = a.A.Cache.Set(r.Context(), source.ProjectID, &projectFromDb, time.Minute*2)
+		err = a.A.Cache.Set(r.Context(), source.ProjectID, &projectFromDb, config.DefaultCacheTTL)
 		if err != nil {
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return

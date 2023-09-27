@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -19,6 +20,7 @@ const (
 	MaxResponseSize                   = 51200 // in bytes
 	DefaultHost                       = "localhost:5005"
 	DefaultSearchTokenizationInterval = 1
+	DefaultCacheTTL                   = time.Minute * 10
 )
 
 var cfgSingleton atomic.Value

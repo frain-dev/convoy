@@ -1,86 +1,84 @@
 version: "3"
 
 services:
-    web:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.1
-        command: ["/start.sh"]
+    server-1:
+        image: rtukpe/bench:v2
+        command: ["./cmd", "server", "--config", "convoy.json", "--port", "3000"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
+        networks:
+            backendCluster:
+                ipv4_address: 172.16.0.12
         ports:
-          - "5005:5005"
-        depends_on:
-            - postgres
-            - redis_server
-            - typesense
+            - "3000:3000"
 
-    scheduler:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.1
+    server-2:
+        image: rtukpe/bench:v2
+        command: ["./cmd", "server", "--config", "convoy.json", "--port", "3001"]
+        volumes:
+            - ./convoy.json:/convoy.json
+        restart: on-failure
+        networks:
+            backendCluster:
+                ipv4_address: 172.16.0.11
+        ports:
+            - "3001:3001"
+
+    schedule:
+        image: rtukpe/bench:v2
         command: ["./cmd", "scheduler", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
-        depends_on:
-            - postgres
-            - redis_server
-            - typesense
+        networks:
+            - backendCluster
 
     worker:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.1
+        image: rtukpe/bench:v2
         command: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
-        depends_on:
-            - postgres
-            - redis_server
-            - typesense
+        networks:
+            - backendCluster
 
     stream:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.1
+        image: rtukpe/bench:v2
         command: ["./cmd", "stream", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
-        depends_on:
-            - postgres
-            - redis_server
+        networks:
+            - backendCluster
 
     ingest:
-      image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.1
-      command: ["./cmd", "ingest", "--config", "convoy.json"]
-      volumes:
-        - ./convoy.json:/convoy.json
-      restart: on-failure
-      depends_on:
-        - postgres
-        - redis_server
-        - typesense
-
-    postgres:
-      image: postgres:15.2-alpine
-      restart: unless-stopped
-      environment:
-        POSTGRES_DB: convoy
-        POSTGRES_USER: convoy
-        POSTGRES_PASSWORD: convoy
-        PGDATA: /data/postgres
-      volumes:
-        - ./postgres_data:/data/postgres
-
-    redis_server:
-        image: redis:alpine
-        restart: always
+        image: rtukpe/bench:v2
+        command: ["./cmd", "ingest", "--config", "convoy.json"]
         volumes:
-          - ./redis_data:/data
+            - ./convoy.json:/convoy.json
+        restart: on-failure
+        networks:
+            - backendCluster
 
-    typesense:
-        image: typesense/typesense:0.24.0
-        restart: always
-        environment:
-            TYPESENSE_DATA_DIR: /data/typesense
-            TYPESENSE_ENABLE_CORS: "true"
-            TYPESENSE_API_KEY: "convoy"
+    caddy:
+        image: caddy
+        restart: on-failure
+        ports:
+            - "80:80"
+            - "443:443"
         volumes:
-            - ./typesense_data:/data/typesense
+            - ./caddyfile:/etc/caddy/Caddyfile
+        depends_on:
+            - server-1
+            - server-2
+        networks:
+            - backendCluster
+
+networks:
+    backendCluster:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 172.16.0.0/24
 

@@ -2,7 +2,9 @@ package portalapi
 
 import (
 	"errors"
+	"github.com/frain-dev/convoy"
 	"net/http"
+	"time"
 
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/config"
@@ -111,10 +113,25 @@ func (a *PortalLinkHandler) retrieveProject(r *http.Request) (*datastore.Project
 		return project, err
 	}
 
+	projectCacheKey := convoy.ProjectsCacheKey.Get(pLink.ProjectID).String()
+	err = a.A.Cache.Get(r.Context(), projectCacheKey, &project)
+	if err != nil {
+		return nil, err
+	}
+
+	if project != nil {
+		return project, nil
+	}
+
 	projectRepo := postgres.NewProjectRepo(a.A.DB)
 	project, err = projectRepo.FetchProjectByID(r.Context(), pLink.ProjectID)
 	if err != nil {
-		return project, err
+		return nil, err
+	}
+
+	err = a.A.Cache.Set(r.Context(), projectCacheKey, &project, time.Minute*5)
+	if err != nil {
+		return nil, err
 	}
 
 	return project, nil

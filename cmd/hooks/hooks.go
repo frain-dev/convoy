@@ -81,7 +81,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			string(convoy.CreateEventQueue): 3,
 			string(convoy.ScheduleQueue):    1,
 			string(convoy.DefaultQueue):     1,
-			string(convoy.StreamQueue):      1,
 			string(convoy.MetaEventQueue):   1,
 		}
 
