@@ -1,3 +1,14 @@
+## 23.09.1
+
+- [Feature] Add event payload transform functionality #1755 #1761
+- [Enhancement] Add tail mode for events and event deliveries #1753
+- [Enhancement] Expose rate limiting for endpoints #1754
+- [Bugfix] Use the different queue instance when starting stream server #1769
+- [Bugfix] Return an appropriate error instead of nil the process event delivery #1756
+- [Bugfix] Add permissions when creating and revoking API keys #1762
+- [Bugfix] Add QueueUrl nil check in SQS handler #1763
+- [Bugfix] Update endpoints migration query #1768
+
 ## 23.08.2
 
 - [Feature] Postgres Full Text Search Reimplementation #1734 #1751 #1750 
@@ -5,9 +16,9 @@
 - [Enhancement] Paused events polling when searching and filtering on the Event Log #1744
 - [Enhancement] Added an edit endpoint button in event delivery page #1738
 - [Enhancement] Added a tooltip for Retry and Force Retry buttons #1741
-- [Fix] Fixed a bug where the subscription filter editor UI was unresponsive #1747
-- [Fix] Fixed a bug where the Batch Replay button on the events log would not replay events #1740
-- [Fix] Fixed a bug in the process event delivery handler that caused events to stay in the `Scheduled` state #1756
+- [Bugfix] Fixed a bug where the subscription filter editor UI was unresponsive #1747
+- [Bugfix] Fixed a bug where the Batch Replay button on the events log would not replay events #1740
+- [Bugfix] Fixed a bug in the process event delivery handler that caused events to stay in the `Scheduled` state #1756
 
 ## 23.08.1
 
