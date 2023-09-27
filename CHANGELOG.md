@@ -1,3 +1,14 @@
+## 23.09.1
+
+- [Feature] Add event payload transform functionality #1755 #1761
+- [Enhancement] Add tail mode for events and event deliveries #1753
+- [Enhancement] Expose rate limiting for endpoints #1754
+- [Fix] Use the different queue instance when starting stream server #1769
+- [Fix] Return an appropriate error instead of nil the process event delivery #1756
+- [Fix] Add permissions when creating and revoking API keys #1762
+- [Fix] Add QueueUrl nil check in SQS handler #1763
+- [Fix] Update endpoints migration query #1768
+
 ## 23.08.2
 
 - [Feature] Postgres Full Text Search Reimplementation #1734 #1751 #1750 
