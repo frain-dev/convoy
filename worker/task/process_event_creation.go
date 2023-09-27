@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/util"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -117,14 +117,14 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			raw := event.Raw
 			data := event.Data
 
-			if !util.IsStringEmpty(s.Function) {
+			if s.Function.Ptr() != nil && !util.IsStringEmpty(s.Function.String) {
 				var payload map[string]interface{}
 				err = json.Unmarshal(event.Data, &payload)
 				if err != nil {
 					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}
 
-				mutated, _, err := subRepo.TransformPayload(ctx, s.Function, payload)
+				mutated, _, err := subRepo.TransformPayload(ctx, s.Function.String, payload)
 				if err != nil {
 					return &EndpointError{Err: err, delay: 10 * time.Second}
 				}
