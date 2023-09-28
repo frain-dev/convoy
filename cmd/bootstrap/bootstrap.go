@@ -86,13 +86,11 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 				}
 
 				fmt.Println(string(data))
-				break
 			case "human":
 				fmt.Printf("Email: %s\n", jsUser.Email)
 				fmt.Printf("Password: %s\n", jsUser.Password)
 				fmt.Printf("First Name: %s\n", jsUser.FirstName)
 				fmt.Printf("Last Name: %s\n", jsUser.LastName)
-				break
 			default:
 				return errors.New("unsupported output format")
 			}
