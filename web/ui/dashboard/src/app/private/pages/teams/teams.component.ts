@@ -140,10 +140,7 @@ export class TeamsComponent implements OnInit {
 			const response = await this.teamService.inviteUserToOrganisation(this.inviteUserForm.value);
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.inviteLink = `${location.origin}/accept-invite?invite-token=${response.data.token.token}`;
-			// this.inviteUserForm.reset();
 			this.invitingUser = false;
-			// this.teamsDialog.nativeElement.close();
-			// this.router.navigate(['/team'], { queryParams: { inviteType: 'pending' } });
 		} catch {
 			this.invitingUser = false;
 		}
