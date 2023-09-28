@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"gopkg.in/guregu/null.v4"
 	"net/http"
 	"time"
 
@@ -71,7 +72,7 @@ func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		Type:       datastore.SubscriptionTypeAPI,
 		SourceID:   s.NewSubscription.SourceID,
 		EndpointID: s.NewSubscription.EndpointID,
-		Function:   s.NewSubscription.Function,
+		Function:   null.StringFrom(s.NewSubscription.Function),
 
 		RetryConfig:     retryConfig,
 		AlertConfig:     s.NewSubscription.AlertConfig.Transform(),
