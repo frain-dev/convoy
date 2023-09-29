@@ -1,3 +1,8 @@
+## 23.9.2
+
+- [Enhancement] Show invite url on teams invite page
+- [Bugfix] Handle nullable 'Function' field in worker handler
+
 ## 23.09.1
 
 - [Feature] Add event payload transform functionality #1755 #1761
