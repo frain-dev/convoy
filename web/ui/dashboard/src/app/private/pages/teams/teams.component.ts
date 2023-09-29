@@ -8,6 +8,7 @@ import { TeamsService } from './teams.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { PrivateService } from '../../private.service';
 import { TEAM } from 'src/app/models/organisation.model';
+import { environment } from 'src/environments/environment';
 
 @Component({
 	selector: 'app-teams',
@@ -62,7 +63,7 @@ export class TeamsComponent implements OnInit {
 	userDetails = this.privateService.getUserProfile;
 	action: 'create' | 'update' = 'create';
 	private rbacService = inject(RbacService);
-
+	inviteLink!: string;
 	constructor(private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private teamService: TeamsService, private formBuilder: FormBuilder, private privateService: PrivateService) {}
 
 	async ngOnInit() {
@@ -138,10 +139,8 @@ export class TeamsComponent implements OnInit {
 		try {
 			const response = await this.teamService.inviteUserToOrganisation(this.inviteUserForm.value);
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.inviteUserForm.reset();
+			this.inviteLink = `${location.origin}/accept-invite?invite-token=${response.data.token.token}`;
 			this.invitingUser = false;
-			this.teamsDialog.nativeElement.close();
-			this.router.navigate(['/team'], { queryParams: { inviteType: 'pending' } });
 		} catch {
 			this.invitingUser = false;
 		}
@@ -185,7 +184,6 @@ export class TeamsComponent implements OnInit {
 			this.cancelingInvite = false;
 		}
 	}
-
 
 	showUpdateMemberModal(member: TEAM) {
 		this.selectedMember = member;
