@@ -2,7 +2,7 @@ version: "3"
 
 services:
     web:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.2
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.9.2
         command: ["/start.sh"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -21,7 +21,7 @@ services:
             - typesense
 
     scheduler:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.2
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.9.2
         command: ["./cmd", "scheduler", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -31,7 +31,7 @@ services:
             condition: service_healthy
 
     worker:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.2
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.9.2
         command: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -41,7 +41,7 @@ services:
             condition: service_healthy
 
     stream:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.2
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.9.2
         command: ["./cmd", "stream", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -51,7 +51,7 @@ services:
             condition: service_healthy
 
     ingest:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.08.2
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.9.2
         command: ["./cmd", "ingest", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
