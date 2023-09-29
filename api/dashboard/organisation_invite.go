@@ -52,14 +52,15 @@ func (a *DashboardHandler) InviteUserToOrganisation(w http.ResponseWriter, r *ht
 		Organisation: org,
 	}
 
-	_, err = inviteService.Run(r.Context())
+	iv, err := inviteService.Run(r.Context())
 	if err != nil {
 		log.FromContext(r.Context()).Error(err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("invite created successfully", nil, http.StatusCreated))
+	res := models.UserInviteTokenResponse{Token: iv, User: user}
+	_ = render.Render(w, r, util.NewServerResponse("invite created successfully", res, http.StatusCreated))
 }
 
 func (a *DashboardHandler) GetPendingOrganisationInvites(w http.ResponseWriter, r *http.Request) {

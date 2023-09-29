@@ -19,6 +19,7 @@ import { PermissionDirective } from '../../components/permission/permission.dire
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { EnterpriseDirective } from '../../components/enterprise/enterprise.directive';
 import { RolePipe } from 'src/app/pipes/role/role.pipe';
+import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 
 const routes: Routes = [
 	{ path: '', component: TeamsComponent },
@@ -56,7 +57,8 @@ const routes: Routes = [
 		SelectComponent,
 		EnterpriseDirective,
 		RolePipe,
-        DialogDirective
+        DialogDirective,
+        CopyButtonComponent
 	]
 })
 export class TeamsModule {}
