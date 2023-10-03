@@ -16,7 +16,7 @@ import (
 )
 
 func createOrganisationMemberService(a *DashboardHandler) *services.OrganisationMemberService {
-	orgMemberRepo := postgres.NewOrgMemberRepo(a.A.DB)
+	orgMemberRepo := postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache)
 
 	return services.NewOrganisationMemberService(orgMemberRepo)
 }
@@ -31,7 +31,7 @@ func (a *DashboardHandler) GetOrganisationMembers(w http.ResponseWriter, r *http
 
 	userID := r.URL.Query().Get("userID")
 
-	members, paginationData, err := postgres.NewOrgMemberRepo(a.A.DB).LoadOrganisationMembersPaged(r.Context(), org.UID, userID, pageable)
+	members, paginationData, err := postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache).LoadOrganisationMembersPaged(r.Context(), org.UID, userID, pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch organisation members")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -50,7 +50,7 @@ func (a *DashboardHandler) GetOrganisationMember(w http.ResponseWriter, r *http.
 		return
 	}
 
-	member, err := postgres.NewOrgMemberRepo(a.A.DB).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
+	member, err := postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation member by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -80,7 +80,7 @@ func (a *DashboardHandler) UpdateOrganisationMember(w http.ResponseWriter, r *ht
 		return
 	}
 
-	member, err := postgres.NewOrgMemberRepo(a.A.DB).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
+	member, err := postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation member by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

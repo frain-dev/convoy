@@ -37,22 +37,9 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 
 		var project *datastore.Project
 
-		projectCacheKey := convoy.ProjectsCacheKey.Get(dynamicEvent.Event.ProjectID).String()
-		err = cache.Get(ctx, projectCacheKey, &project)
+		project, err = projectRepo.FetchProjectByID(ctx, dynamicEvent.Event.ProjectID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: 10 * time.Second}
-		}
-
-		if project == nil {
-			project, err = projectRepo.FetchProjectByID(ctx, dynamicEvent.Event.ProjectID)
-			if err != nil {
-				return &EndpointError{Err: err, delay: 10 * time.Second}
-			}
-
-			err = cache.Set(ctx, projectCacheKey, project, 10*time.Minute)
-			if err != nil {
-				return &EndpointError{Err: err, delay: 10 * time.Second}
-			}
 		}
 
 		endpoint, err := findEndpoint(ctx, project, endpointRepo, &dynamicEvent.Endpoint)
@@ -206,8 +193,8 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo datastore.EndpointRepository, newEndpoint *models.DynamicEndpoint) (*datastore.Endpoint, error) {
 	endpoint, err := endpointRepo.FindEndpointByTargetURL(ctx, project.UID, newEndpoint.URL)
 
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		if !util.IsStringEmpty(newEndpoint.Description) {
 			endpoint.Description = newEndpoint.Description
 		}
@@ -263,8 +250,7 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 			log.WithError(err).Error("failed to update endpoint")
 			return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 		}
-
-	case datastore.ErrEndpointNotFound:
+	case errors.Is(err, datastore.ErrEndpointNotFound):
 		if newEndpoint.RateLimit == 0 {
 			newEndpoint.RateLimit = convoy.RATE_LIMIT
 		}

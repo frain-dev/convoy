@@ -41,7 +41,7 @@ func (a *PortalLinkHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.R
 	}
 
 	ce := services.CreateEventService{
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		Queue:        a.A.Queue,
 		NewMessage:   &newMessage,
 		Project:      project,
@@ -66,7 +66,7 @@ func (a *PortalLinkHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.R
 	}
 
 	rs := services.ReplayEventService{
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		Queue:        a.A.Queue,
 		Event:        event,
 	}
@@ -98,9 +98,9 @@ func (a *PortalLinkHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Req
 	data.Filter.Project = project
 
 	bs := services.BatchReplayEventService{
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		Queue:        a.A.Queue,
-		EventRepo:    postgres.NewEventRepo(a.A.DB),
+		EventRepo:    postgres.NewEventRepo(a.A.DB, a.A.Cache),
 		Filter:       data.Filter,
 	}
 
@@ -127,7 +127,7 @@ func (a *PortalLinkHandler) CountAffectedEvents(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	count, err := postgres.NewEventRepo(a.A.DB).CountEvents(r.Context(), project.UID, data.Filter)
+	count, err := postgres.NewEventRepo(a.A.DB, a.A.Cache).CountEvents(r.Context(), project.UID, data.Filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event", http.StatusBadRequest))
@@ -173,8 +173,8 @@ func (a *PortalLinkHandler) ResendEventDelivery(w http.ResponseWriter, r *http.R
 	}
 
 	fr := services.RetryEventDeliveryService{
-		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.A.DB),
-		EndpointRepo:      postgres.NewEndpointRepo(a.A.DB),
+		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache),
+		EndpointRepo:      postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		Queue:             a.A.Queue,
 		EventDelivery:     eventDelivery,
 		Project:           project,
@@ -220,10 +220,10 @@ func (a *PortalLinkHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *ht
 	data.Filter.Project = project
 
 	br := services.BatchRetryEventDeliveryService{
-		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.A.DB),
-		EndpointRepo:      postgres.NewEndpointRepo(a.A.DB),
+		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache),
+		EndpointRepo:      postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		Queue:             a.A.Queue,
-		EventRepo:         postgres.NewEventRepo(a.A.DB),
+		EventRepo:         postgres.NewEventRepo(a.A.DB, a.A.Cache),
 		Filter:            data.Filter,
 	}
 
@@ -278,7 +278,7 @@ func (a *PortalLinkHandler) CountAffectedEventDeliveries(w http.ResponseWriter, 
 	}
 
 	f := data.Filter
-	count, err := postgres.NewEventDeliveryRepo(a.A.DB).CountEventDeliveries(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams)
+	count, err := postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache).CountEventDeliveries(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event deliveries")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusBadRequest))
@@ -304,8 +304,8 @@ func (a *PortalLinkHandler) ForceResendEventDeliveries(w http.ResponseWriter, r 
 	}
 
 	fr := services.ForceResendEventDeliveriesService{
-		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.A.DB),
-		EndpointRepo:      postgres.NewEndpointRepo(a.A.DB),
+		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache),
+		EndpointRepo:      postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		Queue:             a.A.Queue,
 		IDs:               eventDeliveryIDs.IDs,
 		Project:           project,
@@ -368,7 +368,7 @@ func (a *PortalLinkHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reques
 		}
 
 		se := services.SearchEventService{
-			EventRepo: postgres.NewEventRepo(a.A.DB),
+			EventRepo: postgres.NewEventRepo(a.A.DB, a.A.Cache),
 			Searcher:  searchBackend,
 			Filter:    data.Filter,
 		}
@@ -388,7 +388,7 @@ func (a *PortalLinkHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	m, paginationData, err := postgres.NewEventRepo(a.A.DB).LoadEventsPaged(r.Context(), project.UID, data.Filter)
+	m, paginationData, err := postgres.NewEventRepo(a.A.DB, a.A.Cache).LoadEventsPaged(r.Context(), project.UID, data.Filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch events")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
@@ -437,7 +437,7 @@ func (a *PortalLinkHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *ht
 
 	data.Filter.EndpointIDs = endpointIDs
 	f := data.Filter
-	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey)
+	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch event deliveries")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
@@ -458,7 +458,7 @@ func (a *PortalLinkHandler) retrieveEvent(r *http.Request) (*datastore.Event, er
 	}
 
 	eventID := chi.URLParam(r, "eventID")
-	eventRepo := postgres.NewEventRepo(a.A.DB)
+	eventRepo := postgres.NewEventRepo(a.A.DB, a.A.Cache)
 	return eventRepo.FindEventByID(r.Context(), project.UID, eventID)
 }
 
@@ -469,6 +469,6 @@ func (a *PortalLinkHandler) retrieveEventDelivery(r *http.Request) (*datastore.E
 	}
 
 	eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache)
 	return eventDeliveryRepo.FindEventDeliveryByID(r.Context(), project.UID, eventDeliveryID)
 }

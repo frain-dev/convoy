@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/cache"
 
 	"github.com/frain-dev/convoy/auth"
 
@@ -26,7 +27,7 @@ const (
 		role_type= $3,
 		role_project=$4,
 		role_endpoint=$5,
-		updated_at = now()
+		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL ;
 	`
 
@@ -36,9 +37,9 @@ const (
 		name,
 	    key_type,
 	    mask_id,
-	    COALESCE(role_type,'') as "role.type",
-	    COALESCE(role_project,'') as "role.project",
-	    COALESCE(role_endpoint,'') as "role.endpoint",
+	    COALESCE(role_type,'') AS "role.type",
+	    COALESCE(role_project,'') AS "role.project",
+	    COALESCE(role_endpoint,'') AS "role.endpoint",
 	    hash,
 	    salt,
 	    COALESCE(user_id, '') AS user_id,
@@ -46,12 +47,12 @@ const (
 	    updated_at,
 	    expires_at
 	FROM convoy.api_keys
-	WHERE %s = $1 AND deleted_at IS NULL
+	WHERE deleted_at IS NULL
 	`
 
 	deleteAPIKeys = `
 	UPDATE convoy.api_keys SET
-	deleted_at = now()
+	deleted_at = NOW()
 	WHERE id IN (?);
 	`
 
@@ -61,9 +62,9 @@ const (
 		name,
 	    key_type,
 	    mask_id,
-	    COALESCE(role_type,'') as "role.type",
-	    COALESCE(role_project,'') as "role.project",
-	    COALESCE(role_endpoint,'') as "role.endpoint",
+	    COALESCE(role_type,'') AS "role.type",
+	    COALESCE(role_project,'') AS "role.project",
+	    COALESCE(role_endpoint,'') AS "role.endpoint",
 	    hash,
 	    salt,
 	    COALESCE(user_id, '') AS user_id,
@@ -76,25 +77,25 @@ const (
 	baseApiKeysFilter = `
 	AND (role_project = :project_id OR :project_id = '')
 	AND (role_endpoint = :endpoint_id OR :endpoint_id = '')
-	AND (user_id = :user_id OR :user_id = '') 
+	AND (user_id = :user_id OR :user_id = '')
 	AND (key_type = :key_type OR :key_type = '')`
 
 	baseFetchAPIKeysPagedForward = `
-	%s 
-	%s 
-	AND id <= :cursor 
+	%s
+	%s
+	AND id <= :cursor
 	GROUP BY id
-	ORDER BY id DESC 
+	ORDER BY id DESC
 	LIMIT :limit
 	`
 
 	baseFetchAPIKeysPagedBackward = `
-	WITH api_keys AS (  
-		%s 
-		%s 
-		AND id >= :cursor 
+	WITH api_keys AS (
+		%s
+		%s
+		AND id >= :cursor
 		GROUP BY id
-		ORDER BY id ASC 
+		ORDER BY id ASC
 		LIMIT :limit
 	)
 
@@ -102,13 +103,13 @@ const (
 	`
 
 	countPrevAPIKeys = `
-	SELECT count(distinct(id)) as count
+	SELECT COUNT(DISTINCT(id)) AS count
 	FROM convoy.api_keys s
 	WHERE s.deleted_at IS NULL
 	%s
-	AND id > :cursor 
-	GROUP BY id 
-	ORDER BY id 
+	AND id > :cursor
+	GROUP BY id
+	ORDER BY id
 	DESC LIMIT 1`
 )
 
@@ -119,11 +120,12 @@ var (
 )
 
 type apiKeyRepo struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	cache cache.Cache
 }
 
-func NewAPIKeyRepo(db database.Database) datastore.APIKeyRepository {
-	return &apiKeyRepo{db: db.GetDB()}
+func NewAPIKeyRepo(db database.Database, cache cache.Cache) datastore.APIKeyRepository {
+	return &apiKeyRepo{db: db.GetDB(), cache: cache}
 }
 
 func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) error {
@@ -209,7 +211,7 @@ func (a *apiKeyRepo) UpdateAPIKey(ctx context.Context, key *datastore.APIKey) er
 
 func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, id string) (*datastore.APIKey, error) {
 	apiKey := &datastore.APIKey{}
-	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "id"), id).StructScan(apiKey)
+	err := a.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1;", fetchAPIKey), id).StructScan(apiKey)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
@@ -222,7 +224,7 @@ func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, id string) (*datastore.
 
 func (a *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
 	apiKey := &datastore.APIKey{}
-	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "mask_id"), maskID).StructScan(apiKey)
+	err := a.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND mask_id = $1;", fetchAPIKey), maskID).StructScan(apiKey)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
@@ -235,7 +237,7 @@ func (a *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*da
 
 func (a *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
 	apiKey := &datastore.APIKey{}
-	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "hash"), hash).StructScan(apiKey)
+	err := a.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND hash = $1;", fetchAPIKey), hash).StructScan(apiKey)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound
@@ -374,7 +376,7 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 
 func (a *apiKeyRepo) FindAPIKeyByProjectID(ctx context.Context, projectID string) (*datastore.APIKey, error) {
 	apiKey := &datastore.APIKey{}
-	err := a.db.QueryRowxContext(ctx, fmt.Sprintf(fetchAPIKey, "role_project"), projectID).StructScan(apiKey)
+	err := a.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND role_project = $1;", fetchAPIKey), projectID).StructScan(apiKey)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrAPIKeyNotFound

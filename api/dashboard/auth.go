@@ -29,16 +29,16 @@ func (a *DashboardHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	config, err := config.Get()
+	configuration, err := config.Get()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	lu := services.LoginUserService{
-		UserRepo: postgres.NewUserRepo(a.A.DB),
+		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
 		Cache:    a.A.Cache,
-		JWT:      jwt.NewJwt(&config.Auth.Jwt, a.A.Cache),
+		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, a.A.Cache),
 		Data:     &newUser,
 	}
 
@@ -68,15 +68,15 @@ func (a *DashboardHandler) RefreshToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	config, err := config.Get()
+	configuration, err := config.Get()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	rf := services.RefreshTokenService{
-		UserRepo: postgres.NewUserRepo(a.A.DB),
-		JWT:      jwt.NewJwt(&config.Auth.Jwt, a.A.Cache),
+		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
+		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, a.A.Cache),
 		Data:     &refreshToken,
 	}
 
@@ -96,15 +96,15 @@ func (a *DashboardHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	config, err := config.Get()
+	configuration, err := config.Get()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	lg := services.LogoutUserService{
-		UserRepo: postgres.NewUserRepo(a.A.DB),
-		JWT:      jwt.NewJwt(&config.Auth.Jwt, a.A.Cache),
+		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
+		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, a.A.Cache),
 		Token:    auth.Token,
 	}
 

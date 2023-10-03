@@ -11,7 +11,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/oklog/ulid/v2"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
@@ -189,12 +188,6 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 	err := ps.projectRepo.UpdateProject(ctx, project)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to to update project")
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
-	projectCacheKey := convoy.ProjectsCacheKey.Get(project.UID).String()
-	err = ps.cache.Set(ctx, projectCacheKey, &project, time.Minute*5)
-	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 

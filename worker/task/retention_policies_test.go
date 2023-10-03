@@ -19,7 +19,6 @@ import (
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
-	noopsearcher "github.com/frain-dev/convoy/internal/pkg/searcher/noop"
 	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy/api/testdb"
@@ -251,12 +250,11 @@ func getDB() database.Database {
 
 func buildApplication() *applicationHandler {
 	db := getDB()
-	searcher := noopsearcher.NewNoopSearcher()
 
-	projectRepo := postgres.NewProjectRepo(db)
-	eventRepo := postgres.NewEventRepo(db)
+	projectRepo := postgres.NewProjectRepo(db, nil)
+	eventRepo := postgres.NewEventRepo(db, nil)
 	configRepo := postgres.NewConfigRepo(db)
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db, nil)
 	exportRepo := postgres.NewExportRepo(db)
 
 	app := &applicationHandler{
@@ -264,7 +262,6 @@ func buildApplication() *applicationHandler {
 		eventRepo:         eventRepo,
 		configRepo:        configRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
-		searcher:          searcher,
 		database:          db,
 		exportRepo:        exportRepo,
 	}
@@ -298,7 +295,7 @@ func seedEvent(db database.Database, endpointID string, projectID string, uid, e
 	}
 
 	// Seed Data.
-	eventRepo := postgres.NewEventRepo(db)
+	eventRepo := postgres.NewEventRepo(db, nil)
 	err := eventRepo.CreateEvent(context.TODO(), ev)
 	if err != nil {
 		return nil, err
@@ -339,7 +336,7 @@ func seedEventDelivery(db database.Database, eventID string, endpointID string, 
 	}
 
 	// Seed Data.
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db, nil)
 	err := eventDeliveryRepo.CreateEventDelivery(context.TODO(), eventDelivery)
 	if err != nil {
 		return nil, err

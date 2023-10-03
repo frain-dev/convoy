@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
@@ -17,10 +18,10 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-func MonitorTwitterSources(db database.Database, queue queue.Queuer) func(context.Context, *asynq.Task) error {
-	sourceRepo := postgres.NewSourceRepo(db)
-	subRepo := postgres.NewSubscriptionRepo(db)
-	endpointRepo := postgres.NewEndpointRepo(db)
+func MonitorTwitterSources(db database.Database, cache cache.Cache, queue queue.Queuer) func(context.Context, *asynq.Task) error {
+	sourceRepo := postgres.NewSourceRepo(db, cache)
+	subRepo := postgres.NewSubscriptionRepo(db, cache)
+	endpointRepo := postgres.NewEndpointRepo(db, cache)
 
 	return func(ctx context.Context, t *asynq.Task) error {
 		p := datastore.Pageable{PerPage: 100, Direction: datastore.Next, NextCursor: datastore.DefaultCursor}

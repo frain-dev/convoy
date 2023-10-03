@@ -63,7 +63,7 @@ func Test_CreateUser(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			userRepo := NewUserRepo(db)
+			userRepo := NewUserRepo(db, nil)
 
 			for i, user := range tc.users {
 				if i == 0 {
@@ -91,7 +91,7 @@ func Test_FindUserByEmail(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	userRepo := NewUserRepo(db)
+	userRepo := NewUserRepo(db, nil)
 
 	user := generateUser(t)
 
@@ -123,7 +123,7 @@ func Test_FindUserByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	userRepo := NewUserRepo(db)
+	userRepo := NewUserRepo(db, nil)
 
 	user := generateUser(t)
 
@@ -154,7 +154,7 @@ func Test_FindUserByToken(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	userRepo := NewUserRepo(db)
+	userRepo := NewUserRepo(db, nil)
 
 	user := generateUser(t)
 	token := "fd7fidyfhdjhfdjhfjdh"
@@ -184,7 +184,7 @@ func Test_FindUserByEmailVerificationToken(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	userRepo := NewUserRepo(db)
+	userRepo := NewUserRepo(db, nil)
 
 	user := generateUser(t)
 	token := "fd7fidyfhdjhfdjhfjdh"
@@ -260,7 +260,7 @@ func Test_LoadUsersPaged(t *testing.T) {
 			db, closeFn := getDB(t)
 			defer closeFn()
 
-			userRepo := NewUserRepo(db)
+			userRepo := NewUserRepo(db, nil)
 
 			for i := 0; i < tc.count; i++ {
 				user := &datastore.User{
@@ -284,7 +284,7 @@ func Test_UpdateUser(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	userRepo := NewUserRepo(db)
+	userRepo := NewUserRepo(db, nil)
 	user := generateUser(t)
 
 	require.NoError(t, userRepo.CreateUser(context.Background(), user))

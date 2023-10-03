@@ -19,7 +19,7 @@ func Test_CreateDevice(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	deviceRepo := NewDeviceRepo(db)
+	deviceRepo := NewDeviceRepo(db, nil)
 	device := generateDevice(t, db)
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
@@ -38,7 +38,7 @@ func Test_UpdateDevice(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	deviceRepo := NewDeviceRepo(db)
+	deviceRepo := NewDeviceRepo(db, nil)
 	device := generateDevice(t, db)
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
@@ -61,7 +61,7 @@ func Test_UpdateDeviceLastSeen(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	deviceRepo := NewDeviceRepo(db)
+	deviceRepo := NewDeviceRepo(db, nil)
 	device := generateDevice(t, db)
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
@@ -84,7 +84,7 @@ func Test_DeleteDevice(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	deviceRepo := NewDeviceRepo(db)
+	deviceRepo := NewDeviceRepo(db, nil)
 	device := generateDevice(t, db)
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
@@ -100,7 +100,7 @@ func Test_FetchDeviceByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	deviceRepo := NewDeviceRepo(db)
+	deviceRepo := NewDeviceRepo(db, nil)
 	device := generateDevice(t, db)
 
 	require.NoError(t, deviceRepo.CreateDevice(context.Background(), device))
@@ -176,7 +176,7 @@ func Test_LoadDevicesPaged(t *testing.T) {
 			db, closeFn := getDB(t)
 			defer closeFn()
 
-			deviceRepo := NewDeviceRepo(db)
+			deviceRepo := NewDeviceRepo(db, nil)
 			project := seedProject(t, db)
 
 			for i := 0; i < tc.count; i++ {

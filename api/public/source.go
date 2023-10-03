@@ -48,7 +48,7 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cs := services.CreateSourceService{
-		SourceRepo: postgres.NewSourceRepo(a.A.DB),
+		SourceRepo: postgres.NewSourceRepo(a.A.DB, a.A.Cache),
 		Cache:      a.A.Cache,
 		NewSource:  &newSource,
 		Project:    project,
@@ -60,7 +60,7 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := postgres.NewOrgRepo(a.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
+	org, err := postgres.NewOrgRepo(a.A.DB, a.A.Cache).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -98,7 +98,7 @@ func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	source, err := postgres.NewSourceRepo(a.A.DB).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
+	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		if err == datastore.ErrSourceNotFound {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
@@ -109,7 +109,7 @@ func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := postgres.NewOrgRepo(a.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
+	org, err := postgres.NewOrgRepo(a.A.DB, a.A.Cache).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -160,7 +160,7 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	source, err := postgres.NewSourceRepo(a.A.DB).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
+	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		if err == datastore.ErrSourceNotFound {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
@@ -172,7 +172,7 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	us := services.UpdateSourceService{
-		SourceRepo:   postgres.NewSourceRepo(a.A.DB),
+		SourceRepo:   postgres.NewSourceRepo(a.A.DB, a.A.Cache),
 		Cache:        a.A.Cache,
 		Project:      project,
 		SourceUpdate: &sourceUpdate,
@@ -185,7 +185,7 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := postgres.NewOrgRepo(a.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
+	org, err := postgres.NewOrgRepo(a.A.DB, a.A.Cache).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -223,7 +223,7 @@ func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sourceRepo := postgres.NewSourceRepo(a.A.DB)
+	sourceRepo := postgres.NewSourceRepo(a.A.DB, a.A.Cache)
 
 	source, err := sourceRepo.FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
@@ -275,7 +275,7 @@ func (a *PublicHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request)
 	}
 
 	data := q.Transform(r)
-	sources, paginationData, err := postgres.NewSourceRepo(a.A.DB).LoadSourcesPaged(r.Context(), project.UID, data.SourceFilter, data.Pageable)
+	sources, paginationData, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).LoadSourcesPaged(r.Context(), project.UID, data.SourceFilter, data.Pageable)
 	if err != nil {
 		log.WithError(err).Error("an error occurred while fetching sources")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching sources", http.StatusBadRequest))

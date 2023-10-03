@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"time"
 
@@ -183,11 +184,12 @@ const (
 )
 
 type eventRepo struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	cache cache.Cache
 }
 
-func NewEventRepo(db database.Database) datastore.EventRepository {
-	return &eventRepo{db: db.GetDB()}
+func NewEventRepo(db database.Database, cache cache.Cache) datastore.EventRepository {
+	return &eventRepo{db: db.GetDB(), cache: cache}
 }
 
 func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) error {

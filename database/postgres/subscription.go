@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/cache"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/pkg/compare"
@@ -54,50 +55,50 @@ const (
 	s.project_id,
 	s.created_at, s.updated_at,
 
-	COALESCE(s.endpoint_id,'') as "endpoint_id",
-	COALESCE(s.device_id,'') as "device_id",
-	COALESCE(s.source_id,'') as "source_id",
+	COALESCE(s.endpoint_id,'') AS "endpoint_id",
+	COALESCE(s.device_id,'') AS "device_id",
+	COALESCE(s.source_id,'') AS "source_id",
 
-	s.alert_config_count as "alert_config.count",
-	s.alert_config_threshold as "alert_config.threshold",
-	s.retry_config_type as "retry_config.type",
-	s.retry_config_duration as "retry_config.duration",
-	s.retry_config_retry_count as "retry_config.retry_count",
-	s.filter_config_event_types as "filter_config.event_types",
-	s.filter_config_filter_headers as "filter_config.filter.headers",
-	s.filter_config_filter_body as "filter_config.filter.body",
-	s.rate_limit_config_count as "rate_limit_config.count",
-	s.rate_limit_config_duration as "rate_limit_config.duration",
+	s.alert_config_count AS "alert_config.count",
+	s.alert_config_threshold AS "alert_config.threshold",
+	s.retry_config_type AS "retry_config.type",
+	s.retry_config_duration AS "retry_config.duration",
+	s.retry_config_retry_count AS "retry_config.retry_count",
+	s.filter_config_event_types AS "filter_config.event_types",
+	s.filter_config_filter_headers AS "filter_config.filter.headers",
+	s.filter_config_filter_body AS "filter_config.filter.body",
+	s.rate_limit_config_count AS "rate_limit_config.count",
+	s.rate_limit_config_duration AS "rate_limit_config.duration",
 
-	COALESCE(em.secrets,'[]') as "endpoint_metadata.secrets",
-	COALESCE(em.id,'') as "endpoint_metadata.id",
-	COALESCE(em.title,'') as "endpoint_metadata.title",
-	COALESCE(em.project_id,'') as "endpoint_metadata.project_id",
-	COALESCE(em.support_email,'') as "endpoint_metadata.support_email",
-	COALESCE(em.target_url,'') as "endpoint_metadata.target_url",
-	COALESCE(em.status, '') as "endpoint_metadata.status",
-	COALESCE(em.owner_id, '') as "endpoint_metadata.owner_id",
+	COALESCE(em.secrets,'[]') AS "endpoint_metadata.secrets",
+	COALESCE(em.id,'') AS "endpoint_metadata.id",
+	COALESCE(em.title,'') AS "endpoint_metadata.title",
+	COALESCE(em.project_id,'') AS "endpoint_metadata.project_id",
+	COALESCE(em.support_email,'') AS "endpoint_metadata.support_email",
+	COALESCE(em.target_url,'') AS "endpoint_metadata.target_url",
+	COALESCE(em.status, '') AS "endpoint_metadata.status",
+	COALESCE(em.owner_id, '') AS "endpoint_metadata.owner_id",
 
-	COALESCE(d.id,'') as "device_metadata.id",
-	COALESCE(d.status,'') as "device_metadata.status",
-	COALESCE(d.host_name,'') as "device_metadata.host_name",
+	COALESCE(d.id,'') AS "device_metadata.id",
+	COALESCE(d.status,'') AS "device_metadata.status",
+	COALESCE(d.host_name,'') AS "device_metadata.host_name",
 
-	COALESCE(sm.id,'') as "source_metadata.id",
-	COALESCE(sm.name,'') as "source_metadata.name",
-	COALESCE(sm.type,'') as "source_metadata.type",
-	COALESCE(sm.mask_id,'') as "source_metadata.mask_id",
-	COALESCE(sm.project_id,'') as "source_metadata.project_id",
- 	COALESCE(sm.is_disabled,false) as "source_metadata.is_disabled",
+	COALESCE(sm.id,'') AS "source_metadata.id",
+	COALESCE(sm.name,'') AS "source_metadata.name",
+	COALESCE(sm.type,'') AS "source_metadata.type",
+	COALESCE(sm.mask_id,'') AS "source_metadata.mask_id",
+	COALESCE(sm.project_id,'') AS "source_metadata.project_id",
+ 	COALESCE(sm.is_disabled,FALSE) AS "source_metadata.is_disabled",
 
-	COALESCE(sv.type, '') as "source_metadata.verifier.type",
-	COALESCE(sv.basic_username, '') as "source_metadata.verifier.basic_auth.username",
-	COALESCE(sv.basic_password, '') as "source_metadata.verifier.basic_auth.password",
-	COALESCE(sv.api_key_header_name, '') as "source_metadata.verifier.api_key.header_name",
-	COALESCE(sv.api_key_header_value, '') as "source_metadata.verifier.api_key.header_value",
-	COALESCE(sv.hmac_hash, '') as "source_metadata.verifier.hmac.hash",
-	COALESCE(sv.hmac_header, '') as "source_metadata.verifier.hmac.header",
-	COALESCE(sv.hmac_secret, '') as "source_metadata.verifier.hmac.secret",
-	COALESCE(sv.hmac_encoding, '') as "source_metadata.verifier.hmac.encoding"
+	COALESCE(sv.type, '') AS "source_metadata.verifier.type",
+	COALESCE(sv.basic_username, '') AS "source_metadata.verifier.basic_auth.username",
+	COALESCE(sv.basic_password, '') AS "source_metadata.verifier.basic_auth.password",
+	COALESCE(sv.api_key_header_name, '') AS "source_metadata.verifier.api_key.header_name",
+	COALESCE(sv.api_key_header_value, '') AS "source_metadata.verifier.api_key.header_value",
+	COALESCE(sv.hmac_hash, '') AS "source_metadata.verifier.hmac.hash",
+	COALESCE(sv.hmac_header, '') AS "source_metadata.verifier.hmac.header",
+	COALESCE(sv.hmac_secret, '') AS "source_metadata.verifier.hmac.secret",
+	COALESCE(sv.hmac_encoding, '') AS "source_metadata.verifier.hmac.encoding"
 
 	FROM convoy.subscriptions s
 	LEFT JOIN convoy.endpoints em ON s.endpoint_id = em.id
@@ -129,13 +130,13 @@ const (
 	`
 
 	countEndpointSubscriptions = `
-	SELECT count(distinct(s.id)) as count
+	SELECT COUNT(DISTINCT(s.id)) AS count
 	FROM convoy.subscriptions s
 	WHERE s.deleted_at IS NULL
 	AND s.project_id = $1 AND s.endpoint_id = $2`
 
 	countPrevSubscriptions = `
-	SELECT count(distinct(s.id)) as count
+	SELECT COUNT(DISTINCT(s.id)) AS count
 	FROM convoy.subscriptions s
 	WHERE s.deleted_at IS NULL
 	%s
@@ -149,24 +150,24 @@ const (
 	s.project_id,
 	s.created_at, s.updated_at,
 
-	COALESCE(s.endpoint_id,'') as "endpoint_id",
-	COALESCE(s.device_id,'') as "device_id",
-	COALESCE(s.source_id,'') as "source_id",
+	COALESCE(s.endpoint_id,'') AS "endpoint_id",
+	COALESCE(s.device_id,'') AS "device_id",
+	COALESCE(s.source_id,'') AS "source_id",
 
-	s.alert_config_count as "alert_config.count",
-	s.alert_config_threshold as "alert_config.threshold",
-	s.retry_config_type as "retry_config.type",
-	s.retry_config_duration as "retry_config.duration",
-	s.retry_config_retry_count as "retry_config.retry_count",
-	s.filter_config_event_types as "filter_config.event_types",
-	s.filter_config_filter_headers as "filter_config.filter.headers",
-	s.filter_config_filter_body as "filter_config.filter.body",
-	s.rate_limit_config_count as "rate_limit_config.count",
-	s.rate_limit_config_duration as "rate_limit_config.duration",
+	s.alert_config_count AS "alert_config.count",
+	s.alert_config_threshold AS "alert_config.threshold",
+	s.retry_config_type AS "retry_config.type",
+	s.retry_config_duration AS "retry_config.duration",
+	s.retry_config_retry_count AS "retry_config.retry_count",
+	s.filter_config_event_types AS "filter_config.event_types",
+	s.filter_config_filter_headers AS "filter_config.filter.headers",
+	s.filter_config_filter_body AS "filter_config.filter.body",
+	s.rate_limit_config_count AS "rate_limit_config.count",
+	s.rate_limit_config_duration AS "rate_limit_config.duration",
 
-	COALESCE(d.id,'') as "device_metadata.id",
-	COALESCE(d.status,'') as "device_metadata.status",
-	COALESCE(d.host_name,'') as "device_metadata.host_name"
+	COALESCE(d.id,'') AS "device_metadata.id",
+	COALESCE(d.status,'') AS "device_metadata.status",
+	COALESCE(d.host_name,'') AS "device_metadata.host_name"
 
 	FROM convoy.subscriptions s
 	LEFT JOIN convoy.devices d ON s.device_id = d.id
@@ -176,7 +177,7 @@ const (
 
 	deleteSubscriptions = `
 	UPDATE convoy.subscriptions SET
-	deleted_at = now()
+	deleted_at = NOW()
 	WHERE id = $1 AND project_id = $2;
 	`
 )
@@ -188,11 +189,12 @@ var (
 )
 
 type subscriptionRepo struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	cache cache.Cache
 }
 
-func NewSubscriptionRepo(db database.Database) datastore.SubscriptionRepository {
-	return &subscriptionRepo{db: db.GetDB()}
+func NewSubscriptionRepo(db database.Database, cache cache.Cache) datastore.SubscriptionRepository {
+	return &subscriptionRepo{db: db.GetDB(), cache: cache}
 }
 
 func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {

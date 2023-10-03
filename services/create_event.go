@@ -133,12 +133,12 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		return nil, &ServiceError{ErrMsg: "retry strategy not defined in configuration"}
 	}
 
-	createEvent := task.CreateEvent{
+	e := task.CreateEvent{
 		Event:              *event,
 		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
 	}
 
-	eventByte, err := msgpack.EncodeMsgPack(createEvent)
+	eventByte, err := msgpack.EncodeMsgPack(e)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -160,25 +160,9 @@ func (c *CreateEventService) findEndpoints(ctx context.Context, cache cache.Cach
 	var endpoints []datastore.Endpoint
 
 	if !util.IsStringEmpty(newMessage.EndpointID) {
-		var endpoint *datastore.Endpoint
-		endpointCacheKey := convoy.EndpointsCacheKey.Get(newMessage.EndpointID).String()
-		err := cache.Get(ctx, endpointCacheKey, &endpoint)
-		if err != nil {
-			return nil, err
-		}
-
-		if endpoint != nil {
-			return []datastore.Endpoint{*endpoint}, err
-		}
-
-		endpoint, err = c.EndpointRepo.FindEndpointByID(ctx, newMessage.EndpointID, project.UID)
+		endpoint, err := c.EndpointRepo.FindEndpointByID(ctx, newMessage.EndpointID, project.UID)
 		if err != nil {
 			return endpoints, err
-		}
-
-		err = cache.Set(ctx, endpointCacheKey, endpoint, 10*time.Minute)
-		if err != nil {
-			return nil, err
 		}
 
 		endpoints = append(endpoints, *endpoint)

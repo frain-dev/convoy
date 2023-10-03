@@ -2,10 +2,6 @@ package portalapi
 
 import (
 	"errors"
-	"github.com/frain-dev/convoy"
-	"net/http"
-	"time"
-
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -15,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"net/http"
 )
 
 type PortalLinkHandler struct {
@@ -97,7 +94,7 @@ func (a *PortalLinkHandler) retrieveOrganisation(r *http.Request) (*datastore.Or
 		return org, err
 	}
 
-	orgRepo := postgres.NewOrgRepo(a.A.DB)
+	orgRepo := postgres.NewOrgRepo(a.A.DB, a.A.Cache)
 	org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		return org, err
@@ -113,23 +110,8 @@ func (a *PortalLinkHandler) retrieveProject(r *http.Request) (*datastore.Project
 		return project, err
 	}
 
-	projectCacheKey := convoy.ProjectsCacheKey.Get(pLink.ProjectID).String()
-	err = a.A.Cache.Get(r.Context(), projectCacheKey, &project)
-	if err != nil {
-		return nil, err
-	}
-
-	if project != nil {
-		return project, nil
-	}
-
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
+	projectRepo := postgres.NewProjectRepo(a.A.DB, a.A.Cache)
 	project, err = projectRepo.FetchProjectByID(r.Context(), pLink.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-
-	err = a.A.Cache.Set(r.Context(), projectCacheKey, &project, time.Minute*5)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +136,7 @@ func (a *PortalLinkHandler) retrievePortalLink(r *http.Request) (*datastore.Port
 		token = cred.Token
 	}
 
-	portalLinkRepo := postgres.NewPortalLinkRepo(a.A.DB)
+	portalLinkRepo := postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache)
 	pLink, err := portalLinkRepo.FindPortalLinkByToken(r.Context(), token)
 	if err != nil {
 		message := "an error occurred while retrieving portal link"

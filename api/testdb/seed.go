@@ -47,7 +47,7 @@ func SeedEndpoint(db database.Database, g *datastore.Project, uid, title, ownerI
 	}
 
 	// Seed Data.
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := postgres.NewEndpointRepo(db, nil)
 	err := endpointRepo.CreateEndpoint(context.TODO(), endpoint, g.UID)
 	if err != nil {
 		return &datastore.Endpoint{}, err
@@ -56,13 +56,13 @@ func SeedEndpoint(db database.Database, g *datastore.Project, uid, title, ownerI
 	return endpoint, nil
 }
 
-func SeedMultipleEndpoints(db database.Database, g *datastore.Project, count int) error {
+func SeedMultipleEndpoints(db database.Database, project *datastore.Project, count int) error {
 	for i := 0; i < count; i++ {
 		uid := ulid.Make().String()
 		app := &datastore.Endpoint{
 			UID:       uid,
 			Title:     fmt.Sprintf("Test-%s", uid),
-			ProjectID: g.UID,
+			ProjectID: project.UID,
 			Secrets: datastore.Secrets{
 				{UID: ulid.Make().String()},
 			},
@@ -70,7 +70,7 @@ func SeedMultipleEndpoints(db database.Database, g *datastore.Project, count int
 		}
 
 		// Seed Data.
-		appRepo := postgres.NewEndpointRepo(db)
+		appRepo := postgres.NewEndpointRepo(db, nil)
 		err := appRepo.CreateEndpoint(context.TODO(), app, app.ProjectID)
 		if err != nil {
 			return err
@@ -88,7 +88,7 @@ func SeedEndpointSecret(db database.Database, e *datastore.Endpoint, value strin
 	e.Secrets = append(e.Secrets, sc)
 
 	// Seed Data.
-	endpointRepo := postgres.NewEndpointRepo(db)
+	endpointRepo := postgres.NewEndpointRepo(db, nil)
 	err := endpointRepo.UpdateEndpoint(context.TODO(), e, e.ProjectID)
 	if err != nil {
 		return nil, err
@@ -97,7 +97,6 @@ func SeedEndpointSecret(db database.Database, e *datastore.Endpoint, value strin
 	return &sc, nil
 }
 
-// seed default project
 func SeedDefaultProject(db database.Database, orgID string) (*datastore.Project, error) {
 	if orgID == "" {
 		orgID = ulid.Make().String()
@@ -132,7 +131,7 @@ func SeedDefaultProject(db database.Database, orgID string) (*datastore.Project,
 	}
 
 	// Seed Data.
-	projectRepo := postgres.NewProjectRepo(db)
+	projectRepo := postgres.NewProjectRepo(db, nil)
 	err := projectRepo.CreateProject(context.TODO(), defaultProject)
 	if err != nil {
 		return &datastore.Project{}, err
@@ -162,7 +161,7 @@ func SeedDefaultUser(db database.Database) (*datastore.User, error) {
 	}
 
 	// Seed Data.
-	userRepo := postgres.NewUserRepo(db)
+	userRepo := postgres.NewUserRepo(db, nil)
 	err = userRepo.CreateUser(context.TODO(), defaultUser)
 	if err != nil {
 		return &datastore.User{}, err
@@ -182,7 +181,7 @@ func SeedDefaultOrganisation(db database.Database, user *datastore.User) (*datas
 	}
 
 	// Seed Data.
-	organisationRepo := postgres.NewOrgRepo(db)
+	organisationRepo := postgres.NewOrgRepo(db, nil)
 	err := organisationRepo.CreateOrganisation(context.TODO(), defaultOrg)
 	if err != nil {
 		return &datastore.Organisation{}, err
@@ -197,7 +196,7 @@ func SeedDefaultOrganisation(db database.Database, user *datastore.User) (*datas
 		UpdatedAt:      time.Now(),
 	}
 
-	orgMemberRepo := postgres.NewOrgMemberRepo(db)
+	orgMemberRepo := postgres.NewOrgMemberRepo(db, nil)
 	err = orgMemberRepo.CreateOrganisationMember(context.TODO(), member)
 	if err != nil {
 		return nil, err
@@ -217,7 +216,7 @@ func SeedOrganisationMember(db database.Database, org *datastore.Organisation, u
 		UpdatedAt:      time.Now(),
 	}
 
-	orgMemberRepo := postgres.NewOrgMemberRepo(db)
+	orgMemberRepo := postgres.NewOrgMemberRepo(db, nil)
 	err := orgMemberRepo.CreateOrganisationMember(context.TODO(), member)
 	if err != nil {
 		return nil, err
@@ -244,7 +243,7 @@ func SeedOrganisationInvite(db database.Database, org *datastore.Organisation, e
 		UpdatedAt:      time.Now(),
 	}
 
-	orgInviteRepo := postgres.NewOrgInviteRepo(db)
+	orgInviteRepo := postgres.NewOrgInviteRepo(db, nil)
 	err := orgInviteRepo.CreateOrganisationInvite(context.TODO(), iv)
 	if err != nil {
 		return nil, err
@@ -281,7 +280,7 @@ func SeedAPIKey(db database.Database, role auth.Role, uid, name, keyType, userID
 		UpdatedAt: time.Now(),
 	}
 
-	apiRepo := postgres.NewAPIKeyRepo(db)
+	apiRepo := postgres.NewAPIKeyRepo(db, nil)
 	err = apiRepo.CreateAPIKey(context.Background(), apiKey)
 	if err != nil {
 		return nil, "", err
@@ -306,7 +305,7 @@ func SeedProject(db database.Database, uid, name, orgID string, projectType data
 	}
 
 	// Seed Data.
-	projectRepo := postgres.NewProjectRepo(db)
+	projectRepo := postgres.NewProjectRepo(db, nil)
 	err := projectRepo.CreateProject(context.TODO(), g)
 	if err != nil {
 		return &datastore.Project{}, err
@@ -334,7 +333,7 @@ func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID str
 	}
 
 	// Seed Data.
-	eventRepo := postgres.NewEventRepo(db)
+	eventRepo := postgres.NewEventRepo(db, nil)
 	err := eventRepo.CreateEvent(context.TODO(), ev)
 	if err != nil {
 		return nil, err
@@ -363,7 +362,7 @@ func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *d
 	}
 
 	// Seed Data.
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db, nil)
 	err := eventDeliveryRepo.CreateEventDelivery(context.TODO(), eventDelivery)
 	if err != nil {
 		return nil, err
@@ -391,7 +390,7 @@ func SeedOrganisation(db database.Database, uid, ownerID, name string) (*datasto
 	}
 
 	// Seed Data.
-	orgRepo := postgres.NewOrgRepo(db)
+	orgRepo := postgres.NewOrgRepo(db, nil)
 	err := orgRepo.CreateOrganisation(context.TODO(), org)
 	if err != nil {
 		return &datastore.Organisation{}, err
@@ -400,9 +399,9 @@ func SeedOrganisation(db database.Database, uid, ownerID, name string) (*datasto
 	return org, nil
 }
 
-// SeedMultipleOrganisations is creates random Organisations for integration tests.
+// SeedMultipleOrganisations creates random Organisations for integration tests.
 func SeedMultipleOrganisations(db database.Database, ownerID string, num int) ([]*datastore.Organisation, error) {
-	orgs := []*datastore.Organisation{}
+	orgs := make([]*datastore.Organisation, 0)
 
 	for i := 0; i < num; i++ {
 		uid := ulid.Make().String()
@@ -417,7 +416,7 @@ func SeedMultipleOrganisations(db database.Database, ownerID string, num int) ([
 		orgs = append(orgs, org)
 
 		// Seed Data.
-		orgRepo := postgres.NewOrgRepo(db)
+		orgRepo := postgres.NewOrgRepo(db, nil)
 		err := orgRepo.CreateOrganisation(context.TODO(), org)
 		if err != nil {
 			return nil, err
@@ -465,7 +464,7 @@ func SeedSource(db database.Database, g *datastore.Project, uid, maskID, ds stri
 	}
 
 	// Seed Data
-	sourceRepo := postgres.NewSourceRepo(db)
+	sourceRepo := postgres.NewSourceRepo(db, nil)
 	err := sourceRepo.CreateSource(context.TODO(), source)
 	if err != nil {
 		return nil, err
@@ -511,7 +510,7 @@ func SeedSubscription(db database.Database,
 		FilterConfig: filterConfig,
 	}
 
-	subRepo := postgres.NewSubscriptionRepo(db)
+	subRepo := postgres.NewSubscriptionRepo(db, nil)
 	err := subRepo.CreateSubscription(context.TODO(), g.UID, subscription)
 	if err != nil {
 		return nil, err
@@ -540,7 +539,7 @@ func SeedUser(db database.Database, email, password string) (*datastore.User, er
 	}
 
 	// Seed Data
-	userRepo := postgres.NewUserRepo(db)
+	userRepo := postgres.NewUserRepo(db, nil)
 	err = userRepo.CreateUser(context.TODO(), user)
 	if err != nil {
 		return nil, err
@@ -576,7 +575,7 @@ func SeedDevice(db database.Database, g *datastore.Project, endpointID string) e
 		Status:     datastore.DeviceStatusOnline,
 	}
 
-	deviceRepo := postgres.NewDeviceRepo(db)
+	deviceRepo := postgres.NewDeviceRepo(db, nil)
 	err := deviceRepo.CreateDevice(context.TODO(), device)
 	if err != nil {
 		return err
@@ -594,7 +593,7 @@ func SeedPortalLink(db database.Database, g *datastore.Project, endpoints []stri
 		Endpoints: endpoints,
 	}
 
-	portalLinkRepo := postgres.NewPortalLinkRepo(db)
+	portalLinkRepo := postgres.NewPortalLinkRepo(db, nil)
 	err := portalLinkRepo.CreatePortalLink(context.TODO(), portalLink)
 	if err != nil {
 		return nil, err
@@ -622,7 +621,7 @@ func SeedMetaEvent(db database.Database, project *datastore.Project) (*datastore
 		UpdatedAt: time.Now(),
 	}
 
-	metaEventRepo := postgres.NewMetaEventRepo(db)
+	metaEventRepo := postgres.NewMetaEventRepo(db, nil)
 	err := metaEventRepo.CreateMetaEvent(context.TODO(), metaEvent)
 	if err != nil {
 		return nil, err

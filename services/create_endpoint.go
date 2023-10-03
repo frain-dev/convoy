@@ -152,12 +152,6 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		}
 	}
 
-	endpointCacheKey := convoy.EndpointsCacheKey.Get(endpoint.UID).String()
-	err = a.Cache.Set(ctx, endpointCacheKey, &endpoint, time.Minute*5)
-	if err != nil {
-		return nil, &ServiceError{ErrMsg: "failed to update endpoint cache", Err: nil}
-	}
-
 	return endpoint, nil
 }
 

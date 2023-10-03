@@ -78,14 +78,14 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 
 			// register worker.
 			consumer := worker.NewConsumer(cfg.ConsumerPoolSize, a.Queue, lo)
-			projectRepo := postgres.NewProjectRepo(a.DB)
-			metaEventRepo := postgres.NewMetaEventRepo(a.DB)
-			endpointRepo := postgres.NewEndpointRepo(a.DB)
-			eventRepo := postgres.NewEventRepo(a.DB)
-			jobRepo := postgres.NewJobRepo(a.DB)
-			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
-			subRepo := postgres.NewSubscriptionRepo(a.DB)
-			deviceRepo := postgres.NewDeviceRepo(a.DB)
+			projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
+			metaEventRepo := postgres.NewMetaEventRepo(a.DB, a.Cache)
+			endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
+			eventRepo := postgres.NewEventRepo(a.DB, a.Cache)
+			jobRepo := postgres.NewJobRepo(a.DB, a.Cache)
+			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB, a.Cache)
+			subRepo := postgres.NewSubscriptionRepo(a.DB, a.Cache)
+			deviceRepo := postgres.NewDeviceRepo(a.DB, a.Cache)
 			configRepo := postgres.NewConfigRepo(a.DB)
 
 			searchBackend, err := searcher.NewSearchClient(cfg)
@@ -140,11 +140,11 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				searchBackend,
 			))
 
-			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Queue))
+			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Cache, a.Queue))
 
 			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo))
 
-			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, cfg, rd))
+			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, a.Cache, cfg, rd))
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 
 			consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo))

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/cache"
 
 	"github.com/frain-dev/convoy/util"
 
@@ -33,7 +34,7 @@ const (
 		role_endpoint = $4,
 		status = $5,
 		expires_at = $6,
-		updated_at = now()
+		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
@@ -44,9 +45,9 @@ const (
 		invitee_email,
 		token,
 		status,
-		role_type as "role.type",
-	    COALESCE(role_project,'') as "role.project",
-	    COALESCE(role_endpoint,'') as "role.endpoint",
+		role_type AS "role.type",
+	    COALESCE(role_project,'') AS "role.project",
+	    COALESCE(role_endpoint,'') AS "role.endpoint",
 	    created_at, updated_at, expires_at
 	FROM convoy.organisation_invites
 	WHERE id = $1 AND deleted_at IS NULL;
@@ -59,9 +60,9 @@ const (
 		invitee_email,
 		token,
 		status,
-		role_type as "role.type",
-	    COALESCE(role_project,'') as "role.project",
-	    COALESCE(role_endpoint,'') as "role.endpoint",
+		role_type AS "role.type",
+	    COALESCE(role_project,'') AS "role.project",
+	    COALESCE(role_endpoint,'') AS "role.endpoint",
 	    created_at, updated_at, expires_at
 	FROM convoy.organisation_invites
 	WHERE token = $1 AND deleted_at IS NULL;
@@ -73,9 +74,9 @@ const (
 		organisation_id,
 		invitee_email,
 		status,
-		role_type as "role.type",
-	    COALESCE(role_project,'') as "role.project",
-	    COALESCE(role_endpoint,'') as "role.endpoint",
+		role_type AS "role.type",
+	    COALESCE(role_project,'') AS "role.project",
+	    COALESCE(role_endpoint,'') AS "role.endpoint",
 	    created_at, updated_at, expires_at
 	FROM convoy.organisation_invites
 	WHERE organisation_id = :org_id
@@ -85,18 +86,18 @@ const (
 
 	baseFetchInvitesPagedForward = `
 	%s
-	AND id <= :cursor 
+	AND id <= :cursor
 	GROUP BY id
-	ORDER BY id DESC 
+	ORDER BY id DESC
 	LIMIT :limit
 	`
 
 	baseFetchInvitesPagedBackward = `
 	WITH organisation_invites AS (
 		%s
-		AND id >= :cursor 
+		AND id >= :cursor
 		GROUP BY id
-		ORDER BY id ASC 
+		ORDER BY id ASC
 		LIMIT :limit
 	)
 
@@ -104,11 +105,11 @@ const (
 	`
 
 	countPrevOrganisationInvites = `
-	SELECT count(distinct(id)) as count
+	SELECT COUNT(DISTINCT(id)) AS count
 	FROM convoy.organisation_invites
 	WHERE organisation_id = :org_id
 	AND deleted_at IS NULL
-	AND id > :cursor 
+	AND id > :cursor
 	GROUP BY id
 	ORDER BY id DESC
 	LIMIT 1
@@ -116,17 +117,18 @@ const (
 
 	deleteOrganisationInvite = `
 	UPDATE convoy.organisation_invites SET
-	deleted_at = now()
+	deleted_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 )
 
 type orgInviteRepo struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	cache cache.Cache
 }
 
-func NewOrgInviteRepo(db database.Database) datastore.OrganisationInviteRepository {
-	return &orgInviteRepo{db: db.GetDB()}
+func NewOrgInviteRepo(db database.Database, cache cache.Cache) datastore.OrganisationInviteRepository {
+	return &orgInviteRepo{db: db.GetDB(), cache: cache}
 }
 
 func (i *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {

@@ -2,7 +2,6 @@ package public
 
 import (
 	"errors"
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
@@ -14,7 +13,6 @@ import (
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"net/http"
-	"time"
 )
 
 type PublicHandler struct {
@@ -140,7 +138,7 @@ func (a *PublicHandler) retrieveOrganisation(r *http.Request) (*datastore.Organi
 		return nil, err
 	}
 
-	orgRepo := postgres.NewOrgRepo(a.A.DB)
+	orgRepo := postgres.NewOrgRepo(a.A.DB, a.A.Cache)
 	return orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
 }
 
@@ -152,24 +150,9 @@ func (a *PublicHandler) retrieveProject(r *http.Request) (*datastore.Project, er
 	}
 
 	var project *datastore.Project
-	projectCacheKey := convoy.ProjectsCacheKey.Get(projectID).String()
-	err := a.A.Cache.Get(r.Context(), projectCacheKey, &project)
-	if err != nil {
-		return nil, err
-	}
-
-	if project != nil {
-		return project, nil
-	}
-
 	// fetch project from context or cache
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
-	project, err = projectRepo.FetchProjectByID(r.Context(), projectID)
-	if err != nil {
-		return nil, err
-	}
-
-	err = a.A.Cache.Set(r.Context(), projectCacheKey, &project, time.Minute*10)
+	projectRepo := postgres.NewProjectRepo(a.A.DB, a.A.Cache)
+	project, err := projectRepo.FetchProjectByID(r.Context(), projectID)
 	if err != nil {
 		return nil, err
 	}

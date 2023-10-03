@@ -36,8 +36,8 @@ func (a *DashboardHandler) CreatePortalLink(w http.ResponseWriter, r *http.Reque
 	}
 
 	cp := services.CreatePortalLinkService{
-		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB),
-		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
+		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache),
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		Portal:         &newPortalLink,
 		Project:        project,
 	}
@@ -65,7 +65,7 @@ func (a *DashboardHandler) GetPortalLinkByID(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	portalLink, err := postgres.NewPortalLinkRepo(a.A.DB).FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
+	portalLink, err := postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache).FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
 		if err == datastore.ErrPortalLinkNotFound {
 			_ = render.Render(w, r, util.NewServerResponse(err.Error(), nil, http.StatusNotFound))
@@ -105,7 +105,7 @@ func (a *DashboardHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	portalLink, err := postgres.NewPortalLinkRepo(a.A.DB).FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
+	portalLink, err := postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache).FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
 		if err == datastore.ErrPortalLinkNotFound {
 			_ = render.Render(w, r, util.NewServerResponse(err.Error(), nil, http.StatusNotFound))
@@ -117,8 +117,8 @@ func (a *DashboardHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Reque
 	}
 
 	upl := services.UpdatePortalLinkService{
-		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB),
-		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
+		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache),
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		Project:        project,
 		Update:         &updatePortalLink,
 		PortalLink:     portalLink,
@@ -152,7 +152,7 @@ func (a *DashboardHandler) RevokePortalLink(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	portalLink, err := postgres.NewPortalLinkRepo(a.A.DB).FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
+	portalLink, err := postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache).FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
 		if err == datastore.ErrPortalLinkNotFound {
 			_ = render.Render(w, r, util.NewServerResponse(err.Error(), nil, http.StatusNotFound))
@@ -163,7 +163,7 @@ func (a *DashboardHandler) RevokePortalLink(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = postgres.NewPortalLinkRepo(a.A.DB).RevokePortalLink(r.Context(), project.UID, portalLink.UID)
+	err = postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache).RevokePortalLink(r.Context(), project.UID, portalLink.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -189,7 +189,7 @@ func (a *DashboardHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.R
 
 	filter := &datastore.FilterBy{EndpointID: endpointID}
 
-	portalLinks, paginationData, err := postgres.NewPortalLinkRepo(a.A.DB).LoadPortalLinksPaged(r.Context(), project.UID, filter, pageable)
+	portalLinks, paginationData, err := postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache).LoadPortalLinksPaged(r.Context(), project.UID, filter, pageable)
 	if err != nil {
 		log.WithError(err).Println("an error occurred while fetching portal links")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

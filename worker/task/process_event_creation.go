@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
@@ -45,22 +44,9 @@ func ProcessEventCreation(
 
 		event = createEvent.Event
 
-		projectCacheKey := convoy.ProjectsCacheKey.Get(event.ProjectID).String()
-		err = cache.Get(ctx, projectCacheKey, &project)
+		project, err = projectRepo.FetchProjectByID(ctx, event.ProjectID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
-		}
-
-		if project == nil {
-			project, err = projectRepo.FetchProjectByID(ctx, event.ProjectID)
-			if err != nil {
-				return &EndpointError{Err: err, delay: defaultDelay}
-			}
-
-			err = cache.Set(ctx, projectCacheKey, project, config.DefaultCacheTTL)
-			if err != nil {
-				return &EndpointError{Err: err, delay: defaultDelay}
-			}
 		}
 
 		subscriptions, err = findSubscriptions(ctx, endpointRepo, cache, subRepo, project, &createEvent)

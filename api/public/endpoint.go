@@ -3,7 +3,6 @@ package public
 import (
 	"net/http"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/go-chi/chi/v5"
@@ -56,9 +55,9 @@ func (a *PublicHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	ce := services.CreateEndpointService{
 		Cache:          a.A.Cache,
-		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
-		ProjectRepo:    postgres.NewProjectRepo(a.A.DB),
-		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB),
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
+		ProjectRepo:    postgres.NewProjectRepo(a.A.DB, a.A.Cache),
+		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache),
 		E:              e,
 		ProjectID:      project.UID,
 	}
@@ -117,7 +116,7 @@ func (a *PublicHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := q.Transform(r)
-	endpoints, paginationData, err := postgres.NewEndpointRepo(a.A.DB).LoadEndpointsPaged(r.Context(), project.UID, data.Filter, data.Pageable)
+	endpoints, paginationData, err := postgres.NewEndpointRepo(a.A.DB, a.A.Cache).LoadEndpointsPaged(r.Context(), project.UID, data.Filter, data.Pageable)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("failed to load endpoints")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -173,8 +172,8 @@ func (a *PublicHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	ce := services.UpdateEndpointService{
 		Cache:        a.A.Cache,
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
-		ProjectRepo:  postgres.NewProjectRepo(a.A.DB),
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
+		ProjectRepo:  postgres.NewProjectRepo(a.A.DB, a.A.Cache),
 		E:            e,
 		Endpoint:     endpoint,
 		Project:      project,
@@ -215,17 +214,11 @@ func (a *PublicHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = postgres.NewEndpointRepo(a.A.DB).DeleteEndpoint(r.Context(), endpoint, project.UID)
+	err = postgres.NewEndpointRepo(a.A.DB, a.A.Cache).DeleteEndpoint(r.Context(), endpoint, project.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete endpoint")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete endpoint", http.StatusBadRequest))
 		return
-	}
-
-	endpointCacheKey := convoy.EndpointsCacheKey.Get(endpoint.UID).String()
-	err = a.A.Cache.Delete(r.Context(), endpointCacheKey)
-	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to delete endpoint cache")
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint deleted successfully", nil, http.StatusOK))
@@ -267,8 +260,8 @@ func (a *PublicHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 	xs := services.ExpireSecretService{
 		Queuer:       a.A.Queue,
 		Cache:        a.A.Cache,
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
-		ProjectRepo:  postgres.NewProjectRepo(a.A.DB),
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
+		ProjectRepo:  postgres.NewProjectRepo(a.A.DB, a.A.Cache),
 		S:            e,
 		Endpoint:     endpoint,
 		Project:      project,
@@ -305,7 +298,7 @@ func (a *PublicHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.Requ
 	}
 
 	te := services.ToggleEndpointStatusService{
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		ProjectID:    project.UID,
 		EndpointId:   chi.URLParam(r, "endpointID"),
 	}
@@ -340,7 +333,7 @@ func (a *PublicHandler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ps := services.PauseEndpointService{
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		ProjectID:    project.UID,
 		EndpointId:   chi.URLParam(r, "endpointID"),
 	}
@@ -362,6 +355,6 @@ func (a *PublicHandler) retrieveEndpoint(r *http.Request) (*datastore.Endpoint, 
 	}
 
 	endpointID := chi.URLParam(r, "endpointID")
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB, a.A.Cache)
 	return endpointRepo.FindEndpointByID(r.Context(), endpointID, project.UID)
 }

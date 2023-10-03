@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/r3labs/diff/v3"
 	"strings"
@@ -200,12 +203,13 @@ const (
 )
 
 type projectRepo struct {
-	db   *sqlx.DB
-	hook *hooks.Hook
+	db    *sqlx.DB
+	hook  *hooks.Hook
+	cache cache.Cache
 }
 
-func NewProjectRepo(db database.Database) datastore.ProjectRepository {
-	return &projectRepo{db: db.GetDB(), hook: db.GetHook()}
+func NewProjectRepo(db database.Database, cache cache.Cache) datastore.ProjectRepository {
+	return &projectRepo{db: db.GetDB(), hook: db.GetHook(), cache: cache}
 }
 
 func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Project) error {
@@ -274,6 +278,9 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 	if rowsAffected < 1 {
 		return ErrProjectNotCreated
 	}
+
+	projectCacheKey := convoy.ProjectsCacheKey.Get(project.UID).String()
+	err = p.cache.Set(ctx, projectCacheKey, &project, config.DefaultCacheTTL)
 
 	return tx.Commit()
 }
@@ -385,13 +392,27 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		return err
 	}
 
+	projectCacheKey := convoy.ProjectsCacheKey.Get(project.UID).String()
+	err = p.cache.Set(ctx, projectCacheKey, &project, config.DefaultCacheTTL)
+
 	go p.hook.Fire(datastore.ProjectUpdated, project, changelog)
 	return nil
 }
 
 func (p *projectRepo) FetchProjectByID(ctx context.Context, id string) (*datastore.Project, error) {
-	var project datastore.Project
-	err := p.db.GetContext(ctx, &project, fetchProjectById, id)
+	var project *datastore.Project
+	projectCacheKey := convoy.ProjectsCacheKey.Get(id).String()
+	err := p.cache.Get(ctx, projectCacheKey, &project)
+	if err != nil {
+		return nil, err
+	}
+
+	if project != nil {
+		return project, nil
+	}
+
+	project = &datastore.Project{}
+	err = p.db.GetContext(ctx, project, fetchProjectById, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrProjectNotFound
@@ -399,7 +420,9 @@ func (p *projectRepo) FetchProjectByID(ctx context.Context, id string) (*datasto
 		return nil, err
 	}
 
-	return &project, nil
+	err = p.cache.Set(ctx, projectCacheKey, &project, config.DefaultCacheTTL)
+
+	return project, nil
 }
 
 func (p *projectRepo) FillProjectsStatistics(ctx context.Context, project *datastore.Project) error {
@@ -440,7 +463,18 @@ func (p *projectRepo) DeleteProject(ctx context.Context, id string) error {
 		return err
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	projectCacheKey := convoy.ProjectsCacheKey.Get(id).String()
+	err = p.cache.Delete(ctx, projectCacheKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *projectRepo) GetProjectsWithEventsInTheInterval(ctx context.Context, interval int) ([]datastore.ProjectEvents, error) {

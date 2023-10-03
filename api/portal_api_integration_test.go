@@ -72,8 +72,8 @@ func (s *PortalEndpointIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -129,7 +129,7 @@ func (s *PortalEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
@@ -211,8 +211,8 @@ func (s *PortalEventIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
 	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
 }
 

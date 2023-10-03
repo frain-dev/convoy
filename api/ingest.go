@@ -37,7 +37,7 @@ func retrieveSourceConfigurationFromMaskId(a *ApplicationHandler, ctx context.Co
 
 	if source == nil {
 		// 2. Retrieve source using mask ID.
-		source, err = postgres.NewSourceRepo(a.A.DB).FindSourceByMaskID(ctx, maskId)
+		source, err = postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByMaskID(ctx, maskId)
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +125,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 	if project == nil {
 		// 2. Retrieve source using mask ID.
-		projectRepo := postgres.NewProjectRepo(a.A.DB)
+		projectRepo := postgres.NewProjectRepo(a.A.DB, a.A.Cache)
 		projectFromDb, err := projectRepo.FetchProjectByID(r.Context(), source.ProjectID)
 		if err != nil {
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -160,7 +160,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	var checksum string
 	var isDuplicate bool
 	if len(source.IdempotencyKeys) > 0 {
-		duper := dedup.NewDeDuper(r.Context(), r, postgres.NewEventRepo(a.A.DB))
+		duper := dedup.NewDeDuper(r.Context(), r, postgres.NewEventRepo(a.A.DB, a.A.Cache))
 		exists, err := duper.Exists(source.Name, source.ProjectID, source.IdempotencyKeys)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -295,7 +295,7 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	sourceRepo := postgres.NewSourceRepo(a.A.DB)
+	sourceRepo := postgres.NewSourceRepo(a.A.DB, a.A.Cache)
 	err = c.HandleRequest(w, r, source, sourceRepo)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
