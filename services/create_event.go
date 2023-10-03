@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
@@ -29,6 +30,7 @@ type CreateEventService struct {
 	EndpointRepo datastore.EndpointRepository
 	EventRepo    datastore.EventRepository
 	Queue        queue.Queuer
+	Cache        cache.Cache
 
 	NewMessage *models.CreateEvent
 	Project    *datastore.Project
@@ -63,7 +65,7 @@ func (c *CreateEventService) Run(ctx context.Context) (*datastore.Event, error) 
 		return nil, &ServiceError{ErrMsg: ErrInvalidEndpointID.Error()}
 	}
 
-	endpoints, err := c.FindEndpoints(ctx, c.NewMessage, c.Project)
+	endpoints, err := c.findEndpoints(ctx, c.Cache, c.NewMessage, c.Project)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to find endpoints")
 		return nil, &ServiceError{ErrMsg: err.Error()}
@@ -131,8 +133,6 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		return nil, &ServiceError{ErrMsg: "retry strategy not defined in configuration"}
 	}
 
-	taskName := convoy.CreateEventProcessor
-
 	createEvent := task.CreateEvent{
 		Event:              *event,
 		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
@@ -148,7 +148,7 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		Payload: eventByte,
 		Delay:   0,
 	}
-	err = queuer.Write(taskName, convoy.CreateEventQueue, job)
+	err = queuer.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.FromContext(ctx).Errorf("Error occurred sending new event to the queue %s", err)
 	}
@@ -156,13 +156,29 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 	return event, nil
 }
 
-func (c *CreateEventService) FindEndpoints(ctx context.Context, newMessage *models.CreateEvent, project *datastore.Project) ([]datastore.Endpoint, error) {
+func (c *CreateEventService) findEndpoints(ctx context.Context, cache cache.Cache, newMessage *models.CreateEvent, project *datastore.Project) ([]datastore.Endpoint, error) {
 	var endpoints []datastore.Endpoint
 
 	if !util.IsStringEmpty(newMessage.EndpointID) {
-		endpoint, err := c.EndpointRepo.FindEndpointByID(ctx, newMessage.EndpointID, project.UID)
+		var endpoint *datastore.Endpoint
+		endpointCacheKey := convoy.EndpointsCacheKey.Get(newMessage.EndpointID).String()
+		err := cache.Get(ctx, endpointCacheKey, &endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		if endpoint != nil {
+			return []datastore.Endpoint{*endpoint}, err
+		}
+
+		endpoint, err = c.EndpointRepo.FindEndpointByID(ctx, newMessage.EndpointID, project.UID)
 		if err != nil {
 			return endpoints, err
+		}
+
+		err = cache.Set(ctx, endpointCacheKey, endpoint, 10*time.Minute)
+		if err != nil {
+			return nil, err
 		}
 
 		endpoints = append(endpoints, *endpoint)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy"
 	"net/http"
 	"time"
 
@@ -184,11 +185,32 @@ func (a *DashboardHandler) retrieveProject(r *http.Request) (*datastore.Project,
 	projectID := chi.URLParam(r, "projectID")
 
 	if util.IsStringEmpty(projectID) {
-		return &datastore.Project{}, errors.New("Project ID not present in request")
+		return nil, errors.New("project id not present in request")
+	}
+
+	var project *datastore.Project
+	projectCacheKey := convoy.ProjectsCacheKey.Get(projectID).String()
+	err := a.A.Cache.Get(r.Context(), projectCacheKey, &project)
+	if err != nil {
+		return nil, err
+	}
+
+	if project != nil {
+		return project, nil
 	}
 
 	projectRepo := postgres.NewProjectRepo(a.A.DB)
-	return projectRepo.FetchProjectByID(r.Context(), projectID)
+	project, err = projectRepo.FetchProjectByID(r.Context(), projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = a.A.Cache.Set(r.Context(), projectCacheKey, &project, config.DefaultCacheTTL)
+	if err != nil {
+		return nil, err
+	}
+
+	return project, nil
 }
 
 func (a *DashboardHandler) retrieveHost() (string, error) {

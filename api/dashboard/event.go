@@ -45,6 +45,7 @@ func (a *DashboardHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Re
 		Queue:        a.A.Queue,
 		NewMessage:   &newMessage,
 		Project:      project,
+		Cache:        a.A.Cache,
 	}
 
 	event, err := ce.Run(r.Context())

@@ -49,11 +49,10 @@ const (
 	e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
 	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value"
 	FROM convoy.endpoints AS e
-	LEFT JOIN convoy.events_endpoints AS ee ON e.id = ee.endpoint_id
 	WHERE e.deleted_at IS NULL
 	`
 
-	fetchEndpointById = baseEndpointFetch + ` AND e.id = $1 AND e.project_id = $2 GROUP BY e.id ORDER BY e.id;`
+	fetchEndpointById = baseEndpointFetch + ` AND e.id = $1 AND e.project_id = $2;`
 
 	fetchEndpointsById = baseEndpointFetch + ` AND e.id IN (?) AND e.project_id = ? GROUP BY e.id ORDER BY e.id;`
 

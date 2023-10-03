@@ -74,7 +74,7 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
-    resp := &models.SourceResponse{Source: source}
+	resp := &models.SourceResponse{Source: source}
 
 	_ = render.Render(w, r, util.NewServerResponse("Source created successfully", resp, http.StatusCreated))
 }
@@ -122,8 +122,8 @@ func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
-    resp := &models.SourceResponse{Source: source}
+	fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
+	resp := &models.SourceResponse{Source: source}
 
 	_ = render.Render(w, r, util.NewServerResponse("Source fetched successfully", resp, http.StatusOK))
 }
@@ -198,8 +198,8 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
-    resp := &models.SourceResponse{Source: source}
+	fillSourceURL(source, baseUrl, org.CustomDomain.ValueOrZero())
+	resp := &models.SourceResponse{Source: source}
 
 	_ = render.Render(w, r, util.NewServerResponse("Source updated successfully", resp, http.StatusAccepted))
 }

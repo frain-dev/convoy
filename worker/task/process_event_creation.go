@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
@@ -23,7 +24,10 @@ type CreateEvent struct {
 	CreateSubscription bool
 }
 
-func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
+func ProcessEventCreation(
+	endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository,
+	eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer,
+	subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var createEvent CreateEvent
 		var event datastore.Event
@@ -44,24 +48,24 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 		projectCacheKey := convoy.ProjectsCacheKey.Get(event.ProjectID).String()
 		err = cache.Get(ctx, projectCacheKey, &project)
 		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
+			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
 		if project == nil {
 			project, err = projectRepo.FetchProjectByID(ctx, event.ProjectID)
 			if err != nil {
-				return &EndpointError{Err: err, delay: 10 * time.Second}
+				return &EndpointError{Err: err, delay: defaultDelay}
 			}
 
-			err = cache.Set(ctx, projectCacheKey, project, 10*time.Minute)
+			err = cache.Set(ctx, projectCacheKey, project, config.DefaultCacheTTL)
 			if err != nil {
-				return &EndpointError{Err: err, delay: 10 * time.Second}
+				return &EndpointError{Err: err, delay: defaultDelay}
 			}
 		}
 
 		subscriptions, err = findSubscriptions(ctx, endpointRepo, cache, subRepo, project, &createEvent)
 		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
+			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
 		_, err = eventRepo.FindEventByID(ctx, project.UID, event.UID)
@@ -78,7 +82,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 
 			err = eventRepo.CreateEvent(ctx, &event)
 			if err != nil {
-				return &EndpointError{Err: err, delay: 10 * time.Second}
+				return &EndpointError{Err: err, delay: defaultDelay}
 			}
 		}
 
@@ -96,7 +100,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 			if s.Type == datastore.SubscriptionTypeAPI {
 				endpoint, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID, project.UID)
 				if err != nil {
-					return &EndpointError{Err: err, delay: 10 * time.Second}
+					return &EndpointError{Err: err, delay: defaultDelay}
 				}
 
 				if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.APIKeyAuthentication {
@@ -110,7 +114,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 
 			rc, err := ec.retryConfig()
 			if err != nil {
-				return &EndpointError{Err: err, delay: 10 * time.Second}
+				return &EndpointError{Err: err, delay: defaultDelay}
 			}
 
 			metadata := &datastore.Metadata{
@@ -150,7 +154,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 
 			err = eventDeliveryRepo.CreateEventDelivery(ctx, eventDelivery)
 			if err != nil {
-				return &EndpointError{Err: err, delay: 10 * time.Second}
+				return &EndpointError{Err: err, delay: defaultDelay}
 			}
 
 			if eventDelivery.Status != datastore.DiscardedEventStatus {
@@ -163,7 +167,7 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 
 				data, err := msgpack.EncodeMsgPack(payload)
 				if err != nil {
-					return &EndpointError{Err: err, delay: 10 * time.Second}
+					return &EndpointError{Err: err, delay: defaultDelay}
 				}
 
 				job := &queue.Job{
@@ -190,7 +194,8 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 	}
 }
 
-func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepository, cache cache.Cache, subRepo datastore.SubscriptionRepository, project *datastore.Project, createEvent *CreateEvent) ([]datastore.Subscription, error) {
+func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepository, cache cache.Cache,
+	subRepo datastore.SubscriptionRepository, project *datastore.Project, createEvent *CreateEvent) ([]datastore.Subscription, error) {
 	var subscriptions []datastore.Subscription
 	var err error
 
@@ -202,32 +207,32 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 			endpointCacheKey := convoy.EndpointsCacheKey.Get(endpointID).String()
 			err = cache.Get(ctx, endpointCacheKey, &endpoint)
 			if err != nil {
-				return subscriptions, &EndpointError{Err: err, delay: 10 * time.Second}
+				return subscriptions, &EndpointError{Err: err, delay: defaultDelay}
 			}
 
 			// cache miss, load from db
 			if endpoint == nil {
 				endpoint, err = endpointRepo.FindEndpointByID(ctx, endpointID, project.UID)
 				if err != nil {
-					return subscriptions, &EndpointError{Err: err, delay: 10 * time.Second}
+					return subscriptions, &EndpointError{Err: err, delay: defaultDelay}
 				}
 
 				err = cache.Set(ctx, endpointCacheKey, endpoint, 10*time.Minute)
 				if err != nil {
-					return subscriptions, &EndpointError{Err: err, delay: 10 * time.Second}
+					return subscriptions, &EndpointError{Err: err, delay: defaultDelay}
 				}
 			}
 
 			subs, err := subRepo.FindSubscriptionsByEndpointID(ctx, project.UID, endpoint.UID)
 			if err != nil {
-				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
+				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: defaultDelay}
 			}
 
 			if len(subs) == 0 && createEvent.CreateSubscription {
 				subs := generateSubscription(project, endpoint)
 				err := subRepo.CreateSubscription(ctx, project.UID, subs)
 				if err != nil {
-					return subscriptions, &EndpointError{Err: errors.New("error creating subscription for endpoint"), delay: 10 * time.Second}
+					return subscriptions, &EndpointError{Err: errors.New("error creating subscription for endpoint"), delay: defaultDelay}
 				}
 
 				subscriptions = append(subscriptions, *subs)
@@ -238,21 +243,34 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 			subs, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs)
 			if err != nil {
-				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: 10 * time.Second}
+				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: defaultDelay}
 			}
 
 			subscriptions = append(subscriptions, subs...)
 		}
 	} else if project.Type == datastore.IncomingProject {
-		subs, err := subRepo.FindSubscriptionsBySourceID(ctx, project.UID, event.SourceID)
+		cacheKey := fmt.Sprintf("subscriptions:%s:%s", project.UID, event.SourceID)
+		err := cache.Get(ctx, cacheKey, &subscriptions)
 		if err != nil {
-			return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for this source"), delay: 10 * time.Second}
+			return nil, &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs)
+		if len(subscriptions) == 0 {
+			subscriptions, err = subRepo.FindSubscriptionsBySourceID(ctx, project.UID, event.SourceID)
+			if err != nil {
+				return nil, &EndpointError{Err: err, delay: defaultDelay}
+			}
+
+			err = cache.Set(ctx, cacheKey, &subscriptions, time.Minute*2)
+			if err != nil {
+				return nil, &EndpointError{Err: err, delay: defaultDelay}
+			}
+		}
+
+		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions)
 		if err != nil {
 			log.WithError(err).Error("error find a matching subscription for this source")
-			return subscriptions, &EndpointError{Err: errors.New("error find a matching subscription for this source"), delay: 10 * time.Second}
+			return subscriptions, &EndpointError{Err: errors.New("error find a matching subscription for this source"), delay: defaultDelay}
 		}
 	}
 

@@ -2,8 +2,7 @@ package public
 
 import (
 	"errors"
-	"net/http"
-
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
@@ -14,6 +13,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
+	"net/http"
+	"time"
 )
 
 type PublicHandler struct {
@@ -136,7 +137,7 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 func (a *PublicHandler) retrieveOrganisation(r *http.Request) (*datastore.Organisation, error) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
-		return &datastore.Organisation{}, err
+		return nil, err
 	}
 
 	orgRepo := postgres.NewOrgRepo(a.A.DB)
@@ -147,11 +148,33 @@ func (a *PublicHandler) retrieveProject(r *http.Request) (*datastore.Project, er
 	projectID := chi.URLParam(r, "projectID")
 
 	if util.IsStringEmpty(projectID) {
-		return &datastore.Project{}, errors.New("Project ID not present in request")
+		return nil, errors.New("project id not present in request")
 	}
 
+	var project *datastore.Project
+	projectCacheKey := convoy.ProjectsCacheKey.Get(projectID).String()
+	err := a.A.Cache.Get(r.Context(), projectCacheKey, &project)
+	if err != nil {
+		return nil, err
+	}
+
+	if project != nil {
+		return project, nil
+	}
+
+	// fetch project from context or cache
 	projectRepo := postgres.NewProjectRepo(a.A.DB)
-	return projectRepo.FetchProjectByID(r.Context(), projectID)
+	project, err = projectRepo.FetchProjectByID(r.Context(), projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = a.A.Cache.Set(r.Context(), projectCacheKey, &project, time.Minute*10)
+	if err != nil {
+		return nil, err
+	}
+
+	return project, nil
 }
 
 func (a *PublicHandler) retrieveUser(r *http.Request) (*datastore.User, error) {
