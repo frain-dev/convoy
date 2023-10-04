@@ -203,7 +203,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 }
 
 func (e *endpointRepo) FindEndpointByID(ctx context.Context, id, projectID string) (*datastore.Endpoint, error) {
-	endpoint, err := e.readFromCache(ctx, id, func() (*datastore.Endpoint, error) {
+	end, err := e.readFromCache(ctx, id, func() (*datastore.Endpoint, error) {
 		endpoint := &datastore.Endpoint{}
 		err := e.db.QueryRowxContext(ctx, fetchEndpointById, id, projectID).StructScan(endpoint)
 		if err != nil {
@@ -220,7 +220,7 @@ func (e *endpointRepo) FindEndpointByID(ctx context.Context, id, projectID strin
 		return nil, err
 	}
 
-	return endpoint, nil
+	return end, nil
 }
 
 func (e *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string, projectID string) ([]datastore.Endpoint, error) {
@@ -537,7 +537,7 @@ func (e *endpointRepo) readFromCache(ctx context.Context, id string, readFromDB 
 		return nil, err
 	}
 
-	return endpoint, err
+	return end, err
 }
 
 type EndpointPaginated struct {

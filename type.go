@@ -102,6 +102,7 @@ const (
 	OrganisationsCacheKey      CacheKey = "organisations"
 	OrganisationMemberCacheKey CacheKey = "organisation_members"
 	ProjectsCacheKey           CacheKey = "projects"
+	SubscriptionsCacheKey      CacheKey = "subscriptions"
 	TokenCacheKey              CacheKey = "tokens"
 	SourceCacheKey             CacheKey = "sources"
 )
