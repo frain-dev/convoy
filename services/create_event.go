@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
@@ -30,7 +29,6 @@ type CreateEventService struct {
 	EndpointRepo datastore.EndpointRepository
 	EventRepo    datastore.EventRepository
 	Queue        queue.Queuer
-	Cache        cache.Cache
 
 	NewMessage *models.CreateEvent
 	Project    *datastore.Project
@@ -65,7 +63,7 @@ func (c *CreateEventService) Run(ctx context.Context) (*datastore.Event, error) 
 		return nil, &ServiceError{ErrMsg: ErrInvalidEndpointID.Error()}
 	}
 
-	endpoints, err := c.findEndpoints(ctx, c.Cache, c.NewMessage, c.Project)
+	endpoints, err := c.findEndpoints(ctx, c.NewMessage, c.Project)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to find endpoints")
 		return nil, &ServiceError{ErrMsg: err.Error()}
@@ -156,7 +154,7 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 	return event, nil
 }
 
-func (c *CreateEventService) findEndpoints(ctx context.Context, cache cache.Cache, newMessage *models.CreateEvent, project *datastore.Project) ([]datastore.Endpoint, error) {
+func (c *CreateEventService) findEndpoints(ctx context.Context, newMessage *models.CreateEvent, project *datastore.Project) ([]datastore.Endpoint, error) {
 	var endpoints []datastore.Endpoint
 
 	if !util.IsStringEmpty(newMessage.EndpointID) {

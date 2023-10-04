@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
+	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
-
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/pkg/compare"
 	"github.com/frain-dev/convoy/pkg/flatten"
@@ -195,8 +195,11 @@ type subscriptionRepo struct {
 	cache cache.Cache
 }
 
-func NewSubscriptionRepo(db database.Database, cache cache.Cache) datastore.SubscriptionRepository {
-	return &subscriptionRepo{db: db.GetDB(), cache: cache}
+func NewSubscriptionRepo(db database.Database, ca cache.Cache) datastore.SubscriptionRepository {
+	if ca == nil {
+		ca = ncache.NewNoopCache()
+	}
+	return &subscriptionRepo{db: db.GetDB(), cache: ca}
 }
 
 func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {
@@ -599,13 +602,14 @@ func (s *subscriptionRepo) readFromCache(ctx context.Context, cacheKey string, r
 
 func (s *subscriptionRepo) readManyFromCache(ctx context.Context, cacheKey string, readManyFromDB func() ([]datastore.Subscription, error)) ([]datastore.Subscription, error) {
 	var subscriptions []datastore.Subscription
+
 	subscriptionCacheKey := convoy.SubscriptionsCacheKey.Get(cacheKey).String()
 	err := s.cache.Get(ctx, subscriptionCacheKey, &subscriptions)
 	if err != nil {
 		return nil, err
 	}
 
-	if subscriptions != nil {
+	if len(subscriptions) > 0 {
 		return subscriptions, err
 	}
 
@@ -619,5 +623,5 @@ func (s *subscriptionRepo) readManyFromCache(ctx context.Context, cacheKey strin
 		return nil, err
 	}
 
-	return subscriptions, err
+	return subs, err
 }

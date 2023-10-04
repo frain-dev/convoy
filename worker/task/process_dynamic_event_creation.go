@@ -47,12 +47,6 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 			return err
 		}
 
-		endpointCacheKey := convoy.EndpointsCacheKey.Get(endpoint.UID).String()
-		err = cache.Set(ctx, endpointCacheKey, endpoint, 10*time.Minute)
-		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
-		}
-
 		s, err := findDynamicSubscription(ctx, &dynamicEvent.Subscription, subRepo, project, endpoint)
 		if err != nil {
 			return err

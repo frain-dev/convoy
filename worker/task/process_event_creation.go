@@ -190,23 +190,9 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 		for _, endpointID := range event.Endpoints {
 			var endpoint *datastore.Endpoint
 
-			endpointCacheKey := convoy.EndpointsCacheKey.Get(endpointID).String()
-			err = cache.Get(ctx, endpointCacheKey, &endpoint)
+			endpoint, err = endpointRepo.FindEndpointByID(ctx, endpointID, project.UID)
 			if err != nil {
 				return subscriptions, &EndpointError{Err: err, delay: defaultDelay}
-			}
-
-			// cache miss, load from db
-			if endpoint == nil {
-				endpoint, err = endpointRepo.FindEndpointByID(ctx, endpointID, project.UID)
-				if err != nil {
-					return subscriptions, &EndpointError{Err: err, delay: defaultDelay}
-				}
-
-				err = cache.Set(ctx, endpointCacheKey, endpoint, 10*time.Minute)
-				if err != nil {
-					return subscriptions, &EndpointError{Err: err, delay: defaultDelay}
-				}
 			}
 
 			subs, err := subRepo.FindSubscriptionsByEndpointID(ctx, project.UID, endpoint.UID)

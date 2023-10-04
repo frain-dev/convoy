@@ -45,7 +45,6 @@ func (a *PortalLinkHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.R
 		Queue:        a.A.Queue,
 		NewMessage:   &newMessage,
 		Project:      project,
-		Cache:        a.A.Cache,
 	}
 
 	event, err := ce.Run(r.Context())

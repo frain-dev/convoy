@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
+	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
 	"strings"
 	"time"
@@ -167,8 +168,11 @@ type endpointRepo struct {
 	cache cache.Cache
 }
 
-func NewEndpointRepo(db database.Database, cache cache.Cache) datastore.EndpointRepository {
-	return &endpointRepo{db: db.GetDB(), hook: db.GetHook(), cache: cache}
+func NewEndpointRepo(db database.Database, ca cache.Cache) datastore.EndpointRepository {
+	if ca == nil {
+		ca = ncache.NewNoopCache()
+	}
+	return &endpointRepo{db: db.GetDB(), hook: db.GetHook(), cache: ca}
 }
 
 func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {

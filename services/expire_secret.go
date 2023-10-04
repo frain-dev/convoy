@@ -94,11 +94,5 @@ func (a *ExpireSecretService) Run(ctx context.Context) (*datastore.Endpoint, err
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to expire endpoint secret"))
 	}
 
-	endpointCacheKey := convoy.EndpointsCacheKey.Get(a.Endpoint.UID).String()
-	err = a.Cache.Set(ctx, endpointCacheKey, &a.Endpoint, time.Minute*5)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to update app cache")
-	}
-
 	return a.Endpoint, nil
 }

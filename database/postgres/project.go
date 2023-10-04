@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
+	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/r3labs/diff/v3"
@@ -208,8 +209,11 @@ type projectRepo struct {
 	cache cache.Cache
 }
 
-func NewProjectRepo(db database.Database, cache cache.Cache) datastore.ProjectRepository {
-	return &projectRepo{db: db.GetDB(), hook: db.GetHook(), cache: cache}
+func NewProjectRepo(db database.Database, ca cache.Cache) datastore.ProjectRepository {
+	if ca == nil {
+		ca = ncache.NewNoopCache()
+	}
+	return &projectRepo{db: db.GetDB(), hook: db.GetHook(), cache: ca}
 }
 
 func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Project) error {
