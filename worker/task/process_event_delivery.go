@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy/pkg/httpheader"
 
@@ -41,11 +42,6 @@ type SignatureValues struct {
 type EventDelivery struct {
 	EventDeliveryID string
 	ProjectID       string
-
-	Endpoint      *datastore.Endpoint
-	Project       *datastore.Project
-	Subscription  *datastore.Subscription
-	EventDelivery *datastore.EventDelivery
 }
 
 func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, projectRepo datastore.ProjectRepository, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer) func(context.Context, *asynq.Task) error {
@@ -65,38 +61,26 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		project := data.Project
-		endpoint := data.Endpoint
-		subscription := data.Subscription
-		eventDelivery := data.EventDelivery
-
-		if eventDelivery == nil {
-			eventDelivery, err = eventDeliveryRepo.FindEventDeliveryByID(ctx, data.ProjectID, data.EventDeliveryID)
-			if err != nil {
-				return &EndpointError{Err: err, delay: defaultDelay}
-			}
+		eventDelivery, err := eventDeliveryRepo.FindEventDeliveryByID(ctx, data.ProjectID, data.EventDeliveryID)
+		if err != nil {
+			return &EndpointError{Err: err, delay: defaultDelay}
 		}
+
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*eventDelivery.Metadata).NextDuration(eventDelivery.Metadata.NumTrials)
 
-		if endpoint == nil {
-			endpoint, err = endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, eventDelivery.ProjectID)
-			if err != nil {
-				return &EndpointError{Err: err, delay: delayDuration}
-			}
+		endpoint, err := endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, eventDelivery.ProjectID)
+		if err != nil {
+			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		if subscription == nil {
-			subscription, err = subRepo.FindSubscriptionByID(ctx, eventDelivery.ProjectID, eventDelivery.SubscriptionID)
-			if err != nil {
-				return &EndpointError{Err: err, delay: delayDuration}
-			}
+		subscription, err := subRepo.FindSubscriptionByID(ctx, eventDelivery.ProjectID, eventDelivery.SubscriptionID)
+		if err != nil {
+			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		if project == nil {
-			project, err = projectRepo.FetchProjectByID(ctx, endpoint.ProjectID)
-			if err != nil {
-				return &EndpointError{Err: err, delay: delayDuration}
-			}
+		project, err := projectRepo.FetchProjectByID(ctx, eventDelivery.ProjectID)
+		if err != nil {
+			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
 		switch eventDelivery.Status {
