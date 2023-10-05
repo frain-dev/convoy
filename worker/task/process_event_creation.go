@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/util"
-	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
@@ -179,10 +180,8 @@ func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo d
 
 			if eventDelivery.Status != datastore.DiscardedEventStatus {
 				payload := EventDelivery{
-					Subscription:  &s,
-					Project:       project,
-					Endpoint:      s.Endpoint,
-					EventDelivery: eventDelivery,
+					EventDeliveryID: eventDelivery.UID,
+					ProjectID:       eventDelivery.ProjectID,
 				}
 
 				data, err := msgpack.EncodeMsgPack(payload)

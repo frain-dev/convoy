@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"net/http"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/google/uuid"
 
@@ -190,10 +191,8 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 
 		if eventDelivery.Status != datastore.DiscardedEventStatus {
 			payload := EventDelivery{
-				Endpoint:      endpoint,
-				Project:       project,
-				Subscription:  s,
-				EventDelivery: eventDelivery,
+				EventDeliveryID: eventDelivery.UID,
+				ProjectID:       eventDelivery.ProjectID,
 			}
 
 			data, err := msgpack.EncodeMsgPack(payload)
