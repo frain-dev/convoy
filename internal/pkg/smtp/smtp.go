@@ -27,6 +27,7 @@ func NewClient(cfg *config.SMTPConfiguration) (SmtpClient, error) {
 type SMTPClient struct {
 	url, username, password, from, replyTo string
 	port                                   uint32
+	ssl                                    bool
 }
 
 func NewSMTP(cfg *config.SMTPConfiguration) (SmtpClient, error) {
@@ -59,6 +60,7 @@ func NewSMTP(cfg *config.SMTPConfiguration) (SmtpClient, error) {
 	}
 
 	return &SMTPClient{
+		ssl:      cfg.SSL,
 		url:      cfg.URL,
 		port:     cfg.Port,
 		username: cfg.Username,
@@ -76,6 +78,9 @@ func (s *SMTPClient) SendEmail(emailAddr, subject string, body bytes.Buffer) err
 
 	// Send Email
 	d := gomail.NewDialer(s.url, int(s.port), s.username, s.password)
+	if s.ssl {
+		d.SSL = true
+	}
 	if err := d.DialAndSend(m); err != nil {
 		return err
 	}
