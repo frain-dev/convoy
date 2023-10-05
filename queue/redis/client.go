@@ -1,9 +1,11 @@
 package redis
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/danvixent/asynqmon"
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
@@ -81,6 +83,8 @@ func (q *RedisQueue) Monitor() *asynqmon.HTTPHandler {
 		RootPath:          "/queue/monitoring",
 		RedisConnOpt:      q.opts.RedisClient,
 		PrometheusAddress: q.opts.PrometheusAddress,
+		PayloadFormatter:  Formatter{},
+		ResultFormatter:   Formatter{},
 	})
 	return h
 }
@@ -107,4 +111,21 @@ func (q *RedisQueue) DeleteEventDeliveriesFromQueue(queueName convoy.QueueName, 
 		}
 	}
 	return nil
+}
+
+type Formatter struct {
+}
+
+func (f Formatter) FormatPayload(_ string, payload []byte) string {
+	var pack map[string]interface{}
+	_ = msgpack.DecodeMsgPack(payload, &pack)
+	bytes, _ := json.Marshal(pack)
+	return string(bytes)
+}
+
+func (f Formatter) FormatResult(_ string, payload []byte) string {
+	var pack map[string]interface{}
+	_ = msgpack.DecodeMsgPack(payload, &pack)
+	bytes, _ := json.Marshal(pack)
+	return string(bytes)
 }
