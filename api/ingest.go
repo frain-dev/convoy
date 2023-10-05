@@ -215,7 +215,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	event.Headers["X-Convoy-Source-Id"] = []string{source.MaskID}
 
 	createEvent := task.CreateEvent{
-		Event: *event,
+		Event: event,
 	}
 
 	eventByte, err := msgpack.EncodeMsgPack(createEvent)

@@ -11,13 +11,12 @@ import (
 )
 
 type CreateEvent struct {
-	EndpointID string `json:"endpoint_id"`
-	AppID      string `json:"app_id"` // Deprecated but necessary for backward compatibility
-	EventType  string `json:"event_type" valid:"required~please provide an event type"`
-
-	// Data is an arbitrary JSON value that gets sent as the body of the
-	// webhook to the endpoints
+	UID            string
+	AppID          string            `json:"app_id"` // Deprecated but necessary for backward compatibility
+	OwnerID        string            `json:"owner_id"`
+	EndpointID     string            `json:"endpoint_id"`
 	Data           json.RawMessage   `json:"data" valid:"required~please provide your data"`
+	EventType      string            `json:"event_type" valid:"required~please provide an event type"`
 	CustomHeaders  map[string]string `json:"custom_headers"`
 	IdempotencyKey string            `json:"idempotency_key"`
 }

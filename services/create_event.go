@@ -4,18 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/worker/task"
 	"time"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
-	"github.com/frain-dev/convoy/worker/task"
-	"github.com/oklog/ulid/v2"
 )
 
 var (
@@ -35,6 +34,7 @@ type CreateEventService struct {
 }
 
 type newEvent struct {
+	UID            string
 	Raw            string
 	Data           json.RawMessage
 	EventType      string
@@ -113,7 +113,7 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 	}
 
 	event := &datastore.Event{
-		UID:              ulid.Make().String(),
+		UID:              newMessage.UID,
 		EventType:        datastore.EventType(newMessage.EventType),
 		Data:             newMessage.Data,
 		Raw:              newMessage.Raw,
@@ -132,7 +132,7 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 	}
 
 	e := task.CreateEvent{
-		Event:              *event,
+		Event:              event,
 		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
 	}
 
@@ -157,6 +157,21 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 func (c *CreateEventService) findEndpoints(ctx context.Context, newMessage *models.CreateEvent, project *datastore.Project) ([]datastore.Endpoint, error) {
 	var endpoints []datastore.Endpoint
 
+	if !util.IsStringEmpty(newMessage.OwnerID) {
+		ownerIdEndpoints, err := c.EndpointRepo.FindEndpointsByOwnerID(ctx, project.UID, newMessage.OwnerID)
+		if err != nil {
+			return endpoints, err
+		}
+
+		if len(ownerIdEndpoints) == 0 {
+			return endpoints, errors.New("owner ID has no configured endpoints")
+		}
+
+		for _, endpoint := range ownerIdEndpoints {
+			endpoints = append(endpoints, endpoint)
+		}
+	}
+
 	if !util.IsStringEmpty(newMessage.EndpointID) {
 		endpoint, err := c.EndpointRepo.FindEndpointByID(ctx, newMessage.EndpointID, project.UID)
 		if err != nil {
@@ -168,12 +183,12 @@ func (c *CreateEventService) findEndpoints(ctx context.Context, newMessage *mode
 	}
 
 	if !util.IsStringEmpty(newMessage.AppID) {
-		endpoints, err := c.EndpointRepo.FindEndpointsByAppID(ctx, newMessage.AppID, project.UID)
+		_endpoints, err := c.EndpointRepo.FindEndpointsByAppID(ctx, newMessage.AppID, project.UID)
 		if err != nil {
-			return endpoints, err
+			return _endpoints, err
 		}
 
-		return endpoints, nil
+		return _endpoints, nil
 	}
 
 	return endpoints, nil

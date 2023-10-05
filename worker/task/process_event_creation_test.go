@@ -64,19 +64,19 @@ func TestProcessEventCreated(t *testing.T) {
 		wantDelay  time.Duration
 	}{
 		{
-			name: "should_process_event_for_outgoing_project",
+			name:  "should_process_event_for_outgoing_project",
 			event: &CreateEvent{
-				Event: datastore.Event{
-					UID:            ulid.Make().String(),
-					EventType:      "*",
-					SourceID:       "source-id-1",
-					ProjectID:      "project-id-1",
-					Endpoints:      []string{"endpoint-id-1"},
-					Data:           []byte(`{}`),
-					URLQueryParams: "name=ref&category=food",
-					CreatedAt:      time.Now(),
-					UpdatedAt:      time.Now(),
-				},
+				//Event: datastore.Event{
+				//	UID:            ulid.Make().String(),
+				//	EventType:      "*",
+				//	SourceID:       "source-id-1",
+				//	ProjectID:      "project-id-1",
+				//	Endpoints:      []string{"endpoint-id-1"},
+				//	Data:           []byte(`{}`),
+				//	URLQueryParams: "name=ref&category=food",
+				//	CreatedAt:      time.Now(),
+				//	UpdatedAt:      time.Now(),
+				//},
 			},
 			dbFn: func(args *args) {
 				mockCache, _ := args.cache.(*mocks.MockCache)
@@ -144,16 +144,16 @@ func TestProcessEventCreated(t *testing.T) {
 		{
 			name: "should_process_event_for_outgoing_project_without_subscription",
 			event: &CreateEvent{
-				Event: datastore.Event{
-					UID:       ulid.Make().String(),
-					EventType: "*",
-					SourceID:  "source-id-1",
-					ProjectID: "project-id-1",
-					Endpoints: []string{"endpoint-id-1"},
-					Data:      []byte(`{}`),
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
+				//Event: datastore.Event{
+				//	UID:       ulid.Make().String(),
+				//	EventType: "*",
+				//	SourceID:  "source-id-1",
+				//	ProjectID: "project-id-1",
+				//	Endpoints: []string{"endpoint-id-1"},
+				//	Data:      []byte(`{}`),
+				//	CreatedAt: time.Now(),
+				//	UpdatedAt: time.Now(),
+				//},
 				CreateSubscription: true,
 			},
 			dbFn: func(args *args) {
@@ -213,18 +213,18 @@ func TestProcessEventCreated(t *testing.T) {
 		},
 
 		{
-			name: "should_process_event_for_incoming_project_api_event",
+			name:  "should_process_event_for_incoming_project_api_event",
 			event: &CreateEvent{
-				Event: datastore.Event{
-					UID:       ulid.Make().String(),
-					EventType: "*",
-					SourceID:  "source-id-1",
-					ProjectID: "project-id-1",
-					Endpoints: []string{"endpoint-id-1"},
-					Data:      []byte(`{}`),
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
+				//Event: datastore.Event{
+				//	UID:       ulid.Make().String(),
+				//	EventType: "*",
+				//	SourceID:  "source-id-1",
+				//	ProjectID: "project-id-1",
+				//	Endpoints: []string{"endpoint-id-1"},
+				//	Data:      []byte(`{}`),
+				//	CreatedAt: time.Now(),
+				//	UpdatedAt: time.Now(),
+				//},
 			},
 			dbFn: func(args *args) {
 				mockCache, _ := args.cache.(*mocks.MockCache)
@@ -299,18 +299,18 @@ func TestProcessEventCreated(t *testing.T) {
 		},
 
 		{
-			name: "should_process_event_for_incoming_project_cli_event",
+			name:  "should_process_event_for_incoming_project_cli_event",
 			event: &CreateEvent{
-				Event: datastore.Event{
-					UID:       ulid.Make().String(),
-					EventType: "*",
-					SourceID:  "source-id-1",
-					ProjectID: "project-id-1",
-					Endpoints: []string{"endpoint-id-1"},
-					Data:      []byte(`{}`),
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
+				//Event: datastore.Event{
+				//	UID:       ulid.Make().String(),
+				//	EventType: "*",
+				//	SourceID:  "source-id-1",
+				//	ProjectID: "project-id-1",
+				//	Endpoints: []string{"endpoint-id-1"},
+				//	Data:      []byte(`{}`),
+				//	CreatedAt: time.Now(),
+				//	UpdatedAt: time.Now(),
+				//},
 			},
 			dbFn: func(args *args) {
 				mockCache, _ := args.cache.(*mocks.MockCache)
@@ -392,15 +392,10 @@ func TestProcessEventCreated(t *testing.T) {
 		{
 			name: "should_process_replayed_event",
 			event: &CreateEvent{
-				Event: datastore.Event{
+				Params: CreateEventTaskParams{
 					UID:       ulid.Make().String(),
 					EventType: "*",
-					SourceID:  "source-id-1",
-					ProjectID: "project-id-1",
-					Endpoints: []string{"endpoint-id-1"},
 					Data:      []byte(`{}`),
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
 				},
 			},
 			dbFn: func(args *args) {
@@ -854,7 +849,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			payload, err := json.Marshal(tt.payload)
 			require.NoError(t, err)
 
-			subs, err := matchSubscriptionsUsingFilter(context.Background(), datastore.Event{Data: payload}, args.subRepo, tt.inputSubs)
+			subs, err := matchSubscriptionsUsingFilter(context.Background(), &datastore.Event{Data: payload}, args.subRepo, tt.inputSubs)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				return

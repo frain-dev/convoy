@@ -3,6 +3,11 @@ package public
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/worker/task"
+	"github.com/oklog/ulid/v2"
 	"net/http"
 
 	"github.com/frain-dev/convoy/internal/pkg/searcher"
@@ -45,32 +50,43 @@ func (a *PublicHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+	projectID := chi.URLParam(r, "projectID")
+	if util.IsStringEmpty(projectID) {
+		_ = render.Render(w, r, util.NewErrorResponse("project id not present in request", http.StatusBadRequest))
 		return
 	}
 
-	ce := services.CreateEventService{
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
-		EventRepo:    postgres.NewEventRepo(a.A.DB, a.A.Cache),
-		Queue:        a.A.Queue,
-		NewMessage:   &newMessage,
-		Project:      project,
+	e := task.CreateEvent{
+		Params: task.CreateEventTaskParams{
+			UID:            ulid.Make().String(),
+			ProjectID:      projectID,
+			EndpointID:     newMessage.EndpointID,
+			EventType:      newMessage.EventType,
+			Data:           newMessage.Data,
+			CustomHeaders:  newMessage.CustomHeaders,
+			IdempotencyKey: newMessage.IdempotencyKey,
+		},
+		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
 	}
 
-	event, err := ce.Run(r.Context())
+	eventByte, err := msgpack.EncodeMsgPack(e)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	resp := &models.EventResponse{Event: event}
-	if event.IsDuplicateEvent {
-		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", resp, http.StatusCreated))
-	} else {
-		_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", resp, http.StatusCreated))
+	job := &queue.Job{
+		ID:      newMessage.UID,
+		Payload: eventByte,
+		Delay:   0,
 	}
+
+	err = a.A.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	if err != nil {
+		log.FromContext(r.Context()).Errorf("Error occurred sending new event to the queue %s", err)
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Event queued successfully", 200, http.StatusCreated))
 }
 
 // CreateEndpointFanoutEvent

@@ -19,7 +19,7 @@ type ReplayEventService struct {
 
 func (e *ReplayEventService) Run(ctx context.Context) error {
 	createEvent := task.CreateEvent{
-		Event: *e.Event,
+		Event: e.Event,
 	}
 
 	eventByte, err := msgpack.EncodeMsgPack(createEvent)

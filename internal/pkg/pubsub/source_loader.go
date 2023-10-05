@@ -3,9 +3,10 @@ package pubsub
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/worker/task"
+	"github.com/oklog/ulid/v2"
 	"math"
 	"time"
 
@@ -17,8 +18,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
-	"github.com/frain-dev/convoy/worker/task"
-	"github.com/oklog/ulid/v2"
 )
 
 const (
@@ -122,71 +121,41 @@ func (s *SourceLoader) fetchProjectSources(ctx context.Context) error {
 	return nil
 }
 
-func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, msg string) error {
-	txn, innerCtx := apm.StartTransaction(ctx, fmt.Sprintf("%v handler", source.Name))
-	defer txn.End()
-
+func (s *SourceLoader) handler(_ context.Context, source *datastore.Source, msg string) error {
 	ev := struct {
-		EndpointID    string            `json:"endpoint_id"`
-		OwnerID       string            `json:"owner_id"`
-		EventType     string            `json:"event_type"`
-		Data          json.RawMessage   `json:"data"`
-		CustomHeaders map[string]string `json:"custom_headers"`
+		EndpointID     string            `json:"endpoint_id"`
+		OwnerID        string            `json:"owner_id"`
+		EventType      string            `json:"event_type"`
+		Data           json.RawMessage   `json:"data"`
+		CustomHeaders  map[string]string `json:"custom_headers"`
+		IdempotencyKey string            `json:"idempotency_key"`
 	}{}
 
 	if err := json.Unmarshal([]byte(msg), &ev); err != nil {
 		return err
 	}
 
-	var endpoints []string
-
-	if !util.IsStringEmpty(ev.OwnerID) {
-		ownerIdEndpoints, err := s.endpointRepo.FindEndpointsByOwnerID(innerCtx, source.ProjectID, ev.OwnerID)
-		if err != nil {
-			return err
-		}
-
-		if len(ownerIdEndpoints) == 0 {
-			return errors.New("owner ID has no configured endpoints")
-		}
-
-		for _, endpoint := range ownerIdEndpoints {
-			endpoints = append(endpoints, endpoint.UID)
-		}
-	} else {
-		endpoint, err := s.endpointRepo.FindEndpointByID(innerCtx, ev.EndpointID, source.ProjectID)
-		if err != nil {
-			return err
-		}
-
-		endpoints = append(endpoints, endpoint.UID)
-	}
-
-	event := datastore.Event{
-		UID:       ulid.Make().String(),
-		EventType: datastore.EventType(ev.EventType),
-		SourceID:  source.UID,
-		ProjectID: source.ProjectID,
-		Raw:       string(ev.Data),
-		Data:      ev.Data,
-		Headers:   getCustomHeaders(ev.CustomHeaders),
-		Endpoints: endpoints,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-
-	createEvent := task.CreateEvent{
-		Event:              event,
+	ce := task.CreateEvent{
+		Params: task.CreateEventTaskParams{
+			UID:            ulid.Make().String(),
+			ProjectID:      source.ProjectID,
+			OwnerID:        ev.OwnerID,
+			EndpointID:     ev.EndpointID,
+			EventType:      ev.EventType,
+			Data:           ev.Data,
+			CustomHeaders:  ev.CustomHeaders,
+			IdempotencyKey: ev.IdempotencyKey,
+		},
 		CreateSubscription: !util.IsStringEmpty(ev.EndpointID),
 	}
 
-	eventByte, err := msgpack.EncodeMsgPack(createEvent)
+	eventByte, err := msgpack.EncodeMsgPack(ce)
 	if err != nil {
 		return err
 	}
 
 	job := &queue.Job{
-		ID:      event.UID,
+		ID:      ce.Params.UID,
 		Payload: eventByte,
 		Delay:   0,
 	}
