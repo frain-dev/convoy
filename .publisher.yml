@@ -23,7 +23,7 @@ builds:
 archives:
   - name_template: "{{ .ProjectName}}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     id: cobin-archive
-    builds: 
+    builds:
       - cobin
 
 # https://goreleaser.com/customization/nfpm/
@@ -53,24 +53,24 @@ publishers:
       - cobin-archive
     dir: "{{ dir .ArtifactPath }}"
     cmd: cloudsmith push raw --version={{ .Version }} convoy/convoy {{ .ArtifactName }}
-    env: 
-     - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
+    env:
+      - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
 
   - name: cloudsmith-deb
-    ids: 
-     - deb
+    ids:
+      - deb
     dir: "{{ dir .ArtifactPath }}"
     cmd: cloudsmith push deb convoy/convoy/any-distro/any-version {{ .ArtifactName }}
-    env: 
-     - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
+    env:
+      - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
 
   - name: cloudsmith-rpm
-    ids: 
-     - rpm
+    ids:
+      - rpm
     dir: "{{ dir .ArtifactPath }}"
     cmd: cloudsmith push rpm convoy/convoy/any-distro/any-version {{ .ArtifactName }}
-    env: 
-     - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
+    env:
+      - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
 
 # https://goreleaser.com/customization/homebrew/
 brews:
@@ -88,9 +88,10 @@ brews:
     url_template: https://dl.cloudsmith.io/public/convoy/convoy/raw/versions/{{.Version}}/{{ .ArtifactName }}
 
 dockers:
-  - image_templates: 
-    - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:latest"
-    - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}"
+  - image_templates:
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:latest-amd64"
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}-amd64"
+    use: buildx
     goos: linux
     goarch: amd64
     dockerfile: release.Dockerfile
@@ -107,9 +108,30 @@ dockers:
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.licenses=MPL-2.0
 
-  - image_templates: 
-    - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:latest-slim"
-    - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}-slim"
+  - image_templates:
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:latest-arm64"
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}-arm64"
+    use: buildx
+    goos: linux
+    goarch: arm64
+    dockerfile: release.Dockerfile
+    extra_files:
+      - configs/local/start.sh
+    ids:
+      - cobin
+    build_flag_templates:
+      - --platform=linux/arm64
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description=A fast & secure open source webhooks service
+      - --label=org.opencontainers.image.url=https://github.com/{{ .Env.REPO_NAME }}
+      - --label=org.opencontainers.image.source=https://github.com/{{ .Env.REPO_NAME }}
+      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+      - --label=org.opencontainers.image.licenses=MPL-2.0
+
+  - image_templates:
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:latest-slim"
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}-slim"
+    use: buildx
     goos: linux
     goarch: amd64
     dockerfile: slim.Dockerfile
@@ -123,6 +145,17 @@ dockers:
       - --label=org.opencontainers.image.source=https://github.com/{{ .Env.REPO_NAME }}
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.licenses=MPL-2.0
+
+docker_manifests:
+  - name_template: "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}"
+    image_templates:
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}-amd64"
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}-arm64"
+
+  - name_template: "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:latest"
+    image_templates:
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}-latest-amd64"
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}-latest-arm64"
 
 checksum:
   name_template: "{{ .ProjectName}}_checksums.txt"
