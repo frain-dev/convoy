@@ -34,13 +34,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	var retryStrategy string
 	var signatureHash string
 	var signatureHeader string
-	var smtpProvider string
-	var smtpUrl string
-	var smtpSSL bool
-	var smtpUsername string
-	var smtpPassword string
-	var smtpReplyTo string
-	var smtpFrom string
 	var newRelicApp string
 	var newRelicKey string
 	var typesenseApiKey string
@@ -104,13 +97,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&retryStrategy, "retry-strategy", "", "Endpoint retry strategy")
 	cmd.Flags().StringVar(&signatureHash, "signature-hash", "", "Application signature hash")
 	cmd.Flags().StringVar(&signatureHeader, "signature-header", "", "Application signature header")
-	cmd.Flags().StringVar(&smtpProvider, "smtp-provider", "", "SMTP provider")
-	cmd.Flags().StringVar(&smtpUrl, "smtp-url", "", "SMTP provider URL")
-	cmd.Flags().BoolVar(&smtpSSL, "smtp-ssl", false, "SMTP SSL")
-	cmd.Flags().StringVar(&smtpUsername, "smtp-username", "", "SMTP authentication username")
-	cmd.Flags().StringVar(&smtpPassword, "smtp-password", "", "SMTP authentication password")
-	cmd.Flags().StringVar(&smtpFrom, "smtp-from", "", "Sender email address")
-	cmd.Flags().StringVar(&smtpReplyTo, "smtp-reply-to", "", "Email address to reply to")
 	cmd.Flags().StringVar(&newRelicApp, "new-relic-app", "", "NewRelic application name")
 	cmd.Flags().StringVar(&newRelicKey, "new-relic-key", "", "NewRelic application license key")
 	cmd.Flags().StringVar(&searcher, "searcher", "", "Searcher")
