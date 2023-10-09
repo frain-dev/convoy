@@ -89,8 +89,8 @@ docker_manifests:
 
   - name_template: "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:latest"
     image_templates:
-      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:{{ .Tag }}-latest-amd64"
-      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:{{ .Tag }}-latest-arm64"
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:latest-amd64"
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:latest-arm64"
 
 checksum:
   name_template: "{{ .ProjectName}}_checksums.txt"
