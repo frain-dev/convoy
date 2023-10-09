@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/frain-dev/convoy/cmd/bootstrap"
 	"os"
 	_ "time/tzdata"
 
@@ -88,6 +89,7 @@ func main() {
 	c.AddCommand(configCmd.AddConfigCommand(app))
 	c.AddCommand(stream.AddStreamCommand(app))
 	c.AddCommand(ingest.AddIngestCommand(app))
+	c.AddCommand(bootstrap.AddBootstrapCommand(app))
 
 	if err := c.Execute(); err != nil {
 		slog.Fatal(err)

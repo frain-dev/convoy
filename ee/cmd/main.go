@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/frain-dev/convoy/cmd/bootstrap"
 	"os"
 
 	"github.com/frain-dev/convoy"
@@ -89,6 +90,7 @@ func main() {
 	c.AddCommand(domain.AddDomainCommand(app))
 	c.AddCommand(ingest.AddIngestCommand(app))
 	c.AddCommand(stream.AddStreamCommand(app))
+	c.AddCommand(bootstrap.AddBootstrapCommand(app))
 
 	if err := c.Execute(); err != nil {
 		slog.Fatal(err)
