@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"gopkg.in/guregu/null.v4"
 	"net/http"
 	"time"
 
@@ -20,7 +21,7 @@ var (
 	ErrCreateSubscriptionError         = errors.New("failed to create subscription")
 )
 
-type CreateSubcriptionService struct {
+type CreateSubscriptionService struct {
 	SubRepo         datastore.SubscriptionRepository
 	EndpointRepo    datastore.EndpointRepository
 	SourceRepo      datastore.SourceRepository
@@ -28,7 +29,7 @@ type CreateSubcriptionService struct {
 	NewSubscription *models.CreateSubscription
 }
 
-func (s *CreateSubcriptionService) Run(ctx context.Context) (*datastore.Subscription, error) {
+func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscription, error) {
 	endpoint, err := s.findEndpoint(ctx, s.NewSubscription.AppID, s.NewSubscription.EndpointID)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to find endpoint by id")
@@ -71,6 +72,7 @@ func (s *CreateSubcriptionService) Run(ctx context.Context) (*datastore.Subscrip
 		Type:       datastore.SubscriptionTypeAPI,
 		SourceID:   s.NewSubscription.SourceID,
 		EndpointID: s.NewSubscription.EndpointID,
+		Function:   null.StringFrom(s.NewSubscription.Function),
 
 		RetryConfig:     retryConfig,
 		AlertConfig:     s.NewSubscription.AlertConfig.Transform(),
@@ -112,7 +114,7 @@ func (s *CreateSubcriptionService) Run(ctx context.Context) (*datastore.Subscrip
 	return subscription, nil
 }
 
-func (s *CreateSubcriptionService) findEndpoint(ctx context.Context, appID, endpointID string) (*datastore.Endpoint, error) {
+func (s *CreateSubscriptionService) findEndpoint(ctx context.Context, appID, endpointID string) (*datastore.Endpoint, error) {
 	if !util.IsStringEmpty(appID) {
 		endpoints, err := s.EndpointRepo.FindEndpointsByAppID(ctx, appID, s.Project.UID)
 		if err != nil {

@@ -192,6 +192,7 @@ type JwtRealmOptions struct {
 }
 
 type SMTPConfiguration struct {
+	SSL      bool   `json:"ssl" envconfig:"CONVOY_SMTP_SSL"`
 	Provider string `json:"provider" envconfig:"CONVOY_SMTP_PROVIDER"`
 	URL      string `json:"url" envconfig:"CONVOY_SMTP_URL"`
 	Port     uint32 `json:"port" envconfig:"CONVOY_SMTP_PORT"`

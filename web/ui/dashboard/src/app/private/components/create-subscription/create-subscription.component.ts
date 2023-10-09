@@ -29,6 +29,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		name: [null, Validators.required],
 		source_id: [''],
 		endpoint_id: [null, Validators.required],
+		function: [null],
 		retry_config: this.formBuilder.group({
 			type: [],
 			retry_count: [null, Validators.pattern('^[-+]?[0-9]+$')],
@@ -70,7 +71,8 @@ export class CreateSubscriptionComponent implements OnInit {
 	];
 	createdSubscription = false;
 	private rbacService = inject(RbacService);
-    showFilterDialog = false
+	showFilterDialog = false;
+	showTransformDialog = false;
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router) {}
 
@@ -84,6 +86,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (this.projectType === 'incoming') {
 			this.subscriptionForm.get('source_id')?.addValidators(Validators.required);
 			this.subscriptionForm.get('source_id')?.updateValueAndValidity();
+			this.configurations.push({ uid: 'tranform_config', name: 'Transform', show: false });
 		} else {
 			this.configurations.push({ uid: 'events', name: 'Event Types', show: false });
 		}
@@ -100,8 +103,6 @@ export class CreateSubscriptionComponent implements OnInit {
 		this.configurations.forEach(config => {
 			if (config.uid === configValue) config.show = value ? value : !config.show;
 		});
-
-		this.onToggleConfig();
 	}
 
 	showConfig(configValue: string): boolean {
@@ -128,6 +129,8 @@ export class CreateSubscriptionComponent implements OnInit {
 			if (this.token) this.projectType = 'outgoing';
 
 			if (response.data?.retry_config) this.toggleConfigForm('retry_config');
+			if (response.data?.function) this.toggleConfigForm('tranform_config');
+
 			return;
 		} catch (error) {
 			return error;
@@ -167,18 +170,6 @@ export class CreateSubscriptionComponent implements OnInit {
 		await this.getEndpoints();
 	}
 
-	onToggleConfig() {
-		const retryControls = Object.keys((this.subscriptionForm.get('retry_config') as FormGroup).controls);
-
-		if (this.showConfig('retry_config')) {
-			retryControls.forEach(key => this.subscriptionForm.get(`retry_config.${key}`)?.setValidators(Validators.required));
-			retryControls.forEach(key => this.subscriptionForm.get(`retry_config.${key}`)?.updateValueAndValidity());
-		} else {
-			retryControls.forEach(key => this.subscriptionForm.get(`retry_config.${key}`)?.removeValidators(Validators.required));
-			retryControls.forEach(key => this.subscriptionForm.get(`retry_config.${key}`)?.updateValueAndValidity());
-		}
-	}
-
 	toggleFormsLoaders(loaderState: boolean) {
 		this.isCreatingSubscription = loaderState;
 		if (this.createEndpointForm) this.createEndpointForm.savingEndpoint = loaderState;
@@ -186,32 +177,24 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async runSubscriptionValidation() {
-		if (this.configurations[1]?.show) {
-			this.subscriptionForm.get('retry_config.type')?.addValidators(Validators.required);
-			this.subscriptionForm.get('retry_config.retry_count')?.addValidators(Validators.required);
-			this.subscriptionForm.get('retry_config.duration')?.addValidators(Validators.required);
-			this.subscriptionForm.get('retry_config.type')?.updateValueAndValidity();
-			this.subscriptionForm.get('retry_config.retry_count')?.updateValueAndValidity();
-			this.subscriptionForm.get('retry_config.duration')?.updateValueAndValidity();
-		} else {
-			this.subscriptionForm.get('retry_config.type')?.removeValidators(Validators.required);
-			this.subscriptionForm.get('retry_config.retry_count')?.removeValidators(Validators.required);
-			this.subscriptionForm.get('retry_config.duration')?.removeValidators(Validators.required);
-			this.subscriptionForm.get('retry_config.type')?.updateValueAndValidity();
-			this.subscriptionForm.get('retry_config.retry_count')?.updateValueAndValidity();
-			this.subscriptionForm.get('retry_config.duration')?.updateValueAndValidity();
-		}
-
-		if (this.configurations.length > 2) {
-			if (this.configurations[2]?.show) {
-				this.subscriptionForm.get('filter_config.event_types')?.addValidators(Validators.required);
-				this.subscriptionForm.get('filter_config.event_types')?.updateValueAndValidity();
+		const configFields: any = {
+			retry_config: ['retry_config.type', 'retry_config.retry_count', 'retry_config.duration'],
+			events: ['filter_config.event_types']
+		};
+		this.configurations.forEach(config => {
+			const fields = configFields[config.uid];
+			if (this.showConfig(config.uid)) {
+				fields?.forEach((item: string) => {
+					this.subscriptionForm.get(item)?.addValidators(Validators.required);
+					this.subscriptionForm.get(item)?.updateValueAndValidity();
+				});
 			} else {
-				this.subscriptionForm.get('filter_config.event_types')?.removeValidators(Validators.required);
-				this.subscriptionForm.get('filter_config.event_types')?.updateValueAndValidity();
+				fields?.forEach((item: string) => {
+					this.subscriptionForm.get(item)?.removeValidators(Validators.required);
+					this.subscriptionForm.get(item)?.updateValueAndValidity();
+				});
 			}
-		}
-
+		});
 		return;
 	}
 
@@ -239,13 +222,14 @@ export class CreateSubscriptionComponent implements OnInit {
 		// check if configs are added, else delete the properties
 		const subscriptionData = structuredClone(this.subscriptionForm.value);
 		const retryDuration = this.subscriptionForm.get('retry_config.duration');
-		this.configurations[1]?.show ? (subscriptionData.retry_config.duration = retryDuration?.value + 's') : delete subscriptionData.retry_config;
+		this.configurations[2]?.show ? (subscriptionData.retry_config.duration = retryDuration?.value + 's') : delete subscriptionData.retry_config;
 
 		// create subscription
 		try {
 			const response = this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: subscriptionData, id: this.subscriptionId }) : await this.createSubscriptionService.createSubscription(subscriptionData);
 			if (setup) await this.privateService.getProjectStat({ refresh: true });
 			this.privateService.getSubscriptions();
+			localStorage.removeItem('FUNCTION');
 			this.onAction.emit({ data: response.data, action: this.action == 'update' ? 'update' : 'create' });
 			this.createdSubscription = true;
 		} catch (error) {
@@ -273,10 +257,20 @@ export class CreateSubscriptionComponent implements OnInit {
 		this.showFilterDialog = true;
 	}
 
+	setupTransformDialog() {
+		document.getElementById(this.showAction === 'true' ? 'subscriptionForm' : 'configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
+		this.showTransformDialog = true;
+	}
+
 	getFilterSchema(schema: any) {
 		if (schema.headerSchema) this.subscriptionForm.get('filter_config.filter.headers')?.patchValue(schema.headerSchema);
 		if (schema.bodySchema) this.subscriptionForm.get('filter_config.filter.body')?.patchValue(schema.bodySchema);
-        this.showFilterDialog = false;
+		this.showFilterDialog = false;
+	}
+
+	getFunction(subscriptionFunction: any) {
+		if (subscriptionFunction) this.subscriptionForm.get('function')?.patchValue(subscriptionFunction);
+		this.showTransformDialog = false;
 	}
 
 	get shouldShowBorder(): number {

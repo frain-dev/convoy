@@ -36,6 +36,7 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	var signatureHeader string
 	var smtpProvider string
 	var smtpUrl string
+	var smtpSSL bool
 	var smtpUsername string
 	var smtpPassword string
 	var smtpReplyTo string
@@ -105,6 +106,7 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&signatureHeader, "signature-header", "", "Application signature header")
 	cmd.Flags().StringVar(&smtpProvider, "smtp-provider", "", "SMTP provider")
 	cmd.Flags().StringVar(&smtpUrl, "smtp-url", "", "SMTP provider URL")
+	cmd.Flags().BoolVar(&smtpSSL, "smtp-ssl", false, "SMTP SSL")
 	cmd.Flags().StringVar(&smtpUsername, "smtp-username", "", "SMTP authentication username")
 	cmd.Flags().StringVar(&smtpPassword, "smtp-password", "", "SMTP authentication password")
 	cmd.Flags().StringVar(&smtpFrom, "smtp-from", "", "Sender email address")

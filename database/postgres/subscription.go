@@ -9,9 +9,11 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
+	"github.com/dop251/goja"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/pkg/compare"
 	"github.com/frain-dev/convoy/pkg/flatten"
+	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -27,9 +29,9 @@ const (
 	retry_config_type,retry_config_duration,
 	retry_config_retry_count,filter_config_event_types,
 	filter_config_filter_headers,filter_config_filter_body,
-	rate_limit_config_count,rate_limit_config_duration
+	rate_limit_config_count,rate_limit_config_duration,function
 	)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17);
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18);
     `
 
 	updateSubscription = `
@@ -46,7 +48,8 @@ const (
 	filter_config_filter_headers=$12,
 	filter_config_filter_body=$13,
 	rate_limit_config_count=$14,
-	rate_limit_config_duration=$15
+	rate_limit_config_duration=$15,
+	function=$16
     WHERE id = $1 AND project_id = $2
 	AND deleted_at IS NULL;
     `
@@ -55,7 +58,8 @@ const (
     SELECT
     s.id,s.name,s.type,
 	s.project_id,
-	s.created_at, s.updated_at,
+	s.created_at,
+	s.updated_at, s.function,
 
 	COALESCE(s.endpoint_id,'') AS "endpoint_id",
 	COALESCE(s.device_id,'') AS "device_id",
@@ -144,13 +148,12 @@ const (
 	%s
 	AND s.id > :cursor GROUP BY s.id ORDER BY s.id DESC LIMIT 1`
 
-	fetchSubscriptionByID = baseFetchSubscription + ` AND %s = $1 AND %s = $2;`
-
 	fetchSubscriptionByDeviceID = `
     SELECT
     s.id,s.name,s.type,
 	s.project_id,
-	s.created_at, s.updated_at,
+	s.created_at,
+	s.updated_at, s.function,
 
 	COALESCE(s.endpoint_id,'') AS "endpoint_id",
 	COALESCE(s.device_id,'') AS "device_id",
@@ -174,8 +177,6 @@ const (
 	FROM convoy.subscriptions s
 	LEFT JOIN convoy.devices d ON s.device_id = d.id
     WHERE s.device_id = $1 AND s.project_id = $2 AND s.type = $3`
-
-	fetchCLISubscriptions = baseFetchSubscription + `AND %s = $1 AND %s = $2`
 
 	deleteSubscriptions = `
 	UPDATE convoy.subscriptions SET
@@ -230,7 +231,8 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		subscription.Name, subscription.Type, subscription.ProjectID,
 		endpointID, deviceID, sourceID,
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
-		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, rlc.Count, rlc.Duration,
+		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body,
+		rlc.Count, rlc.Duration, subscription.Function,
 	)
 	if err != nil {
 		return err
@@ -266,7 +268,8 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		ctx, updateSubscription, subscription.UID, projectID,
 		subscription.Name, subscription.EndpointID, sourceID,
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
-		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, rlc.Count, rlc.Duration,
+		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body,
+		rlc.Count, rlc.Duration, subscription.Function,
 	)
 	if err != nil {
 		return err
@@ -332,7 +335,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
-	defer rows.Close()
+	defer closeWithError(rows)
 
 	subscriptions, err := scanSubscriptions(rows)
 	if err != nil {
@@ -371,7 +374,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		rows.Close()
+		defer closeWithError(rows)
 	}
 
 	ids := make([]string, len(subscriptions))
@@ -523,7 +526,7 @@ func (s *subscriptionRepo) CountEndpointSubscriptions(ctx context.Context, proje
 	return count, nil
 }
 
-func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload, filter interface{}) (bool, error) {
+func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload, filter interface{}) (bool, error) {
 	p, err := flatten.Flatten(payload)
 	if err != nil {
 		return false, err
@@ -535,6 +538,16 @@ func (s *subscriptionRepo) TestSubscriptionFilter(ctx context.Context, payload, 
 	}
 
 	return compare.Compare(p, f)
+}
+
+func (s *subscriptionRepo) TransformPayload(_ context.Context, function string, payload map[string]interface{}) (interface{}, []string, error) {
+	transformer := transform.NewTransformer(goja.New())
+	mutated, consoleLog, err := transformer.Transform(function, payload)
+	if err != nil {
+		return nil, []string{}, err
+	}
+
+	return mutated, consoleLog, nil
 }
 
 var (

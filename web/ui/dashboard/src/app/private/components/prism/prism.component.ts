@@ -15,7 +15,7 @@ export class PrismComponent implements AfterViewInit, OnChanges {
 	@Input() code?: string;
 	@Input() language?: string;
 	@Input('title') title?: string;
-	@Input('type') type?: 'default' | 'headers';
+	@Input('type') type?: 'default' | 'headers' | 'display' = 'default';
 	showPayload = false;
 
 	constructor() {}

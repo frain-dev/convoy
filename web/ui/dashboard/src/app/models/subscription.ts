@@ -6,6 +6,7 @@ export interface SUBSCRIPTION {
 	created_at: string;
 	endpoint: string;
 	name: string;
+    function: string;
 	source: SOURCE;
 	status: string;
 	type: 'outgoing' | 'incoming';

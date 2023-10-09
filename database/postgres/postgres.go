@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/frain-dev/convoy/database/hooks"
@@ -65,5 +66,11 @@ func rollbackTx(tx *sqlx.Tx) {
 	err := tx.Rollback()
 	if err != nil && !errors.Is(err, sql.ErrTxDone) {
 		log.WithError(err).Error("failed to rollback tx")
+	}
+}
+func closeWithError(closer io.Closer) {
+	err := closer.Close()
+	if err != nil {
+		fmt.Printf("%v, an error occurred while closing the client", err)
 	}
 }

@@ -188,44 +188,53 @@
 	</div>
 
 	<div class="h-full w-full">
-        <form class="p-20px" [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()" *ngIf="action === 'create'; else updateMemberForm">
-            <convoy-input-field>
-                <label for="email" convoy-label required="true">Email</label>
-                <input type="email" id="email" convoy-input autocomplete="email" formControlName="invitee_email" placeholder="Enter member email" />
-                <convoy-input-error *ngIf="inviteUserForm.get('invitee_email')?.touched && inviteUserForm.get('invitee_email')?.invalid">Please enter a valid email</convoy-input-error>
-            </convoy-input-field>
+		<form class="p-20px" [formGroup]="inviteUserForm" (ngSubmit)="inviteUser()" *ngIf="action === 'create'; else updateMemberForm">
+			<convoy-input-field>
+				<label for="email" convoy-label required="true">Email</label>
+				<input type="email" id="email" convoy-input autocomplete="email" formControlName="invitee_email" placeholder="Enter member email" />
+				<convoy-input-error *ngIf="inviteUserForm.get('invitee_email')?.touched && inviteUserForm.get('invitee_email')?.invalid">Please enter a valid email</convoy-input-error>
+			</convoy-input-field>
 
-            <ng-container formGroupName="role">
-                <convoy-select *convoy-enterprise className="mb-24px" label="Role" name="role" formControlName="type" [options]="roles" errorMessage="Select user role" [required]="true" (selectedOption)="inviteUserForm.get('role')?.patchValue({ type: $event })"></convoy-select>
-            </ng-container>
+			<ng-container formGroupName="role">
+				<convoy-select *convoy-enterprise className="mb-24px" label="Role" name="role" formControlName="type" [options]="roles" errorMessage="Select user role" [required]="true" (selectedOption)="inviteUserForm.get('role')?.patchValue({ type: $event })"></convoy-select>
+			</ng-container>
 
-            <div class="flex justify-end pt-24px pb-40px">
-                <button convoy-button class="ml-16px" [disabled]="invitingUser || inviteUserForm.disabled">
-                    {{ invitingUser ? 'Inviting User...' : 'Send Invite' }}
-                </button>
-            </div>
-        </form>
+			<ng-container *ngIf="inviteLink">
+				<p class="text-grey-40 text-12 mt-20px">Invite Link</p>
+				<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px mb-12px last-of-type:mb-8px">
+					<span class="text-14 font-normal whitespace-nowrap w-380px overflow-hidden text-ellipsis">{{ inviteLink || '' }}</span>
+					<convoy-copy-button [text]="inviteLink || ''" notificationText="Invite link has been copied to clipboard!"></convoy-copy-button>
+				</div>
+			</ng-container>
 
-        <ng-template #updateMemberForm>
-            <form class="p-20px" [formGroup]="memberForm" (ngSubmit)="updateMember()">
-                <convoy-input-field formGroupName="user_metadata">
-                    <label for="email" convoy-label required="true">Email</label>
-                    <input type="email" id="email" convoy-input autocomplete="email" formControlName="email" placeholder="Enter member email" />
-                    <convoy-input-error *ngIf="memberForm.get('email')?.touched && memberForm.get('email')?.invalid">Please enter a valid email</convoy-input-error>
-                </convoy-input-field>
+			<div class="flex justify-end pt-24px pb-40px">
+				<button convoy-button class="ml-16px" [disabled]="invitingUser || inviteUserForm.disabled || inviteLink">
+					{{ invitingUser ? 'Inviting User...' : 'Send Invite' }}
+				</button>
+				<button convoy-button class="ml-16px text-14" type="button" fill="outline" *ngIf="inviteLink" (click)="inviteUserForm.reset(); toggleFilter('pending'); teamsDialog.close()">Done</button>
+			</div>
+		</form>
 
-                <ng-container formGroupName="role">
-                    <convoy-select *convoy-enterprise className="mb-24px" label="Role" name="role" formControlName="type" [options]="roles" errorMessage="Select user role" [required]="true" (selectedOption)="memberForm.get('role')?.patchValue({ type: $event })"></convoy-select>
-                </ng-container>
+		<ng-template #updateMemberForm>
+			<form class="p-20px" [formGroup]="memberForm" (ngSubmit)="updateMember()">
+				<convoy-input-field formGroupName="user_metadata">
+					<label for="email" convoy-label required="true">Email</label>
+					<input type="email" id="email" convoy-input autocomplete="email" formControlName="email" placeholder="Enter member email" />
+					<convoy-input-error *ngIf="memberForm.get('email')?.touched && memberForm.get('email')?.invalid">Please enter a valid email</convoy-input-error>
+				</convoy-input-field>
 
-                <div class="flex justify-end pt-24px pb-40px">
-                    <button convoy-button class="ml-16px" [disabled]="updatingMember || memberForm.disabled">
-                        {{ updatingMember ? 'Updating...' : 'Update' }}
-                    </button>
-                </div>
-            </form>
-        </ng-template>
-    </div>
+				<ng-container formGroupName="role">
+					<convoy-select *convoy-enterprise className="mb-24px" label="Role" name="role" formControlName="type" [options]="roles" errorMessage="Select user role" [required]="true" (selectedOption)="memberForm.get('role')?.patchValue({ type: $event })"></convoy-select>
+				</ng-container>
+
+				<div class="flex justify-end pt-24px pb-40px">
+					<button convoy-button class="ml-16px" [disabled]="updatingMember || memberForm.disabled">
+						{{ updatingMember ? 'Updating...' : 'Update' }}
+					</button>
+				</div>
+			</form>
+		</ng-template>
+	</div>
 </dialog>
 
 <dialog #deleteDialog convoy-dialog position="center" size="sm">

@@ -9,6 +9,9 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/util"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
@@ -139,14 +142,37 @@ func ProcessEventCreation(
 				return &EndpointError{Err: err, delay: defaultDelay}
 			}
 
+			raw := event.Raw
+			data := event.Data
+
+			if s.Function.Ptr() != nil && !util.IsStringEmpty(s.Function.String) {
+				var payload map[string]interface{}
+				err = json.Unmarshal(event.Data, &payload)
+				if err != nil {
+					return &EndpointError{Err: err, delay: 10 * time.Second}
+				}
+
+				mutated, _, err := subRepo.TransformPayload(ctx, s.Function.String, payload)
+				if err != nil {
+					return &EndpointError{Err: err, delay: 10 * time.Second}
+				}
+
+				bytes, err := json.Marshal(mutated)
+				if err != nil {
+					return &EndpointError{Err: err, delay: 10 * time.Second}
+				}
+
+				raw = string(bytes)
+				data = bytes
+			}
+
 			metadata := &datastore.Metadata{
-				NumTrials:       0,
-				RetryLimit:      rc.RetryCount,
-				Data:            event.Data,
-				Raw:             event.Raw,
-				IntervalSeconds: rc.Duration,
+				Raw:             raw,
+				Data:            data,
 				Strategy:        rc.Type,
 				NextSendTime:    time.Now(),
+				IntervalSeconds: rc.Duration,
+				RetryLimit:      rc.RetryCount,
 			}
 
 			eventDelivery := &datastore.EventDelivery{
@@ -181,10 +207,8 @@ func ProcessEventCreation(
 
 			if eventDelivery.Status != datastore.DiscardedEventStatus {
 				payload := EventDelivery{
-					Subscription:  &s,
-					Project:       project,
-					Endpoint:      s.Endpoint,
-					EventDelivery: eventDelivery,
+					EventDeliveryID: eventDelivery.UID,
+					ProjectID:       eventDelivery.ProjectID,
 				}
 
 				data, err := msgpack.EncodeMsgPack(payload)

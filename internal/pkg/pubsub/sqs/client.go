@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/util"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -95,6 +96,24 @@ func (s *Sqs) Consume() {
 
 	if err != nil {
 		s.log.WithError(err).Error("failed to fetch queue url - sqs")
+	}
+
+	if url == nil {
+		log.Errorf("pubsub url for source with id %s is nil", s.source.UID)
+		log.Errorf("url: %+v\n", url)
+		return
+	}
+
+	if url.QueueUrl == nil {
+		log.Errorf("pubsub queue url for source with id %s is nil", s.source.UID)
+		log.Errorf("url: %+v\n", url)
+		return
+	}
+
+	if util.IsStringEmpty(*url.QueueUrl) {
+		log.Errorf("pubsub queue url for source with id %s is empty", s.source.UID)
+		log.Errorf("url: %+v\n", url)
+		return
 	}
 
 	queueURL := url.QueueUrl

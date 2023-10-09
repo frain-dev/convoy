@@ -14,6 +14,7 @@ type CreateSubscription struct {
 	SourceID   string `json:"source_id"`
 	AppID      string `json:"app_id"` // Deprecated but necessary for backward compatibility
 	EndpointID string `json:"endpoint_id" valid:"required~please provide a valid endpoint id"`
+	Function   string `json:"function"`
 
 	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty"`
 	RetryConfig     *RetryConfiguration     `json:"retry_config,omitempty"`
@@ -30,6 +31,7 @@ type UpdateSubscription struct {
 	AppID      string `json:"app_id,omitempty"`
 	SourceID   string `json:"source_id,omitempty"`
 	EndpointID string `json:"endpoint_id,omitempty"`
+	Function   string `json:"function"`
 
 	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty"`
 	RetryConfig     *RetryConfiguration     `json:"retry_config,omitempty"`
@@ -73,6 +75,11 @@ type FilterSchema struct {
 type TestFilter struct {
 	Request FilterSchema `json:"request"`
 	Schema  FilterSchema `json:"schema"`
+}
+
+type TestWebhookFunction struct {
+	Payload  map[string]interface{} `json:"payload"`
+	Function string                 `json:"function"`
 }
 
 type AlertConfiguration struct {
@@ -147,6 +154,11 @@ func (fs *FS) Transform() datastore.FilterSchema {
 		Headers: fs.Headers,
 		Body:    fs.Body,
 	}
+}
+
+type SubscriptionFunctionResponse struct {
+	Payload interface{} `json:"payload"`
+	Log     []string    `json:"log"`
 }
 
 type DynamicSubscription struct {
