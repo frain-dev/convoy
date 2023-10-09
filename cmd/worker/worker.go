@@ -34,6 +34,14 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 	var newRelicTracerEnabled bool
 	var newRelicConfigEnabled bool
 
+	var smtpSSL bool
+	var smtpUsername string
+	var smtpPassword string
+	var smtpReplyTo string
+	var smtpFrom string
+	var smtpProvider string
+	var smtpUrl string
+
 	cmd := &cobra.Command{
 		Use:   "worker",
 		Short: "Start worker instance",
@@ -173,6 +181,14 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			return ctx.Err()
 		},
 	}
+
+	cmd.Flags().BoolVar(&smtpSSL, "smtp-ssl", false, "Enable SMTP SSL")
+	cmd.Flags().StringVar(&smtpUsername, "smtp-username", "", "SMTP authentication username")
+	cmd.Flags().StringVar(&smtpPassword, "smtp-password", "", "SMTP authentication password")
+	cmd.Flags().StringVar(&smtpFrom, "smtp-from", "", "Sender email address")
+	cmd.Flags().StringVar(&smtpReplyTo, "smtp-reply-to", "", "Email address to reply to")
+	cmd.Flags().StringVar(&smtpProvider, "smtp-provider", "", "SMTP provider")
+	cmd.Flags().StringVar(&smtpUrl, "smtp-url", "", "SMTP provider URL")
 
 	cmd.Flags().Uint32Var(&workerPort, "worker-port", 5006, "Worker port")
 	cmd.Flags().StringVar(&logLevel, "log-level", "", "scheduler log level")
