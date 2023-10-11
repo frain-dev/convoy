@@ -6,12 +6,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/frain-dev/convoy/internal/pkg/searcher"
-
 	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/services"
@@ -321,12 +318,6 @@ func (a *PortalLinkHandler) ForceResendEventDeliveries(w http.ResponseWriter, r 
 
 func (a *PortalLinkHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryListEvent
-	cfg, err := config.Get()
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
 	data, err := q.Transform(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -358,35 +349,6 @@ func (a *PortalLinkHandler) GetEventsPaged(w http.ResponseWriter, r *http.Reques
 	}
 
 	data.Filter.EndpointIDs = endpointIDs
-	if cfg.Search.Type == config.TypesenseSearchProvider && !util.IsStringEmpty(data.Filter.Query) {
-		searchBackend, err := searcher.NewSearchClient(cfg)
-		if err != nil {
-			log.FromContext(r.Context()).WithError(err).Error("failed to initialise search backend")
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-			return
-		}
-
-		se := services.SearchEventService{
-			EventRepo: postgres.NewEventRepo(a.A.DB, a.A.Cache),
-			Searcher:  searchBackend,
-			Filter:    data.Filter,
-		}
-
-		m, paginationData, err := se.Run(r.Context())
-		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-			return
-		}
-
-		resp := models.NewListResponse(m, func(event datastore.Event) models.EventResponse {
-			return models.EventResponse{Event: &event}
-		})
-		_ = render.Render(w, r, util.NewServerResponse("Endpoint events fetched successfully",
-			pagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
-
-		return
-	}
-
 	m, paginationData, err := postgres.NewEventRepo(a.A.DB, a.A.Cache).LoadEventsPaged(r.Context(), project.UID, data.Filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch events")

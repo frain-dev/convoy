@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/dop251/goja"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
-	"github.com/dop251/goja"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/pkg/compare"
 	"github.com/frain-dev/convoy/pkg/flatten"
@@ -148,6 +148,8 @@ const (
 	%s
 	AND s.id > :cursor GROUP BY s.id ORDER BY s.id DESC LIMIT 1`
 
+	fetchSubscriptionByID = baseFetchSubscription + ` AND %s = $1 AND %s = $2;`
+
 	fetchSubscriptionByDeviceID = `
     SELECT
     s.id,s.name,s.type,
@@ -177,6 +179,8 @@ const (
 	FROM convoy.subscriptions s
 	LEFT JOIN convoy.devices d ON s.device_id = d.id
     WHERE s.device_id = $1 AND s.project_id = $2 AND s.type = $3`
+
+	fetchCLISubscriptions = baseFetchSubscription + `AND %s = $1 AND %s = $2`
 
 	deleteSubscriptions = `
 	UPDATE convoy.subscriptions SET
@@ -405,6 +409,12 @@ func (s *subscriptionRepo) DeleteSubscription(ctx context.Context, projectID str
 
 	if rowsAffected < 1 {
 		return ErrSubscriptionNotDeleted
+	}
+
+	subscriptionCacheKey := convoy.SubscriptionsCacheKey.Get(subscription.UID).String()
+	err = s.cache.Delete(ctx, subscriptionCacheKey)
+	if err != nil {
+		return err
 	}
 
 	return nil

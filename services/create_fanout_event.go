@@ -7,6 +7,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
+	"github.com/oklog/ulid/v2"
 )
 
 type CreateFanoutEventService struct {
@@ -55,6 +56,7 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (*datastore.Event, e
 	}
 
 	ev := &newEvent{
+		UID:            ulid.Make().String(),
 		Data:           e.NewMessage.Data,
 		EventType:      e.NewMessage.EventType,
 		IdempotencyKey: e.NewMessage.IdempotencyKey,

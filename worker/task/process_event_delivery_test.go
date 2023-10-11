@@ -39,6 +39,9 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
+						EndpointID:     "endpoint-id-1",
+						SubscriptionID: "sub-id-1",
+						ProjectID:      "project-id-1",
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
 							NumTrials:       0,
@@ -47,6 +50,15 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						Status: datastore.SuccessEventStatus,
 					}, nil).Times(1)
+
+				endpoint := &datastore.Endpoint{UID: "endpoint-id-1"}
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).Times(1).Return(endpoint, nil)
+
+				subscriptions := &datastore.Subscription{UID: "sub-id-1", ProjectID: "project-id-1"}
+				s.EXPECT().FindSubscriptionByID(gomock.Any(), "project-id-1", "sub-id-1").Times(1).Return(subscriptions, nil)
+
+				project := &datastore.Project{UID: "project-id-1"}
+				o.EXPECT().FetchProjectByID(gomock.Any(), "project-id-1").Times(1).Return(project, nil)
 			},
 		},
 		{

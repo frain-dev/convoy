@@ -58,7 +58,7 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 				UpdatedAt: time.Now(),
 			}
 
-			userRepo := postgres.NewUserRepo(a.DB)
+			userRepo := postgres.NewUserRepo(a.DB, a.Cache)
 			err = userRepo.CreateUser(context.Background(), user)
 			if err != nil {
 				return err

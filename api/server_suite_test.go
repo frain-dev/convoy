@@ -27,7 +27,6 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/cache"
-	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -112,7 +111,10 @@ func buildServer() *ApplicationHandler {
 	logger = log.NewLogger(os.Stderr)
 	logger.SetLevel(log.FatalLevel)
 
-	noopCache := ncache.NewNoopCache()
+	noopCache, err := cache.NewCache(getConfig().Redis)
+	if err != nil {
+		log.Fatal(fmt.Sprintf("failed to connect to redis: %v", err))
+	}
 
 	ah, _ := NewApplicationHandler(
 		&types.APIOptions{
@@ -194,8 +196,8 @@ func authenticateRequest(auth *models.LoginUser) AuthenticatorFn {
 }
 
 func randBool() bool {
-	rand.Seed(time.Now().UnixNano())
-	return rand.Intn(2) == 1
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return rnd.Intn(2) == 1
 }
 
 func createRequest(method, url, auth string, body io.Reader) *http.Request {

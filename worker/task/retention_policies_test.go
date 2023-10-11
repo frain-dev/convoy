@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/log"
 	"os"
 	"testing"
 	"time"
@@ -18,7 +19,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/oklog/ulid/v2"
 
-	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy/api/testdb"
@@ -125,7 +125,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	// call handler
 	task := asynq.NewTask("retention-policies", nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
-	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.exportRepo, r.ConvoyApp.searcher)
+	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.exportRepo)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
 
@@ -199,7 +199,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	// call handler
 	task := asynq.NewTask(string(convoy.TaskName("retention-policies")), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
-	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.exportRepo, r.ConvoyApp.searcher)
+	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.exportRepo)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
 
@@ -230,7 +230,15 @@ func getConfig() config.Configuration {
 	_ = os.Setenv("CONVOY_DB_OPTIONS", os.Getenv("TEST_DB_OPTIONS"))
 	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
 
-	cfg, _ := config.Get()
+	err := config.LoadConfig("")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cfg, err := config.Get()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return cfg
 }
@@ -275,7 +283,6 @@ type applicationHandler struct {
 	configRepo        datastore.ConfigurationRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	exportRepo        datastore.ExportRepository
-	searcher          searcher.Searcher
 	database          database.Database
 }
 
@@ -304,7 +311,7 @@ func seedEvent(db database.Database, endpointID string, projectID string, uid, e
 	return ev, nil
 }
 
-func seedEventDelivery(db database.Database, eventID string, endpointID string, projectID string, uid string, status datastore.EventDeliveryStatus, subcriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
+func seedEventDelivery(db database.Database, eventID string, endpointID string, projectID string, uid string, status datastore.EventDeliveryStatus, subscriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = ulid.Make().String()
 	}
@@ -314,7 +321,7 @@ func seedEventDelivery(db database.Database, eventID string, endpointID string, 
 		EventID:        eventID,
 		EndpointID:     endpointID,
 		Status:         status,
-		SubscriptionID: subcriptionID,
+		SubscriptionID: subscriptionID,
 		ProjectID:      projectID,
 		Headers:        httpheader.HTTPHeader{"X-sig": []string{"3787 fmmfbf"}},
 		DeliveryAttempts: []datastore.DeliveryAttempt{

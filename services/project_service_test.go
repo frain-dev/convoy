@@ -507,9 +507,6 @@ func TestProjectService_UpdateProject(t *testing.T) {
 			dbFn: func(gs *ProjectService) {
 				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				c, _ := gs.cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 			},
 		},
 

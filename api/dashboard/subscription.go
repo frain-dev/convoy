@@ -114,7 +114,7 @@ func (a *DashboardHandler) CreateSubscription(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	cs := services.CreateSubcriptionService{
+	cs := services.CreateSubscriptionService{
 		SubRepo:         postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache),
 		EndpointRepo:    postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		SourceRepo:      postgres.NewSourceRepo(a.A.DB, a.A.Cache),
@@ -247,7 +247,7 @@ func (a *DashboardHandler) TestSubscriptionFunction(w http.ResponseWriter, r *ht
 		return
 	}
 
-	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
+	subRepo := postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache)
 	mutatedPayload, consoleLog, err := subRepo.TransformPayload(r.Context(), test.Function, test.Payload)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to transform payload")

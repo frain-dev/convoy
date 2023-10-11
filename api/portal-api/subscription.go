@@ -130,7 +130,7 @@ func (a *PortalLinkHandler) CreateSubscription(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	cs := services.CreateSubcriptionService{
+	cs := services.CreateSubscriptionService{
 		SubRepo:         postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache),
 		EndpointRepo:    postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		SourceRepo:      postgres.NewSourceRepo(a.A.DB, a.A.Cache),

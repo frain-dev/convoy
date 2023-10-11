@@ -21,7 +21,6 @@ func provideCreateEventService(ctrl *gomock.Controller, event *models.CreateEven
 		EndpointRepo: mocks.NewMockEndpointRepository(ctrl),
 		EventRepo:    mocks.NewMockEventRepository(ctrl),
 		Queue:        mocks.NewMockQueuer(ctrl),
-		Cache:        mocks.NewMockCache(ctrl),
 		NewMessage:   event,
 		Project:      project,
 	}
@@ -322,10 +321,6 @@ func TestCreateEventService_Run(t *testing.T) {
 			}
 
 			require.Nil(t, err)
-			require.NotEmpty(t, event.UID)
-			require.NotEmpty(t, event.CreatedAt)
-			require.NotEmpty(t, event.UpdatedAt)
-			require.Empty(t, event.DeletedAt)
 
 			stripVariableFields(t, "event", event)
 

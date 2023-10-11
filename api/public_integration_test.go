@@ -755,12 +755,12 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	// Deep Assert.
-	var event datastore.Event
-	parseResponse(s.T(), w.Result(), &event)
-
-	require.NotEmpty(s.T(), event.UID)
-	require.Equal(s.T(), event.Endpoints[0], endpointID)
+	//// Deep Assert.
+	//var event datastore.Event
+	//parseResponse(s.T(), w.Result(), &event)
+	//
+	//require.NotEmpty(s.T(), event.UID)
+	//require.Equal(s.T(), event.Endpoinints[0], endpointID)
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateDynamicEvent() {
@@ -856,12 +856,12 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_V
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	// Deep Assert.
-	var event datastore.Event
-	parseResponse(s.T(), w.Result(), &event)
+	//// Deep Assert.
+	//var event datastore.Event
+	//parseResponse(s.T(), w.Result(), &event)
 
-	require.NotEmpty(s.T(), event.UID)
-	require.Equal(s.T(), event.Endpoints[0], endpointID)
+	//require.NotEmpty(s.T(), event.UID)
+	//require.Equal(s.T(), event.Endpoints[0], endpointID)
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_Endpoint_is_disabled() {

@@ -13,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -88,11 +87,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			deviceRepo := postgres.NewDeviceRepo(a.DB, a.Cache)
 			configRepo := postgres.NewConfigRepo(a.DB)
 
-			searchBackend, err := searcher.NewSearchClient(cfg)
-			if err != nil {
-				a.Logger.Debug("Failed to initialise search backend")
-			}
-
 			rateLimiter, err := limiter.NewLimiter(cfg.Redis)
 			if err != nil {
 				a.Logger.Debug("Failed to initialise rate limiter")
@@ -137,7 +131,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				eventRepo,
 				eventDeliveryRepo,
 				postgres.NewExportRepo(a.DB),
-				searchBackend,
 			))
 
 			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Cache, a.Queue))

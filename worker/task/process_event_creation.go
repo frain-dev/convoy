@@ -9,9 +9,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"time"
 
-	"github.com/frain-dev/convoy/pkg/msgpack"
-	"github.com/frain-dev/convoy/util"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
@@ -28,6 +25,7 @@ type CreateEventTaskParams struct {
 	AppID          string            `json:"app_id"`
 	OwnerID        string            `json:"owner_id"`
 	EndpointID     string            `json:"endpoint_id"`
+	SourceID       string            `json:"source_id"`
 	Data           json.RawMessage   `json:"data"`
 	EventType      string            `json:"event_type"`
 	CustomHeaders  map[string]string `json:"custom_headers"`
@@ -38,17 +36,6 @@ type CreateEvent struct {
 	Params             CreateEventTaskParams
 	Event              *datastore.Event
 	CreateSubscription bool
-}
-
-type newEvent struct {
-	UID            string
-	Raw            string
-	Data           json.RawMessage
-	EventType      string
-	EndpointID     string
-	CustomHeaders  map[string]string
-	IdempotencyKey string
-	IsDuplicate    bool
 }
 
 func ProcessEventCreation(
@@ -410,29 +397,19 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 		return nil, errors.New("no valid endpoint found")
 	}
 
-	ne := &newEvent{
-		Data:           eventParams.Data,
-		EventType:      eventParams.EventType,
-		EndpointID:     eventParams.EndpointID,
-		Raw:            string(eventParams.Data),
-		CustomHeaders:  eventParams.CustomHeaders,
-		IdempotencyKey: eventParams.IdempotencyKey,
-		IsDuplicate:    isDuplicate,
-	}
-
 	var endpointIDs []string
 	for _, endpoint := range endpoints {
 		endpointIDs = append(endpointIDs, endpoint.UID)
 	}
 
 	event := &datastore.Event{
-		UID:              ne.UID,
-		EventType:        datastore.EventType(ne.EventType),
-		Data:             ne.Data,
-		Raw:              ne.Raw,
-		IdempotencyKey:   ne.IdempotencyKey,
-		IsDuplicateEvent: ne.IsDuplicate,
-		Headers:          getCustomHeaders(ne.CustomHeaders),
+		UID:              eventParams.UID,
+		EventType:        datastore.EventType(eventParams.EventType),
+		Data:             eventParams.Data,
+		Raw:              string(eventParams.Data),
+		IdempotencyKey:   eventParams.IdempotencyKey,
+		IsDuplicateEvent: isDuplicate,
+		Headers:          getCustomHeaders(eventParams.CustomHeaders),
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
 		Endpoints:        endpointIDs,

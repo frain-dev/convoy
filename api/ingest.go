@@ -1,10 +1,9 @@
 package api
 
 import (
-	"context"
 	"errors"
 	"github.com/frain-dev/convoy/pkg/msgpack"
-  "errors"
+
 	"io"
 	"net/http"
 	"time"
@@ -26,43 +25,27 @@ import (
 	"github.com/go-chi/render"
 )
 
-func retrieveSourceConfigurationFromMaskId(a *ApplicationHandler, ctx context.Context, maskId string) (*datastore.Source, error) {
-	var source *datastore.Source
-	var err error
-
-	// Tries to retrieve the source configuration from the cache service
-	err = a.A.Cache.Get(ctx, maskId, &source)
-	if err != nil {
-		a.A.Logger.WithError(err)
-	}
-
-	if source == nil {
-		// 2. Retrieve source using mask ID.
-		source, err = postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByMaskID(ctx, maskId)
-		if err != nil {
-			return nil, err
-		}
-		err = a.A.Cache.Set(ctx, maskId, &source, time.Minute*2)
-		if err != nil {
-			a.A.Logger.WithError(err)
-		}
-	}
-	return source, nil
-}
-
 func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
 	// s.AppService.CountProjectApplications()
 	// 1. Retrieve mask ID
 	maskID := chi.URLParam(r, "maskID")
 
-	source, err := retrieveSourceConfigurationFromMaskId(a, r.Context(), maskID)
-
+	// 2. Retrieve source using mask ID.
+	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByMaskID(r.Context(), maskID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
 		_ = render.Render(w, r, util.NewErrorResponse("error retrieving source", http.StatusBadRequest))
+		return
+	}
+
+	// 2. Retrieve source using mask ID.
+	projectRepo := postgres.NewProjectRepo(a.A.DB, a.A.Cache)
+	project, err := projectRepo.FetchProjectByID(r.Context(), source.ProjectID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
@@ -114,32 +97,6 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		default:
 			v = &verifier.NoopVerifier{}
 		}
-	}
-
-	var project *datastore.Project
-
-	err = a.A.Cache.Get(r.Context(), source.ProjectID, &project)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	if project == nil {
-		// 2. Retrieve source using mask ID.
-		projectRepo := postgres.NewProjectRepo(a.A.DB, a.A.Cache)
-		projectFromDb, err := projectRepo.FetchProjectByID(r.Context(), source.ProjectID)
-		if err != nil {
-			_ = render.Render(w, r, util.NewServiceErrResponse(err))
-			return
-		}
-
-		err = a.A.Cache.Set(r.Context(), source.ProjectID, &projectFromDb, config.DefaultCacheTTL)
-		if err != nil {
-			_ = render.Render(w, r, util.NewServiceErrResponse(err))
-			return
-		}
-
-		project = projectFromDb
 	}
 
 	var maxIngestSize uint64
@@ -262,11 +219,8 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 }
 
 func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Request) {
-	maskID := chi.URLParam(r, "maskID")
-	sourceCacheKey := convoy.SourceCacheKey.Get(maskID).String()
-
-	source, err := retrieveSourceConfigurationFromMaskId(a, r.Context(), sourceCacheKey)
-
+	maskId := chi.URLParam(r, "maskID")
+	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByMaskID(r.Context(), maskId)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))

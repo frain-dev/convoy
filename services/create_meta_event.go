@@ -30,12 +30,16 @@ func (m *MetaEvent) Run(eventType string, projectID string, data interface{}) er
 		return err
 	}
 
-	cfg := project.Config.MetaEvent
-	if !cfg.IsEnabled {
+	cfg := project.Config
+	if cfg.MetaEvent == nil {
 		return nil
 	}
 
-	if !m.isSubscribed(eventType, cfg.EventType) {
+	if !cfg.MetaEvent.IsEnabled {
+		return nil
+	}
+
+	if !m.isSubscribed(eventType, cfg.MetaEvent.EventType) {
 		return nil
 	}
 

@@ -21,10 +21,9 @@ import (
 )
 
 var (
-	ErrEndpointNotCreated       = errors.New("endpoint could not be created")
-	ErrEndpointNotUpdated       = errors.New("endpoint could not be updated")
-	ErrEndpointSecretNotDeleted = errors.New("endpoint secret could not be deleted")
-	ErrEndpointExists           = errors.New("an endpoint with that name already exists")
+	ErrEndpointNotCreated = errors.New("endpoint could not be created")
+	ErrEndpointNotUpdated = errors.New("endpoint could not be updated")
+	ErrEndpointExists     = errors.New("an endpoint with that name already exists")
 )
 
 const (
@@ -89,13 +88,27 @@ const (
 
 	updateEndpointStatus = `
 	UPDATE convoy.endpoints SET status = $3
-	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL RETURNING *;
+	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL RETURNING
+	id, title, status, owner_id, target_url,
+    description, http_timeout, rate_limit, rate_limit_duration,
+    advanced_signatures, slack_webhook_url, support_email,
+    app_id, project_id, secrets, created_at, updated_at,
+    authentication_type AS "authentication.type",
+    authentication_type_api_key_header_name AS "authentication.api_key.header_name",
+    authentication_type_api_key_header_value AS "authentication.api_key.header_value";
 	`
 
 	updateEndpointSecrets = `
 	UPDATE convoy.endpoints SET
 	    secrets = $3, updated_at = NOW()
-	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL RETURNING *;
+	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL RETURNING
+	id, title, status, owner_id, target_url,
+    description, http_timeout, rate_limit, rate_limit_duration,
+    advanced_signatures, slack_webhook_url, support_email,
+    app_id, project_id, secrets, created_at, updated_at,
+    authentication_type AS "authentication.type",
+    authentication_type_api_key_header_name AS "authentication.api_key.header_name",
+    authentication_type_api_key_header_value AS "authentication.api_key.header_value";
 	`
 
 	deleteEndpoint = `
@@ -292,7 +305,7 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 }
 
 func (e *endpointRepo) UpdateEndpointStatus(ctx context.Context, projectID string, endpointID string, status datastore.EndpointStatus) error {
-	endpoint := &datastore.Endpoint{}
+	endpoint := datastore.Endpoint{}
 	err := e.db.QueryRowxContext(ctx, updateEndpointStatus, endpointID, projectID, status).StructScan(&endpoint)
 	if err != nil {
 		return err
@@ -465,7 +478,7 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 }
 
 func (e *endpointRepo) UpdateSecrets(ctx context.Context, endpointID string, projectID string, secrets datastore.Secrets) error {
-	endpoint := &datastore.Endpoint{}
+	endpoint := datastore.Endpoint{}
 	err := e.db.QueryRowxContext(ctx, updateEndpointSecrets, endpointID, projectID, secrets).StructScan(&endpoint)
 	if err != nil {
 		return err
@@ -488,13 +501,14 @@ func (e *endpointRepo) DeleteSecret(ctx context.Context, endpoint *datastore.End
 
 	sc.DeletedAt = null.NewTime(time.Now(), true)
 
-	err := e.db.QueryRowxContext(ctx, updateEndpointSecrets, endpoint.UID, projectID, endpoint.Secrets).StructScan(&endpoint)
+	updatedEndpoint := datastore.Endpoint{}
+	err := e.db.QueryRowxContext(ctx, updateEndpointSecrets, endpoint.UID, projectID, endpoint.Secrets).StructScan(&updatedEndpoint)
 	if err != nil {
 		return err
 	}
 
-	endpointCacheKey := convoy.EndpointsCacheKey.Get(endpoint.UID).String()
-	err = e.cache.Set(ctx, endpointCacheKey, endpoint, config.DefaultCacheTTL)
+	endpointCacheKey := convoy.EndpointsCacheKey.Get(updatedEndpoint.UID).String()
+	err = e.cache.Set(ctx, endpointCacheKey, updatedEndpoint, config.DefaultCacheTTL)
 	if err != nil {
 		return err
 	}

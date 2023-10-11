@@ -630,7 +630,7 @@ func SeedMetaEvent(db database.Database, project *datastore.Project) (*datastore
 	return metaEvent, nil
 }
 
-// PurgeDB is run after every test run and it's used to truncate the DB to have
+// PurgeDB is run after every test run, and it's used to truncate the DB to have
 // a clean slate in the next run.
 func PurgeDB(t *testing.T, db database.Database) {
 	err := truncateTables(db)
@@ -657,7 +657,8 @@ func truncateTables(db database.Database) error {
 		convoy.project_configurations,
 		convoy.organisation_members,
 		convoy.organisations,
-		convoy.users
+		convoy.users,
+		convoy.jobs
 	`
 
 	_, err := db.GetDB().ExecContext(context.Background(), fmt.Sprintf("TRUNCATE %s CASCADE;", tables))
