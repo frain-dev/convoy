@@ -14,7 +14,6 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
@@ -166,18 +165,4 @@ func (s *SourceLoader) handler(_ context.Context, source *datastore.Source, msg 
 	}
 
 	return nil
-}
-
-func getCustomHeaders(customHeaders map[string]string) httpheader.HTTPHeader {
-	var headers map[string][]string
-
-	if customHeaders != nil {
-		headers = make(map[string][]string)
-
-		for key, value := range customHeaders {
-			headers[key] = []string{value}
-		}
-	}
-
-	return headers
 }

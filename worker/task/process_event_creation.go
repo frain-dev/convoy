@@ -439,9 +439,7 @@ func findEndpoints(ctx context.Context, endpointRepo datastore.EndpointRepositor
 			return endpoints, errors.New("owner ID has no configured endpoints")
 		}
 
-		for _, endpoint := range ownerIdEndpoints {
-			endpoints = append(endpoints, endpoint)
-		}
+		endpoints = append(endpoints, ownerIdEndpoints...)
 	}
 
 	if !util.IsStringEmpty(newMessage.EndpointID) {

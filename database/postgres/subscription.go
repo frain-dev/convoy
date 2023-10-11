@@ -253,6 +253,9 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 
 	subscriptionCacheKey := convoy.SubscriptionsCacheKey.Get(subscription.UID).String()
 	err = s.cache.Set(ctx, subscriptionCacheKey, &subscription, config.DefaultCacheTTL)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -290,6 +293,9 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 
 	subscriptionCacheKey := convoy.SubscriptionsCacheKey.Get(subscription.UID).String()
 	err = s.cache.Set(ctx, subscriptionCacheKey, &subscription, config.DefaultCacheTTL)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

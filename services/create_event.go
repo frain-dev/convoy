@@ -4,16 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/frain-dev/convoy/worker/task"
-	"time"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/worker/task"
+	"time"
 )
 
 var (
@@ -166,9 +166,7 @@ func (c *CreateEventService) findEndpoints(ctx context.Context, newMessage *mode
 			return endpoints, errors.New("owner ID has no configured endpoints")
 		}
 
-		for _, endpoint := range ownerIdEndpoints {
-			endpoints = append(endpoints, endpoint)
-		}
+		endpoints = append(endpoints, ownerIdEndpoints...)
 	}
 
 	if !util.IsStringEmpty(newMessage.EndpointID) {

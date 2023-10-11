@@ -285,6 +285,9 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 
 	projectCacheKey := convoy.ProjectsCacheKey.Get(project.UID).String()
 	err = p.cache.Set(ctx, projectCacheKey, &project, config.DefaultCacheTTL)
+	if err != nil {
+		return err
+	}
 
 	return tx.Commit()
 }
@@ -398,6 +401,9 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 
 	projectCacheKey := convoy.ProjectsCacheKey.Get(project.UID).String()
 	err = p.cache.Set(ctx, projectCacheKey, &project, config.DefaultCacheTTL)
+	if err != nil {
+		return err
+	}
 
 	go p.hook.Fire(datastore.ProjectUpdated, project, changelog)
 	return nil
@@ -425,6 +431,9 @@ func (p *projectRepo) FetchProjectByID(ctx context.Context, id string) (*datasto
 	}
 
 	err = p.cache.Set(ctx, projectCacheKey, &project, config.DefaultCacheTTL)
+	if err != nil {
+		return nil, err
+	}
 
 	return project, nil
 }
