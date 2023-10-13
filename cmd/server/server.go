@@ -1,8 +1,11 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/worker"
@@ -135,6 +138,11 @@ func StartConvoyServer(a *cli.App) error {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
+	ctrl, err := fflag.NewController(context.Background(), postgres.NewFFlagRepo(a.DB))
+	if err != nil {
+		a.Logger.WithError(err).Fatal("failed to create fflag controller")
+	}
+
 	if cfg.Server.HTTP.Port <= 0 {
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
@@ -152,11 +160,12 @@ func StartConvoyServer(a *cli.App) error {
 
 	handler, err := api.NewApplicationHandler(
 		&types.APIOptions{
-			DB:     a.DB,
-			Queue:  a.Queue,
-			Logger: lo,
-			Tracer: a.Tracer,
-			Cache:  a.Cache,
+			FlagCtrl: ctrl,
+			DB:       a.DB,
+			Queue:    a.Queue,
+			Logger:   lo,
+			Tracer:   a.Tracer,
+			Cache:    a.Cache,
 		})
 	if err != nil {
 		return err

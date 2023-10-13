@@ -226,8 +226,10 @@ type TypesenseConfiguration struct {
 }
 
 type FeatureFlagConfiguration struct {
-	Type  FeatureFlagProvider `json:"type" envconfig:"CONVOY_FEATURE_FLAG_TYPE"`
-	Flipt FliptConfiguration  `json:"flipt"`
+	Experimental bool `json:"experimental" envconfig:"CONVOY_EXPERIMENTAL_FEATURES"`
+	Alpha        bool `json:"alpha" envconfig:"CONVOY_ALPHA_FEATURES"`
+	Beta         bool `json:"beta" envconfig:"CONVOY_BETA_FEATURES"`
+	GA           bool `json:"ga" envconfig:"CONVOY_GA_FEATURES"`
 }
 
 type FliptConfiguration struct {

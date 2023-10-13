@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/frain-dev/convoy/cmd/bootstrap"
 	"os"
 	_ "time/tzdata"
+
+	"github.com/frain-dev/convoy/cmd/bootstrap"
 
 	configCmd "github.com/frain-dev/convoy/cmd/config"
 	"github.com/frain-dev/convoy/cmd/hooks"
@@ -46,6 +47,11 @@ func main() {
 	var dbPassword string
 	var dbDatabase string
 
+	var experimental bool
+	var alpha bool
+	var beta bool
+	var ga bool
+
 	var redisPort int
 	var redisHost string
 	var redisType string
@@ -76,6 +82,11 @@ func main() {
 	c.Flags().StringVar(&redisPassword, "redis-password", "", "Redis Password")
 	c.Flags().StringVar(&redisDatabase, "redis-database", "", "Redis database")
 	c.Flags().IntVar(&redisPort, "redis-port", 0, "Redis Port")
+
+	c.Flags().BoolVar(&experimental, "experimental", false, "Enable experimental features")
+	c.Flags().BoolVar(&alpha, "alpha", false, "Enable alpha features")
+	c.Flags().BoolVar(&beta, "beta", false, "Enable beta features")
+	c.Flags().BoolVar(&ga, "ga", false, "Enable Generally available features")
 
 	c.PersistentPreRunE(hooks.PreRun(app, db))
 	c.PersistentPostRunE(hooks.PostRun(app, db))

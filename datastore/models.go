@@ -1457,3 +1457,22 @@ func (p *Password) Matches() (bool, error) {
 
 	return true, err
 }
+
+type FlagType string
+
+const (
+	ExperimentalFlagType FlagType = "experimental"
+	AlphaFlagType        FlagType = "alpha"
+	BetaFlagType         FlagType = "beta"
+	GAFlagType           FlagType = "ga"
+)
+
+func (ft FlagType) String() string {
+	return string(ft)
+}
+
+type Flag struct {
+	UID        string   `json:"uid,omitempty" db:"id"`
+	FeatureKey string   `json:"feature_key,omitempty" db:"feature_key"`
+	Type       FlagType `json:"type,omitempty" db:"type"`
+}

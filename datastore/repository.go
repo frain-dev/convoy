@@ -180,6 +180,11 @@ type ExportRepository interface {
 	ExportRecords(ctx context.Context, tableName, projectID string, createdAt time.Time, w io.Writer) (int64, error)
 }
 
+type FFlagRepository interface {
+	SaveFlags(ctx context.Context, flags []Flag) error
+	ClearFlagTable(ctx context.Context) error
+}
+
 type MetaEventRepository interface {
 	CreateMetaEvent(context.Context, *MetaEvent) error
 	FindMetaEventByID(ctx context.Context, projectID string, id string) (*MetaEvent, error)
