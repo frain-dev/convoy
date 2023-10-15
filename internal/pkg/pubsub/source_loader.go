@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"math"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy/internal/pkg/apm"
 
@@ -90,12 +91,14 @@ func (s *SourceLoader) fetchSources(ctx context.Context, projectID string, curso
 	}
 
 	for _, source := range sources {
-		ps, err := NewPubSubSource(&source, s.handler, s.log)
-		if err != nil {
-			s.log.WithError(err).Error("failed to create pub sub source")
-		}
+		go func(source datastore.Source) {
+			ps, err := NewPubSubSource(&source, s.handler, s.log)
+			if err != nil {
+				s.log.WithError(err).Error("failed to create pub sub source")
+			}
 
-		s.sourcePool.Insert(ps)
+			s.sourcePool.Insert(ps)
+		}(source)
 	}
 
 	cursor = pagination.NextPageCursor
