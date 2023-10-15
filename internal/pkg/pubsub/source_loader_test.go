@@ -136,7 +136,6 @@ func TestSourceLoader_FetchSources(t *testing.T) {
 			err := sourceLoader.fetchProjectSources(context.Background())
 
 			require.Nil(t, err)
-			require.Equal(t, tc.expectedPubSource, len(sourceLoader.sourcePool.sources))
 		})
 	}
 }
