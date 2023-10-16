@@ -30,13 +30,15 @@ type SourceLoader struct {
 	endpointRepo datastore.EndpointRepository
 	sourceRepo   datastore.SourceRepository
 	projectRepo  datastore.ProjectRepository
+	eventRepo    datastore.EventRepository
 	queue        queue.Queuer
 	sourcePool   *SourcePool
 	log          log.StdLogger
 }
 
-func NewSourceLoader(endpointRepo datastore.EndpointRepository, sourceRepo datastore.SourceRepository, projectRepo datastore.ProjectRepository, queue queue.Queuer, sourcePool *SourcePool, log log.StdLogger) *SourceLoader {
+func NewSourceLoader(eventRepo datastore.EventRepository, endpointRepo datastore.EndpointRepository, sourceRepo datastore.SourceRepository, projectRepo datastore.ProjectRepository, queue queue.Queuer, sourcePool *SourcePool, log log.StdLogger) *SourceLoader {
 	return &SourceLoader{
+		eventRepo:    eventRepo,
 		endpointRepo: endpointRepo,
 		sourceRepo:   sourceRepo,
 		projectRepo:  projectRepo,
@@ -142,6 +144,16 @@ func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, ms
 		return err
 	}
 
+	var IsDuplicate bool
+	if !util.IsStringEmpty(ev.IdempotencyKey) {
+		events, err := s.eventRepo.FindEventsByIdempotencyKey(ctx, source.ProjectID, ev.IdempotencyKey)
+		if err != nil {
+			return err
+		}
+
+		IsDuplicate = len(events) > 0
+	}
+
 	var endpoints []string
 
 	if !util.IsStringEmpty(ev.OwnerID) {
@@ -167,17 +179,18 @@ func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, ms
 	}
 
 	event := datastore.Event{
-		UID:            ulid.Make().String(),
-		EventType:      datastore.EventType(ev.EventType),
-		SourceID:       source.UID,
-		ProjectID:      source.ProjectID,
-		Raw:            string(ev.Data),
-		Data:           ev.Data,
-		IdempotencyKey: ev.IdempotencyKey,
-		Headers:        getCustomHeaders(ev.CustomHeaders),
-		Endpoints:      endpoints,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+		UID:              ulid.Make().String(),
+		EventType:        datastore.EventType(ev.EventType),
+		SourceID:         source.UID,
+		ProjectID:        source.ProjectID,
+		Raw:              string(ev.Data),
+		Data:             ev.Data,
+		IdempotencyKey:   ev.IdempotencyKey,
+		IsDuplicateEvent: IsDuplicate,
+		Headers:          getCustomHeaders(ev.CustomHeaders),
+		Endpoints:        endpoints,
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
 	}
 
 	createEvent := task.CreateEvent{
