@@ -150,15 +150,8 @@ func (a *PublicHandler) retrieveProject(r *http.Request) (*datastore.Project, er
 		return nil, errors.New("project id not present in request")
 	}
 
-	var project *datastore.Project
-	// fetch project from context or cache
 	projectRepo := postgres.NewProjectRepo(a.A.DB, a.A.Cache)
-	project, err := projectRepo.FetchProjectByID(r.Context(), projectID)
-	if err != nil {
-		return nil, err
-	}
-
-	return project, nil
+	return projectRepo.FetchProjectByID(r.Context(), projectID)
 }
 
 func (a *PublicHandler) retrieveUser(r *http.Request) (*datastore.User, error) {
