@@ -13,7 +13,7 @@ import (
 type ContextKey string
 
 type APIOptions struct {
-	FlagCtrl *fflag.Controller
+	FlagCtrl *fflag.FFlag
 	DB       database.Database
 	Queue    queue.Queuer
 	Logger   log.StdLogger

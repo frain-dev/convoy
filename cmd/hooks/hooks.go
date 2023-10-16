@@ -323,26 +323,8 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		return nil, err
 	}
 
-	alpha, err := cmd.Flags().GetBool("alpha")
-	if err != nil {
-		return nil, err
-	}
-
-	beta, err := cmd.Flags().GetBool("beta")
-	if err != nil {
-		return nil, err
-	}
-
-	ga, err := cmd.Flags().GetBool("ga")
-	if err != nil {
-		return nil, err
-	}
-
 	c.FeatureFlag = config.FeatureFlagConfiguration{
 		Experimental: experimental,
-		Alpha:        alpha,
-		Beta:         beta,
-		GA:           ga,
 	}
 
 	return c, nil

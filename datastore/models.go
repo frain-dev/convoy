@@ -1462,9 +1462,6 @@ type FlagType string
 
 const (
 	ExperimentalFlagType FlagType = "experimental"
-	AlphaFlagType        FlagType = "alpha"
-	BetaFlagType         FlagType = "beta"
-	GAFlagType           FlagType = "ga"
 )
 
 func (ft FlagType) String() string {

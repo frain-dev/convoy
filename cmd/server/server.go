@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"errors"
 	"time"
 
@@ -138,7 +137,7 @@ func StartConvoyServer(a *cli.App) error {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
-	ctrl, err := fflag.NewController(context.Background(), postgres.NewFFlagRepo(a.DB))
+	ctrl := fflag.NewFFlag()
 	if err != nil {
 		a.Logger.WithError(err).Fatal("failed to create fflag controller")
 	}

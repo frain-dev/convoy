@@ -227,9 +227,6 @@ type TypesenseConfiguration struct {
 
 type FeatureFlagConfiguration struct {
 	Experimental bool `json:"experimental" envconfig:"CONVOY_EXPERIMENTAL_FEATURES"`
-	Alpha        bool `json:"alpha" envconfig:"CONVOY_ALPHA_FEATURES"`
-	Beta         bool `json:"beta" envconfig:"CONVOY_BETA_FEATURES"`
-	GA           bool `json:"ga" envconfig:"CONVOY_GA_FEATURES"`
 }
 
 type FliptConfiguration struct {

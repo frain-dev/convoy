@@ -72,7 +72,7 @@ func WriteRequestIDHeader(next http.Handler) http.Handler {
 	})
 }
 
-func CanAccessFeature(ctrl *fflag.Controller, featureKey string) func(next http.Handler) http.Handler {
+func CanAccessFeature(ctrl *fflag.FFlag, featureKey string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cfg, err := config.Get()
