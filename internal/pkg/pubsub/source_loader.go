@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"math"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy/internal/pkg/apm"
 
@@ -90,12 +91,14 @@ func (s *SourceLoader) fetchSources(ctx context.Context, projectID string, curso
 	}
 
 	for _, source := range sources {
-		ps, err := NewPubSubSource(&source, s.handler, s.log)
-		if err != nil {
-			s.log.WithError(err).Error("failed to create pub sub source")
-		}
+		go func(source datastore.Source) {
+			ps, err := NewPubSubSource(&source, s.handler, s.log)
+			if err != nil {
+				s.log.WithError(err).Error("failed to create pub sub source")
+			}
 
-		s.sourcePool.Insert(ps)
+			s.sourcePool.Insert(ps)
+		}(source)
 	}
 
 	cursor = pagination.NextPageCursor
@@ -127,11 +130,12 @@ func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, ms
 	defer txn.End()
 
 	ev := struct {
-		EndpointID    string            `json:"endpoint_id"`
-		OwnerID       string            `json:"owner_id"`
-		EventType     string            `json:"event_type"`
-		Data          json.RawMessage   `json:"data"`
-		CustomHeaders map[string]string `json:"custom_headers"`
+		EndpointID     string            `json:"endpoint_id"`
+		OwnerID        string            `json:"owner_id"`
+		EventType      string            `json:"event_type"`
+		Data           json.RawMessage   `json:"data"`
+		IdempotencyKey string            `json:"idempotency_key"`
+		CustomHeaders  map[string]string `json:"custom_headers"`
 	}{}
 
 	if err := json.Unmarshal([]byte(msg), &ev); err != nil {
@@ -163,16 +167,17 @@ func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, ms
 	}
 
 	event := datastore.Event{
-		UID:       ulid.Make().String(),
-		EventType: datastore.EventType(ev.EventType),
-		SourceID:  source.UID,
-		ProjectID: source.ProjectID,
-		Raw:       string(ev.Data),
-		Data:      ev.Data,
-		Headers:   getCustomHeaders(ev.CustomHeaders),
-		Endpoints: endpoints,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		UID:            ulid.Make().String(),
+		EventType:      datastore.EventType(ev.EventType),
+		SourceID:       source.UID,
+		ProjectID:      source.ProjectID,
+		Raw:            string(ev.Data),
+		Data:           ev.Data,
+		IdempotencyKey: ev.IdempotencyKey,
+		Headers:        getCustomHeaders(ev.CustomHeaders),
+		Endpoints:      endpoints,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	createEvent := task.CreateEvent{
