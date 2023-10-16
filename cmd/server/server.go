@@ -34,13 +34,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	var retryStrategy string
 	var signatureHash string
 	var signatureHeader string
-	var smtpProvider string
-	var smtpUrl string
-	var smtpSSL bool
-	var smtpUsername string
-	var smtpPassword string
-	var smtpReplyTo string
-	var smtpFrom string
 	var newRelicApp string
 	var newRelicKey string
 	var typesenseApiKey string
@@ -58,7 +51,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	var newRelicConfigEnabled bool
 
 	var port uint32
-	var smtpPort uint32
 	var retryLimit uint64
 	var workerPort uint32
 	var retryInterval uint64
@@ -104,13 +96,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&retryStrategy, "retry-strategy", "", "Endpoint retry strategy")
 	cmd.Flags().StringVar(&signatureHash, "signature-hash", "", "Application signature hash")
 	cmd.Flags().StringVar(&signatureHeader, "signature-header", "", "Application signature header")
-	cmd.Flags().StringVar(&smtpProvider, "smtp-provider", "", "SMTP provider")
-	cmd.Flags().StringVar(&smtpUrl, "smtp-url", "", "SMTP provider URL")
-	cmd.Flags().BoolVar(&smtpSSL, "smtp-ssl", false, "SMTP SSL")
-	cmd.Flags().StringVar(&smtpUsername, "smtp-username", "", "SMTP authentication username")
-	cmd.Flags().StringVar(&smtpPassword, "smtp-password", "", "SMTP authentication password")
-	cmd.Flags().StringVar(&smtpFrom, "smtp-from", "", "Sender email address")
-	cmd.Flags().StringVar(&smtpReplyTo, "smtp-reply-to", "", "Email address to reply to")
 	cmd.Flags().StringVar(&newRelicApp, "new-relic-app", "", "NewRelic application name")
 	cmd.Flags().StringVar(&newRelicKey, "new-relic-key", "", "NewRelic application license key")
 	cmd.Flags().StringVar(&searcher, "searcher", "", "Searcher")
@@ -126,7 +111,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().BoolVar(&newRelicTracerEnabled, "new-relic-tracer-enabled", false, "Enable new-relic distributed tracer")
 
 	cmd.Flags().Uint32Var(&port, "port", 0, "Server port")
-	cmd.Flags().Uint32Var(&smtpPort, "smtp-port", 0, "Server port")
 	cmd.Flags().Uint32Var(&workerPort, "worker-port", 0, "Worker port")
 	cmd.Flags().Uint64Var(&retryLimit, "retry-limit", 0, "Endpoint retry limit")
 	cmd.Flags().Uint64Var(&maxResponseSize, "max-response-size", 0, "Max response size")
@@ -398,76 +382,6 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	if !util.IsStringEmpty(proxy) {
 		c.Server.HTTP.HttpProxy = proxy
-	}
-
-	// CONVOY_SMTP_PROVIDER
-	smtpProvider, err := cmd.Flags().GetString("smtp-provider")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpProvider) {
-		c.SMTP.Provider = smtpProvider
-	}
-
-	// CONVOY_SMTP_URL
-	smtpUrl, err := cmd.Flags().GetString("smtp-url")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpUrl) {
-		c.SMTP.URL = smtpUrl
-	}
-
-	// CONVOY_SMTP_USERNAME
-	smtpUsername, err := cmd.Flags().GetString("smtp-username")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpUsername) {
-		c.SMTP.Username = smtpUsername
-	}
-
-	// CONVOY_SMTP_PASSWORD
-	smtpPassword, err := cmd.Flags().GetString("smtp-password")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpPassword) {
-		c.SMTP.Password = smtpPassword
-	}
-
-	// CONVOY_SMTP_FROM
-	smtpFrom, err := cmd.Flags().GetString("smtp-from")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpFrom) {
-		c.SMTP.From = smtpFrom
-	}
-
-	// CONVOY_SMTP_REPLY_TO
-	smtpReplyTo, err := cmd.Flags().GetString("smtp-reply-to")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpReplyTo) {
-		c.SMTP.ReplyTo = smtpReplyTo
-	}
-
-	// CONVOY_SMTP_PORT
-	smtpPort, err := cmd.Flags().GetUint32("smtp-port")
-	if err != nil {
-		return nil, err
-	}
-
-	if smtpPort != 0 {
-		c.SMTP.Port = smtpPort
 	}
 
 	// CONVOY_MAX_RESPONSE_SIZE

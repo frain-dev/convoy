@@ -1,68 +1,100 @@
 project_name: convoy
 
 before:
-    hooks:
-        - go mod tidy
+  hooks:
+    - go mod tidy
 builds:
-    - env:
-          - CGO_ENABLED=0
-      main: ./ee/cmd
-      id: cobin
-      goos:
-          - linux
-          - darwin
-          - windows
-      goarch:
-          - amd64
-          - arm64
+  - env:
+      - CGO_ENABLED=0
+    main: ./ee/cmd
+    id: cobin
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
 
 # https://goreleaser.com/customization/archive/
 archives:
-    - name_template: "{{ .ProjectName}}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-      id: cobin-archive
-      builds:
-          - cobin
+  - name_template: "{{ .ProjectName}}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    id: cobin-archive
+    builds:
+      - cobin
 
 dockers:
-    - image_templates:
-          - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:latest"
-          - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:{{ .Tag }}"
-      goos: linux
-      goarch: amd64
-      dockerfile: release.Dockerfile
-      extra_files:
-          - configs/local/start.sh
-      ids:
-          - cobin
-      build_flag_templates:
-          - --platform=linux/amd64
-          - --label=org.opencontainers.image.title={{ .ProjectName }}
-          - --label=org.opencontainers.image.description=A fast & secure open source webhooks service
-          - --label=org.opencontainers.image.url=https://github.com/{{ .Env.REPO_NAME }}-ee
-          - --label=org.opencontainers.image.source=https://github.com/{{ .Env.REPO_NAME }}-ee
-          - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
-          - --label=org.opencontainers.image.licenses=MPL-2.0
+  - image_templates:
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:latest-amd64"
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:{{ .Tag }}-amd64"
+    use: buildx
+    goos: linux
+    goarch: amd64
+    dockerfile: release.Dockerfile
+    extra_files:
+      - configs/local/start.sh
+    ids:
+      - cobin
+    build_flag_templates:
+      - --platform=linux/amd64
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description=A fast & secure open source webhooks service
+      - --label=org.opencontainers.image.url=https://github.com/{{ .Env.REPO_NAME }}-ee
+      - --label=org.opencontainers.image.source=https://github.com/{{ .Env.REPO_NAME }}-ee
+      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+      - --label=org.opencontainers.image.licenses=MPL-2.0
 
-    - image_templates:
-          - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:latest-slim"
-          - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:{{ .Tag }}-slim"
-      goos: linux
-      goarch: amd64
-      dockerfile: slim.Dockerfile
-      ids:
-          - cobin
-      build_flag_templates:
-          - --platform=linux/amd64
-          - --label=org.opencontainers.image.title={{ .ProjectName }}
-          - --label=org.opencontainers.image.description=A fast & secure open source webhooks service
-          - --label=org.opencontainers.image.url=https://github.com/{{ .Env.REPO_NAME }}-ee
-          - --label=org.opencontainers.image.source=https://github.com/{{ .Env.REPO_NAME }}-ee
-          - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
-          - --label=org.opencontainers.image.licenses=MPL-2.0
+  - image_templates:
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:latest-arm64"
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:{{ .Tag }}-arm64"
+    use: buildx
+    goos: linux
+    goarch: arm64
+    dockerfile: release.Dockerfile
+    extra_files:
+      - configs/local/start.sh
+    ids:
+      - cobin
+    build_flag_templates:
+      - --platform=linux/arm64
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description=A fast & secure open source webhooks service
+      - --label=org.opencontainers.image.url=https://github.com/{{ .Env.REPO_NAME }}-ee
+      - --label=org.opencontainers.image.source=https://github.com/{{ .Env.REPO_NAME }}-ee
+      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+      - --label=org.opencontainers.image.licenses=MPL-2.0
+
+  - image_templates:
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:latest-slim"
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:{{ .Tag }}-slim"
+    goos: linux
+    goarch: amd64
+    dockerfile: slim.Dockerfile
+    ids:
+      - cobin
+    build_flag_templates:
+      - --platform=linux/amd64
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description=A fast & secure open source webhooks service
+      - --label=org.opencontainers.image.url=https://github.com/{{ .Env.REPO_NAME }}-ee
+      - --label=org.opencontainers.image.source=https://github.com/{{ .Env.REPO_NAME }}-ee
+      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+      - --label=org.opencontainers.image.licenses=MPL-2.0
+
+docker_manifests:
+  - name_template: "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:{{ .Tag }}"
+    image_templates:
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:{{ .Tag }}-amd64"
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:{{ .Tag }}-arm64"
+
+  - name_template: "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:latest"
+    image_templates:
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:latest-amd64"
+      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}-ee:latest-arm64"
 
 checksum:
-    name_template: "{{ .ProjectName}}_checksums.txt"
+  name_template: "{{ .ProjectName}}_checksums.txt"
 
 release:
-    # Will not auto-publish the release on GitHub
-    disable: true
+  # Will not auto-publish the release on GitHub
+  disable: true

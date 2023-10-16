@@ -125,6 +125,7 @@ type HTTPServerConfiguration struct {
 	SSLCertFile string `json:"ssl_cert_file" envconfig:"CONVOY_SSL_CERT_FILE"`
 	SSLKeyFile  string `json:"ssl_key_file" envconfig:"CONVOY_SSL_KEY_FILE"`
 	Port        uint32 `json:"port" envconfig:"PORT"`
+	IngestPort  uint32 `json:"ingest_port" envconfig:"INGEST_PORT"`
 	WorkerPort  uint32 `json:"worker_port" envconfig:"WORKER_PORT"`
 	SocketPort  uint32 `json:"socket_port" envconfig:"SOCKET_PORT"`
 	DomainPort  uint32 `json:"domain_port" envconfig:"DOMAIN_PORT"`

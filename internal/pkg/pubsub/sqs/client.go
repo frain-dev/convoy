@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/util"
 	"sync"
+
+	"github.com/frain-dev/convoy/util"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -86,7 +87,7 @@ func (s *Sqs) Consume() {
 	defer s.handleError()
 
 	if err != nil {
-		log.WithError(err).Error("failed to create new session - sqs")
+		s.log.WithError(err).Error("failed to create new session - sqs")
 	}
 
 	svc := sqs.New(sess)

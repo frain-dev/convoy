@@ -15,6 +15,8 @@ import (
 )
 
 func AddIngestCommand(a *cli.App) *cobra.Command {
+	var ingestPort uint32
+	var logLevel string
 	var interval int
 
 	var newRelicApp string
@@ -65,7 +67,7 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 			stop := make(chan struct{})
 			go sourceLoader.Run(context.Background(), interval, stop)
 
-			srv := server.NewServer(cfg.Server.HTTP.Port, func() { stop <- struct{}{} })
+			srv := server.NewServer(cfg.Server.HTTP.IngestPort, func() { stop <- struct{}{} })
 			srv.SetHandler(chi.NewMux())
 
 			srv.Listen()
@@ -74,6 +76,8 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 		},
 	}
 
+	cmd.Flags().Uint32Var(&ingestPort, "ingest-port", 5009, "Ingest port")
+	cmd.Flags().StringVar(&logLevel, "log-level", "", "ingest log level")
 	cmd.Flags().IntVar(&interval, "interval", 300, "the time interval, measured in seconds, at which the database should be polled for new pub sub sources")
 	cmd.Flags().BoolVar(&newRelicConfigEnabled, "new-relic-config-enabled", false, "Enable new-relic config")
 	cmd.Flags().BoolVar(&newRelicTracerEnabled, "new-relic-tracer-enabled", false, "Enable new-relic distributed tracer")
@@ -85,6 +89,26 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 
 func buildCliFlagConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	c := &config.Configuration{}
+
+	logLevel, err := cmd.Flags().GetString("log-level")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(logLevel) {
+		c.Logger.Level = logLevel
+	}
+
+	ingestPort, err := cmd.Flags().GetUint32("ingest-port")
+	if err != nil {
+		return nil, err
+	}
+
+	if ingestPort != 0 {
+		c.Server.HTTP.IngestPort = ingestPort
+	}
+
+	c.Server.HTTP.IngestPort = ingestPort
 
 	// CONVOY_NEWRELIC_APP_NAME
 	newReplicApp, err := cmd.Flags().GetString("new-relic-app")
