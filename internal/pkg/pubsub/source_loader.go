@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/oklog/ulid/v2"
 	"math"
