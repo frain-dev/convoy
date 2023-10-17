@@ -13,11 +13,11 @@ import (
 type ContextKey string
 
 type APIOptions struct {
-	FlagCtrl *fflag.FFlag
-	DB       database.Database
-	Queue    queue.Queuer
-	Logger   log.StdLogger
-	Tracer   tracer.Tracer
-	Cache    cache.Cache
-	Authz    *authz.Authz
+	FFlag  *fflag.FFlag
+	DB     database.Database
+	Queue  queue.Queuer
+	Logger log.StdLogger
+	Tracer tracer.Tracer
+	Cache  cache.Cache
+	Authz  *authz.Authz
 }

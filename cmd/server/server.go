@@ -137,7 +137,7 @@ func StartConvoyServer(a *cli.App) error {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
-	ctrl := fflag.NewFFlag()
+	fflag := fflag.NewFFlag()
 	if err != nil {
 		a.Logger.WithError(err).Fatal("failed to create fflag controller")
 	}
@@ -159,12 +159,12 @@ func StartConvoyServer(a *cli.App) error {
 
 	handler, err := api.NewApplicationHandler(
 		&types.APIOptions{
-			FlagCtrl: ctrl,
-			DB:       a.DB,
-			Queue:    a.Queue,
-			Logger:   lo,
-			Tracer:   a.Tracer,
-			Cache:    a.Cache,
+			FFlag:  fflag,
+			DB:     a.DB,
+			Queue:  a.Queue,
+			Logger: lo,
+			Tracer: a.Tracer,
+			Cache:  a.Cache,
 		})
 	if err != nil {
 		return err

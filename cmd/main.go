@@ -47,6 +47,8 @@ func main() {
 	var dbPassword string
 	var dbDatabase string
 
+	var experimental bool
+
 	var redisPort int
 	var redisHost string
 	var redisType string
@@ -77,6 +79,8 @@ func main() {
 	c.Flags().StringVar(&redisPassword, "redis-password", "", "Redis Password")
 	c.Flags().StringVar(&redisDatabase, "redis-database", "", "Redis database")
 	c.Flags().IntVar(&redisPort, "redis-port", 0, "Redis Port")
+
+	c.Flags().BoolVar(&experimental, "experimental", false, "Enable experimental features")
 
 	c.PersistentPreRunE(hooks.PreRun(app, db))
 	c.PersistentPostRunE(hooks.PostRun(app, db))
