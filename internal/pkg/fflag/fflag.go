@@ -2,10 +2,23 @@ package fflag
 
 import (
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/datastore"
 )
 
-var features = map[string]datastore.FlagType{}
+type FlagType string
+
+const (
+	ExperimentalFlagType FlagType = "experimental"
+)
+
+var flagLevels = map[string]int{
+	ExperimentalFlagType.String(): 1,
+}
+
+func (ft FlagType) String() string {
+	return string(ft)
+}
+
+var features = map[string]FlagType{}
 
 type FFlag struct{}
 
@@ -20,10 +33,12 @@ func (c *FFlag) CanAccessFeature(key string, cfg *config.Configuration) bool {
 		return false
 	}
 
-	switch flagType {
-	case datastore.ExperimentalFlagType:
-		return cfg.FeatureFlag.Experimental
-	default:
+	lvl := flagLevels[flagType.String()]
+	if lvl == 0 {
 		return false
 	}
+
+	cfgLvl := flagLevels[cfg.FeatureFlag]
+
+	return lvl <= cfgLvl // if the feature level is less than or equal to the cfg level, we can access the feature
 }

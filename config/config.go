@@ -299,7 +299,7 @@ type Configuration struct {
 	Host               string                     `json:"host" envconfig:"CONVOY_HOST"`
 	CustomDomainSuffix string                     `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
 	Search             SearchConfiguration        `json:"search"`
-	FeatureFlag        FeatureFlagConfiguration   `json:"feature_flag"`
+	FeatureFlag        string                     `json:"feature_flag" envconfig:"CONVOY_FEATURE_FLAG"`
 	Analytics          AnalyticsConfiguration     `json:"analytics"`
 	StoragePolicy      StoragePolicyConfiguration `json:"storage_policy"`
 }

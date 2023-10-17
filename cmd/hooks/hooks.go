@@ -323,8 +323,8 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		return nil, err
 	}
 
-	c.FeatureFlag = config.FeatureFlagConfiguration{
-		Experimental: experimental,
+	if experimental {
+		c.FeatureFlag = "experimental"
 	}
 
 	return c, nil
