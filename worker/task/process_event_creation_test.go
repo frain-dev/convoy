@@ -125,7 +125,7 @@ func TestProcessEventCreated(t *testing.T) {
 				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
-				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().Write(gomock.Any(), convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -170,7 +170,7 @@ func TestProcessEventCreated(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).Times(1).Return(endpoint, nil)
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				subscriptions := []datastore.Subscription{}
+				subscriptions := make([]datastore.Subscription, 0)
 
 				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), "project-id-1", "endpoint-id-1").Times(1).Return(subscriptions, nil)
 
@@ -188,7 +188,7 @@ func TestProcessEventCreated(t *testing.T) {
 				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
-				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().Write(gomock.Any(), convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -265,7 +265,7 @@ func TestProcessEventCreated(t *testing.T) {
 				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(2).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
-				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(2).Return(nil)
+				q.EXPECT().Write(gomock.Any(), convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(2).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -347,7 +347,7 @@ func TestProcessEventCreated(t *testing.T) {
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 
-				q.EXPECT().Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, gomock.Any()).Times(2).Return(nil)
+				q.EXPECT().Write(gomock.Any(), convoy.StreamCliEventsProcessor, convoy.StreamQueue, gomock.Any()).Times(2).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -412,7 +412,7 @@ func TestProcessEventCreated(t *testing.T) {
 				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
-				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().Write(gomock.Any(), convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -437,7 +437,7 @@ func TestProcessEventCreated(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.cache, args.eventQueue, args.subRepo, args.deviceRepo)
+			fn := ProcessEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

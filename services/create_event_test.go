@@ -53,7 +53,7 @@ func TestCreateEventService_Run(t *testing.T) {
 					SupportEmail: "test_app@gmail.com",
 				}, nil)
 				eq, _ := es.Queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
+				eq.EXPECT().Write(gomock.Any(), convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
 			},
 			args: args{
@@ -99,7 +99,7 @@ func TestCreateEventService_Run(t *testing.T) {
 				}, nil)
 
 				eq, _ := es.Queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
+				eq.EXPECT().Write(gomock.Any(), convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
 			},
 			args: args{
@@ -142,7 +142,7 @@ func TestCreateEventService_Run(t *testing.T) {
 				}, nil)
 
 				eq, _ := es.Queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
+				eq.EXPECT().Write(gomock.Any(), convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
 			},
 			args: args{
@@ -187,7 +187,7 @@ func TestCreateEventService_Run(t *testing.T) {
 				}, nil)
 
 				eq, _ := es.Queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
+				eq.EXPECT().Write(gomock.Any(), convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
 			},
 			args: args{

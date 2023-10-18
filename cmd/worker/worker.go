@@ -119,7 +119,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				eventRepo,
 				projectRepo,
 				eventDeliveryRepo,
-				a.Cache,
 				a.Queue,
 				subRepo,
 				deviceRepo))
@@ -129,7 +128,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				eventRepo,
 				projectRepo,
 				eventDeliveryRepo,
-				a.Cache,
 				a.Queue,
 				subRepo,
 				deviceRepo))
