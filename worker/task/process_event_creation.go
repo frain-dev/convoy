@@ -22,7 +22,6 @@ type CreateEventTaskParams struct {
 	UID            string
 	ProjectID      string
 	AppID          string            `json:"app_id"`
-	OwnerID        string            `json:"owner_id"`
 	EndpointID     string            `json:"endpoint_id"`
 	SourceID       string            `json:"source_id"`
 	Data           json.RawMessage   `json:"data"`
@@ -427,19 +426,6 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 func findEndpoints(ctx context.Context, endpointRepo datastore.EndpointRepository, newMessage *CreateEventTaskParams,
 	project *datastore.Project) ([]datastore.Endpoint, error) {
 	var endpoints []datastore.Endpoint
-
-	if !util.IsStringEmpty(newMessage.OwnerID) {
-		ownerIdEndpoints, err := endpointRepo.FindEndpointsByOwnerID(ctx, project.UID, newMessage.OwnerID)
-		if err != nil {
-			return endpoints, err
-		}
-
-		if len(ownerIdEndpoints) == 0 {
-			return endpoints, errors.New("owner ID has no configured endpoints")
-		}
-
-		endpoints = append(endpoints, ownerIdEndpoints...)
-	}
 
 	if !util.IsStringEmpty(newMessage.EndpointID) {
 		endpoint, err := endpointRepo.FindEndpointByID(ctx, newMessage.EndpointID, project.UID)
