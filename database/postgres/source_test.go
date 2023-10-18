@@ -254,6 +254,89 @@ func Test_LoadSourcesPaged(t *testing.T) {
 	}
 }
 
+func Test_LoadPubSubSourcesByProjectIDs(t *testing.T) {
+	type Expected struct {
+		paginationData datastore.PaginationData
+	}
+
+	tests := []struct {
+		name     string
+		pageData datastore.Pageable
+		count    int
+		expected Expected
+	}{
+		{
+			name:     "Load Sources Paged - 10 records",
+			pageData: datastore.Pageable{PerPage: 3},
+			count:    10,
+			expected: Expected{
+				paginationData: datastore.PaginationData{
+					PerPage: 3,
+				},
+			},
+		},
+
+		{
+			name:     "Load Sources Paged - 12 records",
+			pageData: datastore.Pageable{PerPage: 4},
+			count:    12,
+			expected: Expected{
+				paginationData: datastore.PaginationData{
+					PerPage: 4,
+				},
+			},
+		},
+
+		{
+			name:     "Load Sources Paged - 5 records",
+			pageData: datastore.Pageable{PerPage: 3},
+			count:    5,
+			expected: Expected{
+				paginationData: datastore.PaginationData{
+					PerPage: 3,
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, closeFn := getDB(t)
+			defer closeFn()
+
+			var projectIDs []string
+			sourceRepo := NewSourceRepo(db)
+
+			for i := 0; i < tc.count; i++ {
+				project := seedProject(t, db)
+				projectIDs = append(projectIDs, project.UID)
+
+				source := &datastore.Source{
+					UID:       ulid.Make().String(),
+					ProjectID: project.UID,
+					Name:      "Convoy-Prod",
+					MaskID:    uniuri.NewLen(16),
+					Type:      datastore.HTTPSource,
+					Verifier: &datastore.VerifierConfig{
+						Type: datastore.HMacVerifier,
+						HMac: &datastore.HMac{
+							Header: "X-Paystack-Signature",
+							Hash:   "SHA512",
+							Secret: "Paystack Secret",
+						},
+					},
+				}
+				require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
+			}
+
+			_, pageable, err := sourceRepo.LoadPubSubSourcesByProjectIDs(context.Background(), projectIDs, tc.pageData)
+
+			require.NoError(t, err)
+			require.Equal(t, tc.expected.paginationData.PerPage, pageable.PerPage)
+		})
+	}
+}
+
 func generateSource(t *testing.T, db database.Database) *datastore.Source {
 	project := seedProject(t, db)
 

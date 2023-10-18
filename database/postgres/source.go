@@ -510,7 +510,7 @@ func (s *sourceRepo) LoadPubSubSourcesByProjectIDs(ctx context.Context, projectI
 	}
 
 	pagination := &datastore.PaginationData{
-		PerPage:        0,
+		PerPage:        int64(pageable.PerPage),
 		HasNextPage:    hasNext,
 		NextPageCursor: cursor,
 	}
