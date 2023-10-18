@@ -14,7 +14,6 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -24,7 +23,7 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
+func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var dynamicEvent models.DynamicEvent
 
@@ -188,14 +187,14 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 			}
 
 			if s.Type == datastore.SubscriptionTypeAPI {
-				err = eventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
+				err = eventQueue.Write(ctx, convoy.EventProcessor, convoy.EventQueue, job)
 				if err != nil {
 					log.WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
 				}
 			}
 
 			if s.Type == datastore.SubscriptionTypeCLI {
-				err = eventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
+				err = eventQueue.Write(ctx, convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
 				if err != nil {
 					log.WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
 				}

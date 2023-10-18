@@ -61,9 +61,8 @@ func RetryEventDeliveries(db database.Database, cache cache.Cache, eventQueue qu
 
 		wg.Add(1)
 		eventDeliveryRepo := postgres.NewEventDeliveryRepo(db, cache)
-		projectRepo := postgres.NewProjectRepo(db, cache)
 
-		go processEventDeliveryBatch(ctx, status, eventDeliveryRepo, projectRepo, deliveryChan, q, &wg)
+		go processEventDeliveryBatch(ctx, status, eventDeliveryRepo, deliveryChan, q, &wg)
 
 		counter, err := eventDeliveryRepo.CountDeliveriesByStatus(ctx, "", status, searchParams)
 		if err != nil {
@@ -98,7 +97,7 @@ func RetryEventDeliveries(db database.Database, cache cache.Cache, eventQueue qu
 	}
 }
 
-func processEventDeliveryBatch(ctx context.Context, status datastore.EventDeliveryStatus, eventDeliveryRepo datastore.EventDeliveryRepository, projectRepo datastore.ProjectRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup) {
+func processEventDeliveryBatch(ctx context.Context, status datastore.EventDeliveryStatus, eventDeliveryRepo datastore.EventDeliveryRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	batchCount := 1
@@ -148,14 +147,14 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 				Payload: data,
 				Delay:   1 * time.Second,
 			}
-			err = q.Write(taskName, convoy.EventQueue, job)
+			err = q.Write(ctx, taskName, convoy.EventQueue, job)
 			if err != nil {
 				log.WithError(err).Errorf("batch %d: failed to send event delivery %s to the queue", batchCount, delivery.UID)
 			}
-			log.Infof("sucessfully requeued delivery with id: %s", delivery.UID)
+			log.Infof("successfully re-queued delivery with id: %s", delivery.UID)
 		}
 
-		log.Infof("batch %d: sucessfully requeued %d deliveries", batchCount, len(batch))
+		log.Infof("batch %d: successfully re-queued %d deliveries", batchCount, len(batch))
 		batchCount++
 	}
 }

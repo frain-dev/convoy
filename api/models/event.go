@@ -11,7 +11,7 @@ import (
 )
 
 type CreateEvent struct {
-	UID            string
+	UID            string            `json:"uid"`
 	AppID          string            `json:"app_id"` // Deprecated but necessary for backward compatibility
 	OwnerID        string            `json:"owner_id"`
 	EndpointID     string            `json:"endpoint_id"`

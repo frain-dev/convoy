@@ -94,7 +94,7 @@ func (m *MetaEvent) Run(eventType string, projectID string, data interface{}) er
 		return err
 	}
 
-	err = m.queue.Write(convoy.MetaEventProcessor, convoy.MetaEventQueue, &queue.Job{
+	err = m.queue.Write(context.Background(), convoy.MetaEventProcessor, convoy.MetaEventQueue, &queue.Job{
 		ID:      metaEvent.UID,
 		Payload: bytes,
 	})

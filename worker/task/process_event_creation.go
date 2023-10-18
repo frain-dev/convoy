@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -40,7 +39,7 @@ type CreateEvent struct {
 
 func ProcessEventCreation(
 	endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository,
-	eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache, eventQueue queue.Queuer,
+	eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer,
 	subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var createEvent CreateEvent
@@ -75,7 +74,7 @@ func ProcessEventCreation(
 			event = createEvent.Event
 		}
 
-		subscriptions, err := findSubscriptions(ctx, endpointRepo, cache, subRepo, project, event, createEvent.CreateSubscription)
+		subscriptions, err := findSubscriptions(ctx, endpointRepo, subRepo, project, event, createEvent.CreateSubscription)
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
@@ -210,12 +209,12 @@ func ProcessEventCreation(
 				}
 
 				if s.Type == datastore.SubscriptionTypeAPI {
-					err = eventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
+					err = eventQueue.Write(ctx, convoy.EventProcessor, convoy.EventQueue, job)
 					if err != nil {
 						log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
 					}
 				} else if s.Type == datastore.SubscriptionTypeCLI {
-					err = eventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
+					err = eventQueue.Write(ctx, convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
 					if err != nil {
 						log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
 					}
@@ -227,7 +226,7 @@ func ProcessEventCreation(
 	}
 }
 
-func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepository, cache cache.Cache,
+func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepository,
 	subRepo datastore.SubscriptionRepository, project *datastore.Project, event *datastore.Event, shouldCreateSubscription bool) ([]datastore.Subscription, error) {
 	var subscriptions []datastore.Subscription
 	var err error

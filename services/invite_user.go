@@ -61,7 +61,7 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 	return iv, nil
 }
 
-func sendInviteEmail(_ context.Context, iv *datastore.OrganisationInvite, user *datastore.User, org *datastore.Organisation, queuer queue.Queuer) error {
+func sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, user *datastore.User, org *datastore.Organisation, queuer queue.Queuer) error {
 	cfg, err := config.Get()
 	if err != nil {
 		return err
@@ -90,7 +90,7 @@ func sendInviteEmail(_ context.Context, iv *datastore.OrganisationInvite, user *
 		Delay:   0,
 	}
 
-	err = queuer.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)
+	err = queuer.Write(ctx, convoy.EmailProcessor, convoy.DefaultQueue, job)
 	if err != nil {
 		return err
 	}

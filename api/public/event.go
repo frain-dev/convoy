@@ -78,7 +78,7 @@ func (a *PublicHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Reque
 		Delay:   0,
 	}
 
-	err = a.A.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = a.A.Queue.Write(r.Context(), convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.FromContext(r.Context()).Errorf("Error occurred sending new event to the queue %s", err)
 	}
