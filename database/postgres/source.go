@@ -96,10 +96,22 @@ const (
 	`
 
 	fetchPubSubSources = `
-	SELECT *
+	SELECT
+	    id,
+		name,
+		type,
+		pub_sub,
+		mask_id,
+		provider,
+		is_disabled,
+		forward_headers,
+		idempotency_keys,
+		project_id,
+		created_at,
+		updated_at
 	FROM convoy.sources
 	WHERE type = '%s' AND project_id IN (:project_ids) AND deleted_at IS NULL
-	AND id <= :cursor
+	AND (id <= :cursor OR :cursor = '')
     ORDER BY id DESC
     LIMIT :limit
 	`

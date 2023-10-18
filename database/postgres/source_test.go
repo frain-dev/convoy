@@ -271,7 +271,8 @@ func Test_LoadPubSubSourcesByProjectIDs(t *testing.T) {
 			count:    10,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					PerPage: 3,
+					HasNextPage: true,
+					PerPage:     3,
 				},
 			},
 		},
@@ -282,7 +283,8 @@ func Test_LoadPubSubSourcesByProjectIDs(t *testing.T) {
 			count:    12,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					PerPage: 4,
+					PerPage:     4,
+					HasNextPage: true,
 				},
 			},
 		},
@@ -293,8 +295,37 @@ func Test_LoadPubSubSourcesByProjectIDs(t *testing.T) {
 			count:    5,
 			expected: Expected{
 				paginationData: datastore.PaginationData{
-					PerPage: 3,
+					PerPage:     3,
+					HasNextPage: true,
 				},
+			},
+		},
+	}
+
+	pb := &datastore.PubSubConfig{
+		Type:    datastore.GooglePubSub,
+		Workers: 2,
+		Sqs: &datastore.SQSPubSubConfig{
+			AccessKeyID:   "3",
+			SecretKey:     "***",
+			DefaultRegion: "region",
+			QueueName:     "q",
+		},
+		Google: &datastore.GooglePubSubConfig{
+			SubscriptionID: "3333",
+			ServiceAccount: []byte("service"),
+			ProjectID:      "1234",
+		},
+		Kafka: &datastore.KafkaPubSubConfig{
+			Brokers:         []string{"12345"},
+			ConsumerGroupID: "3333",
+			TopicName:       "topic",
+			Auth: &datastore.KafkaAuth{
+				Type:     "33",
+				Hash:     "33",
+				TLS:      true,
+				Username: "1234",
+				Password: "1233",
 			},
 		},
 	}
@@ -316,7 +347,8 @@ func Test_LoadPubSubSourcesByProjectIDs(t *testing.T) {
 					ProjectID: project.UID,
 					Name:      "Convoy-Prod",
 					MaskID:    uniuri.NewLen(16),
-					Type:      datastore.HTTPSource,
+					Type:      datastore.PubSubSource,
+					PubSub:    pb,
 					Verifier: &datastore.VerifierConfig{
 						Type: datastore.HMacVerifier,
 						HMac: &datastore.HMac{
@@ -329,10 +361,17 @@ func Test_LoadPubSubSourcesByProjectIDs(t *testing.T) {
 				require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
 			}
 
-			_, pageable, err := sourceRepo.LoadPubSubSourcesByProjectIDs(context.Background(), projectIDs, tc.pageData)
+			sources, pageable, err := sourceRepo.LoadPubSubSourcesByProjectIDs(context.Background(), projectIDs, tc.pageData)
 
 			require.NoError(t, err)
+
+			for _, s := range sources {
+				require.Equal(t, *pb, *s.PubSub)
+			}
+
+			require.Equal(t, tc.expected.paginationData.PerPage, int64(len(sources)))
 			require.Equal(t, tc.expected.paginationData.PerPage, pageable.PerPage)
+			require.Equal(t, tc.expected.paginationData.HasNextPage, pageable.HasNextPage)
 		})
 	}
 }
