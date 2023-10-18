@@ -95,6 +95,15 @@ const (
 	WHERE s.deleted_at IS NULL
 	`
 
+	fetchPubSubSources = `
+	SELECT *
+	FROM convoy.sources
+	WHERE type = '%s' AND project_id IN (:project_ids) AND deleted_at IS NULL
+	AND id <= :cursor
+    ORDER BY id DESC
+    LIMIT :limit
+	`
+
 	fetchSource = baseFetchSource + ` AND %s = $1;`
 
 	fetchSourceByName = baseFetchSource + ` AND %s = $1 AND %s = $2;`
@@ -449,6 +458,62 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 
 	pagination := &datastore.PaginationData{PrevRowCount: count}
 	pagination = pagination.Build(pageable, ids)
+
+	return sources, *pagination, nil
+}
+
+func (s *sourceRepo) LoadPubSubSourcesByProjectIDs(ctx context.Context, projectIDs []string, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
+	arg := map[string]interface{}{
+		"project_ids": projectIDs,
+		"limit":       pageable.Limit(),
+		"cursor":      pageable.Cursor(),
+	}
+
+	query := fmt.Sprintf(fetchPubSubSources, datastore.PubSubSource)
+
+	query, args, err := sqlx.Named(query, arg)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query = s.db.Rebind(query)
+
+	rows, err := s.db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+	defer rows.Close()
+
+	sources := make([]datastore.Source, 0)
+	for rows.Next() {
+		var source datastore.Source
+		err = rows.StructScan(&source)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		sources = append(sources, source)
+	}
+
+	// Bypass pagination.Build here since we're only dealing with forward paging here
+	var hasNext bool
+	var cursor string
+	if len(sources) > pageable.PerPage {
+		cursor = sources[len(sources)-1].UID
+		sources = sources[:len(sources)-1]
+		hasNext = true
+	}
+
+	pagination := &datastore.PaginationData{
+		PerPage:        0,
+		HasNextPage:    hasNext,
+		NextPageCursor: cursor,
+	}
 
 	return sources, *pagination, nil
 }

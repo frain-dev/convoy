@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -67,13 +66,9 @@ func (s *SourceLoader) Run(ctx context.Context, interval int, stop <-chan struct
 	}
 }
 
-func (s *SourceLoader) fetchSources(ctx context.Context, projectID string, cursor string) error {
+func (s *SourceLoader) fetchSources(ctx context.Context, projectIDs []string, cursor string) error {
 	txn, innerCtx := apm.StartTransaction(ctx, "fetchSources")
 	defer txn.End()
-
-	filter := &datastore.SourceFilter{
-		Type: string(datastore.PubSubSource),
-	}
 
 	pageable := datastore.Pageable{
 		NextCursor: cursor,
@@ -81,7 +76,7 @@ func (s *SourceLoader) fetchSources(ctx context.Context, projectID string, curso
 		PerPage:    perPage,
 	}
 
-	sources, pagination, err := s.sourceRepo.LoadSourcesPaged(innerCtx, projectID, filter, pageable)
+	sources, pagination, err := s.sourceRepo.LoadPubSubSourcesByProjectIDs(innerCtx, projectIDs, pageable)
 	if err != nil {
 		return err
 	}
@@ -91,18 +86,20 @@ func (s *SourceLoader) fetchSources(ctx context.Context, projectID string, curso
 	}
 
 	for _, source := range sources {
-		go func(source datastore.Source) {
-			ps, err := NewPubSubSource(&source, s.handler, s.log)
-			if err != nil {
-				s.log.WithError(err).Error("failed to create pub sub source")
-			}
+		ps, err := NewPubSubSource(&source, s.handler, s.log)
+		if err != nil {
+			s.log.WithError(err).Error("failed to create pub sub source")
+		}
 
-			s.sourcePool.Insert(ps)
-		}(source)
+		s.sourcePool.Insert(ps)
 	}
 
-	cursor = pagination.NextPageCursor
-	return s.fetchSources(innerCtx, projectID, cursor)
+	if pagination.HasNextPage {
+		cursor = pagination.NextPageCursor
+		return s.fetchSources(innerCtx, projectIDs, cursor)
+	}
+
+	return nil
 }
 
 func (s *SourceLoader) fetchProjectSources(ctx context.Context) error {
@@ -114,12 +111,15 @@ func (s *SourceLoader) fetchProjectSources(ctx context.Context) error {
 		return err
 	}
 
-	for _, project := range projects {
-		err := s.fetchSources(innerCtx, project.UID, fmt.Sprintf("%d", math.MaxInt))
-		if err != nil {
-			s.log.WithError(err).Error("failed to load sources")
-			continue
-		}
+	ids := make([]string, len(projects))
+	for i := range projects {
+		ids[i] = projects[i].UID
+	}
+
+	err = s.fetchSources(innerCtx, ids, "")
+	if err != nil {
+		s.log.WithError(err).Error("failed to load sources")
+		return err
 	}
 
 	return nil
@@ -130,12 +130,11 @@ func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, ms
 	defer txn.End()
 
 	ev := struct {
-		EndpointID     string            `json:"endpoint_id"`
-		OwnerID        string            `json:"owner_id"`
-		EventType      string            `json:"event_type"`
-		Data           json.RawMessage   `json:"data"`
-		IdempotencyKey string            `json:"idempotency_key"`
-		CustomHeaders  map[string]string `json:"custom_headers"`
+		EndpointID    string            `json:"endpoint_id"`
+		OwnerID       string            `json:"owner_id"`
+		EventType     string            `json:"event_type"`
+		Data          json.RawMessage   `json:"data"`
+		CustomHeaders map[string]string `json:"custom_headers"`
 	}{}
 
 	if err := json.Unmarshal([]byte(msg), &ev); err != nil {
@@ -167,17 +166,16 @@ func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, ms
 	}
 
 	event := datastore.Event{
-		UID:            ulid.Make().String(),
-		EventType:      datastore.EventType(ev.EventType),
-		SourceID:       source.UID,
-		ProjectID:      source.ProjectID,
-		Raw:            string(ev.Data),
-		Data:           ev.Data,
-		IdempotencyKey: ev.IdempotencyKey,
-		Headers:        getCustomHeaders(ev.CustomHeaders),
-		Endpoints:      endpoints,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+		UID:       ulid.Make().String(),
+		EventType: datastore.EventType(ev.EventType),
+		SourceID:  source.UID,
+		ProjectID: source.ProjectID,
+		Raw:       string(ev.Data),
+		Data:      ev.Data,
+		Headers:   getCustomHeaders(ev.CustomHeaders),
+		Endpoints: endpoints,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	createEvent := task.CreateEvent{
