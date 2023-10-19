@@ -13,6 +13,7 @@ import (
 )
 
 func provideSourceLoader(ctrl *gomock.Controller) *SourceLoader {
+	eventRepo := mocks.NewMockEventRepository(ctrl)
 	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 	sourceRepo := mocks.NewMockSourceRepository(ctrl)
 	projectRepo := mocks.NewMockProjectRepository(ctrl)
@@ -20,7 +21,7 @@ func provideSourceLoader(ctrl *gomock.Controller) *SourceLoader {
 	sourcePool := provideSourcePool()
 	logger := log.NewLogger(io.Discard)
 
-	sourceLoader := NewSourceLoader(endpointRepo, sourceRepo, projectRepo, queue, sourcePool, logger)
+	sourceLoader := NewSourceLoader(eventRepo, endpointRepo, sourceRepo, projectRepo, queue, sourcePool, logger)
 	return sourceLoader
 }
 
