@@ -2,8 +2,6 @@ package public
 
 import (
 	"errors"
-	"net/http"
-
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
@@ -14,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
+	"net/http"
 )
 
 type PublicHandler struct {
@@ -137,10 +136,10 @@ func (a *PublicHandler) BuildRoutes() http.Handler {
 func (a *PublicHandler) retrieveOrganisation(r *http.Request) (*datastore.Organisation, error) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
-		return &datastore.Organisation{}, err
+		return nil, err
 	}
 
-	orgRepo := postgres.NewOrgRepo(a.A.DB)
+	orgRepo := postgres.NewOrgRepo(a.A.DB, a.A.Cache)
 	return orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
 }
 
@@ -148,10 +147,10 @@ func (a *PublicHandler) retrieveProject(r *http.Request) (*datastore.Project, er
 	projectID := chi.URLParam(r, "projectID")
 
 	if util.IsStringEmpty(projectID) {
-		return &datastore.Project{}, errors.New("Project ID not present in request")
+		return nil, errors.New("project id not present in request")
 	}
 
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
+	projectRepo := postgres.NewProjectRepo(a.A.DB, a.A.Cache)
 	return projectRepo.FetchProjectByID(r.Context(), projectID)
 }
 

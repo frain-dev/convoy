@@ -59,7 +59,7 @@ func Test_MetaEvent_Run(t *testing.T) {
 			},
 			qFn: func(m *MetaEvent) {
 				queue, _ := m.queue.(*mocks.MockQueuer)
-				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
+				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 		},
 

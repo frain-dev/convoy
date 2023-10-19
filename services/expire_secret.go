@@ -65,7 +65,7 @@ func (a *ExpireSecretService) Run(ctx context.Context) (*datastore.Endpoint, err
 	}
 
 	taskName := convoy.ExpireSecretsProcessor
-	err = a.Queuer.Write(taskName, convoy.DefaultQueue, job)
+	err = a.Queuer.Write(ctx, taskName, convoy.DefaultQueue, job)
 	if err != nil {
 		log.Errorf("Error occurred sending new event to the queue %s", err)
 	}
@@ -92,12 +92,6 @@ func (a *ExpireSecretService) Run(ctx context.Context) (*datastore.Endpoint, err
 	if err != nil {
 		log.Errorf("Error occurred expiring secret %s", err)
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to expire endpoint secret"))
-	}
-
-	endpointCacheKey := convoy.EndpointsCacheKey.Get(a.Endpoint.UID).String()
-	err = a.Cache.Set(ctx, endpointCacheKey, &a.Endpoint, time.Minute*5)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to update app cache")
 	}
 
 	return a.Endpoint, nil

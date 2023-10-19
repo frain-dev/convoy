@@ -61,9 +61,9 @@ func (a *PortalLinkHandler) CreateEndpoint(w http.ResponseWriter, r *http.Reques
 
 	ce := services.CreateEndpointService{
 		Cache:          a.A.Cache,
-		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
-		ProjectRepo:    postgres.NewProjectRepo(a.A.DB),
-		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB),
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
+		ProjectRepo:    postgres.NewProjectRepo(a.A.DB, a.A.Cache),
+		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache),
 		E:              e,
 		ProjectID:      portalLink.ProjectID,
 	}
@@ -102,8 +102,8 @@ func (a *PortalLinkHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Reques
 
 	ce := services.UpdateEndpointService{
 		Cache:        a.A.Cache,
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
-		ProjectRepo:  postgres.NewProjectRepo(a.A.DB),
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
+		ProjectRepo:  postgres.NewProjectRepo(a.A.DB, a.A.Cache),
 		E:            e,
 		Endpoint:     endpoint,
 		Project:      project,
@@ -145,7 +145,7 @@ func (a *PortalLinkHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = postgres.NewEndpointRepo(a.A.DB).DeleteEndpoint(r.Context(), endpoint, project.UID)
+	err = postgres.NewEndpointRepo(a.A.DB, a.A.Cache).DeleteEndpoint(r.Context(), endpoint, project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -179,8 +179,8 @@ func (a *PortalLinkHandler) ExpireSecret(w http.ResponseWriter, r *http.Request)
 	xs := services.ExpireSecretService{
 		Queuer:       a.A.Queue,
 		Cache:        a.A.Cache,
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
-		ProjectRepo:  postgres.NewProjectRepo(a.A.DB),
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
+		ProjectRepo:  postgres.NewProjectRepo(a.A.DB, a.A.Cache),
 		S:            e,
 		Endpoint:     endpoint,
 		Project:      project,
@@ -204,7 +204,7 @@ func (a *PortalLinkHandler) PauseEndpoint(w http.ResponseWriter, r *http.Request
 	}
 
 	ps := services.PauseEndpointService{
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		ProjectID:    project.UID,
 		EndpointId:   chi.URLParam(r, "endpointID"),
 	}
@@ -224,6 +224,6 @@ func (a *PortalLinkHandler) retrieveEndpoint(r *http.Request) (*datastore.Endpoi
 	}
 
 	endpointID := chi.URLParam(r, "endpointID")
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+	endpointRepo := postgres.NewEndpointRepo(a.A.DB, a.A.Cache)
 	return endpointRepo.FindEndpointByID(r.Context(), endpointID, project.UID)
 }

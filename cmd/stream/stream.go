@@ -52,15 +52,15 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			projectRepo := postgres.NewProjectRepo(a.DB)
-			endpointRepo := postgres.NewEndpointRepo(a.DB)
-			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
-			sourceRepo := postgres.NewSourceRepo(a.DB)
-			subRepo := postgres.NewSubscriptionRepo(a.DB)
-			deviceRepo := postgres.NewDeviceRepo(a.DB)
-			apiKeyRepo := postgres.NewAPIKeyRepo(a.DB)
-			userRepo := postgres.NewUserRepo(a.DB)
-			orgMemberRepo := postgres.NewOrgMemberRepo(a.DB)
+			projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
+			endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
+			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB, a.Cache)
+			sourceRepo := postgres.NewSourceRepo(a.DB, a.Cache)
+			subRepo := postgres.NewSubscriptionRepo(a.DB, a.Cache)
+			deviceRepo := postgres.NewDeviceRepo(a.DB, a.Cache)
+			apiKeyRepo := postgres.NewAPIKeyRepo(a.DB, a.Cache)
+			userRepo := postgres.NewUserRepo(a.DB, a.Cache)
+			orgMemberRepo := postgres.NewOrgMemberRepo(a.DB, a.Cache)
 
 			// enable only the native auth realm
 			authCfg := &config.AuthConfiguration{
@@ -114,7 +114,8 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 			}
 			q := redisQueue.NewQueue(opts)
 
-			consumer := worker.NewConsumer(q, lo)
+			consumer := worker.NewConsumer(100, q, lo)
+			consumer.RegisterHandlers(convoy.StreamCliEventsProcessor, h.EventDeliveryCLiHandler(r))
 
 			// start worker
 			fmt.Println("Registering Stream Server Consumer...")

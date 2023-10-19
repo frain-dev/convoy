@@ -37,7 +37,7 @@ func (a *PublicHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request)
 	}
 
 	data := q.Transform(r)
-	subscriptions, paginationData, err := postgres.NewSubscriptionRepo(a.A.DB).LoadSubscriptionsPaged(r.Context(), project.UID, data.FilterBy, data.Pageable)
+	subscriptions, paginationData, err := postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache).LoadSubscriptionsPaged(r.Context(), project.UID, data.FilterBy, data.Pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching subscriptions")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching subscriptions", http.StatusInternalServerError))
@@ -97,7 +97,7 @@ func (a *PublicHandler) GetSubscription(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	subscription, err := postgres.NewSubscriptionRepo(a.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
+	subscription, err := postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
@@ -145,9 +145,9 @@ func (a *PublicHandler) CreateSubscription(w http.ResponseWriter, r *http.Reques
 	}
 
 	cs := services.CreateSubscriptionService{
-		SubRepo:         postgres.NewSubscriptionRepo(a.A.DB),
-		EndpointRepo:    postgres.NewEndpointRepo(a.A.DB),
-		SourceRepo:      postgres.NewSourceRepo(a.A.DB),
+		SubRepo:         postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache),
+		EndpointRepo:    postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
+		SourceRepo:      postgres.NewSourceRepo(a.A.DB, a.A.Cache),
 		Project:         project,
 		NewSubscription: &sub,
 	}
@@ -182,7 +182,7 @@ func (a *PublicHandler) DeleteSubscription(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	sub, err := postgres.NewSubscriptionRepo(a.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
+	sub, err := postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
@@ -193,7 +193,7 @@ func (a *PublicHandler) DeleteSubscription(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = postgres.NewSubscriptionRepo(a.A.DB).DeleteSubscription(r.Context(), project.UID, sub)
+	err = postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache).DeleteSubscription(r.Context(), project.UID, sub)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete subscription")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete subscription", http.StatusBadRequest))
@@ -238,9 +238,9 @@ func (a *PublicHandler) UpdateSubscription(w http.ResponseWriter, r *http.Reques
 	}
 
 	us := services.UpdateSubscriptionService{
-		SubRepo:        postgres.NewSubscriptionRepo(a.A.DB),
-		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
-		SourceRepo:     postgres.NewSourceRepo(a.A.DB),
+		SubRepo:        postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache),
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
+		SourceRepo:     postgres.NewSourceRepo(a.A.DB, a.A.Cache),
 		ProjectId:      project.UID,
 		SubscriptionId: chi.URLParam(r, "subscriptionID"),
 		Update:         &update,
@@ -281,7 +281,7 @@ func (a *PublicHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
+	subRepo := postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache)
 	isBodyValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Body, test.Schema.Body)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to validate subscription filter")
@@ -321,7 +321,7 @@ func (a *PublicHandler) TestSubscriptionFunction(w http.ResponseWriter, r *http.
 		return
 	}
 
-	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
+	subRepo := postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache)
 	mutatedPayload, consoleLog, err := subRepo.TransformPayload(r.Context(), test.Function, test.Payload)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to transform payload")

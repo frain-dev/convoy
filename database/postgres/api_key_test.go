@@ -24,7 +24,7 @@ func Test_CreateAPIKey(t *testing.T) {
 	project := seedProject(t, db)
 	endpoint := seedEndpoint(t, db)
 
-	apiKeyRepo := NewAPIKeyRepo(db)
+	apiKeyRepo := NewAPIKeyRepo(db, nil)
 	apiKey := generateApiKey(project, endpoint)
 
 	require.NoError(t, apiKeyRepo.CreateAPIKey(context.Background(), apiKey))
@@ -47,7 +47,7 @@ func Test_FindAPIKeyByID(t *testing.T) {
 	project := seedProject(t, db)
 	endpoint := seedEndpoint(t, db)
 
-	apiKeyRepo := NewAPIKeyRepo(db)
+	apiKeyRepo := NewAPIKeyRepo(db, nil)
 	apiKey := generateApiKey(project, endpoint)
 
 	_, err := apiKeyRepo.FindAPIKeyByID(context.Background(), apiKey.UID)
@@ -74,7 +74,7 @@ func Test_FindAPIKeyByMaskID(t *testing.T) {
 	project := seedProject(t, db)
 	endpoint := seedEndpoint(t, db)
 
-	apiKeyRepo := NewAPIKeyRepo(db)
+	apiKeyRepo := NewAPIKeyRepo(db, nil)
 	apiKey := generateApiKey(project, endpoint)
 
 	_, err := apiKeyRepo.FindAPIKeyByMaskID(context.Background(), apiKey.MaskID)
@@ -101,7 +101,7 @@ func Test_FindAPIKeyByHash(t *testing.T) {
 	project := seedProject(t, db)
 	endpoint := seedEndpoint(t, db)
 
-	apiKeyRepo := NewAPIKeyRepo(db)
+	apiKeyRepo := NewAPIKeyRepo(db, nil)
 	apiKey := generateApiKey(project, endpoint)
 
 	_, err := apiKeyRepo.FindAPIKeyByHash(context.Background(), apiKey.Hash)
@@ -128,7 +128,7 @@ func Test_UpdateAPIKey(t *testing.T) {
 	project := seedProject(t, db)
 	endpoint := seedEndpoint(t, db)
 
-	apiKeyRepo := NewAPIKeyRepo(db)
+	apiKeyRepo := NewAPIKeyRepo(db, nil)
 	apiKey := generateApiKey(project, endpoint)
 
 	require.NoError(t, apiKeyRepo.CreateAPIKey(context.Background(), apiKey))
@@ -159,7 +159,7 @@ func Test_RevokeAPIKey(t *testing.T) {
 	project := seedProject(t, db)
 	endpoint := seedEndpoint(t, db)
 
-	apiKeyRepo := NewAPIKeyRepo(db)
+	apiKeyRepo := NewAPIKeyRepo(db, nil)
 	apiKey := generateApiKey(project, endpoint)
 
 	require.NoError(t, apiKeyRepo.CreateAPIKey(context.Background(), apiKey))
@@ -226,7 +226,7 @@ func Test_LoadAPIKeysPaged(t *testing.T) {
 
 			project := seedProject(t, db)
 
-			apiKeyRepo := NewAPIKeyRepo(db)
+			apiKeyRepo := NewAPIKeyRepo(db, nil)
 			for i := 0; i < tc.count; i++ {
 				apiKey := &datastore.APIKey{
 					UID:    ulid.Make().String(),

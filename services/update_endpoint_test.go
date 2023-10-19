@@ -71,9 +71,6 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 
 				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
-
-				c, _ := as.Cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantErr: false,
 		},

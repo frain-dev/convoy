@@ -82,7 +82,6 @@ func GetVersionFromFS(fs embed.FS) string {
 
 const (
 	EventProcessor              TaskName = "EventProcessor"
-	DeadLetterProcessor         TaskName = "DeadLetterProcessor"
 	CreateEventProcessor        TaskName = "CreateEventProcessor"
 	CreateDynamicEventProcessor TaskName = "CreateDynamicEventProcessor"
 	MetaEventProcessor          TaskName = "MetaEventProcessor"
@@ -103,9 +102,9 @@ const (
 	OrganisationsCacheKey      CacheKey = "organisations"
 	OrganisationMemberCacheKey CacheKey = "organisation_members"
 	ProjectsCacheKey           CacheKey = "projects"
+	SubscriptionsCacheKey      CacheKey = "subscriptions"
 	TokenCacheKey              CacheKey = "tokens"
 	SourceCacheKey             CacheKey = "sources"
-	IdempotencyCacheKey        CacheKey = "dedup"
 )
 
 // queues
@@ -123,12 +122,4 @@ const (
 const (
 	DefaultOnPremDir = "/var/convoy/export"
 	TmpExportDir     = "/tmp/convoy/export"
-)
-
-const (
-	EventDeliveryIDLength = 12
-)
-
-const (
-	Concurrency = 100
 )

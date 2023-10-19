@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 package postgres
 
@@ -20,7 +19,7 @@ func Test_CreateJob(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	jobRepo := NewJobRepo(db)
+	jobRepo := NewJobRepo(db, nil)
 	job := generateJob(t, db)
 
 	require.NoError(t, jobRepo.CreateJob(context.Background(), job))
@@ -37,7 +36,7 @@ func TestJobRepo_FetchJobsByProjectId(t *testing.T) {
 	defer closeFn()
 
 	org := seedOrg(t, db)
-	jobRepo := NewJobRepo(db)
+	jobRepo := NewJobRepo(db, nil)
 
 	p1 := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -55,10 +54,10 @@ func TestJobRepo_FetchJobsByProjectId(t *testing.T) {
 		Config:         &datastore.DefaultProjectConfig,
 	}
 
-	err := NewProjectRepo(db).CreateProject(context.Background(), p1)
+	err := NewProjectRepo(db, nil).CreateProject(context.Background(), p1)
 	require.NoError(t, err)
 
-	err = NewProjectRepo(db).CreateProject(context.Background(), p2)
+	err = NewProjectRepo(db, nil).CreateProject(context.Background(), p2)
 	require.NoError(t, err)
 
 	require.NoError(t, jobRepo.CreateJob(context.Background(), &datastore.Job{
@@ -104,7 +103,7 @@ func TestJobRepo_FetchRunningJobsByProjectId(t *testing.T) {
 	defer closeFn()
 
 	org := seedOrg(t, db)
-	jobRepo := NewJobRepo(db)
+	jobRepo := NewJobRepo(db, nil)
 
 	p1 := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -122,10 +121,10 @@ func TestJobRepo_FetchRunningJobsByProjectId(t *testing.T) {
 		Config:         &datastore.DefaultProjectConfig,
 	}
 
-	err := NewProjectRepo(db).CreateProject(context.Background(), p1)
+	err := NewProjectRepo(db, nil).CreateProject(context.Background(), p1)
 	require.NoError(t, err)
 
-	err = NewProjectRepo(db).CreateProject(context.Background(), p2)
+	err = NewProjectRepo(db, nil).CreateProject(context.Background(), p2)
 	require.NoError(t, err)
 
 	require.NoError(t, jobRepo.CreateJob(context.Background(), &datastore.Job{
@@ -169,7 +168,7 @@ func TestJobRepo_MarkJobAsStarted(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	jobRepo := NewJobRepo(db)
+	jobRepo := NewJobRepo(db, nil)
 	job := generateJob(t, db)
 
 	ctx := context.Background()
@@ -192,7 +191,7 @@ func TestJobRepo_MarkJobAsCompleted(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	jobRepo := NewJobRepo(db)
+	jobRepo := NewJobRepo(db, nil)
 	job := generateJob(t, db)
 
 	ctx := context.Background()
@@ -215,7 +214,7 @@ func TestJobRepo_MarkJobAsFailed(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	jobRepo := NewJobRepo(db)
+	jobRepo := NewJobRepo(db, nil)
 	job := generateJob(t, db)
 
 	ctx := context.Background()
@@ -238,7 +237,7 @@ func TestJobRepo_DeleteJob(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	jobRepo := NewJobRepo(db)
+	jobRepo := NewJobRepo(db, nil)
 	job := generateJob(t, db)
 
 	require.NoError(t, jobRepo.CreateJob(context.Background(), job))
@@ -311,7 +310,7 @@ func Test_LoadJobsPaged(t *testing.T) {
 			db, closeFn := getDB(t)
 			defer closeFn()
 
-			jobRepository := NewJobRepo(db)
+			jobRepository := NewJobRepo(db, nil)
 			project := seedProject(t, db)
 
 			for i := 0; i < tc.count; i++ {

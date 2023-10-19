@@ -20,7 +20,7 @@ func Test_CreateMetaEvent(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	metaEventRepo := NewMetaEventRepo(db)
+	metaEventRepo := NewMetaEventRepo(db, nil)
 	metaEvent := generateMetaEvent(t, db)
 	ctx := context.Background()
 
@@ -39,7 +39,7 @@ func Test_FindMetaEventByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	metaEventRepo := NewMetaEventRepo(db)
+	metaEventRepo := NewMetaEventRepo(db, nil)
 	metaEvent := generateMetaEvent(t, db)
 	ctx := context.Background()
 
@@ -62,7 +62,7 @@ func Test_UpdateMetaEvent(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	metaEventRepo := NewMetaEventRepo(db)
+	metaEventRepo := NewMetaEventRepo(db, nil)
 	metaEvent := generateMetaEvent(t, db)
 	ctx := context.Background()
 
@@ -152,7 +152,7 @@ func Test_LoadMetaEventsPaged(t *testing.T) {
 			defer closeFn()
 
 			project := seedProject(t, db)
-			metaEventRepo := NewMetaEventRepo(db)
+			metaEventRepo := NewMetaEventRepo(db, nil)
 
 			for i := 0; i < tc.count; i++ {
 				metaEvent := &datastore.MetaEvent{

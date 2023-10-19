@@ -12,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	objectstore "github.com/frain-dev/convoy/datastore/object-store"
-	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/hibiken/asynq"
 )
@@ -22,7 +21,7 @@ const (
 	eventDeliveriesTable = "convoy.event_deliveries"
 )
 
-func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, exportRepo datastore.ExportRepository, searcher searcher.Searcher) func(context.Context, *asynq.Task) error {
+func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, exportRepo datastore.ExportRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		c := time.Now()
 		config, err := configRepo.LoadConfiguration(ctx)
@@ -58,7 +57,7 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 				}
 				expDate := time.Now().UTC().Add(-policy)
 				for _, table := range tables {
-					err = ExportCollection(ctx, table, exportDir, expDate, objectStoreClient, p, eventRepo, eventDeliveriesRepo, projectRepo, exportRepo, searcher)
+					err = ExportCollection(ctx, table, exportDir, expDate, objectStoreClient, p, eventRepo, eventDeliveriesRepo, projectRepo, exportRepo)
 					if err != nil {
 						return err
 					}
@@ -120,7 +119,7 @@ func ExportCollection(
 	ctx context.Context, tableName string, exportDir string, expDate time.Time,
 	objectStoreClient objectstore.ObjectStore, project *datastore.Project,
 	eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository,
-	projectRepo datastore.ProjectRepository, exportRepo datastore.ExportRepository, searcher searcher.Searcher,
+	projectRepo datastore.ProjectRepository, exportRepo datastore.ExportRepository,
 ) error {
 	out := GetArgsByCollection(tableName, exportDir, project)
 
@@ -178,20 +177,6 @@ func ExportCollection(
 		if err != nil {
 			return err
 		}
-	}
-
-	// delete documents
-	sf := &datastore.SearchFilter{FilterBy: datastore.FilterBy{
-		ProjectID: project.UID,
-		SearchParams: datastore.SearchParams{
-			CreatedAtStart: 0,
-			CreatedAtEnd:   expDate.Unix(),
-		},
-	}}
-
-	err = searcher.Remove(tableName, sf)
-	if err != nil {
-		log.WithError(err).Error("typesense: an error occurred deleting typesense record")
 	}
 
 	return nil

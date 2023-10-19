@@ -13,8 +13,8 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
+	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
@@ -28,6 +28,7 @@ import (
 func AddWorkerCommand(a *cli.App) *cobra.Command {
 	var workerPort uint32
 	var logLevel string
+	var consumerPoolSize int
 
 	var newRelicApp string
 	var newRelicKey string
@@ -84,19 +85,20 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			ctx := context.Background()
 
 			// register worker.
-			consumer := worker.NewConsumer(a.Queue, lo)
-			projectRepo := postgres.NewProjectRepo(a.DB)
-			metaEventRepo := postgres.NewMetaEventRepo(a.DB)
-			endpointRepo := postgres.NewEndpointRepo(a.DB)
-			eventRepo := postgres.NewEventRepo(a.DB)
-			jobRepo := postgres.NewJobRepo(a.DB)
-			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
-			subRepo := postgres.NewSubscriptionRepo(a.DB)
-			deviceRepo := postgres.NewDeviceRepo(a.DB)
+			consumer := worker.NewConsumer(cfg.ConsumerPoolSize, a.Queue, lo)
+			projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
+			metaEventRepo := postgres.NewMetaEventRepo(a.DB, a.Cache)
+			endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
+			eventRepo := postgres.NewEventRepo(a.DB, a.Cache)
+			jobRepo := postgres.NewJobRepo(a.DB, a.Cache)
+			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB, a.Cache)
+			subRepo := postgres.NewSubscriptionRepo(a.DB, a.Cache)
+			deviceRepo := postgres.NewDeviceRepo(a.DB, a.Cache)
 			configRepo := postgres.NewConfigRepo(a.DB)
-			searchBackend, err := searcher.NewSearchClient(cfg)
+
+			rateLimiter, err := limiter.NewLimiter(cfg.Redis)
 			if err != nil {
-				a.Logger.Debug("Failed to initialise search backend")
+				a.Logger.Debug("Failed to initialise rate limiter")
 			}
 
 			rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
@@ -109,14 +111,14 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				eventDeliveryRepo,
 				projectRepo,
 				subRepo,
-				a.Queue))
+				a.Queue,
+				rateLimiter))
 
 			consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
 				endpointRepo,
 				eventRepo,
 				projectRepo,
 				eventDeliveryRepo,
-				a.Cache,
 				a.Queue,
 				subRepo,
 				deviceRepo))
@@ -126,7 +128,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				eventRepo,
 				projectRepo,
 				eventDeliveryRepo,
-				a.Cache,
 				a.Queue,
 				subRepo,
 				deviceRepo))
@@ -137,14 +138,13 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				eventRepo,
 				eventDeliveryRepo,
 				postgres.NewExportRepo(a.DB),
-				searchBackend,
 			))
 
-			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Queue))
+			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Cache, a.Queue))
 
 			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo))
 
-			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, cfg, rd))
+			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, a.Cache, cfg, rd))
 			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 
 			consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo))
@@ -194,6 +194,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 
 	cmd.Flags().Uint32Var(&workerPort, "worker-port", 5006, "Worker port")
 	cmd.Flags().StringVar(&logLevel, "log-level", "", "scheduler log level")
+	cmd.Flags().IntVar(&consumerPoolSize, "consumers", -1, "Size of the consumers pool.")
 	cmd.Flags().BoolVar(&newRelicConfigEnabled, "new-relic-config-enabled", false, "Enable new-relic config")
 	cmd.Flags().BoolVar(&newRelicTracerEnabled, "new-relic-tracer-enabled", false, "Enable new-relic distributed tracer")
 	cmd.Flags().StringVar(&newRelicApp, "new-relic-app", "", "NewRelic application name")
@@ -214,6 +215,12 @@ func buildWorkerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		c.Logger.Level = logLevel
 	}
 
+	// CONVOY_WORKER_POOL_SIZE
+	consumerPoolSize, err := cmd.Flags().GetInt("consumers")
+	if err != nil {
+		return nil, err
+	}
+
 	workerPort, err := cmd.Flags().GetUint32("worker-port")
 	if err != nil {
 		return nil, err
@@ -224,6 +231,10 @@ func buildWorkerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 	}
 
 	c.Server.HTTP.WorkerPort = workerPort
+
+	if consumerPoolSize >= 0 {
+		c.ConsumerPoolSize = consumerPoolSize
+	}
 
 	// CONVOY_NEWRELIC_APP_NAME
 	newReplicApp, err := cmd.Flags().GetString("new-relic-app")

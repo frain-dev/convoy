@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/cache"
 
 	"github.com/frain-dev/convoy/util"
 
@@ -31,28 +32,28 @@ const (
 		role_type = $2,
 		role_project = $3,
 		role_endpoint = $4,
-		updated_at = now()
+		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	deleteOrgMember = `
 	UPDATE convoy.organisation_members SET
-	deleted_at = now()
+	deleted_at = NOW()
 	WHERE id = $1 AND organisation_id = $2 AND deleted_at IS NULL;
 	`
 
 	fetchOrgMemberById = `
 	SELECT
-		o.id as id,
-		o.organisation_id as "organisation_id",
-		o.role_type as "role.type",
-	    COALESCE(o.role_project,'') as "role.project",
-	    COALESCE(o.role_endpoint,'') as "role.endpoint",
-		u.id as "user_id",
-		u.id as "user_metadata.user_id",
-		u.first_name as "user_metadata.first_name",
-		u.last_name as "user_metadata.last_name",
-		u.email as "user_metadata.email"
+		o.id AS id,
+		o.organisation_id AS "organisation_id",
+		o.role_type AS "role.type",
+	    COALESCE(o.role_project,'') AS "role.project",
+	    COALESCE(o.role_endpoint,'') AS "role.endpoint",
+		u.id AS "user_id",
+		u.id AS "user_metadata.user_id",
+		u.first_name AS "user_metadata.first_name",
+		u.last_name AS "user_metadata.last_name",
+		u.email AS "user_metadata.email"
 	FROM convoy.organisation_members o
 	LEFT JOIN convoy.users u
 		ON o.user_id = u.id
@@ -61,16 +62,16 @@ const (
 
 	fetchOrgMemberByUserId = `
 	SELECT
-		o.id as id,
-		o.organisation_id as "organisation_id",
-		o.role_type as "role.type",
-	    COALESCE(o.role_project,'') as "role.project",
-	    COALESCE(o.role_endpoint,'') as "role.endpoint",
-		u.id as "user_id",
-		u.id as "user_metadata.user_id",
-		u.first_name as "user_metadata.first_name",
-		u.last_name as "user_metadata.last_name",
-		u.email as "user_metadata.email"
+		o.id AS id,
+		o.organisation_id AS "organisation_id",
+		o.role_type AS "role.type",
+	    COALESCE(o.role_project,'') AS "role.project",
+	    COALESCE(o.role_endpoint,'') AS "role.endpoint",
+		u.id AS "user_id",
+		u.id AS "user_metadata.user_id",
+		u.first_name AS "user_metadata.first_name",
+		u.last_name AS "user_metadata.last_name",
+		u.email AS "user_metadata.email"
 	FROM convoy.organisation_members o
 	LEFT JOIN convoy.users u
 		ON o.user_id = u.id
@@ -79,16 +80,16 @@ const (
 
 	fetchOrganisationMembersPaged = `
 	SELECT
-		o.id as id,
-		o.organisation_id as "organisation_id",
-		o.role_type as "role.type",
-	    COALESCE(o.role_project,'') as "role.project",
-	    COALESCE(o.role_endpoint,'') as "role.endpoint",
-		u.id as "user_id",
-		u.id as "user_metadata.user_id",
-		u.first_name as "user_metadata.first_name",
-		u.last_name as "user_metadata.last_name",
-		u.email as "user_metadata.email"
+		o.id AS id,
+		o.organisation_id AS "organisation_id",
+		o.role_type AS "role.type",
+	    COALESCE(o.role_project,'') AS "role.project",
+	    COALESCE(o.role_endpoint,'') AS "role.endpoint",
+		u.id AS "user_id",
+		u.id AS "user_metadata.user_id",
+		u.first_name AS "user_metadata.first_name",
+		u.last_name AS "user_metadata.last_name",
+		u.email AS "user_metadata.email"
 	FROM convoy.organisation_members o
 	LEFT JOIN convoy.users u ON o.user_id = u.id
 	WHERE o.organisation_id = :organisation_id
@@ -117,7 +118,7 @@ const (
 	`
 
 	countPrevOrganisationMembers = `
-	SELECT count(distinct(o.id)) as count
+	SELECT COUNT(DISTINCT(o.id)) AS count
 	FROM convoy.organisation_members o
 	LEFT JOIN convoy.users u ON o.user_id = u.id
 	WHERE o.organisation_id = :organisation_id
@@ -156,7 +157,7 @@ const (
 	`
 
 	countPrevUserOrgs = `
-	SELECT count(distinct(o.id)) as count
+	SELECT COUNT(DISTINCT(o.id)) AS count
 	FROM convoy.organisation_members m
 	JOIN convoy.organisations o ON m.organisation_id = o.id
 	WHERE m.user_id = :user_id
@@ -177,11 +178,12 @@ const (
 )
 
 type orgMemberRepo struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	cache cache.Cache
 }
 
-func NewOrgMemberRepo(db database.Database) datastore.OrganisationMemberRepository {
-	return &orgMemberRepo{db: db.GetDB()}
+func NewOrgMemberRepo(db database.Database, cache cache.Cache) datastore.OrganisationMemberRepository {
+	return &orgMemberRepo{db: db.GetDB(), cache: cache}
 }
 
 func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {

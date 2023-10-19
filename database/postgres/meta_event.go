@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/cache"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -24,11 +25,11 @@ const (
 	fetchMetaEventById = `
 	SELECT id, project_id, event_type, metadata,
 	attempt, status, created_at, updated_at
-	from convoy.meta_events WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
+	FROM convoy.meta_events WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 	baseMetaEventsPaged = `
 	SELECT mv.id, mv.project_id, mv.event_type,
-	mv.metadata, mv.attempt, mv.status, 
+	mv.metadata, mv.attempt, mv.status,
 	mv.created_at, mv.updated_at FROM convoy.meta_events mv
 	WHERE mv.deleted_at IS NULL
 	`
@@ -52,7 +53,7 @@ const (
 	AND mv.created_at <= :end_date`
 
 	baseCountPrevMetaEvents = `
-	SELECT count(distinct(mv.id)) as count
+	SELECT COUNT(DISTINCT(mv.id)) AS count
 	FROM convoy.meta_events mv WHERE mv.deleted_at IS NULL
 	`
 	countPrevMetaEvents = ` AND mv.id > :cursor GROUP BY mv.id ORDER BY mv.id DESC LIMIT 1`
@@ -62,22 +63,23 @@ const (
 	AND deleted_at IS NULL;
 	`
 	updateMetaEvent = `
-	UPDATE convoy.meta_events SET 
+	UPDATE convoy.meta_events SET
 	  event_type = $3,
 	  metadata = $4,
 	  attempt = $5,
 	  status = $6,
-	  updated_at = now()
-	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL; 
+	  updated_at = NOW()
+	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 )
 
 type metaEventRepo struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	cache cache.Cache
 }
 
-func NewMetaEventRepo(db database.Database) datastore.MetaEventRepository {
-	return &metaEventRepo{db: db.GetDB()}
+func NewMetaEventRepo(db database.Database, cache cache.Cache) datastore.MetaEventRepository {
+	return &metaEventRepo{db: db.GetDB(), cache: cache}
 }
 
 func (m *metaEventRepo) CreateMetaEvent(ctx context.Context, metaEvent *datastore.MetaEvent) error {

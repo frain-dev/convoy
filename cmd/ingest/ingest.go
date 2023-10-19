@@ -47,9 +47,9 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			sourceRepo := postgres.NewSourceRepo(a.DB)
-			projectRepo := postgres.NewProjectRepo(a.DB)
-			endpointRepo := postgres.NewEndpointRepo(a.DB)
+			sourceRepo := postgres.NewSourceRepo(a.DB, a.Cache)
+			projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
+			endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
 
 			lo := a.Logger.(*log.Logger)
 			lo.SetPrefix("ingester")

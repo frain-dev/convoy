@@ -69,11 +69,8 @@ func TestExpireSecretService_Run(t *testing.T) {
 					Times(1).Return(nil)
 
 				eq, _ := es.Queuer.(*mocks.MockQueuer)
-				eq.EXPECT().Write(convoy.ExpireSecretsProcessor, convoy.DefaultQueue, gomock.Any()).
+				eq.EXPECT().Write(gomock.Any(), convoy.ExpireSecretsProcessor, convoy.DefaultQueue, gomock.Any()).
 					Times(1).Return(nil)
-
-				c, _ := es.Cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr:    false,
 			wantErrMsg: "",

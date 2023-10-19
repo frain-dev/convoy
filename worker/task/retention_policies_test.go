@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/log"
 	"os"
 	"testing"
 	"time"
@@ -18,8 +19,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/oklog/ulid/v2"
 
-	"github.com/frain-dev/convoy/internal/pkg/searcher"
-	noopsearcher "github.com/frain-dev/convoy/internal/pkg/searcher/noop"
 	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy/api/testdb"
@@ -126,7 +125,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	// call handler
 	task := asynq.NewTask("retention-policies", nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
-	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.exportRepo, r.ConvoyApp.searcher)
+	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.exportRepo)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
 
@@ -200,7 +199,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	// call handler
 	task := asynq.NewTask(string(convoy.TaskName("retention-policies")), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
-	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.exportRepo, r.ConvoyApp.searcher)
+	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.exportRepo)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
 
@@ -231,7 +230,15 @@ func getConfig() config.Configuration {
 	_ = os.Setenv("CONVOY_DB_OPTIONS", os.Getenv("TEST_DB_OPTIONS"))
 	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
 
-	cfg, _ := config.Get()
+	err := config.LoadConfig("")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cfg, err := config.Get()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return cfg
 }
@@ -251,12 +258,11 @@ func getDB() database.Database {
 
 func buildApplication() *applicationHandler {
 	db := getDB()
-	searcher := noopsearcher.NewNoopSearcher()
 
-	projectRepo := postgres.NewProjectRepo(db)
-	eventRepo := postgres.NewEventRepo(db)
+	projectRepo := postgres.NewProjectRepo(db, nil)
+	eventRepo := postgres.NewEventRepo(db, nil)
 	configRepo := postgres.NewConfigRepo(db)
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db, nil)
 	exportRepo := postgres.NewExportRepo(db)
 
 	app := &applicationHandler{
@@ -264,7 +270,6 @@ func buildApplication() *applicationHandler {
 		eventRepo:         eventRepo,
 		configRepo:        configRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
-		searcher:          searcher,
 		database:          db,
 		exportRepo:        exportRepo,
 	}
@@ -278,7 +283,6 @@ type applicationHandler struct {
 	configRepo        datastore.ConfigurationRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	exportRepo        datastore.ExportRepository
-	searcher          searcher.Searcher
 	database          database.Database
 }
 
@@ -298,7 +302,7 @@ func seedEvent(db database.Database, endpointID string, projectID string, uid, e
 	}
 
 	// Seed Data.
-	eventRepo := postgres.NewEventRepo(db)
+	eventRepo := postgres.NewEventRepo(db, nil)
 	err := eventRepo.CreateEvent(context.TODO(), ev)
 	if err != nil {
 		return nil, err
@@ -307,7 +311,7 @@ func seedEvent(db database.Database, endpointID string, projectID string, uid, e
 	return ev, nil
 }
 
-func seedEventDelivery(db database.Database, eventID string, endpointID string, projectID string, uid string, status datastore.EventDeliveryStatus, subcriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
+func seedEventDelivery(db database.Database, eventID string, endpointID string, projectID string, uid string, status datastore.EventDeliveryStatus, subscriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = ulid.Make().String()
 	}
@@ -317,7 +321,7 @@ func seedEventDelivery(db database.Database, eventID string, endpointID string, 
 		EventID:        eventID,
 		EndpointID:     endpointID,
 		Status:         status,
-		SubscriptionID: subcriptionID,
+		SubscriptionID: subscriptionID,
 		ProjectID:      projectID,
 		Headers:        httpheader.HTTPHeader{"X-sig": []string{"3787 fmmfbf"}},
 		DeliveryAttempts: []datastore.DeliveryAttempt{
@@ -339,7 +343,7 @@ func seedEventDelivery(db database.Database, eventID string, endpointID string, 
 	}
 
 	// Seed Data.
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db, nil)
 	err := eventDeliveryRepo.CreateEventDelivery(context.TODO(), eventDelivery)
 	if err != nil {
 		return nil, err

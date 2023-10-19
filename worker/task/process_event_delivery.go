@@ -32,7 +32,7 @@ import (
 var (
 	ErrDeliveryAttemptFailed               = errors.New("error sending event")
 	ErrRateLimit                           = errors.New("rate limit error")
-	defaultDelay             time.Duration = 30
+	defaultDelay             time.Duration = 10
 )
 
 type SignatureValues struct {
@@ -44,7 +44,8 @@ type EventDelivery struct {
 	ProjectID       string
 }
 
-func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, projectRepo datastore.ProjectRepository, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer) func(context.Context, *asynq.Task) error {
+func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
+	projectRepo datastore.ProjectRepository, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
 
@@ -91,12 +92,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		ec := &EventDeliveryConfig{subscription: subscription, project: project}
 		rlc := ec.rateLimitConfig()
-
-		rateLimiter, err := limiter.NewLimiter(cfg.Redis)
-		if err != nil {
-			log.WithError(err).Error("failed to initialise redis rate limiter")
-			return &EndpointError{Err: err, delay: delayDuration}
-		}
 
 		res, err := rateLimiter.Allow(ctx, endpoint.TargetURL, rlc.Count, int(rlc.Duration))
 		if err != nil {
@@ -256,22 +251,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				log.Errorf("%s retry limit exceeded ", eventDelivery.UID)
 				eventDelivery.Description = "Retry limit exceeded"
 				eventDelivery.Status = datastore.FailureEventStatus
-			}
-
-			// TODO(all): this block of code is unnecessary L215 - L 221 already caters for this case
-			if endpoint.Status != datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
-				endpointStatus := datastore.InactiveEndpointStatus
-
-				err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
-				if err != nil {
-					log.WithError(err).Error("failed to deactivate endpoint after failed retry")
-				}
-
-				// send endpoint deactivation notification
-				err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, notificationQueue, true, resp.Error, string(resp.Body), resp.StatusCode)
-				if err != nil {
-					log.WithError(err).Error("failed to send notification")
-				}
 			}
 		}
 

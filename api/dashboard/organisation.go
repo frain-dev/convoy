@@ -37,7 +37,7 @@ func (a *DashboardHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.
 		return
 	}
 
-	organisations, paginationData, err := postgres.NewOrgMemberRepo(a.A.DB).LoadUserOrganisationsPaged(r.Context(), user.UID, pageable)
+	organisations, paginationData, err := postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache).LoadUserOrganisationsPaged(r.Context(), user.UID, pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch user organisations")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -63,8 +63,8 @@ func (a *DashboardHandler) CreateOrganisation(w http.ResponseWriter, r *http.Req
 	}
 
 	co := services.CreateOrganisationService{
-		OrgRepo:       postgres.NewOrgRepo(a.A.DB),
-		OrgMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+		OrgRepo:       postgres.NewOrgRepo(a.A.DB, a.A.Cache),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache),
 		NewOrg:        &newOrg,
 		User:          user,
 	}
@@ -98,8 +98,8 @@ func (a *DashboardHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Req
 	}
 
 	us := services.UpdateOrganisationService{
-		OrgRepo:       postgres.NewOrgRepo(a.A.DB),
-		OrgMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+		OrgRepo:       postgres.NewOrgRepo(a.A.DB, a.A.Cache),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache),
 		Org:           org,
 		Update:        &orgUpdate,
 	}
@@ -125,7 +125,7 @@ func (a *DashboardHandler) DeleteOrganisation(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	err = postgres.NewOrgRepo(a.A.DB).DeleteOrganisation(r.Context(), org.UID)
+	err = postgres.NewOrgRepo(a.A.DB, a.A.Cache).DeleteOrganisation(r.Context(), org.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete organisation")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

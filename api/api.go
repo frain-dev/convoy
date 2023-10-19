@@ -111,7 +111,7 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 	err = a.A.Authz.RegisterPolicy(func() authz.Policy {
 		po := &policies.OrganisationPolicy{
 			BasePolicy:             authz.NewBasePolicy(),
-			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache),
 		}
 
 		po.SetRule("manage", authz.RuleFunc(po.Manage))
@@ -126,8 +126,8 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 	err = a.A.Authz.RegisterPolicy(func() authz.Policy {
 		po := &policies.ProjectPolicy{
 			BasePolicy:             authz.NewBasePolicy(),
-			OrganisationRepo:       postgres.NewOrgRepo(a.A.DB),
-			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+			OrganisationRepo:       postgres.NewOrgRepo(a.A.DB, a.A.Cache),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache),
 		}
 
 		po.SetRule("manage", authz.RuleFunc(po.Manage))

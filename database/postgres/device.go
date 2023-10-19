@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/cache"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -62,21 +63,21 @@ const (
 	AND project_id = :project_id`
 
 	baseFetchDevicesPagedForward = `
-	%s 
-	%s 
-	AND id <= :cursor 
+	%s
+	%s
+	AND id <= :cursor
 	GROUP BY id
-	ORDER BY id DESC 
+	ORDER BY id DESC
 	LIMIT :limit
 	`
 
 	baseFetchDevicesPagedBackward = `
-	WITH devices AS (  
-		%s 
-		%s 
-		AND id >= :cursor 
+	WITH devices AS (
+		%s
+		%s
+		AND id >= :cursor
 		GROUP BY id
-		ORDER BY id ASC 
+		ORDER BY id ASC
 		LIMIT :limit
 	)
 
@@ -85,18 +86,19 @@ const (
 
 	countPrevDevices = `
 	SELECT count(distinct(id)) as count
-	FROM convoy.devices 
+	FROM convoy.devices
 	WHERE deleted_at IS NULL
 	%s
 	AND id > :cursor GROUP BY id ORDER BY id DESC LIMIT 1`
 )
 
 type deviceRepo struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	cache cache.Cache
 }
 
-func NewDeviceRepo(db database.Database) datastore.DeviceRepository {
-	return &deviceRepo{db: db.GetDB()}
+func NewDeviceRepo(db database.Database, cache cache.Cache) datastore.DeviceRepository {
+	return &deviceRepo{db: db.GetDB(), cache: cache}
 }
 
 func (d *deviceRepo) CreateDevice(ctx context.Context, device *datastore.Device) error {

@@ -30,7 +30,7 @@ func Test_eventDeliveryRepo_CreateEventDelivery(t *testing.T) {
 
 	ed := generateEventDelivery(project, endpoint, event, device, sub)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	err := edRepo.CreateEventDelivery(context.Background(), ed)
 	require.NoError(t, err)
 
@@ -94,7 +94,7 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
 	event := seedEvent(t, db, project)
 	sub := seedSubscription(t, db, project, source, endpoint, device)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	edMap := map[string]*datastore.EventDelivery{}
 	ids := []string{}
 	for i := 0; i < 8; i++ {
@@ -145,7 +145,7 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByEventID(t *testing.T) {
 	endpoint := seedEndpoint(t, db)
 	sub := seedSubscription(t, db, project, source, endpoint, device)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	edMap := map[string]*datastore.EventDelivery{}
 
 	mainEvent := seedEvent(t, db, project)
@@ -199,7 +199,7 @@ func Test_eventDeliveryRepo_CountDeliveriesByStatus(t *testing.T) {
 	event := seedEvent(t, db, project)
 	sub := seedSubscription(t, db, project, source, endpoint, device)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 
 	status := datastore.FailureEventStatus
 	for i := 0; i < 8; i++ {
@@ -235,7 +235,7 @@ func Test_eventDeliveryRepo_UpdateStatusOfEventDelivery(t *testing.T) {
 
 	ed := generateEventDelivery(project, endpoint, event, device, sub)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	err := edRepo.CreateEventDelivery(context.Background(), ed)
 	require.NoError(t, err)
 
@@ -262,7 +262,7 @@ func Test_eventDeliveryRepo_UpdateStatusOfEventDeliveries(t *testing.T) {
 	ed1 := generateEventDelivery(project, endpoint, event, device, sub)
 	ed2 := generateEventDelivery(project, endpoint, event, device, sub)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	err := edRepo.CreateEventDelivery(context.Background(), ed1)
 	require.NoError(t, err)
 
@@ -291,7 +291,7 @@ func Test_eventDeliveryRepo_FindDiscardedEventDeliveries(t *testing.T) {
 	event := seedEvent(t, db, project)
 	sub := seedSubscription(t, db, project, source, endpoint, device)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 
 	status := datastore.DiscardedEventStatus
 	for i := 0; i < 8; i++ {
@@ -329,7 +329,7 @@ func Test_eventDeliveryRepo_UpdateEventDeliveryWithAttempt(t *testing.T) {
 
 	ed := generateEventDelivery(project, endpoint, event, device, sub)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	err := edRepo.CreateEventDelivery(context.Background(), ed)
 	require.NoError(t, err)
 
@@ -361,7 +361,7 @@ func Test_eventDeliveryRepo_CountEventDeliveries(t *testing.T) {
 	ed1 := generateEventDelivery(project, endpoint, event, device, sub)
 	ed2 := generateEventDelivery(project, endpoint, event, device, sub)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	err := edRepo.CreateEventDelivery(context.Background(), ed1)
 	require.NoError(t, err)
 
@@ -392,7 +392,7 @@ func Test_eventDeliveryRepo_DeleteProjectEventDeliveries(t *testing.T) {
 	ed1 := generateEventDelivery(project, endpoint, event, device, sub)
 	ed2 := generateEventDelivery(project, endpoint, event, device, sub)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	err := edRepo.CreateEventDelivery(context.Background(), ed1)
 	require.NoError(t, err)
 
@@ -436,7 +436,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 	event := seedEvent(t, db, project)
 	sub := seedSubscription(t, db, project, source, endpoint, device)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	edMap := map[string]*datastore.EventDelivery{}
 	for i := 0; i < 8; i++ {
 		ed := generateEventDelivery(project, endpoint, event, device, sub)

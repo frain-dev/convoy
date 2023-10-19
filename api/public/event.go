@@ -3,14 +3,16 @@ package public
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/worker/task"
+	"github.com/oklog/ulid/v2"
 	"net/http"
-
-	"github.com/frain-dev/convoy/internal/pkg/searcher"
 
 	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/services"
@@ -45,32 +47,43 @@ func (a *PublicHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+	projectID := chi.URLParam(r, "projectID")
+	if util.IsStringEmpty(projectID) {
+		_ = render.Render(w, r, util.NewErrorResponse("project id not present in request", http.StatusBadRequest))
 		return
 	}
 
-	ce := services.CreateEventService{
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
-		EventRepo:    postgres.NewEventRepo(a.A.DB),
-		Queue:        a.A.Queue,
-		NewMessage:   &newMessage,
-		Project:      project,
+	e := task.CreateEvent{
+		Params: task.CreateEventTaskParams{
+			UID:            ulid.Make().String(),
+			ProjectID:      projectID,
+			EndpointID:     newMessage.EndpointID,
+			EventType:      newMessage.EventType,
+			Data:           newMessage.Data,
+			CustomHeaders:  newMessage.CustomHeaders,
+			IdempotencyKey: newMessage.IdempotencyKey,
+		},
+		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
 	}
 
-	event, err := ce.Run(r.Context())
+	eventByte, err := msgpack.EncodeMsgPack(e)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	resp := &models.EventResponse{Event: event}
-	if event.IsDuplicateEvent {
-		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", resp, http.StatusCreated))
-	} else {
-		_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", resp, http.StatusCreated))
+	job := &queue.Job{
+		ID:      newMessage.UID,
+		Payload: eventByte,
+		Delay:   0,
 	}
+
+	err = a.A.Queue.Write(r.Context(), convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	if err != nil {
+		log.FromContext(r.Context()).Errorf("Error occurred sending new event to the queue %s", err)
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Event queued successfully", 200, http.StatusCreated))
 }
 
 // CreateEndpointFanoutEvent
@@ -106,9 +119,9 @@ func (a *PublicHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http
 	}
 
 	cf := services.CreateFanoutEventService{
-		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
-		EventRepo:      postgres.NewEventRepo(a.A.DB),
-		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB),
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
+		EventRepo:      postgres.NewEventRepo(a.A.DB, a.A.Cache),
+		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache),
 		Queue:          a.A.Queue,
 		NewMessage:     &newMessage,
 		Project:        project,
@@ -195,7 +208,7 @@ func (a *PublicHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Reque
 	}
 
 	rs := services.ReplayEventService{
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		Queue:        a.A.Queue,
 		Event:        event,
 	}
@@ -239,9 +252,9 @@ func (a *PublicHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Request
 	data.Filter.Project = p
 
 	bs := services.BatchReplayEventService{
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB),
+		EndpointRepo: postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		Queue:        a.A.Queue,
-		EventRepo:    postgres.NewEventRepo(a.A.DB),
+		EventRepo:    postgres.NewEventRepo(a.A.DB, a.A.Cache),
 		Filter:       data.Filter,
 	}
 
@@ -328,8 +341,8 @@ func (a *PublicHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Reque
 	}
 
 	fr := services.RetryEventDeliveryService{
-		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.A.DB),
-		EndpointRepo:      postgres.NewEndpointRepo(a.A.DB),
+		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache),
+		EndpointRepo:      postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		Queue:             a.A.Queue,
 		EventDelivery:     eventDelivery,
 		Project:           project,
@@ -376,10 +389,10 @@ func (a *PublicHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.R
 	data.Filter.Project = project
 
 	br := services.BatchRetryEventDeliveryService{
-		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.A.DB),
-		EndpointRepo:      postgres.NewEndpointRepo(a.A.DB),
+		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache),
+		EndpointRepo:      postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		Queue:             a.A.Queue,
-		EventRepo:         postgres.NewEventRepo(a.A.DB),
+		EventRepo:         postgres.NewEventRepo(a.A.DB, a.A.Cache),
 		Filter:            data.Filter,
 	}
 
@@ -420,8 +433,8 @@ func (a *PublicHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *htt
 	}
 
 	fr := services.ForceResendEventDeliveriesService{
-		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.A.DB),
-		EndpointRepo:      postgres.NewEndpointRepo(a.A.DB),
+		EventDeliveryRepo: postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache),
+		EndpointRepo:      postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
 		Queue:             a.A.Queue,
 		IDs:               eventDeliveryIDs.IDs,
 		Project:           project,
@@ -450,12 +463,6 @@ func (a *PublicHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *htt
 // @Router /v1/projects/{projectID}/events [get]
 func (a *PublicHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryListEvent
-	cfg, err := config.Get()
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
 	data, err := q.Transform(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -469,37 +476,7 @@ func (a *PublicHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data.Filter.Project = project
-
-	if cfg.Search.Type == config.TypesenseSearchProvider && !util.IsStringEmpty(data.Filter.Query) {
-		searchBackend, err := searcher.NewSearchClient(cfg)
-		if err != nil {
-			log.FromContext(r.Context()).WithError(err).Error("failed to initialise search backend")
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-			return
-		}
-
-		se := services.SearchEventService{
-			EventRepo: postgres.NewEventRepo(a.A.DB),
-			Searcher:  searchBackend,
-			Filter:    data.Filter,
-		}
-
-		events, paginationData, err := se.Run(r.Context())
-		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-			return
-		}
-
-		resp := models.NewListResponse(events, func(event datastore.Event) models.EventResponse {
-			return models.EventResponse{Event: &event}
-		})
-		_ = render.Render(w, r, util.NewServerResponse("Endpoint events fetched successfully",
-			pagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
-
-		return
-	}
-
-	eventsPaged, paginationData, err := postgres.NewEventRepo(a.A.DB).LoadEventsPaged(r.Context(), project.UID, data.Filter)
+	eventsPaged, paginationData, err := postgres.NewEventRepo(a.A.DB, a.A.Cache).LoadEventsPaged(r.Context(), project.UID, data.Filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch events")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
@@ -542,7 +519,7 @@ func (a *PublicHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.R
 
 	// if the idempotency key query is set, find the first event with the key
 	if len(data.IdempotencyKey) > 0 {
-		event, err := postgres.NewEventRepo(a.A.DB).FindFirstEventWithIdempotencyKey(r.Context(), project.UID, data.IdempotencyKey)
+		event, err := postgres.NewEventRepo(a.A.DB, a.A.Cache).FindFirstEventWithIdempotencyKey(r.Context(), project.UID, data.IdempotencyKey)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
@@ -551,7 +528,7 @@ func (a *PublicHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.R
 	}
 
 	f := data.Filter
-	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey)
+	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch event deliveries")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
@@ -573,7 +550,7 @@ func (a *PublicHandler) retrieveEvent(r *http.Request) (*datastore.Event, error)
 	}
 
 	eventID := chi.URLParam(r, "eventID")
-	eventRepo := postgres.NewEventRepo(a.A.DB)
+	eventRepo := postgres.NewEventRepo(a.A.DB, a.A.Cache)
 	return eventRepo.FindEventByID(r.Context(), project.UID, eventID)
 }
 
@@ -584,7 +561,7 @@ func (a *PublicHandler) retrieveEventDelivery(r *http.Request) (*datastore.Event
 	}
 
 	eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache)
 	return eventDeliveryRepo.FindEventDeliveryByID(r.Context(), project.UID, eventDeliveryID)
 }
 
