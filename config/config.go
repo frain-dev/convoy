@@ -291,9 +291,11 @@ const (
 	ExperimentalFlagLevel FlagLevel = iota + 1
 )
 
+const Experimental = "experimental"
+
 func (ft *FlagLevel) UnmarshalJSON(v []byte) error {
 	switch string(v) {
-	case "experimental":
+	case Experimental:
 		*ft = ExperimentalFlagLevel
 	}
 	return nil
@@ -302,7 +304,7 @@ func (ft *FlagLevel) UnmarshalJSON(v []byte) error {
 func (ft FlagLevel) MarshalJSON() ([]byte, error) {
 	switch ft {
 	case 1:
-		return []byte("experimental"), nil
+		return []byte(Experimental), nil
 	default:
 		return []byte(""), nil
 	}

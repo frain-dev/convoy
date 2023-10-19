@@ -47,7 +47,7 @@ func main() {
 	var dbPassword string
 	var dbDatabase string
 
-	var experimental bool
+	var fflag string
 
 	var redisPort int
 	var redisHost string
@@ -80,7 +80,7 @@ func main() {
 	c.Flags().StringVar(&redisDatabase, "redis-database", "", "Redis database")
 	c.Flags().IntVar(&redisPort, "redis-port", 0, "Redis Port")
 
-	c.Flags().BoolVar(&experimental, "experimental", false, "Enable experimental features")
+	c.Flags().StringVar(&fflag, "feature-flag", "", "Enable feature flags (experimental)")
 
 	c.PersistentPreRunE(hooks.PreRun(app, db))
 	c.PersistentPostRunE(hooks.PostRun(app, db))

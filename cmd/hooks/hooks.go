@@ -318,12 +318,13 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	}
 
 	// Feature flags
-	experimental, err := cmd.Flags().GetBool("experimental")
+	fflag, err := cmd.Flags().GetString("feature-flag")
 	if err != nil {
 		return nil, err
 	}
 
-	if experimental {
+	switch fflag {
+	case config.Experimental:
 		c.FeatureFlag = config.ExperimentalFlagLevel
 	}
 
