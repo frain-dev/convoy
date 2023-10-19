@@ -32,9 +32,9 @@ func (a *DashboardHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.R
 	}
 
 	cpk := &services.CreatePersonalAPIKeyService{
-		ProjectRepo: postgres.NewProjectRepo(a.A.DB),
-		UserRepo:    postgres.NewUserRepo(a.A.DB),
-		APIKeyRepo:  postgres.NewAPIKeyRepo(a.A.DB),
+		ProjectRepo: postgres.NewProjectRepo(a.A.DB, a.A.Cache),
+		UserRepo:    postgres.NewUserRepo(a.A.DB, a.A.Cache),
+		APIKeyRepo:  postgres.NewAPIKeyRepo(a.A.DB, a.A.Cache),
 		User:        user,
 		NewApiKey:   &newApiKey,
 	}
@@ -73,9 +73,9 @@ func (a *DashboardHandler) RevokePersonalAPIKey(w http.ResponseWriter, r *http.R
 	}
 
 	rvk := &services.RevokePersonalAPIKeyService{
-		ProjectRepo: postgres.NewProjectRepo(a.A.DB),
-		UserRepo:    postgres.NewUserRepo(a.A.DB),
-		APIKeyRepo:  postgres.NewAPIKeyRepo(a.A.DB),
+		ProjectRepo: postgres.NewProjectRepo(a.A.DB, a.A.Cache),
+		UserRepo:    postgres.NewUserRepo(a.A.DB, a.A.Cache),
+		APIKeyRepo:  postgres.NewAPIKeyRepo(a.A.DB, a.A.Cache),
 		UID:         chi.URLParam(r, "keyID"),
 		User:        user,
 	}
@@ -108,9 +108,9 @@ func (a *DashboardHandler) RegenerateProjectAPIKey(w http.ResponseWriter, r *htt
 	}
 
 	rgp := &services.RegenerateProjectAPIKeyService{
-		ProjectRepo: postgres.NewProjectRepo(a.A.DB),
-		UserRepo:    postgres.NewUserRepo(a.A.DB),
-		APIKeyRepo:  postgres.NewAPIKeyRepo(a.A.DB),
+		ProjectRepo: postgres.NewProjectRepo(a.A.DB, a.A.Cache),
+		UserRepo:    postgres.NewUserRepo(a.A.DB, a.A.Cache),
+		APIKeyRepo:  postgres.NewAPIKeyRepo(a.A.DB, a.A.Cache),
 		Project:     project,
 		Member:      member,
 	}
@@ -157,7 +157,7 @@ func (a *DashboardHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apiKeys, paginationData, err := postgres.NewAPIKeyRepo(a.A.DB).LoadAPIKeysPaged(r.Context(), f, &pageable)
+	apiKeys, paginationData, err := postgres.NewAPIKeyRepo(a.A.DB, a.A.Cache).LoadAPIKeysPaged(r.Context(), f, &pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to load api keys")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to load api keys", http.StatusBadRequest))
@@ -170,7 +170,7 @@ func (a *DashboardHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 }
 
 func apiKeyByIDResponse(apiKeys []datastore.APIKey) []models.APIKeyByIDResponse {
-	apiKeyByIDResponse := []models.APIKeyByIDResponse{}
+	apiKeyByIDResponse := make([]models.APIKeyByIDResponse, 0)
 
 	for _, apiKey := range apiKeys {
 		resp := models.APIKeyByIDResponse{

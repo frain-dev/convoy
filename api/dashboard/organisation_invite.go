@@ -45,7 +45,7 @@ func (a *DashboardHandler) InviteUserToOrganisation(w http.ResponseWriter, r *ht
 
 	inviteService := &services.InviteUserService{
 		Queue:        a.A.Queue,
-		InviteRepo:   postgres.NewOrgInviteRepo(a.A.DB),
+		InviteRepo:   postgres.NewOrgInviteRepo(a.A.DB, a.A.Cache),
 		InviteeEmail: newIV.InviteeEmail,
 		Role:         newIV.Role,
 		User:         user,
@@ -71,7 +71,7 @@ func (a *DashboardHandler) GetPendingOrganisationInvites(w http.ResponseWriter, 
 	}
 
 	pageable := m.GetPageableFromContext(r.Context())
-	invites, paginationData, err := postgres.NewOrgInviteRepo(a.A.DB).LoadOrganisationsInvitesPaged(r.Context(), org.UID, datastore.InviteStatusPending, pageable)
+	invites, paginationData, err := postgres.NewOrgInviteRepo(a.A.DB, a.A.Cache).LoadOrganisationsInvitesPaged(r.Context(), org.UID, datastore.InviteStatusPending, pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to load organisation invites")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -100,10 +100,10 @@ func (a *DashboardHandler) ProcessOrganisationMemberInvite(w http.ResponseWriter
 
 	prc := services.ProcessInviteService{
 		Queue:         a.A.Queue,
-		InviteRepo:    postgres.NewOrgInviteRepo(a.A.DB),
-		UserRepo:      postgres.NewUserRepo(a.A.DB),
-		OrgRepo:       postgres.NewOrgRepo(a.A.DB),
-		OrgMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+		InviteRepo:    postgres.NewOrgInviteRepo(a.A.DB, a.A.Cache),
+		UserRepo:      postgres.NewUserRepo(a.A.DB, a.A.Cache),
+		OrgRepo:       postgres.NewOrgRepo(a.A.DB, a.A.Cache),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache),
 		Token:         token,
 		Accepted:      accepted,
 		NewUser:       newUser,
@@ -124,9 +124,9 @@ func (a *DashboardHandler) FindUserByInviteToken(w http.ResponseWriter, r *http.
 
 	fub := &services.FindUserByInviteTokenService{
 		Queue:      a.A.Queue,
-		InviteRepo: postgres.NewOrgInviteRepo(a.A.DB),
-		OrgRepo:    postgres.NewOrgRepo(a.A.DB),
-		UserRepo:   postgres.NewUserRepo(a.A.DB),
+		InviteRepo: postgres.NewOrgInviteRepo(a.A.DB, a.A.Cache),
+		OrgRepo:    postgres.NewOrgRepo(a.A.DB, a.A.Cache),
+		UserRepo:   postgres.NewUserRepo(a.A.DB, a.A.Cache),
 		Token:      token,
 	}
 
@@ -162,7 +162,7 @@ func (a *DashboardHandler) ResendOrganizationInvite(w http.ResponseWriter, r *ht
 
 	rom := &services.ResendOrgMemberService{
 		Queue:        a.A.Queue,
-		InviteRepo:   postgres.NewOrgInviteRepo(a.A.DB),
+		InviteRepo:   postgres.NewOrgInviteRepo(a.A.DB, a.A.Cache),
 		InviteID:     chi.URLParam(r, "inviteID"),
 		User:         user,
 		Organisation: org,
@@ -192,7 +192,7 @@ func (a *DashboardHandler) CancelOrganizationInvite(w http.ResponseWriter, r *ht
 
 	cancelInvite := services.CancelOrgMemberService{
 		Queue:      a.A.Queue,
-		InviteRepo: postgres.NewOrgInviteRepo(a.A.DB),
+		InviteRepo: postgres.NewOrgInviteRepo(a.A.DB, a.A.Cache),
 		InviteID:   chi.URLParam(r, "inviteID"),
 	}
 

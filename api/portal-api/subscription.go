@@ -46,7 +46,7 @@ func (a *PortalLinkHandler) GetSubscriptions(w http.ResponseWriter, r *http.Requ
 	}
 
 	filter := &datastore.FilterBy{ProjectID: project.UID, EndpointIDs: endpointIDs}
-	subscriptions, paginationData, err := postgres.NewSubscriptionRepo(a.A.DB).LoadSubscriptionsPaged(r.Context(), project.UID, filter, pageable)
+	subscriptions, paginationData, err := postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache).LoadSubscriptionsPaged(r.Context(), project.UID, filter, pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching subscriptions")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching subscriptions", http.StatusInternalServerError))
@@ -95,7 +95,7 @@ func (a *PortalLinkHandler) GetSubscription(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	subscription, err := postgres.NewSubscriptionRepo(a.A.DB).FindSubscriptionByID(r.Context(), project.UID, subId)
+	subscription, err := postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache).FindSubscriptionByID(r.Context(), project.UID, subId)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
@@ -131,9 +131,9 @@ func (a *PortalLinkHandler) CreateSubscription(w http.ResponseWriter, r *http.Re
 	}
 
 	cs := services.CreateSubscriptionService{
-		SubRepo:         postgres.NewSubscriptionRepo(a.A.DB),
-		EndpointRepo:    postgres.NewEndpointRepo(a.A.DB),
-		SourceRepo:      postgres.NewSourceRepo(a.A.DB),
+		SubRepo:         postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache),
+		EndpointRepo:    postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
+		SourceRepo:      postgres.NewSourceRepo(a.A.DB, a.A.Cache),
 		Project:         project,
 		NewSubscription: &sub,
 	}
@@ -156,7 +156,7 @@ func (a *PortalLinkHandler) DeleteSubscription(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	sub, err := postgres.NewSubscriptionRepo(a.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
+	sub, err := postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
@@ -167,7 +167,7 @@ func (a *PortalLinkHandler) DeleteSubscription(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err = postgres.NewSubscriptionRepo(a.A.DB).DeleteSubscription(r.Context(), project.UID, sub)
+	err = postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache).DeleteSubscription(r.Context(), project.UID, sub)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete subscription")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete subscription", http.StatusBadRequest))
@@ -199,9 +199,9 @@ func (a *PortalLinkHandler) UpdateSubscription(w http.ResponseWriter, r *http.Re
 	}
 
 	us := services.UpdateSubscriptionService{
-		SubRepo:        postgres.NewSubscriptionRepo(a.A.DB),
-		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB),
-		SourceRepo:     postgres.NewSourceRepo(a.A.DB),
+		SubRepo:        postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache),
+		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
+		SourceRepo:     postgres.NewSourceRepo(a.A.DB, a.A.Cache),
 		ProjectId:      project.UID,
 		SubscriptionId: chi.URLParam(r, "subscriptionID"),
 		Update:         &update,
@@ -225,7 +225,7 @@ func (a *PortalLinkHandler) TestSubscriptionFilter(w http.ResponseWriter, r *htt
 		return
 	}
 
-	subRepo := postgres.NewSubscriptionRepo(a.A.DB)
+	subRepo := postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache)
 	isBodyValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Body, test.Schema.Body)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to validate subscription filter")
@@ -257,7 +257,7 @@ func fillSourceURL(s *datastore.Source, baseUrl string, customDomain string) {
 func (a *PortalLinkHandler) getEndpoints(r *http.Request, pl *datastore.PortalLink) ([]string, error) {
 	results := make([]string, 0)
 	if !util.IsStringEmpty(pl.OwnerID) {
-		endpointRepo := postgres.NewEndpointRepo(a.A.DB)
+		endpointRepo := postgres.NewEndpointRepo(a.A.DB, a.A.Cache)
 		endpoints, err := endpointRepo.FindEndpointsByOwnerID(r.Context(), pl.ProjectID, pl.OwnerID)
 		if err != nil {
 			return nil, err

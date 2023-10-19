@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
@@ -17,10 +18,10 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-func MonitorTwitterSources(db database.Database, queue queue.Queuer) func(context.Context, *asynq.Task) error {
-	sourceRepo := postgres.NewSourceRepo(db)
-	subRepo := postgres.NewSubscriptionRepo(db)
-	endpointRepo := postgres.NewEndpointRepo(db)
+func MonitorTwitterSources(db database.Database, cache cache.Cache, queue queue.Queuer) func(context.Context, *asynq.Task) error {
+	sourceRepo := postgres.NewSourceRepo(db, cache)
+	subRepo := postgres.NewSubscriptionRepo(db, cache)
+	endpointRepo := postgres.NewEndpointRepo(db, cache)
 
 	return func(ctx context.Context, t *asynq.Task) error {
 		p := datastore.Pageable{PerPage: 100, Direction: datastore.Next, NextCursor: datastore.DefaultCursor}
@@ -55,7 +56,7 @@ func MonitorTwitterSources(db database.Database, queue queue.Queuer) func(contex
 						}
 
 						if !util.IsStringEmpty(app.SupportEmail) {
-							err = sendNotificationEmail(source, app, queue)
+							err = sendNotificationEmail(ctx, source, app, queue)
 							if err != nil {
 								log.Error("failed to send notification")
 								return err
@@ -69,7 +70,7 @@ func MonitorTwitterSources(db database.Database, queue queue.Queuer) func(contex
 	}
 }
 
-func sendNotificationEmail(source datastore.Source, endpoint *datastore.Endpoint, q queue.Queuer) error {
+func sendNotificationEmail(ctx context.Context, source datastore.Source, endpoint *datastore.Endpoint, q queue.Queuer) error {
 	em := email.Message{
 		Email:        endpoint.SupportEmail,
 		Subject:      "Twitter Custom Source",
@@ -91,7 +92,7 @@ func sendNotificationEmail(source datastore.Source, endpoint *datastore.Endpoint
 		Delay:   0,
 	}
 
-	err = q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)
+	err = q.Write(ctx, convoy.NotificationProcessor, convoy.DefaultQueue, job)
 	if err != nil {
 		log.WithError(err).Error("failed to write new notification to the queue")
 		return err

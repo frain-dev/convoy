@@ -37,7 +37,7 @@ func (a *PortalLinkHandler) GetPortalLinkEndpoints(w http.ResponseWriter, r *htt
 		return
 	}
 
-	endpoints, err := postgres.NewEndpointRepo(a.A.DB).FindEndpointsByID(r.Context(), endpointIDs, project.UID)
+	endpoints, err := postgres.NewEndpointRepo(a.A.DB, a.A.Cache).FindEndpointsByID(r.Context(), endpointIDs, project.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching endpoints")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch portal link endpoints", http.StatusInternalServerError))

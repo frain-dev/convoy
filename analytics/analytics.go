@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/cache"
 	"math"
 	"time"
 
@@ -92,13 +93,13 @@ func newAnalytics(Repo *Repo, cfg config.Configuration) (*Analytics, error) {
 	return a, nil
 }
 
-func TrackDailyAnalytics(db database.Database, cfg config.Configuration, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
+func TrackDailyAnalytics(db database.Database, cache cache.Cache, cfg config.Configuration, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
 	repo := &Repo{
 		ConfigRepo:  postgres.NewConfigRepo(db),
-		EventRepo:   postgres.NewEventRepo(db),
-		projectRepo: postgres.NewProjectRepo(db),
-		OrgRepo:     postgres.NewOrgRepo(db),
-		UserRepo:    postgres.NewUserRepo(db),
+		EventRepo:   postgres.NewEventRepo(db, cache),
+		projectRepo: postgres.NewProjectRepo(db, cache),
+		OrgRepo:     postgres.NewOrgRepo(db, cache),
+		UserRepo:    postgres.NewUserRepo(db, cache),
 	}
 
 	// Create a pool with go-redis

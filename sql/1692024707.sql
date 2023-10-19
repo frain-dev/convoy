@@ -5,4 +5,4 @@ ALTER TABLE convoy.endpoints
 
 -- +migrate Down
 ALTER TABLE convoy.endpoints
-    DROP CONSTRAINT endpoints_title_project_id_pk;
+    DROP CONSTRAINT IF EXISTS endpoints_title_project_id_pk;

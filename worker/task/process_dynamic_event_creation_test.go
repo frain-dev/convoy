@@ -62,10 +62,6 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				},
 			},
 			dbFn: func(args *args) {
-				mockCache, _ := args.cache.(*mocks.MockCache)
-				var p *datastore.Project
-				mockCache.EXPECT().Get(gomock.Any(), "projects:project-id-1", &p).Times(1).Return(nil)
-
 				project := &datastore.Project{
 					UID:  "project-id-1",
 					Type: datastore.OutgoingProject,
@@ -83,7 +79,6 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 					project,
 					nil,
 				)
-				mockCache.EXPECT().Set(gomock.Any(), "projects:project-id-1", project, 10*time.Minute).Times(1).Return(nil)
 
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
@@ -102,8 +97,6 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 
 				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Any(), "project-id-1").
 					Times(1).Return(nil)
-
-				mockCache.EXPECT().Set(gomock.Any(), "endpoints:endpoint-id-1", gomock.Any(), 10*time.Minute).Times(1).Return(nil)
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				subscriptions := []datastore.Subscription{
@@ -130,7 +123,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
-				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().Write(gomock.Any(), convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -168,10 +161,6 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				},
 			},
 			dbFn: func(args *args) {
-				mockCache, _ := args.cache.(*mocks.MockCache)
-				var p *datastore.Project
-				mockCache.EXPECT().Get(gomock.Any(), "projects:project-id-1", &p).Times(1).Return(nil)
-
 				project := &datastore.Project{
 					UID:  "project-id-1",
 					Type: datastore.OutgoingProject,
@@ -189,16 +178,12 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 					project,
 					nil,
 				)
-				mockCache.EXPECT().Set(gomock.Any(), "projects:project-id-1", project, 10*time.Minute).Times(1).Return(nil)
-
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
 				a.EXPECT().FindEndpointByTargetURL(gomock.Any(), "project-id-1", "https://google.com").Times(1).Return(nil, datastore.ErrEndpointNotFound)
 
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), "project-id-1").
 					Times(1).Return(nil)
-
-				mockCache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), 10*time.Minute).Times(1).Return(nil)
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 
@@ -213,7 +198,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
-				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().Write(gomock.Any(), convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -238,7 +223,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessDynamicEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.cache, args.eventQueue, args.subRepo, args.deviceRepo)
+			fn := ProcessDynamicEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

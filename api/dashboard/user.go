@@ -42,9 +42,9 @@ func (a *DashboardHandler) RegisterUser(w http.ResponseWriter, r *http.Request) 
 	}
 
 	rs := services.RegisterUserService{
-		UserRepo:      postgres.NewUserRepo(a.A.DB),
-		OrgRepo:       postgres.NewOrgRepo(a.A.DB),
-		OrgMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+		UserRepo:      postgres.NewUserRepo(a.A.DB, a.A.Cache),
+		OrgRepo:       postgres.NewOrgRepo(a.A.DB, a.A.Cache),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache),
 		Queue:         a.A.Queue,
 		JWT:           jwt.NewJwt(&config.Auth.Jwt, a.A.Cache),
 		ConfigRepo:    postgres.NewConfigRepo(a.A.DB),
@@ -84,7 +84,7 @@ func (a *DashboardHandler) ResendVerificationEmail(w http.ResponseWriter, r *htt
 	}
 
 	rs := services.ResendEmailVerificationTokenService{
-		UserRepo: postgres.NewUserRepo(a.A.DB),
+		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
 		Queue:    a.A.Queue,
 		BaseURL:  baseUrl,
 		User:     user,
@@ -130,7 +130,7 @@ func (a *DashboardHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := services.UpdateUserService{
-		UserRepo: postgres.NewUserRepo(a.A.DB),
+		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
 		Data:     &userUpdate,
 		User:     user,
 	}
@@ -165,7 +165,7 @@ func (a *DashboardHandler) UpdatePassword(w http.ResponseWriter, r *http.Request
 	}
 
 	up := services.UpdatePasswordService{
-		UserRepo: postgres.NewUserRepo(a.A.DB),
+		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
 		Data:     &updatePassword,
 		User:     user,
 	}
@@ -200,7 +200,7 @@ func (a *DashboardHandler) ForgotPassword(w http.ResponseWriter, r *http.Request
 	}
 
 	gp := services.GeneratePasswordResetTokenService{
-		UserRepo: postgres.NewUserRepo(a.A.DB),
+		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
 		Queue:    a.A.Queue,
 		BaseURL:  baseUrl,
 		Data:     &forgotPassword,
@@ -216,7 +216,7 @@ func (a *DashboardHandler) ForgotPassword(w http.ResponseWriter, r *http.Request
 
 func (a *DashboardHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	ve := services.VerifyEmailService{
-		UserRepo: postgres.NewUserRepo(a.A.DB),
+		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
 		Token:    r.URL.Query().Get("token"),
 	}
 
@@ -244,7 +244,7 @@ func (a *DashboardHandler) ResetPassword(w http.ResponseWriter, r *http.Request)
 	}
 
 	rs := services.ResetPasswordService{
-		UserRepo: postgres.NewUserRepo(a.A.DB),
+		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
 		Token:    token,
 		Data:     &resetPassword,
 	}

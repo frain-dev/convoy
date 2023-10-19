@@ -97,7 +97,7 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	apps, err := postgres.NewEndpointRepo(a.A.DB).CountProjectEndpoints(r.Context(), project.UID)
+	apps, err := postgres.NewEndpointRepo(a.A.DB, a.A.Cache).CountProjectEndpoints(r.Context(), project.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to count project endpoints")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
@@ -130,7 +130,7 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 func (a *DashboardHandler) computeDashboardMessages(ctx context.Context, projectID string, searchParams datastore.SearchParams, period datastore.Period) (uint64, []datastore.EventInterval, error) {
 	var messagesSent uint64
 
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache)
 	messages, err := eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, projectID, searchParams, period)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to load message intervals - ")
@@ -151,7 +151,7 @@ func (a *DashboardHandler) retrieveOrganisation(r *http.Request) (*datastore.Org
 		orgID = r.URL.Query().Get("orgID")
 	}
 
-	orgRepo := postgres.NewOrgRepo(a.A.DB)
+	orgRepo := postgres.NewOrgRepo(a.A.DB, a.A.Cache)
 	return orgRepo.FetchOrganisationByID(r.Context(), orgID)
 }
 
@@ -176,7 +176,7 @@ func (a *DashboardHandler) retrieveMembership(r *http.Request) (*datastore.Organ
 		return &datastore.OrganisationMember{}, err
 	}
 
-	orgMemberRepo := postgres.NewOrgMemberRepo(a.A.DB)
+	orgMemberRepo := postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache)
 	return orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
 }
 
@@ -184,11 +184,17 @@ func (a *DashboardHandler) retrieveProject(r *http.Request) (*datastore.Project,
 	projectID := chi.URLParam(r, "projectID")
 
 	if util.IsStringEmpty(projectID) {
-		return &datastore.Project{}, errors.New("Project ID not present in request")
+		return nil, errors.New("project id not present in request")
 	}
 
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
-	return projectRepo.FetchProjectByID(r.Context(), projectID)
+	var project *datastore.Project
+	projectRepo := postgres.NewProjectRepo(a.A.DB, a.A.Cache)
+	project, err := projectRepo.FetchProjectByID(r.Context(), projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	return project, nil
 }
 
 func (a *DashboardHandler) retrieveHost() (string, error) {

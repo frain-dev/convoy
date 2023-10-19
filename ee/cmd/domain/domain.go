@@ -39,7 +39,7 @@ func AddDomainCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			orgRepo := postgres.NewOrgRepo(a.DB)
+			orgRepo := postgres.NewOrgRepo(a.DB, a.Cache)
 
 			lo := a.Logger.(*log.Logger)
 			lo.SetPrefix("domain server")

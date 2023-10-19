@@ -64,9 +64,6 @@ func TestCreateEndpointService_Run(t *testing.T) {
 
 				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				c, _ := app.Cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantEndpoint: &datastore.Endpoint{
 				Title:           "endpoint",
@@ -113,9 +110,6 @@ func TestCreateEndpointService_Run(t *testing.T) {
 
 				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				c, _ := app.Cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantEndpoint: &datastore.Endpoint{
 				ProjectID: project.UID,

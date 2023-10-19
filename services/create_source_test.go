@@ -119,7 +119,7 @@ func TestCreateSourceService_Run(t *testing.T) {
 				s.EXPECT().CreateSource(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 		},
-		
+
 		{
 			name: "should_set_default_forward_header_for_shopify_source",
 			args: args{

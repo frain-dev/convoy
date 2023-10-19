@@ -4,19 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"time"
-
-	"github.com/frain-dev/convoy/pkg/msgpack"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
-	"github.com/oklog/ulid/v2"
+	"time"
 )
 
 var (
@@ -36,6 +33,7 @@ type CreateEventService struct {
 }
 
 type newEvent struct {
+	UID            string
 	Raw            string
 	Data           json.RawMessage
 	EventType      string
@@ -64,7 +62,7 @@ func (c *CreateEventService) Run(ctx context.Context) (*datastore.Event, error) 
 		return nil, &ServiceError{ErrMsg: ErrInvalidEndpointID.Error()}
 	}
 
-	endpoints, err := c.FindEndpoints(ctx, c.NewMessage, c.Project)
+	endpoints, err := c.findEndpoints(ctx, c.NewMessage, c.Project)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to find endpoints")
 		return nil, &ServiceError{ErrMsg: err.Error()}
@@ -114,7 +112,7 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 	}
 
 	event := &datastore.Event{
-		UID:              ulid.Make().String(),
+		UID:              newMessage.UID,
 		EventType:        datastore.EventType(newMessage.EventType),
 		Data:             newMessage.Data,
 		Raw:              newMessage.Raw,
@@ -132,14 +130,12 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		return nil, &ServiceError{ErrMsg: "retry strategy not defined in configuration"}
 	}
 
-	taskName := convoy.CreateEventProcessor
-
-	createEvent := task.CreateEvent{
-		Event:              *event,
+	e := task.CreateEvent{
+		Event:              event,
 		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
 	}
 
-	eventByte, err := msgpack.EncodeMsgPack(createEvent)
+	eventByte, err := msgpack.EncodeMsgPack(e)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -149,7 +145,7 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		Payload: eventByte,
 		Delay:   0,
 	}
-	err = queuer.Write(taskName, convoy.CreateEventQueue, job)
+	err = queuer.Write(ctx, convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.FromContext(ctx).Errorf("Error occurred sending new event to the queue %s", err)
 	}
@@ -157,8 +153,21 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 	return event, nil
 }
 
-func (c *CreateEventService) FindEndpoints(ctx context.Context, newMessage *models.CreateEvent, project *datastore.Project) ([]datastore.Endpoint, error) {
+func (c *CreateEventService) findEndpoints(ctx context.Context, newMessage *models.CreateEvent, project *datastore.Project) ([]datastore.Endpoint, error) {
 	var endpoints []datastore.Endpoint
+
+	if !util.IsStringEmpty(newMessage.OwnerID) {
+		ownerIdEndpoints, err := c.EndpointRepo.FindEndpointsByOwnerID(ctx, project.UID, newMessage.OwnerID)
+		if err != nil {
+			return endpoints, err
+		}
+
+		if len(ownerIdEndpoints) == 0 {
+			return endpoints, errors.New("owner ID has no configured endpoints")
+		}
+
+		endpoints = append(endpoints, ownerIdEndpoints...)
+	}
 
 	if !util.IsStringEmpty(newMessage.EndpointID) {
 		endpoint, err := c.EndpointRepo.FindEndpointByID(ctx, newMessage.EndpointID, project.UID)
@@ -171,12 +180,12 @@ func (c *CreateEventService) FindEndpoints(ctx context.Context, newMessage *mode
 	}
 
 	if !util.IsStringEmpty(newMessage.AppID) {
-		endpoints, err := c.EndpointRepo.FindEndpointsByAppID(ctx, newMessage.AppID, project.UID)
+		_endpoints, err := c.EndpointRepo.FindEndpointsByAppID(ctx, newMessage.AppID, project.UID)
 		if err != nil {
-			return endpoints, err
+			return _endpoints, err
 		}
 
-		return endpoints, nil
+		return _endpoints, nil
 	}
 
 	return endpoints, nil

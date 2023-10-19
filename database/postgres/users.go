@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/cache"
 	"strings"
 
 	"github.com/frain-dev/convoy/database"
@@ -37,23 +38,23 @@ const (
 
 	fetchUsers = `
 	SELECT * FROM convoy.users
-	WHERE %s = $1 AND deleted_at IS NULL;
+	WHERE deleted_at IS NULL
 	`
 
 	fetchUsersPaginated = `
 	SELECT * FROM convoy.users WHERE deleted_at IS NULL`
 
 	fetchUsersPagedForward = `
-	%s 
-	AND id <= :cursor 
+	%s
+	AND id <= :cursor
 	GROUP BY id
-	ORDER BY id DESC 
+	ORDER BY id DESC
 	LIMIT :limit`
 
 	fetchUsersPagedBackward = `
-	WITH users AS (  
-		%s 
-		AND id >= :cursor 
+	WITH users AS (
+		%s
+		AND id >= :cursor
 		GROUP BY id
 		ORDER BY id ASC
 		LIMIT :limit
@@ -62,10 +63,10 @@ const (
 	SELECT * FROM users ORDER BY id DESC`
 
 	countPrevUsers = `
-	SELECT count(distinct(id)) as count
+	SELECT COUNT(DISTINCT(id)) AS count
 	FROM convoy.users
 	WHERE deleted_at IS NULL
-	AND id > :cursor 
+	AND id > :cursor
 	GROUP BY id
 	ORDER BY id DESC
 	LIMIT 1`
@@ -77,11 +78,12 @@ var (
 )
 
 type userRepo struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	cache cache.Cache
 }
 
-func NewUserRepo(db database.Database) datastore.UserRepository {
-	return &userRepo{db: db.GetDB()}
+func NewUserRepo(db database.Database, cache cache.Cache) datastore.UserRepository {
+	return &userRepo{db: db.GetDB(), cache: cache}
 }
 
 func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
@@ -140,7 +142,7 @@ func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
 
 func (u *userRepo) FindUserByEmail(ctx context.Context, email string) (*datastore.User, error) {
 	user := &datastore.User{}
-	err := u.db.QueryRowxContext(ctx, fmt.Sprintf(fetchUsers, "email"), email).StructScan(user)
+	err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND email = $1;", fetchUsers), email).StructScan(user)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
@@ -153,7 +155,7 @@ func (u *userRepo) FindUserByEmail(ctx context.Context, email string) (*datastor
 
 func (u *userRepo) FindUserByID(ctx context.Context, id string) (*datastore.User, error) {
 	user := &datastore.User{}
-	err := u.db.QueryRowxContext(ctx, fmt.Sprintf(fetchUsers, "id"), id).StructScan(user)
+	err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1;", fetchUsers), id).StructScan(user)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
@@ -166,7 +168,7 @@ func (u *userRepo) FindUserByID(ctx context.Context, id string) (*datastore.User
 
 func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastore.User, error) {
 	user := &datastore.User{}
-	err := u.db.QueryRowxContext(ctx, fmt.Sprintf(fetchUsers, "reset_password_token"), token).StructScan(user)
+	err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND reset_password_token = $1;", fetchUsers), token).StructScan(user)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
@@ -179,7 +181,7 @@ func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastor
 
 func (u *userRepo) FindUserByEmailVerificationToken(ctx context.Context, token string) (*datastore.User, error) {
 	user := &datastore.User{}
-	err := u.db.QueryRowxContext(ctx, fmt.Sprintf(fetchUsers, "email_verification_token"), token).StructScan(user)
+	err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND email_verification_token = $1;", fetchUsers), token).StructScan(user)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound

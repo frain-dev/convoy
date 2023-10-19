@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -19,6 +20,7 @@ const (
 	MaxResponseSize                   = 51200 // in bytes
 	DefaultHost                       = "localhost:5005"
 	DefaultSearchTokenizationInterval = 1
+	DefaultCacheTTL                   = time.Minute * 10
 )
 
 var cfgSingleton atomic.Value
@@ -27,6 +29,7 @@ var DefaultConfiguration = Configuration{
 	Host:            DefaultHost,
 	Environment:     OSSEnvironment,
 	MaxResponseSize: MaxResponseSizeKb,
+
 	Server: ServerConfiguration{
 		HTTP: HTTPServerConfiguration{
 			SSL:        false,
@@ -71,6 +74,7 @@ var DefaultConfiguration = Configuration{
 			Enabled: true,
 		},
 	},
+	ConsumerPoolSize: 100,
 }
 
 type DatabaseConfiguration struct {
@@ -303,6 +307,7 @@ type Configuration struct {
 	FeatureFlag        FeatureFlagConfiguration   `json:"feature_flag"`
 	Analytics          AnalyticsConfiguration     `json:"analytics"`
 	StoragePolicy      StoragePolicyConfiguration `json:"storage_policy"`
+	ConsumerPoolSize   int                        `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called

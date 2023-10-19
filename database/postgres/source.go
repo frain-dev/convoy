@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/cache"
 
 	"github.com/lib/pq"
 
@@ -45,7 +46,7 @@ const (
 	custom_response_body = $10,
 	custom_response_content_type = $11,
 	idempotency_keys = $12,
-	updated_at = now()
+	updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL ;
 	`
 
@@ -60,7 +61,7 @@ const (
         hmac_header=$8,
         hmac_secret=$9,
         hmac_encoding=$10,
-		updated_at = now()
+		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
@@ -77,20 +78,20 @@ const (
 		s.idempotency_keys,
 		s.project_id,
 		COALESCE(s.source_verifier_id, '') AS source_verifier_id,
-		COALESCE(s.custom_response_body, '') as "custom_response.body",
-		COALESCE(s.custom_response_content_type, '') as "custom_response.content_type",
-		COALESCE(sv.type, '') as "verifier.type",
-		COALESCE(sv.basic_username, '') as "verifier.basic_auth.username",
-		COALESCE(sv.basic_password, '') as "verifier.basic_auth.password",
-        COALESCE(sv.api_key_header_name, '') as "verifier.api_key.header_name",
-        COALESCE(sv.api_key_header_value, '') as "verifier.api_key.header_value",
-        COALESCE(sv.hmac_hash, '') as "verifier.hmac.hash",
-        COALESCE(sv.hmac_header, '') as "verifier.hmac.header",
-        COALESCE(sv.hmac_secret, '') as "verifier.hmac.secret",
-        COALESCE(sv.hmac_encoding, '') as "verifier.hmac.encoding",
+		COALESCE(s.custom_response_body, '') AS "custom_response.body",
+		COALESCE(s.custom_response_content_type, '') AS "custom_response.content_type",
+		COALESCE(sv.type, '') AS "verifier.type",
+		COALESCE(sv.basic_username, '') AS "verifier.basic_auth.username",
+		COALESCE(sv.basic_password, '') AS "verifier.basic_auth.password",
+        COALESCE(sv.api_key_header_name, '') AS "verifier.api_key.header_name",
+        COALESCE(sv.api_key_header_value, '') AS "verifier.api_key.header_value",
+        COALESCE(sv.hmac_hash, '') AS "verifier.hmac.hash",
+        COALESCE(sv.hmac_header, '') AS "verifier.hmac.header",
+        COALESCE(sv.hmac_secret, '') AS "verifier.hmac.secret",
+        COALESCE(sv.hmac_encoding, '') AS "verifier.hmac.encoding",
 		s.created_at,
 		s.updated_at
-	FROM convoy.sources as s
+	FROM convoy.sources AS s
 	LEFT JOIN convoy.source_verifiers sv ON s.source_verifier_id = sv.id
 	WHERE s.deleted_at IS NULL
 	`
@@ -101,19 +102,19 @@ const (
 
 	deleteSource = `
 	UPDATE convoy.sources SET
-	deleted_at = now()
+	deleted_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	deleteSourceVerifier = `
 	UPDATE convoy.source_verifiers SET
-	deleted_at = now()
+	deleted_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	deleteSourceSubscription = `
 	UPDATE convoy.subscriptions SET
-	deleted_at = now()
+	deleted_at = NOW()
 	WHERE source_id = $1 AND deleted_at IS NULL;
 	`
 
@@ -146,7 +147,7 @@ const (
 	`
 
 	countPrevSources = `
-	SELECT count(distinct(s.id)) as count
+	SELECT COUNT(DISTINCT(s.id)) AS count
 	FROM convoy.sources s
 	WHERE s.deleted_at IS NULL
 	%s
@@ -161,11 +162,12 @@ var (
 )
 
 type sourceRepo struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	cache cache.Cache
 }
 
-func NewSourceRepo(db database.Database) datastore.SourceRepository {
-	return &sourceRepo{db: db.GetDB()}
+func NewSourceRepo(db database.Database, cache cache.Cache) datastore.SourceRepository {
+	return &sourceRepo{db: db.GetDB(), cache: cache}
 }
 
 func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source) error {

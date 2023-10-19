@@ -1,8 +1,9 @@
 package api
 
 import (
+	"errors"
 	"github.com/frain-dev/convoy/pkg/msgpack"
-  "errors"
+
 	"io"
 	"net/http"
 	"time"
@@ -30,14 +31,21 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	maskID := chi.URLParam(r, "maskID")
 
 	// 2. Retrieve source using mask ID.
-	source, err := postgres.NewSourceRepo(a.A.DB).FindSourceByMaskID(r.Context(), maskID)
+	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByMaskID(r.Context(), maskID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
-
 		_ = render.Render(w, r, util.NewErrorResponse("error retrieving source", http.StatusBadRequest))
+		return
+	}
+
+	// 2. Retrieve source using mask ID.
+	projectRepo := postgres.NewProjectRepo(a.A.DB, a.A.Cache)
+	project, err := projectRepo.FetchProjectByID(r.Context(), source.ProjectID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
@@ -91,15 +99,11 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
-
-	g, err := projectRepo.FetchProjectByID(r.Context(), source.ProjectID)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
+	var maxIngestSize uint64
+	if project.Config != nil && project.Config.MaxIngestSize != 0 {
+		maxIngestSize = project.Config.MaxIngestSize
 	}
 
-	maxIngestSize := g.Config.MaxIngestSize
 	if maxIngestSize == 0 {
 		cfg, err := config.Get()
 		if err != nil {
@@ -114,7 +118,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	var checksum string
 	var isDuplicate bool
 	if len(source.IdempotencyKeys) > 0 {
-		duper := dedup.NewDeDuper(r.Context(), r, postgres.NewEventRepo(a.A.DB))
+		duper := dedup.NewDeDuper(r.Context(), r, postgres.NewEventRepo(a.A.DB, a.A.Cache))
 		exists, err := duper.Exists(source.Name, source.ProjectID, source.IdempotencyKeys)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -169,7 +173,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	event.Headers["X-Convoy-Source-Id"] = []string{source.MaskID}
 
 	createEvent := task.CreateEvent{
-		Event: *event,
+		Event: event,
 	}
 
 	eventByte, err := msgpack.EncodeMsgPack(createEvent)
@@ -184,7 +188,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		Delay:   0,
 	}
 
-	err = a.A.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = a.A.Queue.Write(r.Context(), convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("Error occurred sending new event to the queue")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -215,33 +219,15 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 }
 
 func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Request) {
-	maskID := chi.URLParam(r, "maskID")
-
-	var source *datastore.Source
-	sourceCacheKey := convoy.SourceCacheKey.Get(maskID).String()
-
-	err := a.A.Cache.Get(r.Context(), sourceCacheKey, &source)
+	maskId := chi.URLParam(r, "maskID")
+	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByMaskID(r.Context(), maskId)
 	if err != nil {
-		a.A.Logger.WithError(err)
-	}
-
-	if source == nil {
-		source, err = postgres.NewSourceRepo(a.A.DB).FindSourceByMaskID(r.Context(), maskID)
-		if err != nil {
-			if errors.Is(err, datastore.ErrSourceNotFound) {
-				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
-				return
-			}
-
-			_ = render.Render(w, r, util.NewErrorResponse("error retrieving source", http.StatusBadRequest))
+		if errors.Is(err, datastore.ErrSourceNotFound) {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
-
-		err = a.A.Cache.Set(r.Context(), sourceCacheKey, &source, time.Hour*24)
-		if err != nil {
-			a.A.Logger.WithError(err)
-		}
-
+		_ = render.Render(w, r, util.NewErrorResponse("error retrieving source", http.StatusBadRequest))
+		return
 	}
 
 	if source.Type != datastore.HTTPSource {
@@ -264,7 +250,7 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	sourceRepo := postgres.NewSourceRepo(a.A.DB)
+	sourceRepo := postgres.NewSourceRepo(a.A.DB, a.A.Cache)
 	err = c.HandleRequest(w, r, source, sourceRepo)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))

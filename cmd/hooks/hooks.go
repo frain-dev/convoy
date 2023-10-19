@@ -119,9 +119,9 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		// the order matters here
 		projectListener := listener.NewProjectListener(q)
 		hooks.RegisterHook(datastore.ProjectUpdated, projectListener.AfterUpdate)
-		projectRepo := postgres.NewProjectRepo(postgresDB)
+		projectRepo := postgres.NewProjectRepo(postgresDB, ca)
 
-		metaEventRepo := postgres.NewMetaEventRepo(postgresDB)
+		metaEventRepo := postgres.NewMetaEventRepo(postgresDB, ca)
 		endpointListener := listener.NewEndpointListener(q, projectRepo, metaEventRepo)
 		eventDeliveryListener := listener.NewEventDeliveryListener(q, projectRepo, metaEventRepo)
 
@@ -404,7 +404,7 @@ func shouldBootstrap(cmd *cobra.Command) bool {
 
 func ensureDefaultUser(ctx context.Context, a *cli.App) error {
 	pageable := datastore.Pageable{PerPage: 10, Direction: datastore.Next, NextCursor: datastore.DefaultCursor}
-	userRepo := postgres.NewUserRepo(a.DB)
+	userRepo := postgres.NewUserRepo(a.DB, a.Cache)
 	users, _, err := userRepo.LoadUsersPaged(ctx, pageable)
 	if err != nil {
 		return fmt.Errorf("failed to load users - %w", err)

@@ -2,13 +2,10 @@ package services
 
 import (
 	"context"
-	"errors"
-	"net/http"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/log"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
@@ -50,13 +47,6 @@ func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		log.FromContext(ctx).WithError(err).Error("failed to update endpoint")
 		return endpoint, &ServiceError{ErrMsg: "an error occurred while updating endpoints", Err: err}
 
-	}
-
-	endpointCacheKey := convoy.EndpointsCacheKey.Get(endpoint.UID).String()
-	err = a.Cache.Set(ctx, endpointCacheKey, &endpoint, time.Minute*5)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to update endpoint cache")
-		return endpoint, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
 	}
 
 	return endpoint, nil

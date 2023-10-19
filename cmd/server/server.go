@@ -128,8 +128,8 @@ func StartConvoyServer(a *cli.App) error {
 	start := time.Now()
 	a.Logger.Info("Starting Convoy server...")
 
-	apiKeyRepo := postgres.NewAPIKeyRepo(a.DB)
-	userRepo := postgres.NewUserRepo(a.DB)
+	apiKeyRepo := postgres.NewAPIKeyRepo(a.DB, a.Cache)
+	userRepo := postgres.NewUserRepo(a.DB, a.Cache)
 	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, a.Cache)
 	if err != nil {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")

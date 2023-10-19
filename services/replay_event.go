@@ -18,10 +18,8 @@ type ReplayEventService struct {
 }
 
 func (e *ReplayEventService) Run(ctx context.Context) error {
-	taskName := convoy.CreateEventProcessor
-
 	createEvent := task.CreateEvent{
-		Event: *e.Event,
+		Event: e.Event,
 	}
 
 	eventByte, err := msgpack.EncodeMsgPack(createEvent)
@@ -35,7 +33,7 @@ func (e *ReplayEventService) Run(ctx context.Context) error {
 		Delay:   0,
 	}
 
-	err = e.Queue.Write(taskName, convoy.CreateEventQueue, job)
+	err = e.Queue.Write(ctx, convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("replay_event: failed to write event to the queue")
 		return &ServiceError{ErrMsg: "failed to write event to queue", Err: err}

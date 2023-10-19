@@ -14,10 +14,10 @@ import (
 )
 
 func createProjectService(a *DashboardHandler) (*services.ProjectService, error) {
-	apiKeyRepo := postgres.NewAPIKeyRepo(a.A.DB)
-	projectRepo := postgres.NewProjectRepo(a.A.DB)
-	eventRepo := postgres.NewEventRepo(a.A.DB)
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB)
+	apiKeyRepo := postgres.NewAPIKeyRepo(a.A.DB, a.A.Cache)
+	projectRepo := postgres.NewProjectRepo(a.A.DB, a.A.Cache)
+	eventRepo := postgres.NewEventRepo(a.A.DB, a.A.Cache)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache)
 
 	projectService, err := services.NewProjectService(
 		apiKeyRepo, projectRepo, eventRepo,
@@ -49,7 +49,7 @@ func (a *DashboardHandler) GetProjectStatistics(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	err = postgres.NewProjectRepo(a.A.DB).FillProjectsStatistics(r.Context(), project)
+	err = postgres.NewProjectRepo(a.A.DB, a.A.Cache).FillProjectsStatistics(r.Context(), project)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to count project statistics")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to count project statistics", http.StatusBadRequest))
@@ -71,7 +71,7 @@ func (a *DashboardHandler) DeleteProject(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err = postgres.NewProjectRepo(a.A.DB).DeleteProject(r.Context(), project.UID)
+	err = postgres.NewProjectRepo(a.A.DB, a.A.Cache).DeleteProject(r.Context(), project.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete project")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete project", http.StatusBadRequest))
@@ -180,7 +180,7 @@ func (a *DashboardHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filter := &datastore.ProjectFilter{OrgID: org.UID}
-	projects, err := postgres.NewProjectRepo(a.A.DB).LoadProjects(r.Context(), filter)
+	projects, err := postgres.NewProjectRepo(a.A.DB, a.A.Cache).LoadProjects(r.Context(), filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to load projects")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching projects", http.StatusBadRequest))

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/cache"
 	"time"
 
 	"github.com/lib/pq"
@@ -20,8 +21,9 @@ import (
 )
 
 type eventDeliveryRepo struct {
-	db   *sqlx.DB
-	hook *hooks.Hook
+	db    *sqlx.DB
+	hook  *hooks.Hook
+	cache cache.Cache
 }
 
 var (
@@ -176,8 +178,8 @@ const (
     `
 )
 
-func NewEventDeliveryRepo(db database.Database) datastore.EventDeliveryRepository {
-	return &eventDeliveryRepo{db: db.GetDB(), hook: db.GetHook()}
+func NewEventDeliveryRepo(db database.Database, cache cache.Cache) datastore.EventDeliveryRepository {
+	return &eventDeliveryRepo{db: db.GetDB(), hook: db.GetHook(), cache: cache}
 }
 
 func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *datastore.EventDelivery) error {

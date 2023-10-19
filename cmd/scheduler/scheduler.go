@@ -3,8 +3,6 @@ package scheduler
 import (
 	"context"
 	"fmt"
-	"net/http"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
@@ -15,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
+	"net/http"
 )
 
 func AddSchedulerCommand(a *cli.App) *cobra.Command {
