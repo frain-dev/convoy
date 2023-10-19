@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/oklog/ulid/v2"
-	"math"
-	"time"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
