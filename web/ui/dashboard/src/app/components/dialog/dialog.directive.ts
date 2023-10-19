@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Directive, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
+import { Component, Directive, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { ButtonComponent } from '../button/button.component';
 
 // dialog header
@@ -57,9 +57,5 @@ export class DialogDirective implements OnInit {
 		return `${this.modalType[this.position]} ${this.position === 'full' ? 'bg-[#fafafe]' : 'bg-white-100 ' + this.modalSizes[this.size]}`;
 	}
 
-	@HostListener('click', ['$event'])
-	onClick(event: any) {
-		const dialogWrapper = event.target;
-		if (dialogWrapper === event.currentTarget) dialogWrapper.close();
-	}
+
 }
