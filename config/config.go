@@ -229,15 +229,6 @@ type TypesenseConfiguration struct {
 	ApiKey string `json:"api_key" envconfig:"CONVOY_TYPESENSE_API_KEY"`
 }
 
-type FeatureFlagConfiguration struct {
-	Type  FeatureFlagProvider `json:"type" envconfig:"CONVOY_FEATURE_FLAG_TYPE"`
-	Flipt FliptConfiguration  `json:"flipt"`
-}
-
-type FliptConfiguration struct {
-	Host string `json:"host" envconfig:"CONVOY_FLIPT_HOST"`
-}
-
 type AnalyticsConfiguration struct {
 	IsEnabled bool `json:"enabled" envconfig:"CONVOY_ANALYTICS_ENABLED"`
 }
@@ -290,6 +281,31 @@ func (s SignatureHeaderProvider) String() string {
 	return string(s)
 }
 
+type FlagLevel int
+
+const (
+	ExperimentalFlagLevel FlagLevel = iota + 1
+)
+
+const Experimental = "experimental"
+
+func (ft *FlagLevel) UnmarshalJSON(v []byte) error {
+	switch string(v) {
+	case Experimental:
+		*ft = ExperimentalFlagLevel
+	}
+	return nil
+}
+
+func (ft FlagLevel) MarshalJSON() ([]byte, error) {
+	switch ft {
+	case ExperimentalFlagLevel:
+		return []byte(Experimental), nil
+	default:
+		return []byte(""), nil
+	}
+}
+
 type Configuration struct {
 	Auth               AuthConfiguration          `json:"auth,omitempty"`
 	Database           DatabaseConfiguration      `json:"database"`
@@ -304,7 +320,7 @@ type Configuration struct {
 	Host               string                     `json:"host" envconfig:"CONVOY_HOST"`
 	CustomDomainSuffix string                     `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
 	Search             SearchConfiguration        `json:"search"`
-	FeatureFlag        FeatureFlagConfiguration   `json:"feature_flag"`
+	FeatureFlag        FlagLevel                  `json:"feature_flag" envconfig:"CONVOY_FEATURE_FLAG"`
 	Analytics          AnalyticsConfiguration     `json:"analytics"`
 	StoragePolicy      StoragePolicyConfiguration `json:"storage_policy"`
 	ConsumerPoolSize   int                        `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`

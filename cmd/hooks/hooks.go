@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"time"
+
 	dbhook "github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
-	"os"
-	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
@@ -314,6 +315,17 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		Password: redisPassword,
 		Database: redisDatabase,
 		Port:     redisPort,
+	}
+
+	// Feature flags
+	fflag, err := cmd.Flags().GetString("feature-flag")
+	if err != nil {
+		return nil, err
+	}
+
+	switch fflag {
+	case config.Experimental:
+		c.FeatureFlag = config.ExperimentalFlagLevel
 	}
 
 	return c, nil

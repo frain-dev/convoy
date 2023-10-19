@@ -6,7 +6,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/fflag/flipt"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
@@ -81,7 +80,6 @@ func (a *PortalLinkHandler) BuildRoutes() http.Handler {
 	})
 
 	router.Get("/project", a.GetProject)
-	router.Post("/flags", flipt.BatchEvaluate)
 
 	return router
 }
