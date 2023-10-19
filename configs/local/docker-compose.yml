@@ -69,13 +69,13 @@ services:
             POSTGRES_PASSWORD: convoy
             PGDATA: /data/postgres
         volumes:
-            - ./postgres_data:/data/postgres
+          - postgres_data:/data/postgres
 
     redis_server:
         image: redis:alpine
         restart: always
         volumes:
-            - ./redis_data:/data
+          - redis_data:/data
 
     typesense:
         image: typesense/typesense:0.24.0
@@ -85,4 +85,8 @@ services:
             TYPESENSE_ENABLE_CORS: "true"
             TYPESENSE_API_KEY: "convoy"
         volumes:
-            - ./typesense_data:/data/typesense
+            - typesense_data:/data/typesense
+volumes:
+    postgres_data:
+    typesense_data:
+    redis_data:
