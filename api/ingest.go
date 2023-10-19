@@ -100,7 +100,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	var maxIngestSize uint64
-	if project.Config != nil && project.Config.MaxIngestSize == 0 {
+	if project.Config != nil && project.Config.MaxIngestSize != 0 {
 		maxIngestSize = project.Config.MaxIngestSize
 	}
 
