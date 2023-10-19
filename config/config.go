@@ -285,6 +285,29 @@ func (s SignatureHeaderProvider) String() string {
 	return string(s)
 }
 
+type FlagLevel int
+
+const (
+	ExperimentalFlagLevel FlagLevel = iota + 1
+)
+
+func (ft *FlagLevel) UnmarshalJSON(v []byte) error {
+	switch string(v) {
+	case "experimental":
+		*ft = ExperimentalFlagLevel
+	}
+	return nil
+}
+
+func (ft FlagLevel) MarshalJSON() ([]byte, error) {
+	switch ft {
+	case 1:
+		return []byte("experimental"), nil
+	default:
+		return []byte(""), nil
+	}
+}
+
 type Configuration struct {
 	Auth               AuthConfiguration          `json:"auth,omitempty"`
 	Database           DatabaseConfiguration      `json:"database"`
@@ -299,7 +322,7 @@ type Configuration struct {
 	Host               string                     `json:"host" envconfig:"CONVOY_HOST"`
 	CustomDomainSuffix string                     `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
 	Search             SearchConfiguration        `json:"search"`
-	FeatureFlag        string                     `json:"feature_flag" envconfig:"CONVOY_FEATURE_FLAG"`
+	FeatureFlag        FlagLevel                  `json:"feature_flag" envconfig:"CONVOY_FEATURE_FLAG"`
 	Analytics          AnalyticsConfiguration     `json:"analytics"`
 	StoragePolicy      StoragePolicyConfiguration `json:"storage_policy"`
 }
