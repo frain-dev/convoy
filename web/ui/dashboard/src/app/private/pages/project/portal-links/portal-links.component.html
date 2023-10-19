@@ -95,7 +95,7 @@
 									</button>
 								</li>
 								<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-									<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="danger" class="w-full !justify-start" (click)="activeLink = link; deleteDialog.nativeElement.showModal()">
+									<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="danger" class="w-full !justify-start" (click)="activeLink = link; deleteDialog.showModal()">
 										<svg width="16" height="16" class="mr-8px fill-danger-100">
 											<use xlink:href="#delete-icon"></use>
 										</svg>
@@ -129,6 +129,6 @@
     </div>
 </dialog>
 
-<dialog #deleteModal convoy-dialog position="center" size="sm">
-	<app-delete-modal [isLoading]="isRevokingLink" [deleteText]="'revoke “' + activeLink?.name + '”'" (closeModal)="deleteDialog.nativeElement.close()" (deleteData)="revokeLink()"></app-delete-modal>
+<dialog #deleteDialog convoy-dialog position="center" size="sm">
+	<app-delete-modal [isLoading]="isRevokingLink" [deleteText]="'revoke “' + activeLink?.name + '”'" (closeModal)="deleteDialog.close()" (deleteData)="revokeLink()"></app-delete-modal>
 </dialog>
