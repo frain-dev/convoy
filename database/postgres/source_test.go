@@ -336,7 +336,7 @@ func Test_LoadPubSubSourcesByProjectIDs(t *testing.T) {
 			defer closeFn()
 
 			var projectIDs []string
-			sourceRepo := NewSourceRepo(db)
+			sourceRepo := NewSourceRepo(db, nil)
 
 			for i := 0; i < tc.count; i++ {
 				project := seedProject(t, db)
