@@ -225,14 +225,6 @@ type TypesenseConfiguration struct {
 	ApiKey string `json:"api_key" envconfig:"CONVOY_TYPESENSE_API_KEY"`
 }
 
-type FeatureFlagConfiguration struct {
-	Experimental bool `json:"experimental" envconfig:"CONVOY_EXPERIMENTAL_FEATURES"`
-}
-
-type FliptConfiguration struct {
-	Host string `json:"host" envconfig:"CONVOY_FLIPT_HOST"`
-}
-
 type AnalyticsConfiguration struct {
 	IsEnabled bool `json:"enabled" envconfig:"CONVOY_ANALYTICS_ENABLED"`
 }
