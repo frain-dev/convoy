@@ -84,8 +84,8 @@ func (s *SourceLoader) fetchSources(ctx context.Context, projectIDs []string, cu
 		return nil
 	}
 
-	for _, source := range sources {
-		ps, err := NewPubSubSource(&source, s.handler, s.log)
+	for i := range sources {
+		ps, err := NewPubSubSource(&sources[i], s.handler, s.log)
 		if err != nil {
 			s.log.WithError(err).Error("failed to create pub sub source")
 		}
