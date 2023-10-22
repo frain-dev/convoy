@@ -170,7 +170,7 @@
 				</div>
 			</ng-container>
 
-			<div class="flex items-center" *ngIf="shouldShowBorder < configurations.length">
+			<div class="flex items-center overflow-x-auto no-scrollbar" *ngIf="shouldShowBorder < configurations.length">
 				<ng-container *ngFor="let config of configurations; let i = index">
 					<ng-container *ngIf="!config.show">
 						<button
@@ -182,7 +182,7 @@
 							color="grey"
 							texture="light"
 							type="button"
-							[class]="'mr-24px font-normal'"
+							[class]="'mr-24px font-normal whitespace-nowrap'"
 							(click)="toggleConfigForm(config.uid)"
 						>
 							{{ config.name }}

@@ -47,9 +47,19 @@
 		@apply text-h4;
 	}
 
-    dialog:modal{
-        @apply max-w-full max-h-full;
-    }
+	dialog:modal {
+		@apply max-w-full max-h-full;
+	}
+
+	.no-scrollbar::-webkit-scrollbar {
+		@apply hidden;
+	}
+	.no-scrollbar {
+		scrollbar-width: none;
+	}
+	.no-scrollbar {
+		-ms-overflow-style: none;
+	}
 
 	.docs {
 		article {
