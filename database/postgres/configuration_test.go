@@ -98,16 +98,16 @@ func generateConfig() *datastore.Configuration {
 		StoragePolicy: &datastore.StoragePolicyConfiguration{
 			Type: datastore.OnPrem,
 			S3: &datastore.S3Storage{
-				Prefix:       null.NewString("random7", false),
-				Bucket:       null.NewString("random1", false),
-				AccessKey:    null.NewString("random2", false),
-				SecretKey:    null.NewString("random3", false),
-				Region:       null.NewString("random4", false),
-				SessionToken: null.NewString("random5", false),
-				Endpoint:     null.NewString("random6", false),
+				Prefix:       null.NewString("random7", true),
+				Bucket:       null.NewString("random1", true),
+				AccessKey:    null.NewString("random2", true),
+				SecretKey:    null.NewString("random3", true),
+				Region:       null.NewString("random4", true),
+				SessionToken: null.NewString("random5", true),
+				Endpoint:     null.NewString("random6", true),
 			},
 			OnPrem: &datastore.OnPremStorage{
-				Path: null.NewString("path", false),
+				Path: null.NewString("path", true),
 			},
 		},
 	}
