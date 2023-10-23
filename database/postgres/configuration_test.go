@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -93,6 +95,20 @@ func generateConfig() *datastore.Configuration {
 		UID:                ulid.Make().String(),
 		IsAnalyticsEnabled: true,
 		IsSignupEnabled:    false,
-		StoragePolicy:      &datastore.DefaultStoragePolicy,
+		StoragePolicy: &datastore.StoragePolicyConfiguration{
+			Type: datastore.OnPrem,
+			S3: &datastore.S3Storage{
+				Prefix:       null.NewString("random7", false),
+				Bucket:       null.NewString("random1", false),
+				AccessKey:    null.NewString("random2", false),
+				SecretKey:    null.NewString("random3", false),
+				Region:       null.NewString("random4", false),
+				SessionToken: null.NewString("random5", false),
+				Endpoint:     null.NewString("random6", false),
+			},
+			OnPrem: &datastore.OnPremStorage{
+				Path: null.NewString("path", false),
+			},
+		},
 	}
 }

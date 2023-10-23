@@ -134,6 +134,7 @@ func (c *configRepo) LoadConfiguration(ctx context.Context) (*datastore.Configur
 func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Configuration) error {
 	if cfg.StoragePolicy.Type == datastore.OnPrem {
 		cfg.StoragePolicy.S3 = &datastore.S3Storage{
+			Prefix:       null.NewString("", false),
 			Bucket:       null.NewString("", false),
 			AccessKey:    null.NewString("", false),
 			SecretKey:    null.NewString("", false),
