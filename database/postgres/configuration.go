@@ -14,16 +14,16 @@ import (
 const (
 	createConfiguration = `
 	INSERT INTO convoy.configurations(
-		id, is_analytics_enabled, is_signup_enabled, 
-		storage_policy_type, on_prem_path, 
-		s3_bucket, s3_access_key, s3_secret_key, 
+		id, is_analytics_enabled, is_signup_enabled,
+		storage_policy_type, on_prem_path, s3_prefix,
+		s3_bucket, s3_access_key, s3_secret_key,
 		s3_region, s3_session_token, s3_endpoint
-	  ) 
-	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
+	  )
+	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
 	`
 
 	fetchConfiguration = `
-	SELECT 
+	SELECT
 		id,
 		is_analytics_enabled,
 		is_signup_enabled,
@@ -35,6 +35,7 @@ const (
 		s3_region AS "storage_policy.s3.region",
 		s3_session_token AS "storage_policy.s3.session_token",
 		s3_endpoint AS "storage_policy.s3.endpoint",
+		s3_prefix AS "storage_policy.s3.prefix",
 		created_at,
 		updated_at,
 		deleted_at
@@ -54,8 +55,9 @@ const (
 		s3_access_key = $7,
 		s3_secret_key = $8,
 		s3_region = $9,
-		s3_session_token = $10, 
+		s3_session_token = $10,
 		s3_endpoint = $11,
+		s3_prefix = $12,
 		updated_at = now()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -72,6 +74,7 @@ func NewConfigRepo(db database.Database) datastore.ConfigurationRepository {
 func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.Configuration) error {
 	if config.StoragePolicy.Type == datastore.OnPrem {
 		config.StoragePolicy.S3 = &datastore.S3Storage{
+			Prefix:       null.NewString("", false),
 			Bucket:       null.NewString("", false),
 			AccessKey:    null.NewString("", false),
 			SecretKey:    null.NewString("", false),
@@ -91,6 +94,7 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 		config.IsSignupEnabled,
 		config.StoragePolicy.Type,
 		config.StoragePolicy.OnPrem.Path,
+		config.StoragePolicy.S3.Prefix,
 		config.StoragePolicy.S3.Bucket,
 		config.StoragePolicy.S3.AccessKey,
 		config.StoragePolicy.S3.SecretKey,
@@ -155,8 +159,8 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 		cfg.StoragePolicy.S3.Region,
 		cfg.StoragePolicy.S3.SessionToken,
 		cfg.StoragePolicy.S3.Endpoint,
+		cfg.StoragePolicy.S3.Prefix,
 	)
-
 	if err != nil {
 		return err
 	}
