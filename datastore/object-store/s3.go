@@ -1,7 +1,6 @@
 package objectstore
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -56,8 +55,6 @@ func (s3 *S3Client) Save(filename string) error {
 	} else {
 		name = strings.Replace(filename, "/tmp", s3.opts.Prefix, 1)
 	}
-
-	fmt.Println("name", name)
 
 	uploader := s3manager.NewUploader(s3.session)
 	_, err = uploader.Upload(&s3manager.UploadInput{
