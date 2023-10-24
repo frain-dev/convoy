@@ -147,7 +147,8 @@
 					</div>
 
 					<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('retention_policy')">
-						<div class="flex justify-between items-center mb-24px">
+
+                        <div class="flex justify-between items-center mb-24px">
 							<p class="text-12 font-medium text-new.gray-500">Retention Policy</p>
 							<button convoy-button type="button" size="xs" fill="outline" convoy-permission="Project Settings|MANAGE" color="grey" texture="light" (click)="toggleConfigForm('retention')">
 								<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
@@ -155,7 +156,11 @@
 								</svg>
 							</button>
 						</div>
-						<ng-container *ngIf="projectForm.get('config.is_retention_policy_enabled')?.value">
+                        <div class="project-types grid grid-cols-2 gap-24px mb-24px">
+                            <convoy-radio formControlName="retention_policy_enabled" label="Enable Policy" _name="retention_policy_enabled" [value]="true" _id="enable"></convoy-radio>
+                            <convoy-radio formControlName="retention_policy_enabled" label="Disable Policy" _name="retention_policy_enabled" [value]="false" _id="disable"></convoy-radio>
+                        </div>
+						<ng-container *ngIf="projectForm.get('config.retention_policy_enabled')?.value">
 							<div formGroupName="retention_policy">
 								<div class="grid grid-cols-2 gap-24px">
 									<convoy-input-field>

@@ -48,7 +48,7 @@ export class CreateProjectComponent implements OnInit {
 				url: ['', Validators.required],
 				secret: [null]
 			}),
-			is_retention_policy_enabled: [true]
+			retention_policy_enabled: [true]
 		}),
 		type: [null, Validators.required]
 	});
@@ -234,7 +234,7 @@ export class CreateProjectComponent implements OnInit {
 		});
 
 		if (this.showConfig('retention_policy')) {
-			projectData.config.is_retention_policy_enabled = true;
+			projectData.config.retention_policy_enabled = true;
 			projectData.config.retention_policy.search_policy = typeof projectData.config.retention_policy.search_policy === 'string' ? projectData.config.retention_policy.search_policy : `${projectData.config.retention_policy.search_policy}h`;
 		}
 
