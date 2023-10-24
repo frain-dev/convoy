@@ -26,7 +26,7 @@
 
 	<ul convoy-card class="mb-40px min-h-[70vh] pb-24px" *ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length">
 		<div class="flex items-center gap-50px py-10px text-12 uppercase bg-new.primary-25 mb-16px text-new.gray-600">
-			<div [class]="(privateService.getProjectDetails?.type === 'incoming' ? 'w-356px' : 'w-270px') + ' ml-16px'">Subscription {{ projectDetails?.type === 'incoming' ? '' : 'Name' }}</div>
+			<div [class]="(privateService.getProjectDetails?.type === 'incoming' ? 'w-356px' : 'w-270px') + ' ml-16px'">Subscription {{ privateService.getProjectDetails?.type === 'incoming' ? '' : 'Name' }}</div>
 			<div class="w-252px">Configs</div>
 		</div>
 
@@ -59,9 +59,9 @@
 
 					<div class="whitespace-nowrap flex">
 						<div convoy-tag [color]="hasFilter(subscription.filter_config.filter) ? 'primary' : 'gray'" class="mr-8px py-2px">Filter</div>
-						<div convoy-tag [color]="subscription.function ? 'primary' : 'gray'" class="mr-8px py-2px">Transform</div>
+						<div convoy-tag *ngIf="privateService.getProjectDetails?.type === 'incoming'" [color]="subscription.function ? 'primary' : 'gray'" class="mr-8px py-2px">Transform</div>
 						<div convoy-tag [color]="subscription.retry_config ? 'primary' : 'gray'" class="mr-8px py-2px">Retry Logic</div>
-						<div convoy-tag [color]="subscription.filter_config.event_types.length > 1 || subscription.filter_config.event_types[0] != '*' ? 'primary' : 'gray'" color="primary" class="py-2px">Event Types</div>
+						<div convoy-tag *ngIf="privateService.getProjectDetails?.type === 'outgoing'" [color]="subscription.filter_config.event_types.length > 1 || subscription.filter_config.event_types[0] != '*' ? 'primary' : 'gray'" color="primary" class="py-2px">Event Types</div>
 					</div>
 				</div>
 
@@ -128,10 +128,10 @@
 	</div>
 
 	<div class="p-20px h-full">
-		<ng-container *ngIf="projectDetails?.type === 'incoming'">
+		<ng-container *ngIf="privateService.getProjectDetails?.type === 'incoming'">
 			<h2 class="font-medium mb-10px text-14 text-grey-40">Source</h2>
 			<div convoy-card hover="true" class="w-full cursor-pointer py-20px mb-24px">
-				<div class="px-24px pb-12px border-b border-b-grey-10" [routerLink]="['/projects/' + projectDetails?.uid + '/sources']" [queryParams]="{ id: activeSubscription?.source_metadata?.uid }">
+				<div class="px-24px pb-12px border-b border-b-grey-10" [routerLink]="['/projects/' + privateService.getProjectDetails?.uid + '/sources']" [queryParams]="{ id: activeSubscription?.source_metadata?.uid }">
 					<div class="text-grey-40 text-10 mb-4px">{{ activeSubscription?.source_metadata?.provider || (activeSubscription?.source_metadata?.verifier?.type || '' | sourceValue: 'verifier') }}</div>
 					<div class="flex justify-between items-center">
 						<div class="text-14 font-medium">{{ activeSubscription?.source_metadata?.name }}</div>
@@ -151,7 +151,7 @@
 		<ng-container *ngIf="activeSubscription?.endpoint_metadata?.uid">
 			<h2 class="font-medium mb-10px text-14 text-grey-40">Endpoint</h2>
 			<div convoy-card hover="true" class="w-full cursor-pointer py-20px">
-				<div class="px-24px pb-12px border-b border-b-grey-10" [routerLink]="['/projects/' + projectDetails?.uid + '/endpoints/' + activeSubscription?.endpoint_metadata?.uid]">
+				<div class="px-24px pb-12px border-b border-b-grey-10" [routerLink]="['/projects/' + privateService.getProjectDetails?.uid + '/endpoints/' + activeSubscription?.endpoint_metadata?.uid]">
 					<div class="flex justify-between items-center">
 						<div class="text-14 font-medium">{{ activeSubscription?.endpoint_metadata?.title }}</div>
 						<svg width="18" height="18" class="fill-grey-60">
