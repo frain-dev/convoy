@@ -7,12 +7,14 @@ import { CURSOR } from '../models/global.model';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
 import { USER } from '../models/user.model';
 import { PROJECT } from '../models/project.model';
+import { Observer } from 'rxjs';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class PrivateService {
 	showOrgModal: EventEmitter<boolean> = new EventEmitter();
+	organisations$: EventEmitter<HTTP_RESPONSE> = new EventEmitter();
 	organisationDetails?: ORGANIZATION_DATA;
 	apiFlagResponse!: FLIPT_API_RESPONSE;
 	projects!: HTTP_RESPONSE;
@@ -158,7 +160,8 @@ export class PrivateService {
 
 				await this.organisationConfig(response.data?.content);
 				this.organisations = response;
-				if (!response.data.content.length) return this.router.navigateByUrl('/get-started');
+				this.organisations$.emit(response);
+				// if (!response.data.content.length) return this.router.navigateByUrl('/get-started');
 				return resolve(response);
 			} catch (error) {
 				return reject(error);

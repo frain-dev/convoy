@@ -29,7 +29,7 @@ export class LoginComponent implements OnInit {
 	isSignupEnabled = false;
 	organisations?: ORGANIZATION_DATA[];
 
-	constructor(private formBuilder: FormBuilder, public router: Router, private loginService: LoginService, private signupService:SignupService, private privateService: PrivateService) {}
+	constructor(private formBuilder: FormBuilder, public router: Router, private loginService: LoginService, private signupService: SignupService, private privateService: PrivateService) {}
 
 	ngOnInit() {
 		this.getSignUpConfig();
@@ -43,7 +43,6 @@ export class LoginComponent implements OnInit {
 			this.isFetchingConfig = false;
 		} catch (error) {
 			this.isFetchingConfig = false;
-			return error;
 		}
 	}
 
@@ -57,37 +56,17 @@ export class LoginComponent implements OnInit {
 			localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
 
 			this.isLoadingProject = true;
-			return this.getOrganisations();
+			await this.getOrganisations();
+			return this.router.navigateByUrl('/');
 		} catch {
 			return (this.disableLoginBtn = false);
 		}
 	}
 
-	updateOrganisationDetails() {
-		if (!this.organisations?.length) return;
-
-		this.privateService.organisationDetails = this.organisations[0];
-		localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
-		return this.privateService.getProjectsHelper();
-	}
-
-	checkForSelectedOrganisation() {
-		if (!this.organisations?.length) return;
-
-		const selectedOrganisation = localStorage.getItem('CONVOY_ORG');
-		if (!selectedOrganisation || selectedOrganisation === 'undefined') return this.updateOrganisationDetails();
-
-		const organisationDetails = JSON.parse(selectedOrganisation);
-		this.privateService.organisationDetails = this.organisations.find(org => org.uid === organisationDetails.uid);
-		return this.privateService.organisationDetails ? this.privateService.getProjectsHelper() : this.updateOrganisationDetails();
-	}
-
 	async getOrganisations() {
 		try {
-			const response = await this.privateService.getOrganizations({ refresh: true });
-			this.organisations = response.data.content;
-			if (this.organisations?.length === 0) return this.router.navigateByUrl('/get-started');
-			return this.checkForSelectedOrganisation();
+			await this.privateService.getOrganizations({ refresh: true });
+			return;
 		} catch (error) {
 			return error;
 		}

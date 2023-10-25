@@ -1,6 +1,6 @@
 <div class="flex justify-between items-end border-b border-b-grey-10 pb-20px mb-24px">
 	<div class="flex items-center">
-		<h1 class="text-24 font-bold text-grey-80 mr-10px">Sources</h1>
+		<h1 class="text-18 font-bold text-grey-80 mr-10px">Sources</h1>
 		<convoy-tooltip tooltipContent="Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints" position="right"></convoy-tooltip>
 	</div>
 
@@ -8,7 +8,7 @@
 </div>
 
 <!-- empty state  -->
-<div class="py-100px" convoy-card *ngIf="!isLoadingSources && sources?.content?.length == 0">
+<div class="py-100px" *ngIf="!isLoadingSources && sources?.content?.length == 0">
 	<div convoy-empty-state imgSrc="/assets/img/sources-empty-state.png" heading="Create your first source" description="Sources are how your webhook events are routed into the Convoy." id="sources-empty-state">
 		<button convoy-permission="Sources|MANAGE" convoy-button emptyStateCTA routerLink="./new" class="mt-36px">Connect a source</button>
 	</div>
@@ -21,7 +21,7 @@
 
 <ng-container *ngIf="!isLoadingSources && sources?.content?.length">
 	<!-- list of sources  -->
-	<div class="p-24px min-h-[600px]" convoy-card>
+	<div class="min-h-[600px]">
 		<div class="flex flex-wrap gap-24px">
 			<ng-container *ngFor="let source of sources?.content; let i = index">
 				<div convoy-card [id]="'source' + i" class="w-full max-w-[338px] min-w-[300px] py-20px h-fit">
@@ -105,7 +105,7 @@
 							</div>
 						</div>
 						<div class="mt-12px mx-24px">
-							<convoy-copy-button [text]="source.url" color="primary" className="ml-2px" [notificationText]="source.name + ' URL has been copied to clipboard'"><span class="text-14 ml-8px font-medium">Copy URL</span></convoy-copy-button>
+							<convoy-copy-button [text]="source.url" color="primary" className="ml-2px" [notificationText]="source.name + ' URL has been copied to clipboard'"><span class="text-12 ml-8px font-medium">Copy URL</span></convoy-copy-button>
 						</div>
 					</ng-container>
 				</div>
@@ -123,10 +123,10 @@
 	</div>
 
 	<div class="w-full h-full">
-        <div class="max-w-[770px] m-auto">
-            <convoy-create-source showAction="true" (onAction)="closeCreateSourceModal($event)" [action]="action"></convoy-create-source>
-        </div>
-    </div>
+		<div class="max-w-[770px] m-auto">
+			<convoy-create-source showAction="true" (onAction)="closeCreateSourceModal($event)" [action]="action"></convoy-create-source>
+		</div>
+	</div>
 </dialog>
 
 <dialog #deleteDialog convoy-dialog position="center" size="sm">

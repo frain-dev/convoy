@@ -1,6 +1,6 @@
-<div convoy-card>
-	<div class="flex items-center mt-20px px-20px">
-		<h4 class="font-medium text-14 text-new.gray-600 mr-6px">Event Deliveries</h4>
+<div>
+	<div class="flex items-center mt-40px">
+		<h2 class="text-12 font-medium text-new.gray-600 mr-8px">Events Summary</h2>
 		<convoy-tooltip size="sm" position="right" type="white">
 			<h4 class="mb-10px font-semibold text-12">Deliveries missing?</h4>
 			<p>
@@ -17,7 +17,7 @@
 		</convoy-tooltip>
 	</div>
 
-	<div class="flex px-16px py-24px border-b border-grey-10 items-center justify-between">
+	<div class="flex py-20px items-center justify-between">
 		<div class="flex items-center">
 			<convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="{ startDate: queryParams?.startDate || '', endDate: queryParams?.endDate || '' }" (clearDates)="clearFilters('startDate')" #datePicker></convoy-date-picker>
 
@@ -198,81 +198,83 @@
 	</div>
 
 	<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container" *ngIf="!isloadingEventDeliveries && displayedEventDeliveries && displayedEventDeliveries.length > 0">
-		<table convoy-table>
-			<thead convoy-table-head>
-				<ng-container *ngFor="let head of eventDelTableHead; let i = index">
-					<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngIf="projectService.activeProjectDetails?.type === 'outgoing' || i !== 1 || portalToken">{{ head }}</th>
-				</ng-container>
-			</thead>
-			<tbody>
-				<ng-container *ngFor="let eventDeliveriesGroup of displayedEventDeliveries; let i = index">
-					<tr convoy-table-row [forDate]="true">
-						<td convoy-table-cell [forDate]="true">{{ eventDeliveriesGroup.date }}</td>
-						<td convoy-table-cell [forDate]="true"></td>
-						<td convoy-table-cell [forDate]="true"></td>
-						<td convoy-table-cell [forDate]="true"></td>
-						<td convoy-table-cell [forDate]="true"></td>
-						<td convoy-table-cell [forDate]="true"></td>
-					</tr>
-					<ng-container *ngFor="let eventDelivery of eventDeliveriesGroup.content; let index = index">
-						<tr class="cursor-pointer" convoy-table-row *ngFor="let event of eventDelivery.eventDeliveries; let index = index" [id]="'eventDel' + i" [routerLink]="['./event-deliveries/' + event.uid]" [queryParams]="{ token: portalToken }">
-							<td convoy-table-cell class="pl-16px relative w-140px">
-								<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="assets/img/retry-icon.svg" alt="retry icon" title="manually retried" class="w-12px absolute top-[50%] -translate[3px] -translate-y-[50%] opacity-50" />
-								<convoy-tag className="ml-20px" [color]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
-							</td>
-							<td convoy-table-cell *ngIf="projectService.activeProjectDetails?.type === 'outgoing' || portalToken">
-								<div convoy-tag class="bg-new.gray-50">{{ event.event_metadata.event_type }}</div>
-							</td>
-
-							<td convoy-table-cell>
-								<div class="flex items-center">
-									<ng-container *ngIf="projectService.activeProjectDetails?.type === 'incoming'">
-										<span class="max-w-[146px] overflow-hidden overflow-ellipsis">
-											{{ event?.source_metadata?.name || 'Rest API' }}
-										</span>
-
-										<span class="px-20px font-light">→</span>
-									</ng-container>
-
-									<span [class]="projectService.activeProjectDetails?.type === 'incoming' ? 'max-w-[146px] overflow-hidden overflow-ellipsis' : 'w-166px' + ' overflow-hidden overflow-ellipsis'">
-										{{ event.endpoint_metadata.title }}
-									</span>
-									<!-- show this if CLI is the receiver -->
-									<convoy-tag *ngIf="event.device_id" className="flex items-center">
-										<svg width="16" height="14" class="mr-10px">
-											<use xlink:href="#cli-icon"></use>
-										</svg>
-										CLI Device
-									</convoy-tag>
-								</div>
-							</td>
-							<td convoy-table-cell>{{ event.device_id ? '-' : event.metadata.num_trials }}</td>
-							<td convoy-table-cell>{{ event?.status == 'Success' || event.metadata.num_trials >= event.metadata.retry_limit || event?.status == 'Discarded' ? '-' : (event.metadata.next_send_time | date: 'mediumTime') }}</td>
-							<td convoy-table-cell>{{ event.created_at | date: 'mediumTime' }}</td>
-							<td convoy-table-cell>
-								<button
-									convoy-button
-									size="xs"
-									texture="light"
-									[disabled]="event.status !== 'Success' && event.status !== 'Failure' && event.status !== 'Discarded'"
-									[title]="event.status !== 'Failure' && event.status !== 'Success' && event.status !== 'Discarded' ? 'You can not retry an event when it is scheduled or still processing.' : ''"
-									(click)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
-								>
-									<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
-									{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
-								</button>
-							</td>
-							<td convoy-table-cell>
-								<button size="xs" [routerLink]="'./event-deliveries/' + event.uid">
-									<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" class="h-16px" />
-								</button>
-							</td>
-						</tr>
-						<tr convoy-table-row [forDate]="true"></tr>
+		<div convoy-card>
+			<table convoy-table>
+				<thead convoy-table-head>
+					<ng-container *ngFor="let head of eventDelTableHead; let i = index">
+						<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngIf="projectService.activeProjectDetails?.type === 'outgoing' || i !== 1 || portalToken">{{ head }}</th>
 					</ng-container>
-				</ng-container>
-			</tbody>
-		</table>
+				</thead>
+				<tbody>
+					<ng-container *ngFor="let eventDeliveriesGroup of displayedEventDeliveries; let i = index">
+						<tr convoy-table-row [forDate]="true">
+							<td convoy-table-cell [forDate]="true">{{ eventDeliveriesGroup.date }}</td>
+							<td convoy-table-cell [forDate]="true"></td>
+							<td convoy-table-cell [forDate]="true"></td>
+							<td convoy-table-cell [forDate]="true"></td>
+							<td convoy-table-cell [forDate]="true"></td>
+							<td convoy-table-cell [forDate]="true"></td>
+						</tr>
+						<ng-container *ngFor="let eventDelivery of eventDeliveriesGroup.content; let index = index">
+							<tr class="cursor-pointer" convoy-table-row *ngFor="let event of eventDelivery.eventDeliveries; let index = index" [id]="'eventDel' + i" [routerLink]="['./event-deliveries/' + event.uid]" [queryParams]="{ token: portalToken }">
+								<td convoy-table-cell class="pl-16px relative w-140px">
+									<img *ngIf="event.metadata.num_trials > event.metadata.retry_limit" src="assets/img/retry-icon.svg" alt="retry icon" title="manually retried" class="w-12px absolute top-[50%] -translate[3px] -translate-y-[50%] opacity-50" />
+									<convoy-tag className="ml-20px" [color]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
+								</td>
+								<td convoy-table-cell *ngIf="projectService.activeProjectDetails?.type === 'outgoing' || portalToken">
+									<div convoy-tag class="bg-new.gray-50">{{ event.event_metadata.event_type }}</div>
+								</td>
+
+								<td convoy-table-cell>
+									<div class="flex items-center">
+										<ng-container *ngIf="projectService.activeProjectDetails?.type === 'incoming'">
+											<span class="max-w-[146px] overflow-hidden overflow-ellipsis">
+												{{ event?.source_metadata?.name || 'Rest API' }}
+											</span>
+
+											<span class="px-20px font-light">→</span>
+										</ng-container>
+
+										<span [class]="projectService.activeProjectDetails?.type === 'incoming' ? 'max-w-[146px] overflow-hidden overflow-ellipsis' : 'w-166px' + ' overflow-hidden overflow-ellipsis'">
+											{{ event.endpoint_metadata.title }}
+										</span>
+										<!-- show this if CLI is the receiver -->
+										<convoy-tag *ngIf="event.device_id" className="flex items-center">
+											<svg width="16" height="14" class="mr-10px">
+												<use xlink:href="#cli-icon"></use>
+											</svg>
+											CLI Device
+										</convoy-tag>
+									</div>
+								</td>
+								<td convoy-table-cell>{{ event.device_id ? '-' : event.metadata.num_trials }}</td>
+								<td convoy-table-cell>{{ event?.status == 'Success' || event.metadata.num_trials >= event.metadata.retry_limit || event?.status == 'Discarded' ? '-' : (event.metadata.next_send_time | date: 'mediumTime') }}</td>
+								<td convoy-table-cell>{{ event.created_at | date: 'mediumTime' }}</td>
+								<td convoy-table-cell>
+									<button
+										convoy-button
+										size="xs"
+										texture="light"
+										[disabled]="event.status !== 'Success' && event.status !== 'Failure' && event.status !== 'Discarded'"
+										[title]="event.status !== 'Failure' && event.status !== 'Success' && event.status !== 'Discarded' ? 'You can not retry an event when it is scheduled or still processing.' : ''"
+										(click)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
+									>
+										<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
+										{{ event.status === 'Success' ? 'Force Retry' : 'Retry' }}
+									</button>
+								</td>
+								<td convoy-table-cell>
+									<button size="xs" [routerLink]="'./event-deliveries/' + event.uid">
+										<img src="assets/img/angle-arrow-right-primary.svg" alt="arrow right" class="h-16px" />
+									</button>
+								</td>
+							</tr>
+							<tr convoy-table-row [forDate]="true"></tr>
+						</ng-container>
+					</ng-container>
+				</tbody>
+			</table>
+		</div>
 
 		<!-- pagination -->
 		<div class="pt-8px flex items-center justify-between px-10px" *ngIf="eventDeliveries?.pagination?.has_next_page || eventDeliveries?.pagination?.has_prev_page">

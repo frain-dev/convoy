@@ -4,7 +4,7 @@
 
 <ng-container *ngIf="!isPageLoading">
 	<ng-container *ngIf="!hasEvents">
-		<div convoy-card class="flex items-center justify-center flex-col py-82px h-full text-center px-40px">
+		<div class="flex items-center justify-center flex-col py-82px h-full text-center px-40px">
 			<img src="/assets/img/events-empty-state-image.svg" alt="events empty state image" class="mb-48px" />
 			<h3 class="mb-10px text-16 font-bold">{{ privateService.getProjectDetails?.type === 'incoming' ? 'You have no incoming events.' : 'You have no outgoing events yet' }}</h3>
 			<p class="text-14 text-grey-40 max-w-[428px]" *ngIf="isProjectConfigurationComplete">
@@ -51,7 +51,12 @@
 				</ng-container>
 			</ng-container>
 
-			<button convoy-button *ngIf="!isProjectConfigurationComplete" class="mt-48px" (click)="router.navigateByUrl('/projects/' + privateService.getProjectDetails?.uid + '/setup')">Complete project setup</button>
+			<button convoy-button size="sm" *ngIf="!isProjectConfigurationComplete" class="!py-12px mt-48px" (click)="router.navigateByUrl('/projects/' + privateService.getProjectDetails?.uid + '/setup')">
+				Complete project setup
+				<svg width="24" height="24" class="ml-8px fill-white-100">
+					<use xlink:href="#arrow-right-icon"></use>
+				</svg>
+			</button>
 
 			<a href="https://getconvoy.io/docs/getting-started/sending-webhook-example" convoy-button target="_blank" referrerpolicy="no-referrer" fill="outline" class="mt-48px" *ngIf="privateService.getProjectDetails?.type === 'outgoing' && isProjectConfigurationComplete">
 				Go to documentation
@@ -63,19 +68,9 @@
 	</ng-container>
 
 	<ng-container *ngIf="hasEvents">
-		<div class="text-12 font-medium flex items-center uppercase">
-			<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
-			<svg width="16" height="16" class="mx-4px">
-				<use xlink:href="#arrow-right-icon"></use>
-			</svg>
-			{{ privateService.getProjectDetails?.name }}
-			<svg width="16" height="16" class="mx-4px">
-				<use xlink:href="#arrow-right-icon"></use>
-			</svg>
-			<span class="text-primary-100 font-medium">Events</span>
-		</div>
+		<h2 class="text-12 font-medium text-new.gray-600 mb-16px">Events Summary</h2>
 
-		<div class="py-24px flex items-center">
+		<div class="pb-24px flex items-center">
 			<convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()"></convoy-date-picker>
 
 			<div convoy-dropdown size="sm" position="left">

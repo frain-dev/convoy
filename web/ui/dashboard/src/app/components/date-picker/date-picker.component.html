@@ -3,7 +3,8 @@
 	<button
 		convoy-button
 		fill="outline"
-		[class]="formType === 'filter' ? 'px-10px !border-primary-400 justify-between h-36px min-w-[117px] text-12' : '!border-primary-500 !rounded-4px !bg-[#F7F9FC] !py-12px !px-16px text-12 w-full !justify-start'"
+		size="sm"
+		[class]="formType === 'filter' ? 'px-10px !border-primary-400 justify-between h-36px min-w-[117px]' : '!border-primary-500 !rounded-4px !bg-[#F7F9FC] !py-12px !px-16px w-full !justify-start'"
 		[ngClass]="{ 'text-primary-100 !bg-primary-500': !!selectedDates?.startDate && !!selectedDates?.endDate }"
 		(click)="showPicker = !showPicker"
 	>

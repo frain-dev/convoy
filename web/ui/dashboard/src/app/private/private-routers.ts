@@ -10,7 +10,7 @@ const routes: Routes = [
 	{
 		path: '',
 		component: PrivateComponent,
-		resolve: [() => fetchOrganisations(), () => fetchMembership()],
+		resolve: [() => fetchMembership()],
 		children: [
 			{
 				path: '',

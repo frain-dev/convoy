@@ -18,15 +18,14 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
 	constructor(private privateService: PrivateService, private router: Router) {
 		// for reloading this component when the same route is called again
-		this.router.routeReuseStrategy.shouldReuseRoute = function () {
-			return false;
-		};
-
-		this.reloadSubscription = this.router.events.subscribe(event => {
-			if (event instanceof NavigationEnd) {
-				this.router.navigated = false;
-			}
-		});
+		// this.router.routeReuseStrategy.shouldReuseRoute = function () {
+		// 	return false;
+		// };
+		// this.reloadSubscription = this.router.events.subscribe(event => {
+		// 	if (event instanceof NavigationEnd) {
+		// 		this.router.navigated = false;
+		// 	}
+		// });
 	}
 
 	async ngOnInit() {
@@ -36,7 +35,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnDestroy(): void {
-		this.reloadSubscription?.unsubscribe();
+		// this.reloadSubscription?.unsubscribe();
 	}
 
 	async getProjects(): Promise<any> {
@@ -44,8 +43,11 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
 		try {
 			const response = await this.privateService.getProjects();
-			return response.data.length === 0 ? (this.isLoadingProjects = false) : this.privateService.checkForSelectedProject(response.data);
+			this.projects = response.data;
+			this.isLoadingProjects = false;
+			// return response.data.length === 0 ? (this.isLoadingProjects = false) : this.privateService.checkForSelectedProject(response.data);
 		} catch (error) {
+			this.isLoadingProjects = false;
 			return error;
 		}
 	}
