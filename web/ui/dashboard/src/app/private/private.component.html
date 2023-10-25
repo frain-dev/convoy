@@ -27,18 +27,18 @@
 
 						<ul [hidden]="!organisations?.length">
 							<li convoy-dropdown-option *ngFor="let organisation of organisations">
-								<button convoy-button fill="text" color="grey" size="sm" class="justify-start px-16px py-12px w-full">
+								<button convoy-button fill="text" color="grey" size="sm" class="justify-start px-16px py-12px w-full" (click)="selectOrganisation(organisation)">
 									<div class="flex justify-between items-center w-full">
-										<convoy-badge [text]="organisation.name" [show-text]="false" (click)="selectOrganisation(organisation)">
+										<convoy-badge [text]="organisation.name" [show-text]="false">
 											<div class="max-w-[110px] truncate">{{ organisation?.name }}</div>
 										</convoy-badge>
 
 										<div class="flex gap-16px items-center">
-											<button convoy-button fill="soft" class="py-4px !px-8px" *ngIf="organisation.uid == userOrganization?.uid" routerLink="/settings">
+											<a convoy-button fill="soft" class="py-4px !px-8px" *ngIf="organisation.uid == userOrganization?.uid" (click)="$event.stopPropagation()" routerLink="/settings">
 												<svg width="18" height="18" class="mr-10px" class="fill-new.gray-600">
 													<use xlink:href="#settings-icon"></use>
 												</svg>
-											</button>
+											</a>
 											<img *ngIf="organisation.uid == userOrganization?.uid" class="w-14px" src="/assets/img/check-icon-primary.svg" alt="check icon" />
 										</div>
 									</div>
