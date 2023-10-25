@@ -1,10 +1,8 @@
-<div class="flex justify-between items-end border-b border-b-grey-10 pb-20px mb-24px">
+<div class="flex justify-between items-end mb-24px">
 	<div class="flex items-center">
 		<h1 class="text-18 font-bold text-grey-80 mr-10px">Sources</h1>
-		<convoy-tooltip tooltipContent="Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints" position="right"></convoy-tooltip>
+		<!-- <convoy-tooltip tooltipContent="Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints" position="right" class="scale-90"></convoy-tooltip> -->
 	</div>
-
-	<button convoy-button size="sm" routerLink="./new" convoy-permission="Sources|MANAGE" *ngIf="!isLoadingSources && sources?.content?.length">Connect a source</button>
 </div>
 
 <!-- empty state  -->
@@ -23,6 +21,17 @@
 	<!-- list of sources  -->
 	<div class="min-h-[600px]">
 		<div class="flex flex-wrap gap-24px">
+			<a
+				convoy-permission="Sources|MANAGE"
+				routerLink="./new"
+				class="w-full max-w-[338px] min-w-[300px] rounded-8px border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]"
+			>
+				<svg width="22" height="22" class="mr-2 scale-75" fill="#477db3">
+					<use xlink:href="#plus-icon"></use>
+				</svg>
+				<span class="text-primary-100 font-medium text-12">Create new Source</span>
+			</a>
+
 			<ng-container *ngFor="let source of sources?.content; let i = index">
 				<div convoy-card [id]="'source' + i" class="w-full max-w-[338px] min-w-[300px] py-20px h-fit">
 					<!-- outgoing project sources -->
