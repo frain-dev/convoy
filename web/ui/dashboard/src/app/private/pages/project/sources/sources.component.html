@@ -1,12 +1,5 @@
-<div class="flex justify-between items-end mb-24px">
-	<div class="flex items-center">
-		<h1 class="text-18 font-bold text-grey-80 mr-10px">Sources</h1>
-		<!-- <convoy-tooltip tooltipContent="Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints" position="right" class="scale-90"></convoy-tooltip> -->
-	</div>
-</div>
-
 <!-- empty state  -->
-<div class="py-100px" *ngIf="!isLoadingSources && sources?.content?.length == 0">
+<div class="py-80px" *ngIf="!isLoadingSources && sources?.content?.length == 0">
 	<div convoy-empty-state imgSrc="/assets/img/sources-empty-state.png" heading="Create your first source" description="Sources are how your webhook events are routed into the Convoy." id="sources-empty-state">
 		<button convoy-permission="Sources|MANAGE" convoy-button emptyStateCTA routerLink="./new" class="mt-36px">Connect a source</button>
 	</div>
@@ -18,6 +11,13 @@
 </div>
 
 <ng-container *ngIf="!isLoadingSources && sources?.content?.length">
+	<div class="flex justify-between items-end mb-24px">
+		<div class="flex items-center">
+			<h1 class="text-18 font-bold text-grey-80 mr-10px">Sources</h1>
+			<!-- <convoy-tooltip tooltipContent="Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints" position="right" class="scale-90"></convoy-tooltip> -->
+		</div>
+	</div>
+
 	<!-- list of sources  -->
 	<div class="min-h-[600px]">
 		<div class="flex flex-wrap gap-24px">
