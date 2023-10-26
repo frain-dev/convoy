@@ -174,6 +174,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	configRepo := postgres.NewConfigRepo(a.DB)
 
 	s3 := datastore.S3Storage{
+		Prefix:       null.NewString(cfg.StoragePolicy.S3.Prefix, true),
 		Bucket:       null.NewString(cfg.StoragePolicy.S3.Bucket, true),
 		AccessKey:    null.NewString(cfg.StoragePolicy.S3.AccessKey, true),
 		SecretKey:    null.NewString(cfg.StoragePolicy.S3.SecretKey, true),

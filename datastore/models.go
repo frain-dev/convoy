@@ -1221,6 +1221,7 @@ type StoragePolicyConfiguration struct {
 }
 
 type S3Storage struct {
+	Prefix       null.String `json:"prefix" db:"prefix"`
 	Bucket       null.String `json:"bucket" db:"bucket" valid:"required~please provide a bucket name"`
 	AccessKey    null.String `json:"access_key,omitempty" db:"access_key" valid:"required~please provide an access key"`
 	SecretKey    null.String `json:"secret_key,omitempty" db:"secret_key" valid:"required~please provide a secret key"`

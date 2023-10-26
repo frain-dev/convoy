@@ -5,6 +5,7 @@ type ObjectStore interface {
 }
 
 type ObjectStoreOptions struct {
+	Prefix           string
 	Bucket           string
 	AccessKey        string
 	SecretKey        string
