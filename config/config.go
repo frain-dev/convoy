@@ -301,9 +301,9 @@ func (ft *FlagLevel) UnmarshalJSON(v []byte) error {
 func (ft FlagLevel) MarshalJSON() ([]byte, error) {
 	switch ft {
 	case ExperimentalFlagLevel:
-		return []byte(Experimental), nil
+		return []byte(fmt.Sprintf(`"%s"`, []byte(Experimental))), nil
 	default:
-		return []byte(""), nil
+		return []byte(fmt.Sprintf(`"%s"`, []byte(Experimental))), nil
 	}
 }
 
