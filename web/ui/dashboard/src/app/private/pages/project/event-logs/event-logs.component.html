@@ -1,17 +1,11 @@
-<div class="text-12 font-medium flex items-center uppercase">
-	<a routerLink="/projects" class="font-medium cursor-pointer">Projects</a>
-	<svg width="16" height="16" class="mx-4px">
-		<use xlink:href="#arrow-right-icon"></use>
-	</svg>
-	{{ privateService.getProjectDetails?.name }}
-	<svg width="16" height="16" class="mx-4px">
-		<use xlink:href="#arrow-right-icon"></use>
-	</svg>
-	<span class="text-primary-100 font-medium">Events Log</span>
+<div class="flex justify-between items-end mb-24px">
+	<div class="flex items-center">
+		<h1 class="text-18 font-bold text-grey-80 mr-10px">Events Log</h1>
+	</div>
 </div>
 
 <!-- filters  -->
-<div class="flex py-24px items-center justify-between">
+<div class="flex pb-24px items-center justify-between">
 	<div class="flex items-center w-full">
 		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[200px] w-full rounded-[10px] flex items-center bg-transparent" [ngClass]="{ 'text-primary-100 !bg-primary-500': eventsSearchString != undefined && eventsSearchString != '' }">
 			<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
@@ -108,14 +102,14 @@
 </div>
 
 <!-- empty state  -->
-<div class="py-200px" convoy-card *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0); else eventsList">
+<div class="py-80px" convoy-card *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0); else eventsList">
 	<convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" class="min-h-[70vh]" description="You currently do not have any event logs"></convoy-empty-state>
 </div>
 
 <!-- list of events  -->
 <ng-template #eventsList>
-	<div class="flex gap-24px">
-		<div convoy-card class="max-w-[630px] w-full h-full overflow-hidden relative">
+	<div class="flex gap-24px border-t border-t-new.primary-50">
+		<div class="w-full overflow-hidden relative">
 			<convoy-table-loader id="events_loader_loader" [tableHead]="eventLogsTableHead" *ngIf="isloadingEvents"></convoy-table-loader>
 
 			<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="events-table-container" *ngIf="!isloadingEvents && displayedEvents && displayedEvents.length > 0">
@@ -135,10 +129,10 @@
 								class="group"
 								*ngFor="let event of eventGroup.content; let index = index"
 								(click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid); getDuplicateEvents(event)"
-								class="cursor-pointer"
+								class="cursor-pointer rounded-8px"
 								[active]="event.uid === eventsDetailsItem?.uid"
 							>
-								<td convoy-table-cell class="w-130px pl-16px pr-30px relative">
+								<td convoy-table-cell class="w-130px pl-16px pr-30px relative rounded-l-8px">
 									<div convoy-tag color="gray" class="max-w-[121px] overflow-hidden text-ellipsis mr-8px">{{ event.uid }}</div>
 									<convoy-copy-button size="sm" notificationText="Event ID has been copied to clipboard" className="absolute translate-x-0 translate-y-[-50%] top-[50] hidden group-hover:block" [text]="event.uid"></convoy-copy-button>
 								</td>
@@ -153,7 +147,7 @@
 
 								<td convoy-table-cell class="">{{ event.created_at | date: 'mediumTime' }}</td>
 
-								<td convoy-table-cell class="flex justify-end items-center">
+								<td convoy-table-cell class="flex justify-end items-center rounded-r-8px">
 									<div [class]="event.is_duplicate_event ? 'visible' : 'invisible'" convoy-tag color="gray" size="sm">Duplicate</div>
 
 									<button convoy-button fill="clear" size="sm" class="pr-20px" (click)="viewEventDeliveries(event)">
@@ -170,7 +164,10 @@
 
 			<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0)"></convoy-empty-state>
 		</div>
-		<div convoy-card class="max-w-[460px] w-full max-h-[calc(100vh - 950px)] min-h-[707px] overflow-auto relative p-16px">
+
+		<div class="w-[1px] bg-new.primary-50"></div>
+
+		<div class="max-w-[472px] w-full max-h-[calc(100vh - 950px)] min-h-[707px] overflow-auto relative pt-16px">
 			<!-- event details loader  -->
 			<ng-container *ngIf="isloadingEvents">
 				<div class="border-b border-new.primary-25 pb-24px">
