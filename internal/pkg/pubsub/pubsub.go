@@ -72,7 +72,6 @@ func (p *PubSubSource) getHash() string {
 	hash = hex.EncodeToString(h[:])
 
 	return hash
-
 }
 
 type SourcePool struct {

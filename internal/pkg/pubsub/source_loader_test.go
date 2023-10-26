@@ -43,7 +43,7 @@ func TestSourceLoader_FetchSources(t *testing.T) {
 								UID: "12345",
 							},
 						}, nil),
-					so.EXPECT().LoadSourcesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					so.EXPECT().LoadPubSubSourcesByProjectIDs(gomock.Any(), gomock.Any(), gomock.Any()).
 						Return([]datastore.Source{
 							{
 								UID:  "12345",
@@ -61,9 +61,9 @@ func TestSourceLoader_FetchSources(t *testing.T) {
 									Google: &datastore.GooglePubSubConfig{},
 								},
 							},
-						}, datastore.PaginationData{}, nil),
+						}, datastore.PaginationData{HasNextPage: true}, nil),
 
-					so.EXPECT().LoadSourcesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					so.EXPECT().LoadPubSubSourcesByProjectIDs(gomock.Any(), gomock.Any(), gomock.Any()).
 						Return([]datastore.Source{}, datastore.PaginationData{}, nil))
 			},
 			page:              1,
@@ -82,7 +82,7 @@ func TestSourceLoader_FetchSources(t *testing.T) {
 								UID: "12345",
 							},
 						}, nil),
-					so.EXPECT().LoadSourcesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					so.EXPECT().LoadPubSubSourcesByProjectIDs(gomock.Any(), gomock.Any(), gomock.Any()).
 						Return([]datastore.Source{
 							{
 								UID:  "12345",
@@ -92,9 +92,9 @@ func TestSourceLoader_FetchSources(t *testing.T) {
 									Sqs:  &datastore.SQSPubSubConfig{},
 								},
 							},
-						}, datastore.PaginationData{}, nil),
+						}, datastore.PaginationData{HasNextPage: true}, nil),
 
-					so.EXPECT().LoadSourcesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					so.EXPECT().LoadPubSubSourcesByProjectIDs(gomock.Any(), gomock.Any(), gomock.Any()).
 						Return([]datastore.Source{}, datastore.PaginationData{}, nil))
 			},
 			page:              1,
@@ -114,7 +114,7 @@ func TestSourceLoader_FetchSources(t *testing.T) {
 							},
 						}, nil),
 
-					so.EXPECT().LoadSourcesPaged(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					so.EXPECT().LoadPubSubSourcesByProjectIDs(gomock.Any(), gomock.Any(), gomock.Any()).
 						Return([]datastore.Source{}, datastore.PaginationData{}, nil),
 				)
 			},
