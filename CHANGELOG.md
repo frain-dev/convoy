@@ -1,4 +1,4 @@
-## 24.0.0 
+## 23.10.1
 
 - [Feature] Added bootstrap cli for user account creation #1773
 - [Feature] Add prefix configuration to S3 Config #1812
