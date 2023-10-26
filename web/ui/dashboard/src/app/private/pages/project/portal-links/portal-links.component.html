@@ -1,12 +1,5 @@
-<div class="flex justify-between items-end border-b border-b-grey-10 pb-20px mb-24px">
-	<div class="flex items-center">
-		<h1 class="text-24 font-bold text-grey-80 mr-10px">Portal Links</h1>
-		<convoy-tooltip tooltipContent="Portals links allows you to view and debug webhook events sent to selected endpoints on a streamlined dashboard. On a portal page only events sent to the endpoints you've selected will be shown." position="right"></convoy-tooltip>
-	</div>
-</div>
-
 <!-- empty state  -->
-<div convoy-card class="py-100px mt-24px" *ngIf="!isLoadingPortalLinks && portalLinks?.content?.length === 0">
+<div class="py-80px" *ngIf="!isLoadingPortalLinks && portalLinks?.content?.length === 0">
 	<div
 		convoy-empty-state
 		imgSrc="/assets/img/portal-link-empty-state.png"
@@ -14,7 +7,12 @@
 		description="Portal Links enable you create customer-facing dashboards for your user endpoints. You can link a portal link to more than one endpoint at a time."
 		id="links-empty-state"
 	>
-		<button convoy-permission="Portal Links|MANAGE" convoy-button emptyStateCTA routerLink="./new" class="mt-36px">Create a Portal Link</button>
+		<button convoy-permission="Portal Links|MANAGE" convoy-button emptyStateCTA routerLink="./new" class="mt-36px">
+			<svg width="22" height="22" class="mr-2 scale-75" fill="#ffffff">
+				<use xlink:href="#plus-icon"></use>
+			</svg>
+			Create a Portal Link
+		</button>
 	</div>
 </div>
 
@@ -24,6 +22,13 @@
 </div>
 
 <ng-container *ngIf="!isLoadingPortalLinks && portalLinks?.content?.length">
+	<div class="flex justify-between items-end mb-24px">
+		<div class="flex items-center">
+			<h1 class="text-18 font-bold text-grey-80 mr-10px">Portal Links</h1>
+			<!-- <convoy-tooltip tooltipContent="Portals links allows you to view and debug webhook events sent to selected endpoints on a streamlined dashboard. On a portal page only events sent to the endpoints you've selected will be shown." position="right"></convoy-tooltip> -->
+		</div>
+	</div>
+
 	<div class="flex items-center justify-between my-26px">
 		<div class="flex items-center">
 			<!-- not available yet  -->
@@ -70,10 +75,15 @@
 			</div>
 		</div>
 
-		<convoy-button convoy-permission="Portal Links|MANAGE" size="sm" routerLink="./new">Create Portal Link</convoy-button>
+		<convoy-button convoy-permission="Portal Links|MANAGE" size="sm" routerLink="./new">
+			<svg width="22" height="22" class="mr-2 scale-75" fill="#ffffff">
+				<use xlink:href="#plus-icon"></use>
+			</svg>
+			Portal Link
+		</convoy-button>
 	</div>
 
-	<div class="p-24px min-h-[600px]" convoy-card>
+	<div class="min-h-[600px]">
 		<div class="flex flex-wrap gap-24px">
 			<div convoy-card hover="true" class="w-full max-w-[348px]" *ngFor="let link of portalLinks?.content; let i = index" [id]="'portal-link' + i">
 				<div class="px-24px py-20px border-b border-b-grey-10">
@@ -125,8 +135,8 @@
 
 <dialog #portalLinkDialog convoy-dialog position="full">
 	<div class="w-full h-full">
-        <convoy-create-portal-link [action]="action"></convoy-create-portal-link>
-    </div>
+		<convoy-create-portal-link [action]="action"></convoy-create-portal-link>
+	</div>
 </dialog>
 
 <dialog #deleteDialog convoy-dialog position="center" size="sm">
