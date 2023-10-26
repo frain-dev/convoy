@@ -144,6 +144,7 @@ func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, ms
 	ce := task.CreateEvent{
 		Params: task.CreateEventTaskParams{
 			UID:            ulid.Make().String(),
+			SourceID:       source.UID,
 			ProjectID:      source.ProjectID,
 			EndpointID:     ev.EndpointID,
 			EventType:      ev.EventType,
