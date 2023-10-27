@@ -216,6 +216,13 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 	}
 
 	go e.hook.Fire(datastore.EndpointCreated, endpoint, nil)
+
+	endpointCacheKey := convoy.EndpointCacheKey.Get(endpoint.UID).String()
+	err = e.cache.Set(ctx, endpointCacheKey, endpoint, config.DefaultCacheTTL)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -294,7 +301,7 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 		return ErrEndpointNotUpdated
 	}
 
-	endpointCacheKey := convoy.EndpointsCacheKey.Get(endpoint.UID).String()
+	endpointCacheKey := convoy.EndpointCacheKey.Get(endpoint.UID).String()
 	err = e.cache.Set(ctx, endpointCacheKey, endpoint, config.DefaultCacheTTL)
 	if err != nil {
 		return err
@@ -311,7 +318,7 @@ func (e *endpointRepo) UpdateEndpointStatus(ctx context.Context, projectID strin
 		return err
 	}
 
-	endpointCacheKey := convoy.EndpointsCacheKey.Get(endpointID).String()
+	endpointCacheKey := convoy.EndpointCacheKey.Get(endpointID).String()
 	err = e.cache.Set(ctx, endpointCacheKey, endpoint, config.DefaultCacheTTL)
 	if err != nil {
 		return err
@@ -347,7 +354,7 @@ func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 
-	endpointCacheKey := convoy.EndpointsCacheKey.Get(endpoint.UID).String()
+	endpointCacheKey := convoy.EndpointCacheKey.Get(endpoint.UID).String()
 	err = e.cache.Delete(ctx, endpointCacheKey)
 	if err != nil {
 		return err
@@ -468,7 +475,7 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		rows.Close()
+		closeWithError(rows)
 	}
 
 	pagination := &datastore.PaginationData{PrevRowCount: count}
@@ -484,7 +491,7 @@ func (e *endpointRepo) UpdateSecrets(ctx context.Context, endpointID string, pro
 		return err
 	}
 
-	endpointCacheKey := convoy.EndpointsCacheKey.Get(endpointID).String()
+	endpointCacheKey := convoy.EndpointCacheKey.Get(endpointID).String()
 	err = e.cache.Set(ctx, endpointCacheKey, endpoint, config.DefaultCacheTTL)
 	if err != nil {
 		return err
@@ -507,7 +514,7 @@ func (e *endpointRepo) DeleteSecret(ctx context.Context, endpoint *datastore.End
 		return err
 	}
 
-	endpointCacheKey := convoy.EndpointsCacheKey.Get(updatedEndpoint.UID).String()
+	endpointCacheKey := convoy.EndpointCacheKey.Get(updatedEndpoint.UID).String()
 	err = e.cache.Set(ctx, endpointCacheKey, updatedEndpoint, config.DefaultCacheTTL)
 	if err != nil {
 		return err
@@ -518,7 +525,7 @@ func (e *endpointRepo) DeleteSecret(ctx context.Context, endpoint *datastore.End
 
 func (e *endpointRepo) scanEndpoints(rows *sqlx.Rows) ([]datastore.Endpoint, error) {
 	endpoints := make([]datastore.Endpoint, 0)
-	defer rows.Close()
+	defer closeWithError(rows)
 
 	for rows.Next() {
 		var endpoint datastore.Endpoint
@@ -535,7 +542,7 @@ func (e *endpointRepo) scanEndpoints(rows *sqlx.Rows) ([]datastore.Endpoint, err
 
 func (e *endpointRepo) readFromCache(ctx context.Context, id string, readFromDB func() (*datastore.Endpoint, error)) (*datastore.Endpoint, error) {
 	var endpoint *datastore.Endpoint
-	endpointCacheKey := convoy.EndpointsCacheKey.Get(id).String()
+	endpointCacheKey := convoy.EndpointCacheKey.Get(id).String()
 	err := e.cache.Get(ctx, endpointCacheKey, &endpoint)
 	if err != nil {
 		return nil, err

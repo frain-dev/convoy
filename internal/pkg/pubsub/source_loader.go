@@ -124,9 +124,6 @@ func (s *SourceLoader) fetchProjectSources(ctx context.Context) error {
 }
 
 func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, msg string) error {
-	txn, innerCtx := apm.StartTransaction(ctx, fmt.Sprintf("%v handler", source.Name))
-	defer txn.End()
-
 	ev := struct {
 		EndpointID     string            `json:"endpoint_id"`
 		OwnerID        string            `json:"owner_id"`
@@ -164,7 +161,7 @@ func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, ms
 		Delay:   0,
 	}
 
-	err = s.queue.Write(innerCtx, convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = s.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		return err
 	}

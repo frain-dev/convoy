@@ -92,7 +92,7 @@ func sendNotificationEmail(ctx context.Context, source datastore.Source, endpoin
 		Delay:   0,
 	}
 
-	err = q.Write(ctx, convoy.NotificationProcessor, convoy.DefaultQueue, job)
+	err = q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)
 	if err != nil {
 		log.WithError(err).Error("failed to write new notification to the queue")
 		return err

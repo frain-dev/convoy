@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
+	ncache "github.com/frain-dev/convoy/cache/noop"
+	"github.com/frain-dev/convoy/config"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -83,8 +86,11 @@ type orgRepo struct {
 	cache cache.Cache
 }
 
-func NewOrgRepo(db database.Database, cache cache.Cache) datastore.OrganisationRepository {
-	return &orgRepo{db: db.GetDB(), cache: cache}
+func NewOrgRepo(db database.Database, ca cache.Cache) datastore.OrganisationRepository {
+	if ca == nil {
+		ca = ncache.NewNoopCache()
+	}
+	return &orgRepo{db: db.GetDB(), cache: ca}
 }
 
 func (o *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organisation) error {
@@ -100,6 +106,12 @@ func (o *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organis
 
 	if rowsAffected < 1 {
 		return ErrOrganizationNotCreated
+	}
+
+	orCacheKey := convoy.OrganisationCacheKey.Get(org.UID).String()
+	err = o.cache.Set(ctx, orCacheKey, org, config.DefaultCacheTTL)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -136,7 +148,7 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
-	defer rows.Close()
+	defer closeWithError(rows)
 
 	organizations := make([]datastore.Organisation, 0)
 	for rows.Next() {
@@ -175,7 +187,7 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		rows.Close()
+		closeWithError(rows)
 	}
 
 	ids := make([]string, len(organizations))
@@ -208,6 +220,12 @@ func (o *orgRepo) UpdateOrganisation(ctx context.Context, org *datastore.Organis
 		return ErrOrganizationNotUpdated
 	}
 
+	orCacheKey := convoy.OrganisationCacheKey.Get(org.UID).String()
+	err = o.cache.Set(ctx, orCacheKey, org, config.DefaultCacheTTL)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -226,44 +244,99 @@ func (o *orgRepo) DeleteOrganisation(ctx context.Context, uid string) error {
 		return ErrOrganizationNotDeleted
 	}
 
+	orgCacheKey := convoy.OrganisationCacheKey.Get(uid).String()
+	err = o.cache.Delete(ctx, orgCacheKey)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (o *orgRepo) FetchOrganisationByID(ctx context.Context, id string) (*datastore.Organisation, error) {
-	org := &datastore.Organisation{}
-	err := o.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1", fetchOrganisation), id).StructScan(org)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrOrgNotFound
+	fromCache, err := o.readFromCache(ctx, id, func() (*datastore.Organisation, error) {
+		org := &datastore.Organisation{}
+		err := o.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1", fetchOrganisation), id).StructScan(org)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrOrgNotFound
+			}
+			return nil, err
 		}
+
+		return org, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return org, nil
+	return fromCache, nil
 }
 
 func (o *orgRepo) FetchOrganisationByAssignedDomain(ctx context.Context, domain string) (*datastore.Organisation, error) {
-	org := &datastore.Organisation{}
-	err := o.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND assigned_domain = $1", fetchOrganisation), domain).StructScan(org)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrOrgNotFound
+	fromCache, err := o.readFromCache(ctx, domain, func() (*datastore.Organisation, error) {
+		org := &datastore.Organisation{}
+		err := o.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND assigned_domain = $1", fetchOrganisation), domain).StructScan(org)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrOrgNotFound
+			}
+			return nil, err
 		}
+
+		return org, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return org, nil
+	return fromCache, nil
 }
 
 func (o *orgRepo) FetchOrganisationByCustomDomain(ctx context.Context, domain string) (*datastore.Organisation, error) {
-	org := &datastore.Organisation{}
-	err := o.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND custom_domain = $1", fetchOrganisation), domain).StructScan(org)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrOrgNotFound
+	fromCache, err := o.readFromCache(ctx, domain, func() (*datastore.Organisation, error) {
+		org := &datastore.Organisation{}
+		err := o.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND custom_domain = $1", fetchOrganisation), domain).StructScan(org)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrOrgNotFound
+			}
+			return nil, err
 		}
+
+		return org, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return org, nil
+	return fromCache, nil
+}
+
+func (o *orgRepo) readFromCache(ctx context.Context, key string, readFromDB func() (*datastore.Organisation, error)) (*datastore.Organisation, error) {
+	var organisation *datastore.Organisation
+	userCacheKey := convoy.OrganisationCacheKey.Get(key).String()
+	err := o.cache.Get(ctx, userCacheKey, &organisation)
+	if err != nil {
+		return nil, err
+	}
+
+	if organisation != nil {
+		return organisation, err
+	}
+
+	fromDB, err := readFromDB()
+	if err != nil {
+		return nil, err
+	}
+
+	err = o.cache.Set(ctx, userCacheKey, fromDB, config.DefaultCacheTTL)
+	if err != nil {
+		return nil, err
+	}
+
+	return fromDB, err
 }

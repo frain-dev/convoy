@@ -1,7 +1,6 @@
 package listener
 
 import (
-	"context"
 	"encoding/json"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -59,7 +58,7 @@ func (e *ProjectListener) run(eventType string, data interface{}, changelog inte
 							Delay:   1 * time.Second,
 						}
 
-						err = e.queue.Write(context.Background(), convoy.TokenizeSearchForProject, convoy.ScheduleQueue, job)
+						err = e.queue.Write(convoy.TokenizeSearchForProject, convoy.ScheduleQueue, job)
 						if err != nil {
 							log.WithError(err).Error("an error occurred writing the job to the queue")
 							return

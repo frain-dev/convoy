@@ -47,41 +47,43 @@ func (a *PublicHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	projectID := chi.URLParam(r, "projectID")
-	if util.IsStringEmpty(projectID) {
-		_ = render.Render(w, r, util.NewErrorResponse("project id not present in request", http.StatusBadRequest))
-		return
-	}
+	go func() {
+		projectID := chi.URLParam(r, "projectID")
+		if util.IsStringEmpty(projectID) {
+			_ = render.Render(w, r, util.NewErrorResponse("project id not present in request", http.StatusBadRequest))
+			return
+		}
 
-	e := task.CreateEvent{
-		Params: task.CreateEventTaskParams{
-			UID:            ulid.Make().String(),
-			ProjectID:      projectID,
-			EndpointID:     newMessage.EndpointID,
-			EventType:      newMessage.EventType,
-			Data:           newMessage.Data,
-			CustomHeaders:  newMessage.CustomHeaders,
-			IdempotencyKey: newMessage.IdempotencyKey,
-		},
-		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
-	}
+		e := task.CreateEvent{
+			Params: task.CreateEventTaskParams{
+				UID:            ulid.Make().String(),
+				ProjectID:      projectID,
+				EndpointID:     newMessage.EndpointID,
+				EventType:      newMessage.EventType,
+				Data:           newMessage.Data,
+				CustomHeaders:  newMessage.CustomHeaders,
+				IdempotencyKey: newMessage.IdempotencyKey,
+			},
+			CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
+		}
 
-	eventByte, err := msgpack.EncodeMsgPack(e)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
+		eventByte, err := msgpack.EncodeMsgPack(e)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
 
-	job := &queue.Job{
-		ID:      newMessage.UID,
-		Payload: eventByte,
-		Delay:   0,
-	}
+		job := &queue.Job{
+			ID:      newMessage.UID,
+			Payload: eventByte,
+			Delay:   0,
+		}
 
-	err = a.A.Queue.Write(r.Context(), convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
-	if err != nil {
-		log.FromContext(r.Context()).Errorf("Error occurred sending new event to the queue %s", err)
-	}
+		err = a.A.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+		if err != nil {
+			log.FromContext(r.Context()).Errorf("Error occurred sending new event to the queue %s", err)
+		}
+	}()
 
 	_ = render.Render(w, r, util.NewServerResponse("Event queued successfully", 200, http.StatusCreated))
 }
@@ -192,8 +194,8 @@ func (a *PublicHandler) CreateDynamicEvent(w http.ResponseWriter, r *http.Reques
 // @Summary Replay event
 // @Description This endpoint replays an event afresh assuming it is a new event.
 // @Tags Events
-// @Accept  json
-// @Produce  json
+// @Accept json
+// @Produce json
 // @Param projectID path string true "Project ID"
 // @Param eventID path string true "event id"
 // @Success 200 {object} util.ServerResponse{data=models.EventResponse}

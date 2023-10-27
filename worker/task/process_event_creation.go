@@ -208,12 +208,12 @@ func ProcessEventCreation(
 				}
 
 				if s.Type == datastore.SubscriptionTypeAPI {
-					err = eventQueue.Write(ctx, convoy.EventProcessor, convoy.EventQueue, job)
+					err = eventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
 					if err != nil {
 						log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
 					}
 				} else if s.Type == datastore.SubscriptionTypeCLI {
-					err = eventQueue.Write(ctx, convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
+					err = eventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
 					if err != nil {
 						log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
 					}

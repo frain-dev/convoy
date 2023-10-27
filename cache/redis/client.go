@@ -14,13 +14,13 @@ type RedisCache struct {
 }
 
 func NewRedisCache(addresses []string) (*RedisCache, error) {
-	rdb, err := rdb.NewClient(addresses)
+	client, err := rdb.NewClient(addresses)
 	if err != nil {
 		return nil, err
 	}
 
 	c := cache.New(&cache.Options{
-		Redis: rdb.Client(),
+		Redis: client.Client(),
 	})
 
 	r := &RedisCache{cache: c}
