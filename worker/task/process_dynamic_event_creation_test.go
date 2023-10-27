@@ -123,7 +123,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -198,7 +198,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},

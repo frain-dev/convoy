@@ -761,7 +761,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				q.EXPECT().
-					Write(gomock.Any(), convoy.NotificationProcessor, convoy.DefaultQueue, gomock.Any()).
+					Write(convoy.NotificationProcessor, convoy.DefaultQueue, gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {

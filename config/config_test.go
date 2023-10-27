@@ -118,7 +118,6 @@ func TestLoadConfig(t *testing.T) {
 					Host:   "localhost",
 					Port:   8379,
 				},
-				Search: DefaultConfiguration.Search,
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
@@ -177,7 +176,6 @@ func TestLoadConfig(t *testing.T) {
 					Port:      6379,
 					Addresses: "localhost:7001,localhost:7002,localhost:7003,localhost:7004,localhost:7005,localhost:7006",
 				},
-				Search: DefaultConfiguration.Search,
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
@@ -235,7 +233,6 @@ func TestLoadConfig(t *testing.T) {
 					Host:   "localhost",
 					Port:   8379,
 				},
-				Search: DefaultConfiguration.Search,
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
