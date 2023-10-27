@@ -14,13 +14,13 @@
 
 <!-- personal access tken header  -->
 <div class="flex justify-between items-center mb-28px" *ngIf="!showCreateNewTokenForm && personalAccessKeys?.content?.length > 0">
-	<h3 class="font-semibold">Personal Access Tokens</h3>
+	<h3 class="text-16 font-bold text-new.gray-600">Personal Access Tokens</h3>
 
 	<button convoy-button size="sm" (click)="showCreateNewTokenForm = true">
 		<svg width="16" height="16" class="mr-8px fill-white-100">
 			<use xlink:href="#plus-icon"></use>
 		</svg>
-		Create New Token
+		Token
 	</button>
 </div>
 

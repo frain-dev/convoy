@@ -38,10 +38,6 @@ const routes: Routes = [
 				loadChildren: () => import('./pages/app/app.module').then(m => m.AppModule)
 			},
 			{
-				path: 'team',
-				loadChildren: () => import('./pages/teams/teams.module').then(m => m.TeamsModule)
-			},
-			{
 				path: 'user-settings',
 				loadChildren: () => import('./pages/account/account.module').then(m => m.AccountModule)
 			},
