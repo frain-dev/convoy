@@ -29,7 +29,7 @@
 			<a
 				convoy-permission="Sources|MANAGE"
 				routerLink="./new"
-				class="w-full max-w-[338px] min-w-[300px] rounded-8px border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]"
+				class="w-full max-w-[440px] min-w-[300px] rounded-8px border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]"
 			>
 				<svg width="22" height="22" class="mr-2 scale-75" fill="#477db3">
 					<use xlink:href="#plus-icon"></use>
@@ -38,7 +38,7 @@
 			</a>
 
 			<ng-container *ngFor="let source of sources?.content; let i = index">
-				<div convoy-card [id]="'source' + i" class="w-full max-w-[338px] min-w-[300px] py-20px h-fit">
+				<div convoy-card [id]="'source' + i" class="w-full max-w-[440px] min-w-[300px] py-20px h-fit">
 					<!-- outgoing project sources -->
 					<ng-container *ngIf="privateService.getProjectDetails?.type === 'outgoing'">
 						<div class="flex items-center justify-between px-24px">
@@ -118,8 +118,26 @@
 								</div>
 							</div>
 						</div>
-						<div class="mt-12px mx-24px">
-							<convoy-copy-button [text]="source.url" color="primary" className="ml-2px" [notificationText]="source.name + ' URL has been copied to clipboard'"><span class="text-12 ml-8px font-medium">Copy URL</span></convoy-copy-button>
+
+						<div class="mt-16px mx-24px">
+							<convoy-copy-button [text]="source.url" color="primary" show-icon="false" [notificationText]="source.name + ' URL has been copied to clipboard'">
+								<div convoy-tag color="primary" class="flex items-center !gap-12px">
+									<span class="max-w-[230px] truncate">{{ source.url }}</span>
+									<svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="scale-[.6]" xmlns="http://www.w3.org/2000/svg">
+										<path d="M8 12.2002H15" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+										<path d="M8 16.2002H12.38" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+										<path d="M10 6H14C16 6 16 5 16 4C16 2 15 2 14 2H10C9 2 8 2 8 4C8 6 9 6 10 6Z" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+										<path
+											d="M16 4.01953C19.33 4.19953 21 5.42953 21 9.99953V15.9995C21 19.9995 20 21.9995 15 21.9995H9C4 21.9995 3 19.9995 3 15.9995V9.99953C3 5.43953 4.67 4.19953 8 4.01953"
+											stroke="#292D32"
+											stroke-width="1.5"
+											stroke-miterlimit="10"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										/>
+									</svg>
+								</div>
+							</convoy-copy-button>
 						</div>
 					</ng-container>
 				</div>
