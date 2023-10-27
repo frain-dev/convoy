@@ -129,16 +129,18 @@
 								class="group"
 								*ngFor="let event of eventGroup.content; let index = index"
 								(click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid); getDuplicateEvents(event)"
-								class="cursor-pointer rounded-8px"
+								class="cursor-pointer rounded-8px border-b border-b-new.primary-25"
 								[active]="event.uid === eventsDetailsItem?.uid"
 							>
-								<td convoy-table-cell class="w-130px pl-16px pr-30px relative rounded-l-8px">
-									<div convoy-tag color="gray" class="max-w-[121px] overflow-hidden text-ellipsis mr-8px">{{ event.uid }}</div>
-									<convoy-copy-button size="sm" notificationText="Event ID has been copied to clipboard" className="absolute translate-x-0 translate-y-[-50%] top-[50] hidden group-hover:block" [text]="event.uid"></convoy-copy-button>
+								<td convoy-table-cell class="w-380px pl-16px pr-30px relative rounded-l-8px">
+									<div convoy-tag color="gray" class="mr-8px w-[260px] !gap-16px truncate flex items-center">
+										{{ event.uid }}
+										<convoy-copy-button size="sm" notificationText="Event ID has been copied to clipboard" [text]="event.uid"></convoy-copy-button>
+									</div>
 								</td>
 
 								<td convoy-table-cell>
-									<div class="max-w-[200px] w-full overflow-hidden overflow-ellipsis">
+									<div class="max-w-[300px] w-full overflow-hidden overflow-ellipsis">
 										<span (click)="viewSource(event?.source_metadata?.uid)" [ngClass]="{ 'underline text-primary-100': !portalToken && event.source_metadata.name }">
 											{{ event.source_metadata.name || 'Rest API' }}
 										</span>
