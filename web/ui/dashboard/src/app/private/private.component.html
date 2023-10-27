@@ -1,5 +1,5 @@
 <div class="bg-white-100 min-h-screen overflow-y-auto flex flex-col justify-between">
-	<header class="w-full border-b border-b-grey-10 bg-new.gray-50 fixed z-10">
+	<header class="w-full border-b border-b-grey-10 bg-new.gray-50 fixed z-20">
 		<div class="flex items-center justify-between w-full max-w-[1440px] m-auto px-24px py-12px">
 			<div class="flex items-center">
 				<a routerLink="/" rel="noreferrer">
@@ -9,8 +9,8 @@
 
 			<div class="flex items-center">
 				<a class="flex items-center mr-24px" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
-					<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
-					<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
+					<img src="/assets/img/doc-icon-primary.svg" class="w-14px" alt="doc icon" />
+					<span class="font-medium text-12 text-primary-100 ml-2">Go to docs</span>
 				</a>
 
 				<div convoy-dropdown size="lg" #organisationDropdown *ngIf="organisations?.length">
