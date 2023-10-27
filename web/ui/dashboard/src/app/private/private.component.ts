@@ -105,8 +105,10 @@ export class PrivateComponent implements OnInit {
 		this.privateService.organisationDetails = organisation;
 		this.userOrganization = organisation;
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
+		await this.privateService.getProjects({ refresh: true });
 		this.showOrgDropdown = false;
-		this.privateService.getProjectsHelper({ refresh: true });
+
+		this.router.navigateByUrl('/projects');
 		setInterval(() => {
 			this.isLoadingOrganisations = false;
 		}, 1000);

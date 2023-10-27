@@ -1,5 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { NavigationEnd, Router } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
 import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
 
@@ -8,34 +7,21 @@ import { PrivateService } from '../../private.service';
 	templateUrl: './projects.component.html',
 	styleUrls: ['./projects.component.scss']
 })
-export class ProjectsComponent implements OnInit, OnDestroy {
+export class ProjectsComponent implements OnInit {
 	projects: PROJECT[] = [];
 	isLoadingProjects = false;
 	projectsLoaderIndex: number[] = [0, 1, 2, 3, 4];
 	showOrganisationModal = false;
-	reloadSubscription: any;
 	isLoadingProject: boolean = false;
 
-	constructor(private privateService: PrivateService, private router: Router) {
-		// for reloading this component when the same route is called again
-		// this.router.routeReuseStrategy.shouldReuseRoute = function () {
-		// 	return false;
-		// };
-		// this.reloadSubscription = this.router.events.subscribe(event => {
-		// 	if (event instanceof NavigationEnd) {
-		// 		this.router.navigated = false;
-		// 	}
-		// });
+	constructor(private privateService: PrivateService) {
+		this.privateService.projects$.subscribe(projects => (this.projects = projects.data));
 	}
 
 	async ngOnInit() {
 		this.isLoadingProjects = true;
 		await this.getProjects();
 		this.isLoadingProjects = false;
-	}
-
-	ngOnDestroy(): void {
-		// this.reloadSubscription?.unsubscribe();
 	}
 
 	async getProjects(): Promise<any> {
@@ -45,17 +31,9 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 			const response = await this.privateService.getProjects();
 			this.projects = response.data;
 			this.isLoadingProjects = false;
-			// return response.data.length === 0 ? (this.isLoadingProjects = false) : this.privateService.checkForSelectedProject(response.data);
 		} catch (error) {
 			this.isLoadingProjects = false;
 			return error;
 		}
-	}
-
-	// We're calling project details ahead because every page under project has a guard that requires project details to be present and to also prevent multiple calls
-	async getProjectCompleteDetails(project: PROJECT) {
-		this.isLoadingProject = true;
-
-		await this.privateService.updateProjectDetails([project]);
 	}
 }

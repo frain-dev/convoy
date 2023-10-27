@@ -1,7 +1,12 @@
 <!-- empty state  -->
 <div class="py-80px" *ngIf="!isLoadingSources && sources?.content?.length == 0">
 	<div convoy-empty-state imgSrc="/assets/img/sources-empty-state.png" heading="Create your first source" description="Sources are how your webhook events are routed into the Convoy." id="sources-empty-state">
-		<button convoy-permission="Sources|MANAGE" convoy-button emptyStateCTA routerLink="./new" class="mt-36px">Connect a source</button>
+		<button convoy-permission="Sources|MANAGE" convoy-button emptyStateCTA routerLink="./new" class="mt-36px">
+			<svg width="22" height="22" class="mr-2 scale-75" fill="#ffffff">
+				<use xlink:href="#plus-icon"></use>
+			</svg>
+			Connect a source
+		</button>
 	</div>
 </div>
 
