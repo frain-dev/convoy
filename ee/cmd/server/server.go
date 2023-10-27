@@ -398,36 +398,6 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		c.Tracer.NewRelic.LicenseKey = newReplicKey
 	}
 
-	// CONVOY_SEARCH_TYPE
-	searcher, err := cmd.Flags().GetString("searcher")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(searcher) {
-		c.Search.Type = config.SearchProvider(searcher)
-	}
-
-	// CONVOY_TYPESENSE_HOST
-	typesenseHost, err := cmd.Flags().GetString("typesense-host")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(typesenseHost) {
-		c.Search.Typesense.Host = typesenseHost
-	}
-
-	// CONVOY_TYPESENSE_API_KEY
-	typesenseApiKey, err := cmd.Flags().GetString("typesense-api-key")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(typesenseApiKey) {
-		c.Search.Typesense.ApiKey = typesenseApiKey
-	}
-
 	// CONVOY_NEWRELIC_CONFIG_ENABLED
 	isNRCESet := cmd.Flags().Changed("new-relic-config-enabled")
 	if isNRCESet {
