@@ -1,5 +1,4 @@
 import { EventEmitter, Injectable } from '@angular/core';
-import { Router } from '@angular/router';
 import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { HttpService } from 'src/app/services/http/http.service';
 import { FLIPT_API_RESPONSE } from '../models/flipt.model';
@@ -24,7 +23,7 @@ export class PrivateService {
 	profileDetails!: HTTP_RESPONSE;
 	projectStats!: HTTP_RESPONSE;
 
-	constructor(private http: HttpService, private router: Router) {}
+	constructor(private http: HttpService) {}
 
 	get getOrganisation(): ORGANIZATION_DATA | null {
 		let org = localStorage.getItem('CONVOY_ORG');

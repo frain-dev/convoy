@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
+import { Router } from '@angular/router';
 
 @Component({
 	selector: 'app-projects',
@@ -14,14 +15,26 @@ export class ProjectsComponent implements OnInit {
 	showOrganisationModal = false;
 	isLoadingProject: boolean = false;
 
-	constructor(private privateService: PrivateService) {
+	constructor(private privateService: PrivateService, private router: Router) {
 		this.privateService.projects$.subscribe(projects => (this.projects = projects.data));
 	}
 
 	async ngOnInit() {
-		this.isLoadingProjects = true;
 		await this.getProjects();
-		this.isLoadingProjects = false;
+	}
+
+	async getProject(projectId: string) {
+		this.isLoadingProjects = true;
+
+		try {
+			await this.privateService.getProject({ refresh: true, projectId });
+			await this.privateService.getProjectStat({ refresh: true });
+
+			this.router.navigate([`/projects/${projectId}`]);
+			this.isLoadingProjects = false;
+		} catch (error) {
+			this.isLoadingProjects = false;
+		}
 	}
 
 	async getProjects(): Promise<any> {
