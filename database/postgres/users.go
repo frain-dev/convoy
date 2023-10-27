@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
+	ncache "github.com/frain-dev/convoy/cache/noop"
+	"github.com/frain-dev/convoy/config"
 	"strings"
 
 	"github.com/frain-dev/convoy/database"
@@ -33,7 +36,7 @@ const (
          email_verification_token=$8,
          reset_password_expires_at=$9,
          email_verification_expires_at=$10
-    WHERE id = $1 AND deleted_at IS NULL ;
+    WHERE id = $1 AND deleted_at IS NULL;
     `
 
 	fetchUsers = `
@@ -82,8 +85,11 @@ type userRepo struct {
 	cache cache.Cache
 }
 
-func NewUserRepo(db database.Database, cache cache.Cache) datastore.UserRepository {
-	return &userRepo{db: db.GetDB(), cache: cache}
+func NewUserRepo(db database.Database, ca cache.Cache) datastore.UserRepository {
+	if ca == nil {
+		ca = ncache.NewNoopCache()
+	}
+	return &userRepo{db: db.GetDB(), cache: ca}
 }
 
 func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
@@ -116,6 +122,12 @@ func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
 		return ErrUserNotCreated
 	}
 
+	userCacheKey := convoy.UserCacheKey.Get(user.UID).String()
+	err = u.cache.Set(ctx, userCacheKey, user, config.DefaultCacheTTL)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -137,59 +149,97 @@ func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
 		return ErrUserNotUpdated
 	}
 
+	userCacheKey := convoy.UserCacheKey.Get(user.UID).String()
+	err = u.cache.Set(ctx, userCacheKey, user, config.DefaultCacheTTL)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (u *userRepo) FindUserByEmail(ctx context.Context, email string) (*datastore.User, error) {
-	user := &datastore.User{}
-	err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND email = $1;", fetchUsers), email).StructScan(user)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrUserNotFound
+	fromCache, err := u.readFromCache(ctx, email, func() (*datastore.User, error) {
+		user := &datastore.User{}
+		err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND email = $1;", fetchUsers), email).StructScan(user)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrUserNotFound
+			}
+			return nil, err
 		}
+
+		return user, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	return fromCache, nil
 }
 
 func (u *userRepo) FindUserByID(ctx context.Context, id string) (*datastore.User, error) {
-	user := &datastore.User{}
-	err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1;", fetchUsers), id).StructScan(user)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrUserNotFound
+	fromCache, err := u.readFromCache(ctx, id, func() (*datastore.User, error) {
+		user := &datastore.User{}
+		err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1;", fetchUsers), id).StructScan(user)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrUserNotFound
+			}
+			return nil, err
 		}
+
+		return user, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	return fromCache, nil
 }
 
 func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastore.User, error) {
-	user := &datastore.User{}
-	err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND reset_password_token = $1;", fetchUsers), token).StructScan(user)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrUserNotFound
+	fromCache, err := u.readFromCache(ctx, token, func() (*datastore.User, error) {
+		user := &datastore.User{}
+		err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND reset_password_token = $1;", fetchUsers), token).StructScan(user)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrUserNotFound
+			}
+			return nil, err
 		}
+
+		return user, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	return fromCache, nil
 }
 
 func (u *userRepo) FindUserByEmailVerificationToken(ctx context.Context, token string) (*datastore.User, error) {
-	user := &datastore.User{}
-	err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND email_verification_token = $1;", fetchUsers), token).StructScan(user)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrUserNotFound
+	fromCache, err := u.readFromCache(ctx, token, func() (*datastore.User, error) {
+		user := &datastore.User{}
+		err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND email_verification_token = $1;", fetchUsers), token).StructScan(user)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrUserNotFound
+			}
+			return nil, err
 		}
+
+		return user, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	return fromCache, nil
 }
 
 func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.User, datastore.PaginationData, error) {
@@ -261,7 +311,7 @@ func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageab
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		rows.Close()
+		closeWithError(rows)
 	}
 
 	ids := make([]string, len(users))
@@ -277,4 +327,29 @@ func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageab
 	pagination = pagination.Build(pageable, ids)
 
 	return users, *pagination, nil
+}
+
+func (u *userRepo) readFromCache(ctx context.Context, key string, readFromDB func() (*datastore.User, error)) (*datastore.User, error) {
+	var user *datastore.User
+	userCacheKey := convoy.UserCacheKey.Get(key).String()
+	err := u.cache.Get(ctx, userCacheKey, &user)
+	if err != nil {
+		return nil, err
+	}
+
+	if user != nil {
+		return user, err
+	}
+
+	fromDB, err := readFromDB()
+	if err != nil {
+		return nil, err
+	}
+
+	err = u.cache.Set(ctx, userCacheKey, fromDB, config.DefaultCacheTTL)
+	if err != nil {
+		return nil, err
+	}
+
+	return fromDB, err
 }
