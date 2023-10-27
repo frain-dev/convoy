@@ -12,7 +12,7 @@ export type SETTINGS = 'organisation settings' | 'configuration settings' | 'per
 export class SettingsComponent implements OnInit {
 	activePage: SETTINGS = 'organisation settings';
 	settingsMenu: { name: SETTINGS; icon: string; svg: 'stroke' | 'fill' }[] = [
-		{ name: 'organisation settings', icon: 'settings', svg: 'fill' },
+		{ name: 'organisation settings', icon: 'org', svg: 'fill' },
 		{ name: 'team', icon: 'team', svg: 'stroke' }
 		// hidden for cloud instance
 		// { name: 'configuration settings', icon: 'settings' },
@@ -33,9 +33,5 @@ export class SettingsComponent implements OnInit {
 		const queryParams: any = {};
 		queryParams.activePage = this.activePage;
 		this.router.navigate([], { queryParams: Object.assign({}, queryParams) });
-	}
-
-	goBack() {
-		this.location.back();
 	}
 }
