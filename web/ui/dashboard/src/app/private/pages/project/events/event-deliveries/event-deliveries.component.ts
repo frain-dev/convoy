@@ -42,6 +42,7 @@ export class EventDeliveriesComponent implements OnInit {
 	queryParams?: FILTER_QUERY_PARAM;
 	getEventDeliveriesInterval: any;
 	enableTailMode = false;
+	loadingFilterEndpoints = false;
 
 	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, public projectService: ProjectService, public privateService: PrivateService, private _location: Location) {}
 
@@ -210,6 +211,9 @@ export class EventDeliveriesComponent implements OnInit {
 			} else if (filterType === 'endpointId') {
 				this.eventDeliveriesEndpoint = '';
 				delete this.queryParams['endpointId'];
+			} else if (filterType === 'sourceId') {
+				this.eventDeliveriesSource = '';
+				delete this.queryParams['sourceId'];
 			} else delete this.queryParams[filterType];
 
 			const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
@@ -318,5 +322,9 @@ export class EventDeliveriesComponent implements OnInit {
 
 	toggleSouceFilter(event: any, sourceId: string) {
 		this.eventDeliveriesSource = event.target.checked ? sourceId : '';
+	}
+
+	toggleEndpointFilter(event: any, endpointId: string) {
+		this.eventDeliveriesEndpoint = event.target.checked ? endpointId : '';
 	}
 }

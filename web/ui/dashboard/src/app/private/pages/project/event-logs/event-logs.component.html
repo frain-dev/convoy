@@ -6,7 +6,7 @@
 
 <!-- filters  -->
 <div class="flex pb-24px items-center justify-between">
-	<div class="flex items-center w-full">
+	<div class="flex items-center gap-16px w-full">
 		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[200px] w-full rounded-[10px] flex items-center bg-transparent" [ngClass]="{ 'text-primary-100 !bg-primary-500': eventsSearchString != undefined && eventsSearchString != '' }">
 			<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
 			<input
@@ -23,19 +23,20 @@
 			</button>
 		</form>
 
-		<convoy-date-picker class="ml-14px" (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="eventsDateFilterFromURL" (clearDates)="clearEventFilters('startDate')" #datePicker></convoy-date-picker>
+		<convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" [dateRangeValue]="eventsDateFilterFromURL" (clearDates)="clearEventFilters('startDate')" #datePicker></convoy-date-picker>
 
 		<div convoy-dropdown size="md" position="left" #sourcesDropdown [hidden]="portalToken || privateService.getProjectDetails?.type === 'outgoing'">
-			<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 ml-16px min-w-[130px] whitespace-nowrap justify-between h-36px" [ngClass]="{ 'text-primary-100 !bg-primary-500': queryParams?.sourceId }">
-				<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
-				<span class="text-grey-40 w-full">All Sources</span>
-				<img class="ml-10px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+			<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 whitespace-nowrap justify-between gap-10px" [ngClass]="{ 'text-primary-100 !bg-primary-500': queryParams?.sourceId }">
+				<svg width="18" height="18" class="transition-all scale-75" [class]="queryParams?.sourceId ? 'stroke-new.primary-100' : 'stroke-new.gray-300'">
+					<use xlink:href="#sources-icon"></use>
+				</svg>
+				<span class="text-grey-40">Sources</span>
 			</button>
 
 			<div dropdownOptions class="!max-h-[324px]">
-				<ul class="min-h-[100px] pt-10px">
-					<li class="!py-0 pr-20px relative" *ngFor="let source of filterSources" convoy-list-item>
-						<label class="py-10px pl-20px text-12 block w-full capitalize" [for]="source.uid + 'event'">{{ source.name }}</label>
+				<ul class="min-h-[100px] max-h-[200px] overflow-auto">
+					<li class="!py-0 pr-10px relative" *ngFor="let source of filterSources" convoy-list-item>
+						<label class="py-10px pl-10px text-12 block w-full capitalize text-new.gray-600 font-normal" [for]="source.uid + 'event'">{{ source.name }}</label>
 						<input
 							type="checkbox"
 							class="
@@ -60,20 +61,18 @@
 					</li>
 				</ul>
 
-				<div class="flex items-center justify-end mt-10px p-10px">
-					<button convoy-button convoy-dropdown-option size="sm" fill="outline" color="danger" class="mr-14px" *ngIf="queryParams?.sourceId" (click)="clearEventFilters('sourceId')">Clear</button>
-					<button convoy-dropdown-option convoy-button size="sm" (click)="updateSourceFilter()">Apply</button>
+				<div class="px-10px py-8px flex justify-end gap-14px border-t border-t-new.primary-25">
+					<button convoy-button convoy-dropdown-option class="text-10 !py-4px" size="sm" fill="outline" color="danger" (click)="clearEventFilters('sourceId')">Clear</button>
+					<button convoy-dropdown-option convoy-button class="text-10 !py-4px" size="sm" (click)="updateSourceFilter()">Apply</button>
 				</div>
 			</div>
 		</div>
 
-		<button convoy-button size="sm" fill="outline" class="mx-14px px-10px border-primary-400 h-36px whitespace-nowrap" [disabled]="!(queryParams?.startDate || queryParams?.endDate || queryParams?.sourceId || queryParams?.query)" (click)="fetchRetryCount()">
-			Batch Replay
-		</button>
+		<button convoy-button size="sm" fill="outline" class="px-10px py-6px border-primary-400 whitespace-nowrap" [disabled]="!(queryParams?.startDate || queryParams?.endDate || queryParams?.sourceId || queryParams?.query)" (click)="fetchRetryCount()">Batch Replay</button>
 
 		<div class="h-22px w-[1px] bg-new.primary-50" *ngIf="queryParams?.startDate || queryParams?.endDate || queryParams?.sourceId || queryParams?.query"></div>
 
-		<button convoy-button fill="clear" size="sm" class="h-36px w-fit px-14px" (click)="clearEventFilters()" *ngIf="queryParams?.startDate || queryParams?.endDate || queryParams?.sourceId || queryParams?.query">Clear Filters</button>
+		<button convoy-button fill="clear" size="sm" class="w-fit !p-0" (click)="clearEventFilters()" *ngIf="queryParams?.startDate || queryParams?.endDate || queryParams?.sourceId || queryParams?.query">Clear Filters</button>
 	</div>
 
 	<div class="flex items-center relative">
@@ -185,7 +184,7 @@
 			<ng-container *ngIf="!isloadingEvents && displayedEvents">
 				<div class="border-b border-new.primary-25 pb-24px">
 					<button convoy-button size="xs" fill="soft" (click)="replayEvent({ eventId: eventsDetailsItem.uid })" [disabled]="isRetrying">
-						<svg width="16" height="16" class="mr-10px scale-75">
+						<svg width="16" height="16" class="mr-10px scale-75 stroke-new.primary-400">
 							<use xlink:href="#refresh-icon"></use>
 						</svg>
 						Replay

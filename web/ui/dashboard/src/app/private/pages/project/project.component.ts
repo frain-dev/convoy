@@ -9,7 +9,6 @@ import { Router } from '@angular/router';
 	styleUrls: ['./project.component.scss']
 })
 export class ProjectComponent implements OnInit {
-	screenWidth = window.innerWidth;
 	sideBarItems = [
 		{
 			name: 'Event Deliveries',
@@ -53,7 +52,7 @@ export class ProjectComponent implements OnInit {
 	constructor(private privateService: PrivateService, private router: Router) {}
 
 	ngOnInit() {
-		Promise.all([this.checkScreenSize(), this.getProjectDetails(), this.getProjects()]);
+		Promise.all([this.getProjectDetails(), this.getProjects()]);
 	}
 
 	async getProjectDetails() {
@@ -78,16 +77,6 @@ export class ProjectComponent implements OnInit {
 
 	isOutgoingProject(): boolean {
 		return this.projectDetails?.type === 'outgoing';
-	}
-
-	checkScreenSize() {
-		this.screenWidth > 1150 ? (this.shouldShowFullSideBar = true) : (this.shouldShowFullSideBar = false);
-	}
-
-	@HostListener('window:resize', ['$event'])
-	onWindowResize() {
-		this.screenWidth = window.innerWidth;
-		this.checkScreenSize();
 	}
 
 	isStrokeIcon(icon: string): boolean {
