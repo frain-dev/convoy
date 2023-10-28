@@ -9,6 +9,8 @@ import (
 	"github.com/go-redis/cache/v9"
 )
 
+const cacheSize = 128000
+
 type RedisCache struct {
 	cache *cache.Cache
 }
@@ -20,7 +22,8 @@ func NewRedisCache(addresses []string) (*RedisCache, error) {
 	}
 
 	c := cache.New(&cache.Options{
-		Redis: client.Client(),
+		Redis:      client.Client(),
+		LocalCache: cache.NewTinyLFU(cacheSize, 1*time.Minute),
 	})
 
 	r := &RedisCache{cache: c}
