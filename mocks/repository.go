@@ -312,9 +312,9 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesIntervals(
 }
 
 // LoadEventDeliveriesPaged mocks base method.
-func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable, idempotencyKey string) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable, idempotencyKey, eventType string) ([]datastore.EventDelivery, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadEventDeliveriesPaged", ctx, projectID, endpointIDs, eventID, subscriptionID, status, params, pageable, idempotencyKey)
+	ret := m.ctrl.Call(m, "LoadEventDeliveriesPaged", ctx, projectID, endpointIDs, eventID, subscriptionID, status, params, pageable, idempotencyKey, eventType)
 	ret0, _ := ret[0].([]datastore.EventDelivery)
 	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
@@ -322,9 +322,9 @@ func (m *MockEventDeliveryRepository) LoadEventDeliveriesPaged(ctx context.Conte
 }
 
 // LoadEventDeliveriesPaged indicates an expected call of LoadEventDeliveriesPaged.
-func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesPaged(ctx, projectID, endpointIDs, eventID, subscriptionID, status, params, pageable, idempotencyKey interface{}) *gomock.Call {
+func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesPaged(ctx, projectID, endpointIDs, eventID, subscriptionID, status, params, pageable, idempotencyKey, eventType interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesPaged", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesPaged), ctx, projectID, endpointIDs, eventID, subscriptionID, status, params, pageable, idempotencyKey)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesPaged", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesPaged), ctx, projectID, endpointIDs, eventID, subscriptionID, status, params, pageable, idempotencyKey, eventType)
 }
 
 // UpdateEventDeliveryWithAttempt mocks base method.

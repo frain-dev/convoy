@@ -5,9 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
-	"time"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -116,7 +117,7 @@ const (
 
 	baseEventsPagedForward = `%s %s AND ev.id <= :cursor
 	GROUP BY ev.id, s.id
-	ORDER BY ev.id DESC
+	ORDER BY ev.id %s
 	LIMIT :limit
 	`
 
@@ -128,7 +129,7 @@ const (
 		LIMIT :limit
 	)
 
-	SELECT * FROM events ORDER BY id DESC
+	SELECT * FROM events ORDER BY id %s
 	`
 
 	baseEventFilter = ` AND ev.project_id = :project_id
@@ -364,7 +365,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		"event_id":        filter.Query,
 	}
 
-	var base = baseEventsPaged
+	base := baseEventsPaged
 	var baseQueryPagination string
 	if filter.Pageable.Direction == datastore.Next {
 		baseQueryPagination = baseEventsPagedForward
@@ -382,7 +383,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		base = baseEventsSearch
 	}
 
-	query = fmt.Sprintf(baseQueryPagination, base, filterQuery)
+	query = fmt.Sprintf(baseQueryPagination, base, filterQuery, filter.Pageable.SortOrder())
 	query, args, err = sqlx.Named(query, arg)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err

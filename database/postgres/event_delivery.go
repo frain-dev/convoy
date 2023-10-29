@@ -6,8 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/cache"
 	"time"
+
+	"github.com/frain-dev/convoy/cache"
 
 	"github.com/lib/pq"
 
@@ -76,7 +77,7 @@ const (
 	%s
 	AND ed.id <= :cursor
 	GROUP BY ed.id, ep.id, ev.id, d.id, s.id
-	ORDER BY ed.id DESC
+	ORDER BY ed.id %s
 	LIMIT :limit
 	`
 
@@ -90,13 +91,14 @@ const (
 		LIMIT :limit
 	)
 
-	SELECT * FROM event_deliveries ORDER BY id DESC
+	SELECT * FROM event_deliveries ORDER BY id %s
 	`
 
 	fetchEventDeliveryByID = baseFetchEventDelivery + ` AND ed.id = $1 AND ed.project_id = $2`
 
 	baseEventDeliveryFilter = ` AND (ed.project_id = :project_id OR :project_id = '')
 	AND (ed.event_id = :event_id OR :event_id = '')
+	AND (ev.event_type = :event_type OR :event_type = '')
 	AND ed.created_at >= :start_date
 	AND ed.created_at <= :end_date
 	AND ed.deleted_at IS NULL`
@@ -461,7 +463,7 @@ func (e *eventDeliveryRepo) DeleteProjectEventDeliveries(ctx context.Context, pr
 	return nil
 }
 
-func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable, idempotencyKey string) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable, idempotencyKey, eventType string) ([]datastore.EventDelivery, datastore.PaginationData, error) {
 	eventDeliveriesP := make([]EventDeliveryPaginated, 0)
 
 	start := time.Unix(params.CreatedAtStart, 0)
@@ -474,6 +476,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		"subscription_id": subscriptionID,
 		"start_date":      start,
 		"event_id":        eventID,
+		"event_type":      eventType,
 		"end_date":        end,
 		"status":          status,
 		"cursor":          pageable.Cursor(),
@@ -500,7 +503,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		filterQuery += ` AND ed.subscription_id = :subscription_id`
 	}
 
-	query = fmt.Sprintf(query, baseFetchEventDelivery, filterQuery)
+	query = fmt.Sprintf(query, baseFetchEventDelivery, filterQuery, pageable.SortOrder())
 
 	query, args, err := sqlx.Named(query, arg)
 	if err != nil {

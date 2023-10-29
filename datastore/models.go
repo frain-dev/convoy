@@ -24,6 +24,7 @@ import (
 type Pageable struct {
 	PerPage    int           `json:"per_page"`
 	Direction  PageDirection `json:"direction"`
+	Sort       string        `json:"sort"`
 	PrevCursor string        `json:"prev_page_cursor"`
 	NextCursor string        `json:"next_page_cursor"`
 }
@@ -41,6 +42,14 @@ func (p Pageable) Cursor() string {
 	}
 
 	return p.PrevCursor
+}
+
+func (p Pageable) SortOrder() string {
+	if p.Sort == "ASC" || p.Sort == "DESC" {
+		return p.Sort
+	}
+
+	return "DESC"
 }
 
 func (p Pageable) Limit() int {
