@@ -73,12 +73,18 @@ const (
     `
 
 	baseEventDeliveryPagedForward = `
-	%s
-	%s
-	AND ed.id <= :cursor
-	GROUP BY ed.id, ep.id, ev.id, d.id, s.id
-	ORDER BY ed.id %s
-	LIMIT :limit
+	WITH event_deliveries AS (
+	    %s
+	    %s
+	    AND ed.id <= :cursor
+	    GROUP BY ed.id, ep.id, ev.id, d.id, s.id
+	    ORDER BY ed.id ASC
+	    LIMIT :limit
+	)
+
+	SELECT * FROM event_deliveries
+	WHERE ("event_metadata.event_type" = :event_type OR :event_type = '')
+    ORDER BY id %s
 	`
 
 	baseEventDeliveryPagedBackward = `
@@ -91,14 +97,15 @@ const (
 		LIMIT :limit
 	)
 
-	SELECT * FROM event_deliveries ORDER BY id %s
+	SELECT * FROM event_deliveries
+	WHERE ("event_metadata.event_type" = :event_type OR :event_type = '')
+    ORDER BY id %s
 	`
 
 	fetchEventDeliveryByID = baseFetchEventDelivery + ` AND ed.id = $1 AND ed.project_id = $2`
 
 	baseEventDeliveryFilter = ` AND (ed.project_id = :project_id OR :project_id = '')
 	AND (ed.event_id = :event_id OR :event_id = '')
-	AND (ev.event_type = :event_type OR :event_type = '')
 	AND ed.created_at >= :start_date
 	AND ed.created_at <= :end_date
 	AND ed.deleted_at IS NULL`
