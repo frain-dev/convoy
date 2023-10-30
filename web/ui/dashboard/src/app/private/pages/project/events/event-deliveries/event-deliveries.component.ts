@@ -1,7 +1,6 @@
 import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { fromEvent, Observable } from 'rxjs';
-import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { EVENT_DELIVERY, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
@@ -45,18 +44,6 @@ export class EventDeliveriesComponent implements OnInit {
 	loadingFilterEndpoints = false;
 
 	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, public projectService: ProjectService, public privateService: PrivateService, private _location: Location) {}
-
-	ngAfterViewInit() {
-		if (!this.portalToken) {
-			this.eventsDelEndpointFilter$ = fromEvent<any>(this.eventDelsEndpointFilter?.nativeElement, 'keyup').pipe(
-				map(event => event.target.value),
-				startWith(''),
-				debounceTime(500),
-				distinctUntilChanged(),
-				switchMap(search => this.getEndpointsForFilter(search))
-			);
-		}
-	}
 
 	ngOnInit() {
 		const data = this.getFiltersFromURL();
@@ -244,12 +231,6 @@ export class EventDeliveriesComponent implements OnInit {
 		}
 	}
 
-	async getEndpointsForFilter(search: string): Promise<ENDPOINT[]> {
-		return await (
-			await this.privateService.getEndpoints({ q: search })
-		).data.content;
-	}
-
 	async getSourcesForFilter() {
 		try {
 			const sourcesResponse = (await this.privateService.getSources()).data.content;
@@ -322,9 +303,5 @@ export class EventDeliveriesComponent implements OnInit {
 
 	toggleSouceFilter(event: any, sourceId: string) {
 		this.eventDeliveriesSource = event.target.checked ? sourceId : '';
-	}
-
-	toggleEndpointFilter(event: any, endpointId: string) {
-		this.eventDeliveriesEndpoint = event.target.checked ? endpointId : '';
 	}
 }

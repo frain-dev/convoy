@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
 import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
 import { Router } from '@angular/router';
@@ -48,11 +48,18 @@ export class ProjectComponent implements OnInit {
 	isLoadingProjectDetails: boolean = true;
 	showHelpDropdown = false;
 	projects: PROJECT[] = [];
+	activeNavTab: any;
 
 	constructor(private privateService: PrivateService, private router: Router) {}
 
 	ngOnInit() {
 		Promise.all([this.getProjectDetails(), this.getProjects()]);
+	}
+
+	get activeTab(): any {
+		const element = document.querySelector('.nav-tab.on') as any;
+		if (element) this.activeNavTab = element;
+		return element || this.activeNavTab;
 	}
 
 	async getProjectDetails() {
