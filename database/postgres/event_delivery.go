@@ -6,8 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/cache"
 	"time"
+
+	"github.com/frain-dev/convoy/cache"
 
 	"github.com/lib/pq"
 
@@ -55,6 +56,7 @@ const (
         COALESCE(ep.target_url, '') AS "endpoint_metadata.target_url",
         ev.id AS "event_metadata.id",
         ev.event_type AS "event_metadata.event_type",
+		COALESCE(ed.latency,'') AS latency,
 
 		COALESCE(d.id,'') AS "device_metadata.id",
 		COALESCE(d.status,'') AS "device_metadata.status",
@@ -166,7 +168,7 @@ const (
     `
 
 	updateEventDeliveryAttempts = `
-    UPDATE convoy.event_deliveries SET attempts = $1, status = $2, metadata = $3,  updated_at = NOW() WHERE id = $4 AND project_id = $5 AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET attempts = $1, status = $2, metadata = $3, latency = $4,  updated_at = NOW() WHERE id = $5 AND project_id = $6 AND deleted_at IS NULL;
     `
 
 	softDeleteProjectEventDeliveries = `
@@ -373,7 +375,7 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, pr
 func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, delivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
 	delivery.DeliveryAttempts = append(delivery.DeliveryAttempts, attempt)
 
-	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, delivery.DeliveryAttempts, delivery.Status, delivery.Metadata, delivery.UID, projectID)
+	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, delivery.DeliveryAttempts, delivery.Status, delivery.Metadata, delivery.Latency, delivery.UID, projectID)
 	if err != nil {
 		return err
 	}

@@ -45,7 +45,8 @@ type EventDelivery struct {
 }
 
 func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	projectRepo datastore.ProjectRepository, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter) func(context.Context, *asynq.Task) error {
+	projectRepo datastore.ProjectRepository, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter,
+) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
 
@@ -196,6 +197,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 			eventDelivery.Status = datastore.SuccessEventStatus
 			eventDelivery.Description = ""
+			eventDelivery.Latency = time.Since(eventDelivery.CreatedAt).String()
 		} else {
 			requestLogger.Errorf("%s", eventDelivery.UID)
 			done = false
