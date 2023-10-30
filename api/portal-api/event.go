@@ -398,7 +398,8 @@ func (a *PortalLinkHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *ht
 
 	data.Filter.EndpointIDs = endpointIDs
 	f := data.Filter
-	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey)
+
+	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey, f.EventType)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch event deliveries")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
