@@ -1,5 +1,5 @@
 <!-- empty state  -->
-<div class="py-80px min-h-[500px]" *ngIf="!isLoadingEndpoints && displayedEndpoints?.length === 0">
+<div class="py-80px min-h-[500px]" *ngIf="!userSearch && !isLoadingEndpoints && displayedEndpoints?.length === 0">
 	<div
 		convoy-empty-state
 		imgSrc="/assets/img/events-log-empty-state.png"
@@ -21,7 +21,7 @@
 </div>
 
 <!-- If user has endpoints -->
-<ng-container *ngIf="!isLoadingEndpoints && displayedEndpoints?.length">
+<ng-container *ngIf="userSearch || (!isLoadingEndpoints && displayedEndpoints?.length)">
 	<div class="flex justify-between items-end mb-24px">
 		<div class="flex items-center">
 			<h1 class="text-18 font-bold text-grey-80 mr-10px">Endpoints</h1>
@@ -31,10 +31,10 @@
 
 	<div class="flex items-center justify-between mb-24px mt-18px">
 		<div class="flex items-center">
-			<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100">
+			<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100" (ngSubmit)="getEndpoints({ search: endpointSearchString, hideLoader: true })">
 				<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-				<input type="search" placeholder="Search endpoints" class="w-full text-grey-40 text-14 outline-none" [(ngModel)]="endpointSearchString" (keyup)="searchEndpoint({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" />
-				<button convoy-button *ngIf="endpointSearchString && endpointSearchString.length > 0" class="transition-all duration-200" fill="text" size="sm">
+				<input type="search" placeholder="Search endpoints" class="w-full text-grey-40 text-12 outline-none" [(ngModel)]="endpointSearchString" [ngModelOptions]="{ standalone: true }" />
+				<button convoy-button *ngIf="endpointSearchString && endpointSearchString.length > 0" class="transition-all duration-200" fill="text" (click)="getEndpoints({ search: endpointSearchString, hideLoader: true })" size="sm">
 					<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 				</button>
 			</form>
@@ -51,7 +51,7 @@
 	<div convoy-card>
 		<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container">
 			<table convoy-table>
-				<thead convoy-table-head>
+				<thead convoy-table-head class="border-b border-b-new.primary-25">
 					<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of endpointsTableHead; let i = index">{{ head }}</th>
 				</thead>
 				<tbody>

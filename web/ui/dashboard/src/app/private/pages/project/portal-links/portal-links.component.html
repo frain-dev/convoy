@@ -1,5 +1,5 @@
 <!-- empty state  -->
-<div class="py-80px" *ngIf="!isLoadingPortalLinks && portalLinks?.content?.length === 0">
+<div class="py-80px" *ngIf="!linkEndpoint && !isLoadingPortalLinks && portalLinks?.content?.length === 0">
 	<div
 		convoy-empty-state
 		imgSrc="/assets/img/portal-link-empty-state.png"
@@ -21,7 +21,7 @@
 	<convoy-loader position="relative"></convoy-loader>
 </div>
 
-<ng-container *ngIf="!isLoadingPortalLinks && portalLinks?.content?.length">
+<ng-container *ngIf="linkEndpoint || (!isLoadingPortalLinks && portalLinks?.content?.length)">
 	<div class="flex justify-between items-end mb-24px">
 		<div class="flex items-center">
 			<h1 class="text-18 font-bold text-grey-80 mr-10px">Portal Links</h1>
@@ -48,7 +48,7 @@
 
 	<div class="min-h-[600px]">
 		<div class="flex flex-wrap gap-24px">
-			<a convoy-card hover="true" class="w-full max-w-[440px] min-w-[300px] flex items-center justify-center border border-dashed border-new.primary-400 hover:!border-new.primary-400" convoy-permission="Portal Links|MANAGE" routerLink="./new">
+			<a convoy-card hover="true" class="w-full max-w-[440px] min-h-[160px] min-w-[300px] flex items-center justify-center border border-dashed border-new.primary-400 hover:!border-new.primary-400" convoy-permission="Portal Links|MANAGE" routerLink="./new">
 				<svg width="22" height="22" class="mr-2 scale-75 fill-new.primary-400">
 					<use xlink:href="#plus-icon"></use>
 				</svg>
