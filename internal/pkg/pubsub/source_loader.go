@@ -3,7 +3,6 @@ package pubsub
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/worker/task"
@@ -124,7 +123,7 @@ func (s *SourceLoader) fetchProjectSources(ctx context.Context) error {
 	return nil
 }
 
-func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, msg string) error {
+func (s *SourceLoader) handler(_ context.Context, source *datastore.Source, msg string) error {
 	ev := struct {
 		EndpointID     string            `json:"endpoint_id"`
 		OwnerID        string            `json:"owner_id"`
