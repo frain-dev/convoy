@@ -51,11 +51,11 @@
       "ssl": true,
       "ssl_cert_file": "<insert-ssl-cert-file>",
       "ssl_key_file": "<insert-ssl-key-file>",
-      "port": 443,
-      "ingest_port": 8080,
-      "worker_port": 8081,
-      "socket_port": 8082,
-      "domain_port": 80,
+      "port": 5005,
+      "ingest_port": 5006,
+      "worker_port": 5007,
+      "socket_port": 5008,
+      "domain_port": 5009,
       "proxy": "<insert-proxy-url>"
     }
   },
