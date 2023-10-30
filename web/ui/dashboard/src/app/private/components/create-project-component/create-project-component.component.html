@@ -1,5 +1,5 @@
 <form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()" disabled id="project-form">
-	<div class="mt-24px flex gap-100px">
+	<div class="mt-24px flex gap-100px" [class]="action !== 'update' ? 'rounded-8px p-24px my-24px block border border-new.primary-50' : ''">
 		<ng-container *ngIf="action === 'update'">
 			<div class="min-w-[170px]">
 				<h3 class="mb-24px text-12 text-new.gray-800 font-semibold">Project Settings</h3>

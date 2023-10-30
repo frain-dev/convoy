@@ -1,19 +1,19 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { TableLoaderComponent } from './endpoints-filter.component';
+import { EndpointFilterComponent } from './endpoints-filter.component';
 
-describe('TableLoaderComponent', () => {
-	let component: TableLoaderComponent;
-	let fixture: ComponentFixture<TableLoaderComponent>;
+describe('EndpointFilterComponent', () => {
+	let component: EndpointFilterComponent;
+	let fixture: ComponentFixture<EndpointFilterComponent>;
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			declarations: [TableLoaderComponent]
+			declarations: [EndpointFilterComponent]
 		}).compileComponents();
 	});
 
 	beforeEach(() => {
-		fixture = TestBed.createComponent(TableLoaderComponent);
+		fixture = TestBed.createComponent(EndpointFilterComponent);
 		component = fixture.componentInstance;
 		fixture.detectChanges();
 	});

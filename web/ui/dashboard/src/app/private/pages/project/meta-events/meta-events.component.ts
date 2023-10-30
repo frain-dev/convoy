@@ -93,6 +93,6 @@ export class MetaEventsComponent implements OnInit {
 	}
 
 	routeToMetaEvents() {
-		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.name + '/settings?activePage=meta%20events');
+		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.name + '/settings?activePage=meta events config');
 	}
 }

@@ -296,7 +296,7 @@ export class CreateProjectComponent implements OnInit {
 
 	addPageToUrl() {
 		const queryParams: any = {};
-		queryParams.activePage = this.activeTab;
+		queryParams.activePage = this.activeTab.label;
 		this.router.navigate([], { queryParams: Object.assign({}, queryParams) });
 	}
 
