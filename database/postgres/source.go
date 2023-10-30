@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
+	ncache "github.com/frain-dev/convoy/cache/noop"
+	"time"
 
 	"github.com/lib/pq"
 
@@ -166,8 +169,11 @@ type sourceRepo struct {
 	cache cache.Cache
 }
 
-func NewSourceRepo(db database.Database, cache cache.Cache) datastore.SourceRepository {
-	return &sourceRepo{db: db.GetDB(), cache: cache}
+func NewSourceRepo(db database.Database, ca cache.Cache) datastore.SourceRepository {
+	if ca == nil {
+		ca = ncache.NewNoopCache()
+	}
+	return &sourceRepo{db: db.GetDB(), cache: ca}
 }
 
 func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source) error {
@@ -237,10 +243,21 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 		return ErrSourceNotCreated
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	srcCacheKey := convoy.SourceCacheKey.Get(source.UID).String()
+	err = s.cache.Set(ctx, srcCacheKey, source, time.Hour*24)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source *datastore.Source) error {
+func (s *sourceRepo) UpdateSource(ctx context.Context, source *datastore.Source) error {
 	tx, err := s.db.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -298,49 +315,84 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 		}
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	srcCacheKey := convoy.SourceCacheKey.Get(source.UID).String()
+	err = s.cache.Set(ctx, srcCacheKey, source, time.Hour*24)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (s *sourceRepo) FindSourceByID(ctx context.Context, projectID string, id string) (*datastore.Source, error) {
-	source := &datastore.Source{}
-	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.id"), id).StructScan(source)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrSourceNotFound
+func (s *sourceRepo) FindSourceByID(ctx context.Context, id string) (*datastore.Source, error) {
+	fromCache, err := s.readFromCache(ctx, id, func() (*datastore.Source, error) {
+		source := &datastore.Source{}
+		err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.id"), id).StructScan(source)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrSourceNotFound
+			}
+			return nil, err
 		}
+
+		return source, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return source, nil
+	return fromCache, nil
 }
 
 func (s *sourceRepo) FindSourceByName(ctx context.Context, projectID string, name string) (*datastore.Source, error) {
-	source := &datastore.Source{}
-	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSourceByName, "s.project_id", "s.name"), projectID, name).StructScan(source)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrSourceNotFound
+	fromCache, err := s.readFromCache(ctx, name, func() (*datastore.Source, error) {
+		source := &datastore.Source{}
+		err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSourceByName, "s.project_id", "s.name"), projectID, name).StructScan(source)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrSourceNotFound
+			}
+			return nil, err
 		}
+
+		return source, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return source, nil
+	return fromCache, nil
 }
 
 func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskID string) (*datastore.Source, error) {
-	source := &datastore.Source{}
-	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.mask_id"), maskID).StructScan(source)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrSourceNotFound
+	fromCache, err := s.readFromCache(ctx, maskID, func() (*datastore.Source, error) {
+		source := &datastore.Source{}
+		err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.mask_id"), maskID).StructScan(source)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrSourceNotFound
+			}
+			return nil, err
 		}
+
+		return source, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return source, nil
+	return fromCache, nil
 }
 
-func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectID, id, sourceVeriferID string) error {
+func (s *sourceRepo) DeleteSourceByID(ctx context.Context, id, sourceVeriferID string) error {
 	tx, err := s.db.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -361,7 +413,18 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectID, id, source
 		return err
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	srcCacheKey := convoy.SourceCacheKey.Get(id).String()
+	err = s.cache.Delete(ctx, srcCacheKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, filter *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
@@ -437,7 +500,7 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		rows.Close()
+		closeWithError(rows)
 	}
 
 	ids := make([]string, len(sources))
@@ -453,4 +516,29 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 	pagination = pagination.Build(pageable, ids)
 
 	return sources, *pagination, nil
+}
+
+func (s *sourceRepo) readFromCache(ctx context.Context, key string, readFromDB func() (*datastore.Source, error)) (*datastore.Source, error) {
+	var source *datastore.Source
+	srcCacheKey := convoy.SourceCacheKey.Get(key).String()
+	err := s.cache.Get(ctx, srcCacheKey, &source)
+	if err != nil {
+		return nil, err
+	}
+
+	if source != nil {
+		return source, err
+	}
+
+	fromDB, err := readFromDB()
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.cache.Set(ctx, srcCacheKey, fromDB, time.Hour*24)
+	if err != nil {
+		return nil, err
+	}
+
+	return fromDB, err
 }

@@ -120,11 +120,11 @@ type SubscriptionRepository interface {
 
 type SourceRepository interface {
 	CreateSource(context.Context, *Source) error
-	UpdateSource(ctx context.Context, projectID string, source *Source) error
-	FindSourceByID(ctx context.Context, projectID string, id string) (*Source, error)
+	UpdateSource(ctx context.Context, source *Source) error
+	FindSourceByID(ctx context.Context, id string) (*Source, error)
 	FindSourceByName(ctx context.Context, projectId string, name string) (*Source, error)
 	FindSourceByMaskID(ctx context.Context, maskID string) (*Source, error)
-	DeleteSourceByID(ctx context.Context, projectID string, id string, sourceVerifierID string) error
+	DeleteSourceByID(ctx context.Context, id string, sourceVerifierID string) error
 	LoadSourcesPaged(ctx context.Context, projectID string, filter *SourceFilter, pageable Pageable) ([]Source, PaginationData, error)
 }
 

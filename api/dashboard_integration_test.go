@@ -3501,7 +3501,7 @@ func (s *SourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 	parseResponse(s.T(), w.Result(), &source)
 
 	sourceRepo := postgres.NewSourceRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	dbSource, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultProject.UID, sourceID)
+	dbSource, err := sourceRepo.FindSourceByID(context.Background(), sourceID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), source.UID, dbSource.UID)
 	require.Equal(s.T(), source.Name, dbSource.Name)
@@ -3697,7 +3697,7 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 	parseResponse(s.T(), w.Result(), &source)
 
 	sourceRepo := postgres.NewSourceRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	dbSource, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultProject.UID, sourceID)
+	dbSource, err := sourceRepo.FindSourceByID(context.Background(), sourceID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), source.UID, dbSource.UID)
 	require.Equal(s.T(), name, dbSource.Name)
@@ -3729,7 +3729,7 @@ func (s *SourceIntegrationTestSuite) Test_DeleteSource() {
 
 	// Deep Assert.
 	sourceRepo := postgres.NewSourceRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	_, err = sourceRepo.FindSourceByID(context.Background(), s.DefaultProject.UID, sourceID)
+	_, err = sourceRepo.FindSourceByID(context.Background(), sourceID)
 	require.ErrorIs(s.T(), err, datastore.ErrSourceNotFound)
 }
 

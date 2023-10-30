@@ -25,7 +25,7 @@ func Test_CreateSource(t *testing.T) {
 
 	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
 
-	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
+	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.UID)
 	require.NoError(t, err)
 
 	newSource.CreatedAt = time.Time{}
@@ -41,14 +41,14 @@ func Test_FindSourceByID(t *testing.T) {
 	sourceRepo := NewSourceRepo(db, nil)
 	source := generateSource(t, db)
 
-	_, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
+	_, err := sourceRepo.FindSourceByID(context.Background(), source.UID)
 
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrSourceNotFound))
 
 	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
 
-	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
+	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.UID)
 	require.NoError(t, err)
 
 	newSource.CreatedAt = time.Time{}
@@ -119,9 +119,9 @@ func Test_UpdateSource(t *testing.T) {
 		Body:        "/ref/",
 		ContentType: "application/json",
 	}
-	require.NoError(t, sourceRepo.UpdateSource(context.Background(), source.ProjectID, source))
+	require.NoError(t, sourceRepo.UpdateSource(context.Background(), source))
 
-	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
+	newSource, err := sourceRepo.FindSourceByID(context.Background(), source.UID)
 	require.NoError(t, err)
 
 	newSource.CreatedAt = time.Time{}
@@ -160,12 +160,12 @@ func Test_DeleteSource(t *testing.T) {
 	err := subRepo.CreateSubscription(context.Background(), source.ProjectID, sub)
 	require.NoError(t, err)
 
-	_, err = sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
+	_, err = sourceRepo.FindSourceByID(context.Background(), source.UID)
 	require.NoError(t, err)
 
-	require.NoError(t, sourceRepo.DeleteSourceByID(context.Background(), source.ProjectID, source.UID, source.VerifierID))
+	require.NoError(t, sourceRepo.DeleteSourceByID(context.Background(), source.UID, source.VerifierID))
 
-	_, err = sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
+	_, err = sourceRepo.FindSourceByID(context.Background(), source.UID)
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrSourceNotFound))
 

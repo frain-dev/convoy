@@ -1510,32 +1510,32 @@ func (mr *MockSourceRepositoryMockRecorder) CreateSource(arg0, arg1 interface{})
 }
 
 // DeleteSourceByID mocks base method.
-func (m *MockSourceRepository) DeleteSourceByID(ctx context.Context, projectID, id, sourceVerifierID string) error {
+func (m *MockSourceRepository) DeleteSourceByID(ctx context.Context, id, sourceVerifierID string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteSourceByID", ctx, projectID, id, sourceVerifierID)
+	ret := m.ctrl.Call(m, "DeleteSourceByID", ctx, id, sourceVerifierID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteSourceByID indicates an expected call of DeleteSourceByID.
-func (mr *MockSourceRepositoryMockRecorder) DeleteSourceByID(ctx, projectID, id, sourceVerifierID interface{}) *gomock.Call {
+func (mr *MockSourceRepositoryMockRecorder) DeleteSourceByID(ctx, id, sourceVerifierID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSourceByID", reflect.TypeOf((*MockSourceRepository)(nil).DeleteSourceByID), ctx, projectID, id, sourceVerifierID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSourceByID", reflect.TypeOf((*MockSourceRepository)(nil).DeleteSourceByID), ctx, id, sourceVerifierID)
 }
 
 // FindSourceByID mocks base method.
-func (m *MockSourceRepository) FindSourceByID(ctx context.Context, projectID, id string) (*datastore.Source, error) {
+func (m *MockSourceRepository) FindSourceByID(ctx context.Context, id string) (*datastore.Source, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindSourceByID", ctx, projectID, id)
+	ret := m.ctrl.Call(m, "FindSourceByID", ctx, id)
 	ret0, _ := ret[0].(*datastore.Source)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindSourceByID indicates an expected call of FindSourceByID.
-func (mr *MockSourceRepositoryMockRecorder) FindSourceByID(ctx, projectID, id interface{}) *gomock.Call {
+func (mr *MockSourceRepositoryMockRecorder) FindSourceByID(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSourceByID", reflect.TypeOf((*MockSourceRepository)(nil).FindSourceByID), ctx, projectID, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSourceByID", reflect.TypeOf((*MockSourceRepository)(nil).FindSourceByID), ctx, id)
 }
 
 // FindSourceByMaskID mocks base method.
@@ -1585,17 +1585,17 @@ func (mr *MockSourceRepositoryMockRecorder) LoadSourcesPaged(ctx, projectID, fil
 }
 
 // UpdateSource mocks base method.
-func (m *MockSourceRepository) UpdateSource(ctx context.Context, projectID string, source *datastore.Source) error {
+func (m *MockSourceRepository) UpdateSource(ctx context.Context, source *datastore.Source) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateSource", ctx, projectID, source)
+	ret := m.ctrl.Call(m, "UpdateSource", ctx, source)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateSource indicates an expected call of UpdateSource.
-func (mr *MockSourceRepositoryMockRecorder) UpdateSource(ctx, projectID, source interface{}) *gomock.Call {
+func (mr *MockSourceRepositoryMockRecorder) UpdateSource(ctx, source interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSource", reflect.TypeOf((*MockSourceRepository)(nil).UpdateSource), ctx, projectID, source)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSource", reflect.TypeOf((*MockSourceRepository)(nil).UpdateSource), ctx, source)
 }
 
 // MockDeviceRepository is a mock of DeviceRepository interface.

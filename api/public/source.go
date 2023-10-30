@@ -1,10 +1,9 @@
 package public
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
-
-	"github.com/frain-dev/convoy"
 
 	"github.com/frain-dev/convoy/pkg/log"
 
@@ -98,9 +97,9 @@ func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
+	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByID(r.Context(), chi.URLParam(r, "sourceID"))
 	if err != nil {
-		if err == datastore.ErrSourceNotFound {
+		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
@@ -160,9 +159,9 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
+	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByID(r.Context(), chi.URLParam(r, "sourceID"))
 	if err != nil {
-		if err == datastore.ErrSourceNotFound {
+		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
@@ -217,17 +216,11 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 // @Security ApiKeyAuth
 // @Router /v1/projects/{projectID}/sources/{sourceID} [delete]
 func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
 	sourceRepo := postgres.NewSourceRepo(a.A.DB, a.A.Cache)
 
-	source, err := sourceRepo.FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
+	source, err := sourceRepo.FindSourceByID(r.Context(), chi.URLParam(r, "sourceID"))
 	if err != nil {
-		if err == datastore.ErrSourceNotFound {
+		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
@@ -236,19 +229,10 @@ func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = sourceRepo.DeleteSourceByID(r.Context(), project.UID, source.UID, source.VerifierID)
+	err = sourceRepo.DeleteSourceByID(r.Context(), source.UID, source.VerifierID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete source", http.StatusBadRequest))
 		return
-	}
-
-	if source.Provider == datastore.TwitterSourceProvider {
-		sourceCacheKey := convoy.SourceCacheKey.Get(source.MaskID).String()
-		err = a.A.Cache.Delete(r.Context(), sourceCacheKey)
-		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse("failed to delete source cache", http.StatusBadRequest))
-			return
-		}
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Source deleted successfully", nil, http.StatusOK))
