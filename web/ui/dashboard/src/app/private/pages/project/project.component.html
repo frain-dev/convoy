@@ -30,16 +30,11 @@
 							<button convoy-dropdown-option class="text-12 text-new.primary-800 py-8px px-8px w-full text-left hover:bg-new.primary-25 transition-all duration-300 rounded-8px flex justify-between items-center gap-24px" (click)="getProjectCompleteDetails(project)">
 								<div class="flex items-center gap-8px max-w-[calc(100%-36px)]">
 									<div class="w-full max-w-[200px] truncate">{{ project.name }}</div>
-
-									<!-- <convoy-tooltip [withIcon]="false" position="right" class="block" [ngClass]="{ 'ml-10px': !shouldShowFullSideBar }" size="sm" type="white">
-											{{ project?.type == 'incoming' ? 'This project is for recieving webhook events' : 'This project is for sending out webhook events' }} -->
-
 									<div tooltipToggle convoy-tag class="py-[1px] px-[3px]" color="primary" fill="soft">
 										<svg width="16" height="16" class="fill-primary-100 stroke-primary-100 scale-75" [ngClass]="{ 'rotate-180': project?.type === 'incoming' }">
 											<use xlink:href="#top-right-icon"></use>
 										</svg>
 									</div>
-									<!-- </convoy-tooltip> -->
 								</div>
 
 								<div class="w-12px">

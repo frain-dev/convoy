@@ -102,9 +102,14 @@ export class ProjectComponent implements OnInit {
 
 			if (this.projectDetails?.type === 'outgoing' && this.sideBarItems[this.sideBarItems.length - 1].icon === 'endpoint') this.sideBarItems.push({ name: 'Portal Links', icon: 'portal', route: '/portal-links' });
 			if (this.projectDetails?.type === 'incoming' && this.sideBarItems[this.sideBarItems.length - 1].icon === 'portal') this.sideBarItems.pop();
+
+			await this.privateService.getProject({ refresh: true, projectId: project.uid });
 			await this.privateService.getProjectStat({ refresh: true });
+			this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
+				this.router.navigate([`/projects/${project.uid}`]);
+			});
+
 			this.isLoadingProjectDetails = false;
-			this.router.navigate([`/projects/${project.uid}`]);
 		} catch (error) {
 			this.isLoadingProjectDetails = false;
 		}
