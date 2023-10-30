@@ -553,6 +553,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 			IdempotencyKey: ev.IdempotencyKey,
 			Headers:        ev.Headers,
 			URLQueryParams: ev.URLQueryParams,
+			Latency:        ev.Latency,
 			Endpoint: &datastore.Endpoint{
 				UID:          ev.Endpoint.UID.ValueOrZero(),
 				ProjectID:    ev.Endpoint.ProjectID.ValueOrZero(),
@@ -796,6 +797,7 @@ type EventDeliveryPaginated struct {
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
 	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
+	Latency        string                `json:"latency" db:"latency"`
 
 	Endpoint *EndpointMetadata `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *EventMetadata    `json:"event_metadata,omitempty" db:"event_metadata"`
