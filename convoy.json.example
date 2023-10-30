@@ -1,14 +1,5 @@
 {
   "auth": {
-    "file": {
-      "basic": {
-        "username": "<insert-username>",
-        "password": "<insert-password>"
-      },
-      "api_key": {
-        "api_key": "<insert-api-key>"
-      }
-    },
     "native": {
       "enabled": true
     },
@@ -85,19 +76,12 @@
   },
   "host": "<insert-host>",
   "custom_domain_suffix": "<insert-custom-domain-suffix>",
-  "search": {
-    "type": "typesense",
-    "typesense": {
-      "host": "<insert-typesense-host>",
-      "api_key": "<insert-typesense-api-key>"
-    }
-  },
   "feature_flag": "experimental",
   "analytics": {
     "enabled": true
   },
   "storage_policy": {
-    "type": "s3",
+    "type": "s3 | on_prem",
     "s3": {
       "prefix": "<insert-s3-prefix>",
       "bucket": "<insert-s3-bucket>",
