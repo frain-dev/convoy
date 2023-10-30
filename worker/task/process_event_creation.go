@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/util"
-	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -411,6 +412,7 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
 		Endpoints:        endpointIDs,
+		SourceID:         eventParams.SourceID,
 		ProjectID:        project.UID,
 	}
 

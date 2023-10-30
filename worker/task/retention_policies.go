@@ -74,6 +74,7 @@ func NewObjectStoreClient(storage *datastore.StoragePolicyConfiguration) (object
 	case datastore.S3:
 		exportDir := convoy.TmpExportDir
 		objectStoreOpts := objectstore.ObjectStoreOptions{
+			Prefix:       storage.S3.Prefix.ValueOrZero(),
 			Bucket:       storage.S3.Bucket.ValueOrZero(),
 			Endpoint:     storage.S3.Endpoint.ValueOrZero(),
 			AccessKey:    storage.S3.AccessKey.ValueOrZero(),
@@ -81,6 +82,7 @@ func NewObjectStoreClient(storage *datastore.StoragePolicyConfiguration) (object
 			SessionToken: storage.S3.SessionToken.ValueOrZero(),
 			Region:       storage.S3.Region.ValueOrZero(),
 		}
+
 		objectStoreClient, err := objectstore.NewS3Client(objectStoreOpts)
 		if err != nil {
 			return nil, "", err

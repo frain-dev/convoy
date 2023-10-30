@@ -126,6 +126,7 @@ type SourceRepository interface {
 	FindSourceByMaskID(ctx context.Context, maskID string) (*Source, error)
 	DeleteSourceByID(ctx context.Context, id string, sourceVerifierID string) error
 	LoadSourcesPaged(ctx context.Context, projectID string, filter *SourceFilter, pageable Pageable) ([]Source, PaginationData, error)
+	LoadPubSubSourcesByProjectIDs(ctx context.Context, projectIDs []string, pageable Pageable) ([]Source, PaginationData, error)
 }
 
 type DeviceRepository interface {

@@ -4,6 +4,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/frain-dev/convoy/util"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -32,7 +34,6 @@ func NewS3Client(opts ObjectStoreOptions) (ObjectStore, error) {
 	}
 
 	return client, nil
-
 }
 
 func (s3 *S3Client) Save(filename string) error {
@@ -44,11 +45,21 @@ func (s3 *S3Client) Save(filename string) error {
 
 	defer file.Close()
 
-	names := strings.Split(filename, "/tmp/")
+	name := filename
+
+	if util.IsStringEmpty(s3.opts.Prefix) {
+		names := strings.Split(filename, "/tmp/")
+		if len(names) > 1 {
+			name = names[1]
+		}
+	} else {
+		name = strings.Replace(filename, "/tmp", s3.opts.Prefix, 1)
+	}
+
 	uploader := s3manager.NewUploader(s3.session)
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(s3.opts.Bucket),
-		Key:    aws.String(names[1]),
+		Key:    aws.String(name),
 		Body:   file,
 	})
 

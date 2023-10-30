@@ -231,6 +231,7 @@ type StoragePolicyConfiguration struct {
 }
 
 type S3Storage struct {
+	Prefix       string `json:"prefix" envconfig:"CONVOY_STORAGE_AWS_PREFIX"`
 	Bucket       string `json:"bucket" envconfig:"CONVOY_STORAGE_AWS_BUCKET"`
 	AccessKey    string `json:"access_key" envconfig:"CONVOY_STORAGE_AWS_ACCESS_KEY"`
 	SecretKey    string `json:"secret_key" envconfig:"CONVOY_STORAGE_AWS_SECRET_KEY"`
@@ -291,9 +292,9 @@ func (ft *FlagLevel) UnmarshalJSON(v []byte) error {
 func (ft FlagLevel) MarshalJSON() ([]byte, error) {
 	switch ft {
 	case ExperimentalFlagLevel:
-		return []byte(Experimental), nil
+		return []byte(fmt.Sprintf(`"%s"`, []byte(Experimental))), nil
 	default:
-		return []byte(""), nil
+		return []byte(fmt.Sprintf(`"%s"`, []byte(Experimental))), nil
 	}
 }
 
