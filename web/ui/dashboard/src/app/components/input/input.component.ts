@@ -7,7 +7,7 @@ import { TooltipComponent } from '../tooltip/tooltip.component';
 	selector: '[convoy-input]',
 	standalone: true,
 	host: {
-		class: 'transition-all duration-[.3s] w-full font-normal text-12 placeholder:text-new.gray-300 text-new.gray-600 border border-new.primary-25 valid:border-new.primary-25 disabled:text-new.gray-400 disabled:border-new.primary-25 hover:border-new.primary-25 focus:border-new.primary-300 outline-none rounded-4px placeholder:text-14 bg-white-100 py-12px px-16px appearance-none',
+		class: 'transition-all duration-[.3s] w-full font-normal text-12 placeholder:text-new.gray-300 text-new.gray-600 border border-new.gray-200 disabled:text-new.gray-400 disabled:border-new.primary-25 hover:border-new.primary-100 focus:border-new.primary-300 outline-none rounded-4px placeholder:text-14 bg-white-100 py-12px px-16px appearance-none',
 		'[ngClass]': "{ 'pointer-events-none': readonly, 'appearance-none': type !== 'password' }"
 	}
 })

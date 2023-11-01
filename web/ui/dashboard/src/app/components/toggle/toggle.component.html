@@ -1,4 +1,4 @@
-<label [for]="id || 'convoy-toggle'" class="inline-flex relative items-center mb-5 cursor-pointer" [class]="class">
+<label [for]="id || 'convoy-toggle'" class="inline-flex relative items-center cursor-pointer" [class]="class">
 	<ng-container *ngIf="!formControlName">
 		<input type="checkbox" [id]="id || 'convoy-toggle'" class="sr-only peer" [checked]="isChecked" (change)="onChange.emit($event)" />
 	</ng-container>
@@ -27,5 +27,4 @@
 	></div>
 
 	<span class="ml-2 text-12">{{ label }}</span>
-
 </label>

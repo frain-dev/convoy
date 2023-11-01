@@ -11,7 +11,7 @@
 </div>
 
 <!-- loader  -->
-<div convoy-card class="relative min-h-[500px] flex items-center justify-center" *ngIf="isLoadingSources">
+<div class="relative min-h-[500px] flex items-center justify-center" *ngIf="isLoadingSources">
 	<convoy-loader position="relative"></convoy-loader>
 </div>
 
@@ -151,11 +151,11 @@
 
 <dialog #sourceDialog convoy-dialog id="sourceForm" position="full">
 	<div convoy-dialog-header fullscreen="true" (closeDialog)="closeCreateSourceModal({ action: 'close' })">
-		<h2 class="font-semibold capitalize ml-2">{{ action === 'update' ? 'Update Source' : 'Create source' }}</h2>
+		<h2 class="font-semibold text-14 capitalize ml-10px">{{ action === 'update' ? 'Update Source' : 'Create source' }}</h2>
 	</div>
 
 	<div class="w-full h-full">
-		<div class="max-w-[770px] m-auto">
+		<div class="max-w-[770px] pt-24px m-auto">
 			<convoy-create-source showAction="true" (onAction)="closeCreateSourceModal($event)" [action]="action"></convoy-create-source>
 		</div>
 	</div>

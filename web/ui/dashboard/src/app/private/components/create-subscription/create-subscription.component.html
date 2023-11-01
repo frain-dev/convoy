@@ -1,9 +1,59 @@
-<form class="relative pb-100px" [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()">
+<form class="relative mt-40px" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()">
 	<convoy-loader *ngIf="isLoadingForm"></convoy-loader>
 
-	<p *ngIf="action !== 'view' && !token" class="text-14 font-normal pb-20px max-w-[634px]">A subscription enable you to subscribe endpoints to events from any source, with extra configurations like event filters and retry logic</p>
-	<div convoy-card class="px-24px pt-24px relative" [ngClass]="{ 'mb-70px': action !== 'view' }">
-		<ng-container *ngIf="isPortal === 'false' && showAction === 'true'">
+	<ng-container *ngIf="showAction === 'true'">
+		<ng-container *ngIf="projectType === 'incoming' && !token">
+			<h3 class="font-semibold text-14">Source</h3>
+			<p class="text-12 text-new.gray-600 mt-6px">Incoming event source this subscription is connected to.</p>
+			<div convoy-card class="px-24px py-24px mb-70px mt-20px">
+				<ng-container *ngIf="!showCreateSourceForm">
+					<convoy-select
+						[options]="sources"
+						name="source"
+						formControlName="source_id"
+						errorMessage="Select or create a source"
+						label="Select from existing sources"
+						placeholder="Select source"
+						[required]="true"
+						(selectedOption)="subscriptionForm.patchValue({ source_id: $event })"
+					></convoy-select>
+
+					<button size="sm" convoy-button convoy-permission="Subscriptions|MANAGE" fill="text" type="button" class="mt-24px font-medium" (click)="showCreateSourceForm = true; subscriptionForm.patchValue({ source_id: null })">Create New Source</button>
+				</ng-container>
+
+				<convoy-create-source *ngIf="showCreateSourceForm" (onAction)="$event?.action === 'close' ? (showCreateSourceForm = false) : onCreateSource($event.data)">
+					<button size="sm" convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="pt-30px mt-40px font-medium" (click)="showCreateSourceForm = false; subscriptionForm.patchValue({ source_id: null })">Use Existing Source</button>
+				</convoy-create-source>
+			</div>
+		</ng-container>
+
+		<h3 class="font-semibold text-14 mt-40px">Endpoint</h3>
+		<p class="text-12 text-new.gray-600 mt-6px">Endpoint this subscription routes events into.</p>
+		<div convoy-card class="px-24px py-24px mt-20px" *ngIf="!showCreateEndpointForm">
+			<convoy-select
+				className="mb-0 mt-24px"
+				[options]="endPoints"
+				name="endpoint"
+				formControlName="endpoint_id"
+				errorMessage="Select or create an endpoint"
+				label="Select from existing endpoints"
+				placeholder="Select endpoint"
+				(selectedOption)="subscriptionForm.patchValue({ endpoint_id: $event })"
+				[required]="true"
+			></convoy-select>
+
+			<button size="sm" convoy-button fill="text" type="button" class="mt-24px font-medium" (click)="showCreateEndpointForm = true; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">Create New Endpoint</button>
+		</div>
+
+		<convoy-create-endpoint *ngIf="showCreateEndpointForm" (onAction)="$event.action === 'close' ? (showCreateEndpointForm = false) : onCreateEndpoint($event.data)">
+			<button size="sm" convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="mt-40px font-medium" (click)="showCreateEndpointForm = false; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">Use Existing Endpoint</button>
+		</convoy-create-endpoint>
+	</ng-container>
+
+	<h3 class="font-semibold text-14 mt-70px">Webhook Configuration</h3>
+	<p class="text-12 text-new.gray-600 mt-6px">Configure how you want this endpoint to receive webhook events.</p>
+	<div class="mt-24px pt-24px relative" [ngClass]="{ 'border border-new.gray-100 shadow-xs p-24px rounded-8px': showAction }">
+		<!-- <ng-container *ngIf="isPortal === 'false' && showAction === 'true'">
 			<convoy-input-field className="mb-40px">
 				<label for="subscription-name" required="true" convoy-label>Subscription name</label>
 				<input type="text" id="subscription-name" convoy-input autocomplete="subscription-name" formControlName="name" placeholder="e.g paystack-live" />
@@ -11,7 +61,7 @@
 			</convoy-input-field>
 
 			<hr class="border-t border-new.primary-25 mb-40px" />
-		</ng-container>
+		</ng-container> -->
 
 		<ng-container *ngIf="showConfig('events')">
 			<div *ngIf="projectType === 'outgoing' || token" class="border-l-2 border-new.primary-25 pl-16px mb-40px">
@@ -123,67 +173,17 @@
 			</div>
 		</ng-container>
 
-		<div class="flex flex-wrap items-center mb-24px gap-24px" *ngIf="shouldShowBorder < configurations.length">
+		<div class="flex flex-wrap items-center gap-24px" *ngIf="shouldShowBorder < configurations.length">
 			<ng-container *ngFor="let config of configurations">
-				<button *ngIf="!config.show" convoy-button size="sm" fill="outline" color="grey" texture="light" type="button" (click)="toggleConfig(config.uid)">
-					{{ config.name }}
-					<img src="assets/img/svg/plus-icon.svg" class="ml-24px" alt="plus icon" />
-				</button>
+				<convoy-config-button *ngIf="!config.show" (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
 			</ng-container>
 		</div>
 
 		<div *ngIf="isCreatingSubscription && action === 'create'" convoy-form-loader></div>
 	</div>
 
-	<ng-container *ngIf="showAction === 'true'">
-		<ng-container *ngIf="projectType === 'incoming' && !token">
-			<h3 class="font-semibold mb-6px">Source</h3>
-			<p class="text-14 text-grey-60">Incoming event source this subscription is connected to.</p>
-			<div convoy-card class="px-24px py-24px mb-70px mt-20px" *ngIf="!showCreateSourceForm">
-				<convoy-select
-					[options]="sources"
-					name="source"
-					formControlName="source_id"
-					errorMessage="Select or create a source"
-					label="Select from existing sources"
-					placeholder="Select source"
-					[required]="true"
-					(selectedOption)="subscriptionForm.patchValue({ source_id: $event })"
-				></convoy-select>
-
-				<button convoy-button convoy-permission="Subscriptions|MANAGE" fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateSourceForm = true; subscriptionForm.patchValue({ source_id: null })">Create New Source</button>
-			</div>
-
-			<convoy-create-source *ngIf="showCreateSourceForm" (onAction)="$event?.action === 'close' ? (showCreateSourceForm = false) : onCreateSource($event.data)">
-				<button convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="pt-30px text-14 font-medium" (click)="showCreateSourceForm = false; subscriptionForm.patchValue({ source_id: null })">Use Existing Source</button>
-			</convoy-create-source>
-		</ng-container>
-
-		<h3 class="font-semibold mb-6px">Endpoint</h3>
-		<p class="text-14 text-grey-60">Endpoint this subscription routes events into.</p>
-		<div convoy-card class="px-24px py-24px mt-20px" *ngIf="!showCreateEndpointForm">
-			<convoy-select
-				className="mb-0 mt-24px"
-				[options]="endPoints"
-				name="endpoint"
-				formControlName="endpoint_id"
-				errorMessage="Select or create an endpoint"
-				label="Select from existing endpoints"
-				placeholder="Select endpoint"
-				(selectedOption)="subscriptionForm.patchValue({ endpoint_id: $event })"
-				[required]="true"
-			></convoy-select>
-
-			<button convoy-button convoy-permission="Subscriptions|MANAGE" fill="text" type="button" class="mt-24px text-14 font-medium" (click)="showCreateEndpointForm = true; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">Create New Endpoint</button>
-		</div>
-
-		<convoy-create-endpoint *ngIf="showCreateEndpointForm" (onAction)="$event.action === 'close' ? (showCreateEndpointForm = false) : onCreateEndpoint($event.data)">
-			<button convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="mt-40px text-14 font-medium" (click)="showCreateEndpointForm = false; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">Use Existing Endpoint</button>
-		</convoy-create-endpoint>
-	</ng-container>
-
 	<div class="flex justify-end mt-32px mb-40px" [ngClass]="{ hidden: showAction === 'false' }">
-		<button convoy-button class="text-14" [disabled]="isCreatingSubscription || subscriptionForm.disabled">
+		<button convoy-button size="sm" [disabled]="isCreatingSubscription || subscriptionForm.disabled">
 			{{ action == 'update' ? 'Updat' : 'Creat' }}{{ isCreatingSubscription ? 'ing Subscription...' : 'e Subscription' }}
 			<svg width="24" height="24" class="ml-8px" class="fill-white-100" *ngIf="action === 'create'">
 				<use xlink:href="#arrow-right-icon"></use>
@@ -191,11 +191,6 @@
 		</button>
 	</div>
 </form>
-
-<div class="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center bg-[rgba(0,0,0,0.5)] text-white-100 flex-col" *ngIf="showError">
-	<p>An error occured while fetching app details</p>
-	<button convoy-button size="sm" class="mt-20px" (click)="onAction.emit({ action: 'cancel' })">Close</button>
-</div>
 
 <!-- subscription filters form   -->
 <dialog open convoy-dialog position="full" *ngIf="showFilterDialog">

@@ -16,6 +16,7 @@ import { MultiInputComponent } from 'src/app/components/multi-input/multi-input.
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { DialogDirective, DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
 import { NotificationComponent } from 'src/app/components/notification/notification.component';
+import { ConfigButtonComponent } from '../config-button/config-button.component';
 
 @NgModule({
 	declarations: [CreateSourceComponent],
@@ -39,7 +40,8 @@ import { NotificationComponent } from 'src/app/components/notification/notificat
 		ToggleComponent,
 		MultiInputComponent,
 		DialogDirective,
-        NotificationComponent
+		NotificationComponent,
+		ConfigButtonComponent
 	],
 	exports: [CreateSourceComponent]
 })

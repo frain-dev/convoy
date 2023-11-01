@@ -26,7 +26,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;
 
 	subscriptionForm: FormGroup = this.formBuilder.group({
-		name: [null, Validators.required],
+		name: ['New Endpoint', Validators.required],
 		source_id: [''],
 		endpoint_id: [null, Validators.required],
 		function: [null],
@@ -63,10 +63,9 @@ export class CreateSubscriptionComponent implements OnInit {
 	isLoadingForm = true;
 	isLoadingPortalProject = false;
 	token: string = this.route.snapshot.queryParams.token;
-	showError = false;
 
 	configurations = [
-		{ uid: 'filter_config', name: 'Filter', show: false },
+		{ uid: 'filter_config', name: 'Event Filter', show: false },
 		{ uid: 'retry_config', name: 'Retry Logic', show: false }
 	];
 	createdSubscription = false;
@@ -166,6 +165,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async onCreateEndpoint(newEndpoint: ENDPOINT) {
+		console.log('🚀 ~ file: create-subscription.component.ts:168 ~ CreateSubscriptionComponent ~ onCreateEndpoint ~ newEndpoint:', newEndpoint);
 		this.subscriptionForm.patchValue({ endpoint_id: newEndpoint.uid });
 		await this.getEndpoints();
 	}
@@ -212,6 +212,8 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		if (this.createEndpointForm && !this.createEndpointForm.endpointCreated) await this.createEndpointForm.saveEndpoint();
 		if (this.createSourceForm && !this.createSourceForm.sourceCreated) await this.createSourceForm.saveSource();
+
+		this.subscriptionForm.patchValue({ name: this.endpoints.find(endpoint => endpoint.uid == this.subscriptionForm.value.endpoint_id)?.name + ' Subscription' });
 
 		// check subscription form validation
 		if (this.subscriptionForm.invalid) {

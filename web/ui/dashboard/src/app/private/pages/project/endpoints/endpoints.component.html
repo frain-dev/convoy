@@ -16,7 +16,7 @@
 	</div>
 </div>
 
-<div convoy-card class="relative min-h-[500px] flex items-center justify-center" *ngIf="isLoadingEndpoints">
+<div class="relative min-h-[500px] flex items-center justify-center" *ngIf="isLoadingEndpoints">
 	<convoy-loader position="relative"></convoy-loader>
 </div>
 
@@ -157,7 +157,7 @@
 <!-- create endpoint modal -->
 <dialog #endpointDialog convoy-dialog position="full">
 	<div convoy-dialog-header fullscreen="true" (closeDialog)="cancel()">
-		<h2 class="font-semibold capitalize">{{ action === 'update' ? 'Edit Endpoint' : 'Create Endpoint' }}</h2>
+		<h2 class="font-semibold text-14 capitalize">{{ action === 'update' ? 'Edit Endpoint' : 'Create Endpoint' }}</h2>
 	</div>
 
 	<div class="h-full w-full">

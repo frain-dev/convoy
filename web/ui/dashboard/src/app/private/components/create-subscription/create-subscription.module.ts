@@ -20,6 +20,7 @@ import { PermissionDirective } from '../permission/permission.directive';
 import { MultiInputComponent } from 'src/app/components/multi-input/multi-input.component';
 import { NotificationComponent } from 'src/app/components/notification/notification.component';
 import { CreateTransformFunctionComponent } from '../create-transform-function/create-transform-function.component';
+import { ConfigButtonComponent } from '../config-button/config-button.component';
 
 @NgModule({
 	declarations: [CreateSubscriptionComponent],
@@ -47,7 +48,8 @@ import { CreateTransformFunctionComponent } from '../create-transform-function/c
 		PermissionDirective,
 		DialogDirective,
 		NotificationComponent,
-        CreateTransformFunctionComponent
+		CreateTransformFunctionComponent,
+		ConfigButtonComponent
 	],
 	exports: [CreateSubscriptionComponent]
 })
