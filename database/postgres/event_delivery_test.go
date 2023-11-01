@@ -43,6 +43,8 @@ func Test_eventDeliveryRepo_CreateEventDelivery(t *testing.T) {
 	dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt = time.Time{}, time.Time{}
 	dbEventDelivery.Event, dbEventDelivery.Endpoint, dbEventDelivery.Source, dbEventDelivery.Device = nil, nil, nil, nil
 
+	require.Equal(t, "", dbEventDelivery.Latency)
+
 	require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
 	ed.Metadata.NextSendTime = time.Time{}
 	dbEventDelivery.Metadata.NextSendTime = time.Time{}
@@ -337,6 +339,10 @@ func Test_eventDeliveryRepo_UpdateEventDeliveryWithAttempt(t *testing.T) {
 		UID: ulid.Make().String(),
 	}
 
+	latency := "1h2m"
+
+	ed.Latency = latency
+
 	err = edRepo.UpdateEventDeliveryWithAttempt(context.Background(), project.UID, *ed, newAttempt)
 	require.NoError(t, err)
 
@@ -345,6 +351,7 @@ func Test_eventDeliveryRepo_UpdateEventDeliveryWithAttempt(t *testing.T) {
 
 	require.Equal(t, ed.DeliveryAttempts[0], dbEventDelivery.DeliveryAttempts[0])
 	require.Equal(t, newAttempt, dbEventDelivery.DeliveryAttempts[1])
+	require.Equal(t, latency, dbEventDelivery.Latency)
 }
 
 func Test_eventDeliveryRepo_CountEventDeliveries(t *testing.T) {
