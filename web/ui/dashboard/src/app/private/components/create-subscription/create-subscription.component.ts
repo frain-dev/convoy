@@ -26,7 +26,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;
 
 	subscriptionForm: FormGroup = this.formBuilder.group({
-		name: ['New Endpoint', Validators.required],
+		name: ['', Validators.required],
 		source_id: [''],
 		endpoint_id: [null, Validators.required],
 		function: [null],
@@ -213,7 +213,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (this.createEndpointForm && !this.createEndpointForm.endpointCreated) await this.createEndpointForm.saveEndpoint();
 		if (this.createSourceForm && !this.createSourceForm.sourceCreated) await this.createSourceForm.saveSource();
 
-		this.subscriptionForm.patchValue({ name: this.endpoints.find(endpoint => endpoint.uid == this.subscriptionForm.value.endpoint_id)?.name + ' Subscription' });
+		if (!this.showAction && this.endpoints.length) this.subscriptionForm.patchValue({ name: this.endpoints?.find(endpoint => endpoint.uid == this.subscriptionForm.value.endpoint_id)?.name + ' Subscription' });
 
 		// check subscription form validation
 		if (this.subscriptionForm.invalid) {
