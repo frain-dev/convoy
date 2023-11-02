@@ -20,7 +20,7 @@ func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis) func(context.Context, *a
 	rs := redsync.New(pool)
 
 	return func(ctx context.Context, t *asynq.Task) error {
-		const mutexName = "convoy:deletearchivedtasks:mutex"
+		const mutexName = "convoy:delete_archived_tasks:mutex"
 		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Second), redsync.WithTries(1))
 
 		tctx, cancel := context.WithTimeout(ctx, time.Second*2)
