@@ -22,7 +22,7 @@
 				</ng-container>
 
 				<convoy-create-source *ngIf="showCreateSourceForm" (onAction)="$event?.action === 'close' ? (showCreateSourceForm = false) : onCreateSource($event.data)">
-					<button size="sm" convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="pt-30px mt-40px font-medium" (click)="showCreateSourceForm = false; subscriptionForm.patchValue({ source_id: null })">Use Existing Source</button>
+					<button size="sm" convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="pt-30px font-medium" (click)="showCreateSourceForm = false; subscriptionForm.patchValue({ source_id: null })">Use Existing Source</button>
 				</convoy-create-source>
 			</div>
 		</ng-container>
@@ -209,3 +209,8 @@
 </dialog>
 
 <convoy-notification></convoy-notification>
+
+<!-- source url modal  -->
+<dialog #sourceURLDialog convoy-dialog position="center">
+	<convoy-source-url [url]="sourceURL" (close)="sourceURLDialog.close(); onAction.emit({ data: subscription, action: this.action == 'update' ? 'update' : 'create' })"></convoy-source-url>
+</dialog>

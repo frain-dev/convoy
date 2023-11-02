@@ -21,6 +21,7 @@ import { MultiInputComponent } from 'src/app/components/multi-input/multi-input.
 import { NotificationComponent } from 'src/app/components/notification/notification.component';
 import { CreateTransformFunctionComponent } from '../create-transform-function/create-transform-function.component';
 import { ConfigButtonComponent } from '../config-button/config-button.component';
+import { SourceURLComponent } from '../create-source/source-url/source-url.component';
 
 @NgModule({
 	declarations: [CreateSubscriptionComponent],
@@ -49,7 +50,8 @@ import { ConfigButtonComponent } from '../config-button/config-button.component'
 		DialogDirective,
 		NotificationComponent,
 		CreateTransformFunctionComponent,
-		ConfigButtonComponent
+		ConfigButtonComponent,
+		SourceURLComponent
 	],
 	exports: [CreateSubscriptionComponent]
 })
