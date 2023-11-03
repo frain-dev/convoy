@@ -19,6 +19,7 @@ import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.
 import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
+import { EndpointFilterComponent } from 'src/app/private/components/endpoints-filter/endpoints-filter.component';
 
 @NgModule({
 	declarations: [EventDeliveriesComponent],
@@ -47,7 +48,8 @@ import { PaginationComponent } from 'src/app/private/components/pagination/pagin
 		DropdownOptionDirective,
 		TooltipComponent,
 		PaginationComponent,
-        DialogDirective
+		DialogDirective,
+		EndpointFilterComponent
 	],
 	exports: [EventDeliveriesComponent],
 	providers: [DatePipe]

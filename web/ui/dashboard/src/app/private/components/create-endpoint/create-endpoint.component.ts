@@ -17,11 +17,28 @@ import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { EndpointsService } from '../../pages/project/endpoints/endpoints.service';
 import { NotificationComponent } from 'src/app/components/notification/notification.component';
+import { ConfigButtonComponent } from '../config-button/config-button.component';
 
 @Component({
 	selector: 'convoy-create-endpoint',
 	standalone: true,
-	imports: [CommonModule, ReactiveFormsModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, ButtonComponent, RadioComponent, TooltipComponent, CardComponent, ToggleComponent, FormLoaderComponent, PermissionDirective, NotificationComponent],
+	imports: [
+		CommonModule,
+		ReactiveFormsModule,
+		InputDirective,
+		InputErrorComponent,
+		InputFieldDirective,
+		LabelComponent,
+		ButtonComponent,
+		RadioComponent,
+		TooltipComponent,
+		CardComponent,
+		ToggleComponent,
+		FormLoaderComponent,
+		PermissionDirective,
+		NotificationComponent,
+		ConfigButtonComponent
+	],
 	templateUrl: './create-endpoint.component.html',
 	styleUrls: ['./create-endpoint.component.scss']
 })
@@ -56,7 +73,7 @@ export class CreateEndpointComponent implements OnInit {
 	token: string = this.route.snapshot.params.token;
 	@Input('endpointId') endpointUid: string = this.route.snapshot.params.id;
 	enableMoreConfig = false;
-	configurations = [{ uid: 'http_timeout', name: 'Endpoint Timeout ', show: false }];
+	configurations = [{ uid: 'http_timeout', name: 'Timeout ', show: false }];
 	endpointCreated: boolean = false;
 	private rbacService = inject(RbacService);
 
@@ -72,7 +89,7 @@ export class CreateEndpointComponent implements OnInit {
 
 	async ngOnInit() {
 		if (this.type !== 'portal')
-			this.configurations.push({ uid: 'rate_limit', name: 'Rate Limit ', show: false }, { uid: 'alert_config', name: 'Alert Configuration', show: false }, { uid: 'auth', name: 'Authentication', show: false }, { uid: 'signature', name: 'Signature Format', show: false });
+			this.configurations.push({ uid: 'rate_limit', name: 'Rate Limit ', show: false }, { uid: 'alert_config', name: 'Notifications', show: false }, { uid: 'auth', name: 'Auth', show: false }, { uid: 'signature', name: 'Signature Format', show: false });
 		if (this.endpointUid && this.editMode) this.getEndpointDetails();
 		if (!(await this.rbacService.userCanAccess('Endpoints|MANAGE'))) this.addNewEndpointForm.disable();
 	}
@@ -111,7 +128,6 @@ export class CreateEndpointComponent implements OnInit {
 
 		this.savingEndpoint = true;
 		const endpointValue = structuredClone(this.addNewEndpointForm.value);
-
 
 		if (!this.addNewEndpointForm.value.authentication.api_key.header_name && !this.addNewEndpointForm.value.authentication.api_key.header_value) delete endpointValue.authentication;
 		if (this.addNewEndpointForm.get('http_timeout')?.value) endpointValue.http_timeout = endpointValue.http_timeout + 's';

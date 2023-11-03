@@ -163,6 +163,9 @@ export class EventLogsComponent implements OnInit {
 			if (filterType === 'startDate' || filterType === 'endDate') {
 				delete this.queryParams['startDate'];
 				delete this.queryParams['endDate'];
+			} else if (filterType === 'sourceId') {
+				this.eventSource = '';
+				delete this.queryParams['sourceId'];
 			} else delete this.queryParams[filterType];
 
 			const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));

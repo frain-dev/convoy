@@ -1,32 +1,33 @@
 <div convoy-page>
 	<ng-container *ngIf="!isLoadingProjects && projects.length">
-		<h3 class="mb-2 font-semibold">Projects</h3>
-		<p class="text-grey-40 text-14 font-medium mb-24px">All your project's summary at a glance</p>
+		<h3 class="mb-2 font-bold mt-40px text-16 text-new.gray-800">Projects</h3>
+		<p class="text-new.gray-500 text-12 font-medium mb-24px">All your project's summary at a glance</p>
 
 		<div class="grid grid-cols-3 desktop:grid-cols-2 gap-6">
 			<a convoy-permission="Project Settings|MANAGE" routerLink="./new" class="rounded-8px bg-white-100 border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]">
-				<svg width="22" height="22" class="mr-2" fill="#477db3">
+				<svg width="22" height="22" class="mr-2 scale-75" fill="#477db3">
 					<use xlink:href="#plus-icon"></use>
 				</svg>
-				<span class="text-primary-100 font-medium text-16">Create new project</span>
+				<span class="text-primary-100 font-medium text-12">Create new project</span>
 			</a>
 
 			<ng-container *ngFor="let project of projects">
-				<button (click)="getProjectCompleteDetails(project)" class="rounded-8px bg-white-100 block border border-grey-10 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)] text-left">
-					<div class="px-6 py-4 flex items-center justify-between border-b border-b-grey-10">
+				<button (click)="getProject(project.uid)" class="flex items-center rounded-8px bg-white-100 border border-grey-10 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)] text-left min-h-[88px]">
+					<!-- <div class="px-6 py-4 flex items-center justify-between border-b border-b-grey-10"> -->
+					<div class="px-6 py-4 flex items-center justify-between w-full">
 						<div class="flex items-center">
 							<div class="bg-primary-500 w-6 h-6 rounded-[50px] mr-2 flex items-center justify-center">
-								<svg width="16" height="16" class="fill-primary-100 stroke-primary-100" [ngClass]="{ 'rotate-180': project.type === 'incoming' }">
+								<svg width="16" height="16" class="fill-primary-100 stroke-primary-100 scale-75" [ngClass]="{ 'rotate-180': project.type === 'incoming' }">
 									<use xlink:href="#top-right-icon"></use>
 								</svg>
 							</div>
-							<h4 class="cursor-pointer text-14 font-medium">{{ project.name }}</h4>
+							<h4 class="cursor-pointer text-12 font-medium">{{ project.name }}</h4>
 						</div>
 
 						<div class="bg-primary-500 rounded-8px px-2 pt-[1px] text-10 font-medium text-primary-100 uppercase">{{ project.type || '-' }}</div>
 					</div>
 
-					<div class="flex items-center p-0">
+					<!-- <div class="flex items-center p-0">
 						<div class="py-2 px-6 text-12 font-medium w-1/2 whitespace-nowrap">
 							<span class="text-black mr-2">{{ project.statistics?.messages_sent | number }}</span>
 							<span class="text-grey-40">Events {{ project.type === 'incoming' ? 'Received' : 'Sent' }}</span>
@@ -40,16 +41,19 @@
 								<use xlink:href="#arrow-right-icon"></use>
 							</svg>
 						</div>
-					</div>
+					</div> -->
 				</button>
 			</ng-container>
 		</div>
 	</ng-container>
 
 	<!-- empty state  -->
-	<div class="py-100px mt-24px" convoy-card *ngIf="!isLoadingProjects && !projects.length">
-		<div convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" heading="You currently have no projects" description="Your incoming and outgoing projects appear here." id="subscriptions-empty-state">
-			<button convoy-button convoy-permission="Project Settings|MANAGE" emptyStateCTA routerLink="./new" class="mt-36px">Create a Project</button>
+	<div class="mt-50px" *ngIf="!isLoadingProjects && !projects.length">
+		<div convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" heading="Create a project to get started" description="Your incoming and outgoing projects appear here." id="subscriptions-empty-state">
+			<button convoy-button convoy-permission="Project Settings|MANAGE" size="sm" emptyStateCTA routerLink="./new" class="mt-36px !py-12px">
+				<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
+				Create a Project
+			</button>
 		</div>
 	</div>
 

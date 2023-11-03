@@ -24,12 +24,11 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async createProject(newProjectData: { action: string; data: PROJECT }) {
-		const projectId = newProjectData.data.uid;
-		this.router.navigateByUrl('/projects/' + projectId + '/setup');
+		this.router.navigateByUrl('/projects/' + newProjectData.data.uid);
 	}
 
 	cancel() {
 		this.location.back();
-        this.dialog.nativeElement.close();
+		this.dialog.nativeElement.close();
 	}
 }

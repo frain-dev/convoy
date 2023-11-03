@@ -15,14 +15,14 @@ import { ButtonComponent } from '../button/button.component';
 						<ng-content></ng-content>
 					</div>
 
-					<button convoy-button size="sm" texture="light" class="px-10px !py-10px" [class]="fullscreen !== 'false' ? 'order-1 mr-2' : 'order-2'" (click)="closeDialog.emit()">
+					<button convoy-button size="sm" texture="light" class="px-8px !py-8px" [class]="fullscreen !== 'false' ? 'order-1 mr-2' : 'order-2'" (click)="closeDialog.emit()">
 						<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
 					</button>
 				</div>
 
 				<a *ngIf="fullscreen === 'true'" convoy-button fill="text" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
 					<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
-					<span class="font-medium text-14 text-primary-100 ml-2 whitespace-nowrap">Go to docs</span>
+					<span class="font-medium text-12 text-primary-100 ml-2 whitespace-nowrap">Go to docs</span>
 				</a>
 			</div>
 		</div>
@@ -54,8 +54,6 @@ export class DialogDirective implements OnInit {
 	ngOnInit(): void {}
 
 	get classes(): string {
-		return `${this.modalType[this.position]} ${this.position === 'full' ? 'bg-[#fafafe]' : 'bg-white-100 ' + this.modalSizes[this.size]}`;
+		return `${this.modalType[this.position]} bg-white-100 ${this.position === 'full' ? '' : this.modalSizes[this.size]}`;
 	}
-
-
 }
