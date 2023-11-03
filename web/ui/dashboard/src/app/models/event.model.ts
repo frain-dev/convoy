@@ -32,6 +32,7 @@ export interface EVENT_DELIVERY {
 	uid: string;
 	updated_at: string;
 	device_id: string;
+    event_id: string;
 	cli_metadata?: {
 		event_type: string;
 		host_name: string;

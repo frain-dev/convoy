@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Directive, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -35,4 +35,15 @@ export class ButtonComponent implements OnInit {
 		};
 		return `${this.fill !== 'text' ? this.buttonSizes[this.size] : ''} ${buttonTypes[this.fill]} flex items-center justify-center disabled:opacity-50`;
 	}
+}
+
+@Directive({
+	selector: '[convoy-button-group]',
+	standalone: true,
+	host: { class: 'flex flex-row items-center rounded-8px' }
+})
+export class ButtonGroupDirective implements OnInit {
+	constructor() {}
+
+	ngOnInit(): void {}
 }
