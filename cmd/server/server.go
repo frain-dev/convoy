@@ -131,7 +131,7 @@ func StartConvoyServer(a *cli.App) error {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
-	fflag := fflag.NewFFlag()
+	fFlag := fflag.NewFFlag()
 	if err != nil {
 		a.Logger.WithError(err).Fatal("failed to create fflag controller")
 	}
@@ -153,7 +153,7 @@ func StartConvoyServer(a *cli.App) error {
 
 	handler, err := api.NewApplicationHandler(
 		&types.APIOptions{
-			FFlag:  fflag,
+			FFlag:  fFlag,
 			DB:     a.DB,
 			Queue:  a.Queue,
 			Logger: lo,
@@ -417,36 +417,6 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	if !util.IsStringEmpty(newReplicKey) {
 		c.Tracer.NewRelic.LicenseKey = newReplicKey
-	}
-
-	// CONVOY_SEARCH_TYPE
-	searcher, err := cmd.Flags().GetString("searcher")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(searcher) {
-		c.Search.Type = config.SearchProvider(searcher)
-	}
-
-	// CONVOY_TYPESENSE_HOST
-	typesenseHost, err := cmd.Flags().GetString("typesense-host")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(typesenseHost) {
-		c.Search.Typesense.Host = typesenseHost
-	}
-
-	// CONVOY_TYPESENSE_API_KEY
-	typesenseApiKey, err := cmd.Flags().GetString("typesense-api-key")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(typesenseApiKey) {
-		c.Search.Typesense.ApiKey = typesenseApiKey
 	}
 
 	// CONVOY_NEWRELIC_CONFIG_ENABLED
