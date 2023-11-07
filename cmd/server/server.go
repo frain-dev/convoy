@@ -29,7 +29,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	var limiter string
 	var cache string
 	var logger string
-	var searcher string
 	var logLevel string
 	var sslKeyFile string
 	var sslCertFile string
@@ -38,10 +37,8 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	var signatureHeader string
 	var newRelicApp string
 	var newRelicKey string
-	var typesenseApiKey string
 	var promaddr string
 
-	var typesenseHost string
 	var apiKeyAuthConfig string
 	var basicAuthConfig string
 
@@ -100,9 +97,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&signatureHeader, "signature-header", "", "Application signature header")
 	cmd.Flags().StringVar(&newRelicApp, "new-relic-app", "", "NewRelic application name")
 	cmd.Flags().StringVar(&newRelicKey, "new-relic-key", "", "NewRelic application license key")
-	cmd.Flags().StringVar(&searcher, "searcher", "", "Searcher")
-	cmd.Flags().StringVar(&typesenseHost, "typesense-host", "", "Typesense Host")
-	cmd.Flags().StringVar(&typesenseApiKey, "typesense-api-key", "", "Typesense Api Key")
 	cmd.Flags().StringVar(&promaddr, "promaddr", "", `Prometheus dsn`)
 
 	cmd.Flags().BoolVar(&ssl, "ssl", false, "Configure SSL")
@@ -137,7 +131,7 @@ func StartConvoyServer(a *cli.App) error {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
-	fflag := fflag.NewFFlag()
+	fFlag := fflag.NewFFlag()
 	if err != nil {
 		a.Logger.WithError(err).Fatal("failed to create fflag controller")
 	}
@@ -159,7 +153,7 @@ func StartConvoyServer(a *cli.App) error {
 
 	handler, err := api.NewApplicationHandler(
 		&types.APIOptions{
-			FFlag:  fflag,
+			FFlag:  fFlag,
 			DB:     a.DB,
 			Queue:  a.Queue,
 			Logger: lo,
@@ -181,8 +175,11 @@ func StartConvoyServer(a *cli.App) error {
 	s := worker.NewScheduler(a.Queue, lo)
 
 	// register daily analytic task
-	s.RegisterTask("55 23 * * *", convoy.ScheduleQueue, convoy.DailyAnalytics)
 	s.RegisterTask("58 23 * * *", convoy.ScheduleQueue, convoy.DeleteArchivedTasksProcessor)
+	s.RegisterTask("30 * * * *", convoy.ScheduleQueue, convoy.MonitorTwitterSources)
+	s.RegisterTask("0 0 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
+	s.RegisterTask("55 23 * * *", convoy.ScheduleQueue, convoy.DailyAnalytics)
+	s.RegisterTask("0 * * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
 
 	// Start scheduler
 	s.Start()
@@ -420,36 +417,6 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	if !util.IsStringEmpty(newReplicKey) {
 		c.Tracer.NewRelic.LicenseKey = newReplicKey
-	}
-
-	// CONVOY_SEARCH_TYPE
-	searcher, err := cmd.Flags().GetString("searcher")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(searcher) {
-		c.Search.Type = config.SearchProvider(searcher)
-	}
-
-	// CONVOY_TYPESENSE_HOST
-	typesenseHost, err := cmd.Flags().GetString("typesense-host")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(typesenseHost) {
-		c.Search.Typesense.Host = typesenseHost
-	}
-
-	// CONVOY_TYPESENSE_API_KEY
-	typesenseApiKey, err := cmd.Flags().GetString("typesense-api-key")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(typesenseApiKey) {
-		c.Search.Typesense.ApiKey = typesenseApiKey
 	}
 
 	// CONVOY_NEWRELIC_CONFIG_ENABLED

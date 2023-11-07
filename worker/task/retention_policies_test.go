@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/pkg/log"
 	"os"
 	"testing"
@@ -125,7 +126,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	// call handler
 	task := asynq.NewTask("retention-policies", nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
-	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.exportRepo)
+	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.exportRepo, r.ConvoyApp.redis)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
 
@@ -199,7 +200,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	// call handler
 	task := asynq.NewTask(string(convoy.TaskName("retention-policies")), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
-	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.exportRepo)
+	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.exportRepo, r.ConvoyApp.redis)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
 
@@ -258,6 +259,10 @@ func getDB() database.Database {
 
 func buildApplication() *applicationHandler {
 	db := getDB()
+	redis, err := rdb.NewClient(getConfig().Redis.BuildDsn())
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	projectRepo := postgres.NewProjectRepo(db, nil)
 	eventRepo := postgres.NewEventRepo(db, nil)
@@ -272,6 +277,7 @@ func buildApplication() *applicationHandler {
 		eventDeliveryRepo: eventDeliveryRepo,
 		database:          db,
 		exportRepo:        exportRepo,
+		redis:             redis,
 	}
 
 	return app
@@ -284,6 +290,7 @@ type applicationHandler struct {
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	exportRepo        datastore.ExportRepository
 	database          database.Database
+	redis             *rdb.Redis
 }
 
 func seedEvent(db database.Database, endpointID string, projectID string, uid, eventType string, data []byte, filter SeedFilter) (*datastore.Event, error) {
