@@ -45,7 +45,8 @@ type EventDelivery struct {
 }
 
 func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	projectRepo datastore.ProjectRepository, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter) func(context.Context, *asynq.Task) error {
+	projectRepo datastore.ProjectRepository, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter,
+) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
 
@@ -196,6 +197,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 			eventDelivery.Status = datastore.SuccessEventStatus
 			eventDelivery.Description = ""
+			eventDelivery.Latency = time.Since(eventDelivery.CreatedAt).String()
 		} else {
 			requestLogger.Errorf("%s", eventDelivery.UID)
 			done = false
@@ -251,6 +253,21 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				log.Errorf("%s retry limit exceeded ", eventDelivery.UID)
 				eventDelivery.Description = "Retry limit exceeded"
 				eventDelivery.Status = datastore.FailureEventStatus
+			}
+
+			if endpoint.Status != datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
+				endpointStatus := datastore.InactiveEndpointStatus
+
+				err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
+				if err != nil {
+					log.WithError(err).Error("failed to deactivate endpoint after failed retry")
+				}
+
+				// send endpoint deactivation notification
+				err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, notificationQueue, true, resp.Error, string(resp.Body), resp.StatusCode)
+				if err != nil {
+					log.WithError(err).Error("failed to send notification")
+				}
 			}
 		}
 

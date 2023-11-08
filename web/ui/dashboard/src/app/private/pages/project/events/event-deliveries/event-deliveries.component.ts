@@ -1,7 +1,6 @@
 import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { fromEvent, Observable } from 'rxjs';
-import { debounceTime, distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { EVENT_DELIVERY, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
@@ -42,20 +41,9 @@ export class EventDeliveriesComponent implements OnInit {
 	queryParams?: FILTER_QUERY_PARAM;
 	getEventDeliveriesInterval: any;
 	enableTailMode = false;
+	loadingFilterEndpoints = false;
 
 	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, public projectService: ProjectService, public privateService: PrivateService, private _location: Location) {}
-
-	ngAfterViewInit() {
-		if (!this.portalToken) {
-			this.eventsDelEndpointFilter$ = fromEvent<any>(this.eventDelsEndpointFilter?.nativeElement, 'keyup').pipe(
-				map(event => event.target.value),
-				startWith(''),
-				debounceTime(500),
-				distinctUntilChanged(),
-				switchMap(search => this.getEndpointsForFilter(search))
-			);
-		}
-	}
 
 	ngOnInit() {
 		const data = this.getFiltersFromURL();
@@ -210,6 +198,9 @@ export class EventDeliveriesComponent implements OnInit {
 			} else if (filterType === 'endpointId') {
 				this.eventDeliveriesEndpoint = '';
 				delete this.queryParams['endpointId'];
+			} else if (filterType === 'sourceId') {
+				this.eventDeliveriesSource = '';
+				delete this.queryParams['sourceId'];
 			} else delete this.queryParams[filterType];
 
 			const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
@@ -238,12 +229,6 @@ export class EventDeliveriesComponent implements OnInit {
 		} catch (error) {
 			this.fetchingCount = false;
 		}
-	}
-
-	async getEndpointsForFilter(search: string): Promise<ENDPOINT[]> {
-		return await (
-			await this.privateService.getEndpoints({ q: search })
-		).data.content;
 	}
 
 	async getSourcesForFilter() {

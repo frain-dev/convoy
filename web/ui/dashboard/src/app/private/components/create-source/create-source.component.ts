@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SOURCE } from 'src/app/models/source.model';
@@ -13,8 +13,10 @@ import { RbacService } from 'src/app/services/rbac/rbac.service';
 	styleUrls: ['./create-source.component.scss']
 })
 export class CreateSourceComponent implements OnInit {
+	@ViewChild('sourceURLDialog', { static: true }) sourceURLDialog!: ElementRef<HTMLDialogElement>;
 	@Input('action') action: 'update' | 'create' = 'create';
 	@Input('showAction') showAction: 'true' | 'false' = 'false';
+	@Input('showModal') showModal: 'true' | 'false' = 'false';
 	@Output() onAction = new EventEmitter<any>();
 	sourceForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
@@ -150,6 +152,7 @@ export class CreateSourceComponent implements OnInit {
 
 	brokerAddresses: string[] = [];
 	private rbacService = inject(RbacService);
+	sourceURL!: string;
 
 	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
 
@@ -254,8 +257,15 @@ export class CreateSourceComponent implements OnInit {
 			const response = this.action === 'update' ? await this.createSourceService.updateSource({ data: sourceData, id: this.sourceId }) : await this.createSourceService.createSource({ sourceData });
 			document.getElementById('configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
 			this.sourceData = response.data;
-			this.onAction.emit({ action: this.action, data: response.data });
 			this.sourceCreated = true;
+
+			if (this.showModal == 'true') {
+				this.sourceURL = this.sourceData.url;
+				this.sourceURLDialog.nativeElement.showModal();
+				return response;
+			}
+
+			this.onAction.emit({ action: this.action, data: this.sourceData });
 			return response;
 		} catch (error) {
 			this.sourceCreated = false;

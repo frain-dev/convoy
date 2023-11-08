@@ -1,5 +1,5 @@
 <div class="flex justify-between items-center mb-28px">
-	<h3 class="font-semibold">Change Password</h3>
+	<h3 class="text-16 font-bold text-new.gray-600">Change Password</h3>
 	<button convoy-button size="sm" [disabled]="isUpdatingPassword" (click)="changePassword()">{{ isUpdatingPassword ? 'Saving changes...' : 'Save Changes' }}</button>
 </div>
 
@@ -30,7 +30,7 @@
 	</div>
 </form>
 
-<div class="flex items-start bg-primary-500 border border-dashed border-primary-100 rounded-8px py-10px px-16px mt-24px w-full">
+<div class="flex items-center bg-primary-500 border border-dashed border-new.primary-400 rounded-8px py-10px px-16px mt-24px w-full">
 	<img src="/assets/img/ideas.svg" alt="idea" class="mr-20px" />
-	<p class="text-14">Use a strong password with at least 8 characters long, and having a mixed of letters, numbers, and symbols.</p>
+	<p class="text-12 text-new.gray-600">Use a strong password with at least 8 characters long, and having a mixed of letters, numbers, and symbols.</p>
 </div>

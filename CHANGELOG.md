@@ -1,3 +1,22 @@
+## 23.10.1
+
+- [Feature] Added bootstrap cli for user account creation #1773
+- [Feature] Add prefix configuration to S3 Config #1812
+- [Enhancement] Added TLS option for SMTP config #1784
+- [Enhancement] Added support for multi-architecture docker images #1790
+- [Enhancement] Improved docker compose to use named volumes #1804
+- [Enhancement] Replaced Flipt for a custom feature flag implementation #1797
+- [Enhancement] Added several performance improvements with caches and reduced db calls #1765 #1783
+- [Enhancement] Optimise source loader query #1806
+- [Bugfix] Added separate port for `ingest` cli #1795
+- [Bugfix] Add support for Idempotency keys in message broker integration #1800
+- [Bugfix] Fixed concurrency bug where wrong source name is show in the event log #1800
+- [Bugfix] Fixed role check for updating organization name #1805
+- [Bugfix] Fixed a bug with the portal link delete button #1807
+- [Bugfix] Fixed a bug with the endpoint config button #1810 
+- [Bugfix] Removed onclickout function for dialogs #1808
+- [Bugfix] Generate exponential back-off rate limits from intervalSeconds and Limt #1813
+
 ## 23.9.2
 
 - [Enhancement] Show invite url on teams invite page

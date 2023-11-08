@@ -10,7 +10,7 @@ const routes: Routes = [
 	{
 		path: '',
 		component: PrivateComponent,
-		resolve: [() => fetchOrganisations(), () => fetchMembership()],
+		resolve: [() => fetchMembership()],
 		children: [
 			{
 				path: '',
@@ -36,10 +36,6 @@ const routes: Routes = [
 			{
 				path: 'app-portal/:token',
 				loadChildren: () => import('./pages/app/app.module').then(m => m.AppModule)
-			},
-			{
-				path: 'team',
-				loadChildren: () => import('./pages/teams/teams.module').then(m => m.TeamsModule)
 			},
 			{
 				path: 'user-settings',

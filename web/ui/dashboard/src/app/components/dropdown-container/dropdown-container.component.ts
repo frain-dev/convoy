@@ -10,7 +10,7 @@ export class DropdownContainerComponent implements OnInit {
 	@Input('size') size: 'sm' | 'md' | 'lg' | 'xl' | 'full' = 'md';
 	@Input('show') show = false;
 	@Input('className') class!: string;
-	sizes = { sm: 'w-[140px]', md: 'w-[200px]', lg: 'w-[249px]', xl: 'w-fit min-w-[200px] max-w-[300px]', full: 'w-full' };
+	sizes = { sm: 'w-140px', md: 'w-200px', lg: 'w-260px', xl: 'w-full min-w-[200px] max-w-[300px]', full: 'w-full' };
 
 	constructor() {}
 

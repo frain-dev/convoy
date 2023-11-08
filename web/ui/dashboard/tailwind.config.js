@@ -50,6 +50,7 @@ module.exports = {
 		extend: {
 			spacing: customSpacing(),
 			boxShadow: {
+				xs: '0px 0px 0px -4px rgba(12, 26, 75, 0.08), 0px 0px 1px 1px rgba(50, 50, 71, 0.05)',
 				sm: '0px 2px 8px rgba(12, 26, 75, 0.08), 0px 3px 8px -1px rgba(50, 50, 71, 0.05)',
 				default: '0px 2px 4px rgba(12, 26, 75, 0.04), 0px 4px 20px -2px rgba(50, 50, 71, 0.08)',
 				lg: '0px 4px 8px rgba(12, 26, 75, 0.1), 0px 10px 16px rgba(20, 37, 63, 0.06)',
