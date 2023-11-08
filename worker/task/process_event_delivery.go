@@ -254,6 +254,21 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				eventDelivery.Description = "Retry limit exceeded"
 				eventDelivery.Status = datastore.FailureEventStatus
 			}
+
+			if endpoint.Status != datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
+				endpointStatus := datastore.InactiveEndpointStatus
+
+				err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
+				if err != nil {
+					log.WithError(err).Error("failed to deactivate endpoint after failed retry")
+				}
+
+				// send endpoint deactivation notification
+				err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, notificationQueue, true, resp.Error, string(resp.Body), resp.StatusCode)
+				if err != nil {
+					log.WithError(err).Error("failed to send notification")
+				}
+			}
 		}
 
 		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(ctx, project.UID, *eventDelivery, attempt)
