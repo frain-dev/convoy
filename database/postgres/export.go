@@ -32,14 +32,14 @@ const (
 	`
 
 	count = `
-		SELECT COUNT(*) FROM %S %S;
+		SELECT COUNT(*) FROM %s %s
 	`
 
 	where = ` WHERE deleted_at IS NULL AND project_id = $1 AND created_at < $2 AND (id > $3 OR $3 = '')`
 )
 
 // ExportRecords exports the records from the given table and writes them in json format to the passed writer.
-// It's the callers responsibility to close the writer.
+// It's the caller's responsibility to close the writer.
 func (e *exportRepo) ExportRecords(ctx context.Context, tableName, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
 	c := &struct {
 		Count int64 `db:"count"`
