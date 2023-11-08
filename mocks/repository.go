@@ -1510,47 +1510,47 @@ func (mr *MockSourceRepositoryMockRecorder) CreateSource(arg0, arg1 interface{})
 }
 
 // DeleteSourceByID mocks base method.
-func (m *MockSourceRepository) DeleteSourceByID(ctx context.Context, id, sourceVerifierID string) error {
+func (m *MockSourceRepository) DeleteSourceByID(ctx context.Context, projectId, id, sourceVerifierId string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteSourceByID", ctx, id, sourceVerifierID)
+	ret := m.ctrl.Call(m, "DeleteSourceByID", ctx, projectId, id, sourceVerifierId)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteSourceByID indicates an expected call of DeleteSourceByID.
-func (mr *MockSourceRepositoryMockRecorder) DeleteSourceByID(ctx, id, sourceVerifierID interface{}) *gomock.Call {
+func (mr *MockSourceRepositoryMockRecorder) DeleteSourceByID(ctx, projectId, id, sourceVerifierId interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSourceByID", reflect.TypeOf((*MockSourceRepository)(nil).DeleteSourceByID), ctx, id, sourceVerifierID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSourceByID", reflect.TypeOf((*MockSourceRepository)(nil).DeleteSourceByID), ctx, projectId, id, sourceVerifierId)
 }
 
 // FindSourceByID mocks base method.
-func (m *MockSourceRepository) FindSourceByID(ctx context.Context, id string) (*datastore.Source, error) {
+func (m *MockSourceRepository) FindSourceByID(ctx context.Context, projectId, id string) (*datastore.Source, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindSourceByID", ctx, id)
+	ret := m.ctrl.Call(m, "FindSourceByID", ctx, projectId, id)
 	ret0, _ := ret[0].(*datastore.Source)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindSourceByID indicates an expected call of FindSourceByID.
-func (mr *MockSourceRepositoryMockRecorder) FindSourceByID(ctx, id interface{}) *gomock.Call {
+func (mr *MockSourceRepositoryMockRecorder) FindSourceByID(ctx, projectId, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSourceByID", reflect.TypeOf((*MockSourceRepository)(nil).FindSourceByID), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSourceByID", reflect.TypeOf((*MockSourceRepository)(nil).FindSourceByID), ctx, projectId, id)
 }
 
 // FindSourceByMaskID mocks base method.
-func (m *MockSourceRepository) FindSourceByMaskID(ctx context.Context, maskID string) (*datastore.Source, error) {
+func (m *MockSourceRepository) FindSourceByMaskID(ctx context.Context, maskId string) (*datastore.Source, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindSourceByMaskID", ctx, maskID)
+	ret := m.ctrl.Call(m, "FindSourceByMaskID", ctx, maskId)
 	ret0, _ := ret[0].(*datastore.Source)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindSourceByMaskID indicates an expected call of FindSourceByMaskID.
-func (mr *MockSourceRepositoryMockRecorder) FindSourceByMaskID(ctx, maskID interface{}) *gomock.Call {
+func (mr *MockSourceRepositoryMockRecorder) FindSourceByMaskID(ctx, maskId interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSourceByMaskID", reflect.TypeOf((*MockSourceRepository)(nil).FindSourceByMaskID), ctx, maskID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSourceByMaskID", reflect.TypeOf((*MockSourceRepository)(nil).FindSourceByMaskID), ctx, maskId)
 }
 
 // FindSourceByName mocks base method.
@@ -1569,9 +1569,9 @@ func (mr *MockSourceRepositoryMockRecorder) FindSourceByName(ctx, projectId, nam
 }
 
 // LoadPubSubSourcesByProjectIDs mocks base method.
-func (m *MockSourceRepository) LoadPubSubSourcesByProjectIDs(ctx context.Context, projectIDs []string, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
+func (m *MockSourceRepository) LoadPubSubSourcesByProjectIDs(ctx context.Context, projectIds []string, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadPubSubSourcesByProjectIDs", ctx, projectIDs, pageable)
+	ret := m.ctrl.Call(m, "LoadPubSubSourcesByProjectIDs", ctx, projectIds, pageable)
 	ret0, _ := ret[0].([]datastore.Source)
 	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
@@ -1579,15 +1579,15 @@ func (m *MockSourceRepository) LoadPubSubSourcesByProjectIDs(ctx context.Context
 }
 
 // LoadPubSubSourcesByProjectIDs indicates an expected call of LoadPubSubSourcesByProjectIDs.
-func (mr *MockSourceRepositoryMockRecorder) LoadPubSubSourcesByProjectIDs(ctx, projectIDs, pageable interface{}) *gomock.Call {
+func (mr *MockSourceRepositoryMockRecorder) LoadPubSubSourcesByProjectIDs(ctx, projectIds, pageable interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadPubSubSourcesByProjectIDs", reflect.TypeOf((*MockSourceRepository)(nil).LoadPubSubSourcesByProjectIDs), ctx, projectIDs, pageable)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadPubSubSourcesByProjectIDs", reflect.TypeOf((*MockSourceRepository)(nil).LoadPubSubSourcesByProjectIDs), ctx, projectIds, pageable)
 }
 
 // LoadSourcesPaged mocks base method.
-func (m *MockSourceRepository) LoadSourcesPaged(ctx context.Context, projectID string, filter *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
+func (m *MockSourceRepository) LoadSourcesPaged(ctx context.Context, projectId string, filter *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadSourcesPaged", ctx, projectID, filter, pageable)
+	ret := m.ctrl.Call(m, "LoadSourcesPaged", ctx, projectId, filter, pageable)
 	ret0, _ := ret[0].([]datastore.Source)
 	ret1, _ := ret[1].(datastore.PaginationData)
 	ret2, _ := ret[2].(error)
@@ -1595,23 +1595,23 @@ func (m *MockSourceRepository) LoadSourcesPaged(ctx context.Context, projectID s
 }
 
 // LoadSourcesPaged indicates an expected call of LoadSourcesPaged.
-func (mr *MockSourceRepositoryMockRecorder) LoadSourcesPaged(ctx, projectID, filter, pageable interface{}) *gomock.Call {
+func (mr *MockSourceRepositoryMockRecorder) LoadSourcesPaged(ctx, projectId, filter, pageable interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadSourcesPaged", reflect.TypeOf((*MockSourceRepository)(nil).LoadSourcesPaged), ctx, projectID, filter, pageable)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadSourcesPaged", reflect.TypeOf((*MockSourceRepository)(nil).LoadSourcesPaged), ctx, projectId, filter, pageable)
 }
 
 // UpdateSource mocks base method.
-func (m *MockSourceRepository) UpdateSource(ctx context.Context, source *datastore.Source) error {
+func (m *MockSourceRepository) UpdateSource(ctx context.Context, projectId string, source *datastore.Source) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateSource", ctx, source)
+	ret := m.ctrl.Call(m, "UpdateSource", ctx, projectId, source)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateSource indicates an expected call of UpdateSource.
-func (mr *MockSourceRepositoryMockRecorder) UpdateSource(ctx, source interface{}) *gomock.Call {
+func (mr *MockSourceRepositoryMockRecorder) UpdateSource(ctx, projectId, source interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSource", reflect.TypeOf((*MockSourceRepository)(nil).UpdateSource), ctx, source)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSource", reflect.TypeOf((*MockSourceRepository)(nil).UpdateSource), ctx, projectId, source)
 }
 
 // MockDeviceRepository is a mock of DeviceRepository interface.

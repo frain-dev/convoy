@@ -65,7 +65,7 @@ func (s *UpdateSourceService) Run(ctx context.Context) (*datastore.Source, error
 		s.Source.CustomResponse.ContentType = *s.SourceUpdate.CustomResponse.ContentType
 	}
 
-	err := s.SourceRepo.UpdateSource(ctx, s.Source)
+	err := s.SourceRepo.UpdateSource(ctx, s.Project.UID, s.Source)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to update source")
 		return nil, &ServiceError{ErrMsg: "an error occurred while updating source", Err: err}

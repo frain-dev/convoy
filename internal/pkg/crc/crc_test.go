@@ -42,7 +42,7 @@ func Test_TwitterCrc_HandleRequest(t *testing.T) {
 				},
 			},
 			dbFn: func(so *mocks.MockSourceRepository) {
-				so.EXPECT().UpdateSource(gomock.Any(), gomock.Any()).Return(nil)
+				so.EXPECT().UpdateSource(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			},
 			wantToken: "sha256=HXvxTdsfShG6k2zC9NVANwFquJBdOugRYHax2vNiiOo=",
 		},

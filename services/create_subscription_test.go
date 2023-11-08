@@ -183,7 +183,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 				)
 
 				sr, _ := ss.SourceRepo.(*mocks.MockSourceRepository)
-				sr.EXPECT().FindSourceByID(gomock.Any(), "source-id-1").
+				sr.EXPECT().FindSourceByID(gomock.Any(), "12345", "source-id-1").
 					Times(1).Return(
 					&datastore.Source{
 						ProjectID: "12345",
@@ -221,7 +221,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 				)
 
 				sr, _ := ss.SourceRepo.(*mocks.MockSourceRepository)
-				sr.EXPECT().FindSourceByID(gomock.Any(), "source-id-1").
+				sr.EXPECT().FindSourceByID(gomock.Any(), "12345", "source-id-1").
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			wantErr:    true,

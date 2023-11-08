@@ -95,7 +95,7 @@ func TestUpdateSourceService_Run(t *testing.T) {
 			},
 			dbFn: func(so *UpdateSourceService) {
 				s, _ := so.SourceRepo.(*mocks.MockSourceRepository)
-				s.EXPECT().UpdateSource(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				s.EXPECT().UpdateSource(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 		},
 
@@ -121,7 +121,7 @@ func TestUpdateSourceService_Run(t *testing.T) {
 			},
 			dbFn: func(so *UpdateSourceService) {
 				s, _ := so.SourceRepo.(*mocks.MockSourceRepository)
-				s.EXPECT().UpdateSource(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("updated failed"))
+				s.EXPECT().UpdateSource(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("updated failed"))
 			},
 			wantErr:    true,
 			wantErrMsg: "an error occurred while updating source",

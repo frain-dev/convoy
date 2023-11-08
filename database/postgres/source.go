@@ -127,7 +127,7 @@ const (
 	deleteSource = `
 	UPDATE convoy.sources SET
 	deleted_at = NOW()
-	WHERE id = $1 AND deleted_at IS NULL;
+	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	deleteSourceVerifier = `
@@ -139,7 +139,7 @@ const (
 	deleteSourceSubscription = `
 	UPDATE convoy.subscriptions SET
 	deleted_at = NOW()
-	WHERE source_id = $1 AND deleted_at IS NULL;
+	WHERE source_id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	fetchSourcesPagedFilter = `
@@ -278,7 +278,7 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 	return nil
 }
 
-func (s *sourceRepo) UpdateSource(ctx context.Context, source *datastore.Source) error {
+func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source *datastore.Source) error {
 	tx, err := s.db.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -350,7 +350,7 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, source *datastore.Source)
 	return nil
 }
 
-func (s *sourceRepo) FindSourceByID(ctx context.Context, id string) (*datastore.Source, error) {
+func (s *sourceRepo) FindSourceByID(ctx context.Context, projectId string, id string) (*datastore.Source, error) {
 	fromCache, err := s.readFromCache(ctx, id, func() (*datastore.Source, error) {
 		source := &datastore.Source{}
 		err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.id"), id).StructScan(source)
@@ -413,23 +413,23 @@ func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskID string) (*da
 	return fromCache, nil
 }
 
-func (s *sourceRepo) DeleteSourceByID(ctx context.Context, id, sourceVeriferID string) error {
+func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectId string, id, sourceVerifierId string) error {
 	tx, err := s.db.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, deleteSourceVerifier, sourceVeriferID)
+	_, err = tx.ExecContext(ctx, deleteSourceVerifier, sourceVerifierId)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, deleteSource, id)
+	_, err = tx.ExecContext(ctx, deleteSource, id, projectId)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, deleteSourceSubscription, id)
+	_, err = tx.ExecContext(ctx, deleteSourceSubscription, id, projectId)
 	if err != nil {
 		return err
 	}
@@ -589,7 +589,7 @@ func (s *sourceRepo) LoadPubSubSourcesByProjectIDs(ctx context.Context, projectI
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
-	defer rows.Close()
+	defer closeWithError(rows)
 
 	sources := make([]datastore.Source, 0)
 	for rows.Next() {

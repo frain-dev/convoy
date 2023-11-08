@@ -45,7 +45,7 @@ func (tc *TwitterCrc) HandleRequest(w http.ResponseWriter, r *http.Request, sour
 	}
 
 	source.ProviderConfig.Twitter.CrcVerifiedAt = null.TimeFrom(time.Now())
-	err = sourceRepo.UpdateSource(r.Context(), source)
+	err = sourceRepo.UpdateSource(r.Context(), source.ProjectID, source)
 	if err != nil {
 		return err
 	}

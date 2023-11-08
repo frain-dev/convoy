@@ -78,7 +78,7 @@ func (a *DashboardHandler) GetSourceByID(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByID(r.Context(), chi.URLParam(r, "sourceID"))
+	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
@@ -132,7 +132,7 @@ func (a *DashboardHandler) UpdateSource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByID(r.Context(), chi.URLParam(r, "sourceID"))
+	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
@@ -190,7 +190,7 @@ func (a *DashboardHandler) DeleteSource(w http.ResponseWriter, r *http.Request) 
 
 	sourceRepo := postgres.NewSourceRepo(a.A.DB, a.A.Cache)
 
-	source, err := sourceRepo.FindSourceByID(r.Context(), chi.URLParam(r, "sourceID"))
+	source, err := sourceRepo.FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
@@ -201,7 +201,7 @@ func (a *DashboardHandler) DeleteSource(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = sourceRepo.DeleteSourceByID(r.Context(), source.UID, source.VerifierID)
+	err = sourceRepo.DeleteSourceByID(r.Context(), project.UID, source.UID, source.VerifierID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete source", http.StatusBadRequest))
 		return
