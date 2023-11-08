@@ -2,25 +2,22 @@ package newcloud
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
-	"github.com/frain-dev/convoy/util"
-	"github.com/oklog/ulid/v2"
-
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 )
 
 func (m *Migrator) RunSubscriptionMigration() error {
 	for _, p := range m.projects {
-		sources, err := m.loadProjectSources(p.OrganisationID, p.UID, pagedResponse{})
+		subscriptions, err := m.loadProjectSubscriptions(p.OrganisationID, p.UID, pagedResponse{})
 		if err != nil {
 			return err
 		}
 
-		err = m.SaveSources(context.Background(), sources)
+		err = m.SaveSubscriptions(context.Background(), subscriptions)
 		if err != nil {
-			return fmt.Errorf("failed to save sources: %v", err)
+			return fmt.Errorf("failed to save subscriptions: %v", err)
 		}
 		return nil
 	}
@@ -29,108 +26,78 @@ func (m *Migrator) RunSubscriptionMigration() error {
 }
 
 const (
-	saveSources = `
-    INSERT INTO convoy.sources
-        (id, source_verifier_id, name,type,mask_id,provider,
-        is_disabled,forward_headers,project_id, pub_sub, created_at, updated_at,
-        custom_response_body, custom_response_content_type, idempotency_keys
-         )
+	createSubscription = `
+    INSERT INTO convoy.subscriptions (
+    id,name,type,
+	project_id,endpoint_id,device_id,
+	source_id,alert_config_count,alert_config_threshold,
+	retry_config_type,retry_config_duration,
+	retry_config_retry_count,filter_config_event_types,
+	filter_config_filter_headers,filter_config_filter_body,
+	rate_limit_config_count,rate_limit_config_duration,
+	created_at, updated_at, deleted_at,function
+	)
     VALUES (
-        :id, :source_verifier_id, :name, :type, :mask_id, :provider,
-        :is_disabled, :forward_headers, :project_id, :pub_sub, :created_at, :updated_at,
-        :custom_response_body, :custom_response_content_type, :idempotency_keys
-    )
-    `
-
-	saveSourceVerifiers = `
-    INSERT INTO convoy.source_verifiers (
-        id,type,basic_username,basic_password,
-        api_key_header_name,api_key_header_value,
-        hmac_hash,hmac_header,hmac_secret,hmac_encoding
-    )
-    VALUES (
-        :id, :type, :basic_username, :basic_password,
-        :api_key_header_name, :api_key_header_value,
-        :hmac_hash, :hmac_header, :hmac_secret, :hmac_encoding
-    )
+        :id, :name, :type,
+		:project_id, :endpoint_id, :device_id,
+		:source_id, :alert_config_count, :alert_config_threshold,
+		:retry_config_type, :retry_config_duration,
+		:retry_config_retry_count, :filter_config_event_types,
+		:filter_config_filter_headers, :filter_config_filter_body,
+		:rate_limit_config_count, :rate_limit_config_duration,
+		:created_at, :updated_at, :deleted_at, :function
+	);
     `
 )
 
-func (s *Migrator) SaveSources(ctx context.Context, sources []datastore.Source) error {
-	sourceValues := make([]map[string]interface{}, 0, len(sources))
-	sourceVerifierValues := make([]map[string]interface{}, 0, len(sources))
+func (s *Migrator) SaveSubscriptions(ctx context.Context, subscriptions []datastore.Subscription) error {
+	values := make([]map[string]interface{}, 0, len(subscriptions))
+	for _, subscription := range subscriptions {
 
-	for _, source := range sources {
-		var (
-			sourceVerifierID *string
-			hmac             datastore.HMac
-			basic            datastore.BasicAuth
-			apiKey           datastore.ApiKey
-		)
+		ac := subscription.GetAlertConfig()
+		rc := subscription.GetRetryConfig()
+		fc := subscription.GetFilterConfig()
+		rlc := subscription.GetRateLimitConfig()
 
-		switch source.Verifier.Type {
-		case datastore.APIKeyVerifier:
-			apiKey = *source.Verifier.ApiKey
-		case datastore.BasicAuthVerifier:
-			basic = *source.Verifier.BasicAuth
-		case datastore.HMacVerifier:
-			hmac = *source.Verifier.HMac
+		var endpointID, sourceID, deviceID *string
+		if !util.IsStringEmpty(subscription.EndpointID) {
+			endpointID = &subscription.EndpointID
 		}
 
-		if !util.IsStringEmpty(string(source.Verifier.Type)) {
-			source.VerifierID = ulid.Make().String()
-			sourceVerifierID = &source.VerifierID
-
-			sourceVerifierValues = append(sourceVerifierValues, map[string]interface{}{
-				"id":                   sourceVerifierID,
-				"type":                 source.Verifier.Type,
-				"basic_username":       basic.UserName,
-				"basic_password":       basic.Password,
-				"api_key_header_name":  apiKey.HeaderName,
-				"api_key_header_value": apiKey.HeaderValue,
-				"hmac_hash":            hmac.Hash,
-				"hmac_header":          hmac.Header,
-				"hmac_secret":          hmac.Secret,
-				"hmac_encoding":        hmac.Encoding,
-			})
+		if !util.IsStringEmpty(subscription.SourceID) {
+			sourceID = &subscription.SourceID
 		}
 
-		sourceValues = append(sourceValues, map[string]interface{}{
-			"id":                           source.UID,
-			"source_verifier_id":           sourceVerifierID,
-			"name":                         source.Name,
-			"type":                         source.Type,
-			"mask_id":                      source.MaskID,
-			"provider":                     source.Provider,
-			"is_disabled":                  source.IsDisabled,
-			"forward_headers":              source.ForwardHeaders,
-			"project_id":                   source.ProjectID,
-			"pub_sub":                      source.PubSub,
-			"created_at":                   source.CreatedAt,
-			"updated_at":                   source.UpdatedAt,
-			"custom_response_body":         source.CustomResponse.Body,
-			"custom_response_content_type": source.CustomResponse.ContentType,
-			"idempotency_keys":             source.IdempotencyKeys,
+		if !util.IsStringEmpty(subscription.DeviceID) {
+			deviceID = &subscription.DeviceID
+		}
+
+		values = append(values, map[string]interface{}{
+			"id":                           subscription.UID,
+			"name":                         subscription.Name,
+			"type":                         subscription.Type,
+			"project_id":                   subscription.ProjectID,
+			"endpoint_id":                  endpointID,
+			"device_id":                    deviceID,
+			"source_id":                    sourceID,
+			"alert_config_count":           ac.Count,
+			"alert_config_threshold":       ac.Threshold,
+			"retry_config_type":            rc.Type,
+			"retry_config_duration":        rc.Duration,
+			"retry_config_retry_count":     rc.RetryCount,
+			"filter_config_event_types":    fc.EventTypes,
+			"filter_config_filter_headers": fc.Filter.Headers,
+			"filter_config_filter_body":    fc.Filter.Body,
+			"rate_limit_config_count":      rlc.Count,
+			"rate_limit_config_duration":   rlc.Duration,
+			"created_at":                   subscription.CreatedAt,
+			"updated_at":                   subscription.UpdatedAt,
+			"deleted_at":                   subscription.DeletedAt,
+			"function":                     subscription.Function,
 		})
+
 	}
 
-	tx, err := s.newDB.BeginTxx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return err
-	}
-	defer rollbackTx(tx)
-
-	if len(sourceVerifierValues) > 0 {
-		_, err = tx.NamedExecContext(ctx, saveSourceVerifiers, sourceVerifierValues)
-		if err != nil {
-			return err
-		}
-	}
-
-	_, err = tx.NamedExecContext(ctx, saveSources, sourceValues)
-	if err != nil {
-		return err
-	}
-
-	return tx.Commit()
+	_, err := s.newDB.NamedExecContext(ctx, createSubscription, values)
+	return err
 }

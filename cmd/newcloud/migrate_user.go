@@ -3,6 +3,8 @@ package newcloud
 import (
 	"context"
 
+	"github.com/frain-dev/convoy/database/hooks"
+
 	"github.com/jmoiron/sqlx"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -10,7 +12,7 @@ import (
 
 type Migrator struct {
 	OldBaseURL     string
-	OldPostgresDSN string
+	OldMigratorDSN string
 	NewBaseURL     string
 	PAT            string
 	NewPassword    string
@@ -22,6 +24,7 @@ type Migrator struct {
 	oldIDsToNewIDs map[string]string
 
 	newDB *sqlx.DB
+	oldDB *sqlx.DB
 
 	oldUserRepo datastore.UserRepository
 }
@@ -75,4 +78,16 @@ func (m *Migrator) SaveUsers(ctx context.Context, users []*datastore.User) error
 
 	_, err := m.newDB.NamedExecContext(ctx, saveUsers, values)
 	return err
+}
+
+func (p *Migrator) GetDB() *sqlx.DB {
+	return p.oldDB
+}
+
+func (p *Migrator) Close() error {
+	return nil
+}
+
+func (p *Migrator) GetHook() *hooks.Hook {
+	return nil
 }

@@ -1,6 +1,7 @@
 package newcloud
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,6 +19,7 @@ import (
 var client = http.Client{Timeout: 15 * time.Second}
 
 func AddMigrateCommand(a *cli.App) *cobra.Command {
+	var oldBaseURL string
 	var oldBaseURL string
 	var newBaseURL string
 	var personalAccessKey string
@@ -225,4 +227,79 @@ func (m *Migrator) loadProjectSubscriptions(orgID, projectID string, pageable pa
 	}
 
 	return subscriptions, nil
+}
+
+func (m *Migrator) loadAPIKeys(apiKeyRepo datastore.APIKeyRepository, projectID, userID string, pageable *datastore.Pageable) ([]datastore.APIKey, error) {
+	f := &datastore.ApiKeyFilter{
+		ProjectID: projectID,
+	}
+
+	if userID != "" {
+		f = &datastore.ApiKeyFilter{
+			UserID: userID,
+		}
+	}
+
+	keys, paginationData, err := apiKeyRepo.LoadAPIKeysPaged(context.Background(), f, pageable)
+	if err != nil {
+		return nil, err
+	}
+
+	if paginationData.HasNextPage {
+		pageable.NextCursor = keys[len(keys)-1].UID
+		moreKeys, err := m.loadAPIKeys(apiKeyRepo, projectID, userID, pageable)
+		if err != nil {
+			log.WithError(err).Errorf("failed to load next api keys page, next cursor is %s", paginationData.NextPageCursor)
+		}
+
+		keys = append(keys, moreKeys...)
+	}
+
+	return keys, nil
+}
+
+func (m *Migrator) loadEvents(eventRepo datastore.EventRepository, project *datastore.Project, pageable datastore.Pageable) ([]datastore.Event, error) {
+	f := &datastore.Filter{
+		Project:  project,
+		Pageable: pageable,
+	}
+
+	events, paginationData, err := eventRepo.LoadEventsPaged(context.Background(), project.UID, f)
+	if err != nil {
+		return nil, err
+	}
+
+	if paginationData.HasNextPage {
+		f.Pageable.NextCursor = events[len(events)-1].UID
+		moreEvents, err := m.loadEvents(eventRepo, project, pageable)
+		if err != nil {
+			log.WithError(err).Errorf("failed to load next event page, next cursor is %s", paginationData.NextPageCursor)
+		}
+
+		events = append(events, moreEvents...)
+	}
+
+	return events, nil
+}
+
+func (m *Migrator) loadEventDeliveries(eventDeliveryRepository datastore.EventDeliveryRepository, project *datastore.Project, pageable datastore.Pageable) ([]datastore.EventDelivery, error) {
+	eventDeliveries, paginationData, err := eventDeliveryRepository.LoadEventDeliveriesPaged(
+		context.Background(),
+		project.UID, nil, "", "", nil, datastore.SearchParams{}, pageable, "",
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if paginationData.HasNextPage {
+		pageable.NextCursor = eventDeliveries[len(eventDeliveries)-1].UID
+		moreEventDeliveries, err := m.loadEventDeliveries(eventDeliveryRepository, project, pageable)
+		if err != nil {
+			log.WithError(err).Errorf("failed to load next event page, next cursor is %s", paginationData.NextPageCursor)
+		}
+
+		eventDeliveries = append(eventDeliveries, moreEventDeliveries...)
+	}
+
+	return eventDeliveries, nil
 }
