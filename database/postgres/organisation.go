@@ -181,13 +181,14 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		closeWithError(rows)
 	}
 
 	ids := make([]string, len(organizations))

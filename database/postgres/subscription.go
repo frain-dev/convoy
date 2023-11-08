@@ -341,6 +341,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
+	defer closeWithError(rows)
 
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
@@ -378,13 +379,14 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		defer closeWithError(rows)
 	}
 
 	ids := make([]string, len(subscriptions))
@@ -589,6 +591,7 @@ func nullifyEmptyConfig(sub *datastore.Subscription) {
 func scanSubscriptions(rows *sqlx.Rows) ([]datastore.Subscription, error) {
 	subscriptions := make([]datastore.Subscription, 0)
 	var err error
+	defer closeWithError(rows)
 
 	for rows.Next() {
 		sub := datastore.Subscription{}

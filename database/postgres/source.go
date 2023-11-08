@@ -482,6 +482,7 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
+	defer closeWithError(rows)
 
 	sources := make([]datastore.Source, 0)
 	for rows.Next() {
@@ -515,13 +516,14 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		closeWithError(rows)
 	}
 
 	ids := make([]string, len(sources))

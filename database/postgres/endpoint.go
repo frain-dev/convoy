@@ -469,13 +469,14 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		closeWithError(rows)
 	}
 
 	pagination := &datastore.PaginationData{PrevRowCount: count}

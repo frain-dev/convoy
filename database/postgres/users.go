@@ -273,6 +273,7 @@ func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageab
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
+	defer closeWithError(rows)
 
 	var users []datastore.User
 	for rows.Next() {
@@ -305,13 +306,14 @@ func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageab
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		closeWithError(rows)
 	}
 
 	ids := make([]string, len(users))

@@ -247,6 +247,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, projec
 	if err != nil {
 		return nil, err
 	}
+	defer closeWithError(rows)
 
 	for rows.Next() {
 		var ed datastore.EventDelivery
@@ -258,7 +259,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, projec
 		eventDeliveries = append(eventDeliveries, ed)
 	}
 
-	return eventDeliveries, rows.Close()
+	return eventDeliveries, nil
 }
 
 func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, projectID string, eventID string) ([]datastore.EventDelivery, error) {
@@ -269,6 +270,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, pr
 	if err != nil {
 		return nil, err
 	}
+	defer closeWithError(rows)
 
 	for rows.Next() {
 		var ed datastore.EventDelivery
@@ -280,7 +282,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, pr
 		eventDeliveries = append(eventDeliveries, ed)
 	}
 
-	return eventDeliveries, rows.Close()
+	return eventDeliveries, nil
 }
 
 func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, projectID string, status datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
@@ -358,6 +360,7 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, pr
 	if err != nil {
 		return nil, err
 	}
+	defer closeWithError(rows)
 
 	for rows.Next() {
 		var ed datastore.EventDelivery
@@ -369,7 +372,7 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, pr
 		eventDeliveries = append(eventDeliveries, ed)
 	}
 
-	return eventDeliveries, rows.Close()
+	return eventDeliveries, nil
 }
 
 func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, delivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
@@ -609,15 +612,13 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
-		}
-		err = rows.Close()
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
 		}
 	}
 

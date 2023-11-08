@@ -230,6 +230,7 @@ func (j *jobRepo) FetchRunningJobsByProjectId(ctx context.Context, projectID str
 	if err != nil {
 		return nil, err
 	}
+	defer closeWithError(rows)
 
 	for rows.Next() {
 		var job datastore.Job
@@ -251,6 +252,7 @@ func (j *jobRepo) FetchJobsByProjectId(ctx context.Context, projectID string) ([
 	if err != nil {
 		return nil, err
 	}
+	defer closeWithError(rows)
 
 	for rows.Next() {
 		var job datastore.Job
@@ -303,6 +305,7 @@ func (j *jobRepo) LoadJobsPaged(ctx context.Context, projectID string, pageable 
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
+	defer closeWithError(rows)
 
 	var jobs []datastore.Job
 	for rows.Next() {
@@ -337,13 +340,14 @@ func (j *jobRepo) LoadJobsPaged(ctx context.Context, projectID string, pageable 
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		rows.Close()
 	}
 
 	ids := make([]string, len(jobs))

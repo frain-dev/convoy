@@ -58,7 +58,7 @@ const (
 		s3_session_token = $10,
 		s3_endpoint = $11,
 		s3_prefix = $12,
-		updated_at = now()
+		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 )
