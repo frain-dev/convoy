@@ -78,7 +78,7 @@ func (a *PublicHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Reque
 		Delay:   0,
 	}
 
-	err = a.A.Queue.Write(r.Context(), convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = a.A.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.FromContext(r.Context()).Errorf("Error occurred sending new event to the queue %s", err)
 	}
@@ -192,8 +192,8 @@ func (a *PublicHandler) CreateDynamicEvent(w http.ResponseWriter, r *http.Reques
 // @Summary Replay event
 // @Description This endpoint replays an event afresh assuming it is a new event.
 // @Tags Events
-// @Accept  json
-// @Produce  json
+// @Accept json
+// @Produce json
 // @Param projectID path string true "Project ID"
 // @Param eventID path string true "event id"
 // @Success 200 {object} util.ServerResponse{data=models.EventResponse}

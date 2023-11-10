@@ -1,8 +1,8 @@
 package dashboard
 
 import (
+	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy"
 	"net/http"
 
 	"github.com/frain-dev/convoy/pkg/log"
@@ -80,7 +80,7 @@ func (a *DashboardHandler) GetSourceByID(w http.ResponseWriter, r *http.Request)
 
 	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
-		if err == datastore.ErrSourceNotFound {
+		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
@@ -134,7 +134,7 @@ func (a *DashboardHandler) UpdateSource(w http.ResponseWriter, r *http.Request) 
 
 	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
-		if err == datastore.ErrSourceNotFound {
+		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
@@ -192,7 +192,7 @@ func (a *DashboardHandler) DeleteSource(w http.ResponseWriter, r *http.Request) 
 
 	source, err := sourceRepo.FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
-		if err == datastore.ErrSourceNotFound {
+		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
@@ -205,15 +205,6 @@ func (a *DashboardHandler) DeleteSource(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete source", http.StatusBadRequest))
 		return
-	}
-
-	if source.Provider == datastore.TwitterSourceProvider {
-		sourceCacheKey := convoy.SourceCacheKey.Get(source.MaskID).String()
-		err = a.A.Cache.Delete(r.Context(), sourceCacheKey)
-		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse("failed to delete source cache", http.StatusBadRequest))
-			return
-		}
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Source deleted successfully", nil, http.StatusOK))

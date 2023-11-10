@@ -251,7 +251,7 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		return ErrSubscriptionNotCreated
 	}
 
-	subscriptionCacheKey := convoy.SubscriptionsCacheKey.Get(subscription.UID).String()
+	subscriptionCacheKey := convoy.SubscriptionCacheKey.Get(subscription.UID).String()
 	err = s.cache.Set(ctx, subscriptionCacheKey, &subscription, config.DefaultCacheTTL)
 	if err != nil {
 		return err
@@ -291,7 +291,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		return ErrSubscriptionNotUpdated
 	}
 
-	subscriptionCacheKey := convoy.SubscriptionsCacheKey.Get(subscription.UID).String()
+	subscriptionCacheKey := convoy.SubscriptionCacheKey.Get(subscription.UID).String()
 	err = s.cache.Set(ctx, subscriptionCacheKey, &subscription, config.DefaultCacheTTL)
 	if err != nil {
 		return err
@@ -341,6 +341,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
+	defer closeWithError(rows)
 
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
@@ -378,13 +379,14 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		defer closeWithError(rows)
 	}
 
 	ids := make([]string, len(subscriptions))
@@ -417,7 +419,7 @@ func (s *subscriptionRepo) DeleteSubscription(ctx context.Context, projectID str
 		return ErrSubscriptionNotDeleted
 	}
 
-	subscriptionCacheKey := convoy.SubscriptionsCacheKey.Get(subscription.UID).String()
+	subscriptionCacheKey := convoy.SubscriptionCacheKey.Get(subscription.UID).String()
 	err = s.cache.Delete(ctx, subscriptionCacheKey)
 	if err != nil {
 		return err
@@ -589,6 +591,7 @@ func nullifyEmptyConfig(sub *datastore.Subscription) {
 func scanSubscriptions(rows *sqlx.Rows) ([]datastore.Subscription, error) {
 	subscriptions := make([]datastore.Subscription, 0)
 	var err error
+	defer closeWithError(rows)
 
 	for rows.Next() {
 		sub := datastore.Subscription{}
@@ -606,7 +609,7 @@ func scanSubscriptions(rows *sqlx.Rows) ([]datastore.Subscription, error) {
 
 func (s *subscriptionRepo) readFromCache(ctx context.Context, cacheKey string, readFromDB func() (*datastore.Subscription, error)) (*datastore.Subscription, error) {
 	var subscription *datastore.Subscription
-	subscriptionCacheKey := convoy.SubscriptionsCacheKey.Get(cacheKey).String()
+	subscriptionCacheKey := convoy.SubscriptionCacheKey.Get(cacheKey).String()
 	err := s.cache.Get(ctx, subscriptionCacheKey, &subscription)
 	if err != nil {
 		return nil, err
@@ -632,7 +635,7 @@ func (s *subscriptionRepo) readFromCache(ctx context.Context, cacheKey string, r
 func (s *subscriptionRepo) readManyFromCache(ctx context.Context, cacheKey string, readManyFromDB func() ([]datastore.Subscription, error)) ([]datastore.Subscription, error) {
 	var subscriptions []datastore.Subscription
 
-	subscriptionCacheKey := convoy.SubscriptionsCacheKey.Get(cacheKey).String()
+	subscriptionCacheKey := convoy.SubscriptionCacheKey.Get(cacheKey).String()
 	err := s.cache.Get(ctx, subscriptionCacheKey, &subscriptions)
 	if err != nil {
 		return nil, err

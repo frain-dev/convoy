@@ -128,7 +128,7 @@ func queueEmail(ctx context.Context, em *email.Message, q queue.Queuer) error {
 		Delay:   0,
 	}
 
-	err = q.Write(ctx, convoy.EmailProcessor, convoy.DefaultQueue, job)
+	err = q.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to write new notification to the queue")
 		return err

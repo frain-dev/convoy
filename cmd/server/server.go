@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	_ "net/http/pprof"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
@@ -131,7 +132,7 @@ func StartConvoyServer(a *cli.App) error {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
-	fFlag := fflag.NewFFlag()
+	flag := fflag.NewFFlag()
 	if err != nil {
 		a.Logger.WithError(err).Fatal("failed to create fflag controller")
 	}
@@ -153,7 +154,7 @@ func StartConvoyServer(a *cli.App) error {
 
 	handler, err := api.NewApplicationHandler(
 		&types.APIOptions{
-			FFlag:  fFlag,
+			FFlag:  flag,
 			DB:     a.DB,
 			Queue:  a.Queue,
 			Logger: lo,
@@ -174,7 +175,7 @@ func StartConvoyServer(a *cli.App) error {
 	// initialize scheduler
 	s := worker.NewScheduler(a.Queue, lo)
 
-	// register daily analytic task
+	// register tasks
 	s.RegisterTask("58 23 * * *", convoy.ScheduleQueue, convoy.DeleteArchivedTasksProcessor)
 	s.RegisterTask("30 * * * *", convoy.ScheduleQueue, convoy.MonitorTwitterSources)
 	s.RegisterTask("0 0 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)

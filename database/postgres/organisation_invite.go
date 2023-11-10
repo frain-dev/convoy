@@ -202,6 +202,7 @@ func (i *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
+	defer closeWithError(rows)
 
 	var invites []datastore.OrganisationInvite
 	for rows.Next() {
@@ -235,13 +236,14 @@ func (i *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		rows.Close()
 	}
 
 	ids := make([]string, len(invites))

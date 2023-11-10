@@ -147,7 +147,7 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		Payload: eventByte,
 		Delay:   0,
 	}
-	err = queuer.Write(ctx, convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = queuer.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.FromContext(ctx).Errorf("Error occurred sending new event to the queue %s", err)
 	}

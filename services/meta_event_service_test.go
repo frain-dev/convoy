@@ -44,7 +44,7 @@ func TestMetaEventService(t *testing.T) {
 				metaEventRepo.EXPECT().UpdateMetaEvent(gomock.Any(), gomock.Any(), gomock.Any())
 
 				queue, _ := m.Queue.(*mocks.MockQueuer)
-				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 		},
 

@@ -55,6 +55,7 @@ func main() {
 	var redisUsername string
 	var redisPassword string
 	var redisDatabase string
+	var enableProfiling bool
 
 	var configFile string
 
@@ -80,6 +81,7 @@ func main() {
 	c.Flags().IntVar(&redisPort, "redis-port", 0, "Redis Port")
 
 	c.Flags().StringVar(&fflag, "feature-flag", "", "Enable feature flags (experimental)")
+	c.Flags().BoolVar(&enableProfiling, "enable-profiling", false, "Enable profiling")
 
 	c.PersistentPreRunE(hooks.PreRun(app, db))
 	c.PersistentPostRunE(hooks.PostRun(app, db))
