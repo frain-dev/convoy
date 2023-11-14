@@ -297,6 +297,7 @@ func (p *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFilt
 	if err != nil {
 		return nil, err
 	}
+	defer closeWithError(rows)
 
 	projects := make([]*datastore.Project, 0)
 	for rows.Next() {
@@ -310,7 +311,7 @@ func (p *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFilt
 		projects = append(projects, &proj)
 	}
 
-	return projects, rows.Close()
+	return projects, nil
 }
 
 func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Project) error {
@@ -496,6 +497,7 @@ func (p *projectRepo) GetProjectsWithEventsInTheInterval(ctx context.Context, in
 	if err != nil {
 		return nil, err
 	}
+	defer closeWithError(rows)
 
 	for rows.Next() {
 		var proj datastore.ProjectEvents
@@ -508,5 +510,5 @@ func (p *projectRepo) GetProjectsWithEventsInTheInterval(ctx context.Context, in
 		projects = append(projects, proj)
 	}
 
-	return projects, rows.Close()
+	return projects, nil
 }

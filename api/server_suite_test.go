@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	ncache "github.com/frain-dev/convoy/cache/noop"
 	"io"
 	"math/rand"
 	"net/http"
@@ -111,10 +112,7 @@ func buildServer() *ApplicationHandler {
 	logger = log.NewLogger(os.Stderr)
 	logger.SetLevel(log.FatalLevel)
 
-	noopCache, err := cache.NewCache(getConfig().Redis)
-	if err != nil {
-		log.Fatal(fmt.Sprintf("failed to connect to redis: %v", err))
-	}
+	noopCache := ncache.NewNoopCache()
 
 	ah, _ := NewApplicationHandler(
 		&types.APIOptions{

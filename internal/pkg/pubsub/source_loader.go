@@ -3,7 +3,6 @@ package pubsub
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/worker/task"
@@ -124,10 +123,7 @@ func (s *SourceLoader) fetchProjectSources(ctx context.Context) error {
 	return nil
 }
 
-func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, msg string) error {
-	txn, innerCtx := apm.StartTransaction(ctx, fmt.Sprintf("%v handler", source.Name))
-	defer txn.End()
-
+func (s *SourceLoader) handler(_ context.Context, source *datastore.Source, msg string) error {
 	ev := struct {
 		EndpointID     string            `json:"endpoint_id"`
 		OwnerID        string            `json:"owner_id"`
@@ -166,7 +162,7 @@ func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, ms
 		Delay:   0,
 	}
 
-	err = s.queue.Write(innerCtx, convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = s.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		return err
 	}

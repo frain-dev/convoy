@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/endpoint.model';
@@ -8,6 +8,7 @@ import { CreateEndpointComponent } from '../create-endpoint/create-endpoint.comp
 import { CreateSourceComponent } from '../create-source/create-source.component';
 import { CreateSubscriptionService } from './create-subscription.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
+import { SUBSCRIPTION } from 'src/app/models/subscription';
 
 @Component({
 	selector: 'convoy-create-subscription',
@@ -24,9 +25,10 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
 	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;
+	@ViewChild('sourceURLDialog', { static: true }) sourceURLDialog!: ElementRef<HTMLDialogElement>;
 
 	subscriptionForm: FormGroup = this.formBuilder.group({
-		name: [null, Validators.required],
+		name: ['', Validators.required],
 		source_id: [''],
 		endpoint_id: [null, Validators.required],
 		function: [null],
@@ -63,16 +65,17 @@ export class CreateSubscriptionComponent implements OnInit {
 	isLoadingForm = true;
 	isLoadingPortalProject = false;
 	token: string = this.route.snapshot.queryParams.token;
-	showError = false;
 
 	configurations = [
-		{ uid: 'filter_config', name: 'Filter', show: false },
+		{ uid: 'filter_config', name: 'Event Filter', show: false },
 		{ uid: 'retry_config', name: 'Retry Logic', show: false }
 	];
 	createdSubscription = false;
 	private rbacService = inject(RbacService);
 	showFilterDialog = false;
 	showTransformDialog = false;
+	sourceURL!: string;
+	subscription!: SUBSCRIPTION;
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router) {}
 
@@ -162,6 +165,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async onCreateSource(newSource: SOURCE) {
 		this.subscriptionForm.patchValue({ source_id: newSource.uid });
+		this.sourceURL = newSource.url;
 		await this.getSources();
 	}
 
@@ -213,6 +217,8 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (this.createEndpointForm && !this.createEndpointForm.endpointCreated) await this.createEndpointForm.saveEndpoint();
 		if (this.createSourceForm && !this.createSourceForm.sourceCreated) await this.createSourceForm.saveSource();
 
+		if (!this.showAction && this.endpoints.length) this.subscriptionForm.patchValue({ name: this.endpoints?.find(endpoint => endpoint.uid == this.subscriptionForm.value.endpoint_id)?.name + ' Subscription' });
+
 		// check subscription form validation
 		if (this.subscriptionForm.invalid) {
 			this.isCreatingSubscription = false;
@@ -227,11 +233,13 @@ export class CreateSubscriptionComponent implements OnInit {
 		// create subscription
 		try {
 			const response = this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: subscriptionData, id: this.subscriptionId }) : await this.createSubscriptionService.createSubscription(subscriptionData);
+			this.subscription = response.data;
 			if (setup) await this.privateService.getProjectStat({ refresh: true });
 			this.privateService.getSubscriptions();
 			localStorage.removeItem('FUNCTION');
-			this.onAction.emit({ data: response.data, action: this.action == 'update' ? 'update' : 'create' });
 			this.createdSubscription = true;
+			if (this.sourceURL) return this.sourceURLDialog.nativeElement.showModal();
+			this.onAction.emit({ data: this.subscription, action: this.action == 'update' ? 'update' : 'create' });
 		} catch (error) {
 			this.createdSubscription = false;
 			this.isCreatingSubscription = false;

@@ -115,7 +115,6 @@ func TestJwtRealm_Authenticate(t *testing.T) {
 				},
 			},
 			dbFn: func(userRepo *mocks.MockUserRepository) {
-				userRepo.EXPECT().FindUserByID(gomock.Any(), gomock.Any()).Return(nil, ErrInvalidToken)
 			},
 			want:       nil,
 			blacklist:  true,

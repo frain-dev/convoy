@@ -1,0 +1,12 @@
+<div class="p-40px">
+	<h1 class="text-16 font-semibold mb-4px">{{ heading || 'Source URL' }}</h1>
+	<p class="text-12 text-new.gray-400 mb-24px">Copy the source URL below into your source platform to start receiving webhook events.</p>
+	<div class="flex items-center justify-between w-full h-50px bg-white-100 border border-new.primary-25 rounded-[6px] px-16px mb-12px">
+		<span class="text-12 text-new.gray-600 font-normal truncate">{{ url }}</span>
+		<div class="ml-8px" convoy-copy-button [text]="url || ''" notificationText="Source URL copied to clipboard."></div>
+	</div>
+
+	<div class="flex justify-end mt-30px">
+		<button convoy-button size="sm" class="px-20px" (click)="close.emit()">Close</button>
+	</div>
+</div>

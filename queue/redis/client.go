@@ -1,7 +1,6 @@
 package redis
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/danvixent/asynqmon"
@@ -44,7 +43,7 @@ func NewQueue(opts queue.QueueOptions) queue.Queuer {
 	}
 }
 
-func (q *RedisQueue) Write(ctx context.Context, taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
+func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
 	s := string(queueName)
 	if job.ID == "" {
 		job.ID = ulid.Make().String()
@@ -71,7 +70,7 @@ func (q *RedisQueue) Write(ctx context.Context, taskName convoy.TaskName, queueN
 		return err
 	}
 
-	_, err = q.client.EnqueueContext(ctx, t, nil)
+	_, err = q.client.Enqueue(t, nil)
 	return err
 }
 

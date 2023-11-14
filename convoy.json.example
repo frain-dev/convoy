@@ -1,81 +1,99 @@
 {
-  "environment": "dev",
+  "auth": {
+    "native": {
+      "enabled": true
+    },
+    "jwt": {
+      "enabled": true,
+      "secret": "<insert-jwt-secret>",
+      "expiry": 3600,
+      "refresh_secret": "<insert-jwt-refresh-secret>",
+      "refresh_expiry": 86400
+    },
+    "is_signup_enabled": true
+  },
   "database": {
-    "type": "<insert-database-type>",
-    "dsn": "<insert-database-dsn>"
+    "type": "postgres",
+    "scheme": "postgres",
+    "host": "<insert-db-host>",
+    "username": "<insert-db-username>",
+    "password": "<insert-db-password>",
+    "database": "<insert-db-name>",
+    "options": "sslmode=disable",
+    "port": 5432,
+    "max_open_conn": 100,
+    "max_idle_conn": 10,
+    "conn_max_lifetime": 3600
   },
-  "sentry": {
-    "dsn": "<insert-sentry-dsn>"
+  "redis": {
+    "scheme": "redis",
+    "host": "<insert-redis-host>",
+    "username": "<insert-redis-username>",
+    "password": "<insert-redis-password>",
+    "database": "0",
+    "port": 6379,
+    "addresses": "<insert-redis-addresses>"
   },
-  "queue": {
-    "type": "redis",
-    "redis": {
-      "dsn": "<insert-redis-dsn>"
+  "prometheus": {
+    "dsn": "<insert-prometheus-dsn>"
+  },
+  "server": {
+    "http": {
+      "ssl": true,
+      "ssl_cert_file": "<insert-ssl-cert-file>",
+      "ssl_key_file": "<insert-ssl-key-file>",
+      "port": 5005,
+      "ingest_port": 5006,
+      "worker_port": 5007,
+      "socket_port": 5008,
+      "domain_port": 5009,
+      "proxy": "<insert-proxy-url>"
     }
   },
+  "max_response_size": 102400,
+  "smtp": {
+    "ssl": true,
+    "provider": "<insert-smtp-provider>",
+    "url": "<insert-smtp-url>",
+    "port": 587,
+    "username": "<insert-smtp-username>",
+    "password": "<insert-smtp-password>",
+    "from": "<insert-smtp-from>",
+    "reply-to": "<insert-smtp-reply-to>"
+  },
+  "env": "production",
   "logger": {
-    "type": "console",
-    "server_log": {
-      "level": "info"
-    }
+    "level": "info"
   },
   "tracer": {
     "type": "new_relic",
     "new_relic": {
+      "app_name": "<insert-new-relic-app-name>",
       "license_key": "<insert-new-relic-license-key>",
-      "app_name": "convoy",
       "config_enabled": true,
       "distributed_tracer_enabled": true
     }
   },
-  "server": {
-    "http": {
-      "ssl": false,
-      "ssl_cert_file": "",
-      "ssl_key_file": "",
-      "port": 5005
-    }
+  "host": "<insert-host>",
+  "custom_domain_suffix": "<insert-custom-domain-suffix>",
+  "feature_flag": "experimental",
+  "analytics": {
+    "enabled": true
   },
-  "auth": {
-    "require_auth": false,
-    "file": {
-      "basic": [
-        {
-          "username": "default",
-          "password": "default",
-          "role": {
-            "type": "super_user",
-            "groups": [
-              "sendcash-pay",
-              "buycoins-api"
-            ]
-          }
-        }
-      ],
-      "api_key": [
-        {
-          "api_key": "<insert-api-key>",
-          "role": {
-            "type": "super_user",
-            "groups": [
-              "sendcash-pay"
-            ]
-          }
-        }
-      ]
-    }
-  },
-  "group": {
-    "signature": {
-      "header": "X-Company-Event-WebHook-Signature",
-      "hash": "SHA256"
+  "storage_policy": {
+    "type": "s3 | on_prem",
+    "s3": {
+      "prefix": "<insert-s3-prefix>",
+      "bucket": "<insert-s3-bucket>",
+      "access_key": "<insert-s3-access-key>",
+      "secret_key": "<insert-s3-secret-key>",
+      "region": "<insert-s3-region>",
+      "session_token": "<insert-s3-session-token>",
+      "endpoint": "<insert-s3-endpoint>"
     },
-    "strategy": {
-      "type": "default",
-      "default": {
-        "intervalSeconds": 20,
-        "retryLimit": 3
-      }
+    "on_prem": {
+      "path": "<insert-on-prem-path>"
     }
-  }
+  },
+  "consumer_pool_size": 200
 }

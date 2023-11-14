@@ -151,6 +151,7 @@ func (m *metaEventRepo) LoadMetaEventsPaged(ctx context.Context, projectID strin
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
+	defer closeWithError(rows)
 
 	metaEvents := make([]datastore.MetaEvent, 0)
 	for rows.Next() {
@@ -181,6 +182,7 @@ func (m *metaEventRepo) LoadMetaEventsPaged(ctx context.Context, projectID strin
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
 
 		if rows.Next() {
 			err = rows.StructScan(&count)
@@ -188,8 +190,6 @@ func (m *metaEventRepo) LoadMetaEventsPaged(ctx context.Context, projectID strin
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-
-		rows.Close()
 	}
 
 	ids := make([]string, len(metaEvents))
@@ -204,7 +204,7 @@ func (m *metaEventRepo) LoadMetaEventsPaged(ctx context.Context, projectID strin
 	pagination := &datastore.PaginationData{PrevRowCount: count}
 	pagination = pagination.Build(filter.Pageable, ids)
 
-	return metaEvents, *pagination, rows.Close()
+	return metaEvents, *pagination, nil
 }
 
 func (m *metaEventRepo) UpdateMetaEvent(ctx context.Context, projectID string, metaEvent *datastore.MetaEvent) error {

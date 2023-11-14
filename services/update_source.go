@@ -2,11 +2,8 @@ package services
 
 import (
 	"context"
-	"time"
-
 	"github.com/frain-dev/convoy/pkg/log"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
@@ -72,14 +69,6 @@ func (s *UpdateSourceService) Run(ctx context.Context) (*datastore.Source, error
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to update source")
 		return nil, &ServiceError{ErrMsg: "an error occurred while updating source", Err: err}
-	}
-
-	if s.Source.Provider == datastore.TwitterSourceProvider {
-		sourceCacheKey := convoy.SourceCacheKey.Get(s.Source.MaskID).String()
-		err = s.Cache.Set(ctx, sourceCacheKey, &s.Source, time.Hour*24)
-		if err != nil {
-			return nil, &ServiceError{ErrMsg: "failed to create source cache", Err: err}
-		}
 	}
 
 	return s.Source, nil

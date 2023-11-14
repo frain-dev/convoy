@@ -42,7 +42,7 @@ func TestCreateDynamicEventService_Run(t *testing.T) {
 			name: "should_create_dynamic_event",
 			dbFn: func(es *CreateDynamicEventService) {
 				q, _ := es.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), convoy.CreateDynamicEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().Write(convoy.CreateDynamicEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			args: args{
 				ctx: ctx,
