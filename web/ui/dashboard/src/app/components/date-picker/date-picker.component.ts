@@ -26,7 +26,9 @@ export class DatePickerComponent implements OnInit {
 	@Output() selectedDateRange = new EventEmitter<any>();
 	@Output() selectedDate = new EventEmitter<any>();
 	@Output() clearDates = new EventEmitter<any>();
-	@Input('formType') formType: 'filter' = 'filter';
+	@Input('show') show = false;
+	@Input('formType') formType: 'filter' | 'form' = 'filter';
+	@Input('position') position: 'right' | 'left' | 'center' | 'right-side' = 'left';
 	@Input('dateRangeValue') dateRangeValue?: {
 		startDate: string | Date;
 		endDate: string | Date;
@@ -75,6 +77,8 @@ export class DatePickerComponent implements OnInit {
 		if (this.dateValue) this.selectedStartDay = new Date(this.dateValue).getTime();
 
 		this.initDatePicker();
+
+		if (this.show) this.showPicker = true;
 	}
 
 	initDatePicker() {
