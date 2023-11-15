@@ -28,8 +28,8 @@
 			<div class="h-22px w-[1px] bg-new.primary-50"></div>
 
 			<div class="flex gap-x-2px" *ngIf="queryParams?.startDate || queryParams?.endDate">
-				<div class="border border-new.primary-200 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Date</div>
-				<div class="border border-new.primary-200 rounded-tr-22px rounded-br-22px px-10px py-6px text-new.gray-500 text-12 flex gap-6px items-center">
+				<div class="border border-new.primary-100 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Date</div>
+				<div class="border border-new.primary-100 rounded-tr-22px rounded-br-22px px-10px py-6px text-new.gray-400 text-12 flex gap-6px items-center">
 					{{ queryParams?.startDate | date: 'dd/MM/yy, h:mm a' }} - {{ queryParams?.endDate | date: 'dd/MM/yy, h:mm a' }}
 
 					<button convoy-button (click)="clearFilters('startDate'); toggleFilter('Date', false)" fill="text" type="button" class="py-0 px-0 ml-4px">
@@ -49,13 +49,13 @@
 					[dateRangeValue]="{ startDate: queryParams?.startDate || '', endDate: queryParams?.endDate || '' }"
 					#datePicker
 				>
-					<button dropdownTrigger convoy-button fill="outline" size="sm" class="border border-new.primary-200 rounded-tl-22px rounded-[0] rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Date</button>
+					<button dropdownTrigger convoy-button fill="outline" size="sm" class="border border-new.primary-100 rounded-tl-22px rounded-[0] rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Date</button>
 				</convoy-date-picker>
 			</ng-container>
 
 			<div class="flex gap-x-2px" *ngIf="eventDeliveryFilteredByStatus.length">
-				<div class="border border-new.primary-200 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Status</div>
-				<div class="border border-new.primary-200 last-of-type:rounded-tr-22px last-of-type:rounded-br-22px px-10px py-6px text-new.gray-500 text-12 flex gap-6px items-center" *ngFor="let status of eventDeliveryFilteredByStatus">
+				<div class="border border-new.primary-100 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Status</div>
+				<div class="border border-new.primary-100 last-of-type:rounded-tr-22px last-of-type:rounded-br-22px px-10px py-6px text-new.gray-400 text-12 flex gap-6px items-center" *ngFor="let status of eventDeliveryFilteredByStatus">
 					{{ status || 'None' }}
 
 					<button convoy-button (click)="removeStatusFilter(status)" fill="text" type="button" class="py-0 px-0 ml-4px">
@@ -68,7 +68,7 @@
 
 			<ng-container *ngIf="showFilter('Status')">
 				<div convoy-dropdown size="md" position="right-side" [show]="true" #statusDropdown>
-					<div dropdownTrigger class="border border-new.primary-200 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Status</div>
+					<div dropdownTrigger class="border border-new.primary-100 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Status</div>
 
 					<ng-container dropdownOptions>
 						<ul class="min-h-[100px] max-h-[200px] overflow-auto pb-10px">
@@ -83,8 +83,8 @@
 			</ng-container>
 
 			<div class="flex gap-x-2px" *ngIf="eventDeliveriesSource">
-				<div class="border border-new.primary-200 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Source</div>
-				<div class="border border-new.primary-200 rounded-tr-22px rounded-br-22px px-10px py-6px text-new.gray-500 text-12 flex gap-6px items-center">
+				<div class="border border-new.primary-100 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Source</div>
+				<div class="border border-new.primary-100 rounded-tr-22px rounded-br-22px px-10px py-6px text-new.gray-400 text-12 flex gap-6px items-center">
 					{{ eventDeliveriesSourceData?.name }}
 
 					<button convoy-button (click)="eventDeliveriesSource = ''; toggleFilter('Source', false); clearFilters('sourceId')" fill="text" type="button" class="py-0 px-0 ml-4px">
@@ -97,7 +97,7 @@
 
 			<ng-container *ngIf="showFilter('Source')">
 				<div convoy-dropdown size="md" position="right-side" [show]="true" #sourcesFilterDropdown [hidden]="portalToken || this.projectService.activeProjectDetails?.type === 'outgoing'">
-					<div dropdownTrigger class="border border-new.primary-200 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Sources</div>
+					<div dropdownTrigger class="border border-new.primary-100 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Sources</div>
 
 					<div dropdownOptions>
 						<ul class="min-h-[100px] max-h-[200px] overflow-auto">
@@ -119,8 +119,8 @@
 			</ng-container>
 
 			<div class="flex gap-x-2px" *ngIf="eventDeliveriesEndpoint">
-				<div class="border border-new.primary-200 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Endpoint</div>
-				<div class="border border-new.primary-200 rounded-tr-22px rounded-br-22px px-10px py-6px text-new.gray-500 text-12 flex gap-6px items-center">
+				<div class="border border-new.primary-100 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Endpoint</div>
+				<div class="border border-new.primary-100 rounded-tr-22px rounded-br-22px px-10px py-6px text-new.gray-400 text-12 flex gap-6px items-center">
 					{{ eventDeliveriesEndpointData?.title || eventDeliveriesEndpoint }}
 
 					<button convoy-button (click)="clearFilters('endpointId'); toggleFilter('Endpoint', false)" fill="text" type="button" class="py-0 px-0 ml-4px">
@@ -133,13 +133,13 @@
 
 			<ng-container *ngIf="showFilter('Endpoint')">
 				<convoy-endpoint-filter *ngIf="!portalToken" position="right-side" [show]="true" [endpoint]="eventDeliveriesEndpoint" (clear)="clearFilters('endpointId')" (set)="updateEndpointFilter($event); toggleFilter('Endpoint', false)">
-					<button dropdownTrigger convoy-button size="sm" fill="outline" class="border border-new.primary-200 rounded-[0] rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Endpoint</button>
+					<button dropdownTrigger convoy-button size="sm" fill="outline" class="border border-new.primary-100 rounded-[0] rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Endpoint</button>
 				</convoy-endpoint-filter>
 			</ng-container>
 
 			<div class="flex gap-x-2px" *ngIf="eventDelEventType">
-				<div class="border border-new.primary-200 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Event Type</div>
-				<div class="border border-new.primary-200 rounded-tr-22px rounded-br-22px px-10px py-6px text-new.gray-500 text-12 flex gap-6px items-center">
+				<div class="border border-new.primary-100 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Event Type</div>
+				<div class="border border-new.primary-100 rounded-tr-22px rounded-br-22px px-10px py-6px text-new.gray-400 text-12 flex gap-6px items-center">
 					{{ eventDelEventType }}
 
 					<button convoy-button (click)="clearFilters('eventType'); toggleFilter('Event Type', false)" fill="text" type="button" class="py-0 px-0 ml-4px">
@@ -152,7 +152,7 @@
 
 			<ng-container *ngIf="showFilter('Event type')">
 				<div convoy-dropdown size="md" position="right-side" [show]="true" #eventTypeDropdown>
-					<div dropdownTrigger class="border border-new.primary-200 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Event Type</div>
+					<div dropdownTrigger class="border border-new.primary-100 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Event Type</div>
 
 					<ng-container dropdownOptions>
 						<div>
@@ -195,11 +195,11 @@
 	</div>
 
 	<div class="flex items-center gap-x-16px">
-		<button convoy-button size="sm" class="px-10px py-6px border-primary-400" [disabled]="(!queryParams?.startDate || !queryParams?.endDate) && !queryParams?.endpointId && !queryParams?.eventId && !queryParams?.status && !queryParams?.sourceId" (click)="showBatchRetry()">
+		<button convoy-button size="sm" class="px-10px py-6px border-primary-400" [disabled]="!isAnyFilterSelected()" (click)="showBatchRetry()">
 			Batch Retry
 		</button>
 		<div convoy-button size="sm" fill="outline" texture="light" class="px-6px relative">
-			<label class="text-12 text-new.gray-500 block w-full capitalize whitespace-nowrap mr-6px" for="tailMode">Tail Events</label>
+			<label class="text-12 text-new.gray-400 block w-full capitalize whitespace-nowrap mr-6px" for="tailMode">Tail Events</label>
 			<input
 				type="checkbox"
 				class="

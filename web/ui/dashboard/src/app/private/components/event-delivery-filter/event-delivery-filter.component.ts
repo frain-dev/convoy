@@ -31,7 +31,7 @@ export class EventDeliveryFilterComponent implements OnInit {
 	@Output('tail') tail = new EventEmitter<any>();
 	@Output('batchRetry') batchRetry = new EventEmitter<any>();
 
-	sortOrder: 'asc' | 'desc' = 'desc';
+	sortOrder: 'asc' | 'desc' | string = 'desc';
 
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
 	eventDeliveryFilteredByStatus: string[] = [];
@@ -50,7 +50,7 @@ export class EventDeliveryFilterComponent implements OnInit {
 
 	portalToken = this.route.snapshot.queryParams?.token;
 
-	queryParams?: FILTER_QUERY_PARAM;
+	queryParams: FILTER_QUERY_PARAM = {}
 	enableTailMode = false;
 	filterOptions = [
 		{ name: 'Date', show: false },
@@ -137,6 +137,8 @@ export class EventDeliveryFilterComponent implements OnInit {
 			this.eventDeliveriesSource = '';
 			this.eventDeliveriesEndpoint = '';
 			this.eventDeliveryFilteredByStatus = [];
+            const sortParam = this.queryParams.sort
+
 			this.queryParams = {};
 			this._location.go(`${location.pathname}`);
 		}
@@ -203,9 +205,10 @@ export class EventDeliveryFilterComponent implements OnInit {
 
 	toggleSortOrder() {
 		this.sortOrder === 'asc' ? (this.sortOrder = 'desc') : (this.sortOrder = 'asc');
-		localStorage.setItem('EVENTS_SORT_ORDER', this.sortOrder);
+		const data = this.addFilterToURL({ sort: this.sortOrder });
+		// this.type === 'logs' ? localStorage.setItem('EVENTS_LOG_SORT_ORDER', this.sortOrder) : localStorage.setItem('EVENTS_SORT_ORDER', this.sortOrder);
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.filter.emit({ sort: this.sortOrder, ...this.queryParams });
+		this.filter.emit(data);
 	}
 
 	toggleTailMode(e?: any, status?: 'on' | 'off') {
@@ -214,13 +217,13 @@ export class EventDeliveryFilterComponent implements OnInit {
 		else tailModeConfig = e.target.checked;
 
 		this.enableTailMode = tailModeConfig;
-		localStorage.setItem('EVENTS_TAIL_MODE', JSON.stringify(tailModeConfig));
+		this.type === 'logs' ? localStorage.setItem('EVENT_LOGS_TAIL_MODE', JSON.stringify(tailModeConfig)) : localStorage.setItem('EVENTS_TAIL_MODE', JSON.stringify(tailModeConfig));
 
 		this.tail.emit({ data: this.queryParams, tailModeConfig });
 	}
 
 	checkIfTailModeIsEnabled() {
-		const tailModeConfig = localStorage.getItem('EVENTS_TAIL_MODE');
+		const tailModeConfig = this.type === 'logs' ? localStorage.getItem('EVENT_LOGS_TAIL_MODE') : localStorage.getItem('EVENTS_TAIL_MODE');
 		this.enableTailMode = tailModeConfig ? JSON.parse(tailModeConfig) : false;
 
 		return this.enableTailMode;
@@ -237,7 +240,7 @@ export class EventDeliveryFilterComponent implements OnInit {
 	}
 
 	isAnyFilterSelected(): Boolean {
-		return (this.queryParams && Object.keys(this.queryParams).length > 0) || false;
+		return (this.queryParams && (Object.keys(this.queryParams)[0] !== 'sort' || Object.keys(this.queryParams)[0] === 'sort') && Object.keys(this.queryParams).length > 1) || false;
 	}
 
 	async getSelectedEndpointData(): Promise<ENDPOINT> {

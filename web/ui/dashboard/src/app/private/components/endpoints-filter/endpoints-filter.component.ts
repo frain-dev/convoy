@@ -30,14 +30,7 @@ export class EndpointFilterComponent implements OnInit {
 
 	constructor(public privateService: PrivateService) {}
 
-	async ngOnInit() {
-        // console.log(this.endpointId)
-		// if (this.endpointId) {
-		// 	this.selectedEndpoint = await this.getSelectedEndpointData();
-        //     console.log(this.selectedEndpoint)
-		// 	this.setSelectedEndpoint.emit(this.selectedEndpoint);
-		// }
-	}
+	ngOnInit(): void {}
 
 	ngAfterViewInit() {
 		this.endpoints$ = fromEvent<any>(this.eventDelsEndpointFilter?.nativeElement, 'keyup').pipe(
@@ -49,19 +42,11 @@ export class EndpointFilterComponent implements OnInit {
 		);
 	}
 
-	// selectEndpoint(event: any, endpointId: string) {
-	// 	this.selectedEndpoint = event.target.checked ? endpointId : '';
-	// }
-
 	async getEndpointsForFilter(search: string): Promise<ENDPOINT[]> {
 		return await (
 			await this.privateService.getEndpoints({ q: search })
 		).data.content;
 	}
-
-	// async getSelectedEndpointData(): Promise<ENDPOINT> {
-	// 	return await (await this.privateService.getEndpoints()).data.content.find((item: ENDPOINT) => item.uid === this.endpointId);
-	// }
 
 	clear() {
 		this.clearEndpoint.emit();
