@@ -105,17 +105,10 @@ export class GeneralService {
 			const filteredItemDate = content.filter((item: { created_at: Date }) => this.getDate(item.created_at) === itemDate);
 			const contents = { date: itemDate, content: filteredItemDate };
 			displayedItems.push(contents);
+
 			displayedItems = sortOrder === 'desc' ? displayedItems.sort((a: any, b: any) => Number(new Date(b.date)) - Number(new Date(a.date))) : displayedItems.sort((a: any, b: any) => Number(new Date(a.date)) - Number(new Date(b.date)));
-			// displayedItems = displayedItems.sort((a: any, b: any) => Number(new Date(a.date)) - Number(new Date(b.date)));
 		});
-		const setDatess = ['25 Aug, 2023', '31 Aug, 2023', '15 Nov, 2023'];
-		const playaround = sortOrder === 'desc' ? displayedItems.sort((a: any, b: any) => Number(new Date(b)) - Number(new Date(a))) : displayedItems.sort((a: any, b: any) => Number(new Date(a)) - Number(new Date(b)));
-		// console.log(setDatess);
-		// console.log(setDatess.sort((a: any, b: any) => Number(new Date(b)) - Number(new Date(a))));
-		// console.log(setDatess.sort((a: any, b: any) => Number(new Date(a)) - Number(new Date(b))));
-		// console.log(Number(new Date('25 Aug, 2023')));
-		// console.log(Number(new Date('31 Aug, 2023')));
-		// console.log(Number(new Date('15 Nov, 2023')));
+
 		return displayedItems;
 	}
 

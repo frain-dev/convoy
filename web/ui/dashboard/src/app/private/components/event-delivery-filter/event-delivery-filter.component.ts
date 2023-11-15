@@ -204,9 +204,8 @@ export class EventDeliveryFilterComponent implements OnInit {
 	}
 
 	toggleSortOrder() {
-		this.queryParams && this.queryParams === 'asc' ? (this.sortOrder = 'desc') : (this.sortOrder = 'asc');
+		this.sortOrder === 'asc' ? (this.sortOrder = 'desc') : (this.sortOrder = 'asc');
 		const data = this.addFilterToURL({ sort: this.sortOrder });
-		// this.type === 'logs' ? localStorage.setItem('EVENTS_LOG_SORT_ORDER', this.sortOrder) : localStorage.setItem('EVENTS_SORT_ORDER', this.sortOrder);
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
 		this.filter.emit(data);
 	}
