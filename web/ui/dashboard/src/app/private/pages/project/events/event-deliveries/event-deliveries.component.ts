@@ -1,6 +1,7 @@
-import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Observable } from 'rxjs';
+import { fromEvent, Observable } from 'rxjs';
+import { debounceTime, distinctUntilChanged, map, startWith } from 'rxjs/operators';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { EVENT_DELIVERY, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
@@ -28,11 +29,14 @@ export class EventDeliveriesComponent implements OnInit {
 	isRetrying = false;
 	batchRetryCount!: number;
 	eventDeliveriesEndpoint?: string;
+	eventDeliveriesEndpointData?: ENDPOINT;
 	eventDeliveriesSource?: string;
+	eventDeliveriesSourceData?: SOURCE;
 	displayedEventDeliveries!: { date: string; content: any[] }[];
 	eventDeliveries?: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	eventDeliveryFilteredByStatus: string[] = [];
 	eventsDelEndpointFilter$!: Observable<ENDPOINT[]>;
+	@ViewChild('eventTypeForm', { static: false }) eventDelsEventsTypeForm!: ElementRef;
 	@ViewChild('eventDelsEndpointFilter', { static: true }) eventDelsEndpointFilter!: ElementRef;
 	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
 	@ViewChild('batchRetryDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
@@ -42,19 +46,53 @@ export class EventDeliveriesComponent implements OnInit {
 	getEventDeliveriesInterval: any;
 	enableTailMode = false;
 	loadingFilterEndpoints = false;
+	eventDelEventType?: string;
+	eventsTypeSearchString!: string;
+	filterOptions = [
+		{ name: 'Date', show: false },
+		{ name: 'Status', show: false },
+		{ name: 'Source', show: false },
+		{ name: 'Endpoint', show: false },
+		{ name: 'Event type', show: false }
+	];
+	sortOrder: 'asc' | 'desc' = 'desc';
 
 	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, public projectService: ProjectService, public privateService: PrivateService, private _location: Location) {}
 
-	ngOnInit() {
+	async ngOnInit() {
 		const data = this.getFiltersFromURL();
 		this.getEventDeliveries({ ...data, showLoader: true });
 		if (this.checkIfTailModeIsEnabled()) this.getEventDeliveriesAtInterval();
+
+		this.projectService.activeProjectDetails?.type == 'incoming' ? this.filterOptions.splice(3, 2) : this.filterOptions.splice(2, 1);
+
+		if (this.eventDeliveriesSource) this.eventDeliveriesSourceData = await this.getSelectedSourceData();
 
 		if (!this.portalToken || this.projectService.activeProjectDetails?.type == 'incoming') this.getSourcesForFilter();
 	}
 
 	ngOnDestroy() {
 		clearInterval(this.getEventDeliveriesInterval);
+	}
+
+	toggleSortOrder() {
+		this.sortOrder === 'asc' ? (this.sortOrder = 'desc') : (this.sortOrder = 'asc');
+		const data = this.addFilterToURL({ sort: this.sortOrder });
+		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
+		this.getEventDeliveries({ ...data, showLoader: true });
+	}
+
+	setEventType() {
+		console.log(this.eventsTypeSearchString);
+		this.eventDelEventType = this.eventsTypeSearchString;
+		const data = this.addFilterToURL({ eventType: this.eventsTypeSearchString });
+		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
+		this.getEventDeliveries({ ...data, showLoader: true });
+		this.toggleFilter('Event type', false);
+	}
+
+	fetchEventDeliveries(requestDetails?: FILTER_QUERY_PARAM) {
+		const data = requestDetails;
 	}
 
 	getFiltersFromURL() {
@@ -65,6 +103,8 @@ export class EventDeliveriesComponent implements OnInit {
 
 		this.eventDeliveriesSource = this.queryParams?.sourceId;
 		this.eventDeliveriesEndpoint = this.queryParams?.endpointId;
+
+		this.eventDelEventType = this.queryParams?.eventType;
 
 		return this.queryParams;
 	}
@@ -164,6 +204,31 @@ export class EventDeliveriesComponent implements OnInit {
 		return this.eventDeliveryFilteredByStatus?.length > 0 ? this.eventDeliveryFilteredByStatus.includes(status) : false;
 	}
 
+	isAnyFilterSelected(): Boolean {
+		return (this.queryParams && Object.keys(this.queryParams).length > 0) || false;
+	}
+
+	toggleFilter(filterValue: string, show: boolean) {
+		this.filterOptions.forEach(filter => {
+			if (filter.name === filterValue) filter.show = show;
+		});
+	}
+
+	showFilter(filterValue: string): boolean {
+		return this.filterOptions.find(filter => filter.name === filterValue)?.show || false;
+	}
+
+	selectStatusFilter(status: string) {
+		if (!this.eventDeliveryFilteredByStatus?.includes(status)) this.eventDeliveryFilteredByStatus.push(status);
+		this.toggleFilter('Status', false);
+		this.getSelectedStatusFilter();
+	}
+
+	removeStatusFilter(status: string) {
+		this.eventDeliveryFilteredByStatus = this.eventDeliveryFilteredByStatus.filter(e => e !== status);
+		this.getSelectedStatusFilter();
+	}
+
 	updateEventDevliveryStatusFilter(status: string, isChecked: any) {
 		if (isChecked.target.checked) {
 			this.eventDeliveryFilteredByStatus.push(status);
@@ -186,7 +251,7 @@ export class EventDeliveriesComponent implements OnInit {
 		this.getEventDeliveries({ ...data, showLoader: true });
 	}
 
-	clearFilters(filterType?: 'startDate' | 'endDate' | 'eventId' | 'endpointId' | 'status' | 'sourceId' | 'next_page_cursor' | 'prev_page_cursor' | 'direction') {
+	clearFilters(filterType?: 'startDate' | 'endDate' | 'eventId' | 'endpointId' | 'status' | 'sourceId' | 'next_page_cursor' | 'prev_page_cursor' | 'direction' | 'eventType') {
 		if (filterType && this.queryParams) {
 			// if filter to clear start date or end date, it means clear date filter. :)
 			if (filterType === 'startDate' || filterType === 'endDate') {
@@ -201,6 +266,10 @@ export class EventDeliveriesComponent implements OnInit {
 			} else if (filterType === 'sourceId') {
 				this.eventDeliveriesSource = '';
 				delete this.queryParams['sourceId'];
+			} else if (filterType === 'eventType') {
+				this.eventDelEventType = '';
+				this.eventsTypeSearchString = '';
+				delete this.queryParams['eventType'];
 			} else delete this.queryParams[filterType];
 
 			const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
@@ -229,6 +298,10 @@ export class EventDeliveriesComponent implements OnInit {
 		} catch (error) {
 			this.fetchingCount = false;
 		}
+	}
+
+	async getSelectedSourceData(): Promise<SOURCE> {
+		return await (await this.privateService.getSources()).data.content.find((item: SOURCE) => item.uid === this.eventDeliveriesSource);
 	}
 
 	async getSourcesForFilter() {
