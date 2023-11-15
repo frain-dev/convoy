@@ -35,8 +35,9 @@ export class DropdownOptionDirective {
     changeDetection: ChangeDetectionStrategy.Default
 })
 export class DropdownComponent implements OnInit {
-	@Input('position') position: 'right' | 'left' | 'center' = 'right';
+	@Input('position') position: 'right' | 'left' | 'center' | 'right-side' = 'right';
 	@Input('size') size: 'sm' | 'md' | 'lg' | 'xl' | 'full' = 'md';
+	@Input('show') showDropdown = false;
 	@ViewChild('dropdownTriggerContainer', { static: true }) dropdownTriggerContainer!: ElementRef;
 	@ViewChild('dropdownContainer', { static: true }) dropdownOptions!: ElementRef;
     @Output() readonly onSelect = new EventEmitter<any>;
@@ -45,6 +46,8 @@ export class DropdownComponent implements OnInit {
     constructor() {}
 
     ngOnInit(): void {
+        if(this.showDropdown) this.show = true;
+
 		this.dropdownTriggerContainer.nativeElement.children[0].addEventListener('click', () => (this.show = !this.show));
     }
 }
