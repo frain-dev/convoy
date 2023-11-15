@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
@@ -24,11 +24,14 @@ export class EventDeliveryFilterComponent implements OnInit {
 	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
 	@ViewChild('eventTypeFilter', { static: false }) eventTypeFilter?: any;
 
-	sortOrder: 'asc' | 'desc' = 'desc';
+	@Input('type') type: 'deliveries' | 'logs' = 'deliveries';
+
 	@Output('sortEvents') sort = new EventEmitter<any>();
 	@Output('filter') filter = new EventEmitter<any>();
 	@Output('tail') tail = new EventEmitter<any>();
 	@Output('batchRetry') batchRetry = new EventEmitter<any>();
+
+	sortOrder: 'asc' | 'desc' = 'desc';
 
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
 	eventDeliveryFilteredByStatus: string[] = [];
@@ -42,6 +45,8 @@ export class EventDeliveryFilterComponent implements OnInit {
 
 	eventDelEventType?: string;
 	eventsTypeSearchString!: string;
+
+	eventsSearchString!: string;
 
 	portalToken = this.route.snapshot.queryParams?.token;
 
@@ -60,7 +65,11 @@ export class EventDeliveryFilterComponent implements OnInit {
 		const data = this.getFiltersFromURL();
 		this.filter.emit(data);
 
-		this.projectService.activeProjectDetails?.type == 'incoming' ? this.filterOptions.splice(3, 2) : this.filterOptions.splice(2, 1);
+		if (this.type === 'logs') {
+			this.projectService.activeProjectDetails?.type == 'outgoing' ? this.filterOptions.splice(1, 4) : this.filterOptions.splice(1, 4, { name: 'Source', show: false });
+		} else {
+			this.projectService.activeProjectDetails?.type == 'incoming' ? this.filterOptions.splice(3, 2) : this.filterOptions.splice(2, 1);
+		}
 
 		if (this.checkIfTailModeIsEnabled()) this.tail.emit({ data: this.queryParams, tailModeConfig: this.checkIfTailModeIsEnabled() });
 
@@ -178,6 +187,12 @@ export class EventDeliveryFilterComponent implements OnInit {
 		this.filter.emit(data);
 	}
 
+	searchEvents() {
+		const data = this.addFilterToURL({ query: this.eventsSearchString });
+		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
+		this.filter.emit(data);
+	}
+
 	setEventType() {
 		this.eventDelEventType = this.eventsTypeSearchString;
 		const data = this.addFilterToURL({ eventType: this.eventsTypeSearchString });
@@ -240,7 +255,7 @@ export class EventDeliveryFilterComponent implements OnInit {
 		} catch (error) {}
 	}
 
-    showBatchRetry(){
-        this.batchRetry.emit(this.queryParams)
-    }
+	showBatchRetry() {
+		this.batchRetry.emit(this.queryParams);
+	}
 }

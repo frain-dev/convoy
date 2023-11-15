@@ -1,13 +1,31 @@
 <div class="flex py-20px items-center justify-between">
 	<div class="flex items-start gap-x-16px">
 		<div class="flex flex-wrap items-center gap-x-16px gap-y-10px w-fit max-w-[750px]">
+			<div *ngIf="type === 'logs'">
+				<form class="border border-primary-400 h-36px px-14px py-0 max-w-[200px] w-full rounded-[10px] flex items-center bg-transparent" [ngClass]="{ 'text-primary-100 !bg-primary-500': eventsSearchString != undefined && eventsSearchString != '' }">
+					<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
+					<input
+						type="search"
+						placeholder="Search events"
+						[(ngModel)]="eventsSearchString"
+						(change)="searchEvents()"
+						[ngModelOptions]="{ standalone: true }"
+						class="w-full text-grey-40 outline-none bg-transparent text-12 font-normal"
+						[ngClass]="{ 'bg-primary-500': eventsSearchString != undefined && eventsSearchString != '' }"
+					/>
+					<button *ngIf="eventsSearchString">
+						<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px opacity-75" />
+					</button>
+				</form>
+			</div>
+
 			<button convoy-button fill="outline" class="!p-10px border-new.primary-200" (click)="toggleSortOrder()">
 				<svg width="10" height="10" class="scale-105">
 					<use xlink:href="#sort-icon"></use>
 				</svg>
 			</button>
 
-			<div class="h-16px w-[1px] bg-new.gray-200"></div>
+			<div class="h-22px w-[1px] bg-new.primary-50"></div>
 
 			<div class="flex gap-x-2px" *ngIf="queryParams?.startDate || queryParams?.endDate">
 				<div class="border border-new.primary-200 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Date</div>
@@ -140,14 +158,7 @@
 						<div>
 							<form class="border border-primary-400 h-36px px-14px py-0 max-w-[200px] w-full rounded-[10px] flex items-center bg-transparent">
 								<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-								<input
-									type="search"
-									placeholder="Search event type"
-									[(ngModel)]="eventsTypeSearchString"
-									(change)="setEventType()"
-									[ngModelOptions]="{ standalone: true }"
-									class="w-full text-grey-40 outline-none bg-transparent text-12 font-normal"
-								/>
+								<input type="search" placeholder="Search event type" [(ngModel)]="eventsTypeSearchString" (change)="setEventType()" [ngModelOptions]="{ standalone: true }" class="w-full text-grey-40 outline-none bg-transparent text-12 font-normal" />
 								<button *ngIf="eventsTypeSearchString">
 									<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px opacity-75" />
 								</button>
@@ -176,7 +187,7 @@
 				</ul>
 			</div>
 			<ng-container *ngIf="isAnyFilterSelected()">
-				<div class="h-16px w-[1px] bg-new.gray-200"></div>
+				<div class="h-22px w-[1px] bg-new.primary-50"></div>
 
 				<button convoy-button size="sm" texture="light" (click)="clearFilters()">Clear Filters</button>
 			</ng-container>

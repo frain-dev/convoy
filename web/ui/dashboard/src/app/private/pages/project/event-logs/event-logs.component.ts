@@ -24,6 +24,7 @@ import { EventsService } from '../events/events.service';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
+import { EventDeliveryFilterComponent } from 'src/app/private/components/event-delivery-filter/event-delivery-filter.component';
 
 @Component({
 	selector: 'convoy-event-logs',
@@ -51,7 +52,8 @@ import { ListItemComponent } from 'src/app/components/list-item/list-item.compon
 		CopyButtonComponent,
 		ListItemComponent,
 		DropdownOptionDirective,
-		DialogDirective
+		DialogDirective,
+		EventDeliveryFilterComponent
 	],
 	templateUrl: './event-logs.component.html',
 	styleUrls: ['./event-logs.component.scss']
@@ -90,45 +92,33 @@ export class EventLogsComponent implements OnInit {
 
 	constructor(private eventsLogService: EventLogsService, public generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService, private _location: Location) {}
 
-	async ngOnInit() {
-		const data = this.getFiltersFromURL();
-		this.getEventLogs({ ...data, showLoader: true });
-		if (this.checkIfTailModeIsEnabled()) this.getEventsAtInterval();
-		if (!this.portalToken) this.getSourcesForFilter();
-	}
+	async ngOnInit() {}
 
 	ngOnDestroy() {
 		clearInterval(this.getEventsInterval);
 	}
 
-	async getSourcesForFilter() {
-		try {
-			const sourcesResponse = (await this.privateService.getSources()).data.content;
-			this.filterSources = sourcesResponse;
-		} catch (error) {}
+	fetchEventLogs(requestDetails: FILTER_QUERY_PARAM) {
+		const data = requestDetails;
+		this.queryParams = data;
+		this.getEventLogs({ ...data, showLoader: true });
 	}
 
-	searchEvents() {
-		const data = this.addFilterToURL({ query: this.eventsSearchString });
-		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.getEventLogs({ ...data, showLoader: true });
+	handleTailing(tailDetails: { data: FILTER_QUERY_PARAM; tailModeConfig: boolean }) {
+		this.queryParams = tailDetails.data;
+
+		clearInterval(this.getEventsInterval);
+		if (tailDetails.tailModeConfig) this.newgetEventsAtInterval(tailDetails.data);
+	}
+
+	newgetEventsAtInterval(data: FILTER_QUERY_PARAM) {
+		this.getEventsInterval = setInterval(() => {
+			this.getEventLogs(data);
+		}, 5000);
 	}
 
 	paginateEvents(event: CURSOR) {
 		const data = this.addFilterToURL(event);
-		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.getEventLogs({ ...data, showLoader: true });
-	}
-
-	updateSourceFilter() {
-		const data = this.addFilterToURL({ sourceId: this.eventSource });
-		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.getEventLogs({ ...data, showLoader: true });
-	}
-
-	getSelectedDateRange(dateRange: { startDate: string; endDate: string }) {
-		this.eventsDateFilterFromURL = dateRange;
-		const data = this.addFilterToURL(dateRange);
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
 		this.getEventLogs({ ...data, showLoader: true });
 	}
@@ -267,16 +257,14 @@ export class EventLogsComponent implements OnInit {
 		}
 	}
 
-	async fetchRetryCount() {
+	async fetchRetryCount(data: FILTER_QUERY_PARAM) {
+		this.queryParams = data;
+
+		if (!data) return;
 		const page = this.route.snapshot.queryParams.page || 1;
 		this.fetchingCount = true;
 		try {
-			const response = await this.eventsLogService.getRetryCount({
-				page: page,
-				startDate: this.eventsDateFilterFromURL.startDate,
-				endDate: this.eventsDateFilterFromURL.endDate,
-				sourceId: this.eventSource || ''
-			});
+			const response = await this.eventsLogService.getRetryCount(data);
 
 			this.batchRetryCount = response.data.num;
 			this.fetchingCount = false;
@@ -331,16 +319,5 @@ export class EventLogsComponent implements OnInit {
 		if (filterByIdempotencyKey) queryParams['idempotencyKey'] = event.idempotency_key;
 
 		this.router.navigate([`/projects/${this.privateService.getProjectDetails?.uid}/events`], { queryParams });
-	}
-
-	toggleSouceFilter(event: any, sourceId: string) {
-		this.eventSource = event.target.checked ? sourceId : '';
-	}
-
-	toggleSortOrder() {
-		this.sortOrder === 'asc' ? (this.sortOrder = 'desc') : (this.sortOrder = 'asc');
-		const data = this.addFilterToURL({ sort: this.sortOrder });
-		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.getEventLogs({ ...data, showLoader: true });
 	}
 }
