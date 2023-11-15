@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
+	"github.com/oklog/ulid/v2"
 	"time"
 )
 
@@ -73,6 +74,7 @@ func (c *CreateEventService) Run(ctx context.Context) (*datastore.Event, error) 
 	}
 
 	newEvent := &newEvent{
+		UID:            ulid.Make().String(),
 		Data:           c.NewMessage.Data,
 		EventType:      c.NewMessage.EventType,
 		EndpointID:     c.NewMessage.EndpointID,
@@ -145,7 +147,7 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		Payload: eventByte,
 		Delay:   0,
 	}
-	err = queuer.Write(ctx, convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = queuer.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.FromContext(ctx).Errorf("Error occurred sending new event to the queue %s", err)
 	}

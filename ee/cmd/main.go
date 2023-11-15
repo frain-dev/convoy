@@ -10,7 +10,6 @@ import (
 	"github.com/frain-dev/convoy/cmd/ingest"
 	"github.com/frain-dev/convoy/cmd/migrate"
 	"github.com/frain-dev/convoy/cmd/retry"
-	"github.com/frain-dev/convoy/cmd/scheduler"
 	"github.com/frain-dev/convoy/cmd/stream"
 	"github.com/frain-dev/convoy/cmd/version"
 	"github.com/frain-dev/convoy/cmd/worker"
@@ -84,7 +83,6 @@ func main() {
 	c.AddCommand(server.AddServerCommand(app))
 	c.AddCommand(worker.AddWorkerCommand(app))
 	c.AddCommand(retry.AddRetryCommand(app))
-	c.AddCommand(scheduler.AddSchedulerCommand(app))
 	c.AddCommand(migrate.AddMigrateCommand(app))
 	c.AddCommand(configCmd.AddConfigCommand(app))
 	c.AddCommand(domain.AddDomainCommand(app))

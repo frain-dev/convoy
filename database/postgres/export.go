@@ -25,21 +25,21 @@ func NewExportRepo(db database.Database) datastore.ExportRepository {
 
 const (
 	exportRepoQ = `
-		SELECT to_jsonb(ed) - 'id' || jsonb_build_object('uid', ed.id) AS json_output
+		SELECT TO_JSONB(ed) - 'id' || JSONB_BUILD_OBJECT('uid', ed.id) AS json_output
 		FROM %s AS ed %s
 		ORDER BY id ASC
 		LIMIT $4
 	`
 
 	count = `
-		SELECT COUNT(*) FROM %s %s;
+		SELECT COUNT(*) FROM %s %s
 	`
 
 	where = ` WHERE deleted_at IS NULL AND project_id = $1 AND created_at < $2 AND (id > $3 OR $3 = '')`
 )
 
 // ExportRecords exports the records from the given table and writes them in json format to the passed writer.
-// It's the callers responsibility to close the writer.
+// It's the caller's responsibility to close the writer.
 func (e *exportRepo) ExportRecords(ctx context.Context, tableName, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
 	c := &struct {
 		Count int64 `db:"count"`
@@ -99,12 +99,12 @@ func (e *exportRepo) querybatch(ctx context.Context, q, projectID, lastID string
 	if err != nil {
 		return 0, "", err
 	}
-	defer rows.Close()
+	defer closeWithError(rows)
 
 	var record json.RawMessage
 	records := make([]byte, 0, 1000)
 
-	// scan first record and append it without appending comma
+	// scan the first record and append it without appending a comma
 	if rows.Next() {
 		numDocs++
 		err = rows.Scan(&record)

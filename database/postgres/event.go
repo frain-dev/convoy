@@ -16,8 +16,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-var ErrEventNotCreated = errors.New("event could not be created")
-
 const (
 	createEvent = `
 	INSERT INTO convoy.events (id,event_type,endpoints,project_id,
@@ -263,6 +261,7 @@ func (e *eventRepo) FindEventsByIDs(ctx context.Context, projectID string, ids [
 	if err != nil {
 		return nil, err
 	}
+	defer closeWithError(rows)
 
 	events := make([]datastore.Event, 0)
 	for rows.Next() {
@@ -290,6 +289,7 @@ func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID st
 	if err != nil {
 		return nil, err
 	}
+	defer closeWithError(rows)
 
 	events := make([]datastore.Event, 0)
 	for rows.Next() {
@@ -399,6 +399,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
+	defer closeWithError(rows)
 
 	events := make([]datastore.Event, 0)
 	for rows.Next() {
@@ -440,15 +441,13 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
-		}
-		err = rows.Close()
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
 		}
 	}
 
@@ -464,7 +463,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 	pagination := &datastore.PaginationData{PrevRowCount: count}
 	pagination = pagination.Build(filter.Pageable, ids)
 
-	return events, *pagination, rows.Close()
+	return events, *pagination, nil
 }
 
 func (e *eventRepo) DeleteProjectEvents(ctx context.Context, projectID string, filter *datastore.EventFilter, hardDelete bool) error {
@@ -509,6 +508,7 @@ func (e *eventRepo) CopyRows(ctx context.Context, projectID string, interval int
 			return err
 		}
 	}
+
 	_, err = tx.ExecContext(ctx, copyRowsFromEventsToEventsSearch, projectID, interval)
 	if err != nil {
 		return err

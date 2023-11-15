@@ -29,20 +29,20 @@ const (
 	UPDATE convoy.devices SET
 	host_name = $3,
 	status = $4,
-	updated_at = now()
+	updated_at = NOW()
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 	updateDeviceLastSeen = `
 	UPDATE convoy.devices SET
 	status = $3,
-	last_seen_at = now(),
-	updated_at = now()
+	last_seen_at = NOW(),
+	updated_at = NOW()
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	deleteDevice = `
 	UPDATE convoy.devices SET
-	deleted_at = now()
+	deleted_at = NOW()
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
@@ -85,7 +85,7 @@ const (
 	`
 
 	countPrevDevices = `
-	SELECT count(distinct(id)) as count
+	SELECT COUNT(DISTINCT(id)) AS count
 	FROM convoy.devices
 	WHERE deleted_at IS NULL
 	%s
@@ -251,6 +251,7 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, projectID string, fil
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
+	defer closeWithError(rows)
 
 	var devices []datastore.Device
 	for rows.Next() {
@@ -285,13 +286,14 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, projectID string, fil
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		rows.Close()
 	}
 
 	ids := make([]string, len(devices))

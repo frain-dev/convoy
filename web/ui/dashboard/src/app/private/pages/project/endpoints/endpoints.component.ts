@@ -79,6 +79,7 @@ export class EndpointsComponent implements OnInit {
 	isSendingTestEvent = false;
 	endpointSearchString!: string;
 	action: 'create' | 'update' = 'create';
+	userSearch = false;
 
 	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute) {}
 
@@ -94,6 +95,7 @@ export class EndpointsComponent implements OnInit {
 
 	async getEndpoints(requestDetails?: CURSOR & { search?: string; hideLoader?: boolean }) {
 		this.isLoadingEndpoints = !requestDetails?.hideLoader;
+		this.userSearch = !!requestDetails?.search;
 
 		try {
 			const response = await this.privateService.getEndpoints({ ...requestDetails, q: requestDetails?.search || this.endpointSearchString });

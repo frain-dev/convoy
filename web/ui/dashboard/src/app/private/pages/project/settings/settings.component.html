@@ -1,24 +1,27 @@
-<div id="project-settings"></div>
-<convoy-loader *ngIf="isloading"></convoy-loader>
+<div class="max-w-[1000px] m-auto">
+	<div id="project-settings"></div>
+	<convoy-loader *ngIf="isloading"></convoy-loader>
 
-<app-create-project-component [action]="'update'" class="block -mt-24px"></app-create-project-component>
+	<app-create-project-component [action]="'update'" class="block -mt-24px"></app-create-project-component>
 
-<hr class="border-t border-grey-10 my-40px" />
-
-<div convoy-card color="danger" class="p-26px my-24px">
-	<h2 class="text-danger font-semibold mb-20px">Danger zone</h2>
-	<p class="text-14">
-		Deleting this project will delete all of it's data including events, apps, subscriptions and config.
-		<strong>Are you sure you want to delete this project?</strong>
-	</p>
-	<button convoy-button convoy-permission="Project Settings|MANAGE" color="danger" size="sm" class="mt-32px" (click)="deleteDialog.showModal()">
-		<svg width="18" height="18" class="mr-2 fill-white-100">
-			<use xlink:href="#delete-icon"></use>
-		</svg>
-		Delete Project
-	</button>
+	<div class="w-[730px] ml-auto">
+		<hr class="border-t border-grey-10 my-40px" />
+		<div convoy-card color="danger" class="p-26px my-24px">
+			<h2 class="text-danger text-14 font-semibold mb-20px">Danger zone</h2>
+			<p class="text-12">
+				Deleting this project will delete all of it's data including events, apps, subscriptions and config.
+				<strong>Are you sure you want to delete this project?</strong>
+			</p>
+			<button convoy-button convoy-permission="Project Settings|MANAGE" color="danger" size="sm" class="mt-32px" (click)="deleteDialog.showModal()">
+				<svg width="18" height="18" class="mr-2 fill-white-100">
+					<use xlink:href="#delete-icon"></use>
+				</svg>
+				Delete Project
+			</button>
+		</div>
+	</div>
 </div>
 
 <dialog #deleteDialog convoy-dialog position="center" size="sm">
-    <app-delete-modal [isLoading]="isloading" [deleteText]="'delete this project'" (closeModal)="deleteDialog.close()" (deleteData)="deleteProject()"></app-delete-modal>
+	<app-delete-modal [isLoading]="isloading" [deleteText]="'delete this project'" (closeModal)="deleteDialog.close()" (deleteData)="deleteProject()"></app-delete-modal>
 </dialog>

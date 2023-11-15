@@ -1,9 +1,8 @@
+import { Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { GeneralService } from 'src/app/services/general/general.service';
-import { SettingsService } from './settings.service';
 
-export type SETTINGS = 'organisation settings' | 'configuration settings' | 'personal access tokens';
+export type SETTINGS = 'organisation settings' | 'configuration settings' | 'personal access tokens' | 'team';
 
 @Component({
 	selector: 'convoy-settings',
@@ -12,13 +11,14 @@ export type SETTINGS = 'organisation settings' | 'configuration settings' | 'per
 })
 export class SettingsComponent implements OnInit {
 	activePage: SETTINGS = 'organisation settings';
-	settingsMenu: { name: SETTINGS; icon: string }[] = [
-		{ name: 'organisation settings', icon: 'settings' }
+	settingsMenu: { name: SETTINGS; icon: string; svg: 'stroke' | 'fill' }[] = [
+		{ name: 'organisation settings', icon: 'org', svg: 'fill' },
+		{ name: 'team', icon: 'team', svg: 'stroke' }
 		// hidden for cloud instance
 		// { name: 'configuration settings', icon: 'settings' },
 	];
 
-	constructor(private router: Router, private route: ActivatedRoute) {}
+	constructor(private router: Router, private route: ActivatedRoute, private location: Location) {}
 
 	ngOnInit() {
 		this.toggleActivePage(this.route.snapshot.queryParams?.activePage ?? 'organisation settings');

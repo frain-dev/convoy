@@ -17,11 +17,12 @@ import { CreateSubscriptionComponent } from '../../components/create-subscriptio
 import { CreateSubscriptionService } from '../../components/create-subscription/create-subscription.service';
 import { LoaderModule } from '../../components/loader/loader.module';
 import { NotificationComponent } from 'src/app/components/notification/notification.component';
+import { SourceURLComponent } from '../../components/create-source/source-url/source-url.component';
 
 @Component({
 	selector: 'convoy-setup-project',
 	standalone: true,
-	imports: [CommonModule, DialogHeaderComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, CardComponent, DialogDirective, NotificationComponent],
+	imports: [CommonModule, DialogHeaderComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, CardComponent, DialogDirective, NotificationComponent, SourceURLComponent],
 	templateUrl: './setup-project.component.html',
 	styleUrls: ['./setup-project.component.scss']
 })
@@ -29,7 +30,8 @@ export class SetupProjectComponent implements OnInit {
 	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
 	@ViewChild(CreateSubscriptionComponent) createSubscriptionForm!: CreateSubscriptionComponent;
-    @ViewChild('projectSetupDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('projectSetupDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('sourceURLDialog', { static: true }) sourceURLDialog!: ElementRef<HTMLDialogElement>;
 
 	activeProjectId = this.route.snapshot.params.id;
 	projectType: 'incoming' | 'outgoing' = 'outgoing';
@@ -41,11 +43,12 @@ export class SetupProjectComponent implements OnInit {
 	isLoading = false;
 	showLoader = false;
 	connectPubSub = false;
+	sourceURL!: string;
 
 	constructor(public privateService: PrivateService, private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private subscriptionService: CreateSubscriptionService) {}
 
 	async ngOnInit() {
-        this.dialog.nativeElement.showModal()
+		this.dialog.nativeElement.showModal();
 		if (!this.privateService.getProjectDetails?.uid) {
 			this.showLoader = true;
 			await this.privateService.getProjectDetails;
@@ -57,23 +60,23 @@ export class SetupProjectComponent implements OnInit {
 		}
 	}
 
-    ngOnDestroy(){
-        this.dialog.nativeElement.close()
-    }
+	ngOnDestroy() {
+		this.dialog.nativeElement.close();
+	}
 
 	cancel() {
-        this.dialog.nativeElement.close()
+		this.dialog.nativeElement.close();
 		this.privateService.getProjectDetails?.uid ? this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid) : this.router.navigateByUrl('/projects/' + this.activeProjectId);
 	}
 
 	onProjectOnboardingComplete() {
 		this.generalService.showNotification({ message: `${this.privateService.getProjectDetails?.type} configuration complete`, style: 'success', type: 'modal' });
-
 		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid);
 	}
 
 	onCreateSource(newSource: SOURCE) {
 		this.createSubscriptionForm.subscriptionForm.patchValue({ source_id: newSource.uid });
+		this.sourceURL = newSource.url;
 	}
 
 	onCreateEndpoint(newEndpoint: ENDPOINT) {
@@ -88,7 +91,7 @@ export class SetupProjectComponent implements OnInit {
 
 	async saveProjectConfig() {
 		this.toggleFormsLoaders(true);
-		this.createSubscriptionForm.subscriptionForm.patchValue({ name: `${this.createEndpointForm.addNewEndpointForm.value.name}${this.projectType === 'incoming' ? ' → ' + this.createSourceForm.sourceForm.value.name : ''}'s Subscription` });
+		this.createSubscriptionForm.subscriptionForm.patchValue({ name: `${this.createEndpointForm.addNewEndpointForm.value.name}'s Subscription` });
 		await this.createSubscriptionForm.runSubscriptionValidation();
 
 		if (this.createSubscriptionForm.subscriptionForm.get('name')?.invalid || this.createSubscriptionForm.subscriptionForm.get('retry_config')?.invalid || this.createSubscriptionForm.subscriptionForm.get('filter_config')?.invalid) {
@@ -104,13 +107,18 @@ export class SetupProjectComponent implements OnInit {
 
 		// check subscription form validation
 		if (this.createSubscriptionForm.subscriptionForm.invalid) {
+			console.log(this.createSubscriptionForm.subscriptionForm);
+
 			this.createSubscriptionForm.isCreatingSubscription = false;
 			return this.createSubscriptionForm.subscriptionForm.markAllAsTouched();
 		}
+		console.log(this.createSubscriptionForm.subscriptionForm);
 
 		// create subscription
 		try {
 			this.createSubscriptionForm.saveSubscription(true);
-		} catch (error) {}
+		} catch (error) {
+			console.log('🚀 ~ file: setup-project.component.ts:122 ~ SetupProjectComponent ~ saveProjectConfig ~ error:', error);
+		}
 	}
 }

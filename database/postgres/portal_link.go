@@ -332,8 +332,7 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
-
-	defer rows.Close()
+	defer closeWithError(rows)
 
 	var portalLinks []datastore.PortalLink
 
@@ -373,13 +372,14 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		rows.Close()
 	}
 
 	ids := make([]string, len(portalLinks))
@@ -427,6 +427,7 @@ func (p *portalLinkRepo) upsertPortalLinkEndpoint(ctx context.Context, tx *sqlx.
 		if err != nil {
 			return err
 		}
+		defer closeWithError(rows)
 
 		for rows.Next() {
 			var endpoint datastore.Endpoint

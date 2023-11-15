@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
+	ncache "github.com/frain-dev/convoy/cache/noop"
+	"github.com/frain-dev/convoy/config"
 
 	"github.com/frain-dev/convoy/auth"
 
@@ -124,8 +127,11 @@ type apiKeyRepo struct {
 	cache cache.Cache
 }
 
-func NewAPIKeyRepo(db database.Database, cache cache.Cache) datastore.APIKeyRepository {
-	return &apiKeyRepo{db: db.GetDB(), cache: cache}
+func NewAPIKeyRepo(db database.Database, ca cache.Cache) datastore.APIKeyRepository {
+	if ca == nil {
+		ca = ncache.NewNoopCache()
+	}
+	return &apiKeyRepo{db: db.GetDB(), cache: ca}
 }
 
 func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) error {
@@ -170,6 +176,12 @@ func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) er
 		return ErrAPIKeyNotCreated
 	}
 
+	cacheKey := convoy.ApiKeyCacheKey.Get(key.UID).String()
+	err = a.cache.Set(ctx, cacheKey, key, config.DefaultCacheTTL)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -206,46 +218,76 @@ func (a *apiKeyRepo) UpdateAPIKey(ctx context.Context, key *datastore.APIKey) er
 		return ErrAPIKeyNotUpdated
 	}
 
+	cacheKey := convoy.ApiKeyCacheKey.Get(key.UID).String()
+	err = a.cache.Set(ctx, cacheKey, key, config.DefaultCacheTTL)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, id string) (*datastore.APIKey, error) {
-	apiKey := &datastore.APIKey{}
-	err := a.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1;", fetchAPIKey), id).StructScan(apiKey)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrAPIKeyNotFound
+	fromCache, err := a.readFromCache(ctx, id, func() (*datastore.APIKey, error) {
+		apiKey := &datastore.APIKey{}
+		err := a.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1;", fetchAPIKey), id).StructScan(apiKey)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrAPIKeyNotFound
+			}
+			return nil, err
 		}
+
+		return apiKey, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return apiKey, nil
+	return fromCache, nil
 }
 
 func (a *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
-	apiKey := &datastore.APIKey{}
-	err := a.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND mask_id = $1;", fetchAPIKey), maskID).StructScan(apiKey)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrAPIKeyNotFound
+	fromCache, err := a.readFromCache(ctx, maskID, func() (*datastore.APIKey, error) {
+		apiKey := &datastore.APIKey{}
+		err := a.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND mask_id = $1;", fetchAPIKey), maskID).StructScan(apiKey)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrAPIKeyNotFound
+			}
+			return nil, err
 		}
+
+		return apiKey, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return apiKey, nil
+	return fromCache, nil
 }
 
 func (a *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
-	apiKey := &datastore.APIKey{}
-	err := a.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND hash = $1;", fetchAPIKey), hash).StructScan(apiKey)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrAPIKeyNotFound
+	fromCache, err := a.readFromCache(ctx, hash, func() (*datastore.APIKey, error) {
+		apiKey := &datastore.APIKey{}
+		err := a.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND hash = $1;", fetchAPIKey), hash).StructScan(apiKey)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrAPIKeyNotFound
+			}
+			return nil, err
 		}
+
+		return apiKey, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return apiKey, nil
+	return fromCache, nil
 }
 
 func (a *apiKeyRepo) RevokeAPIKeys(ctx context.Context, ids []string) error {
@@ -266,6 +308,14 @@ func (a *apiKeyRepo) RevokeAPIKeys(ctx context.Context, ids []string) error {
 
 	if rowsAffected < 1 {
 		return ErrAPIKeyNotRevoked
+	}
+
+	for _, key := range ids {
+		cacheKey := convoy.ApiKeyCacheKey.Get(key).String()
+		err = a.cache.Delete(ctx, cacheKey)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -315,7 +365,7 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
-	defer rows.Close()
+	defer closeWithError(rows)
 
 	var apiKeys []datastore.APIKey
 
@@ -350,13 +400,14 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		rows.Close()
 	}
 
 	ids := make([]string, len(apiKeys))
@@ -375,19 +426,52 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 }
 
 func (a *apiKeyRepo) FindAPIKeyByProjectID(ctx context.Context, projectID string) (*datastore.APIKey, error) {
-	apiKey := &datastore.APIKey{}
-	err := a.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND role_project = $1;", fetchAPIKey), projectID).StructScan(apiKey)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrAPIKeyNotFound
+	fromCache, err := a.readFromCache(ctx, projectID, func() (*datastore.APIKey, error) {
+		apiKey := &datastore.APIKey{}
+		err := a.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND role_project = $1;", fetchAPIKey), projectID).StructScan(apiKey)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrAPIKeyNotFound
+			}
+			return nil, err
 		}
+
+		return apiKey, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return apiKey, nil
+	return fromCache, nil
 }
 
 type ApiKeyPaginated struct {
 	Count int `db:"count"`
 	datastore.APIKey
+}
+
+func (a *apiKeyRepo) readFromCache(ctx context.Context, id string, readFromDB func() (*datastore.APIKey, error)) (*datastore.APIKey, error) {
+	var apiKey *datastore.APIKey
+	cacheKey := convoy.ApiKeyCacheKey.Get(id).String()
+	err := a.cache.Get(ctx, cacheKey, &apiKey)
+	if err != nil {
+		return nil, err
+	}
+
+	if apiKey != nil {
+		return apiKey, err
+	}
+
+	fromDB, err := readFromDB()
+	if err != nil {
+		return nil, err
+	}
+
+	err = a.cache.Set(ctx, cacheKey, fromDB, config.DefaultCacheTTL)
+	if err != nil {
+		return nil, err
+	}
+
+	return fromDB, err
 }

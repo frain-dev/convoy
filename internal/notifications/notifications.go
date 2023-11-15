@@ -104,7 +104,7 @@ func SendEndpointNotification(ctx context.Context,
 			Delay:   0,
 		}
 
-		err = q.Write(ctx, convoy.NotificationProcessor, convoy.DefaultQueue, job)
+		err = q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)
 		if err != nil {
 			log.WithError(err).Error("Failed to write new notification to the queue")
 		}

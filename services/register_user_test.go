@@ -85,7 +85,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 				orgRepo.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 				orgMemberRepo.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 		},
 		{
@@ -141,7 +141,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 				orgRepo.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 				orgMemberRepo.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 		},
 		{

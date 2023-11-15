@@ -1,136 +1,143 @@
-<div class="bg-[#fafafe] min-h-screen overflow-y-auto flex flex-col justify-between">
-	<div class="">
-		<header class="w-full bg-white-100 border-b border-b-grey-10">
-			<div class="flex items-center justify-between w-full max-w-[1440px] m-auto bg-white-100 px-64px py-12px">
-				<div class="flex items-center">
-					<a routerLink="/" rel="noreferrer">
-						<img src="/assets/img/logo.svg" alt="convoy logo" class="w-100px" />
-					</a>
+<div class="bg-white-100 min-h-screen overflow-y-auto flex flex-col justify-between">
+	<header class="w-full border-b border-b-grey-10 bg-new.gray-50 fixed z-20">
+		<div class="flex items-center justify-between w-full max-w-[1440px] m-auto px-24px py-12px">
+			<div class="flex items-center">
+				<a routerLink="/" rel="noreferrer">
+					<img src="/assets/img/logo.svg" alt="convoy logo" class="w-100px" />
+				</a>
+			</div>
 
-					<nav class="ml-130px desktop:ml-20px transition-all duration-200">
-						<ul class="flex items-center">
-							<li *ngIf="!organisations?.length">
-								<a routerLink="/get-started" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Get Started</a>
-							</li>
-							<li *ngIf="organisations?.length">
-								<a routerLink="/projects" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Projects</a>
-							</li>
-							<li *ngIf="organisations?.length">
-								<a routerLink="/team" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Team</a>
-							</li>
-							<li *ngIf="organisations?.length">
-								<a routerLink="/settings" routerLinkActive="bg-primary-500 text-primary-100 font-medium" class="py-8px px-16px mr-32px rounded-4px text-14 transition-all duration-200">Settings</a>
-							</li>
-						</ul>
-					</nav>
-				</div>
+			<div class="flex items-center">
+				<a class="flex items-center mr-24px" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+					<img src="/assets/img/doc-icon-primary.svg" class="w-14px" alt="doc icon" />
+					<span class="font-medium text-12 text-primary-100 ml-2">Go to docs</span>
+				</a>
 
-				<div class="flex items-center">
-					<a class="flex items-center mr-16px" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
-						<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
-						<span class="font-medium text-14 text-primary-100 ml-2">Go to docs</span>
-					</a>
+				<div convoy-dropdown size="lg" #organisationDropdown *ngIf="organisations?.length">
+					<button dropdownTrigger convoy-button color="grey" texture="light" size="sm" class="bg-grey-10 py-10px px-20px rounded-8px mr-12px">
+						<convoy-badge *ngIf="organisations?.length" className="mr-8px" [show-text]="false" [text]="userOrganization?.name || ''">
+							<div class="max-w-[110px] truncate">{{ userOrganization?.name }}</div>
+						</convoy-badge>
 
-					<div convoy-dropdown size="lg" #organisationDropdown>
-						<button dropdownTrigger convoy-button color="grey" texture="light" size="sm" class="bg-grey-10 py-10px px-20px rounded-8px mr-12px">
-							<convoy-badge *ngIf="organisations?.length" className="mr-8px" [show-text]="false" [text]="userOrganization?.name || ''">
-								<div class="max-w-[110px] truncate">{{ userOrganization?.name }}</div>
-							</convoy-badge>
+						<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
+					</button>
 
-							<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
-						</button>
+					<ul dropdownOptions>
+						<li class="font-semibold text-12 text-grey-40 px-16px pt-12px pb-8px border-b border-b-grey-10">Your organisations ({{ organisations?.length || 0 }})</li>
 
-						<ul dropdownOptions>
-							<li class="font-semibold text-12 text-grey-40 px-32px pt-12px pb-8px border-b border-b-grey-10">Your organisations ({{ organisations?.length || 0 }})</li>
+						<ul [hidden]="!organisations?.length">
+							<li convoy-dropdown-option *ngFor="let organisation of organisations">
+								<button convoy-button fill="text" color="grey" size="sm" class="justify-start px-16px py-12px w-full" (click)="selectOrganisation(organisation)">
+									<div class="flex justify-between items-center w-full">
+										<convoy-badge [text]="organisation.name" [show-text]="false">
+											<div class="max-w-[110px] truncate">{{ organisation?.name }}</div>
+										</convoy-badge>
 
-							<ul [hidden]="!organisations?.length">
-								<li convoy-dropdown-option *ngFor="let organisation of organisations">
-									<button convoy-button fill="text" color="grey" size="sm" class="justify-start px-30px py-12px w-full" (click)="selectOrganisation(organisation)">
-										<div class="flex justify-between items-center w-full">
-											<convoy-badge [text]="organisation.name" [show-text]="false">
-												<div class="max-w-[110px] truncate">{{ organisation?.name }}</div>
-											</convoy-badge>
-
-											<img *ngIf="organisation.uid == userOrganization?.uid" src="/assets/img/check-icon-primary.svg" alt="check icon" />
+										<div class="flex gap-16px items-center" *ngIf="organisation.uid == userOrganization?.uid">
+											<a convoy-button fill="soft" class="py-4px !px-8px" (click)="$event.stopPropagation(); this.showOrgDropdown = false" routerLink="/settings">
+												<svg width="18" height="18" class="mr-10px" class="fill-new.gray-600">
+													<use xlink:href="#settings-icon"></use>
+												</svg>
+											</a>
+											<img class="w-14px" src="/assets/img/check-icon-primary.svg" alt="check icon" />
 										</div>
-									</button>
-								</li>
-							</ul>
-
-							<li class="border-t border-t-grey-10">
-								<button convoy-dropdown-option convoy-button fill="text" size="sm" class="px-30px py-16px" (click)="dialog.nativeElement.showModal()">
-									<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
-									Add {{ organisations?.length ? 'another' : 'an' }} Organization
+									</div>
 								</button>
 							</li>
 						</ul>
-					</div>
 
-					<div convoy-dropdown size="lg" #accountDropdown>
-						<button dropdownTrigger convoy-button color="grey" texture="light" size="sm" class="bg-grey-10 py-12px px-20px rounded-8px h-36px">
-							<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
-						</button>
+						<li class="border-t border-t-grey-10">
+							<button convoy-dropdown-option convoy-button fill="text" size="sm" class="p-16px" (click)="dialog.nativeElement.showModal()">
+								<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
+								Add {{ organisations?.length ? 'another' : 'an' }} Organization
+							</button>
+						</li>
+					</ul>
+				</div>
 
-						<ul dropdownOptions>
-							<li class="border-b border-b-grey-10 pt-12px pb-8px px-16px">
-								<h3 class="capitalize text-14 font-medium">{{ authDetails()?.first_name }} {{ authDetails()?.last_name }}</h3>
-								<p class="text-12 text-grey-40">{{ authDetails()?.email }}</p>
-							</li>
-							<li>
-								<ul>
-									<li>
-										<a convoy-dropdown-option routerLink="/user-settings" class="block py-8px text-12 pl-24px text-grey-40 w-full">My account</a>
-									</li>
-								</ul>
-							</li>
-							<li class="border-t border-t-grey-10">
-								<button convoy-dropdown-option convoy-button fill="text" color="danger" class="font-medium px-24px py-8px text-12 w-full !justify-start" (click)="logout()">Logout</button>
-							</li>
-						</ul>
-					</div>
+				<div convoy-dropdown size="lg" #accountDropdown>
+					<button dropdownTrigger convoy-button color="grey" texture="light" size="sm" class="bg-grey-10 py-12px px-10px rounded-8px h-36px">
+						<img src="/assets/img/user-icon.svg" alt="user icon" />
+					</button>
+
+					<ul dropdownOptions>
+						<li class="border-b border-b-grey-10 pt-12px pb-8px px-16px">
+							<h3 class="capitalize text-14 font-medium">{{ authDetails()?.first_name }} {{ authDetails()?.last_name }}</h3>
+							<p class="text-12 text-grey-40">{{ authDetails()?.email }}</p>
+						</li>
+						<li>
+							<ul>
+								<li>
+									<a convoy-dropdown-option routerLink="/user-settings" class="block py-8px text-12 pl-24px text-grey-40 w-full">My account</a>
+								</li>
+							</ul>
+						</li>
+						<li class="border-t border-t-grey-10">
+							<button convoy-dropdown-option convoy-button fill="text" color="danger" class="font-medium px-24px py-8px text-12 w-full !justify-start" (click)="logout()">Logout</button>
+						</li>
+					</ul>
 				</div>
 			</div>
-		</header>
+		</div>
+	</header>
 
-		<convoy-github-star></convoy-github-star>
+	<!-- <convoy-github-star></convoy-github-star> -->
 
-		<convoy-loader *ngIf="isLoadingOrganisations" position="fixed"></convoy-loader>
+	<convoy-loader *ngIf="isLoadingOrganisations" position="fixed"></convoy-loader>
 
-		<router-outlet></router-outlet>
+	<div class="mt-60px">
+		<div
+			*ngIf="!isLoadingOrganisations && !organisations?.length"
+			convoy-empty-state
+			imgSrc="/assets/img/organizations-empty-state.svg"
+			heading="Create an organisation to get started with Convoy"
+			description="An organization is required to create projects on Convoy."
+			id="organisation-empty-state"
+			class="mt-80px"
+		>
+			<button convoy-button class="mt-40px px-18px py-14px" size="sm" emptyStateCTA (click)="privateService.showOrgModal.emit(true)">
+				<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
+				Create Organisation
+			</button>
+		</div>
+
+		<router-outlet *ngIf="organisations?.length"></router-outlet>
 	</div>
 
 	<!-- Convoy version -->
 	<p class="text-center text-grey-20 pt-80px pb-20px">Convoy {{ convoyVersion }}</p>
-</div>
 
-<div class="fixed left-30px top-[80vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex flex-col justify-center items-center rounded-12px px-24px pb-28px pt-10px z-10" *ngIf="showHelpCard">
-	<img src="/assets/img/svg/help-circle.svg" alt="Help image" class="w-24px h-24px mb-10px" />
-	<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer" class="text-grey-60 text-14 text-center">Need help? Go to docs</a>
-</div>
-
-<div class="fixed left-30px top-[90vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex justify-center items-center rounded-12px px-24px py-16px z-[5] hover:cursor-pointer" *ngIf="!isEmailVerified" (click)="verifyEmailDialog.showModal()">
-	<img src="/assets/img/svg/lock_open.svg" alt="lock icon" class="w-24px h-24px mr-16px" />
-	<span class="text-warning-100 text-14 font-medium">Please remember to verify your email.</span>
-</div>
-
-
-<dialog #verifyEmailDialog convoy-dialog position="center" size="md">
-    <convoy-verify-email (closeModal)="verifyEmailDialog.close()"></convoy-verify-email>
-</dialog>
-
-<dialog #orgDialog convoy-dialog position="center">
-	<div class="p-40px">
-		<img src="/assets/img/organisation-icon.svg" alt="organisation icon" class="pb-12px" />
-		<p class="text-grey-40 text-16 max-w-[423px] pb-40px">Your organization information will help us to know how to get you set up.</p>
-		<form [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
-			<convoy-input-field>
-				<label for="name" required="true" convoy-label>What's your bussiness name?</label>
-				<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="e.g. Kuda" />
-				<convoy-input-error *ngIf="addOrganisationForm.get('name')?.touched && addOrganisationForm.get('name')?.invalid">Organisation name is required</convoy-input-error>
-			</convoy-input-field>
-			<div class="flex items-center justify-end w-full">
-				<button convoy-button [disabled]="creatingOrganisation" class="self-stretch px-66px">Submit</button>
-			</div>
-		</form>
+	<div class="fixed left-30px top-[80vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex flex-col justify-center items-center rounded-12px px-24px pb-28px pt-10px z-10" *ngIf="showHelpCard">
+		<img src="/assets/img/svg/help-circle.svg" alt="Help image" class="w-24px h-24px mb-10px" />
+		<a target="_blank" href="https://getconvoy.io/docs" rel="noreferrer" class="text-grey-60 text-14 text-center">Need help? Go to docs</a>
 	</div>
-</dialog>
+
+	<div class="fixed left-30px top-[90vh] transition-all duration-300 w-fit bg-white-100 shadow-sm flex justify-center items-center rounded-12px px-24px py-16px z-[5] hover:cursor-pointer" *ngIf="!isEmailVerified" (click)="verifyEmailDialog.showModal()">
+		<img src="/assets/img/svg/lock_open.svg" alt="lock icon" class="w-24px h-24px mr-16px" />
+		<span class="text-warning-100 text-14 font-medium">Please remember to verify your email.</span>
+	</div>
+
+	<dialog #verifyEmailDialog convoy-dialog position="center" size="md">
+		<convoy-verify-email (closeModal)="verifyEmailDialog.close()"></convoy-verify-email>
+	</dialog>
+
+	<dialog #orgDialog convoy-dialog position="center">
+		<div class="p-40px">
+			<img src="/assets/img/organisation-icon.svg" alt="organisation icon" class="pb-16px w-62px" />
+			<p class="text-grey-40 text-14 max-w-[276px] pb-40px">Your organization information will help us to know how to get you set up.</p>
+
+			<form [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
+				<convoy-input-field>
+					<label for="name" required="true" convoy-label>What's your bussiness name?</label>
+					<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="e.g. Kuda" />
+					<convoy-input-error *ngIf="addOrganisationForm.get('name')?.touched && addOrganisationForm.get('name')?.invalid">Organisation name is required</convoy-input-error>
+				</convoy-input-field>
+
+				<div class="flex items-center gap-24px justify-end w-full">
+					<button convoy-button [disabled]="creatingOrganisation" size="sm" type="button" (click)="dialog.nativeElement.close()" fill="outline" color="danger" class="self-stretch px-18px">Cancel</button>
+					<button convoy-button [disabled]="creatingOrganisation" size="sm" class="self-stretch px-18px">Create</button>
+				</div>
+			</form>
+		</div>
+	</dialog>
+</div>

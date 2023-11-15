@@ -6,9 +6,8 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
 import { TeamsService } from './teams.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { PrivateService } from '../../private.service';
+import { PrivateService } from '../../../private.service';
 import { TEAM } from 'src/app/models/organisation.model';
-import { environment } from 'src/environments/environment';
 
 @Component({
 	selector: 'app-teams',
@@ -64,6 +63,7 @@ export class TeamsComponent implements OnInit {
 	action: 'create' | 'update' = 'create';
 	private rbacService = inject(RbacService);
 	inviteLink!: string;
+
 	constructor(private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private teamService: TeamsService, private formBuilder: FormBuilder, private privateService: PrivateService) {}
 
 	async ngOnInit() {
@@ -88,7 +88,7 @@ export class TeamsComponent implements OnInit {
 	toggleFilter(selectedFilter: 'active' | 'pending') {
 		this.selectedFilterOption = selectedFilter;
 		this.selectedFilterOption === 'active' ? this.fetchTeamMembers() : this.fetchPendingTeamMembers();
-		if (!this.router.url.split('/')[2]) this.addFilterToUrl();
+		// if (!this.router.url.split('/')[2]) this.addFilterToUrl();
 	}
 
 	async fetchPendingTeamMembers(requestDetails?: { page?: number }) {
