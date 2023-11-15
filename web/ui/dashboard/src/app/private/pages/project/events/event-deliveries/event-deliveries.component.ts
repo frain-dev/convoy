@@ -60,40 +60,40 @@ export class EventDeliveriesComponent implements OnInit {
 	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, public projectService: ProjectService, public privateService: PrivateService, private _location: Location) {}
 
 	async ngOnInit() {
-		const data = this.getFiltersFromURL();
-		this.getEventDeliveries({ ...data, showLoader: true });
-		if (this.checkIfTailModeIsEnabled()) this.getEventDeliveriesAtInterval();
-
 		this.projectService.activeProjectDetails?.type == 'incoming' ? this.filterOptions.splice(3, 2) : this.filterOptions.splice(2, 1);
-
-		if (this.eventDeliveriesSource) this.eventDeliveriesSourceData = await this.getSelectedSourceData();
-
-		if (!this.portalToken || this.projectService.activeProjectDetails?.type == 'incoming') this.getSourcesForFilter();
 	}
 
 	ngOnDestroy() {
 		clearInterval(this.getEventDeliveriesInterval);
 	}
 
-	toggleSortOrder() {
-		this.sortOrder === 'asc' ? (this.sortOrder = 'desc') : (this.sortOrder = 'asc');
-		const data = this.addFilterToURL({ sort: this.sortOrder });
-		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.getEventDeliveries({ ...data, showLoader: true });
-	}
-
-	setEventType() {
-		console.log(this.eventsTypeSearchString);
-		this.eventDelEventType = this.eventsTypeSearchString;
-		const data = this.addFilterToURL({ eventType: this.eventsTypeSearchString });
-		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.getEventDeliveries({ ...data, showLoader: true });
-		this.toggleFilter('Event type', false);
-	}
-
 	fetchEventDeliveries(requestDetails?: FILTER_QUERY_PARAM) {
 		const data = requestDetails;
+		this.queryParams = data;
+		this.getEventDeliveries({ ...data, showLoader: true });
 	}
+
+	checkIfTailModeIsEnabled() {
+		const tailModeConfig = localStorage.getItem('EVENTS_TAIL_MODE');
+		this.enableTailMode = tailModeConfig ? JSON.parse(tailModeConfig) : false;
+
+		return this.enableTailMode;
+	}
+
+	handleTailing(tailDetails: { data: FILTER_QUERY_PARAM; tailModeConfig: boolean }) {
+		this.queryParams = tailDetails.data;
+
+		clearInterval(this.getEventDeliveriesInterval);
+		if (tailDetails.tailModeConfig) this.newgetEventDeliveriesAtInterval(tailDetails.data);
+	}
+
+	newgetEventDeliveriesAtInterval(data: FILTER_QUERY_PARAM) {
+		this.getEventDeliveriesInterval = setInterval(() => {
+			// const data = { ...this.queryParams, ...this.route.snapshot.queryParams };
+			this.getEventDeliveries(data);
+		}, 5000);
+	}
+
 
 	getFiltersFromURL() {
 		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams };
@@ -107,13 +107,6 @@ export class EventDeliveriesComponent implements OnInit {
 		this.eventDelEventType = this.queryParams?.eventType;
 
 		return this.queryParams;
-	}
-
-	checkIfTailModeIsEnabled() {
-		const tailModeConfig = localStorage.getItem('EVENTS_TAIL_MODE');
-		this.enableTailMode = tailModeConfig ? JSON.parse(tailModeConfig) : false;
-
-		return this.enableTailMode;
 	}
 
 	toggleTailMode(e?: any, status?: 'on' | 'off') {
@@ -204,52 +197,6 @@ export class EventDeliveriesComponent implements OnInit {
 		return this.eventDeliveryFilteredByStatus?.length > 0 ? this.eventDeliveryFilteredByStatus.includes(status) : false;
 	}
 
-	isAnyFilterSelected(): Boolean {
-		return (this.queryParams && Object.keys(this.queryParams).length > 0) || false;
-	}
-
-	toggleFilter(filterValue: string, show: boolean) {
-		this.filterOptions.forEach(filter => {
-			if (filter.name === filterValue) filter.show = show;
-		});
-	}
-
-	showFilter(filterValue: string): boolean {
-		return this.filterOptions.find(filter => filter.name === filterValue)?.show || false;
-	}
-
-	selectStatusFilter(status: string) {
-		if (!this.eventDeliveryFilteredByStatus?.includes(status)) this.eventDeliveryFilteredByStatus.push(status);
-		this.toggleFilter('Status', false);
-		this.getSelectedStatusFilter();
-	}
-
-	removeStatusFilter(status: string) {
-		this.eventDeliveryFilteredByStatus = this.eventDeliveryFilteredByStatus.filter(e => e !== status);
-		this.getSelectedStatusFilter();
-	}
-
-	updateEventDevliveryStatusFilter(status: string, isChecked: any) {
-		if (isChecked.target.checked) {
-			this.eventDeliveryFilteredByStatus.push(status);
-		} else {
-			let index = this.eventDeliveryFilteredByStatus.findIndex(x => x === status);
-			this.eventDeliveryFilteredByStatus.splice(index, 1);
-		}
-	}
-
-	getSelectedDateRange(dateRange: { startDate: string; endDate: string }) {
-		const data = this.addFilterToURL(dateRange);
-		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.getEventDeliveries({ ...data, showLoader: true });
-	}
-
-	getSelectedStatusFilter() {
-		const eventDelsStatus = this.eventDeliveryFilteredByStatus.length > 0 ? JSON.stringify(this.eventDeliveryFilteredByStatus) : '';
-		const data = this.addFilterToURL({ status: eventDelsStatus });
-		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.getEventDeliveries({ ...data, showLoader: true });
-	}
 
 	clearFilters(filterType?: 'startDate' | 'endDate' | 'eventId' | 'endpointId' | 'status' | 'sourceId' | 'next_page_cursor' | 'prev_page_cursor' | 'direction' | 'eventType') {
 		if (filterType && this.queryParams) {
@@ -285,12 +232,14 @@ export class EventDeliveriesComponent implements OnInit {
 		this.getEventDeliveries({ showLoader: true });
 	}
 
-	async fetchRetryCount() {
-		if (!this.queryParams) return;
+	async fetchRetryCount(data: FILTER_QUERY_PARAM) {
+		this.queryParams = data;
+
+		if (!data) return;
 
 		this.fetchingCount = true;
 		try {
-			const response = await this.eventsService.getRetryCount(this.queryParams);
+			const response = await this.eventsService.getRetryCount(data);
 
 			this.batchRetryCount = response.data.num;
 			this.fetchingCount = false;
@@ -298,29 +247,6 @@ export class EventDeliveriesComponent implements OnInit {
 		} catch (error) {
 			this.fetchingCount = false;
 		}
-	}
-
-	async getSelectedSourceData(): Promise<SOURCE> {
-		return await (await this.privateService.getSources()).data.content.find((item: SOURCE) => item.uid === this.eventDeliveriesSource);
-	}
-
-	async getSourcesForFilter() {
-		try {
-			const sourcesResponse = (await this.privateService.getSources()).data.content;
-			this.filterSources = sourcesResponse;
-		} catch (error) {}
-	}
-
-	updateEndpointFilter() {
-		const data = this.addFilterToURL({ endpointId: this.eventDeliveriesEndpoint });
-		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.getEventDeliveries({ ...data, showLoader: true });
-	}
-
-	updateSourceFilter() {
-		const data = this.addFilterToURL({ sourceId: this.eventDeliveriesSource });
-		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.getEventDeliveries({ ...data, showLoader: true });
 	}
 
 	paginateEvents(event: CURSOR) {
@@ -372,9 +298,5 @@ export class EventDeliveriesComponent implements OnInit {
 			this.isRetrying = false;
 			return error;
 		}
-	}
-
-	toggleSouceFilter(event: any, sourceId: string) {
-		this.eventDeliveriesSource = event.target.checked ? sourceId : '';
 	}
 }

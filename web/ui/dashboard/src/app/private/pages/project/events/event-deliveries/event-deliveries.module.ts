@@ -20,6 +20,7 @@ import { TimePickerComponent } from 'src/app/components/time-picker/time-picker.
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { EndpointFilterComponent } from 'src/app/private/components/endpoints-filter/endpoints-filter.component';
+import { EventDeliveryFilterComponent } from 'src/app/private/components/event-delivery-filter/event-delivery-filter.component';
 
 @NgModule({
 	declarations: [EventDeliveriesComponent],
@@ -49,7 +50,8 @@ import { EndpointFilterComponent } from 'src/app/private/components/endpoints-fi
 		TooltipComponent,
 		PaginationComponent,
 		DialogDirective,
-		EndpointFilterComponent
+		EndpointFilterComponent,
+        EventDeliveryFilterComponent
 	],
 	exports: [EventDeliveriesComponent],
 	providers: [DatePipe]
