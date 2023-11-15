@@ -65,54 +65,19 @@ export class EventDeliveriesComponent implements OnInit {
 
 	checkIfTailModeIsEnabled() {
 		const tailModeConfig = localStorage.getItem('EVENTS_TAIL_MODE');
-		this.enableTailMode = tailModeConfig ? JSON.parse(tailModeConfig) : false;
 
-		return this.enableTailMode;
+		return tailModeConfig ? JSON.parse(tailModeConfig) : false;
 	}
 
 	handleTailing(tailDetails: { data: FILTER_QUERY_PARAM; tailModeConfig: boolean }) {
 		this.queryParams = tailDetails.data;
 
 		clearInterval(this.getEventDeliveriesInterval);
-		if (tailDetails.tailModeConfig) this.newgetEventDeliveriesAtInterval(tailDetails.data);
+		if (tailDetails.tailModeConfig) this.getEventDeliveriesAtInterval(tailDetails.data);
 	}
 
-	newgetEventDeliveriesAtInterval(data: FILTER_QUERY_PARAM) {
+	getEventDeliveriesAtInterval(data: FILTER_QUERY_PARAM) {
 		this.getEventDeliveriesInterval = setInterval(() => {
-			// const data = { ...this.queryParams, ...this.route.snapshot.queryParams };
-			this.getEventDeliveries(data);
-		}, 5000);
-	}
-
-	getFiltersFromURL() {
-		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams };
-
-		// set filter status if any exists in URL
-		this.eventDeliveryFilteredByStatus = this.queryParams.status ? JSON.parse(this.queryParams.status) : [];
-
-		this.eventDeliveriesSource = this.queryParams?.sourceId;
-		this.eventDeliveriesEndpoint = this.queryParams?.endpointId;
-
-		this.eventDelEventType = this.queryParams?.eventType;
-
-		return this.queryParams;
-	}
-
-	toggleTailMode(e?: any, status?: 'on' | 'off') {
-		let tailModeConfig: boolean;
-		if (status) tailModeConfig = status === 'on';
-		else tailModeConfig = e.target.checked;
-
-		this.enableTailMode = tailModeConfig;
-		localStorage.setItem('EVENTS_TAIL_MODE', JSON.stringify(tailModeConfig));
-
-		clearInterval(this.getEventDeliveriesInterval);
-		if (tailModeConfig) this.getEventDeliveriesAtInterval();
-	}
-
-	getEventDeliveriesAtInterval() {
-		this.getEventDeliveriesInterval = setInterval(() => {
-			const data = { ...this.queryParams, ...this.route.snapshot.queryParams };
 			this.getEventDeliveries(data);
 		}, 5000);
 	}
@@ -169,57 +134,6 @@ export class EventDeliveriesComponent implements OnInit {
 		}
 	}
 
-	addFilterToURL(params?: FILTER_QUERY_PARAM) {
-		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams, ...params };
-
-		if (!params?.next_page_cursor) delete this.queryParams.next_page_cursor;
-		if (!params?.prev_page_cursor) delete this.queryParams.prev_page_cursor;
-
-		const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
-		const queryParams = new URLSearchParams(cleanedQuery).toString();
-		this._location.go(`${location.pathname}?${queryParams}`);
-
-		return this.queryParams;
-	}
-
-	checkIfEventDeliveryStatusFilterOptionIsSelected(status: string): boolean {
-		return this.eventDeliveryFilteredByStatus?.length > 0 ? this.eventDeliveryFilteredByStatus.includes(status) : false;
-	}
-
-	clearFilters(filterType?: 'startDate' | 'endDate' | 'eventId' | 'endpointId' | 'status' | 'sourceId' | 'next_page_cursor' | 'prev_page_cursor' | 'direction' | 'eventType') {
-		if (filterType && this.queryParams) {
-			// if filter to clear start date or end date, it means clear date filter. :)
-			if (filterType === 'startDate' || filterType === 'endDate') {
-				delete this.queryParams['startDate'];
-				delete this.queryParams['endDate'];
-			} else if (filterType === 'eventId') {
-				delete this.queryParams['eventId'];
-				delete this.queryParams['idempotencyKey'];
-			} else if (filterType === 'endpointId') {
-				this.eventDeliveriesEndpoint = '';
-				delete this.queryParams['endpointId'];
-			} else if (filterType === 'sourceId') {
-				this.eventDeliveriesSource = '';
-				delete this.queryParams['sourceId'];
-			} else if (filterType === 'eventType') {
-				this.eventDelEventType = '';
-				this.eventsTypeSearchString = '';
-				delete this.queryParams['eventType'];
-			} else delete this.queryParams[filterType];
-
-			const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
-			const queryParams = new URLSearchParams(cleanedQuery).toString();
-			this._location.go(`${location.pathname}?${queryParams}`);
-		} else {
-			this.datePicker.clearDate();
-			this.queryParams = {};
-			this._location.go(`${location.pathname}`);
-		}
-
-		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.getEventDeliveries({ showLoader: true });
-	}
-
 	async fetchRetryCount(data: FILTER_QUERY_PARAM) {
 		this.queryParams = data;
 
@@ -238,9 +152,9 @@ export class EventDeliveriesComponent implements OnInit {
 	}
 
 	paginateEvents(event: CURSOR) {
-		const data = this.addFilterToURL({ next_page_cursor: event.next_page_cursor, prev_page_cursor: event.prev_page_cursor });
-		if (this.checkIfTailModeIsEnabled()) this.toggleTailMode(false, 'off');
-		this.getEventDeliveries({ ...data, showLoader: true });
+		this.queryParams = this.generalService.addFilterToURL(event);
+		this.handleTailing({ data: this.queryParams, tailModeConfig: this.checkIfTailModeIsEnabled() });
+		this.getEventDeliveries({ ...this.queryParams, showLoader: true });
 	}
 
 	async retryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {

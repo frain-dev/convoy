@@ -1,5 +1,8 @@
+import { Location } from '@angular/common';
 import { Injectable } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
+import { FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { NOTIFICATION_STATUS } from 'src/app/models/global.model';
 import { environment } from 'src/environments/environment';
 
@@ -9,7 +12,8 @@ import { environment } from 'src/environments/environment';
 export class GeneralService {
 	alertStatus: BehaviorSubject<{ message: string; style: NOTIFICATION_STATUS; type?: string; show: boolean }> = new BehaviorSubject<{ message: string; style: NOTIFICATION_STATUS; type?: string; show: boolean }>({ message: 'testing', style: 'info', type: 'alert', show: false });
 
-	constructor() {}
+	queryParams: FILTER_QUERY_PARAM = {};
+	constructor(private route: ActivatedRoute, private _location: Location) {}
 
 	showNotification(details: { message: string; style: NOTIFICATION_STATUS; type?: string }) {
 		this.alertStatus.next({ message: details.message, style: details.style, show: true, type: details.type ? details.type : 'alert' });
@@ -110,6 +114,19 @@ export class GeneralService {
 		});
 
 		return displayedItems;
+	}
+
+	addFilterToURL(params?: FILTER_QUERY_PARAM) {
+		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams, ...params };
+
+		if (!params?.next_page_cursor) delete this.queryParams.next_page_cursor;
+		if (!params?.prev_page_cursor) delete this.queryParams.prev_page_cursor;
+
+		const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
+		const queryParams = new URLSearchParams(cleanedQuery).toString();
+		this._location.go(`${location.pathname}?${queryParams}`);
+
+		return this.queryParams;
 	}
 
 	getCodeSnippetString(type: 'event_data' | 'res_body' | 'res_header' | 'req_header' | 'error' | 'log', data: any) {

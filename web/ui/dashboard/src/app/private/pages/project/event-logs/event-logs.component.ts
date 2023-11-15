@@ -63,7 +63,6 @@ export class EventLogsComponent implements OnInit {
 	eventsDateFilterFromURL: { startDate: string; endDate: string } = { startDate: '', endDate: '' };
 	eventLogsTableHead: string[] = ['Event ID', 'Source', 'Time', ''];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
-	eventsSearchString?: string;
 	eventSource?: string;
 	isloadingEvents: boolean = false;
 	eventDetailsTabs = [
@@ -86,7 +85,7 @@ export class EventLogsComponent implements OnInit {
 	isFetchingDuplicateEvents = false;
 	batchRetryCount: any;
 	getEventsInterval: any;
-	queryParams?: FILTER_QUERY_PARAM;
+	queryParams: FILTER_QUERY_PARAM = {};
 	enableTailMode = false;
 	sortOrder: 'asc' | 'desc' = 'desc';
 
@@ -108,96 +107,24 @@ export class EventLogsComponent implements OnInit {
 		this.queryParams = tailDetails.data;
 
 		clearInterval(this.getEventsInterval);
-		if (tailDetails.tailModeConfig) this.newgetEventsAtInterval(tailDetails.data);
+		if (tailDetails.tailModeConfig) this.getEventsAtInterval(tailDetails.data);
 	}
 
-	newgetEventsAtInterval(data: FILTER_QUERY_PARAM) {
+	getEventsAtInterval(data: FILTER_QUERY_PARAM) {
 		this.getEventsInterval = setInterval(() => {
 			this.getEventLogs(data);
 		}, 5000);
 	}
 
 	paginateEvents(event: CURSOR) {
-		const data = this.addFilterToURL(event);
-		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.getEventLogs({ ...data, showLoader: true });
-	}
-
-	// fetch filters from url
-	getFiltersFromURL() {
-		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams };
-
-		this.eventsDateFilterFromURL = { startDate: this.queryParams?.startDate || '', endDate: this.queryParams?.endDate || '' };
-		this.eventsSearchString = this.queryParams.query ?? undefined;
-		this.eventSource = this.queryParams.sourceId;
-
-		return this.queryParams;
-	}
-
-	// fetch and add new filter to url
-	addFilterToURL(params?: FILTER_QUERY_PARAM) {
-		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams, ...params };
-
-		if (!params?.next_page_cursor) delete this.queryParams.next_page_cursor;
-		if (!params?.prev_page_cursor) delete this.queryParams.prev_page_cursor;
-
-		const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
-		const queryParams = new URLSearchParams(cleanedQuery).toString();
-		this._location.go(`${location.pathname}?${queryParams}`);
-
-		return this.queryParams;
-	}
-
-	// clear filters
-	clearEventFilters(filterType?: 'startDate' | 'endDate' | 'sourceId' | 'next_page_cursor' | 'prev_page_cursor' | 'direction') {
-		if (filterType && this.queryParams) {
-			if (filterType === 'startDate' || filterType === 'endDate') {
-				delete this.queryParams['startDate'];
-				delete this.queryParams['endDate'];
-			} else if (filterType === 'sourceId') {
-				this.eventSource = '';
-				delete this.queryParams['sourceId'];
-			} else delete this.queryParams[filterType];
-
-			const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
-			const queryParams = new URLSearchParams(cleanedQuery).toString();
-			this._location.go(`${location.pathname}?${queryParams}`);
-		} else {
-			this.datePicker.clearDate();
-			this.queryParams = {};
-			this.eventsDateFilterFromURL = { startDate: '', endDate: '' };
-			this.eventsSearchString = '';
-			this.eventSource = '';
-			this._location.go(`${location.pathname}`);
-		}
-
-		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.getEventLogs({ showLoader: true });
+		this.queryParams = this.generalService.addFilterToURL(event);
+		this.handleTailing({ data: this.queryParams, tailModeConfig: this.checkIfTailModeIsEnabled() });
+		this.getEventLogs({ ...this.queryParams, showLoader: true });
 	}
 
 	checkIfTailModeIsEnabled() {
 		const tailModeConfig = localStorage.getItem('EVENT_LOGS_TAIL_MODE');
-		this.enableTailMode = tailModeConfig ? JSON.parse(tailModeConfig) : false;
-		return this.enableTailMode;
-	}
-
-	toggleTailMode(e: any, status?: 'on' | 'off') {
-		let tailModeConfig: boolean;
-		if (status) tailModeConfig = status === 'on';
-		else tailModeConfig = e.target.checked;
-
-		this.enableTailMode = tailModeConfig;
-		localStorage.setItem('EVENT_LOGS_TAIL_MODE', JSON.stringify(tailModeConfig));
-
-		clearInterval(this.getEventsInterval);
-		if (tailModeConfig) this.getEventsAtInterval();
-	}
-
-	getEventsAtInterval() {
-		this.getEventsInterval = setInterval(() => {
-			const data = { ...this.queryParams, ...this.route.snapshot.queryParams };
-			this.getEventLogs(data);
-		}, 5000);
+		return tailModeConfig ? JSON.parse(tailModeConfig) : false;
 	}
 
 	async getEventLogs(requestDetails?: FILTER_QUERY_PARAM) {
@@ -288,16 +215,10 @@ export class EventLogsComponent implements OnInit {
 	}
 
 	async batchReplayEvent() {
-		const page = this.route.snapshot.queryParams.page || 1;
 		this.isRetrying = true;
 
 		try {
-			const response = await this.eventsLogService.batchRetryEvent({
-				page: page || 1,
-				startDate: this.eventsDateFilterFromURL.startDate,
-				endDate: this.eventsDateFilterFromURL.endDate,
-				sourceId: this.eventSource || ''
-			});
+			const response = await this.eventsLogService.batchRetryEvent(this.queryParams);
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.batchDialog.nativeElement.close();

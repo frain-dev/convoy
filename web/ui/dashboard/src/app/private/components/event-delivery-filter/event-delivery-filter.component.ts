@@ -12,6 +12,7 @@ import { SOURCE } from 'src/app/models/source.model';
 import { PrivateService } from '../../private.service';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { FormsModule } from '@angular/forms';
+import { GeneralService } from 'src/app/services/general/general.service';
 
 @Component({
 	selector: 'convoy-event-delivery-filter',
@@ -59,7 +60,7 @@ export class EventDeliveryFilterComponent implements OnInit {
 		{ name: 'Endpoint', show: false },
 		{ name: 'Event type', show: false }
 	];
-	constructor(private route: ActivatedRoute, private _location: Location, public projectService: ProjectService, private privateService: PrivateService) {}
+	constructor(private route: ActivatedRoute, private _location: Location, public projectService: ProjectService, private privateService: PrivateService, private generalService: GeneralService) {}
 
 	async ngOnInit() {
 		const data = this.getFiltersFromURL();
@@ -80,18 +81,24 @@ export class EventDeliveryFilterComponent implements OnInit {
 		if (!this.portalToken || this.projectService.activeProjectDetails?.type == 'incoming') this.getSourcesForFilter();
 	}
 
-	addFilterToURL(params?: FILTER_QUERY_PARAM) {
-		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams, ...params };
-
-		if (!params?.next_page_cursor) delete this.queryParams.next_page_cursor;
-		if (!params?.prev_page_cursor) delete this.queryParams.prev_page_cursor;
-
+	updateRouteQuery() {
 		const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
 		const queryParams = new URLSearchParams(cleanedQuery).toString();
 		this._location.go(`${location.pathname}?${queryParams}`);
-
-		return this.queryParams;
 	}
+
+	// addFilterToURL(params?: FILTER_QUERY_PARAM) {
+	// 	this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams, ...params };
+
+	// 	if (!params?.next_page_cursor) delete this.queryParams.next_page_cursor;
+	// 	if (!params?.prev_page_cursor) delete this.queryParams.prev_page_cursor;
+
+	// 	const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
+	// 	const queryParams = new URLSearchParams(cleanedQuery).toString();
+	// 	this._location.go(`${location.pathname}?${queryParams}`);
+
+	// 	return this.queryParams;
+	// }
 
 	getFiltersFromURL() {
 		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams };
@@ -148,9 +155,10 @@ export class EventDeliveryFilterComponent implements OnInit {
 	}
 
 	getSelectedDateRange(dateRange: { startDate: string; endDate: string }) {
-		const data = this.addFilterToURL(dateRange);
+		this.queryParams = this.generalService.addFilterToURL(dateRange);
+		// this.updateRouteQuery();
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.filter.emit(data);
+		this.filter.emit(this.queryParams);
 	}
 
 	selectStatusFilter(status: string) {
@@ -168,46 +176,46 @@ export class EventDeliveryFilterComponent implements OnInit {
 
 	getSelectedStatusFilter() {
 		const eventDelsStatus = this.eventDeliveryFilteredByStatus.length > 0 ? JSON.stringify(this.eventDeliveryFilteredByStatus) : '';
-		const data = this.addFilterToURL({ status: eventDelsStatus });
+		this.queryParams = this.generalService.addFilterToURL({ status: eventDelsStatus });
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.filter.emit(data);
+		this.filter.emit(this.queryParams);
 	}
 
 	updateSourceFilter(source: SOURCE) {
 		this.eventDeliveriesSource = source.uid;
 		this.eventDeliveriesSourceData = source;
-		const data = this.addFilterToURL({ sourceId: this.eventDeliveriesSource });
+		this.queryParams = this.generalService.addFilterToURL({ sourceId: this.eventDeliveriesSource });
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.filter.emit(data);
+		this.filter.emit(this.queryParams);
 	}
 
 	updateEndpointFilter(endpoint: ENDPOINT) {
 		this.eventDeliveriesEndpoint = endpoint.uid;
 		this.eventDeliveriesEndpointData = endpoint;
-		const data = this.addFilterToURL({ endpointId: this.eventDeliveriesEndpoint });
+		this.queryParams = this.generalService.addFilterToURL({ endpointId: this.eventDeliveriesEndpoint });
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.filter.emit(data);
+		this.filter.emit(this.queryParams);
 	}
 
 	searchEvents() {
-		const data = this.addFilterToURL({ query: this.eventsSearchString });
+		this.queryParams = this.generalService.addFilterToURL({ query: this.eventsSearchString });
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.filter.emit(data);
+		this.filter.emit(this.queryParams);
 	}
 
 	setEventType() {
 		this.eventDelEventType = this.eventsTypeSearchString;
-		const data = this.addFilterToURL({ eventType: this.eventsTypeSearchString });
+		this.queryParams = this.generalService.addFilterToURL({ eventType: this.eventsTypeSearchString });
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.filter.emit(data);
+		this.filter.emit(this.queryParams);
 		this.toggleFilter('Event type', false);
 	}
 
 	toggleSortOrder() {
 		this.sortOrder === 'asc' ? (this.sortOrder = 'desc') : (this.sortOrder = 'asc');
-		const data = this.addFilterToURL({ sort: this.sortOrder });
+		this.queryParams = this.generalService.addFilterToURL({ sort: this.sortOrder });
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
-		this.filter.emit(data);
+		this.filter.emit(this.queryParams);
 	}
 
 	toggleTailMode(e?: any, status?: 'on' | 'off') {
