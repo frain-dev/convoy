@@ -19,15 +19,25 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 export class EndpointFilterComponent implements OnInit {
 	@ViewChild('endpoint', { static: true }) eventDelsEndpointFilter!: ElementRef;
 	@Input('endpoint') endpointId!: string | undefined;
+	@Input('show') show: boolean = false;
+	@Input('position') position: 'right' | 'left' | 'center' | 'right-side' = 'left';
 	@Output('clear') clearEndpoint = new EventEmitter<any>();
 	@Output('set') setEndpoint = new EventEmitter<any>();
+	@Output('setEndpoint') setSelectedEndpoint = new EventEmitter<any>();
 	loadingFilterEndpoints = false;
 	endpoints$!: Observable<ENDPOINT[]>;
-	selectedEndpoint!: string;
+	selectedEndpoint!: ENDPOINT;
 
 	constructor(public privateService: PrivateService) {}
 
-	ngOnInit(): void {}
+	async ngOnInit() {
+        // console.log(this.endpointId)
+		// if (this.endpointId) {
+		// 	this.selectedEndpoint = await this.getSelectedEndpointData();
+        //     console.log(this.selectedEndpoint)
+		// 	this.setSelectedEndpoint.emit(this.selectedEndpoint);
+		// }
+	}
 
 	ngAfterViewInit() {
 		this.endpoints$ = fromEvent<any>(this.eventDelsEndpointFilter?.nativeElement, 'keyup').pipe(
@@ -39,15 +49,19 @@ export class EndpointFilterComponent implements OnInit {
 		);
 	}
 
-	selectEndpoint(event: any, endpointId: string) {
-		this.selectedEndpoint = event.target.checked ? endpointId : '';
-	}
+	// selectEndpoint(event: any, endpointId: string) {
+	// 	this.selectedEndpoint = event.target.checked ? endpointId : '';
+	// }
 
 	async getEndpointsForFilter(search: string): Promise<ENDPOINT[]> {
 		return await (
 			await this.privateService.getEndpoints({ q: search })
 		).data.content;
 	}
+
+	// async getSelectedEndpointData(): Promise<ENDPOINT> {
+	// 	return await (await this.privateService.getEndpoints()).data.content.find((item: ENDPOINT) => item.uid === this.endpointId);
+	// }
 
 	clear() {
 		this.clearEndpoint.emit();
