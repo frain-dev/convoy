@@ -86,6 +86,7 @@ export class EventLogsComponent implements OnInit {
 	getEventsInterval: any;
 	queryParams?: FILTER_QUERY_PARAM;
 	enableTailMode = false;
+	sortOrder: 'asc' | 'desc' = 'desc';
 
 	constructor(private eventsLogService: EventLogsService, public generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService, private _location: Location) {}
 
@@ -216,7 +217,7 @@ export class EventLogsComponent implements OnInit {
 			const eventsResponse = await this.eventsService.getEvents(requestDetails);
 			this.events = eventsResponse.data;
 
-			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content);
+			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content, this.sortOrder);
 			this.isloadingEvents = false;
 
 			if (this.eventsDetailsItem) return;
@@ -334,5 +335,12 @@ export class EventLogsComponent implements OnInit {
 
 	toggleSouceFilter(event: any, sourceId: string) {
 		this.eventSource = event.target.checked ? sourceId : '';
+	}
+
+	toggleSortOrder() {
+		this.sortOrder === 'asc' ? (this.sortOrder = 'desc') : (this.sortOrder = 'asc');
+		const data = this.addFilterToURL({ sort: this.sortOrder });
+		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
+		this.getEventLogs({ ...data, showLoader: true });
 	}
 }

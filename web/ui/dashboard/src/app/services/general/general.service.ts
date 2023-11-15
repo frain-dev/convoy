@@ -97,7 +97,7 @@ export class GeneralService {
 		return `${day} ${months[month]}, ${year}`;
 	}
 
-	setContentDisplayed(content: { created_at: Date }[]) {
+	setContentDisplayed(content: { created_at: Date }[], sortOrder?: 'asc' | 'desc') {
 		const dateCreateds = content.map((item: { created_at: Date }) => this.getDate(item.created_at));
 		const uniqueDateCreateds = [...new Set(dateCreateds)];
 		let displayedItems: any = [];
@@ -105,7 +105,7 @@ export class GeneralService {
 			const filteredItemDate = content.filter((item: { created_at: Date }) => this.getDate(item.created_at) === itemDate);
 			const contents = { date: itemDate, content: filteredItemDate };
 			displayedItems.push(contents);
-			displayedItems = displayedItems.sort((a: any, b: any) => Number(new Date(b.date)) - Number(new Date(a.date)));
+			displayedItems = sortOrder === 'desc' ? displayedItems.sort((a: any, b: any) => Number(new Date(b.date)) - Number(new Date(a.date))) : displayedItems.sort((a: any, b: any) => Number(new Date(a.date)) - Number(new Date(b.date)));
 		});
 		return displayedItems;
 	}
