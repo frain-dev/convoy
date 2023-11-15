@@ -207,7 +207,7 @@ export class EventLogsComponent implements OnInit {
 			const eventsResponse = await this.eventsService.getEvents(requestDetails);
 			this.events = eventsResponse.data;
 
-			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content, this.sortOrder);
+			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content, this.queryParams?.sort || 'desc');
 			this.isloadingEvents = false;
 
 			if (this.eventsDetailsItem) return;

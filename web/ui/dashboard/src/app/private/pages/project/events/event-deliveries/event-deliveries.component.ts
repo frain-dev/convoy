@@ -48,20 +48,10 @@ export class EventDeliveriesComponent implements OnInit {
 	loadingFilterEndpoints = false;
 	eventDelEventType?: string;
 	eventsTypeSearchString!: string;
-	filterOptions = [
-		{ name: 'Date', show: false },
-		{ name: 'Status', show: false },
-		{ name: 'Source', show: false },
-		{ name: 'Endpoint', show: false },
-		{ name: 'Event type', show: false }
-	];
-	sortOrder: 'asc' | 'desc' = 'desc';
 
 	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, public projectService: ProjectService, public privateService: PrivateService, private _location: Location) {}
 
-	async ngOnInit() {
-		this.projectService.activeProjectDetails?.type == 'incoming' ? this.filterOptions.splice(3, 2) : this.filterOptions.splice(2, 1);
-	}
+	ngOnInit(): void {}
 
 	ngOnDestroy() {
 		clearInterval(this.getEventDeliveriesInterval);
@@ -93,7 +83,6 @@ export class EventDeliveriesComponent implements OnInit {
 			this.getEventDeliveries(data);
 		}, 5000);
 	}
-
 
 	getFiltersFromURL() {
 		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams };
@@ -150,7 +139,7 @@ export class EventDeliveriesComponent implements OnInit {
 		const finalEventDels: any = [];
 		let filteredEventDeliveries: any = [];
 
-		const filteredEventDeliveriesByDate = this.generalService.setContentDisplayed(eventDeliveriesData);
+		const filteredEventDeliveriesByDate = this.generalService.setContentDisplayed(eventDeliveriesData, this.queryParams?.sort || 'desc');
 
 		eventDeliveriesData.forEach((item: any) => {
 			eventIds.push(item.event_id);
@@ -196,7 +185,6 @@ export class EventDeliveriesComponent implements OnInit {
 	checkIfEventDeliveryStatusFilterOptionIsSelected(status: string): boolean {
 		return this.eventDeliveryFilteredByStatus?.length > 0 ? this.eventDeliveryFilteredByStatus.includes(status) : false;
 	}
-
 
 	clearFilters(filterType?: 'startDate' | 'endDate' | 'eventId' | 'endpointId' | 'status' | 'sourceId' | 'next_page_cursor' | 'prev_page_cursor' | 'direction' | 'eventType') {
 		if (filterType && this.queryParams) {

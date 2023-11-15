@@ -50,7 +50,7 @@ export class EventDeliveryFilterComponent implements OnInit {
 
 	portalToken = this.route.snapshot.queryParams?.token;
 
-	queryParams: FILTER_QUERY_PARAM = {}
+	queryParams: FILTER_QUERY_PARAM = {};
 	enableTailMode = false;
 	filterOptions = [
 		{ name: 'Date', show: false },
@@ -137,7 +137,7 @@ export class EventDeliveryFilterComponent implements OnInit {
 			this.eventDeliveriesSource = '';
 			this.eventDeliveriesEndpoint = '';
 			this.eventDeliveryFilteredByStatus = [];
-            const sortParam = this.queryParams.sort
+			const sortParam = this.queryParams.sort;
 
 			this.queryParams = {};
 			this._location.go(`${location.pathname}`);
@@ -204,7 +204,7 @@ export class EventDeliveryFilterComponent implements OnInit {
 	}
 
 	toggleSortOrder() {
-		this.sortOrder === 'asc' ? (this.sortOrder = 'desc') : (this.sortOrder = 'asc');
+		this.queryParams && this.queryParams === 'asc' ? (this.sortOrder = 'desc') : (this.sortOrder = 'asc');
 		const data = this.addFilterToURL({ sort: this.sortOrder });
 		// this.type === 'logs' ? localStorage.setItem('EVENTS_LOG_SORT_ORDER', this.sortOrder) : localStorage.setItem('EVENTS_SORT_ORDER', this.sortOrder);
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
