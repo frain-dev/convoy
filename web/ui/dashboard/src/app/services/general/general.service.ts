@@ -12,7 +12,7 @@ import { environment } from 'src/environments/environment';
 export class GeneralService {
 	alertStatus: BehaviorSubject<{ message: string; style: NOTIFICATION_STATUS; type?: string; show: boolean }> = new BehaviorSubject<{ message: string; style: NOTIFICATION_STATUS; type?: string; show: boolean }>({ message: 'testing', style: 'info', type: 'alert', show: false });
 
-	queryParams: FILTER_QUERY_PARAM = {};
+
 	constructor(private route: ActivatedRoute, private _location: Location) {}
 
 	showNotification(details: { message: string; style: NOTIFICATION_STATUS; type?: string }) {
@@ -117,16 +117,16 @@ export class GeneralService {
 	}
 
 	addFilterToURL(params?: FILTER_QUERY_PARAM) {
-		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams, ...params };
+		const queryParams = { ...this.route.snapshot.queryParams, ...params };
 
-		if (!params?.next_page_cursor) delete this.queryParams.next_page_cursor;
-		if (!params?.prev_page_cursor) delete this.queryParams.prev_page_cursor;
+		if (!params?.next_page_cursor) delete queryParams.next_page_cursor;
+		if (!params?.prev_page_cursor) delete queryParams.prev_page_cursor;
 
-		const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
-		const queryParams = new URLSearchParams(cleanedQuery).toString();
-		this._location.go(`${location.pathname}?${queryParams}`);
+		const cleanedQuery: any = Object.fromEntries(Object.entries(queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
+		const cleanedQueryParams = new URLSearchParams(cleanedQuery).toString();
+		this._location.go(`${location.pathname}?${cleanedQueryParams}`);
 
-		return this.queryParams;
+		return queryParams;
 	}
 
 	getCodeSnippetString(type: 'event_data' | 'res_body' | 'res_header' | 'req_header' | 'error' | 'log', data: any) {

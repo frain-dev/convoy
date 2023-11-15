@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CardComponent } from 'src/app/components/card/card.component';
@@ -89,9 +89,9 @@ export class EventLogsComponent implements OnInit {
 	enableTailMode = false;
 	sortOrder: 'asc' | 'desc' = 'desc';
 
-	constructor(private eventsLogService: EventLogsService, public generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService, private _location: Location) {}
+	constructor(private eventsLogService: EventLogsService, public generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService) {}
 
-	async ngOnInit() {}
+	ngOnInit() {}
 
 	ngOnDestroy() {
 		clearInterval(this.getEventsInterval);
@@ -117,7 +117,7 @@ export class EventLogsComponent implements OnInit {
 	}
 
 	paginateEvents(event: CURSOR) {
-		this.queryParams = this.generalService.addFilterToURL(event);
+		this.queryParams = this.generalService.addFilterToURL({...this.queryParams, ...event});
 		this.handleTailing({ data: this.queryParams, tailModeConfig: this.checkIfTailModeIsEnabled() });
 		this.getEventLogs({ ...this.queryParams, showLoader: true });
 	}

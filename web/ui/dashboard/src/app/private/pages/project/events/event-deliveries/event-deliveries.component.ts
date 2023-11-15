@@ -1,18 +1,13 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { fromEvent, Observable } from 'rxjs';
-import { debounceTime, distinctUntilChanged, map, startWith } from 'rxjs/operators';
-import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { EVENT_DELIVERY, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { EventsService } from '../events.service';
 import { PrivateService } from 'src/app/private/private.service';
-import { SOURCE } from 'src/app/models/source.model';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
 import { ProjectService } from '../../project.service';
-import { Location } from '@angular/common';
 
 @Component({
 	selector: 'app-event-deliveries',
@@ -28,30 +23,16 @@ export class EventDeliveriesComponent implements OnInit {
 	isloadingEventDeliveries = false;
 	isRetrying = false;
 	batchRetryCount!: number;
-	eventDeliveriesEndpoint?: string;
-	eventDeliveriesEndpointData?: ENDPOINT;
-	eventDeliveriesSource?: string;
-	eventDeliveriesSourceData?: SOURCE;
 	displayedEventDeliveries!: { date: string; content: any[] }[];
 	eventDeliveries?: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
-	eventDeliveryFilteredByStatus: string[] = [];
-	eventsDelEndpointFilter$!: Observable<ENDPOINT[]>;
-	@ViewChild('eventTypeForm', { static: false }) eventDelsEventsTypeForm!: ElementRef;
-	@ViewChild('eventDelsEndpointFilter', { static: true }) eventDelsEndpointFilter!: ElementRef;
-	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
 	@ViewChild('batchRetryDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
 	portalToken = this.route.snapshot.queryParams?.token;
-	filterSources: SOURCE[] = [];
 	queryParams?: FILTER_QUERY_PARAM;
 	getEventDeliveriesInterval: any;
-	enableTailMode = false;
-	loadingFilterEndpoints = false;
-	eventDelEventType?: string;
-	eventsTypeSearchString!: string;
 
-	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, public projectService: ProjectService, public privateService: PrivateService, private _location: Location) {}
+	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, public projectService: ProjectService, public privateService: PrivateService) {}
 
-	ngOnInit(): void {}
+	ngOnInit() {}
 
 	ngOnDestroy() {
 		clearInterval(this.getEventDeliveriesInterval);
@@ -152,7 +133,7 @@ export class EventDeliveriesComponent implements OnInit {
 	}
 
 	paginateEvents(event: CURSOR) {
-		this.queryParams = this.generalService.addFilterToURL(event);
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...event });
 		this.handleTailing({ data: this.queryParams, tailModeConfig: this.checkIfTailModeIsEnabled() });
 		this.getEventDeliveries({ ...this.queryParams, showLoader: true });
 	}
