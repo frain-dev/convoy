@@ -9,7 +9,7 @@ export interface EVENT {
 	uid: string;
 	updated_at: string;
 	app_id?: string;
-    idempotency_key: string;
+	idempotency_key: string;
 	is_duplicate_event: boolean;
 	event_type: string;
 	data: any;
@@ -68,7 +68,6 @@ export interface EVENT_DELIVERY_ATTEMPT {
 	error?: string;
 }
 
-
 export interface FILTER_QUERY_PARAM {
 	startDate?: string;
 	endDate?: string;
@@ -81,5 +80,7 @@ export interface FILTER_QUERY_PARAM {
 	prev_page_cursor?: string;
 	direction?: 'next' | 'prev';
 	showLoader?: boolean;
-    query?:string;
+	query?: string;
+	sort?: string;
+	eventType?: string;
 }

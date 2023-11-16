@@ -19,11 +19,14 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 export class EndpointFilterComponent implements OnInit {
 	@ViewChild('endpoint', { static: true }) eventDelsEndpointFilter!: ElementRef;
 	@Input('endpoint') endpointId!: string | undefined;
+	@Input('show') show: boolean = false;
+	@Input('position') position: 'right' | 'left' | 'center' | 'right-side' = 'left';
 	@Output('clear') clearEndpoint = new EventEmitter<any>();
 	@Output('set') setEndpoint = new EventEmitter<any>();
+	@Output('setEndpoint') setSelectedEndpoint = new EventEmitter<any>();
 	loadingFilterEndpoints = false;
 	endpoints$!: Observable<ENDPOINT[]>;
-	selectedEndpoint!: string;
+	selectedEndpoint!: ENDPOINT;
 
 	constructor(public privateService: PrivateService) {}
 
@@ -37,10 +40,6 @@ export class EndpointFilterComponent implements OnInit {
 			distinctUntilChanged(),
 			switchMap(search => this.getEndpointsForFilter(search))
 		);
-	}
-
-	selectEndpoint(event: any, endpointId: string) {
-		this.selectedEndpoint = event.target.checked ? endpointId : '';
 	}
 
 	async getEndpointsForFilter(search: string): Promise<ENDPOINT[]> {
