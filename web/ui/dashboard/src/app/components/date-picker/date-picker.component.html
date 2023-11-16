@@ -1,26 +1,10 @@
-<div convoyOverlay *ngIf="showPicker" (click)="showPicker = false"></div>
+<div convoyOverlay *ngIf="showPicker" (click)="showPicker = false; close.emit()"></div>
 <div class="relative">
-	<button
-		convoy-button
-		fill="outline"
-		size="sm"
-		[class]="formType === 'filter' ? 'px-10px !border-primary-400 justify-between gap-10px' : '!border-primary-500 !rounded-4px !bg-[#F7F9FC] !py-12px !px-16px w-full !justify-start'"
-		[ngClass]="{ 'text-primary-100 !bg-primary-500': !!selectedDates?.startDate && !!selectedDates?.endDate }"
-		(click)="showPicker = !showPicker"
-	>
-		<svg width="18" height="18" class="transition-all fill-none scale-75" [class]="!!selectedDates?.startDate && !!selectedDates?.endDate ? 'stroke-new.primary-300' : 'stroke-new.gray-500'">
-			<use xlink:href="#calendar-icon"></use>
-		</svg>
-		<span class="text-grey-40 mr-4px">Date</span>
+	<div class="empty:hidden" (click)="showPicker = !showPicker">
+		<ng-content select="[dropdownTrigger]"></ng-content>
+	</div>
 
-		<button type="button" *ngIf="selectedDates?.startDate && selectedDates?.endDate" (click)="clearDate($event); clearDates.emit()">
-			<svg width="10" height="10" class="fill-primary-100">
-				<use xlink:href="#close-icon"></use>
-			</svg>
-		</button>
-	</button>
-
-	<div convoy-dropdown-container position="left" class="!w-fit !max-h-[none]" [show]="showPicker">
+	<div convoy-dropdown-container [position]="position" class="!w-fit !max-h-[none]" [show]="showPicker">
 		<div class="w-full">
 			<div class="flex gap-40px px-16px pt-16px">
 				<div class="calendar w-280px">

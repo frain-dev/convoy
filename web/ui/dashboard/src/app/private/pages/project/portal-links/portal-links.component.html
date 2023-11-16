@@ -42,7 +42,22 @@
                 </form>
             </div> -->
 
-			<convoy-endpoint-filter [endpoint]="linkEndpoint" (clear)="clearEndpointFilter()" (set)="updateEndpointFilter($event)"></convoy-endpoint-filter>
+			<convoy-endpoint-filter [endpoint]="linkEndpoint" (set)="updateEndpointFilter($event)">
+				<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 whitespace-nowrap justify-between" [ngClass]="{ 'text-primary-100 !bg-primary-500': linkEndpoint }">
+					<div class="flex items-center gap-10px">
+						<svg width="18" height="18" class="transition-all scale-75" [class]="linkEndpoint ? 'stroke-new.primary-400' : 'stroke-new.gray-600'">
+							<use xlink:href="#endpoints-icon"></use>
+						</svg>
+						<span class="text-grey-40">Endpoints</span>
+
+						<button type="button" *ngIf="linkEndpoint" (click)="clearEndpointFilter()">
+							<svg width="10" height="10" class="fill-primary-100">
+								<use xlink:href="#close-icon"></use>
+							</svg>
+						</button>
+					</div>
+				</button>
+			</convoy-endpoint-filter>
 		</div>
 	</div>
 

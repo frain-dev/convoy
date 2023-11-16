@@ -27,6 +27,10 @@ export class EventsComponent implements OnInit {
 		startDate: [{ value: new Date(new Date().setDate(new Date().getDate() - 30)), disabled: true }],
 		endDate: [{ value: new Date(), disabled: true }]
 	});
+	dateRangeValue?: {
+		startDate: string | Date;
+		endDate: string | Date;
+	};
 	hasEvents: boolean = false;
 	chartData!: CHARTDATA[];
 	showAddEventModal = false;
@@ -122,6 +126,7 @@ export class EventsComponent implements OnInit {
 	}
 
 	getSelectedDateRange(dateRange?: { startDate: Date; endDate: Date }) {
+		this.dateRangeValue = dateRange;
 		this.statsDateRange.patchValue({
 			startDate: dateRange?.startDate || new Date(new Date().setDate(new Date().getDate() - 30)),
 			endDate: dateRange?.endDate || new Date()

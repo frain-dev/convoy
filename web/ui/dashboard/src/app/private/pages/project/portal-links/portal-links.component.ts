@@ -132,8 +132,8 @@ export class PortalLinksComponent implements OnInit {
 		).data.content;
 	}
 
-	updateEndpointFilter(endpointId: string) {
-		this.linkEndpoint = endpointId;
+	updateEndpointFilter(endpoint: ENDPOINT) {
+		this.linkEndpoint = endpoint?.uid;
 		this.getPortalLinks();
 	}
 
