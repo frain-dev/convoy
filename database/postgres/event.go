@@ -121,14 +121,10 @@ const (
 	`
 
 	baseEventsPagedBackward = `
-	WITH events AS (
 		%s %s AND ev.id >= :cursor
 		GROUP BY ev.id, s.id
 		ORDER BY ev.id %s
 		LIMIT :limit
-	)
-
-	SELECT * FROM events ORDER BY id %s
 	`
 
 	baseEventFilter = ` AND ev.project_id = :project_id
