@@ -119,7 +119,7 @@ export class EventDeliveryFilterComponent implements OnInit {
 
 			const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
 			const queryParams = new URLSearchParams(cleanedQuery).toString();
-			this._location.go(`${location.pathname}?${queryParams}`);
+			this._location.go(`${location.pathname}?${this.portalToken ? `token=${this.portalToken}` : ''}${queryParams}`);
 		} else {
 			this.eventDelEventType = '';
 			this.eventsTypeSearchString = '';
@@ -130,7 +130,7 @@ export class EventDeliveryFilterComponent implements OnInit {
 			const sortParam = this.queryParams.sort;
 
 			this.queryParams = {};
-			this._location.go(`${location.pathname}`);
+			this._location.go(`${location.pathname}${this.portalToken ? `?token=${this.portalToken}` : ''}`);
 		}
 
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
@@ -158,19 +158,6 @@ export class EventDeliveryFilterComponent implements OnInit {
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
 		this.filter.emit(this.queryParams);
 		this.toggleFilter('status', false);
-	}
-
-	updateEventDevliveryStatusFilter(status: string, isChecked: any) {
-		if (isChecked.target.checked) {
-			this.eventDeliveryFilteredByStatus.push(status);
-		} else {
-			let index = this.eventDeliveryFilteredByStatus.findIndex(x => x === status);
-			this.eventDeliveryFilteredByStatus.splice(index, 1);
-		}
-	}
-
-	checkIfEventDeliveryStatusFilterOptionIsSelected(status: string): boolean {
-		return this.eventDeliveryFilteredByStatus?.length > 0 ? this.eventDeliveryFilteredByStatus.includes(status) : false;
 	}
 
 	updateSourceFilter(source: SOURCE) {
@@ -206,9 +193,15 @@ export class EventDeliveryFilterComponent implements OnInit {
 	toggleSortOrder() {
 		this.sortOrder === 'asc' ? (this.sortOrder = 'desc') : (this.sortOrder = 'asc');
 		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, sort: this.sortOrder });
+		// this.type === 'logs' ? localStorage.setItem('EVENTS_LOGS_SORT_ORDER', this.sortOrder) : localStorage.setItem('EVENTS_SORT_ORDER', this.sortOrder);
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
 		this.filter.emit(this.queryParams);
 	}
+
+	// getSortOrder() {
+	// 	const sortOrderConfig = this.type === 'logs' ? localStorage.getItem('EVENTS_LOGS_SORT_ORDER') : localStorage.getItem('EVENTS_SORT_ORDER');
+	// 	this.sortOrder = sortOrderConfig || 'desc';
+	// }
 
 	toggleTailMode(e?: any, status?: 'on' | 'off') {
 		let tailModeConfig: boolean;
@@ -239,7 +232,12 @@ export class EventDeliveryFilterComponent implements OnInit {
 	}
 
 	isAnyFilterSelected(): Boolean {
-		return (this.queryParams && (Object.keys(this.queryParams)[0] !== 'sort' || Object.keys(this.queryParams)[0] === 'sort') && Object.keys(this.queryParams).length > 1) || false;
+		return (
+			(this.queryParams &&
+				(Object.keys(this.queryParams).includes('sort') || !Object.keys(this.queryParams).includes('sort')) &&
+				((Object.keys(this.queryParams).length > 0 && !Object.keys(this.queryParams).includes('sort')) || (Object.keys(this.queryParams).length > 1 && Object.keys(this.queryParams).includes('sort')))) ||
+			false
+		);
 	}
 
 	async getSelectedEndpointData(): Promise<ENDPOINT> {
