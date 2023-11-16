@@ -174,7 +174,7 @@ func authenticateRequest(auth *models.LoginUser) AuthenticatorFn {
 		// Act
 		router.ServeHTTP(w, req)
 		if w.Code != http.StatusOK {
-			return fmt.Errorf("failed to authenticate: reponse body: %s", w.Body.String())
+			return fmt.Errorf("failed to authenticate: response body: %s", w.Body.String())
 		}
 
 		loginResp := &models.LoginUserResponse{}
