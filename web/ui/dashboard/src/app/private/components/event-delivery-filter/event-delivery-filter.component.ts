@@ -70,6 +70,8 @@ export class EventDeliveryFilterComponent implements OnInit {
 		if (this.type === 'logs') this.projectService.activeProjectDetails?.type == 'outgoing' ? this.filterOptions.splice(1, 4) : this.filterOptions.splice(1, 4, { name: 'Source', id: 'source', show: false });
 		else this.projectService.activeProjectDetails?.type == 'incoming' ? this.filterOptions.splice(3, 2) : this.filterOptions.splice(2, 1);
 
+		if (this.portalToken) this.filterOptions = this.filterOptions.filter(key => key.id !== 'endpoint');
+
 		if (this.eventDeliveriesSource) this.eventDeliveriesSourceData = await this.getSelectedSourceData();
 
 		if (this.eventDeliveriesEndpoint) this.eventDeliveriesEndpointData = await this.getSelectedEndpointData();
@@ -235,7 +237,9 @@ export class EventDeliveryFilterComponent implements OnInit {
 		return (
 			(this.queryParams &&
 				(Object.keys(this.queryParams).includes('sort') || !Object.keys(this.queryParams).includes('sort')) &&
-				((Object.keys(this.queryParams).length > 0 && !Object.keys(this.queryParams).includes('sort')) || (Object.keys(this.queryParams).length > 1 && Object.keys(this.queryParams).includes('sort')))) ||
+				(Object.keys(this.queryParams).includes('token') || !Object.keys(this.queryParams).includes('token')) &&
+				((Object.keys(this.queryParams).length > 0 && !Object.keys(this.queryParams).includes('sort') && !Object.keys(this.queryParams).includes('token')) ||
+					(Object.keys(this.queryParams).length > 1 && (Object.keys(this.queryParams).includes('sort') || Object.keys(this.queryParams).includes('token'))))) ||
 			false
 		);
 	}
