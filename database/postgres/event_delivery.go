@@ -502,7 +502,6 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		query = getBackwardDeliveryPageQuery(pageable.SortOrder())
 	}
 
-	fmt.Println("direction", pageable.Direction)
 	filterQuery = baseEventDeliveryFilter
 	if len(endpointIDs) > 0 {
 		filterQuery += ` AND ed.endpoint_id IN (:endpoint_ids)`
@@ -529,8 +528,6 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 	}
 
 	query = e.db.Rebind(query)
-
-	fmt.Println("query", query)
 
 	rows, err := e.db.QueryxContext(ctx, query, args...)
 	if err != nil {

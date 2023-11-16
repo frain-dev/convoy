@@ -63,7 +63,7 @@ func (p *Pageable) SetCursors() {
 		if isStringEmpty(p.NextCursor) {
 			p.NextCursor = "" // still set it empty, it might be filled with spaces
 		}
-	case "DESC":
+	default:
 		if isStringEmpty(p.NextCursor) {
 			p.NextCursor = "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"
 		}
