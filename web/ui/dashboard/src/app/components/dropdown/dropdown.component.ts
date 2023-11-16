@@ -41,6 +41,7 @@ export class DropdownComponent implements OnInit {
 	@ViewChild('dropdownTriggerContainer', { static: true }) dropdownTriggerContainer!: ElementRef;
 	@ViewChild('dropdownContainer', { static: true }) dropdownOptions!: ElementRef;
     @Output() readonly onSelect = new EventEmitter<any>;
+	@Output('close') close = new EventEmitter<any>();
 	show = false;
 
     constructor() {}

@@ -1,4 +1,4 @@
-<div convoyOverlay *ngIf="showPicker" (click)="showPicker = false"></div>
+<div convoyOverlay *ngIf="showPicker" (click)="showPicker = false; close.emit()"></div>
 <div class="relative">
 	<div class="empty:hidden" (click)="showPicker = !showPicker">
 		<ng-content select="[dropdownTrigger]"></ng-content>

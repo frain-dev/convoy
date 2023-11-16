@@ -54,11 +54,11 @@ export class EventDeliveryFilterComponent implements OnInit {
 	queryParams: FILTER_QUERY_PARAM = {};
 	enableTailMode = false;
 	filterOptions = [
-		{ name: 'Date', show: false },
-		{ name: 'Status', show: false },
-		{ name: 'Source', show: false },
-		{ name: 'Endpoint', show: false },
-		{ name: 'Event type', show: false }
+		{ name: 'Date', id: 'date', show: false },
+		{ name: 'Status', id: 'status', show: false },
+		{ name: 'Source', id: 'source', show: false },
+		{ name: 'Endpoint', id: 'endpoint', show: false },
+		{ name: 'Event type', id: 'eventType', show: false }
 	];
 	constructor(private route: ActivatedRoute, private _location: Location, public projectService: ProjectService, private privateService: PrivateService, private generalService: GeneralService) {}
 
@@ -67,7 +67,7 @@ export class EventDeliveryFilterComponent implements OnInit {
 		if (this.checkIfTailModeIsEnabled()) this.tail.emit({ data: this.queryParams, tailModeConfig: this.checkIfTailModeIsEnabled() });
 		this.filter.emit(data);
 
-		if (this.type === 'logs') this.projectService.activeProjectDetails?.type == 'outgoing' ? this.filterOptions.splice(1, 4) : this.filterOptions.splice(1, 4, { name: 'Source', show: false });
+		if (this.type === 'logs') this.projectService.activeProjectDetails?.type == 'outgoing' ? this.filterOptions.splice(1, 4) : this.filterOptions.splice(1, 4, { name: 'Source', id: 'source', show: false });
 		else this.projectService.activeProjectDetails?.type == 'incoming' ? this.filterOptions.splice(3, 2) : this.filterOptions.splice(2, 1);
 
 		if (this.eventDeliveriesSource) this.eventDeliveriesSourceData = await this.getSelectedSourceData();
@@ -87,6 +87,10 @@ export class EventDeliveryFilterComponent implements OnInit {
 		this.eventDeliveriesEndpoint = this.queryParams?.endpointId;
 
 		this.eventDelEventType = this.queryParams?.eventType;
+
+		this.sortOrder = this.queryParams?.sort || 'desc';
+
+		this.eventsSearchString = this.queryParams?.query || '';
 
 		return this.queryParams;
 	}
@@ -134,19 +138,13 @@ export class EventDeliveryFilterComponent implements OnInit {
 	}
 
 	getSelectedDateRange(dateRange: { startDate: string; endDate: string }) {
-		console.log({ ...this.queryParams, ...dateRange });
 		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...dateRange });
-		console.log(this.queryParams);
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
 		this.filter.emit(this.queryParams);
 	}
 
 	selectStatusFilter(status: string) {
-		if (!this.eventDeliveryFilteredByStatus?.includes(status)) {
-			this.eventDeliveryFilteredByStatus.push(status);
-			// this.toggleFilter('Status', false);
-			// this.getSelectedStatusFilter();
-		}
+		if (!this.eventDeliveryFilteredByStatus?.includes(status)) this.eventDeliveryFilteredByStatus.push(status);
 	}
 
 	removeStatusFilter(status: string) {
@@ -159,10 +157,10 @@ export class EventDeliveryFilterComponent implements OnInit {
 		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, status: eventDelsStatus });
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
 		this.filter.emit(this.queryParams);
-        this.toggleFilter('Status', false);
+		this.toggleFilter('status', false);
 	}
 
-    updateEventDevliveryStatusFilter(status: string, isChecked: any) {
+	updateEventDevliveryStatusFilter(status: string, isChecked: any) {
 		if (isChecked.target.checked) {
 			this.eventDeliveryFilteredByStatus.push(status);
 		} else {
@@ -171,7 +169,7 @@ export class EventDeliveryFilterComponent implements OnInit {
 		}
 	}
 
-    checkIfEventDeliveryStatusFilterOptionIsSelected(status: string): boolean {
+	checkIfEventDeliveryStatusFilterOptionIsSelected(status: string): boolean {
 		return this.eventDeliveryFilteredByStatus?.length > 0 ? this.eventDeliveryFilteredByStatus.includes(status) : false;
 	}
 
@@ -202,7 +200,7 @@ export class EventDeliveryFilterComponent implements OnInit {
 		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, eventType: this.eventsTypeSearchString });
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
 		this.filter.emit(this.queryParams);
-		this.toggleFilter('Event type', false);
+		this.toggleFilter('eventType', false);
 	}
 
 	toggleSortOrder() {
@@ -232,12 +230,12 @@ export class EventDeliveryFilterComponent implements OnInit {
 
 	toggleFilter(filterValue: string, show: boolean) {
 		this.filterOptions.forEach(filter => {
-			if (filter.name === filterValue) filter.show = show;
+			if (filter.id === filterValue) filter.show = show;
 		});
 	}
 
 	showFilter(filterValue: string): boolean {
-		return this.filterOptions.find(filter => filter.name === filterValue)?.show || false;
+		return this.filterOptions.find(filter => filter.id === filterValue)?.show || false;
 	}
 
 	isAnyFilterSelected(): Boolean {

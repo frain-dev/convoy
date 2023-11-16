@@ -26,6 +26,7 @@ export class DatePickerComponent implements OnInit {
 	@Output() selectedDateRange = new EventEmitter<any>();
 	@Output() selectedDate = new EventEmitter<any>();
 	@Output() clearDates = new EventEmitter<any>();
+	@Output() close = new EventEmitter<any>();
 	@Input('show') show = false;
 	@Input('formType') formType: 'filter' | 'form' = 'filter';
 	@Input('position') position: 'right' | 'left' | 'center' | 'right-side' = 'left';
