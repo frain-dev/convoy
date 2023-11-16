@@ -240,14 +240,6 @@ func Pagination(next http.Handler) http.Handler {
 			rawDirection = "next"
 		}
 
-		if len(rawNextCursor) == 0 {
-			rawNextCursor = "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"
-		}
-
-		if len(rawPrevCursor) == 0 {
-			rawPrevCursor = ""
-		}
-
 		perPage, err := strconv.Atoi(rawPerPage)
 		if err != nil {
 			perPage = 20
@@ -260,6 +252,7 @@ func Pagination(next http.Handler) http.Handler {
 			NextCursor: rawNextCursor,
 			PrevCursor: rawPrevCursor,
 		}
+		pageable.SetCursors()
 
 		r = r.WithContext(setPageableInContext(r.Context(), pageable))
 		next.ServeHTTP(w, r)

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/cache"
@@ -79,7 +80,7 @@ const (
 	    %s
 	    AND ed.id <= :cursor
 	    GROUP BY ed.id, ep.id, ev.id, d.id, s.id
-	    ORDER BY ed.id ASC
+	    ORDER BY ed.id %s
 	    LIMIT :limit
 	)
 
@@ -94,7 +95,7 @@ const (
 		%s
 		AND ed.id >= :cursor
 		GROUP BY ed.id, ep.id, ev.id, d.id, s.id
-		ORDER BY ed.id ASC
+		ORDER BY ed.id %s
 		LIMIT :limit
 	)
 
@@ -496,11 +497,12 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 
 	var query, filterQuery string
 	if pageable.Direction == datastore.Next {
-		query = baseEventDeliveryPagedForward
+		query = getFwdDeliveryPageQuery(pageable.SortOrder())
 	} else {
-		query = baseEventDeliveryPagedBackward
+		query = getBackwardDeliveryPageQuery(pageable.SortOrder())
 	}
 
+	fmt.Println("direction", pageable.Direction)
 	filterQuery = baseEventDeliveryFilter
 	if len(endpointIDs) > 0 {
 		filterQuery += ` AND ed.endpoint_id IN (:endpoint_ids)`
@@ -514,7 +516,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		filterQuery += ` AND ed.subscription_id = :subscription_id`
 	}
 
-	query = fmt.Sprintf(query, baseFetchEventDelivery, filterQuery, pageable.SortOrder())
+	query = fmt.Sprintf(query, baseFetchEventDelivery, filterQuery, pageable.SortOrder(), pageable.SortOrder())
 
 	query, args, err := sqlx.Named(query, arg)
 	if err != nil {
@@ -527,6 +529,8 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 	}
 
 	query = e.db.Rebind(query)
+
+	fmt.Println("query", query)
 
 	rows, err := e.db.QueryxContext(ctx, query, args...)
 	if err != nil {
@@ -843,4 +847,20 @@ func (m *CLIMetadata) Scan(value interface{}) error {
 	}
 
 	return nil
+}
+
+func getFwdDeliveryPageQuery(sortOrder string) string {
+	if sortOrder == "ASC" {
+		return strings.Replace(baseEventDeliveryPagedForward, "<=", ">=", 1)
+	}
+
+	return baseEventDeliveryPagedForward
+}
+
+func getBackwardDeliveryPageQuery(sortOrder string) string {
+	if sortOrder == "ASC" {
+		return strings.Replace(baseEventDeliveryPagedBackward, ">=", "<=", 1)
+	}
+
+	return baseEventDeliveryPagedBackward
 }

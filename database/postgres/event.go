@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/cache"
@@ -123,7 +124,7 @@ const (
 	WITH events AS (
 		%s %s AND ev.id >= :cursor
 		GROUP BY ev.id, s.id
-		ORDER BY ev.id ASC
+		ORDER BY ev.id %s
 		LIMIT :limit
 	)
 
@@ -368,9 +369,9 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 	base := baseEventsPaged
 	var baseQueryPagination string
 	if filter.Pageable.Direction == datastore.Next {
-		baseQueryPagination = baseEventsPagedForward
+		baseQueryPagination = getFwdEventPageQuery(filter.Pageable.SortOrder())
 	} else {
-		baseQueryPagination = baseEventsPagedBackward
+		baseQueryPagination = getBackwardEventPageQuery(filter.Pageable.SortOrder())
 	}
 
 	filterQuery = baseEventFilter
@@ -524,4 +525,20 @@ func getCreatedDateFilter(startDate, endDate int64) (time.Time, time.Time) {
 type EventEndpoint struct {
 	EventID    string `db:"event_id"`
 	EndpointID string `db:"endpoint_id"`
+}
+
+func getFwdEventPageQuery(sortOrder string) string {
+	if sortOrder == "ASC" {
+		return strings.Replace(baseEventsPagedForward, "<=", ">=", 1)
+	}
+
+	return baseEventsPagedBackward
+}
+
+func getBackwardEventPageQuery(sortOrder string) string {
+	if sortOrder == "ASC" {
+		return strings.Replace(baseEventsPagedBackward, ">=", "<=", 1)
+	}
+
+	return baseEventsPagedBackward
 }
