@@ -117,7 +117,7 @@ const (
 	FROM convoy.event_deliveries ed
 	WHERE ed.deleted_at IS NULL
 	%s
-	AND ed.id > :cursor GROUP BY ed.id ORDER BY ed.id DESC LIMIT 1`
+	AND ed.id > :cursor GROUP BY ed.id ORDER BY ed.id %s LIMIT 1`
 
 	loadEventDeliveriesIntervals = `
     SELECT
@@ -515,7 +515,12 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		filterQuery += ` AND ed.subscription_id = :subscription_id`
 	}
 
-	query = fmt.Sprintf(query, baseFetchEventDelivery, filterQuery, pageable.SortOrder(), pageable.SortOrder())
+	preOrder := pageable.SortOrder()
+	if pageable.Direction == datastore.Prev {
+		preOrder = reverseOrder(preOrder)
+	}
+
+	query = fmt.Sprintf(query, baseFetchEventDelivery, filterQuery, preOrder, pageable.SortOrder())
 
 	query, args, err := sqlx.Named(query, arg)
 	if err != nil {
@@ -604,7 +609,9 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		qarg := arg
 		qarg["cursor"] = first.UID
 
-		cq := fmt.Sprintf(countPrevEventDeliveries, filterQuery)
+		tmp := getCountEventPrevRowQuery(pageable.SortOrder())
+
+		cq := fmt.Sprintf(tmp, filterQuery, pageable.SortOrder())
 		countQuery, qargs, err = sqlx.Named(cq, qarg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -860,4 +867,21 @@ func getBackwardDeliveryPageQuery(sortOrder string) string {
 	}
 
 	return baseEventDeliveryPagedBackward
+}
+
+func getCountEventPrevRowQuery(sortOrder string) string {
+	if sortOrder == "ASC" {
+		return strings.Replace(countPrevEventDeliveries, ">", "<", 1)
+	}
+
+	return countPrevEventDeliveries
+}
+
+func reverseOrder(sortOrder string) string {
+	switch sortOrder {
+	case "ASC":
+		return "DESC"
+	default:
+		return "ASC"
+	}
 }

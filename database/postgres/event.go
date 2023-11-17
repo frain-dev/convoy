@@ -114,17 +114,26 @@ const (
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
     WHERE ev.deleted_at IS NULL`
 
-	baseEventsPagedForward = `%s %s AND ev.id <= :cursor
-	GROUP BY ev.id, s.id
-	ORDER BY ev.id %s
-	LIMIT :limit
+	baseEventsPagedForward = `
+	WITH events AS (
+        %s %s AND ev.id <= :cursor
+	    GROUP BY ev.id, s.id
+	    ORDER BY ev.id %s
+	    LIMIT :limit
+	)
+
+	SELECT * FROM events ORDER BY id %s
 	`
 
 	baseEventsPagedBackward = `
-		%s %s AND ev.id >= :cursor
+	WITH events AS (
+        %s %s AND ev.id >= :cursor
 		GROUP BY ev.id, s.id
 		ORDER BY ev.id %s
 		LIMIT :limit
+	)
+
+	SELECT * FROM events ORDER BY id %s
 	`
 
 	baseEventFilter = ` AND ev.project_id = :project_id
@@ -151,7 +160,7 @@ const (
 	LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
 	WHERE ev.deleted_at IS NULL
 	`
-	countPrevEvents = ` AND ev.id > :cursor GROUP BY ev.id ORDER BY ev.id DESC LIMIT 1`
+	countPrevEvents = ` AND ev.id > :cursor GROUP BY ev.id ORDER BY ev.id %s LIMIT 1`
 
 	softDeleteProjectEvents = `
 	UPDATE convoy.events SET deleted_at = NOW()
@@ -380,7 +389,12 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		base = baseEventsSearch
 	}
 
-	query = fmt.Sprintf(baseQueryPagination, base, filterQuery, filter.Pageable.SortOrder())
+	preOrder := filter.Pageable.SortOrder()
+	if filter.Pageable.Direction == datastore.Prev {
+		preOrder = reverseOrder(preOrder)
+	}
+
+	query = fmt.Sprintf(baseQueryPagination, base, filterQuery, preOrder, filter.Pageable.SortOrder())
 	query, args, err = sqlx.Named(query, arg)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
@@ -421,7 +435,10 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 			baseCountEvents = baseCountPrevEventSearch
 		}
 
-		cq := baseCountEvents + filterQuery + countPrevEvents
+		tmp := getCountDeliveriesPrevRowQuery(filter.Pageable.SortOrder())
+		tmp = fmt.Sprintf(tmp, filter.Pageable.SortOrder())
+
+		cq := baseCountEvents + filterQuery + tmp
 		countQuery, qargs, err = sqlx.Named(cq, qarg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -537,4 +554,12 @@ func getBackwardEventPageQuery(sortOrder string) string {
 	}
 
 	return baseEventsPagedBackward
+}
+
+func getCountDeliveriesPrevRowQuery(sortOrder string) string {
+	if sortOrder == "ASC" {
+		return strings.Replace(countPrevEvents, ">", "<", 1)
+	}
+
+	return countPrevEvents
 }
