@@ -528,7 +528,7 @@ func getFwdEventPageQuery(sortOrder string) string {
 		return strings.Replace(baseEventsPagedForward, "<=", ">=", 1)
 	}
 
-	return baseEventsPagedBackward
+	return baseEventsPagedForward
 }
 
 func getBackwardEventPageQuery(sortOrder string) string {
