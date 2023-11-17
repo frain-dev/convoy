@@ -288,6 +288,32 @@ definitions:
     additionalProperties:
       type: string
     type: object
+  datastore.KafkaAuth:
+    properties:
+      hash:
+        type: string
+      password:
+        type: string
+      tls:
+        type: boolean
+      type:
+        type: string
+      username:
+        type: string
+    type: object
+  datastore.KafkaPubSubConfig:
+    properties:
+      auth:
+        $ref: '#/definitions/datastore.KafkaAuth'
+      brokers:
+        items:
+          type: string
+        type: array
+      consumer_group_id:
+        type: string
+      topic_name:
+        type: string
+    type: object
   datastore.KeyType:
     enum:
     - project
@@ -378,6 +404,8 @@ definitions:
         type: integer
       prev_page_cursor:
         type: string
+      sort:
+        type: string
     type: object
   datastore.PaginationData:
     properties:
@@ -419,6 +447,8 @@ definitions:
     type: object
   datastore.ProjectConfig:
     properties:
+      add_event_id_trace_headers:
+        type: boolean
       disable_endpoint:
         type: boolean
       max_payload_read_size:
@@ -466,6 +496,8 @@ definitions:
     properties:
       google:
         $ref: '#/definitions/datastore.GooglePubSubConfig'
+      kafka:
+        $ref: '#/definitions/datastore.KafkaPubSubConfig'
       sqs:
         $ref: '#/definitions/datastore.SQSPubSubConfig'
       type:
@@ -477,10 +509,12 @@ definitions:
     enum:
     - sqs
     - google
+    - kafka
     type: string
     x-enum-varnames:
     - SqsPubSub
     - GooglePubSub
+    - KafkaPubSub
   datastore.RateLimitConfiguration:
     properties:
       count:
@@ -491,6 +525,8 @@ definitions:
   datastore.RetentionPolicyConfiguration:
     properties:
       policy:
+        type: string
+      search_policy:
         type: string
     type: object
   datastore.RetryConfiguration:
@@ -761,9 +797,6 @@ definitions:
           type: string
         type: object
       data:
-        description: |-
-          Data is an arbitrary JSON value that gets sent as the body of the
-          webhook to the endpoints
         items:
           type: integer
         type: array
@@ -772,6 +805,10 @@ definitions:
       event_type:
         type: string
       idempotency_key:
+        type: string
+      owner_id:
+        type: string
+      uid:
         type: string
     type: object
   models.CreateProject:
@@ -826,6 +863,8 @@ definitions:
         type: string
       filter_config:
         $ref: '#/definitions/models.FilterConfiguration'
+      function:
+        type: string
       name:
         type: string
       rate_limit_config:
@@ -1132,6 +1171,32 @@ definitions:
           type: string
         type: array
     type: object
+  models.KafkaAuth:
+    properties:
+      hash:
+        type: string
+      password:
+        type: string
+      tls:
+        type: boolean
+      type:
+        type: string
+      username:
+        type: string
+    type: object
+  models.KafkaPubSubConfig:
+    properties:
+      auth:
+        $ref: '#/definitions/models.KafkaAuth'
+      brokers:
+        items:
+          type: string
+        type: array
+      consumer_group_id:
+        type: string
+      topic_name:
+        type: string
+    type: object
   models.MetaEventConfiguration:
     properties:
       event_type:
@@ -1216,6 +1281,8 @@ definitions:
     type: object
   models.ProjectConfig:
     properties:
+      add_event_id_trace_headers:
+        type: boolean
       disable_endpoint:
         type: boolean
       max_payload_read_size:
@@ -1264,6 +1331,8 @@ definitions:
     properties:
       google:
         $ref: '#/definitions/models.GooglePubSubConfig'
+      kafka:
+        $ref: '#/definitions/models.KafkaPubSubConfig'
       sqs:
         $ref: '#/definitions/models.SQSPubSubConfig'
       type:
@@ -1281,6 +1350,8 @@ definitions:
   models.RetentionPolicyConfiguration:
     properties:
       policy:
+        type: string
+      search_policy:
         type: string
     type: object
   models.RetryConfiguration:
@@ -1384,6 +1455,14 @@ definitions:
       type:
         type: string
     type: object
+  models.SubscriptionFunctionResponse:
+    properties:
+      log:
+        items:
+          type: string
+        type: array
+      payload: {}
+    type: object
   models.SubscriptionResponse:
     properties:
       alert_config:
@@ -1400,6 +1479,8 @@ definitions:
         $ref: '#/definitions/datastore.Endpoint'
       filter_config:
         $ref: '#/definitions/datastore.FilterConfiguration'
+      function:
+        $ref: '#/definitions/null.String'
       name:
         type: string
       rate_limit_config:
@@ -1421,6 +1502,14 @@ definitions:
         $ref: '#/definitions/models.FilterSchema'
       schema:
         $ref: '#/definitions/models.FilterSchema'
+    type: object
+  models.TestWebhookFunction:
+    properties:
+      function:
+        type: string
+      payload:
+        additionalProperties: true
+        type: object
     type: object
   models.UpdateCustomResponse:
     properties:
@@ -1506,6 +1595,8 @@ definitions:
         type: string
       filter_config:
         $ref: '#/definitions/models.FilterConfiguration'
+      function:
+        type: string
       name:
         type: string
       rate_limit_config:
@@ -1525,6 +1616,14 @@ definitions:
         $ref: '#/definitions/models.HMac'
       type:
         $ref: '#/definitions/datastore.VerifierType'
+    type: object
+  null.String:
+    properties:
+      string:
+        type: string
+      valid:
+        description: Valid is true if String is not NULL
+        type: boolean
     type: object
   public.Stub:
     type: object
@@ -3169,6 +3268,9 @@ paths:
         name: eventID
         type: string
       - in: query
+        name: eventType
+        type: string
+      - in: query
         name: idempotencyKey
         type: string
       - in: query
@@ -4565,6 +4667,68 @@ paths:
             - properties:
                 data:
                   type: boolean
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/public.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/public.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/public.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Validate subscription filter
+      tags:
+      - Subscriptions
+  /v1/projects/{projectID}/subscriptions/test_function:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint validates that a filter will match a certain payload
+        structure.
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Function Details
+        in: body
+        name: filter
+        required: true
+        schema:
+          $ref: '#/definitions/models.TestWebhookFunction'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.SubscriptionFunctionResponse'
               type: object
         "400":
           description: Bad Request

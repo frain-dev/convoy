@@ -463,7 +463,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 		datastore.Pageable{
 			PerPage: 10,
 		},
-		"",
+		"", "",
 	)
 
 	require.NoError(t, err)
@@ -491,4 +491,29 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 
 		require.Equal(t, ed, dbEventDelivery)
 	}
+
+	evType := "file"
+	event = seedEventWithEventType(t, db, project, evType)
+
+	ed := generateEventDelivery(project, endpoint, event, device, sub)
+
+	err = edRepo.CreateEventDelivery(context.Background(), ed)
+	require.NoError(t, err)
+
+	filteredDeliveries, _, err := edRepo.LoadEventDeliveriesPaged(
+		context.Background(), project.UID, []string{endpoint.UID}, event.UID, sub.UID,
+		[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus},
+		datastore.SearchParams{
+			CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
+			CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
+		},
+		datastore.Pageable{
+			PerPage: 10,
+		},
+		"", evType,
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, 1, len(filteredDeliveries))
+	require.Equal(t, ed.UID, filteredDeliveries[0].UID)
 }

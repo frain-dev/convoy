@@ -2719,6 +2719,11 @@
                     },
                     {
                         "type": "string",
+                        "name": "eventType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "name": "idempotencyKey",
                         "in": "query"
                     },
@@ -5187,6 +5192,118 @@
                 }
             }
         },
+        "/v1/projects/{projectID}/subscriptions/test_function": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint validates that a filter will match a certain payload structure.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Validate subscription filter",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "projectID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Function Details",
+                        "name": "filter",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.TestWebhookFunction"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.SubscriptionFunctionResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/public.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/public.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/public.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{projectID}/subscriptions/{subscriptionID}": {
             "get": {
                 "security": [
@@ -5948,6 +6065,46 @@
                 "type": "string"
             }
         },
+        "datastore.KafkaAuth": {
+            "type": "object",
+            "properties": {
+                "hash": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "tls": {
+                    "type": "boolean"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "datastore.KafkaPubSubConfig": {
+            "type": "object",
+            "properties": {
+                "auth": {
+                    "$ref": "#/definitions/datastore.KafkaAuth"
+                },
+                "brokers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "consumer_group_id": {
+                    "type": "string"
+                },
+                "topic_name": {
+                    "type": "string"
+                }
+            }
+        },
         "datastore.KeyType": {
             "type": "string",
             "enum": [
@@ -6074,6 +6231,9 @@
                 },
                 "prev_page_cursor": {
                     "type": "string"
+                },
+                "sort": {
+                    "type": "string"
                 }
             }
         },
@@ -6138,6 +6298,9 @@
         "datastore.ProjectConfig": {
             "type": "object",
             "properties": {
+                "add_event_id_trace_headers": {
+                    "type": "boolean"
+                },
                 "disable_endpoint": {
                     "type": "boolean"
                 },
@@ -6209,6 +6372,9 @@
                 "google": {
                     "$ref": "#/definitions/datastore.GooglePubSubConfig"
                 },
+                "kafka": {
+                    "$ref": "#/definitions/datastore.KafkaPubSubConfig"
+                },
                 "sqs": {
                     "$ref": "#/definitions/datastore.SQSPubSubConfig"
                 },
@@ -6224,11 +6390,13 @@
             "type": "string",
             "enum": [
                 "sqs",
-                "google"
+                "google",
+                "kafka"
             ],
             "x-enum-varnames": [
                 "SqsPubSub",
-                "GooglePubSub"
+                "GooglePubSub",
+                "KafkaPubSub"
             ]
         },
         "datastore.RateLimitConfiguration": {
@@ -6246,6 +6414,9 @@
             "type": "object",
             "properties": {
                 "policy": {
+                    "type": "string"
+                },
+                "search_policy": {
                     "type": "string"
                 }
             }
@@ -6647,7 +6818,6 @@
                     }
                 },
                 "data": {
-                    "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -6660,6 +6830,12 @@
                     "type": "string"
                 },
                 "idempotency_key": {
+                    "type": "string"
+                },
+                "owner_id": {
+                    "type": "string"
+                },
+                "uid": {
                     "type": "string"
                 }
             }
@@ -6742,6 +6918,9 @@
                 },
                 "filter_config": {
                     "$ref": "#/definitions/models.FilterConfiguration"
+                },
+                "function": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
@@ -7200,6 +7379,46 @@
                 }
             }
         },
+        "models.KafkaAuth": {
+            "type": "object",
+            "properties": {
+                "hash": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "tls": {
+                    "type": "boolean"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.KafkaPubSubConfig": {
+            "type": "object",
+            "properties": {
+                "auth": {
+                    "$ref": "#/definitions/models.KafkaAuth"
+                },
+                "brokers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "consumer_group_id": {
+                    "type": "string"
+                },
+                "topic_name": {
+                    "type": "string"
+                }
+            }
+        },
         "models.MetaEventConfiguration": {
             "type": "object",
             "properties": {
@@ -7328,6 +7547,9 @@
         "models.ProjectConfig": {
             "type": "object",
             "properties": {
+                "add_event_id_trace_headers": {
+                    "type": "boolean"
+                },
                 "disable_endpoint": {
                     "type": "boolean"
                 },
@@ -7401,6 +7623,9 @@
                 "google": {
                     "$ref": "#/definitions/models.GooglePubSubConfig"
                 },
+                "kafka": {
+                    "$ref": "#/definitions/models.KafkaPubSubConfig"
+                },
                 "sqs": {
                     "$ref": "#/definitions/models.SQSPubSubConfig"
                 },
@@ -7427,6 +7652,9 @@
             "type": "object",
             "properties": {
                 "policy": {
+                    "type": "string"
+                },
+                "search_policy": {
                     "type": "string"
                 }
             }
@@ -7586,6 +7814,18 @@
                 }
             }
         },
+        "models.SubscriptionFunctionResponse": {
+            "type": "object",
+            "properties": {
+                "log": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "payload": {}
+            }
+        },
         "models.SubscriptionResponse": {
             "type": "object",
             "properties": {
@@ -7611,6 +7851,9 @@
                 },
                 "filter_config": {
                     "$ref": "#/definitions/datastore.FilterConfiguration"
+                },
+                "function": {
+                    "$ref": "#/definitions/null.String"
                 },
                 "name": {
                     "type": "string"
@@ -7643,6 +7886,18 @@
                 },
                 "schema": {
                     "$ref": "#/definitions/models.FilterSchema"
+                }
+            }
+        },
+        "models.TestWebhookFunction": {
+            "type": "object",
+            "properties": {
+                "function": {
+                    "type": "string"
+                },
+                "payload": {
+                    "type": "object",
+                    "additionalProperties": true
                 }
             }
         },
@@ -7774,6 +8029,9 @@
                 "filter_config": {
                     "$ref": "#/definitions/models.FilterConfiguration"
                 },
+                "function": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -7802,6 +8060,18 @@
                 },
                 "type": {
                     "$ref": "#/definitions/datastore.VerifierType"
+                }
+            }
+        },
+        "null.String": {
+            "type": "object",
+            "properties": {
+                "string": {
+                    "type": "string"
+                },
+                "valid": {
+                    "description": "Valid is true if String is not NULL",
+                    "type": "boolean"
                 }
             }
         },

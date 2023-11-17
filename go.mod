@@ -9,6 +9,8 @@ require (
 	github.com/aws/aws-sdk-go v1.34.28
 	github.com/danvixent/asynqmon v0.7.3
 	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5
+	github.com/dop251/goja v0.0.0-20230828202809-3dbe69dd2b8e
+	github.com/dop251/goja_nodejs v0.0.0-20230821135201-94e508132562
 	github.com/dukex/mixpanel v0.0.0-20220410140740-e82251311162
 	github.com/felixge/httpsnoop v1.0.2
 	github.com/getkin/kin-openapi v0.80.0
@@ -48,7 +50,6 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/swaggo/swag v1.8.12
 	github.com/tidwall/gjson v1.14.4
-	github.com/typesense/typesense-go v0.4.0
 	github.com/xdg-go/pbkdf2 v1.0.0
 	golang.org/x/crypto v0.5.0
 	google.golang.org/api v0.102.0
@@ -58,8 +59,6 @@ require (
 
 require (
 	github.com/dlclark/regexp2 v1.7.0 // indirect
-	github.com/dop251/goja v0.0.0-20230828202809-3dbe69dd2b8e // indirect
-	github.com/dop251/goja_nodejs v0.0.0-20230821135201-94e508132562 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
@@ -84,7 +83,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/deepmap/oapi-codegen v1.9.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-gorp/gorp/v3 v3.0.2 // indirect
@@ -112,7 +110,6 @@ require (
 	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/sergi/go-diff v1.0.0 // indirect
-	github.com/sony/gobreaker v0.5.0 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/vmihailenco/go-tinylfu v0.2.2 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5

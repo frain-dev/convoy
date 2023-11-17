@@ -227,6 +227,7 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 func Pagination(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawPerPage := r.URL.Query().Get("perPage")
+		sort := r.URL.Query().Get("sort")
 		rawDirection := r.URL.Query().Get("direction")
 		rawNextCursor := r.URL.Query().Get("next_page_cursor")
 		rawPrevCursor := r.URL.Query().Get("prev_page_cursor")
@@ -239,25 +240,19 @@ func Pagination(next http.Handler) http.Handler {
 			rawDirection = "next"
 		}
 
-		if len(rawNextCursor) == 0 {
-			rawNextCursor = "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"
-		}
-
-		if len(rawPrevCursor) == 0 {
-			rawPrevCursor = ""
-		}
-
 		perPage, err := strconv.Atoi(rawPerPage)
 		if err != nil {
 			perPage = 20
 		}
 
 		pageable := datastore.Pageable{
+			Sort:       strings.ToUpper(sort),
 			PerPage:    perPage,
 			Direction:  datastore.PageDirection(rawDirection),
 			NextCursor: rawNextCursor,
 			PrevCursor: rawPrevCursor,
 		}
+		pageable.SetCursors()
 
 		r = r.WithContext(setPageableInContext(r.Context(), pageable))
 		next.ServeHTTP(w, r)

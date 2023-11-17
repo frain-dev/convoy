@@ -70,7 +70,20 @@
 		<h2 class="text-12 font-medium text-new.gray-600 mb-16px">Events Summary</h2>
 
 		<div class="pb-24px flex items-center">
-			<convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()"></convoy-date-picker>
+			<convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()">
+				<button dropdownTrigger convoy-button fill="outline" size="sm" class="px-10px !border-primary-400 justify-between gap-10px" [ngClass]="{ 'text-primary-100 !bg-primary-500': !!dateRangeValue?.startDate && !!dateRangeValue?.endDate }">
+					<svg width="18" height="18" class="transition-all fill-none scale-75" [class]="!!dateRangeValue?.startDate && !!dateRangeValue?.endDate ? 'stroke-new.primary-300' : 'stroke-new.gray-500'">
+						<use xlink:href="#calendar-icon"></use>
+					</svg>
+					<span class="text-grey-40 mr-4px">Date</span>
+
+					<button type="button" *ngIf="dateRangeValue?.startDate && dateRangeValue?.endDate" (click)="getSelectedDateRange()">
+						<svg width="10" height="10" class="fill-primary-100">
+							<use xlink:href="#close-icon"></use>
+						</svg>
+					</button>
+				</button>
+			</convoy-date-picker>
 
 			<div convoy-dropdown size="sm" position="left">
 				<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 ml-16px">

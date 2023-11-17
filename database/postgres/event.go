@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
-	"time"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -112,21 +114,26 @@ const (
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
     WHERE ev.deleted_at IS NULL`
 
-	baseEventsPagedForward = `%s %s AND ev.id <= :cursor
-	GROUP BY ev.id, s.id
-	ORDER BY ev.id DESC
-	LIMIT :limit
+	baseEventsPagedForward = `
+	WITH events AS (
+        %s %s AND ev.id <= :cursor
+	    GROUP BY ev.id, s.id
+	    ORDER BY ev.id %s
+	    LIMIT :limit
+	)
+
+	SELECT * FROM events ORDER BY id %s
 	`
 
 	baseEventsPagedBackward = `
 	WITH events AS (
-		%s %s AND ev.id >= :cursor
+        %s %s AND ev.id >= :cursor
 		GROUP BY ev.id, s.id
-		ORDER BY ev.id ASC
+		ORDER BY ev.id %s
 		LIMIT :limit
 	)
 
-	SELECT * FROM events ORDER BY id DESC
+	SELECT * FROM events ORDER BY id %s
 	`
 
 	baseEventFilter = ` AND ev.project_id = :project_id
@@ -153,7 +160,7 @@ const (
 	LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
 	WHERE ev.deleted_at IS NULL
 	`
-	countPrevEvents = ` AND ev.id > :cursor GROUP BY ev.id ORDER BY ev.id DESC LIMIT 1`
+	countPrevEvents = ` AND ev.id > :cursor GROUP BY ev.id ORDER BY ev.id %s LIMIT 1`
 
 	softDeleteProjectEvents = `
 	UPDATE convoy.events SET deleted_at = NOW()
@@ -364,12 +371,12 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		"event_id":        filter.Query,
 	}
 
-	var base = baseEventsPaged
+	base := baseEventsPaged
 	var baseQueryPagination string
 	if filter.Pageable.Direction == datastore.Next {
-		baseQueryPagination = baseEventsPagedForward
+		baseQueryPagination = getFwdEventPageQuery(filter.Pageable.SortOrder())
 	} else {
-		baseQueryPagination = baseEventsPagedBackward
+		baseQueryPagination = getBackwardEventPageQuery(filter.Pageable.SortOrder())
 	}
 
 	filterQuery = baseEventFilter
@@ -382,7 +389,12 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		base = baseEventsSearch
 	}
 
-	query = fmt.Sprintf(baseQueryPagination, base, filterQuery)
+	preOrder := filter.Pageable.SortOrder()
+	if filter.Pageable.Direction == datastore.Prev {
+		preOrder = reverseOrder(preOrder)
+	}
+
+	query = fmt.Sprintf(baseQueryPagination, base, filterQuery, preOrder, filter.Pageable.SortOrder())
 	query, args, err = sqlx.Named(query, arg)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
@@ -423,7 +435,10 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 			baseCountEvents = baseCountPrevEventSearch
 		}
 
-		cq := baseCountEvents + filterQuery + countPrevEvents
+		tmp := getCountDeliveriesPrevRowQuery(filter.Pageable.SortOrder())
+		tmp = fmt.Sprintf(tmp, filter.Pageable.SortOrder())
+
+		cq := baseCountEvents + filterQuery + tmp
 		countQuery, qargs, err = sqlx.Named(cq, qarg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -523,4 +538,28 @@ func getCreatedDateFilter(startDate, endDate int64) (time.Time, time.Time) {
 type EventEndpoint struct {
 	EventID    string `db:"event_id"`
 	EndpointID string `db:"endpoint_id"`
+}
+
+func getFwdEventPageQuery(sortOrder string) string {
+	if sortOrder == "ASC" {
+		return strings.Replace(baseEventsPagedForward, "<=", ">=", 1)
+	}
+
+	return baseEventsPagedForward
+}
+
+func getBackwardEventPageQuery(sortOrder string) string {
+	if sortOrder == "ASC" {
+		return strings.Replace(baseEventsPagedBackward, ">=", "<=", 1)
+	}
+
+	return baseEventsPagedBackward
+}
+
+func getCountDeliveriesPrevRowQuery(sortOrder string) string {
+	if sortOrder == "ASC" {
+		return strings.Replace(countPrevEvents, ">", "<", 1)
+	}
+
+	return countPrevEvents
 }

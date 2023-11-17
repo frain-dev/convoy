@@ -3,9 +3,10 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"github.com/frain-dev/convoy/cache"
 	"sync"
 	"time"
+
+	"github.com/frain-dev/convoy/cache"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/database"
@@ -71,7 +72,7 @@ func RetryEventDeliveries(db database.Database, cache cache.Cache, eventQueue qu
 		log.Infof("Total number of event deliveries to requeue is %d", counter)
 
 		for {
-			deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", []string{}, eventId, "", []datastore.EventDeliveryStatus{status}, searchParams, pageable, "")
+			deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", []string{}, eventId, "", []datastore.EventDeliveryStatus{status}, searchParams, pageable, "", "")
 			if err != nil {
 				log.WithError(err).Errorf("successfully fetched %d event deliveries", count)
 				close(deliveryChan)
