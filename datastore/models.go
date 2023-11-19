@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -24,6 +25,7 @@ import (
 type Pageable struct {
 	PerPage    int           `json:"per_page"`
 	Direction  PageDirection `json:"direction"`
+	Sort       string        `json:"sort"`
 	PrevCursor string        `json:"prev_page_cursor"`
 	NextCursor string        `json:"next_page_cursor"`
 }
@@ -43,9 +45,31 @@ func (p Pageable) Cursor() string {
 	return p.PrevCursor
 }
 
+func (p Pageable) SortOrder() string {
+	if p.Sort == "ASC" || p.Sort == "DESC" {
+		return p.Sort
+	}
+
+	return "DESC"
+}
+
 func (p Pageable) Limit() int {
 	return p.PerPage + 1
 }
+
+func (p *Pageable) SetCursors() {
+	switch p.Sort {
+	case "ASC":
+		if isStringEmpty(p.NextCursor) {
+			p.NextCursor = "" // still set it empty, it might be filled with spaces
+		}
+	default:
+		if isStringEmpty(p.NextCursor) {
+			p.NextCursor = "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"
+		}
+	}
+}
+func isStringEmpty(s string) bool { return len(strings.TrimSpace(s)) == 0 }
 
 type PaginationData struct {
 	PrevRowCount    PrevRowCount `json:"-"`
@@ -867,6 +891,7 @@ type EventDelivery struct {
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
 	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
+	Latency        string                `json:"latency" db:"latency"`
 
 	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`
@@ -1221,6 +1246,7 @@ type StoragePolicyConfiguration struct {
 }
 
 type S3Storage struct {
+	Prefix       null.String `json:"prefix" db:"prefix"`
 	Bucket       null.String `json:"bucket" db:"bucket" valid:"required~please provide a bucket name"`
 	AccessKey    null.String `json:"access_key,omitempty" db:"access_key" valid:"required~please provide an access key"`
 	SecretKey    null.String `json:"secret_key,omitempty" db:"secret_key" valid:"required~please provide a secret key"`

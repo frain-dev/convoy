@@ -6,7 +6,7 @@ import { PrivateService } from './private.service';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { differenceInSeconds } from 'date-fns';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 
 @Component({
 	selector: 'app-private',
@@ -33,10 +33,21 @@ export class PrivateComponent implements OnInit {
 	});
 	creatingOrganisation = false;
 	checkTokenInterval: any;
+	onboardingSteps = [
+		{ step: 'Create an Organization', id: 'organisation', description: 'Add your organization details and get set up.', stepColor: 'bg-[#416FF4] shadow-[0_22px_24px_0px_rgba(65,111,244,0.2)]', class: 'border-[rgba(65,111,244,0.2)]', currentStage: 'current' },
+		{
+			step: 'Create your first project',
+			id: 'project',
+			description: 'Set up all the information for creating your webhook events.',
+			stepColor: 'bg-[#47B38D] shadow-[0_22px_24px_0px_rgba(43,214,123,0.2)]',
+			class: 'border-[rgba(71,179,141,0.36)]',
+			currentStage: 'pending'
+		}
+	];
 	private jwtHelper: JwtHelperService = new JwtHelperService();
 	private shouldShowOrgSubscription: Subscription | undefined;
 
-	constructor(private generalService: GeneralService, private router: Router, public privateService: PrivateService, private formBuilder: FormBuilder) {}
+	constructor(private generalService: GeneralService, public router: Router, public privateService: PrivateService, private formBuilder: FormBuilder) {}
 
 	async ngOnInit() {
 		this.shouldShowOrgModal();
@@ -69,13 +80,11 @@ export class PrivateComponent implements OnInit {
 
 	async getOrganizations(refresh: boolean = false) {
 		this.isLoadingOrganisations = true;
-
 		try {
 			const response = await this.privateService.getOrganizations({ refresh });
 			this.organisations = response.data.content;
 			this.isLoadingOrganisations = false;
-			if (this.organisations?.length === 0) return this.router.navigateByUrl('/get-started');
-			this.checkForSelectedOrganisation();
+			if (this.organisations?.length) this.checkForSelectedOrganisation();
 			return;
 		} catch (error) {
 			this.isLoadingOrganisations = false;
@@ -96,8 +105,10 @@ export class PrivateComponent implements OnInit {
 		this.privateService.organisationDetails = organisation;
 		this.userOrganization = organisation;
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
+		await this.privateService.getProjects({ refresh: true });
 		this.showOrgDropdown = false;
-		this.privateService.getProjectsHelper({ refresh: true });
+
+		this.router.navigateByUrl('/projects');
 		setInterval(() => {
 			this.isLoadingOrganisations = false;
 		}, 1000);

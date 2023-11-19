@@ -7,6 +7,12 @@ import { PrivateService } from '../../private.service';
 import { CreateProjectComponentService } from './create-project-component.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 
+interface TAB {
+	label: string;
+	svg: 'fill' | 'stroke';
+	icon: string;
+}
+
 @Component({
 	selector: 'app-create-project-component',
 	templateUrl: './create-project-component.component.html',
@@ -77,8 +83,14 @@ export class CreateProjectComponent implements OnInit {
 		{ uid: 'signature', name: 'Signature Format', show: false }
 	];
 	public rbacService = inject(RbacService);
-	tabs: string[] = ['project config', 'signature history', 'endpoints config', 'meta events'];
-	activeTab = 'project config';
+	tabs: TAB[] = [
+		{ label: 'project config', svg: 'fill', icon: 'settings' },
+		{ label: 'signature history', svg: 'fill', icon: 'sig-history' },
+		{ label: 'endpoints config', svg: 'stroke', icon: 'endpoints' },
+		{ label: 'meta events config', svg: 'stroke', icon: 'meta-events' },
+		{ label: 'secrets', svg: 'stroke', icon: 'secret' }
+	];
+	activeTab = this.tabs[0];
 	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed'];
 
 	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router, private route: ActivatedRoute) {}
@@ -86,7 +98,7 @@ export class CreateProjectComponent implements OnInit {
 	async ngOnInit() {
 		if (this.action === 'update') this.getProjectDetails();
 		if (!(await this.rbacService.userCanAccess('Project Settings|MANAGE'))) this.projectForm.disable();
-		if (this.action === 'update') this.switchTab(this.route.snapshot.queryParams?.activePage ?? 'project config');
+		if (this.action === 'update') this.switchTab(this.tabs.find(tab => tab.label == this.route.snapshot.queryParams?.activePage) ?? this.tabs[0]);
 	}
 
 	get versions(): FormArray {
@@ -122,7 +134,7 @@ export class CreateProjectComponent implements OnInit {
 		try {
 			this.projectDetails = this.privateService.getProjectDetails;
 
-			if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab !== 'signature history');
+			if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab.label !== 'signature history');
 
 			this.projectForm.patchValue(this.projectDetails);
 			this.projectForm.get('config.strategy')?.patchValue(this.projectDetails.config.strategy);
@@ -130,8 +142,9 @@ export class CreateProjectComponent implements OnInit {
 			this.projectForm.get('config.ratelimit')?.patchValue(this.projectDetails.config.ratelimit);
 			const digits = this.projectDetails.config.retention_policy.search_policy.match(/\d+/g);
 			this.projectForm.get('config.retention_policy.search_policy')?.patchValue(digits);
+            this.projectForm.get('config.meta_event.type')?.patchValue('http');
 
-			this.configurations.forEach(config => {
+            this.configurations.forEach(config => {
 				if (this.projectDetails?.type === 'outgoing') this.toggleConfigForm(config.uid);
 				else if (config.uid !== 'signature') this.toggleConfigForm(config.uid);
 			});
@@ -186,7 +199,7 @@ export class CreateProjectComponent implements OnInit {
 		if (typeof this.projectForm.value.config.strategy.duration === 'string') this.projectForm.value.config.strategy.duration = this.getTimeValue(this.projectForm.value.config.strategy.duration);
 		if (typeof this.projectForm.value.config.strategy.retry_count === 'string') this.projectForm.value.config.strategy.retry_count = parseInt(this.projectForm.value.config.strategy.retry_count);
 		if (typeof this.projectForm.value.config.ratelimit.count === 'string') this.projectForm.value.config.ratelimit.count = parseInt(this.projectForm.value.config.ratelimit.count);
-		this.projectForm.value.config.retention_policy.search_policy = `${this.projectForm.value.config.retention_policy.search_policy}h`;
+		if (this.projectForm.value.config.retention_policy.search_policy) this.projectForm.value.config.retention_policy.search_policy = `${this.projectForm.value.config.retention_policy.search_policy}h`;
 		this.isCreatingProject = true;
 
 		try {
@@ -276,15 +289,15 @@ export class CreateProjectComponent implements OnInit {
 		else if (!disableValue && actionType === 'metaEvents') this.metaEventsDialog.nativeElement.showModal();
 	}
 
-	switchTab(tab: string) {
-		if (tab === 'meta events') this.projectForm.patchValue({ config: { meta_event: { type: 'http' } } });
+	switchTab(tab: TAB) {
+		if (tab.label === 'meta events') this.projectForm.patchValue({ config: { meta_event: { type: 'http' } } });
 		this.activeTab = tab;
 		this.addPageToUrl();
 	}
 
 	addPageToUrl() {
 		const queryParams: any = {};
-		queryParams.activePage = this.activeTab;
+		queryParams.activePage = this.activeTab.label;
 		this.router.navigate([], { queryParams: Object.assign({}, queryParams) });
 	}
 

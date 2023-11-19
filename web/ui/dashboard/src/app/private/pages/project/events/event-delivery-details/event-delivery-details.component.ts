@@ -5,6 +5,8 @@ import { EventDeliveryDetailsService } from './event-delivery-details.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { EventsService } from '../events.service';
 import { PrivateService } from 'src/app/private/private.service';
+import { ENDPOINT } from 'src/app/models/endpoint.model';
+import { EndpointsService } from '../../endpoints/endpoints.service';
 
 @Component({
 	selector: 'app-event-delivery-details',
@@ -19,16 +21,25 @@ export class EventDeliveryDetailsComponent implements OnInit {
 	selectedDeliveryAttempt?: EVENT_DELIVERY_ATTEMPT;
 	isLoadingDeliveryDetails = false;
 	isloadingDeliveryAttempts = false;
+	isloadingEndpoint = false;
 	shouldRenderSmallSize = false;
 	eventDeliveryId = this.route.snapshot.params?.id;
 	screenWidth = window.innerWidth;
 	portalToken = this.route.snapshot.queryParams?.token;
 
-	constructor(private route: ActivatedRoute, private router: Router, private privateService: PrivateService, private eventDeliveryDetailsService: EventDeliveryDetailsService, public generalService: GeneralService, private eventsService: EventsService) {}
+	constructor(
+		private route: ActivatedRoute,
+		private router: Router,
+		private privateService: PrivateService,
+		private eventDeliveryDetailsService: EventDeliveryDetailsService,
+		public generalService: GeneralService,
+		private eventsService: EventsService,
+		private endpointService: EndpointsService
+	) {}
 
 	ngOnInit(): void {
 		const eventDeliveryId = this.route.snapshot.params.id;
-		this.getEventDeliveryDetails(eventDeliveryId);
+		this.getEventDeliveryDetails(eventDeliveryId).then(_ => this.getEndpoint());
 		this.getEventDeliveryAttempts(eventDeliveryId);
 	}
 
@@ -78,6 +89,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 			const deliveries = response.data;
 			this.eventDeliveryAtempts = deliveries.reverse();
 			this.eventDeliveryAtempt = this.eventDeliveryAtempts[this.eventDeliveryAtempts.length - 1];
+			this.selectedDeliveryAttempt = this.eventDeliveryAtempt;
 
 			this.isloadingDeliveryAttempts = false;
 		} catch (error) {
@@ -97,5 +109,19 @@ export class EventDeliveryDetailsComponent implements OnInit {
 	onWindowResize() {
 		this.screenWidth = window.innerWidth;
 		this.checkScreenSize();
+	}
+
+	async getEndpoint() {
+		if (!this.eventDelsDetails?.endpoint_id) return;
+		this.isloadingEndpoint = true;
+
+		try {
+			const response = await this.endpointService.getEndpoint(this.eventDelsDetails?.endpoint_id);
+			this.eventDelsDetails.endpoint_metadata = response.data;
+
+			this.isloadingEndpoint = false;
+		} catch (error) {
+			this.isloadingEndpoint = false;
+		}
 	}
 }

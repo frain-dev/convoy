@@ -40,6 +40,7 @@ func (sc *StoragePolicyConfiguration) Transform() *datastore.StoragePolicyConfig
 }
 
 type S3Storage struct {
+	Prefix       null.String `json:"prefix"`
 	Bucket       null.String `json:"bucket" valid:"required~please provide a bucket name"`
 	AccessKey    null.String `json:"access_key,omitempty" valid:"required~please provide an access key"`
 	SecretKey    null.String `json:"secret_key,omitempty" valid:"required~please provide a secret key"`
@@ -54,6 +55,7 @@ func (s3 *S3Storage) transform() *datastore.S3Storage {
 	}
 
 	return &datastore.S3Storage{
+		Prefix:       s3.Prefix,
 		Bucket:       s3.Bucket,
 		AccessKey:    s3.AccessKey,
 		SecretKey:    s3.SecretKey,

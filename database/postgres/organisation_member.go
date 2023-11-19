@@ -253,6 +253,7 @@ func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organi
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
+	defer closeWithError(rows)
 
 	var members []*datastore.OrganisationMember
 	for rows.Next() {
@@ -285,13 +286,14 @@ func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organi
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		rows.Close()
 	}
 
 	ids := make([]string, len(members))
@@ -340,6 +342,7 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
+	defer closeWithError(rows)
 
 	organisations := make([]datastore.Organisation, 0)
 	for rows.Next() {
@@ -372,13 +375,14 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		rows.Close()
 	}
 
 	ids := make([]string, len(organisations))
@@ -401,8 +405,7 @@ func (o *orgMemberRepo) FindUserProjects(ctx context.Context, userID string) ([]
 	if err != nil {
 		return nil, err
 	}
-
-	defer rows.Close()
+	defer closeWithError(rows)
 
 	var projects []datastore.Project
 	for rows.Next() {

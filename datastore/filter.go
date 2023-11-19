@@ -13,6 +13,7 @@ type Filter struct {
 	EndpointIDs    []string
 	SubscriptionID string
 	EventID        string
+	EventType      string
 	SourceID       string
 	Pageable       Pageable
 	IdempotencyKey string

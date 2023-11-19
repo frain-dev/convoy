@@ -1,12 +1,13 @@
 <!-- header  -->
-<div class="flex justify-between items-end border-b border-b-grey-10 pb-20px mb-24px">
-	<div class="flex items-center">
-		<h1 class="text-24 font-bold text-grey-80 mr-10px">Meta Events</h1>
-		<convoy-tooltip position="right">Meta events are operation events that occur on your project, such as: event delivery, endpoints status, e.t.c. You can receive this events notification via HTTPS.</convoy-tooltip>
-	</div>
-</div>
 
 <ng-container *ngIf="isMetaEventEnabled">
+	<div class="flex justify-between items-end mb-24px">
+		<div class="flex items-center">
+			<h1 class="text-18 font-bold text-grey-80 mr-10px">Meta Events</h1>
+			<!-- <convoy-tooltip position="right">Meta events are operation events that occur on your project, such as: event delivery, endpoints status, e.t.c. You can receive this events notification via HTTPS.</convoy-tooltip> -->
+		</div>
+	</div>
+
 	<div convoy-card class="flex">
 		<div class="min-w-[605px] w-full h-full overflow-hidden relative">
 			<convoy-table-loader id="meta_events_loader" [tableHead]="metaEventsTableHead" *ngIf="isLoadingMetaEvents"></convoy-table-loader>
@@ -80,7 +81,7 @@
 </ng-container>
 
 <!-- empty state  -->
-<div class="py-100px" convoy-card *ngIf="!isMetaEventEnabled">
+<div class="py-80px" *ngIf="!isMetaEventEnabled">
 	<div
 		convoy-empty-state
 		imgSrc="/assets/img/events-empty-state-image.svg"
@@ -88,6 +89,6 @@
 		description="Meta events are operation events that occur on your project, such as: event delivery, endpoints status, e.t.c. You can receive this events notification via HTTPS."
 		id="meta-events-empty-state"
 	>
-		<button convoy-button emptyStateCTA class="mt-36px" (click)="routeToMetaEvents()">Turn on Meta Events</button>
+		<button convoy-button emptyStateCTA class="!py-14px mt-36px" (click)="routeToMetaEvents()">Turn on Meta Events</button>
 	</div>
 </div>

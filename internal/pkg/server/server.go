@@ -2,8 +2,11 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/config"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"os/signal"
 	"time"
@@ -39,6 +42,22 @@ func (s *Server) SetHandler(handler http.Handler) {
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
 	})
+
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err).Fatal("failed to start server")
+	}
+
+	if cfg.EnableProfiling {
+		router.Route("/debug", func(pprofRouter chi.Router) {
+			pprofRouter.HandleFunc("/pprof/", pprof.Index)
+			pprofRouter.HandleFunc("/pprof/cmdline", pprof.Cmdline)
+			pprofRouter.HandleFunc("/pprof/profile", pprof.Profile)
+			pprofRouter.HandleFunc("/pprof/symbol", pprof.Symbol)
+			pprofRouter.HandleFunc("/pprof/trace", pprof.Trace)
+		})
+	}
+
 	router.Handle("/*", handler)
 	s.s.Handler = router
 }
@@ -50,7 +69,8 @@ func (s *Server) SetStopFunction(fn func()) {
 func (s *Server) Listen() {
 	go func() {
 		//service connections
-		if err := s.s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		err := s.s.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.WithError(err).Fatal("failed to listen")
 		}
 	}()
@@ -61,7 +81,8 @@ func (s *Server) Listen() {
 func (s *Server) ListenAndServeTLS(certFile, keyFile string) {
 	go func() {
 		//service connections
-		if err := s.s.ListenAndServeTLS(certFile, keyFile); err != nil && err != http.ErrServerClosed {
+		err := s.s.ListenAndServeTLS(certFile, keyFile)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.WithError(err).Fatal("failed to listen")
 		}
 	}()
@@ -70,7 +91,7 @@ func (s *Server) ListenAndServeTLS(certFile, keyFile string) {
 }
 
 func (s *Server) gracefulShutdown() {
-	//Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds
+	//Wait for interrupt signal to gracefully shut down the server with a timeout of 10 seconds
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
@@ -89,5 +110,5 @@ func (s *Server) gracefulShutdown() {
 
 	log.Info("Server exiting")
 
-	time.Sleep(2 * time.Second) // allow all pending connections close themselves
+	time.Sleep(2 * time.Second) // allow all pending connections to close themselves
 }

@@ -426,3 +426,12 @@ func seedEvent(t *testing.T, db database.Database, project *datastore.Project) *
 	require.NoError(t, NewEventRepo(db, nil).CreateEvent(context.Background(), ev))
 	return ev
 }
+
+func seedEventWithEventType(t *testing.T, db database.Database, project *datastore.Project, eventType string) *datastore.Event {
+	ev := generateEvent(t, db)
+	ev.EventType = datastore.EventType(eventType)
+	ev.ProjectID = project.UID
+
+	require.NoError(t, NewEventRepo(db, nil).CreateEvent(context.Background(), ev))
+	return ev
+}

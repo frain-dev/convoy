@@ -64,7 +64,7 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 					},
 				}, nil)
 				eq, _ := es.Queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(gomock.Any(), convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
+				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
 			},
 			args: args{
@@ -109,7 +109,7 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 					Times(1).Return(&datastore.PortalLink{UID: "12345"}, nil)
 
 				eq, _ := es.Queue.(*mocks.MockQueuer)
-				eq.EXPECT().Write(gomock.Any(), convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
+				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 					Times(1).Return(nil)
 			},
 			args: args{

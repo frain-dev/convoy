@@ -22,6 +22,8 @@ import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { PermissionDirective } from 'src/app/private/components/permission/permission.directive';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
+import { EndpointFilterComponent } from 'src/app/private/components/endpoints-filter/endpoints-filter.component';
+import { TagComponent } from 'src/app/components/tag/tag.component';
 
 @Component({
 	selector: 'convoy-portal-links',
@@ -44,7 +46,9 @@ import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 		PaginationComponent,
 		PermissionDirective,
 		LoaderModule,
-		DialogDirective
+		DialogDirective,
+		EndpointFilterComponent,
+		TagComponent
 	],
 	templateUrl: './portal-links.component.html',
 	styleUrls: ['./portal-links.component.scss']
@@ -128,8 +132,8 @@ export class PortalLinksComponent implements OnInit {
 		).data.content;
 	}
 
-	updateEndpointFilter(endpointId: string) {
-		this.linkEndpoint = endpointId;
+	updateEndpointFilter(endpoint: ENDPOINT) {
+		this.linkEndpoint = endpoint?.uid;
 		this.getPortalLinks();
 	}
 

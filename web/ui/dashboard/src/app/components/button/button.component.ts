@@ -17,7 +17,7 @@ export class ButtonComponent implements OnInit {
 	@Input('color') color: 'primary' | 'success' | 'warning' | 'danger' | 'grey' | 'transparent' = 'primary';
 	@Input('texture') texture: 'deep' | 'light' = 'deep';
 	@Input('index') tabIndex = 0;
-	buttonSizes = { xs: 'py-4px px-8px text-12', sm: `py-6px px-16px text-12`, md: `py-10px px-36px text-14`, lg: `py-10px px-36px w-full text-14` };
+	buttonSizes = { xs: 'py-4px px-8px text-12', sm: `py-6px px-16px text-12`, md: `py-8px px-18px text-12`, lg: `py-10px px-36px w-full text-14` };
 
 	constructor() {}
 
@@ -26,9 +26,9 @@ export class ButtonComponent implements OnInit {
 	get classes(): string {
 		const colorLevel = this.texture == 'deep' ? '100' : this.color == 'grey' ? '20' : '500';
 		const buttonTypes = {
-			default: `bg-${this.color}-${colorLevel} text-${this.texture == 'deep' ? 'white' : this.color}-100 border-none rounded-8px`,
-			soft: `bg-new.${this.color}-25 text-new.${this.color}-400 border-none border border-new.${this.color}-25  rounded-8px`,
-			outline: `border rounded-[10px] border-${this.color}-${colorLevel} text-${this.color}-100`,
+			default: `bg-${this.color}-${colorLevel} text-${this.texture == 'deep' ? 'white' : this.color}-100 border-none rounded-8px hover:shadow-xs transition-all`,
+			soft: `bg-new.${this.color}-25 text-new.${this.color}-400 border-none border border-new.${this.color}-25  rounded-8px hover:shadow-xs transition-all`,
+			outline: `border rounded-[10px] border-${this.color}-${colorLevel} text-${this.color}-100 hover:shadow-xs transition-all`,
 			clear: `border-none text-${this.color}-100`,
 			text: `border-0 text-${this.color}-${colorLevel} ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
 			link: `border-none text-${this.color}-${colorLevel} ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''} underline decoration-${this.color}-${colorLevel}`

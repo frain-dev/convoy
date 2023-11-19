@@ -68,6 +68,7 @@ func rollbackTx(tx *sqlx.Tx) {
 		log.WithError(err).Error("failed to rollback tx")
 	}
 }
+
 func closeWithError(closer io.Closer) {
 	err := closer.Close()
 	if err != nil {

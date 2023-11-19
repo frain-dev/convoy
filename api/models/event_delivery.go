@@ -81,6 +81,7 @@ func (ql *QueryListEventDelivery) Transform(r *http.Request) (*QueryListEventDel
 			SubscriptionID: r.URL.Query().Get("subscriptionId"),
 			IdempotencyKey: r.URL.Query().Get("idempotencyKey"),
 			EventID:        r.URL.Query().Get("eventId"),
+			EventType:      r.URL.Query().Get("eventType"),
 			Status:         getEventDeliveryStatus(r),
 			Pageable:       m.GetPageableFromContext(r.Context()),
 			SearchParams:   searchParams,

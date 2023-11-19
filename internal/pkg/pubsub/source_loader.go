@@ -3,11 +3,10 @@ package pubsub
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"time"
+
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/oklog/ulid/v2"
-	"math"
-	"time"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
@@ -65,13 +64,9 @@ func (s *SourceLoader) Run(ctx context.Context, interval int, stop <-chan struct
 	}
 }
 
-func (s *SourceLoader) fetchSources(ctx context.Context, projectID string, cursor string) error {
+func (s *SourceLoader) fetchSources(ctx context.Context, projectIDs []string, cursor string) error {
 	txn, innerCtx := apm.StartTransaction(ctx, "fetchSources")
 	defer txn.End()
-
-	filter := &datastore.SourceFilter{
-		Type: string(datastore.PubSubSource),
-	}
 
 	pageable := datastore.Pageable{
 		NextCursor: cursor,
@@ -79,7 +74,7 @@ func (s *SourceLoader) fetchSources(ctx context.Context, projectID string, curso
 		PerPage:    perPage,
 	}
 
-	sources, pagination, err := s.sourceRepo.LoadSourcesPaged(innerCtx, projectID, filter, pageable)
+	sources, pagination, err := s.sourceRepo.LoadPubSubSourcesByProjectIDs(innerCtx, projectIDs, pageable)
 	if err != nil {
 		return err
 	}
@@ -88,19 +83,21 @@ func (s *SourceLoader) fetchSources(ctx context.Context, projectID string, curso
 		return nil
 	}
 
-	for _, source := range sources {
-		go func(source datastore.Source) {
-			ps, err := NewPubSubSource(&source, s.handler, s.log)
-			if err != nil {
-				s.log.WithError(err).Error("failed to create pub sub source")
-			}
+	for i := range sources {
+		ps, err := NewPubSubSource(&sources[i], s.handler, s.log)
+		if err != nil {
+			s.log.WithError(err).Error("failed to create pub sub source")
+		}
 
-			s.sourcePool.Insert(ps)
-		}(source)
+		s.sourcePool.Insert(ps)
 	}
 
-	cursor = pagination.NextPageCursor
-	return s.fetchSources(innerCtx, projectID, cursor)
+	if pagination.HasNextPage {
+		cursor = pagination.NextPageCursor
+		return s.fetchSources(innerCtx, projectIDs, cursor)
+	}
+
+	return nil
 }
 
 func (s *SourceLoader) fetchProjectSources(ctx context.Context) error {
@@ -112,21 +109,21 @@ func (s *SourceLoader) fetchProjectSources(ctx context.Context) error {
 		return err
 	}
 
-	for _, project := range projects {
-		err := s.fetchSources(innerCtx, project.UID, fmt.Sprintf("%d", math.MaxInt))
-		if err != nil {
-			s.log.WithError(err).Error("failed to load sources")
-			continue
-		}
+	ids := make([]string, len(projects))
+	for i := range projects {
+		ids[i] = projects[i].UID
+	}
+
+	err = s.fetchSources(innerCtx, ids, "")
+	if err != nil {
+		s.log.WithError(err).Error("failed to load sources")
+		return err
 	}
 
 	return nil
 }
 
-func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, msg string) error {
-	txn, innerCtx := apm.StartTransaction(ctx, fmt.Sprintf("%v handler", source.Name))
-	defer txn.End()
-
+func (s *SourceLoader) handler(_ context.Context, source *datastore.Source, msg string) error {
 	ev := struct {
 		EndpointID     string            `json:"endpoint_id"`
 		OwnerID        string            `json:"owner_id"`
@@ -143,6 +140,7 @@ func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, ms
 	ce := task.CreateEvent{
 		Params: task.CreateEventTaskParams{
 			UID:            ulid.Make().String(),
+			SourceID:       source.UID,
 			ProjectID:      source.ProjectID,
 			EndpointID:     ev.EndpointID,
 			EventType:      ev.EventType,
@@ -164,7 +162,7 @@ func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, ms
 		Delay:   0,
 	}
 
-	err = s.queue.Write(innerCtx, convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = s.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		return err
 	}

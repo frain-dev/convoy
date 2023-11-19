@@ -83,7 +83,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 						Direction:  datastore.Next,
 						NextCursor: datastore.DefaultCursor,
 					},
-					gomock.Any()).
+					gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(
 						[]datastore.EventDelivery{
@@ -105,7 +105,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 					Times(2).Return(nil)
 
 				q, _ := es.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(2).Return(nil)
 			},
 		},
@@ -154,7 +154,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 						Direction:  datastore.Next,
 						NextCursor: datastore.DefaultCursor,
 					},
-					gomock.Any()).
+					gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(
 						[]datastore.EventDelivery{
@@ -177,7 +177,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 					Times(1).Return(nil)
 
 				q, _ := es.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 			},
 			wantSuccesses: 1,

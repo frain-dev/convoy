@@ -425,6 +425,46 @@
 				},
 				"type": "object"
 			},
+			"datastore.KafkaAuth": {
+				"properties": {
+					"hash": {
+						"type": "string"
+					},
+					"password": {
+						"type": "string"
+					},
+					"tls": {
+						"type": "boolean"
+					},
+					"type": {
+						"type": "string"
+					},
+					"username": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.KafkaPubSubConfig": {
+				"properties": {
+					"auth": {
+						"$ref": "#/components/schemas/datastore.KafkaAuth"
+					},
+					"brokers": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"consumer_group_id": {
+						"type": "string"
+					},
+					"topic_name": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.KeyType": {
 				"enum": [
 					"project",
@@ -550,6 +590,9 @@
 					},
 					"prev_page_cursor": {
 						"type": "string"
+					},
+					"sort": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -614,6 +657,9 @@
 			},
 			"datastore.ProjectConfig": {
 				"properties": {
+					"add_event_id_trace_headers": {
+						"type": "boolean"
+					},
 					"disable_endpoint": {
 						"type": "boolean"
 					},
@@ -685,6 +731,9 @@
 					"google": {
 						"$ref": "#/components/schemas/datastore.GooglePubSubConfig"
 					},
+					"kafka": {
+						"$ref": "#/components/schemas/datastore.KafkaPubSubConfig"
+					},
 					"sqs": {
 						"$ref": "#/components/schemas/datastore.SQSPubSubConfig"
 					},
@@ -700,12 +749,14 @@
 			"datastore.PubSubType": {
 				"enum": [
 					"sqs",
-					"google"
+					"google",
+					"kafka"
 				],
 				"type": "string",
 				"x-enum-varnames": [
 					"SqsPubSub",
-					"GooglePubSub"
+					"GooglePubSub",
+					"KafkaPubSub"
 				]
 			},
 			"datastore.RateLimitConfiguration": {
@@ -722,6 +773,9 @@
 			"datastore.RetentionPolicyConfiguration": {
 				"properties": {
 					"policy": {
+						"type": "string"
+					},
+					"search_policy": {
 						"type": "string"
 					}
 				},
@@ -1123,7 +1177,6 @@
 						"type": "object"
 					},
 					"data": {
-						"description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
 						"items": {
 							"type": "integer"
 						},
@@ -1136,6 +1189,12 @@
 						"type": "string"
 					},
 					"idempotency_key": {
+						"type": "string"
+					},
+					"owner_id": {
+						"type": "string"
+					},
+					"uid": {
 						"type": "string"
 					}
 				},
@@ -1218,6 +1277,9 @@
 					},
 					"filter_config": {
 						"$ref": "#/components/schemas/models.FilterConfiguration"
+					},
+					"function": {
+						"type": "string"
 					},
 					"name": {
 						"type": "string"
@@ -1677,6 +1739,46 @@
 				},
 				"type": "object"
 			},
+			"models.KafkaAuth": {
+				"properties": {
+					"hash": {
+						"type": "string"
+					},
+					"password": {
+						"type": "string"
+					},
+					"tls": {
+						"type": "boolean"
+					},
+					"type": {
+						"type": "string"
+					},
+					"username": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.KafkaPubSubConfig": {
+				"properties": {
+					"auth": {
+						"$ref": "#/components/schemas/models.KafkaAuth"
+					},
+					"brokers": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"consumer_group_id": {
+						"type": "string"
+					},
+					"topic_name": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"models.MetaEventConfiguration": {
 				"properties": {
 					"event_type": {
@@ -1804,6 +1906,9 @@
 			},
 			"models.ProjectConfig": {
 				"properties": {
+					"add_event_id_trace_headers": {
+						"type": "boolean"
+					},
 					"disable_endpoint": {
 						"type": "boolean"
 					},
@@ -1877,6 +1982,9 @@
 					"google": {
 						"$ref": "#/components/schemas/models.GooglePubSubConfig"
 					},
+					"kafka": {
+						"$ref": "#/components/schemas/models.KafkaPubSubConfig"
+					},
 					"sqs": {
 						"$ref": "#/components/schemas/models.SQSPubSubConfig"
 					},
@@ -1903,6 +2011,9 @@
 			"models.RetentionPolicyConfiguration": {
 				"properties": {
 					"policy": {
+						"type": "string"
+					},
+					"search_policy": {
 						"type": "string"
 					}
 				},
@@ -2063,6 +2174,18 @@
 				},
 				"type": "object"
 			},
+			"models.SubscriptionFunctionResponse": {
+				"properties": {
+					"log": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"payload": {}
+				},
+				"type": "object"
+			},
 			"models.SubscriptionResponse": {
 				"properties": {
 					"alert_config": {
@@ -2087,6 +2210,9 @@
 					},
 					"filter_config": {
 						"$ref": "#/components/schemas/datastore.FilterConfiguration"
+					},
+					"function": {
+						"$ref": "#/components/schemas/null.String"
 					},
 					"name": {
 						"type": "string"
@@ -2119,6 +2245,18 @@
 					},
 					"schema": {
 						"$ref": "#/components/schemas/models.FilterSchema"
+					}
+				},
+				"type": "object"
+			},
+			"models.TestWebhookFunction": {
+				"properties": {
+					"function": {
+						"type": "string"
+					},
+					"payload": {
+						"additionalProperties": true,
+						"type": "object"
 					}
 				},
 				"type": "object"
@@ -2250,6 +2388,9 @@
 					"filter_config": {
 						"$ref": "#/components/schemas/models.FilterConfiguration"
 					},
+					"function": {
+						"type": "string"
+					},
 					"name": {
 						"type": "string"
 					},
@@ -2278,6 +2419,18 @@
 					},
 					"type": {
 						"$ref": "#/components/schemas/datastore.VerifierType"
+					}
+				},
+				"type": "object"
+			},
+			"null.String": {
+				"properties": {
+					"string": {
+						"type": "string"
+					},
+					"valid": {
+						"description": "Valid is true if String is not NULL",
+						"type": "boolean"
 					}
 				},
 				"type": "object"
@@ -5378,6 +5531,13 @@
 					},
 					{
 						"in": "query",
+						"name": "eventType",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
 						"name": "idempotencyKey",
 						"schema": {
 							"type": "string"
@@ -8098,6 +8258,133 @@
 											"properties": {
 												"data": {
 													"type": "boolean"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/public.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/public.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/public.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Validate subscription filter",
+				"tags": [
+					"Subscriptions"
+				]
+			}
+		},
+		"/v1/projects/{projectID}/subscriptions/test_function": {
+			"post": {
+				"description": "This endpoint validates that a filter will match a certain payload structure.",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.TestWebhookFunction"
+							}
+						}
+					},
+					"description": "Function Details",
+					"required": true,
+					"x-originalParamName": "filter"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/models.SubscriptionFunctionResponse"
 												}
 											},
 											"type": "object"

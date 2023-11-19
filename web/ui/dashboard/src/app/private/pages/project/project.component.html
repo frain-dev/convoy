@@ -1,26 +1,14 @@
-<div class="flex pt-0 pb-0 w-full max-w-[1440px] m-auto">
-	<aside class="w-fit pt-24px border-r border-r-grey-10 relative pr-24px ml-64px">
-		<button class="z-[1] px-0 py-0 border border-grey-10 bg-white-100 rounded-100px w-32px h-32px absolute top-8px -right-16px flex items-center justify-center" [disabled]="screenWidth < 1150" (click)="shouldShowFullSideBar = !shouldShowFullSideBar">
-			<svg width="12" height="12" class="fill-primary-100 transition-all duration-200" [class]="shouldShowFullSideBar ? 'hidden' : 'block'">
-				<use xlink:href="#sidebar-icon"></use>
-			</svg>
-			<svg width="12" height="12" class="fill-primary-100 transition-all duration-200" [class]="!shouldShowFullSideBar ? 'hidden' : 'block'">
-				<use xlink:href="#sidebar-icon-2"></use>
-			</svg>
-		</button>
-
-		<nav>
-			<convoy-skeleton-loader className="w-132px h-22px mb-20px" *ngIf="!projectDetails"></convoy-skeleton-loader>
-
-			<div convoy-dropdown position="center" class="left-0" size="xl">
-				<button convoy-button dropdownTrigger color="grey" fill="outline" class="!p-10px justify-between border-new.gray-200 w-full bg-white-100">
+<div class="pt-0 pb-0 w-full">
+	<div class="w-full border-b border-b-new.primary-50 fixed top-60px z-[12] bg-white-100">
+		<nav class="flex items-center justify-between max-w-[1440px] m-auto px-24px py-12px">
+			<!-- <convoy-skeleton-loader className="w-132px h-22px mb-20px" *ngIf="!projectDetails"></convoy-skeleton-loader> -->
+			<div convoy-dropdown position="center" class="left-0 mr-24px" size="lg">
+				<button convoy-button dropdownTrigger fill="soft" class="!p-8px justify-between min-w-[150px]">
 					<div class="flex items-center">
-						<convoy-badge [show-text]="false" className="text-10 font-medium text-new.gray-800" *ngIf="!shouldShowFullSideBar" [text]="projectDetails?.name || ''"></convoy-badge>
-
-						<div class="text-12 font-medium text-new.gray-800 whitespace-nowrap text-left max-w-[96px] truncate" [class]="shouldShowFullSideBar ? ' mr-8px' : ' w-0 overflow-hidden'">{{ projectDetails?.name }}</div>
+						<div class="text-12 font-medium text-new.gray-800 whitespace-nowrap text-left max-w-[120px] truncate" [class]="shouldShowFullSideBar ? ' mr-8px' : ' w-0 overflow-hidden'">{{ projectDetails?.name }}</div>
 						<convoy-tooltip [withIcon]="false" position="right" class="block" [ngClass]="{ 'ml-10px': !shouldShowFullSideBar }" size="sm" type="white">
 							{{ projectDetails?.type == 'incoming' ? 'This project is for recieving webhook events' : 'This project is for sending out webhook events' }}
-							<div tooltipToggle convoy-tag class="py-[1px] px-[3px]" color="primary" fill="soft" *ngIf="shouldShowFullSideBar">
+							<div tooltipToggle convoy-tag class="py-[1px] px-[3px] bg-[rgba(71,125,179,.08)]" color="primary" fill="soft" *ngIf="shouldShowFullSideBar">
 								<svg width="16" height="16" class="fill-primary-100 stroke-primary-100 scale-75" [ngClass]="{ 'rotate-180': projectDetails?.type === 'incoming' }">
 									<use xlink:href="#top-right-icon"></use>
 								</svg>
@@ -38,20 +26,15 @@
 
 				<ng-container dropdownOptions class="relative">
 					<ul class="p-10px max-h-[300px] overflow-y-auto overflow-x-hidden">
-						<li class="mb-12px w-full" *ngFor="let project of projects">
+						<li class="mb-12px last-of-type:mb-0 w-full" *ngFor="let project of projects">
 							<button convoy-dropdown-option class="text-12 text-new.primary-800 py-8px px-8px w-full text-left hover:bg-new.primary-25 transition-all duration-300 rounded-8px flex justify-between items-center gap-24px" (click)="getProjectCompleteDetails(project)">
 								<div class="flex items-center gap-8px max-w-[calc(100%-36px)]">
 									<div class="w-full max-w-[200px] truncate">{{ project.name }}</div>
-
-									<convoy-tooltip [withIcon]="false" position="right" class="block" [ngClass]="{ 'ml-10px': !shouldShowFullSideBar }" size="sm" type="white">
-										{{ project?.type == 'incoming' ? 'This project is for recieving webhook events' : 'This project is for sending out webhook events' }}
-
-										<div tooltipToggle convoy-tag class="py-[1px] px-[3px]" color="primary" fill="soft" *ngIf="shouldShowFullSideBar">
-											<svg width="16" height="16" class="fill-primary-100 stroke-primary-100 scale-75" [ngClass]="{ 'rotate-180': project?.type === 'incoming' }">
-												<use xlink:href="#top-right-icon"></use>
-											</svg>
-										</div>
-									</convoy-tooltip>
+									<div tooltipToggle convoy-tag class="py-[1px] px-[3px]" color="primary" fill="soft">
+										<svg width="16" height="16" class="fill-primary-100 stroke-primary-100 scale-75" [ngClass]="{ 'rotate-180': project?.type === 'incoming' }">
+											<use xlink:href="#top-right-icon"></use>
+										</svg>
+									</div>
 								</div>
 
 								<div class="w-12px">
@@ -63,47 +46,57 @@
 
 					<hr class="border-t border-t-new.primary-25" *ngIf="projects.length" />
 
-					<div>
+					<div class="flex items-center">
 						<a routerLink="../new" class="text-12 text-new.primary-800 py-12px px-18px w-full text-left hover:bg-new.primary-25 flex items-center">
-							<img src="assets/img/svg/plus-icon.svg" class="mr-8px" alt="plus icon" />
-							Create New Project
+							<img src="assets/img/svg/plus-icon.svg" class="w-12px mr-8px" alt="plus icon" />
+							New Project
+						</a>
+						<div class="h-44px w-2px bg-new.primary-25"></div>
+						<a routerLink="../" class="text-12 text-new.primary-800 py-12px px-18px w-full text-left hover:bg-new.primary-25 flex items-center">
+							<img src="assets/img/svg/projects.svg" class="w-12px mr-8px" alt="plus icon" />
+							All Projects
 						</a>
 					</div>
 				</ng-container>
 			</div>
 
-			<div *ngIf="!projectDetails">
-				<convoy-skeleton-loader className="w-182px h-38px mb-16px !rounded-8px"></convoy-skeleton-loader>
-				<convoy-skeleton-loader className="w-182px h-38px mb-16px !rounded-8px"></convoy-skeleton-loader>
-				<convoy-skeleton-loader className="w-182px h-38px mb-16px !rounded-8px"></convoy-skeleton-loader>
-				<convoy-skeleton-loader className="w-182px h-38px mb-16px !rounded-8px"></convoy-skeleton-loader>
-				<convoy-skeleton-loader className="w-182px h-38px mb-16px !rounded-8px"></convoy-skeleton-loader>
-			</div>
+			<ul *ngIf="projectDetails" class="flex items-center justify-between w-full relative">
+				<div class="flex items-center gap-6px">
+					<li *ngFor="let nav of sideBarItems" class="transition-all duration-200 z-[1]">
+						<a [routerLink]="'.' + nav.route" routerLinkActive="!text-new.primary-400 on hover:bg-transparent" #route="routerLinkActive" class="nav-tab text-new.gray-600 rounded-22px py-8px px-16px transition-all duration-200 font-medium hover:bg-new.gray-50">
+							<!-- <svg width="18" height="18" class="mr-10px transition-all duration-200" [class]="isStrokeIcon(nav.icon) ? (route.isActive ? 'stroke-primary-100' : 'stroke-new.gray-600') : route.isActive ? 'fill-primary-100' : 'fill-new.gray-600'" [id]="nav.icon">
+                                <use [attr.xlink:href]="'#' + nav.icon + '-icon'"></use>
+                            </svg> -->
+							<span class="text-12 transition-all duration-200 whitespace-nowrap">{{ nav.name }}</span>
+						</a>
+					</li>
 
-			<ul *ngIf="projectDetails" class="border-b border-grey-20 pb-40px">
-				<li [class]="shouldShowFullSideBar ? 'w-182px' : 'w-66px'" *ngFor="let nav of sideBarItems" class="transition-all duration-200">
-					<a [routerLink]="'.' + nav.route" routerLinkActive="!text-new.primary-400 !border-l-new.primary-400" #route="routerLinkActive" class="border-l-2 border-l-transparent flex items-center text-new.gray-600 pl-6 mt-24px transition-all duration-200 font-medium">
-						<svg width="18" height="18" class="mr-10px transition-all duration-200" [class]="isStrokeIcon(nav.icon) ? (route.isActive ? 'stroke-primary-100' : 'stroke-new.gray-600') : route.isActive ? 'fill-primary-100' : 'fill-new.gray-600'" [id]="nav.icon">
-							<use [attr.xlink:href]="'#' + nav.icon + '-icon'"></use>
-						</svg>
-						<span class="text-14 transition-all duration-200 whitespace-nowrap" [ngClass]="{ 'w-0 hidden': !shouldShowFullSideBar }">{{ nav.name }}</span>
-					</a>
-				</li>
-			</ul>
+					<div class="h-16px w-[1px] bg-new.gray-300"></div>
 
-			<ul *ngIf="projectDetails" class="pb-40px pt-16px">
-				<li [class]="shouldShowFullSideBar ? 'w-182px' : 'w-66px'" *ngFor="let nav of secondarySideBarItems" class="transition-all duration-200">
-					<a [routerLink]="'.' + nav.route" routerLinkActive="!text-new.primary-400 !border-l-new.primary-400" #route="routerLinkActive" class="border-l-2 border-l-transparent flex items-center text-new.gray-600 pl-6 mt-24px transition-all duration-200 font-medium">
-						<svg width="18" height="18" class="mr-10px transition-all duration-200" [class]="isStrokeIcon(nav.icon) ? (route.isActive ? 'stroke-primary-100' : 'stroke-new.gray-600') : route.isActive ? 'fill-primary-100' : 'fill-new.gray-600'" [id]="nav.icon">
-							<use [attr.xlink:href]="'#' + nav.icon + '-icon'"></use>
+					<li *ngFor="let nav of secondarySideBarItems" class="transition-all duration-200 z-[1]">
+						<a [routerLink]="'.' + nav.route" routerLinkActive="!text-new.primary-400 on hover:bg-transparent" #route="routerLinkActive" class="nav-tab text-new.gray-600 rounded-22px py-8px px-16px transition-all duration-200 font-medium hover:bg-new.gray-50">
+							<!-- <svg width="18" height="18" class="mr-10px transition-all duration-200" [class]="isStrokeIcon(nav.icon) ? (route.isActive ? 'stroke-primary-100' : 'stroke-new.gray-600') : route.isActive ? 'fill-primary-100' : 'fill-new.gray-600'" [id]="nav.icon">
+                                <use [attr.xlink:href]="'#' + nav.icon + '-icon'"></use>
+                            </svg> -->
+							<span class="text-12 transition-all duration-200">{{ nav.name }}</span>
+						</a>
+					</li>
+				</div>
+
+				<div class="absolute w-122px left-0 h-[36px] bg-new.primary-25 rounded-22px z-0 transition-all duration-300" [style]="'left: ' + activeTab?.offsetLeft + 'px; width: ' + activeTab?.offsetWidth + 'px'"></div>
+
+				<li class="z-[1]">
+					<a routerLink="./settings" routerLinkActive="!text-new.primary-400  on hover:bg-transparent" #route="routerLinkActive" class="nav-tab text-new.gray-600 flex items-center rounded-22px py-8px px-16px transition-all duration-200 font-medium hover:bg-new.gray-50">
+						<svg width="18" height="18" class="mr-10px" [class]="route.isActive ? 'fill-primary-100' : 'fill-new.gray-600'">
+							<use xlink:href="#settings-icon"></use>
 						</svg>
-						<span class="text-14 transition-all duration-200" [ngClass]="{ 'w-0 hidden': !shouldShowFullSideBar }">{{ nav.name }}</span>
+						<span class="font-medium text-12 transition-all duration-200" [ngClass]="{ 'w-0 hidden': !shouldShowFullSideBar }">Project Settings</span>
 					</a>
 				</li>
 			</ul>
 		</nav>
 
-		<div class="border-t border-t-grey-10 pt-16px">
+		<!-- <div class="border-t border-t-grey-10 pt-16px">
 			<ul>
 				<li class="relative">
 					<button class="flex items-center text-new.gray-600 pl-24px mt-24px w-full" (click)="showHelpDropdown = !showHelpDropdown">
@@ -182,10 +175,10 @@
 					</a>
 				</li>
 			</ul>
-		</div>
-	</aside>
+		</div> -->
+	</div>
 
-	<main class="w-full pl-24px pr-24px pt-24px relative transition-all duration-200">
+	<main class="w-full pl-24px pr-24px pt-24px relative transition-all duration-200 max-w-[1440px] m-auto mt-60px">
 		<router-outlet></router-outlet>
 	</main>
 </div>

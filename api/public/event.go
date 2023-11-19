@@ -3,12 +3,13 @@ package public
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/oklog/ulid/v2"
-	"net/http"
 
 	"github.com/frain-dev/convoy/pkg/log"
 
@@ -78,7 +79,7 @@ func (a *PublicHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Reque
 		Delay:   0,
 	}
 
-	err = a.A.Queue.Write(r.Context(), convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = a.A.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.FromContext(r.Context()).Errorf("Error occurred sending new event to the queue %s", err)
 	}
@@ -192,8 +193,8 @@ func (a *PublicHandler) CreateDynamicEvent(w http.ResponseWriter, r *http.Reques
 // @Summary Replay event
 // @Description This endpoint replays an event afresh assuming it is a new event.
 // @Tags Events
-// @Accept  json
-// @Produce  json
+// @Accept json
+// @Produce json
 // @Param projectID path string true "Project ID"
 // @Param eventID path string true "event id"
 // @Success 200 {object} util.ServerResponse{data=models.EventResponse}
@@ -528,7 +529,8 @@ func (a *PublicHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.R
 	}
 
 	f := data.Filter
-	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey)
+
+	ed, paginationData, err := postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey, f.EventType)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch event deliveries")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))

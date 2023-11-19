@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/cache"
+	"strings"
 	"time"
+
+	"github.com/frain-dev/convoy/cache"
 
 	"github.com/lib/pq"
 
@@ -55,6 +57,7 @@ const (
         COALESCE(ep.target_url, '') AS "endpoint_metadata.target_url",
         ev.id AS "event_metadata.id",
         ev.event_type AS "event_metadata.event_type",
+		COALESCE(ed.latency,'') AS latency,
 
 		COALESCE(d.id,'') AS "device_metadata.id",
 		COALESCE(d.status,'') AS "device_metadata.status",
@@ -72,12 +75,18 @@ const (
     `
 
 	baseEventDeliveryPagedForward = `
-	%s
-	%s
-	AND ed.id <= :cursor
-	GROUP BY ed.id, ep.id, ev.id, d.id, s.id
-	ORDER BY ed.id DESC
-	LIMIT :limit
+	WITH event_deliveries AS (
+	    %s
+	    %s
+	    AND ed.id <= :cursor
+	    GROUP BY ed.id, ep.id, ev.id, d.id, s.id
+	    ORDER BY ed.id %s
+	    LIMIT :limit
+	)
+
+	SELECT * FROM event_deliveries
+	WHERE ("event_metadata.event_type" = :event_type OR :event_type = '')
+    ORDER BY id %s
 	`
 
 	baseEventDeliveryPagedBackward = `
@@ -86,11 +95,13 @@ const (
 		%s
 		AND ed.id >= :cursor
 		GROUP BY ed.id, ep.id, ev.id, d.id, s.id
-		ORDER BY ed.id ASC
+		ORDER BY ed.id %s
 		LIMIT :limit
 	)
 
-	SELECT * FROM event_deliveries ORDER BY id DESC
+	SELECT * FROM event_deliveries
+	WHERE ("event_metadata.event_type" = :event_type OR :event_type = '')
+    ORDER BY id %s
 	`
 
 	fetchEventDeliveryByID = baseFetchEventDelivery + ` AND ed.id = $1 AND ed.project_id = $2`
@@ -106,7 +117,7 @@ const (
 	FROM convoy.event_deliveries ed
 	WHERE ed.deleted_at IS NULL
 	%s
-	AND ed.id > :cursor GROUP BY ed.id ORDER BY ed.id DESC LIMIT 1`
+	AND ed.id > :cursor GROUP BY ed.id ORDER BY ed.id %s LIMIT 1`
 
 	loadEventDeliveriesIntervals = `
     SELECT
@@ -166,7 +177,7 @@ const (
     `
 
 	updateEventDeliveryAttempts = `
-    UPDATE convoy.event_deliveries SET attempts = $1, status = $2, metadata = $3,  updated_at = NOW() WHERE id = $4 AND project_id = $5 AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET attempts = $1, status = $2, metadata = $3, latency = $4,  updated_at = NOW() WHERE id = $5 AND project_id = $6 AND deleted_at IS NULL;
     `
 
 	softDeleteProjectEventDeliveries = `
@@ -245,6 +256,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, projec
 	if err != nil {
 		return nil, err
 	}
+	defer closeWithError(rows)
 
 	for rows.Next() {
 		var ed datastore.EventDelivery
@@ -256,7 +268,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, projec
 		eventDeliveries = append(eventDeliveries, ed)
 	}
 
-	return eventDeliveries, rows.Close()
+	return eventDeliveries, nil
 }
 
 func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, projectID string, eventID string) ([]datastore.EventDelivery, error) {
@@ -267,6 +279,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, pr
 	if err != nil {
 		return nil, err
 	}
+	defer closeWithError(rows)
 
 	for rows.Next() {
 		var ed datastore.EventDelivery
@@ -278,7 +291,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, pr
 		eventDeliveries = append(eventDeliveries, ed)
 	}
 
-	return eventDeliveries, rows.Close()
+	return eventDeliveries, nil
 }
 
 func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, projectID string, status datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
@@ -356,6 +369,7 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, pr
 	if err != nil {
 		return nil, err
 	}
+	defer closeWithError(rows)
 
 	for rows.Next() {
 		var ed datastore.EventDelivery
@@ -367,13 +381,13 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, pr
 		eventDeliveries = append(eventDeliveries, ed)
 	}
 
-	return eventDeliveries, rows.Close()
+	return eventDeliveries, nil
 }
 
 func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, delivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
 	delivery.DeliveryAttempts = append(delivery.DeliveryAttempts, attempt)
 
-	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, delivery.DeliveryAttempts, delivery.Status, delivery.Metadata, delivery.UID, projectID)
+	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, delivery.DeliveryAttempts, delivery.Status, delivery.Metadata, delivery.Latency, delivery.UID, projectID)
 	if err != nil {
 		return err
 	}
@@ -461,7 +475,7 @@ func (e *eventDeliveryRepo) DeleteProjectEventDeliveries(ctx context.Context, pr
 	return nil
 }
 
-func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable, idempotencyKey string) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable, idempotencyKey, eventType string) ([]datastore.EventDelivery, datastore.PaginationData, error) {
 	eventDeliveriesP := make([]EventDeliveryPaginated, 0)
 
 	start := time.Unix(params.CreatedAtStart, 0)
@@ -474,6 +488,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		"subscription_id": subscriptionID,
 		"start_date":      start,
 		"event_id":        eventID,
+		"event_type":      eventType,
 		"end_date":        end,
 		"status":          status,
 		"cursor":          pageable.Cursor(),
@@ -482,9 +497,9 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 
 	var query, filterQuery string
 	if pageable.Direction == datastore.Next {
-		query = baseEventDeliveryPagedForward
+		query = getFwdDeliveryPageQuery(pageable.SortOrder())
 	} else {
-		query = baseEventDeliveryPagedBackward
+		query = getBackwardDeliveryPageQuery(pageable.SortOrder())
 	}
 
 	filterQuery = baseEventDeliveryFilter
@@ -500,7 +515,12 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		filterQuery += ` AND ed.subscription_id = :subscription_id`
 	}
 
-	query = fmt.Sprintf(query, baseFetchEventDelivery, filterQuery)
+	preOrder := pageable.SortOrder()
+	if pageable.Direction == datastore.Prev {
+		preOrder = reverseOrder(preOrder)
+	}
+
+	query = fmt.Sprintf(query, baseFetchEventDelivery, filterQuery, preOrder, pageable.SortOrder())
 
 	query, args, err := sqlx.Named(query, arg)
 	if err != nil {
@@ -551,6 +571,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 			IdempotencyKey: ev.IdempotencyKey,
 			Headers:        ev.Headers,
 			URLQueryParams: ev.URLQueryParams,
+			Latency:        ev.Latency,
 			Endpoint: &datastore.Endpoint{
 				UID:          ev.Endpoint.UID.ValueOrZero(),
 				ProjectID:    ev.Endpoint.ProjectID.ValueOrZero(),
@@ -588,7 +609,9 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		qarg := arg
 		qarg["cursor"] = first.UID
 
-		cq := fmt.Sprintf(countPrevEventDeliveries, filterQuery)
+		tmp := getCountEventPrevRowQuery(pageable.SortOrder())
+
+		cq := fmt.Sprintf(tmp, filterQuery, pageable.SortOrder())
 		countQuery, qargs, err = sqlx.Named(cq, qarg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -606,15 +629,13 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
-		}
-		err = rows.Close()
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
 		}
 	}
 
@@ -794,6 +815,7 @@ type EventDeliveryPaginated struct {
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
 	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
+	Latency        string                `json:"latency" db:"latency"`
 
 	Endpoint *EndpointMetadata `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *EventMetadata    `json:"event_metadata,omitempty" db:"event_metadata"`
@@ -829,4 +851,37 @@ func (m *CLIMetadata) Scan(value interface{}) error {
 	}
 
 	return nil
+}
+
+func getFwdDeliveryPageQuery(sortOrder string) string {
+	if sortOrder == "ASC" {
+		return strings.Replace(baseEventDeliveryPagedForward, "<=", ">=", 1)
+	}
+
+	return baseEventDeliveryPagedForward
+}
+
+func getBackwardDeliveryPageQuery(sortOrder string) string {
+	if sortOrder == "ASC" {
+		return strings.Replace(baseEventDeliveryPagedBackward, ">=", "<=", 1)
+	}
+
+	return baseEventDeliveryPagedBackward
+}
+
+func getCountEventPrevRowQuery(sortOrder string) string {
+	if sortOrder == "ASC" {
+		return strings.Replace(countPrevEventDeliveries, ">", "<", 1)
+	}
+
+	return countPrevEventDeliveries
+}
+
+func reverseOrder(sortOrder string) string {
+	switch sortOrder {
+	case "ASC":
+		return "DESC"
+	default:
+		return "ASC"
+	}
 }

@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/go-redsync/redsync/v4"
+	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"os"
 	"time"
 
@@ -21,8 +24,32 @@ const (
 	eventDeliveriesTable = "convoy.event_deliveries"
 )
 
-func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, exportRepo datastore.ExportRepository) func(context.Context, *asynq.Task) error {
+func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveriesRepo datastore.EventDeliveryRepository, exportRepo datastore.ExportRepository, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
+	pool := goredis.NewPool(rd.Client())
+	rs := redsync.New(pool)
+
 	return func(ctx context.Context, t *asynq.Task) error {
+		const mutexName = "convoy:retention:mutex"
+		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Second), redsync.WithTries(1))
+
+		tctx, cancel := context.WithTimeout(ctx, time.Second*2)
+		defer cancel()
+
+		err := mutex.LockContext(tctx)
+		if err != nil {
+			return fmt.Errorf("failed to obtain lock: %v", err)
+		}
+
+		defer func() {
+			tctx, cancel := context.WithTimeout(ctx, time.Second*2)
+			defer cancel()
+
+			ok, err := mutex.UnlockContext(tctx)
+			if !ok || err != nil {
+				log.WithError(err).Error("failed to release lock")
+			}
+		}()
+
 		c := time.Now()
 		config, err := configRepo.LoadConfiguration(ctx)
 		if err != nil {
@@ -74,6 +101,7 @@ func NewObjectStoreClient(storage *datastore.StoragePolicyConfiguration) (object
 	case datastore.S3:
 		exportDir := convoy.TmpExportDir
 		objectStoreOpts := objectstore.ObjectStoreOptions{
+			Prefix:       storage.S3.Prefix.ValueOrZero(),
 			Bucket:       storage.S3.Bucket.ValueOrZero(),
 			Endpoint:     storage.S3.Endpoint.ValueOrZero(),
 			AccessKey:    storage.S3.AccessKey.ValueOrZero(),
@@ -81,6 +109,7 @@ func NewObjectStoreClient(storage *datastore.StoragePolicyConfiguration) (object
 			SessionToken: storage.S3.SessionToken.ValueOrZero(),
 			Region:       storage.S3.Region.ValueOrZero(),
 		}
+
 		objectStoreClient, err := objectstore.NewS3Client(objectStoreOpts)
 		if err != nil {
 			return nil, "", err

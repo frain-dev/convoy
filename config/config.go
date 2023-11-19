@@ -75,6 +75,7 @@ var DefaultConfiguration = Configuration{
 		},
 	},
 	ConsumerPoolSize: 100,
+	EnableProfiling:  false,
 }
 
 type DatabaseConfiguration struct {
@@ -219,16 +220,6 @@ type NewRelicConfiguration struct {
 	DistributedTracerEnabled bool   `json:"distributed_tracer_enabled" envconfig:"CONVOY_NEWRELIC_DISTRIBUTED_TRACER_ENABLED"`
 }
 
-type SearchConfiguration struct {
-	Type      SearchProvider         `json:"type" envconfig:"CONVOY_SEARCH_TYPE"`
-	Typesense TypesenseConfiguration `json:"typesense"`
-}
-
-type TypesenseConfiguration struct {
-	Host   string `json:"host" envconfig:"CONVOY_TYPESENSE_HOST"`
-	ApiKey string `json:"api_key" envconfig:"CONVOY_TYPESENSE_API_KEY"`
-}
-
 type AnalyticsConfiguration struct {
 	IsEnabled bool `json:"enabled" envconfig:"CONVOY_ANALYTICS_ENABLED"`
 }
@@ -240,6 +231,7 @@ type StoragePolicyConfiguration struct {
 }
 
 type S3Storage struct {
+	Prefix       string `json:"prefix" envconfig:"CONVOY_STORAGE_AWS_PREFIX"`
 	Bucket       string `json:"bucket" envconfig:"CONVOY_STORAGE_AWS_BUCKET"`
 	AccessKey    string `json:"access_key" envconfig:"CONVOY_STORAGE_AWS_ACCESS_KEY"`
 	SecretKey    string `json:"secret_key" envconfig:"CONVOY_STORAGE_AWS_SECRET_KEY"`
@@ -300,9 +292,9 @@ func (ft *FlagLevel) UnmarshalJSON(v []byte) error {
 func (ft FlagLevel) MarshalJSON() ([]byte, error) {
 	switch ft {
 	case ExperimentalFlagLevel:
-		return []byte(Experimental), nil
+		return []byte(fmt.Sprintf(`"%s"`, []byte(Experimental))), nil
 	default:
-		return []byte(""), nil
+		return []byte(fmt.Sprintf(`"%s"`, []byte(Experimental))), nil
 	}
 }
 
@@ -319,11 +311,11 @@ type Configuration struct {
 	Tracer             TracerConfiguration        `json:"tracer"`
 	Host               string                     `json:"host" envconfig:"CONVOY_HOST"`
 	CustomDomainSuffix string                     `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
-	Search             SearchConfiguration        `json:"search"`
 	FeatureFlag        FlagLevel                  `json:"feature_flag" envconfig:"CONVOY_FEATURE_FLAG"`
 	Analytics          AnalyticsConfiguration     `json:"analytics"`
 	StoragePolicy      StoragePolicyConfiguration `json:"storage_policy"`
 	ConsumerPoolSize   int                        `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
+	EnableProfiling    bool                       `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called

@@ -37,7 +37,7 @@ export class TableCellComponent implements OnInit {
 	selector: 'convoy-table-head, [convoy-table-head]',
 	standalone: true,
 	imports: [CommonModule],
-	host: { class: 'bg-new.primary-25' },
+	host: { class: '' },
 	template: `
 		<tr>
 			<ng-content></ng-content>

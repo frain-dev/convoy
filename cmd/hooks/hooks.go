@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -174,6 +175,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	configRepo := postgres.NewConfigRepo(a.DB)
 
 	s3 := datastore.S3Storage{
+		Prefix:       null.NewString(cfg.StoragePolicy.S3.Prefix, true),
 		Bucket:       null.NewString(cfg.StoragePolicy.S3.Bucket, true),
 		AccessKey:    null.NewString(cfg.StoragePolicy.S3.AccessKey, true),
 		SecretKey:    null.NewString(cfg.StoragePolicy.S3.SecretKey, true),
@@ -358,6 +360,7 @@ func checkPendingMigrations(db database.Database) error {
 	if err != nil {
 		return err
 	}
+	defer closeWithError(rows)
 
 	for rows.Next() {
 		var id ID
@@ -377,7 +380,7 @@ func checkPendingMigrations(db database.Database) error {
 		return postgres.ErrPendingMigrationsFound
 	}
 
-	return rows.Close()
+	return nil
 }
 
 func shouldCheckMigration(cmd *cobra.Command) bool {
@@ -452,4 +455,11 @@ func ensureDefaultUser(ctx context.Context, a *cli.App) error {
 	a.Logger.Infof("Created Superuser with username: %s and password: %s", defaultUser.Email, p.Plaintext)
 
 	return nil
+}
+
+func closeWithError(closer io.Closer) {
+	err := closer.Close()
+	if err != nil {
+		fmt.Printf("%v, an error occurred while closing the client", err)
+	}
 }

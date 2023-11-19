@@ -26,7 +26,10 @@ export class DatePickerComponent implements OnInit {
 	@Output() selectedDateRange = new EventEmitter<any>();
 	@Output() selectedDate = new EventEmitter<any>();
 	@Output() clearDates = new EventEmitter<any>();
-	@Input('formType') formType: 'filter' = 'filter';
+	@Output() close = new EventEmitter<any>();
+	@Input('show') show = false;
+	@Input('formType') formType: 'filter' | 'form' = 'filter';
+	@Input('position') position: 'right' | 'left' | 'center' | 'right-side' = 'left';
 	@Input('dateRangeValue') dateRangeValue?: {
 		startDate: string | Date;
 		endDate: string | Date;
@@ -75,6 +78,8 @@ export class DatePickerComponent implements OnInit {
 		if (this.dateValue) this.selectedStartDay = new Date(this.dateValue).getTime();
 
 		this.initDatePicker();
+
+		if (this.show) this.showPicker = true;
 	}
 
 	initDatePicker() {
@@ -225,7 +230,7 @@ export class DatePickerComponent implements OnInit {
 	getDayClassNames(day: CALENDAR_DAY): string {
 		const classNames = `w-full h-40px justify-center items-center transition-all duration-300 ease-in-out ${this.isCurrentDay(day.timestamp) && !this.isStartDay(day.timestamp) && !this.isEndDay(day.timestamp) ? '!bg-transparent !font-extrabold !text-primary-100' : ''} ${
 			this.isDayWithinStartAndEndDates(day.timestamp) ? 'bg-primary-400 font-medium' : ''
-		} ${(this.isInFuture(day.timestamp) && this.formType === 'filter') || day.month !== 0 ? 'opacity-30 pointer-events-none' : ''} ${day.month !== 0 ? '!opacity-0 pointer-events-none' : ''} ${
+		} ${(this.isInFuture(day.timestamp) && this.formType === 'filter') || day.month !== 0 ? 'opacity-30 pointer-events-none' : ''} ${day.month !== 0 ? '!opacity-0 pointer-events-none hidden' : ''} ${
 			this.isSelectedDay(day.timestamp) && day.month == 0 ? '!bg-primary-200 !text-white-100 font-medium' : ''
 		} ${this.isStartDay(day.timestamp) ? 'rounded-bl-8px rounded-tl-8px' : ''} ${this.isEndDay(day.timestamp) ? 'rounded-br-8px rounded-tr-8px' : ''}`;
 		return classNames;
@@ -234,7 +239,7 @@ export class DatePickerComponent implements OnInit {
 	getDayClassNamesRightCalendar(day: CALENDAR_DAY): string {
 		const classNames = `w-full h-40px justify-center items-center transition-all duration-300 ease-in-out ${this.isCurrentDay(day.timestamp) && !this.isStartDay(day.timestamp) && !this.isEndDay(day.timestamp) ? '!bg-transparent !font-extrabold !text-primary-100' : ''} ${
 			this.isDayWithinStartAndEndDates(day.timestamp) ? 'bg-primary-400 font-medium' : ''
-		} ${day.month !== 0 ? '!opacity-0 pointer-events-none' : ''} ${this.isInFuture(day.timestamp) && this.formType === 'filter' ? 'opacity-30 pointer-events-none' : ''} ${
+		} ${day.month !== 0 ? '!opacity-0 pointer-events-none hidden' : ''} ${this.isInFuture(day.timestamp) && this.formType === 'filter' ? 'opacity-30 pointer-events-none' : ''} ${
 			this.isSelectedDay(day.timestamp) && day.month == 0 ? '!bg-primary-200 !text-white-100 font-medium' : ''
 		} ${this.isStartDay(day.timestamp) ? 'rounded-bl-8px rounded-tl-8px' : ''} ${this.isEndDay(day.timestamp) ? 'rounded-br-8px rounded-tr-8px' : ''}`;
 		return classNames;

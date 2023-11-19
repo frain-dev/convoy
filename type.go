@@ -81,13 +81,11 @@ func GetVersionFromFS(fs embed.FS) string {
 }
 
 const (
-	EventProcessor              TaskName = "EventProcessor"
-	CreateEventProcessor        TaskName = "CreateEventProcessor"
-	CreateDynamicEventProcessor TaskName = "CreateDynamicEventProcessor"
-	MetaEventProcessor          TaskName = "MetaEventProcessor"
-	NotificationProcessor       TaskName = "NotificationProcessor"
-	// todo(raymond): remove this and it's references
-	IndexDocument                TaskName = "index document"
+	EventProcessor               TaskName = "EventProcessor"
+	CreateEventProcessor         TaskName = "CreateEventProcessor"
+	CreateDynamicEventProcessor  TaskName = "CreateDynamicEventProcessor"
+	MetaEventProcessor           TaskName = "MetaEventProcessor"
+	NotificationProcessor        TaskName = "NotificationProcessor"
 	TokenizeSearch               TaskName = "tokenize search"
 	TokenizeSearchForProject     TaskName = "tokenize search for project"
 	DailyAnalytics               TaskName = "daily analytics"
@@ -98,11 +96,13 @@ const (
 	ExpireSecretsProcessor       TaskName = "ExpireSecretsProcessor"
 	DeleteArchivedTasksProcessor TaskName = "DeleteArchivedTasksProcessor"
 
-	EndpointsCacheKey          CacheKey = "endpoints"
-	OrganisationsCacheKey      CacheKey = "organisations"
+	EndpointCacheKey           CacheKey = "endpoints"
+	UserCacheKey               CacheKey = "users"
+	ApiKeyCacheKey             CacheKey = "api_keys"
+	OrganisationCacheKey       CacheKey = "organisations"
 	OrganisationMemberCacheKey CacheKey = "organisation_members"
 	ProjectsCacheKey           CacheKey = "projects"
-	SubscriptionsCacheKey      CacheKey = "subscriptions"
+	SubscriptionCacheKey       CacheKey = "subscriptions"
 	TokenCacheKey              CacheKey = "tokens"
 	SourceCacheKey             CacheKey = "sources"
 )

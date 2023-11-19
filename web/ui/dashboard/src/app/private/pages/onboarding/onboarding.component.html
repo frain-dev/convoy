@@ -1,8 +1,8 @@
 <convoy-loader *ngIf="isloading"></convoy-loader>
 
-<div class="max-w-[1300px] m-auto" *ngIf="!isloading">
-	<h1 class="text-center font-bold text-20 mt-60px">Set up is quick and easy on Convoy!</h1>
-	<p class="text-center text-grey-40 text-16 max-w-[621px] mt-10px mb-110px m-auto">Follow our simple guide and you’ll be sending and recieving webhook events in no time!</p>
+<div class="max-w-[1300px] m-auto mt-50px" *ngIf="!isloading">
+	<h1 class="text-center font-bold text-20">Set up is quick and easy on Convoy!</h1>
+	<p class="text-center text-grey-40 text-16 max-w-[621px] mt-10px mb-50px m-auto">Follow our simple guide and you’ll be sending and recieving webhook events in no time!</p>
 
 	<div class="flex justify-between items-center max-w-[860px] w-full m-auto desktop:flex-wrap">
 		<div class="relative" *ngFor="let step of onboardingSteps; let i = index">
@@ -11,15 +11,15 @@
 			</div>
 
 			<div
-				class="max-w-[374px] rounded-16px p-32px bg-white-100 border"
+				class="max-w-[374px] rounded-16px p-32px bg-new.gray-100 border"
 				[class]="step.class"
 				[ngClass]="{ 'pointer-events-none opacity-40': step.currentStage === 'pending' || step.currentStage === 'done', 'shadow-[0px_8px_16px_rgba(12,26,75,0.1),0px_20px_24px_rgba(20,37,63,0.06)]': step.currentStage === 'current' }"
 			>
 				<div class="rounded-12px w-48px h-48px flex items-center justify-center text-20 text-white-100 mb-32px" [class]="step.stepColor">{{ i + 1 }}</div>
 				<h1 class="text-20 font-bold text-grey-100">{{ step.step }}</h1>
-				<p class="my-16px text-16 text-grey-80 max-w-[95%]">{{ step.description }}</p>
+				<p class="mt-16px mb-24px text-16 text-grey-80 max-w-[95%]">{{ step.description }}</p>
 
-				<button convoy-button size="sm" (click)="i > 0 ? router.navigateByUrl('/projects/new') : (privateService.setShowOrgModal(true))">
+				<button convoy-button size="sm" (click)="i > 0 ? router.navigateByUrl('/projects/new') : privateService.showOrgModal.emit(true)">
 					Get Started
 					<svg width="16" height="16" class="ml-8px fill-white-100">
 						<use xlink:href="#white-arrow-icon"></use>
@@ -29,3 +29,22 @@
 		</div>
 	</div>
 </div>
+
+<dialog #orgDialog convoy-dialog position="center">
+	<div class="p-40px">
+		<img src="/assets/img/organisation-icon.svg" alt="organisation icon" class="pb-12px" />
+		<p class="text-grey-40 text-16 max-w-[423px] pb-40px">Your organization information will help us to know how to get you set up.</p>
+
+		<form [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
+			<convoy-input-field>
+				<label for="name" required="true" convoy-label>What's your bussiness name?</label>
+				<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="e.g. Kuda" />
+				<convoy-input-error *ngIf="addOrganisationForm.get('name')?.touched && addOrganisationForm.get('name')?.invalid">Organisation name is required</convoy-input-error>
+			</convoy-input-field>
+			<div class="flex items-center gap-24px justify-end w-full">
+				<button convoy-button [disabled]="creatingOrganisation" type="button" (click)="dialog.nativeElement.close()" fill="outline" color="danger" class="self-stretch px-66px">Cancel</button>
+				<button convoy-button [disabled]="creatingOrganisation" class="self-stretch px-66px">Submit</button>
+			</div>
+		</form>
+	</div>
+</dialog>
