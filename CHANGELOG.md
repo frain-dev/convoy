@@ -1,3 +1,12 @@
+## 23.11.1
+
+- [Feature] add cache to the organisations and api key repositories, add profiling route #1822
+- [Feature] Record event delivery latency #1830
+- [Enhancement] Improve event deliveries filtering #1824 #1840
+- [Enhancement] UI layout redesign #1815
+- [Enhancement] Move scheduler functionality into server #1835
+- [Bugfix] Fixed endpoint enabling and disabling #1837
+
 ## 23.10.1
 
 - [Feature] Added bootstrap cli for user account creation #1773
