@@ -1030,6 +1030,8 @@ definitions:
         $ref: '#/definitions/httpheader.HTTPHeader'
       idempotency_key:
         type: string
+      latency:
+        type: string
       metadata:
         $ref: '#/definitions/datastore.Metadata'
       project_id:
@@ -2492,6 +2494,9 @@ paths:
         type: array
       - in: query
         name: eventId
+        type: string
+      - in: query
+        name: event_type
         type: string
       - in: query
         name: idempotencyKey

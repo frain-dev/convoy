@@ -1530,6 +1530,9 @@
 					"idempotency_key": {
 						"type": "string"
 					},
+					"latency": {
+						"type": "string"
+					},
 					"metadata": {
 						"$ref": "#/components/schemas/datastore.Metadata"
 					},
@@ -4188,6 +4191,13 @@
 					{
 						"in": "query",
 						"name": "eventId",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "event_type",
 						"schema": {
 							"type": "string"
 						}

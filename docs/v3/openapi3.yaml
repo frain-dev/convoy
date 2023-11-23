@@ -1030,6 +1030,8 @@ components:
           $ref: '#/components/schemas/httpheader.HTTPHeader'
         idempotency_key:
           type: string
+        latency:
+          type: string
         metadata:
           $ref: '#/components/schemas/datastore.Metadata'
         project_id:
@@ -2579,6 +2581,10 @@ paths:
           type: array
       - in: query
         name: eventId
+        schema:
+          type: string
+      - in: query
+        name: event_type
         schema:
           type: string
       - in: query

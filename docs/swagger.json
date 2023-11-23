@@ -1543,6 +1543,11 @@
                     },
                     {
                         "type": "string",
+                        "name": "event_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "name": "idempotencyKey",
                         "in": "query"
                     },
@@ -7169,6 +7174,9 @@
                     "$ref": "#/definitions/httpheader.HTTPHeader"
                 },
                 "idempotency_key": {
+                    "type": "string"
+                },
+                "latency": {
                     "type": "string"
                 },
                 "metadata": {
