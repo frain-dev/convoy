@@ -617,6 +617,13 @@
                         "description": "The name of the endpoint",
                         "name": "q",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1543,6 +1550,11 @@
                     },
                     {
                         "type": "string",
+                        "name": "event_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "name": "idempotencyKey",
                         "in": "query"
                     },
@@ -1565,6 +1577,13 @@
                         "example": "01H0JATTVCXZK8FRDX1M1JN3QY",
                         "description": "A pagination cursor to fetch the previous page of a list",
                         "name": "prev_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
                         "in": "query"
                     },
                     {
@@ -2461,6 +2480,13 @@
                     },
                     {
                         "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "name": "sourceId",
                         "in": "query"
                     },
@@ -3320,6 +3346,13 @@
                         "example": "01H0JATTVCXZK8FRDX1M1JN3QY",
                         "description": "A pagination cursor to fetch the previous page of a list",
                         "name": "prev_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
                         "in": "query"
                     },
                     {
@@ -4280,6 +4313,13 @@
                     },
                     {
                         "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "example": "http",
                         "description": "The source type e.g. http, pub_sub",
                         "name": "type",
@@ -4876,6 +4916,13 @@
                         "example": "01H0JATTVCXZK8FRDX1M1JN3QY",
                         "description": "A pagination cursor to fetch the previous page of a list",
                         "name": "prev_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
                         "in": "query"
                     }
                 ],
@@ -7169,6 +7216,9 @@
                     "$ref": "#/definitions/httpheader.HTTPHeader"
                 },
                 "idempotency_key": {
+                    "type": "string"
+                },
+                "latency": {
                     "type": "string"
                 },
                 "metadata": {

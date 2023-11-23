@@ -59,6 +59,7 @@ type QueryListEventDelivery struct {
 	EventID        string   `json:"eventId"`
 	SubscriptionID string   `json:"subscriptionId"`
 	IdempotencyKey string   `json:"idempotencyKey"`
+	EventType      string   `json:"event_type"`
 	// A list of event delivery statuses to filter by
 	Status []string `json:"status"`
 	SearchParams

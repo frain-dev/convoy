@@ -1530,6 +1530,9 @@
 					"idempotency_key": {
 						"type": "string"
 					},
+					"latency": {
+						"type": "string"
+					},
 					"metadata": {
 						"$ref": "#/components/schemas/datastore.Metadata"
 					},
@@ -3146,6 +3149,14 @@
 						"schema": {
 							"type": "string"
 						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
 					}
 				],
 				"responses": {
@@ -4194,6 +4205,13 @@
 					},
 					{
 						"in": "query",
+						"name": "event_type",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
 						"name": "idempotencyKey",
 						"schema": {
 							"type": "string"
@@ -4219,6 +4237,14 @@
 						"description": "A pagination cursor to fetch the previous page of a list",
 						"in": "query",
 						"name": "prev_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
 						"schema": {
 							"type": "string"
 						}
@@ -5236,6 +5262,14 @@
 						}
 					},
 					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"in": "query",
 						"name": "sourceId",
 						"schema": {
@@ -6216,6 +6250,14 @@
 						"description": "A pagination cursor to fetch the previous page of a list",
 						"in": "query",
 						"name": "prev_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
 						"schema": {
 							"type": "string"
 						}
@@ -7300,6 +7342,14 @@
 						}
 					},
 					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "The source type e.g. http, pub_sub",
 						"in": "query",
 						"name": "type",
@@ -7973,6 +8023,14 @@
 						"description": "A pagination cursor to fetch the previous page of a list",
 						"in": "query",
 						"name": "prev_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
 						"schema": {
 							"type": "string"
 						}

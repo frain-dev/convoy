@@ -1030,6 +1030,8 @@ components:
           $ref: '#/components/schemas/httpheader.HTTPHeader'
         idempotency_key:
           type: string
+        latency:
+          type: string
         metadata:
           $ref: '#/components/schemas/datastore.Metadata'
         project_id:
@@ -2019,6 +2021,11 @@ paths:
         name: q
         schema:
           type: string
+      - description: sort order
+        in: query
+        name: sort
+        schema:
+          type: string
       responses:
         "200":
           content:
@@ -2582,6 +2589,10 @@ paths:
         schema:
           type: string
       - in: query
+        name: event_type
+        schema:
+          type: string
+      - in: query
         name: idempotencyKey
         schema:
           type: string
@@ -2598,6 +2609,11 @@ paths:
       - description: A pagination cursor to fetch the previous page of a list
         in: query
         name: prev_page_cursor
+        schema:
+          type: string
+      - description: sort order
+        in: query
+        name: sort
         schema:
           type: string
       - description: The start date
@@ -3146,6 +3162,11 @@ paths:
         name: query
         schema:
           type: string
+      - description: sort order
+        in: query
+        name: sort
+        schema:
+          type: string
       - in: query
         name: sourceId
         schema:
@@ -3676,6 +3697,11 @@ paths:
       - description: A pagination cursor to fetch the previous page of a list
         in: query
         name: prev_page_cursor
+        schema:
+          type: string
+      - description: sort order
+        in: query
+        name: sort
         schema:
           type: string
       - description: The start date
@@ -4256,6 +4282,11 @@ paths:
         name: provider
         schema:
           type: string
+      - description: sort order
+        in: query
+        name: sort
+        schema:
+          type: string
       - description: The source type e.g. http, pub_sub
         in: query
         name: type
@@ -4619,6 +4650,11 @@ paths:
       - description: A pagination cursor to fetch the previous page of a list
         in: query
         name: prev_page_cursor
+        schema:
+          type: string
+      - description: sort order
+        in: query
+        name: sort
         schema:
           type: string
       responses:

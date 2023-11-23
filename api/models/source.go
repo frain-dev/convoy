@@ -3,11 +3,12 @@ package models
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
-	"net/http"
-	"strings"
 )
 
 type CreateSource struct {
@@ -142,6 +143,7 @@ type QueryListSource struct {
 }
 
 type Pageable struct {
+	Sort string `json:"sort"  example:"ASC | DESC"` // sort order
 	// The number of items to return per page
 	PerPage   int                     `json:"perPage" example:"20"`
 	Direction datastore.PageDirection `json:"direction"`
