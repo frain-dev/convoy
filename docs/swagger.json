@@ -617,6 +617,13 @@
                         "description": "The name of the endpoint",
                         "name": "q",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1574,6 +1581,13 @@
                     },
                     {
                         "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "example": "2006-01-02T15:04:05",
                         "description": "The start date",
                         "name": "startDate",
@@ -2466,6 +2480,13 @@
                     },
                     {
                         "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "name": "sourceId",
                         "in": "query"
                     },
@@ -3325,6 +3346,13 @@
                         "example": "01H0JATTVCXZK8FRDX1M1JN3QY",
                         "description": "A pagination cursor to fetch the previous page of a list",
                         "name": "prev_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
                         "in": "query"
                     },
                     {
@@ -4285,6 +4313,13 @@
                     },
                     {
                         "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "example": "http",
                         "description": "The source type e.g. http, pub_sub",
                         "name": "type",
@@ -4881,6 +4916,13 @@
                         "example": "01H0JATTVCXZK8FRDX1M1JN3QY",
                         "description": "A pagination cursor to fetch the previous page of a list",
                         "name": "prev_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
                         "in": "query"
                     }
                 ],

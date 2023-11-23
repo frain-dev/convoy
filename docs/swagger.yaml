@@ -1987,6 +1987,11 @@ paths:
         in: query
         name: q
         type: string
+      - description: sort order
+        example: ASC | DESC
+        in: query
+        name: sort
+        type: string
       produces:
       - application/json
       responses:
@@ -2516,6 +2521,11 @@ paths:
         in: query
         name: prev_page_cursor
         type: string
+      - description: sort order
+        example: ASC | DESC
+        in: query
+        name: sort
+        type: string
       - description: The start date
         example: 2006-01-02T15:04:05
         in: query
@@ -3011,6 +3021,11 @@ paths:
         in: query
         name: query
         type: string
+      - description: sort order
+        example: ASC | DESC
+        in: query
+        name: sort
+        type: string
       - in: query
         name: sourceId
         type: string
@@ -3489,6 +3504,11 @@ paths:
         example: 01H0JATTVCXZK8FRDX1M1JN3QY
         in: query
         name: prev_page_cursor
+        type: string
+      - description: sort order
+        example: ASC | DESC
+        in: query
+        name: sort
         type: string
       - description: The start date
         example: 2006-01-02T15:04:05
@@ -4016,6 +4036,11 @@ paths:
         in: query
         name: provider
         type: string
+      - description: sort order
+        example: ASC | DESC
+        in: query
+        name: sort
+        type: string
       - description: The source type e.g. http, pub_sub
         example: http
         in: query
@@ -4347,6 +4372,11 @@ paths:
         example: 01H0JATTVCXZK8FRDX1M1JN3QY
         in: query
         name: prev_page_cursor
+        type: string
+      - description: sort order
+        example: ASC | DESC
+        in: query
+        name: sort
         type: string
       produces:
       - application/json
