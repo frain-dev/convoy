@@ -11,18 +11,18 @@ import (
 )
 
 // GetDeliveryAttempt
-// @Summary Retrieve a delivery attempt
-// @Description This endpoint fetches an app event delivery attempt
-// @Tags Delivery Attempts
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param eventDeliveryID path string true "event delivery id"
-// @Param deliveryAttemptID path string true "delivery attempt id"
-// @Success 200 {object} util.ServerResponse{data=datastore.DeliveryAttempt}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID} [get]
+//	@Summary		Retrieve a delivery attempt
+//	@Description	This endpoint fetches an app event delivery attempt
+//	@Tags			Delivery Attempts
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID			path		string	true	"Project ID"
+//	@Param			eventDeliveryID		path		string	true	"event delivery id"
+//	@Param			deliveryAttemptID	path		string	true	"delivery attempt id"
+//	@Success		200					{object}	util.ServerResponse{data=datastore.DeliveryAttempt}
+//	@Failure		400,401,404			{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID} [get]
 func (a *PublicHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 	eventDelivery, err := a.retrieveEventDelivery(r)
 	if err != nil {
@@ -43,17 +43,17 @@ func (a *PublicHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Reques
 }
 
 // GetDeliveryAttempts
-// @Summary List delivery attempts
-// @Description This endpoint fetches an app message's delivery attempts
-// @Tags Delivery Attempts
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param eventDeliveryID path string true "event delivery id"
-// @Success 200 {object} util.ServerResponse{data=[]datastore.DeliveryAttempt}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts [get]
+//	@Summary		List delivery attempts
+//	@Description	This endpoint fetches an app message's delivery attempts
+//	@Tags			Delivery Attempts
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID		path		string	true	"Project ID"
+//	@Param			eventDeliveryID	path		string	true	"event delivery id"
+//	@Success		200				{object}	util.ServerResponse{data=[]datastore.DeliveryAttempt}
+//	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts [get]
 func (a *PublicHandler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
 	eventDelivery, err := a.retrieveEventDelivery(r)
 	if err != nil {

@@ -758,33 +758,69 @@ components:
     models.CreateEndpoint:
       properties:
         advanced_signatures:
+          description: |-
+            Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)
+            -- simple or advanced. If left unspecified, we default to false.
           type: boolean
         appID:
           description: Deprecated but necessary for backward compatibility
           type: string
         authentication:
-          $ref: '#/components/schemas/models.EndpointAuthentication'
+          allOf:
+          - $ref: '#/components/schemas/models.EndpointAuthentication'
+          description: |-
+            This is used to define any custom authentication required by the endpoint. This
+            shouldn't be needed often because webhook endpoints usually should be exposed to
+            the internet.
         description:
+          description: |-
+            Human readable description of the endpoint. Think of this as metadata describing
+            the endpoint
           type: string
         http_timeout:
+          description: |-
+            Define endpoint http timeout in seconds. It uses Go's time duration syntax.
+            E.g. 3s, 1m
           type: string
         is_disabled:
+          description: This is used to manually enable/disable the endpoint.
           type: boolean
         name:
+          description: Endpoint name.
           type: string
         owner_id:
+          description: |-
+            The OwnerID is used to group more than one endpoint together to achieve
+            [fanout](https://getconvoy.io/docs/manual/endpoints#Endpoint%20Owner%20ID)
           type: string
         rate_limit:
+          description: |-
+            Rate limit is the total number of requests to be sent to an endpoint in
+            the time duration specified in RateLimitDuration
           type: integer
         rate_limit_duration:
+          description: |-
+            Rate limit duration specifies the time range for the rate limit. It uses
+            Go's time duration syntax. E.g. 3s, 1m
           type: string
         secret:
+          description: Endpoint's webhook secret. If not provided, Convoy autogenerates
+            one for the endpoint.
           type: string
         slack_webhook_url:
+          description: |-
+            Slack webhook URL is an alternative method to support email where endpoint developers
+            can receive failure notifications.
           type: string
         support_email:
+          description: |-
+            Endpoint developers support email. This is used for communicating endpoint state
+            changes. You should always turn this on when disabling endpoints are enabled.
           type: string
         url:
+          description: |-
+            URL is the endpoint's URL prefixed with https. non-https urls are currently
+            not supported.
           type: string
       type: object
     models.CreateEvent:
@@ -832,25 +868,43 @@ components:
     models.CreateSource:
       properties:
         custom_response:
-          $ref: '#/components/schemas/models.CustomResponse'
+          allOf:
+          - $ref: '#/components/schemas/models.CustomResponse'
+          description: |-
+            Custom response is used to define a custom response for incoming
+            webhooks project sources only.
         idempotency_keys:
+          description: |-
+            IdempotencyKeys are used to specify parts of a webhook request to uniquely
+            identify the event in an incoming webhooks project.
           items:
             type: string
           type: array
-        idempotency_ttl:
-          type: string
         is_disabled:
+          description: This is used to manually enable/disable the source.
           type: boolean
         name:
+          description: Source name.
           type: string
         provider:
           $ref: '#/components/schemas/datastore.SourceProvider'
         pub_sub:
-          $ref: '#/components/schemas/models.PubSubConfig'
+          allOf:
+          - $ref: '#/components/schemas/models.PubSubConfig'
+          description: |-
+            PubSub are used to specify message broker sources for outgoing
+            webhooks projects.
         type:
-          $ref: '#/components/schemas/datastore.SourceType'
+          allOf:
+          - $ref: '#/components/schemas/datastore.SourceType'
+          description: Source Type. Currently supported values are - sqs, kafka or
+            pubsub.
         verifier:
-          $ref: '#/components/schemas/models.VerifierConfig'
+          allOf:
+          - $ref: '#/components/schemas/models.VerifierConfig'
+          description: |-
+            Verifiers are used to verify webhook events ingested in incoming
+            webhooks projects.
       type: object
     models.CreateSubscription:
       properties:
@@ -1574,8 +1628,6 @@ components:
           items:
             type: string
           type: array
-        idempotency_ttl:
-          type: string
         is_disabled:
           type: boolean
         name:

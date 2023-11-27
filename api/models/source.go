@@ -12,15 +12,32 @@ import (
 )
 
 type CreateSource struct {
-	Name            string                   `json:"name" valid:"required~please provide a source name"`
-	Type            datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
-	Provider        datastore.SourceProvider `json:"provider"`
-	IsDisabled      bool                     `json:"is_disabled"`
-	CustomResponse  CustomResponse           `json:"custom_response"`
-	Verifier        VerifierConfig           `json:"verifier"`
-	PubSub          PubSubConfig             `json:"pub_sub"`
-	IdempotencyKeys []string                 `json:"idempotency_keys"`
-	IdempotencyTTL  string                   `json:"idempotency_ttl"`
+	// Source name.
+	Name string `json:"name" valid:"required~please provide a source name"`
+
+	// Source Type. Currently supported values are - sqs, kafka or pubsub.
+	Type datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+
+	Provider datastore.SourceProvider `json:"provider"`
+
+	// This is used to manually enable/disable the source.
+	IsDisabled bool `json:"is_disabled"`
+
+	// Custom response is used to define a custom response for incoming
+	// webhooks project sources only.
+	CustomResponse CustomResponse `json:"custom_response"`
+
+	// Verifiers are used to verify webhook events ingested in incoming
+	// webhooks projects.
+	Verifier VerifierConfig `json:"verifier"`
+
+	// PubSub are used to specify message broker sources for outgoing
+	// webhooks projects.
+	PubSub PubSubConfig `json:"pub_sub"`
+
+	// IdempotencyKeys are used to specify parts of a webhook request to uniquely
+	// identify the event in an incoming webhooks project.
+	IdempotencyKeys []string `json:"idempotency_keys"`
 }
 
 func (cs *CreateSource) Validate() error {
@@ -115,7 +132,6 @@ type UpdateSource struct {
 	Verifier        VerifierConfig       `json:"verifier"`
 	PubSub          *PubSubConfig        `json:"pub_sub"`
 	IdempotencyKeys []string             `json:"idempotency_keys"`
-	IdempotencyTTL  string               `json:"idempotency_ttl"`
 }
 
 func (us *UpdateSource) Validate() error {
