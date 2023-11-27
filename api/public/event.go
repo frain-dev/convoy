@@ -23,17 +23,17 @@ import (
 )
 
 // CreateEndpointEvent
-// @Summary Create an event
-// @Description This endpoint creates an endpoint event
-// @Tags Events
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param event body models.CreateEvent true "Event Details"
-// @Success 200 {object} util.ServerResponse{data=models.EventResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/events [post]
+//	@Summary		Create an event
+//	@Description	This endpoint creates an endpoint event
+//	@Tags			Events
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string				true	"Project ID"
+//	@Param			event		body		models.CreateEvent	true	"Event Details"
+//	@Success		200			{object}	util.ServerResponse{data=models.EventResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/events [post]
 func (a *PublicHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	var newMessage models.CreateEvent
 	err := util.ReadJSON(r, &newMessage)
@@ -88,17 +88,17 @@ func (a *PublicHandler) CreateEndpointEvent(w http.ResponseWriter, r *http.Reque
 }
 
 // CreateEndpointFanoutEvent
-// @Summary Fan out an event
-// @Description This endpoint uses the owner_id to fan out an event to multiple endpoints.
-// @Tags Events
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param event body models.FanoutEvent true "Event Details"
-// @Success 200 {object} util.ServerResponse{data=models.EventResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/events/fanout [post]
+//	@Summary		Fan out an event
+//	@Description	This endpoint uses the owner_id to fan out an event to multiple endpoints.
+//	@Tags			Events
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string				true	"Project ID"
+//	@Param			event		body		models.FanoutEvent	true	"Event Details"
+//	@Success		200			{object}	util.ServerResponse{data=models.EventResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/events/fanout [post]
 func (a *PublicHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Request) {
 	var newMessage models.FanoutEvent
 	err := util.ReadJSON(r, &newMessage)
@@ -143,17 +143,17 @@ func (a *PublicHandler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http
 }
 
 // CreateDynamicEvent
-// @Summary Dynamic Events
-// @Description This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events
-// @Tags Events
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param event body models.DynamicEvent true "Event Details"
-// @Success 200 {object} Stub
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/events/dynamic [post]
+//	@Summary		Dynamic Events
+//	@Description	This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events
+//	@Tags			Events
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string				true	"Project ID"
+//	@Param			event		body		models.DynamicEvent	true	"Event Details"
+//	@Success		200			{object}	Stub
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/events/dynamic [post]
 func (a *PublicHandler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
 	var newMessage models.DynamicEvent
 	err := util.ReadJSON(r, &newMessage)
@@ -190,17 +190,17 @@ func (a *PublicHandler) CreateDynamicEvent(w http.ResponseWriter, r *http.Reques
 }
 
 // ReplayEndpointEvent
-// @Summary Replay event
-// @Description This endpoint replays an event afresh assuming it is a new event.
-// @Tags Events
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param eventID path string true "event id"
-// @Success 200 {object} util.ServerResponse{data=models.EventResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/events/{eventID}/replay [put]
+//	@Summary		Replay event
+//	@Description	This endpoint replays an event afresh assuming it is a new event.
+//	@Tags			Events
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Param			eventID		path		string	true	"event id"
+//	@Success		200			{object}	util.ServerResponse{data=models.EventResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/events/{eventID}/replay [put]
 func (a *PublicHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	event, err := a.retrieveEvent(r)
 	if err != nil {
@@ -225,17 +225,17 @@ func (a *PublicHandler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Reque
 }
 
 // BatchReplayEvents
-// @Summary Batch replay events
-// @Description This endpoint replays multiple events at once.
-// @Tags Events
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param request query models.QueryBatchReplayEventResponse false "Query Params"
-// @Success 200 {object} util.ServerResponse{data=datastore.Event{data=Stub}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/events/batchreplay [post]
+//	@Summary		Batch replay events
+//	@Description	This endpoint replays multiple events at once.
+//	@Tags			Events
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string									true	"Project ID"
+//	@Param			request		query		models.QueryBatchReplayEventResponse	false	"Query Params"
+//	@Success		200			{object}	util.ServerResponse{data=datastore.Event{data=Stub}}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/events/batchreplay [post]
 func (a *PublicHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryBatchReplayEvent
 	p, err := a.retrieveProject(r)
@@ -269,17 +269,17 @@ func (a *PublicHandler) BatchReplayEvents(w http.ResponseWriter, r *http.Request
 }
 
 // GetEndpointEvent
-// @Summary Retrieve an event
-// @Description This endpoint retrieves an event
-// @Tags Events
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param eventID path string true "event id"
-// @Success 200 {object} util.ServerResponse{data=models.EventResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/events/{eventID} [get]
+//	@Summary		Retrieve an event
+//	@Description	This endpoint retrieves an event
+//	@Tags			Events
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Param			eventID		path		string	true	"event id"
+//	@Success		200			{object}	util.ServerResponse{data=models.EventResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/events/{eventID} [get]
 func (a *PublicHandler) GetEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	event, err := a.retrieveEvent(r)
 	if err != nil {
@@ -293,17 +293,17 @@ func (a *PublicHandler) GetEndpointEvent(w http.ResponseWriter, r *http.Request)
 }
 
 // GetEventDelivery
-// @Summary Retrieve an event delivery
-// @Description This endpoint fetches an event delivery.
-// @Tags Event Deliveries
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param eventDeliveryID path string true "event delivery id"
-// @Success 200 {object} util.ServerResponse{data=models.EventDeliveryResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID} [get]
+//	@Summary		Retrieve an event delivery
+//	@Description	This endpoint fetches an event delivery.
+//	@Tags			Event Deliveries
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID		path		string	true	"Project ID"
+//	@Param			eventDeliveryID	path		string	true	"event delivery id"
+//	@Success		200				{object}	util.ServerResponse{data=models.EventDeliveryResponse}
+//	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID} [get]
 func (a *PublicHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
 	eventDelivery, err := a.retrieveEventDelivery(r)
 	if err != nil {
@@ -317,17 +317,17 @@ func (a *PublicHandler) GetEventDelivery(w http.ResponseWriter, r *http.Request)
 }
 
 // ResendEventDelivery
-// @Summary Retry event delivery
-// @Description This endpoint retries an event delivery.
-// @Tags Event Deliveries
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param eventDeliveryID path string true "event delivery id"
-// @Success 200 {object} util.ServerResponse{data=models.EventDeliveryResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend [put]
+//	@Summary		Retry event delivery
+//	@Description	This endpoint retries an event delivery.
+//	@Tags			Event Deliveries
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID		path		string	true	"Project ID"
+//	@Param			eventDeliveryID	path		string	true	"event delivery id"
+//	@Success		200				{object}	util.ServerResponse{data=models.EventDeliveryResponse}
+//	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend [put]
 func (a *PublicHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -361,17 +361,17 @@ func (a *PublicHandler) ResendEventDelivery(w http.ResponseWriter, r *http.Reque
 }
 
 // BatchRetryEventDelivery
-// @Summary Batch retry event delivery
-// @Description This endpoint batch retries multiple event deliveries at once.
-// @Tags Event Deliveries
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param request query models.QueryBatchRetryEventDelivery false "Query Params"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/eventdeliveries/batchretry [post]
+//	@Summary		Batch retry event delivery
+//	@Description	This endpoint batch retries multiple event deliveries at once.
+//	@Tags			Event Deliveries
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string								true	"Project ID"
+//	@Param			request		query		models.QueryBatchRetryEventDelivery	false	"Query Params"
+//	@Success		200			{object}	util.ServerResponse{data=Stub}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/eventdeliveries/batchretry [post]
 func (a *PublicHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryBatchRetryEventDelivery
 
@@ -407,17 +407,17 @@ func (a *PublicHandler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.R
 }
 
 // ForceResendEventDeliveries
-// @Summary Force retry event delivery
-// @Description This endpoint enables you retry a previously successful event delivery
-// @Tags Event Deliveries
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param deliveryIds body Stub{ids=models.IDs} true "event delivery ids"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/eventdeliveries/forceresend [post]
+//	@Summary		Force retry event delivery
+//	@Description	This endpoint enables you retry a previously successful event delivery
+//	@Tags			Event Deliveries
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string					true	"Project ID"
+//	@Param			deliveryIds	body		Stub{ids=models.IDs}	true	"event delivery ids"
+//	@Success		200			{object}	util.ServerResponse{data=Stub}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/eventdeliveries/forceresend [post]
 func (a *PublicHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	eventDeliveryIDs := models.IDs{}
 
@@ -451,17 +451,17 @@ func (a *PublicHandler) ForceResendEventDeliveries(w http.ResponseWriter, r *htt
 }
 
 // GetEventsPaged
-// @Summary List all events
-// @Description This endpoint fetches app events with pagination
-// @Tags Events
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param request query models.QueryListEvent false "Query Params"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.EventResponse}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/events [get]
+//	@Summary		List all events
+//	@Description	This endpoint fetches app events with pagination
+//	@Tags			Events
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string					true	"Project ID"
+//	@Param			request		query		models.QueryListEvent	false	"Query Params"
+//	@Success		200			{object}	util.ServerResponse{data=pagedResponse{content=[]models.EventResponse}}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/events [get]
 func (a *PublicHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryListEvent
 	data, err := q.Transform(r)
@@ -492,17 +492,17 @@ func (a *PublicHandler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetEventDeliveriesPaged
-// @Summary List all event deliveries
-// @Description This endpoint retrieves all event deliveries paginated.
-// @Tags Event Deliveries
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param request query models.QueryListEventDelivery false "Query Params"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.EventDeliveryResponse}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/eventdeliveries [get]
+//	@Summary		List all event deliveries
+//	@Description	This endpoint retrieves all event deliveries paginated.
+//	@Tags			Event Deliveries
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string							true	"Project ID"
+//	@Param			request		query		models.QueryListEventDelivery	false	"Query Params"
+//	@Success		200			{object}	util.ServerResponse{data=pagedResponse{content=[]models.EventDeliveryResponse}}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/eventdeliveries [get]
 func (a *PublicHandler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryListEventDelivery
 

@@ -22,17 +22,17 @@ type pagedResponse struct {
 }
 
 // CreateEndpoint
-// @Summary Create an endpoint
-// @Description This endpoint creates an endpoint
-// @Tags Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param endpoint body models.CreateEndpoint true "Endpoint Details"
-// @Success 200 {object} util.ServerResponse{data=models.EndpointResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/endpoints [post]
+//	@Summary		Create an endpoint
+//	@Description	This endpoint creates an endpoint
+//	@Tags			Endpoints
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string					true	"Project ID"
+//	@Param			endpoint	body		models.CreateEndpoint	true	"Endpoint Details"
+//	@Success		200			{object}	util.ServerResponse{data=models.EndpointResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/endpoints [post]
 func (a *PublicHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.CreateEndpoint
 	err := util.ReadJSON(r, &e)
@@ -73,17 +73,17 @@ func (a *PublicHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetEndpoint
-// @Summary Retrieve endpoint
-// @Description This endpoint fetches an endpoint
-// @Tags Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param endpointID path string true "Endpoint ID"
-// @Success 200 {object} util.ServerResponse{data=models.EndpointResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/endpoints/{endpointID} [get]
+//	@Summary		Retrieve endpoint
+//	@Description	This endpoint fetches an endpoint
+//	@Tags			Endpoints
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Param			endpointID	path		string	true	"Endpoint ID"
+//	@Success		200			{object}	util.ServerResponse{data=models.EndpointResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/endpoints/{endpointID} [get]
 func (a *PublicHandler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint, err := a.retrieveEndpoint(r)
 	if err != nil {
@@ -96,17 +96,17 @@ func (a *PublicHandler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetEndpoints
-// @Summary List all endpoints
-// @Description This endpoint fetches an endpoints
-// @Tags Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param request query models.QueryListEndpoint false "Query Params"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.EndpointResponse}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/endpoints [get]
+//	@Summary		List all endpoints
+//	@Description	This endpoint fetches an endpoints
+//	@Tags			Endpoints
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string						true	"Project ID"
+//	@Param			request		query		models.QueryListEndpoint	false	"Query Params"
+//	@Success		200			{object}	util.ServerResponse{data=pagedResponse{content=[]models.EndpointResponse}}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/endpoints [get]
 func (a *PublicHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryListEndpoint
 	project, err := a.retrieveProject(r)
@@ -131,18 +131,18 @@ func (a *PublicHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateEndpoint
-// @Summary Update an endpoint
-// @Description This endpoint updates an endpoint
-// @Tags Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param endpointID path string true "Endpoint ID"
-// @Param endpoint body models.UpdateEndpoint true "Endpoint Details"
-// @Success 200 {object} util.ServerResponse{data=models.EndpointResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/endpoints/{endpointID} [put]
+//	@Summary		Update an endpoint
+//	@Description	This endpoint updates an endpoint
+//	@Tags			Endpoints
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string					true	"Project ID"
+//	@Param			endpointID	path		string					true	"Endpoint ID"
+//	@Param			endpoint	body		models.UpdateEndpoint	true	"Endpoint Details"
+//	@Success		200			{object}	util.ServerResponse{data=models.EndpointResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/endpoints/{endpointID} [put]
 func (a *PublicHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	var e models.UpdateEndpoint
 
@@ -190,17 +190,17 @@ func (a *PublicHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteEndpoint
-// @Summary Delete endpoint
-// @Description This endpoint deletes an endpoint
-// @Tags Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param endpointID path string true "Endpoint ID"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/endpoints/{endpointID} [delete]
+//	@Summary		Delete endpoint
+//	@Description	This endpoint deletes an endpoint
+//	@Tags			Endpoints
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Param			endpointID	path		string	true	"Endpoint ID"
+//	@Success		200			{object}	util.ServerResponse{data=Stub}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/endpoints/{endpointID} [delete]
 func (a *PublicHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 	endpoint, err := a.retrieveEndpoint(r)
 	if err != nil {
@@ -225,18 +225,18 @@ func (a *PublicHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 // ExpireSecret
-// @Summary Roll endpoint secret
-// @Description This endpoint expires and re-generates the endpoint secret.
-// @Tags Endpoints
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param endpointID path string true "Endpoint ID"
-// @Param endpoint body models.ExpireSecret true "Expire Secret Body Parameters"
-// @Success 200 {object} util.ServerResponse{data=models.EndpointResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/endpoints/{endpointID}/expire_secret [put]
+//	@Summary		Roll endpoint secret
+//	@Description	This endpoint expires and re-generates the endpoint secret.
+//	@Tags			Endpoints
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string				true	"Project ID"
+//	@Param			endpointID	path		string				true	"Endpoint ID"
+//	@Param			endpoint	body		models.ExpireSecret	true	"Expire Secret Body Parameters"
+//	@Success		200			{object}	util.ServerResponse{data=models.EndpointResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret [put]
 func (a *PublicHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 	var e *models.ExpireSecret
 	err := util.ReadJSON(r, &e)
@@ -279,17 +279,17 @@ func (a *PublicHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 }
 
 // ToggleEndpointStatus
-// @Summary Toggle endpoint status
-// @Description This endpoint toggles an endpoint status between the active and inactive statetes
-// @Tags Endpoints
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param endpointID path string true "Endpoint ID"
-// @Success 200 {object} util.ServerResponse{data=models.EndpointResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/endpoints/{endpointID}/toggle_status [put]
+//	@Summary		Toggle endpoint status
+//	@Description	This endpoint toggles an endpoint status between the active and inactive statetes
+//	@Tags			Endpoints
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Param			endpointID	path		string	true	"Endpoint ID"
+//	@Success		200			{object}	util.ServerResponse{data=models.EndpointResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status [put]
 func (a *PublicHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -314,17 +314,17 @@ func (a *PublicHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.Requ
 }
 
 // PauseEndpoint
-// @Summary Pause endpoint
-// @Description This endpoint toggles an endpoint status between the active and paused states
-// @Tags Endpoints
-// @Accept json
-// @Produce json
-// @Param projectID path string true "Project ID"
-// @Param endpointID path string true "Endpoint ID"
-// @Success 200 {object} util.ServerResponse{data=models.EndpointResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/endpoints/{endpointID}/pause [put]
+//	@Summary		Pause endpoint
+//	@Description	This endpoint toggles an endpoint status between the active and paused states
+//	@Tags			Endpoints
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Param			endpointID	path		string	true	"Endpoint ID"
+//	@Success		200			{object}	util.ServerResponse{data=models.EndpointResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/endpoints/{endpointID}/pause [put]
 func (a *PublicHandler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {

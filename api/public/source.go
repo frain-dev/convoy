@@ -17,17 +17,17 @@ import (
 )
 
 // CreateSource
-// @Summary Create a source
-// @Description This endpoint creates a source
-// @Tags Sources
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param source body models.CreateSource true "Source Details"
-// @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/sources [post]
+//	@Summary		Create a source
+//	@Description	This endpoint creates a source
+//	@Tags			Sources
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string				true	"Project ID"
+//	@Param			source		body		models.CreateSource	true	"Source Details"
+//	@Success		200			{object}	util.ServerResponse{data=models.SourceResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/sources [post]
 func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 	var newSource models.CreateSource
 	if err := util.ReadJSON(r, &newSource); err != nil {
@@ -79,17 +79,17 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetSourceByID
-// @Summary Retrieve a source
-// @Description This endpoint retrieves a source by its id
-// @Tags Sources
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param sourceID path string true "Source ID"
-// @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/sources/{sourceID} [get]
+//	@Summary		Retrieve a source
+//	@Description	This endpoint retrieves a source by its id
+//	@Tags			Sources
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Param			sourceID	path		string	true	"Source ID"
+//	@Success		200			{object}	util.ServerResponse{data=models.SourceResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/sources/{sourceID} [get]
 func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -128,18 +128,18 @@ func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateSource
-// @Summary Update a source
-// @Description This endpoint updates a source
-// @Tags Sources
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param sourceID path string true "source id"
-// @Param source body models.UpdateSource true "Source Details"
-// @Success 200 {object} util.ServerResponse{data=models.SourceResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/sources/{sourceID} [put]
+//	@Summary		Update a source
+//	@Description	This endpoint updates a source
+//	@Tags			Sources
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string				true	"Project ID"
+//	@Param			sourceID	path		string				true	"source id"
+//	@Param			source		body		models.UpdateSource	true	"Source Details"
+//	@Success		200			{object}	util.ServerResponse{data=models.SourceResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/sources/{sourceID} [put]
 func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 	var sourceUpdate models.UpdateSource
 	err := util.ReadJSON(r, &sourceUpdate)
@@ -204,17 +204,17 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteSource
-// @Summary Delete a source
-// @Description This endpoint deletes a source
-// @Tags Sources
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param sourceID path string true "source id"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/sources/{sourceID} [delete]
+//	@Summary		Delete a source
+//	@Description	This endpoint deletes a source
+//	@Tags			Sources
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Param			sourceID	path		string	true	"source id"
+//	@Success		200			{object}	util.ServerResponse{data=Stub}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/sources/{sourceID} [delete]
 func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 	sourceRepo := postgres.NewSourceRepo(a.A.DB, a.A.Cache)
 
@@ -245,17 +245,17 @@ func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 }
 
 // LoadSourcesPaged
-// @Summary List all sources
-// @Description This endpoint fetches multiple sources
-// @Tags Sources
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param request query models.QueryListSource false "Query Params"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.SourceResponse}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/sources [get]
+//	@Summary		List all sources
+//	@Description	This endpoint fetches multiple sources
+//	@Tags			Sources
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string					true	"Project ID"
+//	@Param			request		query		models.QueryListSource	false	"Query Params"
+//	@Success		200			{object}	util.ServerResponse{data=pagedResponse{content=[]models.SourceResponse}}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/sources [get]
 func (a *PublicHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryListSource
 	project, err := a.retrieveProject(r)

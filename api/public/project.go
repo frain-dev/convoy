@@ -32,16 +32,16 @@ func createProjectService(a *PublicHandler) (*services.ProjectService, error) {
 }
 
 // GetProject - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary Retrieve a project
-// @Description This endpoint fetches a project by its id
-// @Tags Projects
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Success 200 {object} util.ServerResponse{data=models.ProjectResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID} [get]
+//	@Summary		Retrieve a project
+//	@Description	This endpoint fetches a project by its id
+//	@Tags			Projects
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Success		200			{object}	util.ServerResponse{data=models.ProjectResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID} [get]
 func (a *PublicHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -54,16 +54,16 @@ func (a *PublicHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteProject - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary Delete a project
-// @Description This endpoint deletes a project using its id
-// @Tags Projects
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Success 200 {object} util.ServerResponse{data=Stub}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID} [delete]
+//	@Summary		Delete a project
+//	@Description	This endpoint deletes a project using its id
+//	@Tags			Projects
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Success		200			{object}	util.ServerResponse{data=Stub}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID} [delete]
 func (a *PublicHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 	project, err := a.retrieveProject(r)
 	if err != nil {
@@ -83,17 +83,17 @@ func (a *PublicHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateProject - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary Create a project
-// @Description This endpoint creates a project
-// @Tags Projects
-// @Accept  json
-// @Produce  json
-// @Param orgID query string true "Organisation id"
-// @Param project body models.CreateProject true "Project Details"
-// @Success 200 {object} util.ServerResponse{data=models.CreateProjectResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects [post]
+//	@Summary		Create a project
+//	@Description	This endpoint creates a project
+//	@Tags			Projects
+//	@Accept			json
+//	@Produce		json
+//	@Param			orgID		query		string					true	"Organisation id"
+//	@Param			project		body		models.CreateProject	true	"Project Details"
+//	@Success		200			{object}	util.ServerResponse{data=models.CreateProjectResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects [post]
 func (a *PublicHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	org, err := a.retrieveHeadlessOrganisation(r)
 	if err != nil {
@@ -145,17 +145,17 @@ func (a *PublicHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateProject - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary Update a project
-// @Description This endpoint updates a project
-// @Tags Projects
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param project body models.UpdateProject true "Project Details"
-// @Success 200 {object} util.ServerResponse{data=models.ProjectResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID} [put]
+//	@Summary		Update a project
+//	@Description	This endpoint updates a project
+//	@Tags			Projects
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string					true	"Project ID"
+//	@Param			project		body		models.UpdateProject	true	"Project Details"
+//	@Success		200			{object}	util.ServerResponse{data=models.ProjectResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID} [put]
 func (a *PublicHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	var update models.UpdateProject
 	err := util.ReadJSON(r, &update)
@@ -192,17 +192,17 @@ func (a *PublicHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetProjects - this is a duplicate annotation for the api/v1 route of this handler
-// @Summary List all projects
-// @Description This endpoint fetches projects
-// @Tags Projects
-// @Accept  json
-// @Produce  json
-// @Param name query string false "Project name"
-// @Param orgID query string true "organisation id"
-// @Success 200 {object} util.ServerResponse{data=[]models.ProjectResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects [get]
+//	@Summary		List all projects
+//	@Description	This endpoint fetches projects
+//	@Tags			Projects
+//	@Accept			json
+//	@Produce		json
+//	@Param			name		query		string	false	"Project name"
+//	@Param			orgID		query		string	true	"organisation id"
+//	@Success		200			{object}	util.ServerResponse{data=[]models.ProjectResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects [get]
 func (a *PublicHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	org, err := a.retrieveHeadlessOrganisation(r)
 	if err != nil {

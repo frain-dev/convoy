@@ -13,17 +13,17 @@ import (
 )
 
 // GetMetaEventsPaged
-// @Summary List all meta events
-// @Description This endpoint fetches meta events with pagination
-// @Tags Meta Events
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param request query models.QueryListMetaEvent false "Query Params"
-// @Success 200 {object} util.ServerResponse{data=pagedResponse{content=[]models.MetaEventResponse}}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/meta-events [get]
+//	@Summary		List all meta events
+//	@Description	This endpoint fetches meta events with pagination
+//	@Tags			Meta Events
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string						true	"Project ID"
+//	@Param			request		query		models.QueryListMetaEvent	false	"Query Params"
+//	@Success		200			{object}	util.ServerResponse{data=pagedResponse{content=[]models.MetaEventResponse}}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/meta-events [get]
 func (a *PublicHandler) GetMetaEventsPaged(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryListMetaEvent
 	data, err := q.Transform(r)
@@ -52,17 +52,17 @@ func (a *PublicHandler) GetMetaEventsPaged(w http.ResponseWriter, r *http.Reques
 }
 
 // GetMetaEvent
-// @Summary Retrieve a meta event
-// @Description This endpoint retrieves a meta event
-// @Tags Meta Events
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param metaEventID path string true "meta event id"
-// @Success 200 {object} util.ServerResponse{data=models.MetaEventResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/meta-events/{metaEventID} [get]
+//	@Summary		Retrieve a meta event
+//	@Description	This endpoint retrieves a meta event
+//	@Tags			Meta Events
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Param			metaEventID	path		string	true	"meta event id"
+//	@Success		200			{object}	util.ServerResponse{data=models.MetaEventResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/meta-events/{metaEventID} [get]
 func (a *PublicHandler) GetMetaEvent(w http.ResponseWriter, r *http.Request) {
 	metaEvent, err := a.retrieveMetaEvent(r)
 	if err != nil {
@@ -76,17 +76,17 @@ func (a *PublicHandler) GetMetaEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 // ResendMetaEvent
-// @Summary Retry meta event
-// @Description This endpoint retries a meta event
-// @Tags Meta Events
-// @Accept  json
-// @Produce  json
-// @Param projectID path string true "Project ID"
-// @Param metaEventID path string true "meta event id"
-// @Success 200 {object} util.ServerResponse{data=models.MetaEventResponse}
-// @Failure 400,401,404 {object} util.ServerResponse{data=Stub}
-// @Security ApiKeyAuth
-// @Router /v1/projects/{projectID}/meta-events/{metaEventID}/resend [put]
+//	@Summary		Retry meta event
+//	@Description	This endpoint retries a meta event
+//	@Tags			Meta Events
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Param			metaEventID	path		string	true	"meta event id"
+//	@Success		200			{object}	util.ServerResponse{data=models.MetaEventResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/meta-events/{metaEventID}/resend [put]
 func (a *PublicHandler) ResendMetaEvent(w http.ResponseWriter, r *http.Request) {
 	metaEvent, err := a.retrieveMetaEvent(r)
 	if err != nil {
