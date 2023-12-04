@@ -20,16 +20,6 @@ services:
             - redis_server
             - typesense
 
-    scheduler:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.11.1
-        command: ["./cmd", "scheduler", "--config", "convoy.json"]
-        volumes:
-            - ./convoy.json:/convoy.json
-        restart: on-failure
-        depends_on:
-            web:
-                condition: service_healthy
-
     worker:
         image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.11.1
         command: ["./cmd", "worker", "--config", "convoy.json"]
