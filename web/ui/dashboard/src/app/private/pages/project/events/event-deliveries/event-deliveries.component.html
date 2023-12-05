@@ -19,7 +19,6 @@
 
 	<convoy-event-delivery-filter (filter)="fetchEventDeliveries($event)" (tail)="handleTailing($event)" (batchRetry)="fetchRetryCount($event)"></convoy-event-delivery-filter>
 
-
 	<convoy-table-loader id="event_deliveries_loader" [tableHead]="eventDelTableHead" *ngIf="isloadingEventDeliveries"></convoy-table-loader>
 
 	<!-- empty state  -->
@@ -111,8 +110,8 @@
 
 		<!-- pagination -->
 		<div class="pt-8px flex items-center justify-between px-10px" *ngIf="eventDeliveries?.pagination?.has_next_page || eventDeliveries?.pagination?.has_prev_page">
-			<convoy-pagination [pagination]="eventDeliveries?.pagination" (paginate)="paginateEvents($event)"></convoy-pagination>
-			<div class="text-grey-40 text-14">{{ eventDeliveries?.content?.length }} events</div>
+			<convoy-pagination [pagination]="eventDeliveries.pagination" (paginate)="paginateEvents($event)"></convoy-pagination>
+			<div class="text-grey-40 text-14">{{ eventDeliveries.content.length }} event{{ eventDeliveries.content.length > 1 ? 's' : '' }}</div>
 		</div>
 	</div>
 </div>

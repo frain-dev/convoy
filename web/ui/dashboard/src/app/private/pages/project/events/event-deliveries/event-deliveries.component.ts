@@ -24,7 +24,7 @@ export class EventDeliveriesComponent implements OnInit {
 	isRetrying = false;
 	batchRetryCount!: number;
 	displayedEventDeliveries!: { date: string; content: any[] }[];
-	eventDeliveries?: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
+	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	@ViewChild('batchRetryDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
 	portalToken = this.route.snapshot.queryParams?.token;
 	queryParams?: FILTER_QUERY_PARAM;
