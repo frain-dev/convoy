@@ -113,11 +113,19 @@ const (
 	AND ed.deleted_at IS NULL`
 
 	countPrevEventDeliveries = `
-	SELECT COUNT(DISTINCT(ed.id)) AS count
-	FROM convoy.event_deliveries ed
-	WHERE ed.deleted_at IS NULL
-	%s
-	AND ed.id > :cursor GROUP BY ed.id ORDER BY ed.id %s LIMIT 1`
+	WITH event_deliveries AS (
+        SELECT ed.id AS "id", ev.event_type AS "event_type"
+	    FROM convoy.event_deliveries ed
+    	LEFT JOIN convoy.events ev ON ed.event_id = ev.id
+	    WHERE ed.deleted_at IS NULL
+	    %s
+	    AND ed.id > :cursor
+        GROUP BY ed.id, ev.id
+        ORDER BY ed.id %s
+	)
+
+	SELECT COUNT(DISTINCT("id")) AS count FROM event_deliveries WHERE ("event_type" = :event_type OR :event_type = '')
+	`
 
 	loadEventDeliveriesIntervals = `
     SELECT
