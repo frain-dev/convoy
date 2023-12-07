@@ -26,7 +26,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/tracer"
-	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/spf13/cobra"
 )
 
@@ -57,18 +56,20 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
-		nwCfg := cfg.Tracer.NewRelic
-		nRApp, err := newrelic.NewApplication(
-			newrelic.ConfigAppName(nwCfg.AppName),
-			newrelic.ConfigLicense(nwCfg.LicenseKey),
-			newrelic.ConfigDistributedTracerEnabled(nwCfg.DistributedTracerEnabled),
-			newrelic.ConfigEnabled(nwCfg.ConfigEnabled),
-		)
+		//nwCfg := cfg.Tracer.NewRelic
+		//nRApp, err := apm.NewNewRelicAPM(nwCfg.AppName, nwCfg.LicenseKey,
+		//	nwCfg.DistributedTracerEnabled, nwCfg.ConfigEnabled,
+		//)
+		//if err != nil {
+		//	return err
+		//}
+
+		ddApp, err := apm.NewDataDogAPM("api-server")
 		if err != nil {
 			return err
 		}
 
-		apm.SetApplication(nRApp)
+		apm.SetApplication(ddApp)
 
 		var tr tracer.Tracer
 		var ca cache.Cache

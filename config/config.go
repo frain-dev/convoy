@@ -211,6 +211,12 @@ type LoggerConfiguration struct {
 type TracerConfiguration struct {
 	Type     TracerProvider        `json:"type" envconfig:"CONVOY_TRACER_PROVIDER"`
 	NewRelic NewRelicConfiguration `json:"new_relic"`
+	Datadog  DatadogConfiguration  `json:"datadog"`
+}
+
+type DatadogConfiguration struct {
+	AppName    string `json:"app_name" envconfig:"CONVOY_DATADOG_APP_NAME"`
+	LicenseKey string `json:"license_key" envconfig:"CONVOY_DATADOG_LICENSE_KEY"`
 }
 
 type NewRelicConfiguration struct {

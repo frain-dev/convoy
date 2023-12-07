@@ -38,7 +38,7 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		return
 	}
-	if _, err := static.Open(strings.TrimLeft(p, "/")); err != nil { // If file not found server index/html from root
+	if _, err := static.Open(strings.TrimLeft(p, "/")); err != nil { // If file isn't found server index/html from root
 		req.URL.Path = "/"
 	}
 	http.FileServer(http.FS(static)).ServeHTTP(rw, req)

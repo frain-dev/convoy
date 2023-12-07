@@ -2,87 +2,61 @@ package apm
 
 import (
 	"context"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"net/http"
-
-	"github.com/newrelic/go-agent/v3/newrelic"
 )
+
+type APM interface {
+	StartWebTransaction(name string, r *http.Request, w http.ResponseWriter) (Transaction, *http.Request, http.ResponseWriter)
+	StartTransaction(ctx context.Context, name string) (Transaction, context.Context)
+	Shutdown()
+}
+
+type Transaction interface {
+	AddTag(key string, value interface{})
+	End()
+	RecordError(err error)
+}
+
+// TransactionOption defines an option for configuring transactions.
+type TransactionOption func(*TransactionOptions)
+
+// TransactionOptions holds configuration for transactions.
+type TransactionOptions struct {
+	// Additional fields as needed.
+}
 
 var (
-	std = New()
+	std = apmImpl{}
 )
 
-func SetApplication(app *newrelic.Application) {
-	std.SetApplication(app)
+type apmImpl struct {
+	//nr *newRelicAPM
+	dd *dataDogAPM
 }
 
 func NoticeError(ctx context.Context, err error) {
-	std.NoticeError(ctx, err)
+	//txn := newrelic.FromContext(ctx)
+	//txn.NoticeError(err)
+
+	span, _ := tracer.StartSpanFromContext(ctx, "")
+	span.Finish(tracer.WithError(err))
 }
 
-func StartTransaction(ctx context.Context, name string) (*Transaction, context.Context) {
-	return std.StartTransaction(ctx, name)
+func SetApplication(app APM) {
+	//if a, ok := app.(*newRelicAPM); ok {
+	//	std.nr = a
+	//}
+
+	if d, ok := app.(*dataDogAPM); ok {
+		std.dd = d
+	}
 }
 
-func StartWebTransaction(name string, r *http.Request, w http.ResponseWriter) (*Transaction, *http.Request, http.ResponseWriter) {
-	return std.StartWebTransaction(name, r, w)
+func StartTransaction(ctx context.Context, name string) (Transaction, context.Context) {
+	return std.dd.StartTransaction(ctx, name)
 }
 
-type APM struct {
-	application *newrelic.Application
-}
-
-func New() *APM {
-	return &APM{}
-}
-
-func (a *APM) SetApplication(app *newrelic.Application) {
-	a.application = app
-}
-
-func (a *APM) NoticeError(ctx context.Context, err error) {
-	txn := newrelic.FromContext(ctx)
-	txn.NoticeError(err)
-}
-
-func (a *APM) StartTransaction(ctx context.Context, name string) (*Transaction, context.Context) {
-	inner := a.createTransaction(name)
-	c := newrelic.NewContext(ctx, inner)
-
-	return NewTransaction(inner), c
-}
-
-func (a *APM) StartWebTransaction(name string, r *http.Request, w http.ResponseWriter) (*Transaction, *http.Request, http.ResponseWriter) {
-	inner := a.createTransaction(name)
-
-	// Set the transaction as a web request, gather attributes based on the
-	// request, and read incoming distributed trace headers.
-	inner.SetWebRequestHTTP(r)
-
-	// Prepare to capture attributes, errors, and headers from the
-	// response.
-	w = inner.SetWebResponse(w)
-
-	// Add the Transaction to the http.Request's Context.
-	r = newrelic.RequestWithTransactionContext(r, inner)
-
-	// Encapsulate Transaction
-	txn := NewTransaction(inner)
-
-	return txn, r, w
-}
-
-func (a *APM) createTransaction(name string) *newrelic.Transaction {
-	return a.application.StartTransaction(name)
-}
-
-type Transaction struct {
-	txn *newrelic.Transaction
-}
-
-func NewTransaction(inner *newrelic.Transaction) *Transaction {
-	return &Transaction{inner}
-}
-
-func (t *Transaction) End() {
-	t.txn.End()
+func StartWebTransaction(name string, r *http.Request, w http.ResponseWriter) (Transaction, *http.Request, http.ResponseWriter) {
+	return std.dd.StartWebTransaction(name, r, w)
 }
