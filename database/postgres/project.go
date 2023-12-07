@@ -189,7 +189,14 @@ const (
 
 	updateProjectEndpointStatus = `
 	UPDATE convoy.endpoints SET status = ?, updated_at = NOW()
-	WHERE project_id = ? AND status IN (?) AND deleted_at IS NULL;
+	WHERE project_id = ? AND status IN (?) AND deleted_at IS NULL RETURNING
+	id, title, status, owner_id, target_url,
+    description, http_timeout, rate_limit, rate_limit_duration,
+    advanced_signatures, slack_webhook_url, support_email,
+    app_id, project_id, secrets, created_at, updated_at,
+    authentication_type AS "authentication.type",
+    authentication_type_api_key_header_name AS "authentication.api_key.header_name",
+    authentication_type_api_key_header_value AS "authentication.api_key.header_value";
 	`
 
 	getProjectsWithEventsInTheInterval = `
@@ -389,9 +396,24 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		}
 
 		query = p.db.Rebind(query)
-		_, err = tx.ExecContext(ctx, query, args...)
+		rows, err := p.db.QueryxContext(ctx, query, args...)
 		if err != nil {
 			return err
+		}
+		defer closeWithError(rows)
+
+		for rows.Next() {
+			var endpoint datastore.Endpoint
+			err := rows.StructScan(&endpoint)
+			if err != nil {
+				return err
+			}
+
+			endpointCacheKey := convoy.EndpointCacheKey.Get(endpoint.UID).String()
+			err = p.cache.Set(ctx, endpointCacheKey, endpoint, config.DefaultCacheTTL)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
