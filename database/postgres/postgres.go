@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/lib/pq"
+	sqlxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/jmoiron/sqlx"
 	"io"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/newrelic/go-agent/v3/integrations/nrpq"
+	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
 )
 
 const pkgName = "postgres"
@@ -28,7 +31,11 @@ type Postgres struct {
 
 func NewDB(cfg config.Configuration) (*Postgres, error) {
 	dbConfig := cfg.Database
-	db, err := sqlx.Connect("nrpostgres", dbConfig.BuildDsn())
+
+	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName("db"))
+
+	//db, err := sqlx.Connect("nrpostgres", dbConfig.BuildDsn())
+	db, err := sqlxtrace.Connect("postgres", dbConfig.BuildDsn())
 	if err != nil {
 		return nil, fmt.Errorf("[%s]: failed to open database - %v", pkgName, err)
 	}

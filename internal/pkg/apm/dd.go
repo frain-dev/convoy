@@ -18,7 +18,7 @@ func NewDataDogAPM(serviceName string, opts ...tracer.StartOption) (APM, error) 
 }
 
 func (d *dataDogAPM) StartWebTransaction(name string, r *http.Request, w http.ResponseWriter) (Transaction, *http.Request, http.ResponseWriter) {
-	span, _ := tracer.StartSpanFromContext(context.Background(), name)
+	span, _ := tracer.StartSpanFromContext(r.Context(), name)
 	return &dataDogTransaction{span: span}, r, w
 }
 

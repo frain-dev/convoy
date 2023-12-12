@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy/config"
+	chitrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/go-chi/chi.v5"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -39,6 +40,7 @@ func NewServer(port uint32, stopFn func()) *Server {
 
 func (s *Server) SetHandler(handler http.Handler) {
 	router := chi.NewRouter()
+	router.Use(chitrace.Middleware())
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
 	})
