@@ -145,7 +145,7 @@ const (
 	fetchSourcesPagedFilter = `
 	AND (s.type = :type OR :type = '')
     AND (s.provider = :provider OR :provider = '')
-	AND s.name LIKE :query
+	AND s.name ILIKE :query
 	AND s.project_id = :project_id
 	`
 
