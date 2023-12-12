@@ -325,7 +325,7 @@ export class PrivateService {
 		});
 	}
 
-	getSources(requestDetails?: CURSOR): Promise<HTTP_RESPONSE> {
+	getSources(requestDetails?: CURSOR & { q?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				if (!requestDetails) requestDetails = { next_page_cursor: 'FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF', direction: 'next' };

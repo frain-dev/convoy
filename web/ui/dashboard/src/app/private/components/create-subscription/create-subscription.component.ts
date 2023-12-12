@@ -140,9 +140,9 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
-	async getEndpoints() {
+	async getEndpoints(searchString?: string) {
 		try {
-			const response = await this.privateService.getEndpoints();
+			const response = await this.privateService.getEndpoints({ q: searchString });
 			this.endpoints = this.token ? response.data : response.data.content;
 			this.modifyEndpointData(this.token ? response.data : response.data.content);
 			return;
@@ -151,11 +151,11 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
-	async getSources() {
+	async getSources(searchString?: string) {
 		if (this.privateService.getProjectDetails?.type === 'outgoing' || this.token) return;
 
 		try {
-			const sourcesResponse = await this.privateService.getSources();
+			const sourcesResponse = await this.privateService.getSources({ q: searchString });
 			this.sources = sourcesResponse.data.content;
 			return;
 		} catch (error) {
