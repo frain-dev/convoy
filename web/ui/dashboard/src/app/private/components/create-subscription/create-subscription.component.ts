@@ -151,11 +151,11 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
-	async getSources() {
+	async getSources(searchString?: string) {
 		if (this.privateService.getProjectDetails?.type === 'outgoing' || this.token) return;
 
 		try {
-			const sourcesResponse = await this.privateService.getSources();
+			const sourcesResponse = await this.privateService.getSources({ q: searchString });
 			this.sources = sourcesResponse.data.content;
 			return;
 		} catch (error) {
