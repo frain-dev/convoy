@@ -140,9 +140,9 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
-	async getEndpoints() {
+	async getEndpoints(searchString?: string) {
 		try {
-			const response = await this.privateService.getEndpoints();
+			const response = await this.privateService.getEndpoints({ q: searchString });
 			this.endpoints = this.token ? response.data : response.data.content;
 			this.modifyEndpointData(this.token ? response.data : response.data.content);
 			return;

@@ -40,8 +40,10 @@
 				errorMessage="Select or create an endpoint"
 				label="Select from existing endpoints"
 				placeholder="Select endpoint"
-				(selectedOption)="subscriptionForm.patchValue({ endpoint_id: $event })"
 				[required]="true"
+				[searchable]="true"
+				(searchString)="getEndpoints($event)"
+				(selectedOption)="subscriptionForm.patchValue({ endpoint_id: $event })"
 			></convoy-select>
 
 			<button size="sm" convoy-button fill="text" type="button" class="mt-24px font-medium" (click)="showCreateEndpointForm = true; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">Create New Endpoint</button>
