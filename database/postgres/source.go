@@ -144,7 +144,8 @@ const (
 
 	fetchSourcesPagedFilter = `
 	AND (s.type = :type OR :type = '')
-	AND (s.provider = :provider OR :provider = '')
+    AND (s.provider = :provider OR :provider = '')
+	AND s.name LIKE :query
 	AND s.project_id = :project_id
 	`
 
@@ -455,6 +456,7 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 		"project_id": projectID,
 		"limit":      pageable.Limit(),
 		"cursor":     pageable.Cursor(),
+		"query":      "%" + filter.Query + "%",
 	}
 
 	var query string

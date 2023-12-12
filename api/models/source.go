@@ -178,6 +178,7 @@ func (ls *QueryListSource) Transform(r *http.Request) *QueryListSourceResponse {
 	return &QueryListSourceResponse{
 		Pageable: m.GetPageableFromContext(r.Context()),
 		SourceFilter: &datastore.SourceFilter{
+			Query:    r.URL.Query().Get("q"),
 			Type:     r.URL.Query().Get("type"),
 			Provider: r.URL.Query().Get("provider"),
 		},
