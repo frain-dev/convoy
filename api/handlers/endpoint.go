@@ -1,27 +1,22 @@
-package public
+package handlers
 
 import (
+	"context"
 	"net/http"
-
-	"github.com/frain-dev/convoy/pkg/log"
-
-	"github.com/go-chi/chi/v5"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
-
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
 
-type pagedResponse struct {
-	Content    interface{}               `json:"content,omitempty"`
-	Pagination *datastore.PaginationData `json:"pagination,omitempty"`
-}
-
 // CreateEndpoint
+//
 //	@Summary		Create an endpoint
 //	@Description	This endpoint creates an endpoint
 //	@Tags			Endpoints
@@ -33,8 +28,11 @@ type pagedResponse struct {
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints [post]
-func (a *PublicHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+
 	var e models.CreateEndpoint
+
 	err := util.ReadJSON(r, &e)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -47,17 +45,28 @@ func (a *PublicHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, err := a.retrieveProject(r)
+	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache)
+		pLink, err := portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+
+		e.OwnerID = pLink.OwnerID
+	}
+
 	ce := services.CreateEndpointService{
-		Cache:          a.A.Cache,
-		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
-		ProjectRepo:    postgres.NewProjectRepo(a.A.DB, a.A.Cache),
-		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache),
+		Cache:          h.A.Cache,
+		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
+		ProjectRepo:    postgres.NewProjectRepo(h.A.DB, h.A.Cache),
+		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache),
 		E:              e,
 		ProjectID:      project.UID,
 	}
@@ -73,6 +82,7 @@ func (a *PublicHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetEndpoint
+//
 //	@Summary		Retrieve endpoint
 //	@Description	This endpoint fetches an endpoint
 //	@Tags			Endpoints
@@ -84,8 +94,15 @@ func (a *PublicHandler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints/{endpointID} [get]
-func (a *PublicHandler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
-	endpoint, err := a.retrieveEndpoint(r)
+func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	endpointID := chi.URLParam(r, "endpointID")
+	endpoint, err := h.retrieveEndpoint(r.Context(), endpointID, project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 		return
@@ -96,6 +113,7 @@ func (a *PublicHandler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetEndpoints
+//
 //	@Summary		List all endpoints
 //	@Description	This endpoint fetches an endpoints
 //	@Tags			Endpoints
@@ -107,18 +125,19 @@ func (a *PublicHandler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints [get]
-func (a *PublicHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
-	var q *models.QueryListEndpoint
-	project, err := a.retrieveProject(r)
+func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
+	var q *models.QueryListEndpoint
+
 	data := q.Transform(r)
-	endpoints, paginationData, err := postgres.NewEndpointRepo(a.A.DB, a.A.Cache).LoadEndpointsPaged(r.Context(), project.UID, data.Filter, data.Pageable)
+	endpoints, paginationData, err := postgres.NewEndpointRepo(h.A.DB, h.A.Cache).LoadEndpointsPaged(r.Context(), project.UID, data.Filter, data.Pageable)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to load endpoints")
+		h.A.Logger.WithError(err).Error("failed to load endpoints")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -131,6 +150,7 @@ func (a *PublicHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateEndpoint
+//
 //	@Summary		Update an endpoint
 //	@Description	This endpoint updates an endpoint
 //	@Tags			Endpoints
@@ -143,22 +163,23 @@ func (a *PublicHandler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints/{endpointID} [put]
-func (a *PublicHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
-	var e models.UpdateEndpoint
-
-	err := util.ReadJSON(r, &e)
+func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	endpoint, err := a.retrieveEndpoint(r)
+	var e models.UpdateEndpoint
+
+	err = util.ReadJSON(r, &e)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	project, err := a.retrieveProject(r)
+	endpointID := chi.URLParam(r, "endpointID")
+	endpoint, err := h.retrieveEndpoint(r.Context(), endpointID, project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -171,9 +192,9 @@ func (a *PublicHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ce := services.UpdateEndpointService{
-		Cache:        a.A.Cache,
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
-		ProjectRepo:  postgres.NewProjectRepo(a.A.DB, a.A.Cache),
+		Cache:        h.A.Cache,
+		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
+		ProjectRepo:  postgres.NewProjectRepo(h.A.DB, h.A.Cache),
 		E:            e,
 		Endpoint:     endpoint,
 		Project:      project,
@@ -190,6 +211,7 @@ func (a *PublicHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteEndpoint
+//
 //	@Summary		Delete endpoint
 //	@Description	This endpoint deletes an endpoint
 //	@Tags			Endpoints
@@ -201,20 +223,21 @@ func (a *PublicHandler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints/{endpointID} [delete]
-func (a *PublicHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
-	endpoint, err := a.retrieveEndpoint(r)
+func (h *Handler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	endpointID := chi.URLParam(r, "endpointID")
+	endpoint, err := h.retrieveEndpoint(r.Context(), endpointID, project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	err = postgres.NewEndpointRepo(a.A.DB, a.A.Cache).DeleteEndpoint(r.Context(), endpoint, project.UID)
+	err = postgres.NewEndpointRepo(h.A.DB, h.A.Cache).DeleteEndpoint(r.Context(), endpoint, project.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete endpoint")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete endpoint", http.StatusBadRequest))
@@ -225,6 +248,7 @@ func (a *PublicHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 // ExpireSecret
+//
 //	@Summary		Roll endpoint secret
 //	@Description	This endpoint expires and re-generates the endpoint secret.
 //	@Tags			Endpoints
@@ -237,31 +261,32 @@ func (a *PublicHandler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret [put]
-func (a *PublicHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
-	var e *models.ExpireSecret
-	err := util.ReadJSON(r, &e)
+func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	endpoint, err := a.retrieveEndpoint(r)
+	var e *models.ExpireSecret
+	err = util.ReadJSON(r, &e)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	project, err := a.retrieveProject(r)
+	endpointID := chi.URLParam(r, "endpointID")
+	endpoint, err := h.retrieveEndpoint(r.Context(), endpointID, project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	xs := services.ExpireSecretService{
-		Queuer:       a.A.Queue,
-		Cache:        a.A.Cache,
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
-		ProjectRepo:  postgres.NewProjectRepo(a.A.DB, a.A.Cache),
+		Queuer:       h.A.Queue,
+		Cache:        h.A.Cache,
+		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
+		ProjectRepo:  postgres.NewProjectRepo(h.A.DB, h.A.Cache),
 		S:            e,
 		Endpoint:     endpoint,
 		Project:      project,
@@ -279,6 +304,7 @@ func (a *PublicHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 }
 
 // ToggleEndpointStatus
+//
 //	@Summary		Toggle endpoint status
 //	@Description	This endpoint toggles an endpoint status between the active and inactive statetes
 //	@Tags			Endpoints
@@ -290,15 +316,15 @@ func (a *PublicHandler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status [put]
-func (a *PublicHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r)
+func (h *Handler) ToggleEndpointStatus(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	te := services.ToggleEndpointStatusService{
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
+		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
 		ProjectID:    project.UID,
 		EndpointId:   chi.URLParam(r, "endpointID"),
 	}
@@ -314,6 +340,7 @@ func (a *PublicHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.Requ
 }
 
 // PauseEndpoint
+//
 //	@Summary		Pause endpoint
 //	@Description	This endpoint toggles an endpoint status between the active and paused states
 //	@Tags			Endpoints
@@ -325,15 +352,15 @@ func (a *PublicHandler) ToggleEndpointStatus(w http.ResponseWriter, r *http.Requ
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints/{endpointID}/pause [put]
-func (a *PublicHandler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r)
+func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
 	ps := services.PauseEndpointService{
-		EndpointRepo: postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
+		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
 		ProjectID:    project.UID,
 		EndpointId:   chi.URLParam(r, "endpointID"),
 	}
@@ -348,13 +375,7 @@ func (a *PublicHandler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("endpoint status updated successfully", resp, http.StatusAccepted))
 }
 
-func (a *PublicHandler) retrieveEndpoint(r *http.Request) (*datastore.Endpoint, error) {
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		return &datastore.Endpoint{}, err
-	}
-
-	endpointID := chi.URLParam(r, "endpointID")
-	endpointRepo := postgres.NewEndpointRepo(a.A.DB, a.A.Cache)
-	return endpointRepo.FindEndpointByID(r.Context(), endpointID, project.UID)
+func (h *Handler) retrieveEndpoint(ctx context.Context, endpointID, projectID string) (*datastore.Endpoint, error) {
+	endpointRepo := postgres.NewEndpointRepo(h.A.DB, h.A.Cache)
+	return endpointRepo.FindEndpointByID(ctx, endpointID, projectID)
 }

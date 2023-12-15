@@ -1,4 +1,4 @@
-package public
+package handlers
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ var redirectRoutes = []string{
 	"/api/v1/sources",
 }
 
-func (a *PublicHandler) RedirectToProjects(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) RedirectToProjects(w http.ResponseWriter, r *http.Request) {
 	projectID := r.URL.Query().Get("projectID")
 
 	if util.IsStringEmpty(projectID) {

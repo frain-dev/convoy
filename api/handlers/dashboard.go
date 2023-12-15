@@ -1,34 +1,22 @@
-package dashboard
+package handlers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/api/types"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-type DashboardHandler struct {
-	A *types.APIOptions
-}
-
-func NewDashboardHandler(a *types.APIOptions) *DashboardHandler {
-	return &DashboardHandler{A: a}
-}
-
-func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 	format := "2006-01-02T15:04:05"
 	startDate := r.URL.Query().Get("startDate")
 	endDate := r.URL.Query().Get("endDate")
@@ -39,7 +27,7 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 
 	startT, err := time.Parse(format, startDate)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("error parsing startDate")
+		h.A.Logger.WithError(err).Error("error parsing startDate")
 		_ = render.Render(w, r, util.NewErrorResponse("please specify a startDate in the format "+format, http.StatusBadRequest))
 		return
 	}
@@ -77,7 +65,7 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 		CreatedAtEnd:   endT.Unix(),
 	}
 
-	project, err := a.retrieveProject(r)
+	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -86,9 +74,9 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 	qs := fmt.Sprintf("%v:%v:%v:%v", project.UID, searchParams.CreatedAtStart, searchParams.CreatedAtEnd, period)
 
 	var data *models.DashboardSummary
-	err = a.A.Cache.Get(r.Context(), qs, &data)
+	err = h.A.Cache.Get(r.Context(), qs, &data)
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to get dashboard summary from cache")
+		h.A.Logger.WithError(err).Error("failed to get dashboard summary from cache")
 	}
 
 	if data != nil {
@@ -97,14 +85,14 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	apps, err := postgres.NewEndpointRepo(a.A.DB, a.A.Cache).CountProjectEndpoints(r.Context(), project.UID)
+	apps, err := postgres.NewEndpointRepo(h.A.DB, h.A.Cache).CountProjectEndpoints(r.Context(), project.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to count project endpoints")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
 		return
 	}
 
-	eventsSent, messages, err := a.computeDashboardMessages(r.Context(), project.UID, searchParams, p)
+	eventsSent, messages, err := h.computeDashboardMessages(r.Context(), project.UID, searchParams, p)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching messages", http.StatusInternalServerError))
 		return
@@ -117,20 +105,20 @@ func (a *DashboardHandler) GetDashboardSummary(w http.ResponseWriter, r *http.Re
 		PeriodData:   &messages,
 	}
 
-	err = a.A.Cache.Set(r.Context(), qs, dashboard, time.Minute)
+	err = h.A.Cache.Set(r.Context(), qs, dashboard, time.Minute)
 
 	if err != nil {
-		a.A.Logger.WithError(err)
+		h.A.Logger.WithError(err)
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Dashboard summary fetched successfully",
 		dashboard, http.StatusOK))
 }
 
-func (a *DashboardHandler) computeDashboardMessages(ctx context.Context, projectID string, searchParams datastore.SearchParams, period datastore.Period) (uint64, []datastore.EventInterval, error) {
+func (h *Handler) computeDashboardMessages(ctx context.Context, projectID string, searchParams datastore.SearchParams, period datastore.Period) (uint64, []datastore.EventInterval, error) {
 	var messagesSent uint64
 
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB, h.A.Cache)
 	messages, err := eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, projectID, searchParams, period)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to load message intervals - ")
@@ -142,66 +130,4 @@ func (a *DashboardHandler) computeDashboardMessages(ctx context.Context, project
 	}
 
 	return messagesSent, messages, nil
-}
-
-func (a *DashboardHandler) retrieveOrganisation(r *http.Request) (*datastore.Organisation, error) {
-	orgID := chi.URLParam(r, "orgID")
-
-	if util.IsStringEmpty(orgID) {
-		orgID = r.URL.Query().Get("orgID")
-	}
-
-	orgRepo := postgres.NewOrgRepo(a.A.DB, a.A.Cache)
-	return orgRepo.FetchOrganisationByID(r.Context(), orgID)
-}
-
-func (a *DashboardHandler) retrieveUser(r *http.Request) (*datastore.User, error) {
-	authUser := middleware.GetAuthUserFromContext(r.Context())
-	user, ok := authUser.Metadata.(*datastore.User)
-	if !ok {
-		return &datastore.User{}, errors.New("User not found")
-	}
-
-	return user, nil
-}
-
-func (a *DashboardHandler) retrieveMembership(r *http.Request) (*datastore.OrganisationMember, error) {
-	org, err := a.retrieveOrganisation(r)
-	if err != nil {
-		return &datastore.OrganisationMember{}, err
-	}
-
-	user, err := a.retrieveUser(r)
-	if err != nil {
-		return &datastore.OrganisationMember{}, err
-	}
-
-	orgMemberRepo := postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache)
-	return orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
-}
-
-func (a *DashboardHandler) retrieveProject(r *http.Request) (*datastore.Project, error) {
-	projectID := chi.URLParam(r, "projectID")
-
-	if util.IsStringEmpty(projectID) {
-		return nil, errors.New("project id not present in request")
-	}
-
-	var project *datastore.Project
-	projectRepo := postgres.NewProjectRepo(a.A.DB, a.A.Cache)
-	project, err := projectRepo.FetchProjectByID(r.Context(), projectID)
-	if err != nil {
-		return nil, err
-	}
-
-	return project, nil
-}
-
-func (a *DashboardHandler) retrieveHost() (string, error) {
-	cfg, err := config.Get()
-	if err != nil {
-		return "", err
-	}
-
-	return cfg.Host, nil
 }

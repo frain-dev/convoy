@@ -3,6 +3,7 @@ package stream
 import (
 	"context"
 	"fmt"
+
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
@@ -61,13 +62,14 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 			apiKeyRepo := postgres.NewAPIKeyRepo(a.DB, a.Cache)
 			userRepo := postgres.NewUserRepo(a.DB, a.Cache)
 			orgMemberRepo := postgres.NewOrgMemberRepo(a.DB, a.Cache)
+			portalLinkRepo := postgres.NewPortalLinkRepo(a.DB, a.Cache)
 
 			// enable only the native auth realm
 			authCfg := &config.AuthConfiguration{
 				Native: config.NativeRealmOptions{Enabled: true},
 			}
 
-			err = realm_chain.Init(authCfg, apiKeyRepo, userRepo, nil)
+			err = realm_chain.Init(authCfg, apiKeyRepo, userRepo, portalLinkRepo, nil)
 			if err != nil {
 				a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 				return err

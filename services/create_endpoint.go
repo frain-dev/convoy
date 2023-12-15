@@ -133,7 +133,6 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 
 		update := models.PortalLink{
 			Name:              portalLink.Name,
-			Endpoints:         append(portalLink.Endpoints, endpoint.UID),
 			OwnerID:           portalLink.OwnerID,
 			CanManageEndpoint: portalLink.CanManageEndpoint,
 		}

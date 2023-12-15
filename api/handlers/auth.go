@@ -1,8 +1,7 @@
-package dashboard
+package handlers
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
@@ -16,13 +15,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-type AuthorizedLogin struct {
-	Username   string    `json:"username,omitempty"`
-	Token      string    `json:"token"`
-	ExpiryTime time.Time `json:"expiry_time"`
-}
-
-func (a *DashboardHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	var newUser models.LoginUser
 	if err := util.ReadJSON(r, &newUser); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -36,9 +29,9 @@ func (a *DashboardHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lu := services.LoginUserService{
-		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
-		Cache:    a.A.Cache,
-		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, a.A.Cache),
+		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		Cache:    h.A.Cache,
+		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		Data:     &newUser,
 	}
 
@@ -56,7 +49,7 @@ func (a *DashboardHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Login successful", u, http.StatusOK))
 }
 
-func (a *DashboardHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var refreshToken models.Token
 	if err := util.ReadJSON(r, &refreshToken); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -75,8 +68,8 @@ func (a *DashboardHandler) RefreshToken(w http.ResponseWriter, r *http.Request) 
 	}
 
 	rf := services.RefreshTokenService{
-		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
-		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, a.A.Cache),
+		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		Data:     &refreshToken,
 	}
 
@@ -89,7 +82,7 @@ func (a *DashboardHandler) RefreshToken(w http.ResponseWriter, r *http.Request) 
 	_ = render.Render(w, r, util.NewServerResponse("Token refresh successful", token, http.StatusOK))
 }
 
-func (a *DashboardHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	auth, err := middleware.GetAuthFromRequest(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
@@ -103,8 +96,8 @@ func (a *DashboardHandler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lg := services.LogoutUserService{
-		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
-		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, a.A.Cache),
+		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		Token:    auth.Token,
 	}
 

@@ -1,4 +1,4 @@
-package dashboard
+package handlers
 
 import (
 	"encoding/json"
@@ -17,7 +17,7 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-func (a *DashboardHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 	var newApiKey models.PersonalAPIKey
 	err := json.NewDecoder(r.Body).Decode(&newApiKey)
 	if err != nil {
@@ -32,16 +32,16 @@ func (a *DashboardHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.R
 	}
 
 	cpk := &services.CreatePersonalAPIKeyService{
-		ProjectRepo: postgres.NewProjectRepo(a.A.DB, a.A.Cache),
-		UserRepo:    postgres.NewUserRepo(a.A.DB, a.A.Cache),
-		APIKeyRepo:  postgres.NewAPIKeyRepo(a.A.DB, a.A.Cache),
+		ProjectRepo: postgres.NewProjectRepo(h.A.DB, h.A.Cache),
+		UserRepo:    postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		APIKeyRepo:  postgres.NewAPIKeyRepo(h.A.DB, h.A.Cache),
 		User:        user,
 		NewApiKey:   &newApiKey,
 	}
 
 	apiKey, keyString, err := cpk.Run(r.Context())
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to create personal api key")
+		h.A.Logger.WithError(err).Error("failed to create personal api key")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -65,7 +65,7 @@ func (a *DashboardHandler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.R
 	_ = render.Render(w, r, util.NewServerResponse("Personal API Key created successfully", resp, http.StatusCreated))
 }
 
-func (a *DashboardHandler) RevokePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) RevokePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 	user, ok := m.GetAuthUserFromContext(r.Context()).Metadata.(*datastore.User)
 	if !ok {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
@@ -73,9 +73,9 @@ func (a *DashboardHandler) RevokePersonalAPIKey(w http.ResponseWriter, r *http.R
 	}
 
 	rvk := &services.RevokePersonalAPIKeyService{
-		ProjectRepo: postgres.NewProjectRepo(a.A.DB, a.A.Cache),
-		UserRepo:    postgres.NewUserRepo(a.A.DB, a.A.Cache),
-		APIKeyRepo:  postgres.NewAPIKeyRepo(a.A.DB, a.A.Cache),
+		ProjectRepo: postgres.NewProjectRepo(h.A.DB, h.A.Cache),
+		UserRepo:    postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		APIKeyRepo:  postgres.NewAPIKeyRepo(h.A.DB, h.A.Cache),
 		UID:         chi.URLParam(r, "keyID"),
 		User:        user,
 	}
@@ -89,28 +89,28 @@ func (a *DashboardHandler) RevokePersonalAPIKey(w http.ResponseWriter, r *http.R
 	_ = render.Render(w, r, util.NewServerResponse("personal api key revoked successfully", nil, http.StatusOK))
 }
 
-func (a *DashboardHandler) RegenerateProjectAPIKey(w http.ResponseWriter, r *http.Request) {
-	member, err := a.retrieveMembership(r)
+func (h *Handler) RegenerateProjectAPIKey(w http.ResponseWriter, r *http.Request) {
+	member, err := h.retrieveMembership(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	project, err := a.retrieveProject(r)
+	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+	if err = h.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
 	rgp := &services.RegenerateProjectAPIKeyService{
-		ProjectRepo: postgres.NewProjectRepo(a.A.DB, a.A.Cache),
-		UserRepo:    postgres.NewUserRepo(a.A.DB, a.A.Cache),
-		APIKeyRepo:  postgres.NewAPIKeyRepo(a.A.DB, a.A.Cache),
+		ProjectRepo: postgres.NewProjectRepo(h.A.DB, h.A.Cache),
+		UserRepo:    postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		APIKeyRepo:  postgres.NewAPIKeyRepo(h.A.DB, h.A.Cache),
 		Project:     project,
 		Member:      member,
 	}
@@ -139,7 +139,7 @@ func (a *DashboardHandler) RegenerateProjectAPIKey(w http.ResponseWriter, r *htt
 	_ = render.Render(w, r, util.NewServerResponse("api key regenerated successfully", resp, http.StatusOK))
 }
 
-func (a *DashboardHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 
 	f := &datastore.ApiKeyFilter{}
@@ -157,7 +157,7 @@ func (a *DashboardHandler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apiKeys, paginationData, err := postgres.NewAPIKeyRepo(a.A.DB, a.A.Cache).LoadAPIKeysPaged(r.Context(), f, &pageable)
+	apiKeys, paginationData, err := postgres.NewAPIKeyRepo(h.A.DB, h.A.Cache).LoadAPIKeysPaged(r.Context(), f, &pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to load api keys")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to load api keys", http.StatusBadRequest))

@@ -1,9 +1,10 @@
-package public
+package handlers
 
 import (
 	"errors"
 	"net/http"
 
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -17,6 +18,7 @@ import (
 )
 
 // GetSubscriptions
+//
 //	@Summary		List all subscriptions
 //	@Description	This endpoint fetches all the subscriptions
 //	@Tags			Subscriptions
@@ -28,16 +30,17 @@ import (
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions [get]
-func (a *PublicHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
-	var q *models.QueryListSubscription
-	project, err := a.retrieveProject(r)
+func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
+	var q *models.QueryListSubscription
+
 	data := q.Transform(r)
-	subscriptions, paginationData, err := postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache).LoadSubscriptionsPaged(r.Context(), project.UID, data.FilterBy, data.Pageable)
+	subscriptions, paginationData, err := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache).LoadSubscriptionsPaged(r.Context(), project.UID, data.FilterBy, data.Pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching subscriptions")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching subscriptions", http.StatusInternalServerError))
@@ -48,10 +51,28 @@ func (a *PublicHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request)
 		subscriptions = make([]datastore.Subscription, 0)
 	}
 
-	org, err := a.retrieveOrganisation(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
+	var org *datastore.Organisation
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if h.IsReqWithPortalLinkToken(authUser) {
+		project, err := h.retrieveProject(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		orgRepo := postgres.NewOrgRepo(h.A.DB, h.A.Cache)
+		org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+	} else {
+		org, err = h.retrieveOrganisation(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
 	}
 
 	var customDomain string
@@ -61,7 +82,7 @@ func (a *PublicHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request)
 		customDomain = org.CustomDomain.ValueOrZero()
 	}
 
-	baseUrl, err := a.retrieveHost()
+	baseUrl, err := h.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -79,6 +100,7 @@ func (a *PublicHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request)
 }
 
 // GetSubscription
+//
 //	@Summary		Retrieve a subscription
 //	@Description	This endpoint retrieves a single subscription
 //	@Tags			Subscriptions
@@ -90,14 +112,14 @@ func (a *PublicHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request)
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/{subscriptionID} [get]
-func (a *PublicHandler) GetSubscription(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r)
+func (h *Handler) GetSubscription(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	subscription, err := postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
+	subscription, err := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
@@ -113,6 +135,7 @@ func (a *PublicHandler) GetSubscription(w http.ResponseWriter, r *http.Request) 
 }
 
 // CreateSubscription
+//
 //	@Summary		Create a subscription
 //	@Description	This endpoint creates a subscriptions
 //	@Tags			Subscriptions
@@ -124,10 +147,10 @@ func (a *PublicHandler) GetSubscription(w http.ResponseWriter, r *http.Request) 
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions [post]
-func (a *PublicHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r)
+func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
@@ -145,16 +168,16 @@ func (a *PublicHandler) CreateSubscription(w http.ResponseWriter, r *http.Reques
 	}
 
 	cs := services.CreateSubscriptionService{
-		SubRepo:         postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache),
-		EndpointRepo:    postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
-		SourceRepo:      postgres.NewSourceRepo(a.A.DB, a.A.Cache),
+		SubRepo:         postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache),
+		EndpointRepo:    postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
+		SourceRepo:      postgres.NewSourceRepo(h.A.DB, h.A.Cache),
 		Project:         project,
 		NewSubscription: &sub,
 	}
 
 	subscription, err := cs.Run(r.Context())
 	if err != nil {
-		a.A.Logger.WithError(err).Error("failed to create subscription")
+		h.A.Logger.WithError(err).Error("failed to create subscription")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
@@ -164,6 +187,7 @@ func (a *PublicHandler) CreateSubscription(w http.ResponseWriter, r *http.Reques
 }
 
 // DeleteSubscription
+//
 //	@Summary		Delete subscription
 //	@Description	This endpoint deletes a subscription
 //	@Tags			Subscriptions
@@ -175,14 +199,14 @@ func (a *PublicHandler) CreateSubscription(w http.ResponseWriter, r *http.Reques
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/{subscriptionID} [delete]
-func (a *PublicHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r)
+func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	sub, err := postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
+	sub, err := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
@@ -193,7 +217,7 @@ func (a *PublicHandler) DeleteSubscription(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache).DeleteSubscription(r.Context(), project.UID, sub)
+	err = postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache).DeleteSubscription(r.Context(), project.UID, sub)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete subscription")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete subscription", http.StatusBadRequest))
@@ -204,6 +228,7 @@ func (a *PublicHandler) DeleteSubscription(w http.ResponseWriter, r *http.Reques
 }
 
 // UpdateSubscription
+//
 //	@Summary		Update a subscription
 //	@Description	This endpoint updates a subscription
 //	@Tags			Subscriptions
@@ -216,11 +241,17 @@ func (a *PublicHandler) DeleteSubscription(w http.ResponseWriter, r *http.Reques
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/{subscriptionID} [put]
-func (a *PublicHandler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
-	var update models.UpdateSubscription
-	err := util.ReadJSON(r, &update)
+func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
-		a.A.Logger.WithError(err).Error(err.Error())
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	var update models.UpdateSubscription
+	err = util.ReadJSON(r, &update)
+	if err != nil {
+		h.A.Logger.WithError(err).Error(err.Error())
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -231,16 +262,10 @@ func (a *PublicHandler) UpdateSubscription(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
 	us := services.UpdateSubscriptionService{
-		SubRepo:        postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache),
-		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
-		SourceRepo:     postgres.NewSourceRepo(a.A.DB, a.A.Cache),
+		SubRepo:        postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache),
+		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
+		SourceRepo:     postgres.NewSourceRepo(h.A.DB, h.A.Cache),
 		ProjectId:      project.UID,
 		SubscriptionId: chi.URLParam(r, "subscriptionID"),
 		Update:         &update,
@@ -256,12 +281,13 @@ func (a *PublicHandler) UpdateSubscription(w http.ResponseWriter, r *http.Reques
 	_ = render.Render(w, r, util.NewServerResponse("Subscription updated successfully", resp, http.StatusAccepted))
 }
 
-func (a *PublicHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Request) {
 	// For backward compatibility
 	_ = render.Render(w, r, util.NewServerResponse("Subscription status updated successfully", nil, http.StatusAccepted))
 }
 
 // TestSubscriptionFilter
+//
 //	@Summary		Validate subscription filter
 //	@Description	This endpoint validates that a filter will match a certain payload structure.
 //	@Tags			Subscriptions
@@ -273,7 +299,7 @@ func (a *PublicHandler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/test_filter [post]
-func (a *PublicHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request) {
 	var test models.TestFilter
 	err := util.ReadJSON(r, &test)
 	if err != nil {
@@ -281,7 +307,7 @@ func (a *PublicHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	subRepo := postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache)
+	subRepo := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache)
 	isBodyValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Body, test.Schema.Body)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to validate subscription filter")
@@ -302,6 +328,7 @@ func (a *PublicHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Re
 }
 
 // TestSubscriptionFunction
+//
 //	@Summary		Validate subscription filter
 //	@Description	This endpoint validates that a filter will match a certain payload structure.
 //	@Tags			Subscriptions
@@ -313,7 +340,7 @@ func (a *PublicHandler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Re
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/test_function [post]
-func (a *PublicHandler) TestSubscriptionFunction(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) TestSubscriptionFunction(w http.ResponseWriter, r *http.Request) {
 	var test models.TestWebhookFunction
 	err := util.ReadJSON(r, &test)
 	if err != nil {
@@ -321,7 +348,7 @@ func (a *PublicHandler) TestSubscriptionFunction(w http.ResponseWriter, r *http.
 		return
 	}
 
-	subRepo := postgres.NewSubscriptionRepo(a.A.DB, a.A.Cache)
+	subRepo := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache)
 	mutatedPayload, consoleLog, err := subRepo.TransformPayload(r.Context(), test.Function, test.Payload)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to transform payload")

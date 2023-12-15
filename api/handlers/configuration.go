@@ -1,4 +1,4 @@
-package dashboard
+package handlers
 
 import (
 	"errors"
@@ -16,8 +16,8 @@ import (
 	"github.com/go-chi/render"
 )
 
-func (a *DashboardHandler) LoadConfiguration(w http.ResponseWriter, r *http.Request) {
-	config, err := postgres.NewConfigRepo(a.A.DB).LoadConfiguration(r.Context())
+func (h *Handler) LoadConfiguration(w http.ResponseWriter, r *http.Request) {
+	config, err := postgres.NewConfigRepo(h.A.DB).LoadConfiguration(r.Context())
 	if err != nil && !errors.Is(err, datastore.ErrConfigNotFound) {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -44,7 +44,7 @@ func (a *DashboardHandler) LoadConfiguration(w http.ResponseWriter, r *http.Requ
 	_ = render.Render(w, r, util.NewServerResponse("Configuration fetched successfully", configResponse, http.StatusOK))
 }
 
-func (a *DashboardHandler) CreateConfiguration(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateConfiguration(w http.ResponseWriter, r *http.Request) {
 	var newConfig models.Configuration
 	if err := util.ReadJSON(r, &newConfig); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -57,7 +57,7 @@ func (a *DashboardHandler) CreateConfiguration(w http.ResponseWriter, r *http.Re
 	}
 
 	cc := services.CreateConfigService{
-		ConfigRepo: postgres.NewConfigRepo(a.A.DB),
+		ConfigRepo: postgres.NewConfigRepo(h.A.DB),
 		NewConfig:  &newConfig,
 	}
 
@@ -75,7 +75,7 @@ func (a *DashboardHandler) CreateConfiguration(w http.ResponseWriter, r *http.Re
 	_ = render.Render(w, r, util.NewServerResponse("Configuration created successfully", c, http.StatusCreated))
 }
 
-func (a *DashboardHandler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
 	var newConfig models.Configuration
 	if err := util.ReadJSON(r, &newConfig); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -88,7 +88,7 @@ func (a *DashboardHandler) UpdateConfiguration(w http.ResponseWriter, r *http.Re
 	}
 
 	uc := services.UpdateConfigService{
-		ConfigRepo: postgres.NewConfigRepo(a.A.DB),
+		ConfigRepo: postgres.NewConfigRepo(h.A.DB),
 		Config:     &newConfig,
 	}
 
@@ -106,7 +106,7 @@ func (a *DashboardHandler) UpdateConfiguration(w http.ResponseWriter, r *http.Re
 	_ = render.Render(w, r, util.NewServerResponse("Configuration updated successfully", c, http.StatusAccepted))
 }
 
-func (a *DashboardHandler) IsSignUpEnabled(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) IsSignUpEnabled(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.Get()
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to load configuration")

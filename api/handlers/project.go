@@ -1,4 +1,4 @@
-package dashboard
+package handlers
 
 import (
 	"net/http"
@@ -13,15 +13,15 @@ import (
 	"github.com/go-chi/render"
 )
 
-func createProjectService(a *DashboardHandler) (*services.ProjectService, error) {
-	apiKeyRepo := postgres.NewAPIKeyRepo(a.A.DB, a.A.Cache)
-	projectRepo := postgres.NewProjectRepo(a.A.DB, a.A.Cache)
-	eventRepo := postgres.NewEventRepo(a.A.DB, a.A.Cache)
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.A.DB, a.A.Cache)
+func createProjectService(h *Handler) (*services.ProjectService, error) {
+	apiKeyRepo := postgres.NewAPIKeyRepo(h.A.DB, h.A.Cache)
+	projectRepo := postgres.NewProjectRepo(h.A.DB, h.A.Cache)
+	eventRepo := postgres.NewEventRepo(h.A.DB, h.A.Cache)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB, h.A.Cache)
 
 	projectService, err := services.NewProjectService(
 		apiKeyRepo, projectRepo, eventRepo,
-		eventDeliveryRepo, a.A.Cache,
+		eventDeliveryRepo, h.A.Cache,
 	)
 
 	if err != nil {
@@ -31,8 +31,8 @@ func createProjectService(a *DashboardHandler) (*services.ProjectService, error)
 	return projectService, nil
 }
 
-func (a *DashboardHandler) GetProject(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r)
+func (h *Handler) GetProject(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -42,14 +42,14 @@ func (a *DashboardHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Project fetched successfully", resp, http.StatusOK))
 }
 
-func (a *DashboardHandler) GetProjectStatistics(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r)
+func (h *Handler) GetProjectStatistics(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	err = postgres.NewProjectRepo(a.A.DB, a.A.Cache).FillProjectsStatistics(r.Context(), project)
+	err = postgres.NewProjectRepo(h.A.DB, h.A.Cache).FillProjectsStatistics(r.Context(), project)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to count project statistics")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to count project statistics", http.StatusBadRequest))
@@ -59,19 +59,19 @@ func (a *DashboardHandler) GetProjectStatistics(w http.ResponseWriter, r *http.R
 	_ = render.Render(w, r, util.NewServerResponse("Project Stats fetched successfully", project.Statistics, http.StatusOK))
 }
 
-func (a *DashboardHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r)
+func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	if err = a.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+	if err = h.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
-	err = postgres.NewProjectRepo(a.A.DB, a.A.Cache).DeleteProject(r.Context(), project.UID)
+	err = postgres.NewProjectRepo(h.A.DB, h.A.Cache).DeleteProject(r.Context(), project.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete project")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete project", http.StatusBadRequest))
@@ -82,7 +82,7 @@ func (a *DashboardHandler) DeleteProject(w http.ResponseWriter, r *http.Request)
 		nil, http.StatusOK))
 }
 
-func (a *DashboardHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var newProject models.CreateProject
 	err := util.ReadJSON(r, &newProject)
 	if err != nil {
@@ -90,18 +90,18 @@ func (a *DashboardHandler) CreateProject(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	org, err := a.retrieveOrganisation(r)
+	org, err := h.retrieveOrganisation(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+	if err = h.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
-	member, err := a.retrieveMembership(r)
+	member, err := h.retrieveMembership(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -112,7 +112,7 @@ func (a *DashboardHandler) CreateProject(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	projectService, err := createProjectService(a)
+	projectService, err := createProjectService(h)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -132,7 +132,7 @@ func (a *DashboardHandler) CreateProject(w http.ResponseWriter, r *http.Request)
 	_ = render.Render(w, r, util.NewServerResponse("Project created successfully", resp, http.StatusCreated))
 }
 
-func (a *DashboardHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	var update models.UpdateProject
 	err := util.ReadJSON(r, &update)
 	if err != nil {
@@ -140,13 +140,13 @@ func (a *DashboardHandler) UpdateProject(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	p, err := a.retrieveProject(r)
+	p, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	if err = a.A.Authz.Authorize(r.Context(), "project.manage", p); err != nil {
+	if err = h.A.Authz.Authorize(r.Context(), "project.manage", p); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
@@ -156,7 +156,7 @@ func (a *DashboardHandler) UpdateProject(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	projectService, err := createProjectService(a)
+	projectService, err := createProjectService(h)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -172,15 +172,15 @@ func (a *DashboardHandler) UpdateProject(w http.ResponseWriter, r *http.Request)
 	_ = render.Render(w, r, util.NewServerResponse("Project updated successfully", resp, http.StatusAccepted))
 }
 
-func (a *DashboardHandler) GetProjects(w http.ResponseWriter, r *http.Request) {
-	org, err := a.retrieveOrganisation(r)
+func (h *Handler) GetProjects(w http.ResponseWriter, r *http.Request) {
+	org, err := h.retrieveOrganisation(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	filter := &datastore.ProjectFilter{OrgID: org.UID}
-	projects, err := postgres.NewProjectRepo(a.A.DB, a.A.Cache).LoadProjects(r.Context(), filter)
+	projects, err := postgres.NewProjectRepo(h.A.DB, h.A.Cache).LoadProjects(r.Context(), filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to load projects")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching projects", http.StatusBadRequest))

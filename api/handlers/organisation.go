@@ -1,4 +1,4 @@
-package dashboard
+package handlers
 
 import (
 	"net/http"
@@ -14,14 +14,14 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-func (a *DashboardHandler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
-	org, err := a.retrieveOrganisation(r)
+func (h *Handler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
+	org, err := h.retrieveOrganisation(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+	if err = h.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
@@ -29,15 +29,15 @@ func (a *DashboardHandler) GetOrganisation(w http.ResponseWriter, r *http.Reques
 	_ = render.Render(w, r, util.NewServerResponse("Organisation fetched successfully", org, http.StatusOK))
 }
 
-func (a *DashboardHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) { // TODO: change to GetUserOrganisationsPaged
+func (h *Handler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) { // TODO: change to GetUserOrganisationsPaged
 	pageable := m.GetPageableFromContext(r.Context())
-	user, err := a.retrieveUser(r)
+	user, err := h.retrieveUser(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	organisations, paginationData, err := postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache).LoadUserOrganisationsPaged(r.Context(), user.UID, pageable)
+	organisations, paginationData, err := postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache).LoadUserOrganisationsPaged(r.Context(), user.UID, pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch user organisations")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -48,7 +48,7 @@ func (a *DashboardHandler) GetOrganisationsPaged(w http.ResponseWriter, r *http.
 		pagedResponse{Content: &organisations, Pagination: &paginationData}, http.StatusOK))
 }
 
-func (a *DashboardHandler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 	var newOrg models.Organisation
 	err := util.ReadJSON(r, &newOrg)
 	if err != nil {
@@ -56,15 +56,15 @@ func (a *DashboardHandler) CreateOrganisation(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	user, err := a.retrieveUser(r)
+	user, err := h.retrieveUser(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	co := services.CreateOrganisationService{
-		OrgRepo:       postgres.NewOrgRepo(a.A.DB, a.A.Cache),
-		OrgMemberRepo: postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache),
+		OrgRepo:       postgres.NewOrgRepo(h.A.DB, h.A.Cache),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache),
 		NewOrg:        &newOrg,
 		User:          user,
 	}
@@ -78,7 +78,7 @@ func (a *DashboardHandler) CreateOrganisation(w http.ResponseWriter, r *http.Req
 	_ = render.Render(w, r, util.NewServerResponse("Organisation created successfully", organisation, http.StatusCreated))
 }
 
-func (a *DashboardHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 	var orgUpdate models.Organisation
 	err := util.ReadJSON(r, &orgUpdate)
 	if err != nil {
@@ -86,20 +86,20 @@ func (a *DashboardHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	org, err := a.retrieveOrganisation(r)
+	org, err := h.retrieveOrganisation(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+	if err = h.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
 	us := services.UpdateOrganisationService{
-		OrgRepo:       postgres.NewOrgRepo(a.A.DB, a.A.Cache),
-		OrgMemberRepo: postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache),
+		OrgRepo:       postgres.NewOrgRepo(h.A.DB, h.A.Cache),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache),
 		Org:           org,
 		Update:        &orgUpdate,
 	}
@@ -113,19 +113,19 @@ func (a *DashboardHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Req
 	_ = render.Render(w, r, util.NewServerResponse("Organisation updated successfully", org, http.StatusAccepted))
 }
 
-func (a *DashboardHandler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
-	org, err := a.retrieveOrganisation(r)
+func (h *Handler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
+	org, err := h.retrieveOrganisation(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+	if err = h.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
-	err = postgres.NewOrgRepo(a.A.DB, a.A.Cache).DeleteOrganisation(r.Context(), org.UID)
+	err = postgres.NewOrgRepo(h.A.DB, h.A.Cache).DeleteOrganisation(r.Context(), org.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete organisation")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

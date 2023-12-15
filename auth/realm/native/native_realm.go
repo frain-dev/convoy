@@ -16,15 +16,31 @@ import (
 )
 
 type NativeRealm struct {
-	apiKeyRepo datastore.APIKeyRepository
-	userRepo   datastore.UserRepository
+	apiKeyRepo     datastore.APIKeyRepository
+	userRepo       datastore.UserRepository
+	portalLinkRepo datastore.PortalLinkRepository
 }
 
-func NewNativeRealm(apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository) *NativeRealm {
-	return &NativeRealm{apiKeyRepo: apiKeyRepo, userRepo: userRepo}
+func NewNativeRealm(apiKeyRepo datastore.APIKeyRepository,
+	userRepo datastore.UserRepository,
+	portalLinkRepo datastore.PortalLinkRepository) *NativeRealm {
+	return &NativeRealm{apiKeyRepo: apiKeyRepo, userRepo: userRepo, portalLinkRepo: portalLinkRepo}
 }
 
 func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*auth.AuthenticatedUser, error) {
+	if cred.Type == auth.CredentialTypeToken {
+		pLink, err := n.portalLinkRepo.FindPortalLinkByToken(ctx, cred.Token)
+		if err != nil {
+			return nil, errors.New("invalid portal link token")
+		}
+
+		return &auth.AuthenticatedUser{
+			AuthenticatedByRealm: n.GetName(),
+			Credential:           *cred,
+			PortalLink:           pLink,
+		}, nil
+	}
+
 	if cred.Type != auth.CredentialTypeAPIKey {
 		return nil, fmt.Errorf("%s only authenticates credential type %s", n.GetName(), auth.CredentialTypeAPIKey.String())
 	}

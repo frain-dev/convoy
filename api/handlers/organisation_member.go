@@ -1,4 +1,4 @@
-package dashboard
+package handlers
 
 import (
 	"net/http"
@@ -15,15 +15,15 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-func createOrganisationMemberService(a *DashboardHandler) *services.OrganisationMemberService {
-	orgMemberRepo := postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache)
+func createOrganisationMemberService(h *Handler) *services.OrganisationMemberService {
+	orgMemberRepo := postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache)
 
 	return services.NewOrganisationMemberService(orgMemberRepo)
 }
 
-func (a *DashboardHandler) GetOrganisationMembers(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetOrganisationMembers(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
-	org, err := a.retrieveOrganisation(r)
+	org, err := h.retrieveOrganisation(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -31,7 +31,7 @@ func (a *DashboardHandler) GetOrganisationMembers(w http.ResponseWriter, r *http
 
 	userID := r.URL.Query().Get("userID")
 
-	members, paginationData, err := postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache).LoadOrganisationMembersPaged(r.Context(), org.UID, userID, pageable)
+	members, paginationData, err := postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache).LoadOrganisationMembersPaged(r.Context(), org.UID, userID, pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch organisation members")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -42,15 +42,15 @@ func (a *DashboardHandler) GetOrganisationMembers(w http.ResponseWriter, r *http
 		pagedResponse{Content: &members, Pagination: &paginationData}, http.StatusOK))
 }
 
-func (a *DashboardHandler) GetOrganisationMember(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetOrganisationMember(w http.ResponseWriter, r *http.Request) {
 	memberID := chi.URLParam(r, "memberID")
-	org, err := a.retrieveOrganisation(r)
+	org, err := h.retrieveOrganisation(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	member, err := postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
+	member, err := postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation member by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -60,7 +60,7 @@ func (a *DashboardHandler) GetOrganisationMember(w http.ResponseWriter, r *http.
 	_ = render.Render(w, r, util.NewServerResponse("Organisation member fetched successfully", member, http.StatusOK))
 }
 
-func (a *DashboardHandler) UpdateOrganisationMember(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateOrganisationMember(w http.ResponseWriter, r *http.Request) {
 	var roleUpdate models.UpdateOrganisationMember
 	err := util.ReadJSON(r, &roleUpdate)
 	if err != nil {
@@ -69,25 +69,25 @@ func (a *DashboardHandler) UpdateOrganisationMember(w http.ResponseWriter, r *ht
 	}
 
 	memberID := chi.URLParam(r, "memberID")
-	org, err := a.retrieveOrganisation(r)
+	org, err := h.retrieveOrganisation(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+	if err = h.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
-	member, err := postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
+	member, err := postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation member by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	orgMemberService := createOrganisationMemberService(a)
+	orgMemberService := createOrganisationMemberService(h)
 	organisationMember, err := orgMemberService.UpdateOrganisationMember(r.Context(), member, &roleUpdate.Role)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -97,20 +97,20 @@ func (a *DashboardHandler) UpdateOrganisationMember(w http.ResponseWriter, r *ht
 	_ = render.Render(w, r, util.NewServerResponse("Organisation member updated successfully", organisationMember, http.StatusAccepted))
 }
 
-func (a *DashboardHandler) DeleteOrganisationMember(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) DeleteOrganisationMember(w http.ResponseWriter, r *http.Request) {
 	memberID := chi.URLParam(r, "memberID")
-	org, err := a.retrieveOrganisation(r)
+	org, err := h.retrieveOrganisation(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	if err = a.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+	if err = h.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
-	orgMemberService := createOrganisationMemberService(a)
+	orgMemberService := createOrganisationMemberService(h)
 	err = orgMemberService.DeleteOrganisationMember(r.Context(), memberID, org)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
