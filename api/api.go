@@ -327,7 +327,7 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 						})
 
 						projectSubRouter.Route("/meta-events", func(metaEventRouter chi.Router) {
-							metaEventRouter.Get("/", handler.GetMetaEventsPaged)
+							metaEventRouter.With(middleware.Pagination).Get("/", handler.GetMetaEventsPaged)
 
 							metaEventRouter.Route("/{metaEventID}", func(metaEventSubRouter chi.Router) {
 								metaEventSubRouter.Get("/", handler.GetMetaEvent)

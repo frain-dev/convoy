@@ -5,13 +5,10 @@ import (
 
 	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/api"
-	base "github.com/frain-dev/convoy/api/dashboard"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/database/postgres"
-	"github.com/frain-dev/convoy/ee/api/dashboard"
 	"github.com/frain-dev/convoy/ee/api/policies"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
-	"github.com/go-chi/chi/v5"
 )
 
 type EHandler struct {
@@ -42,16 +39,8 @@ func (eh *EHandler) BuildRoutes() http.Handler {
 	router := eh.ApplicationHandler.BuildRoutes()
 
 	// apply overrides
-	eh.RegisterEnterpriseDashboardHandler(router)
 
 	return router
-}
-
-func (eh *EHandler) RegisterEnterpriseDashboardHandler(r *chi.Mux) {
-	_ = &dashboard.DashboardHandler{
-		DashboardHandler: base.NewDashboardHandler(eh.opts),
-		Opts:             eh.opts,
-	}
 }
 
 func (eh *EHandler) RegisterPolicy() error {

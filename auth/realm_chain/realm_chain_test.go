@@ -313,8 +313,9 @@ func TestInit(t *testing.T) {
 
 			mockAPIKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 			userRepo := mocks.NewMockUserRepository(ctrl)
+			portalLinkRepo := mocks.NewMockPortalLinkRepository(ctrl)
 			cache := mocks.NewMockCache(ctrl)
-			err := Init(tt.args.authConfig, mockAPIKeyRepo, userRepo, cache)
+			err := Init(tt.args.authConfig, mockAPIKeyRepo, userRepo, portalLinkRepo, cache)
 			if tt.wantErr {
 				require.Equal(t, tt.wantErrMsg, err.Error())
 				return

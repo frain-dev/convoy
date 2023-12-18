@@ -795,6 +795,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			userRepo := mocks.NewMockUserRepository(ctrl)
 			cache := mocks.NewMockCache(ctrl)
 			subRepo := mocks.NewMockSubscriptionRepository(ctrl)
+			portalLinkRepo := mocks.NewMockPortalLinkRepository(ctrl)
 			q := mocks.NewMockQueuer(ctrl)
 			rateLimiter := mocks.NewMockRateLimiter(ctrl)
 
@@ -808,7 +809,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				t.Errorf("failed to get config: %v", err)
 			}
 
-			err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, cache)
+			err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, cache)
 			if err != nil {
 				t.Errorf("failed to initialize realm chain : %v", err)
 			}

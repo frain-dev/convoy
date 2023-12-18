@@ -272,8 +272,9 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			defer ctrl.Finish()
 			mockApiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 			mockUserRepo := mocks.NewMockUserRepository(ctrl)
+			mockPortalLinkRepo := mocks.NewMockPortalLinkRepository(ctrl)
 
-			nr := NewNativeRealm(mockApiKeyRepo, mockUserRepo)
+			nr := NewNativeRealm(mockApiKeyRepo, mockUserRepo, mockPortalLinkRepo)
 			if tt.nFn != nil {
 				tt.nFn(mockApiKeyRepo, mockUserRepo)
 			}
