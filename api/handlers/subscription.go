@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -52,27 +51,11 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var org *datastore.Organisation
-
-	authUser := middleware.GetAuthUserFromContext(r.Context())
-	if h.IsReqWithPortalLinkToken(authUser) {
-		project, err := h.retrieveProject(r)
-		if err != nil {
-			_ = render.Render(w, r, util.NewServiceErrResponse(err))
-			return
-		}
-
-		orgRepo := postgres.NewOrgRepo(h.A.DB, h.A.Cache)
-		org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
-		if err != nil {
-			_ = render.Render(w, r, util.NewServiceErrResponse(err))
-			return
-		}
-	} else {
-		org, err = h.retrieveOrganisation(r)
-		if err != nil {
-			_ = render.Render(w, r, util.NewServiceErrResponse(err))
-			return
-		}
+	orgRepo := postgres.NewOrgRepo(h.A.DB, h.A.Cache)
+	org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
 	}
 
 	var customDomain string

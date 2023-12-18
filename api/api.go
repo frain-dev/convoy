@@ -92,6 +92,9 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 			r.Use(middleware.RequireAuth())
 
 			r.Route("/projects", func(projectRouter chi.Router) {
+				projectRouter.Get("/", handler.GetProjects)
+				projectRouter.Post("/", handler.CreateProject)
+
 				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 					projectSubRouter.Get("/", handler.GetProject)
 					projectSubRouter.Put("/", handler.UpdateProject)
@@ -246,9 +249,8 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 				})
 
 				orgSubRouter.Route("/projects", func(projectRouter chi.Router) {
-					projectRouter.Route("/", func(orgSubRouter chi.Router) {
-						projectRouter.Get("/", handler.GetProjects)
-					})
+					projectRouter.Get("/", handler.GetProjects)
+					projectRouter.Post("/", handler.CreateProject)
 
 					projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 
@@ -353,9 +355,6 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 		})
 
 		uiRouter.Route("/configuration", func(configRouter chi.Router) {
-			configRouter.Get("/", handler.LoadConfiguration)
-			configRouter.Post("/", handler.CreateConfiguration)
-			configRouter.Put("/", handler.UpdateConfiguration)
 			configRouter.Get("/is_signup_enabled", handler.IsSignUpEnabled)
 		})
 	})
@@ -369,7 +368,7 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 		portalLinkRouter.Get("/portal_link", handler.GetPortalLink)
 
 		portalLinkRouter.Route("/endpoints", func(endpointRouter chi.Router) {
-			endpointRouter.Get("/", handler.GetPortalLinkEndpoints)
+			endpointRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
 			endpointRouter.Get("/{endpointID}", handler.GetEndpoint)
 			endpointRouter.With(handler.CanManageEndpoint()).Post("/", handler.CreateEndpoint)
 			endpointRouter.With(handler.CanManageEndpoint()).Put("/{endpointID}", handler.UpdateEndpoint)
@@ -470,6 +469,7 @@ var guestRoutes = []string{
 	"/users/reset-password",
 	"/users/verify_email",
 	"/organisations/process_invite",
+	"ui/configuration/is_signup_enabled",
 }
 
 func shouldAuthRoute(r *http.Request) bool {

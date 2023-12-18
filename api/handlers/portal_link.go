@@ -288,47 +288,6 @@ func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.Portal
 	}
 }
 
-func (h *Handler) GetPortalLinkEndpoints(w http.ResponseWriter, r *http.Request) {
-	authUser := middleware.GetAuthUserFromContext(r.Context())
-	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache)
-	pLink, err := portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
-	if err != nil {
-		if err == datastore.ErrPortalLinkNotFound {
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
-			return
-		}
-
-		_ = render.Render(w, r, util.NewErrorResponse("error retrieving portal link", http.StatusBadRequest))
-		return
-	}
-
-	project, err := h.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	endpointIDs, err := h.getEndpoints(r, pLink)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	if len(endpointIDs) == 0 {
-		_ = render.Render(w, r, util.NewServerResponse("Endpoints fetched successfully", endpointIDs, http.StatusOK))
-		return
-	}
-
-	endpoints, err := postgres.NewEndpointRepo(h.A.DB, h.A.Cache).FindEndpointsByID(r.Context(), endpointIDs, project.UID)
-	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching endpoints")
-		_ = render.Render(w, r, util.NewErrorResponse("failed to fetch portal link endpoints", http.StatusInternalServerError))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Endpoints fetched successfully", endpoints, http.StatusOK))
-}
-
 func (h *Handler) getEndpoints(r *http.Request, pl *datastore.PortalLink) ([]string, error) {
 	results := make([]string, 0)
 	if !util.IsStringEmpty(pl.OwnerID) {

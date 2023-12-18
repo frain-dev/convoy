@@ -284,7 +284,9 @@ func (h *Handler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := h.retrieveOrganisation(r)
+	var org *datastore.Organisation
+	orgRepo := postgres.NewOrgRepo(h.A.DB, h.A.Cache)
+	org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

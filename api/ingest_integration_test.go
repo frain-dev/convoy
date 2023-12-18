@@ -55,7 +55,8 @@ func (i *IngestIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(i.ConvoyApp.A.DB, i.ConvoyApp.A.Cache)
 	userRepo := postgres.NewUserRepo(i.ConvoyApp.A.DB, i.ConvoyApp.A.Cache)
-	initRealmChain(i.T(), apiRepo, userRepo, i.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(i.ConvoyApp.A.DB, i.ConvoyApp.A.Cache)
+	initRealmChain(i.T(), apiRepo, userRepo, portalLinkRepo, i.ConvoyApp.A.Cache)
 }
 
 func (i *IngestIntegrationTestSuite) TearDownTest() {

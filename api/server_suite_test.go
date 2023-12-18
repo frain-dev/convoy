@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	ncache "github.com/frain-dev/convoy/cache/noop"
 	"io"
 	"math/rand"
 	"net/http"
@@ -16,6 +15,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	ncache "github.com/frain-dev/convoy/cache/noop"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/types"
@@ -128,13 +129,13 @@ func buildServer() *ApplicationHandler {
 	return ah
 }
 
-func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, cache cache.Cache) {
+func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, portalLinkRepo datastore.PortalLinkRepository, cache cache.Cache) {
 	cfg, err := config.Get()
 	if err != nil {
 		t.Errorf("failed to get config: %v", err)
 	}
 
-	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, cache)
+	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, cache)
 	if err != nil {
 		t.Errorf("failed to initialize realm chain : %v", err)
 	}

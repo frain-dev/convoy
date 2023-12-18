@@ -133,8 +133,31 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var q *models.QueryListEndpoint
-
 	data := q.Transform(r)
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, err := h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		endpointIDs, err := h.getEndpoints(r, portalLink)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		if len(endpointIDs) == 0 {
+			_ = render.Render(w, r, util.NewServerResponse("App events fetched successfully",
+				pagedResponse{Content: endpointIDs, Pagination: &datastore.PaginationData{PerPage: int64(data.Filter.Pageable.PerPage)}}, http.StatusOK))
+			return
+		}
+
+		data.Filter.EndpointIDs = endpointIDs
+	}
+
 	endpoints, paginationData, err := postgres.NewEndpointRepo(h.A.DB, h.A.Cache).LoadEndpointsPaged(r.Context(), project.UID, data.Filter, data.Pageable)
 	if err != nil {
 		h.A.Logger.WithError(err).Error("failed to load endpoints")
