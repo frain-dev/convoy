@@ -17,7 +17,6 @@ import (
 	"github.com/hibiken/asynq"
 	"bytes"
 	"compress/gzip"
-	"io/ioutil"	
 )
 
 const (
@@ -193,7 +192,7 @@ func ExportCollection(
 	if err != nil {
 		return err
 	}
-	
+
 	switch tableName {
 	case eventsTable:
 		eventFilter := &datastore.EventFilter{
@@ -231,7 +230,7 @@ func ExportCollection(
 }
 
 func compressFile(outFile, inFile string) error {
-	inputBytes, err := ioutil.ReadFile(inFile)
+	inputBytes, err := os.ReadFile(inFile)
 	if err != nil {
 		return err
 	}
@@ -248,7 +247,7 @@ func compressFile(outFile, inFile string) error {
 		return err
 	}
 
-	err = ioutil.WriteFile(outFile, buf.Bytes(), 0644)
+	err = os.WriteFile(outFile, buf.Bytes(), 0644)
 	if err != nil {
 		return err
 	}
