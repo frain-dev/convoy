@@ -23,21 +23,52 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 	tests := []struct {
 		name       string
 		args       args
-		nFn        func(apiKeyRepo *mocks.MockAPIKeyRepository, userRepo *mocks.MockUserRepository)
+		nFn        func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository)
 		want       *auth.AuthenticatedUser
 		wantErr    bool
 		wantErrMsg string
 	}{
 		{
-			name: "should_authenticate_successfully",
+			name: "should_authenticate_portal_link_tokens_successfully",
+			args: args{
+				cred: &auth.Credential{
+					Type:  auth.CredentialTypeToken,
+					Token: "C8oU2G7dA75BWrHfFYYvrash",
+				},
+			},
+			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
+				pR.EXPECT().
+					FindPortalLinkByToken(gomock.Any(), gomock.Any()).
+					Times(1).Return(&datastore.PortalLink{
+					UID:       "abcd",
+					Token:     "C8oU2G7dA75BWrHfFYYvrash",
+					CreatedAt: time.Time{},
+				}, nil)
+			},
+			want: &auth.AuthenticatedUser{
+				AuthenticatedByRealm: "native_realm",
+				Credential: auth.Credential{
+					Type:  auth.CredentialTypeToken,
+					Token: "C8oU2G7dA75BWrHfFYYvrash",
+				},
+				PortalLink: &datastore.PortalLink{
+					UID:       "abcd",
+					Token:     "C8oU2G7dA75BWrHfFYYvrash",
+					CreatedAt: time.Time{},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_authenticate_apikey_successfully",
 			args: args{
 				cred: &auth.Credential{
 					Type:   auth.CredentialTypeAPIKey,
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
 			},
-			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository, userRepo *mocks.MockUserRepository) {
-				apiKeyRepo.EXPECT().
+			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
+				aR.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
@@ -85,8 +116,8 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
 			},
-			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository, userRepo *mocks.MockUserRepository) {
-				apiKeyRepo.EXPECT().
+			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
+				aR.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
@@ -103,7 +134,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					CreatedAt: time.Time{},
 				}, nil)
 
-				userRepo.EXPECT().FindUserByID(gomock.Any(), "1234").Times(1).Return(&datastore.User{UID: "1234"}, nil)
+				uR.EXPECT().FindUserByID(gomock.Any(), "1234").Times(1).Return(&datastore.User{UID: "1234"}, nil)
 			},
 			want: &auth.AuthenticatedUser{
 				AuthenticatedByRealm: "native_realm",
@@ -142,8 +173,8 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
 			},
-			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository, userRepo *mocks.MockUserRepository) {
-				apiKeyRepo.EXPECT().
+			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
+				aR.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
@@ -160,7 +191,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					CreatedAt: time.Time{},
 				}, nil)
 
-				userRepo.EXPECT().FindUserByID(gomock.Any(), "1234").Times(1).Return(nil, errors.New("failed"))
+				uR.EXPECT().FindUserByID(gomock.Any(), "1234").Times(1).Return(nil, errors.New("failed"))
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to fetch user: failed",
@@ -185,8 +216,8 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
 			},
-			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository, userRepo *mocks.MockUserRepository) {
-				apiKeyRepo.EXPECT().
+			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
+				aR.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
@@ -226,8 +257,8 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
 			},
-			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository, userRepo *mocks.MockUserRepository) {
-				apiKeyRepo.EXPECT().
+			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
+				aR.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(&datastore.APIKey{
 					UID: "abcd",
@@ -255,8 +286,8 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
 			},
-			nFn: func(apiKeyRepo *mocks.MockAPIKeyRepository, userRepo *mocks.MockUserRepository) {
-				apiKeyRepo.EXPECT().
+			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
+				aR.EXPECT().
 					FindAPIKeyByMaskID(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil, errors.New("no documents in result"))
 			},
@@ -276,7 +307,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 
 			nr := NewNativeRealm(mockApiKeyRepo, mockUserRepo, mockPortalLinkRepo)
 			if tt.nFn != nil {
-				tt.nFn(mockApiKeyRepo, mockUserRepo)
+				tt.nFn(mockApiKeyRepo, mockUserRepo, mockPortalLinkRepo)
 			}
 
 			got, err := nr.Authenticate(context.Background(), tt.args.cred)
