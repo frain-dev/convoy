@@ -16,7 +16,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-func (h *Handler) LoadConfiguration(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetConfiguration(w http.ResponseWriter, r *http.Request) {
 	config, err := postgres.NewConfigRepo(h.A.DB).LoadConfiguration(r.Context())
 	if err != nil && !errors.Is(err, datastore.ErrConfigNotFound) {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

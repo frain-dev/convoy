@@ -355,6 +355,7 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 		})
 
 		uiRouter.Route("/configuration", func(configRouter chi.Router) {
+			configRouter.Get("/", handler.GetConfiguration)
 			configRouter.Get("/is_signup_enabled", handler.IsSignUpEnabled)
 		})
 	})
