@@ -213,10 +213,10 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 				userSubRouter.Put("/profile", handler.UpdateUser)
 				userSubRouter.Put("/password", handler.UpdatePassword)
 
-				userSubRouter.Route("/security/personal_api_keys", func(securityRouter chi.Router) {
-					securityRouter.Post("/", handler.CreatePersonalAPIKey)
-					securityRouter.Put("/{keyID}/revoke", handler.RevokePersonalAPIKey)
+				userSubRouter.Route("/security", func(securityRouter chi.Router) {
+					securityRouter.Post("/personal_api_keys", handler.CreatePersonalAPIKey)
 					securityRouter.With(middleware.Pagination).Get("/", handler.GetAPIKeys)
+					securityRouter.Put("/{keyID}/revoke", handler.RevokePersonalAPIKey)
 				})
 			})
 		})
