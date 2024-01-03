@@ -470,7 +470,7 @@ var guestRoutes = []string{
 	"/users/reset-password",
 	"/users/verify_email",
 	"/organisations/process_invite",
-	"ui/configuration/is_signup_enabled",
+	"/ui/configuration/is_signup_enabled",
 }
 
 func shouldAuthRoute(r *http.Request) bool {
