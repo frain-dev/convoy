@@ -1,4 +1,4 @@
-package public
+package handlers
 
 import (
 	"net/http"
@@ -11,6 +11,7 @@ import (
 )
 
 // GetDeliveryAttempt
+//
 //	@Summary		Retrieve a delivery attempt
 //	@Description	This endpoint fetches an app event delivery attempt
 //	@Tags			Delivery Attempts
@@ -23,8 +24,8 @@ import (
 //	@Failure		400,401,404			{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID} [get]
-func (a *PublicHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
-	eventDelivery, err := a.retrieveEventDelivery(r)
+func (h *Handler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
+	eventDelivery, err := h.retrieveEventDelivery(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -43,6 +44,7 @@ func (a *PublicHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Reques
 }
 
 // GetDeliveryAttempts
+//
 //	@Summary		List delivery attempts
 //	@Description	This endpoint fetches an app message's delivery attempts
 //	@Tags			Delivery Attempts
@@ -54,8 +56,8 @@ func (a *PublicHandler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Reques
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts [get]
-func (a *PublicHandler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
-	eventDelivery, err := a.retrieveEventDelivery(r)
+func (h *Handler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
+	eventDelivery, err := h.retrieveEventDelivery(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

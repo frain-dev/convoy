@@ -1,4 +1,4 @@
-package public
+package handlers
 
 import (
 	"fmt"
@@ -14,10 +14,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 // CreatePortalLink
+//
 //	@Summary		Create a portal link
 //	@Description	This endpoint creates a portal link
 //	@Tags			Portal Links
@@ -29,22 +30,22 @@ import (
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links [post]
-func (a *PublicHandler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 	var newPortalLink models.PortalLink
 	if err := util.ReadJSON(r, &newPortalLink); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	project, err := a.retrieveProject(r)
+	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	cp := services.CreatePortalLinkService{
-		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache),
-		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
+		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache),
+		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
 		Portal:         &newPortalLink,
 		Project:        project,
 	}
@@ -55,7 +56,7 @@ func (a *PublicHandler) CreatePortalLink(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	baseUrl, err := a.retrieveHost()
+	baseUrl, err := h.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -66,6 +67,7 @@ func (a *PublicHandler) CreatePortalLink(w http.ResponseWriter, r *http.Request)
 }
 
 // GetPortalLinkByID
+//
 //	@Summary		Retrieve a portal link
 //	@Description	This endpoint retrieves a portal link by its id.
 //	@Tags			Portal Links
@@ -77,35 +79,47 @@ func (a *PublicHandler) CreatePortalLink(w http.ResponseWriter, r *http.Request)
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID} [get]
-func (a *PublicHandler) GetPortalLinkByID(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r)
+func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	portalLink, err := postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache).FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
-	if err != nil {
-		if err == datastore.ErrPortalLinkNotFound {
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+	var pLink *datastore.PortalLink
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if h.IsReqWithPortalLinkToken(authUser) {
+		pLink, err = h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("error retrieving portal link", http.StatusBadRequest))
 			return
 		}
+	} else {
+		portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache)
+		pLink, err = portalLinkRepo.FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
+		if err != nil {
+			if err == datastore.ErrPortalLinkNotFound {
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+				return
+			}
 
-		_ = render.Render(w, r, util.NewErrorResponse("error retrieving portal link", http.StatusBadRequest))
-		return
+			_ = render.Render(w, r, util.NewErrorResponse("error retrieving portal link", http.StatusBadRequest))
+			return
+		}
 	}
 
-	baseUrl, err := a.retrieveHost()
+	baseUrl, err := h.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	pl := portalLinkResponse(portalLink, baseUrl)
+	pl := portalLinkResponse(pLink, baseUrl)
 	_ = render.Render(w, r, util.NewServerResponse("Portal link fetched successfully", pl, http.StatusOK))
 }
 
 // UpdatePortalLink
+//
 //	@Summary		Update a portal link
 //	@Description	This endpoint updates a portal link
 //	@Tags			Portal Links
@@ -118,7 +132,7 @@ func (a *PublicHandler) GetPortalLinkByID(w http.ResponseWriter, r *http.Request
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID} [put]
-func (a *PublicHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 	var updatePortalLink models.PortalLink
 	err := util.ReadJSON(r, &updatePortalLink)
 	if err != nil {
@@ -126,13 +140,13 @@ func (a *PublicHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	project, err := a.retrieveProject(r)
+	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	portalLink, err := postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache).FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
+	portalLink, err := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache).FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
 		if err == datastore.ErrPortalLinkNotFound {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
@@ -144,8 +158,8 @@ func (a *PublicHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Request)
 	}
 
 	upl := services.UpdatePortalLinkService{
-		PortalLinkRepo: postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache),
-		EndpointRepo:   postgres.NewEndpointRepo(a.A.DB, a.A.Cache),
+		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache),
+		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
 		Project:        project,
 		Update:         &updatePortalLink,
 		PortalLink:     portalLink,
@@ -157,7 +171,7 @@ func (a *PublicHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	baseUrl, err := a.retrieveHost()
+	baseUrl, err := h.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -168,6 +182,7 @@ func (a *PublicHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Request)
 }
 
 // RevokePortalLink
+//
 //	@Summary		Revoke a portal link
 //	@Description	This endpoint revokes a portal link
 //	@Tags			Portal Links
@@ -179,14 +194,14 @@ func (a *PublicHandler) UpdatePortalLink(w http.ResponseWriter, r *http.Request)
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke [put]
-func (a *PublicHandler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r)
+func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	portalLinkRepo := postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache)
 	portalLink, err := portalLinkRepo.FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
 		if err == datastore.ErrPortalLinkNotFound {
@@ -209,6 +224,7 @@ func (a *PublicHandler) RevokePortalLink(w http.ResponseWriter, r *http.Request)
 }
 
 // LoadPortalLinksPaged
+//
 //	@Summary		List all portal links
 //	@Description	This endpoint fetches multiple portal links
 //	@Tags			Portal Links
@@ -222,9 +238,9 @@ func (a *PublicHandler) RevokePortalLink(w http.ResponseWriter, r *http.Request)
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links [get]
-func (a *PublicHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
-	pageable := m.GetPageableFromContext(r.Context())
-	project, err := a.retrieveProject(r)
+func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
+	pageable := middleware.GetPageableFromContext(r.Context())
+	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -233,7 +249,7 @@ func (a *PublicHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Requ
 	endpointIDs := getEndpointIDs(r)
 	filter := &datastore.FilterBy{EndpointIDs: endpointIDs}
 
-	portalLinks, paginationData, err := postgres.NewPortalLinkRepo(a.A.DB, a.A.Cache).LoadPortalLinksPaged(r.Context(), project.UID, filter, pageable)
+	portalLinks, paginationData, err := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache).LoadPortalLinksPaged(r.Context(), project.UID, filter, pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Println("an error occurred while fetching portal links")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching portal links", http.StatusBadRequest))
@@ -241,7 +257,7 @@ func (a *PublicHandler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Requ
 	}
 
 	plResponse := []*models.PortalLinkResponse{}
-	baseUrl, err := a.retrieveHost()
+	baseUrl, err := h.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -270,4 +286,27 @@ func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.Portal
 		CreatedAt:         pl.CreatedAt,
 		UpdatedAt:         pl.UpdatedAt,
 	}
+}
+
+func (h *Handler) getEndpoints(r *http.Request, pl *datastore.PortalLink) ([]string, error) {
+	results := make([]string, 0)
+	if !util.IsStringEmpty(pl.OwnerID) {
+		endpointRepo := postgres.NewEndpointRepo(h.A.DB, h.A.Cache)
+		endpoints, err := endpointRepo.FindEndpointsByOwnerID(r.Context(), pl.ProjectID, pl.OwnerID)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, endpoint := range endpoints {
+			results = append(results, endpoint.UID)
+		}
+
+		return results, nil
+	}
+
+	if pl.Endpoints == nil {
+		return results, nil
+	}
+
+	return pl.Endpoints, nil
 }

@@ -1,4 +1,4 @@
-package dashboard
+package handlers
 
 import (
 	"errors"
@@ -17,7 +17,7 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
-func (a *DashboardHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var newUser models.RegisterUser
 	if err := util.ReadJSON(r, &newUser); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -29,7 +29,7 @@ func (a *DashboardHandler) RegisterUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	baseUrl, err := a.retrieveHost()
+	baseUrl, err := h.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -42,12 +42,12 @@ func (a *DashboardHandler) RegisterUser(w http.ResponseWriter, r *http.Request) 
 	}
 
 	rs := services.RegisterUserService{
-		UserRepo:      postgres.NewUserRepo(a.A.DB, a.A.Cache),
-		OrgRepo:       postgres.NewOrgRepo(a.A.DB, a.A.Cache),
-		OrgMemberRepo: postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache),
-		Queue:         a.A.Queue,
-		JWT:           jwt.NewJwt(&config.Auth.Jwt, a.A.Cache),
-		ConfigRepo:    postgres.NewConfigRepo(a.A.DB),
+		UserRepo:      postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		OrgRepo:       postgres.NewOrgRepo(h.A.DB, h.A.Cache),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache),
+		Queue:         h.A.Queue,
+		JWT:           jwt.NewJwt(&config.Auth.Jwt, h.A.Cache),
+		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
 		BaseURL:       baseUrl,
 		Data:          &newUser,
 	}
@@ -70,22 +70,22 @@ func (a *DashboardHandler) RegisterUser(w http.ResponseWriter, r *http.Request) 
 	_ = render.Render(w, r, util.NewServerResponse("Registration successful", u, http.StatusCreated))
 }
 
-func (a *DashboardHandler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 	user, ok := getUser(r)
 	if !ok {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
 
-	baseUrl, err := a.retrieveHost()
+	baseUrl, err := h.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	rs := services.ResendEmailVerificationTokenService{
-		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
-		Queue:    a.A.Queue,
+		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		Queue:    h.A.Queue,
 		BaseURL:  baseUrl,
 		User:     user,
 	}
@@ -99,7 +99,7 @@ func (a *DashboardHandler) ResendVerificationEmail(w http.ResponseWriter, r *htt
 	_ = render.Render(w, r, util.NewServerResponse("Verification email resent successfully", nil, http.StatusOK))
 }
 
-func (a *DashboardHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	user, ok := getUser(r)
 	if !ok {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
@@ -110,7 +110,7 @@ func (a *DashboardHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("User fetched successfully", userResponse, http.StatusOK))
 }
 
-func (a *DashboardHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	var userUpdate models.UpdateUser
 	err := util.ReadJSON(r, &userUpdate)
 	if err != nil {
@@ -130,7 +130,7 @@ func (a *DashboardHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := services.UpdateUserService{
-		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
+		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
 		Data:     &userUpdate,
 		User:     user,
 	}
@@ -145,7 +145,7 @@ func (a *DashboardHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("User updated successfully", userResponse, http.StatusOK))
 }
 
-func (a *DashboardHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	var updatePassword models.UpdatePassword
 	err := util.ReadJSON(r, &updatePassword)
 	if err != nil {
@@ -165,7 +165,7 @@ func (a *DashboardHandler) UpdatePassword(w http.ResponseWriter, r *http.Request
 	}
 
 	up := services.UpdatePasswordService{
-		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
+		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
 		Data:     &updatePassword,
 		User:     user,
 	}
@@ -180,9 +180,9 @@ func (a *DashboardHandler) UpdatePassword(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("Password updated successfully", userResponse, http.StatusOK))
 }
 
-func (a *DashboardHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var forgotPassword models.ForgotPassword
-	baseUrl, err := a.retrieveHost()
+	baseUrl, err := h.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -200,8 +200,8 @@ func (a *DashboardHandler) ForgotPassword(w http.ResponseWriter, r *http.Request
 	}
 
 	gp := services.GeneratePasswordResetTokenService{
-		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
-		Queue:    a.A.Queue,
+		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		Queue:    h.A.Queue,
 		BaseURL:  baseUrl,
 		Data:     &forgotPassword,
 	}
@@ -214,9 +214,9 @@ func (a *DashboardHandler) ForgotPassword(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("Password reset token has been sent successfully", nil, http.StatusOK))
 }
 
-func (a *DashboardHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	ve := services.VerifyEmailService{
-		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
+		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
 		Token:    r.URL.Query().Get("token"),
 	}
 
@@ -229,7 +229,7 @@ func (a *DashboardHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Email has been verified successfully", nil, http.StatusOK))
 }
 
-func (a *DashboardHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	var resetPassword models.ResetPassword
 	err := util.ReadJSON(r, &resetPassword)
@@ -244,7 +244,7 @@ func (a *DashboardHandler) ResetPassword(w http.ResponseWriter, r *http.Request)
 	}
 
 	rs := services.ResetPasswordService{
-		UserRepo: postgres.NewUserRepo(a.A.DB, a.A.Cache),
+		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
 		Token:    token,
 		Data:     &resetPassword,
 	}

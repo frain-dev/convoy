@@ -314,18 +314,6 @@ definitions:
       topic_name:
         type: string
     type: object
-  datastore.KeyType:
-    enum:
-    - project
-    - app_portal
-    - cli
-    - personal_key
-    type: string
-    x-enum-varnames:
-    - ProjectKey
-    - AppPortalKey
-    - CLIKey
-    - PersonalKey
   datastore.M:
     additionalProperties: true
     type: object
@@ -709,30 +697,19 @@ definitions:
     - HMacVerifier
     - BasicAuthVerifier
     - APIKeyVerifier
+  handlers.Stub:
+    type: object
+  handlers.pagedResponse:
+    properties:
+      content: {}
+      pagination:
+        $ref: '#/definitions/datastore.PaginationData'
+    type: object
   httpheader.HTTPHeader:
     additionalProperties:
       items:
         type: string
       type: array
-    type: object
-  models.APIKeyResponse:
-    properties:
-      created_at:
-        type: string
-      expires_at:
-        type: string
-      key:
-        type: string
-      key_type:
-        $ref: '#/definitions/datastore.KeyType'
-      name:
-        type: string
-      role:
-        $ref: '#/definitions/models.Role'
-      uid:
-        type: string
-      user_id:
-        type: string
     type: object
   models.AlertConfiguration:
     properties:
@@ -846,24 +823,6 @@ definitions:
         type: string
       uid:
         type: string
-    type: object
-  models.CreateProject:
-    properties:
-      config:
-        $ref: '#/definitions/models.ProjectConfig'
-      logo_url:
-        type: string
-      name:
-        type: string
-      type:
-        type: string
-    type: object
-  models.CreateProjectResponse:
-    properties:
-      api_key:
-        $ref: '#/definitions/models.APIKeyResponse'
-      project:
-        $ref: '#/definitions/models.ProjectResponse'
     type: object
   models.CreateSource:
     properties:
@@ -1252,21 +1211,6 @@ definitions:
       topic_name:
         type: string
     type: object
-  models.MetaEventConfiguration:
-    properties:
-      event_type:
-        items:
-          type: string
-        type: array
-      is_enabled:
-        type: boolean
-      secret:
-        type: string
-      type:
-        type: string
-      url:
-        type: string
-    type: object
   models.MetaEventResponse:
     properties:
       attempt:
@@ -1334,54 +1278,6 @@ definitions:
       url:
         type: string
     type: object
-  models.ProjectConfig:
-    properties:
-      add_event_id_trace_headers:
-        type: boolean
-      disable_endpoint:
-        type: boolean
-      max_payload_read_size:
-        type: integer
-      meta_event:
-        $ref: '#/definitions/models.MetaEventConfiguration'
-      ratelimit:
-        $ref: '#/definitions/models.RateLimitConfiguration'
-      replay_attacks_prevention_enabled:
-        type: boolean
-      retention_policy:
-        $ref: '#/definitions/models.RetentionPolicyConfiguration'
-      retention_policy_enabled:
-        type: boolean
-      signature:
-        $ref: '#/definitions/models.SignatureConfiguration'
-      strategy:
-        $ref: '#/definitions/models.StrategyConfiguration'
-    type: object
-  models.ProjectResponse:
-    properties:
-      config:
-        $ref: '#/definitions/datastore.ProjectConfig'
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      logo_url:
-        type: string
-      name:
-        type: string
-      organisation_id:
-        type: string
-      retained_events:
-        type: integer
-      statistics:
-        $ref: '#/definitions/datastore.ProjectStatistics'
-      type:
-        $ref: '#/definitions/datastore.ProjectType'
-      uid:
-        type: string
-      updated_at:
-        type: string
-    type: object
   models.PubSubConfig:
     properties:
       google:
@@ -1402,13 +1298,6 @@ definitions:
       duration:
         type: integer
     type: object
-  models.RetentionPolicyConfiguration:
-    properties:
-      policy:
-        type: string
-      search_policy:
-        type: string
-    type: object
   models.RetryConfiguration:
     properties:
       duration:
@@ -1420,15 +1309,6 @@ definitions:
       type:
         $ref: '#/definitions/datastore.StrategyProvider'
     type: object
-  models.Role:
-    properties:
-      app:
-        type: string
-      project:
-        type: string
-      type:
-        type: string
-    type: object
   models.SQSPubSubConfig:
     properties:
       access_key_id:
@@ -1438,26 +1318,6 @@ definitions:
       queue_name:
         type: string
       secret_key:
-        type: string
-    type: object
-  models.SignatureConfiguration:
-    properties:
-      header:
-        $ref: '#/definitions/config.SignatureHeaderProvider'
-      versions:
-        items:
-          $ref: '#/definitions/models.SignatureVersion'
-        type: array
-    type: object
-  models.SignatureVersion:
-    properties:
-      created_at:
-        type: string
-      encoding:
-        type: string
-      hash:
-        type: string
-      uid:
         type: string
     type: object
   models.SourceResponse:
@@ -1500,15 +1360,6 @@ definitions:
         type: string
       verifier:
         $ref: '#/definitions/datastore.VerifierConfig'
-    type: object
-  models.StrategyConfiguration:
-    properties:
-      duration:
-        type: integer
-      retry_count:
-        type: integer
-      type:
-        type: string
     type: object
   models.SubscriptionFunctionResponse:
     properties:
@@ -1602,19 +1453,6 @@ definitions:
       url:
         type: string
     type: object
-  models.UpdateProject:
-    properties:
-      config:
-        $ref: '#/definitions/models.ProjectConfig'
-      logo_url:
-        type: string
-      name:
-        type: string
-      rate_limit:
-        type: integer
-      rate_limit_duration:
-        type: string
-    type: object
   models.UpdateSource:
     properties:
       custom_response:
@@ -1678,14 +1516,6 @@ definitions:
         description: Valid is true if String is not NULL
         type: boolean
     type: object
-  public.Stub:
-    type: object
-  public.pagedResponse:
-    properties:
-      content: {}
-      pagination:
-        $ref: '#/definitions/datastore.PaginationData'
-    type: object
   util.ServerResponse:
     properties:
       data:
@@ -1712,296 +1542,6 @@ info:
   title: Convoy API Reference
   version: 0.9.0
 paths:
-  /v1/projects:
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches projects
-      parameters:
-      - description: Project name
-        in: query
-        name: name
-        type: string
-      - description: organisation id
-        in: query
-        name: orgID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/models.ProjectResponse'
-                  type: array
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/public.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/public.Stub'
-              type: object
-        "404":
-          description: Not Found
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/public.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: List all projects
-      tags:
-      - Projects
-    post:
-      consumes:
-      - application/json
-      description: This endpoint creates a project
-      parameters:
-      - description: Organisation id
-        in: query
-        name: orgID
-        required: true
-        type: string
-      - description: Project Details
-        in: body
-        name: project
-        required: true
-        schema:
-          $ref: '#/definitions/models.CreateProject'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.CreateProjectResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/public.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/public.Stub'
-              type: object
-        "404":
-          description: Not Found
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/public.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Create a project
-      tags:
-      - Projects
-  /v1/projects/{projectID}:
-    delete:
-      consumes:
-      - application/json
-      description: This endpoint deletes a project using its id
-      parameters:
-      - description: Project ID
-        in: path
-        name: projectID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/public.Stub'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/public.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/public.Stub'
-              type: object
-        "404":
-          description: Not Found
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/public.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Delete a project
-      tags:
-      - Projects
-    get:
-      consumes:
-      - application/json
-      description: This endpoint fetches a project by its id
-      parameters:
-      - description: Project ID
-        in: path
-        name: projectID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.ProjectResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/public.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/public.Stub'
-              type: object
-        "404":
-          description: Not Found
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/public.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Retrieve a project
-      tags:
-      - Projects
-    put:
-      consumes:
-      - application/json
-      description: This endpoint updates a project
-      parameters:
-      - description: Project ID
-        in: path
-        name: projectID
-        required: true
-        type: string
-      - description: Project Details
-        in: body
-        name: project
-        required: true
-        schema:
-          $ref: '#/definitions/models.UpdateProject'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.ProjectResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/public.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/public.Stub'
-              type: object
-        "404":
-          description: Not Found
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/public.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Update a project
-      tags:
-      - Projects
   /v1/projects/{projectID}/endpoints:
     get:
       consumes:
@@ -2054,7 +1594,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/public.pagedResponse'
+                  - $ref: '#/definitions/handlers.pagedResponse'
                   - properties:
                       content:
                         items:
@@ -2069,7 +1609,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2078,7 +1618,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -2087,7 +1627,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2129,7 +1669,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2138,7 +1678,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -2147,7 +1687,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2180,7 +1720,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "400":
           description: Bad Request
@@ -2189,7 +1729,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2198,7 +1738,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -2207,7 +1747,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2248,7 +1788,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2257,7 +1797,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -2266,7 +1806,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2313,7 +1853,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2322,7 +1862,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -2331,7 +1871,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2379,7 +1919,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2388,7 +1928,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -2397,7 +1937,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2440,7 +1980,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2449,7 +1989,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -2458,7 +1998,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2501,7 +2041,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2510,7 +2050,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -2519,7 +2059,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2602,7 +2142,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/public.pagedResponse'
+                  - $ref: '#/definitions/handlers.pagedResponse'
                   - properties:
                       content:
                         items:
@@ -2617,7 +2157,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2626,7 +2166,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -2635,7 +2175,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2677,7 +2217,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2686,7 +2226,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -2695,7 +2235,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2739,7 +2279,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2748,7 +2288,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -2757,7 +2297,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2804,7 +2344,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2813,7 +2353,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -2822,7 +2362,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2864,7 +2404,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2873,7 +2413,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -2882,7 +2422,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2928,7 +2468,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "400":
           description: Bad Request
@@ -2937,7 +2477,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -2946,7 +2486,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -2955,7 +2495,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -2979,7 +2519,7 @@ paths:
         required: true
         schema:
           allOf:
-          - $ref: '#/definitions/public.Stub'
+          - $ref: '#/definitions/handlers.Stub'
           - properties:
               ids:
                 $ref: '#/definitions/models.IDs'
@@ -2994,7 +2534,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "400":
           description: Bad Request
@@ -3003,7 +2543,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3012,7 +2552,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -3021,7 +2561,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3096,7 +2636,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/public.pagedResponse'
+                  - $ref: '#/definitions/handlers.pagedResponse'
                   - properties:
                       content:
                         items:
@@ -3111,7 +2651,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3120,7 +2660,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -3129,7 +2669,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3171,7 +2711,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3180,7 +2720,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -3189,7 +2729,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3231,7 +2771,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3240,7 +2780,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -3249,7 +2789,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3291,7 +2831,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3300,7 +2840,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -3309,7 +2849,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3370,7 +2910,7 @@ paths:
                   - $ref: '#/definitions/datastore.Event'
                   - properties:
                       data:
-                        $ref: '#/definitions/public.Stub'
+                        $ref: '#/definitions/handlers.Stub'
                     type: object
               type: object
         "400":
@@ -3380,7 +2920,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3389,7 +2929,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -3398,7 +2938,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3430,7 +2970,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/public.Stub'
+            $ref: '#/definitions/handlers.Stub'
         "400":
           description: Bad Request
           schema:
@@ -3438,7 +2978,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3447,7 +2987,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -3456,7 +2996,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3500,7 +3040,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3509,7 +3049,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -3518,7 +3058,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3577,7 +3117,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/public.pagedResponse'
+                  - $ref: '#/definitions/handlers.pagedResponse'
                   - properties:
                       content:
                         items:
@@ -3592,7 +3132,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3601,7 +3141,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -3610,7 +3150,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3652,7 +3192,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3661,7 +3201,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -3670,7 +3210,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3712,7 +3252,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3721,7 +3261,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -3730,7 +3270,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3771,7 +3311,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/public.pagedResponse'
+                  - $ref: '#/definitions/handlers.pagedResponse'
                   - properties:
                       content:
                         items:
@@ -3786,7 +3326,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3795,7 +3335,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -3804,7 +3344,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3846,7 +3386,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3855,7 +3395,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -3864,7 +3404,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3906,7 +3446,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3915,7 +3455,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -3924,7 +3464,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -3971,7 +3511,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -3980,7 +3520,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -3989,7 +3529,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4022,7 +3562,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "400":
           description: Bad Request
@@ -4031,7 +3571,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4040,7 +3580,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -4049,7 +3589,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4108,7 +3648,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/public.pagedResponse'
+                  - $ref: '#/definitions/handlers.pagedResponse'
                   - properties:
                       content:
                         items:
@@ -4123,7 +3663,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4132,7 +3672,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -4141,7 +3681,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4183,7 +3723,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4192,7 +3732,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -4201,7 +3741,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4234,7 +3774,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "400":
           description: Bad Request
@@ -4243,7 +3783,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4252,7 +3792,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -4261,7 +3801,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4302,7 +3842,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4311,7 +3851,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -4320,7 +3860,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4367,7 +3907,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4376,7 +3916,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -4385,7 +3925,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4440,7 +3980,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/public.pagedResponse'
+                  - $ref: '#/definitions/handlers.pagedResponse'
                   - properties:
                       content:
                         items:
@@ -4455,7 +3995,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4464,7 +4004,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -4473,7 +4013,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4515,7 +4055,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4524,7 +4064,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -4533,7 +4073,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4566,7 +4106,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "400":
           description: Bad Request
@@ -4575,7 +4115,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4584,7 +4124,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -4593,7 +4133,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4634,7 +4174,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4643,7 +4183,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -4652,7 +4192,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4699,7 +4239,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4708,7 +4248,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -4717,7 +4257,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4761,7 +4301,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4770,7 +4310,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -4779,7 +4319,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []
@@ -4823,7 +4363,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "401":
           description: Unauthorized
@@ -4832,7 +4372,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "404":
           description: Not Found
@@ -4841,7 +4381,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/public.Stub'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
       security:
       - ApiKeyAuth: []

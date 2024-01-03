@@ -79,7 +79,8 @@ func (s *PublicEndpointIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *PublicEndpointIntegrationTestSuite) TearDownTest() {
@@ -728,7 +729,8 @@ func (s *PublicEventIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *PublicEventIntegrationTestSuite) TearDownTest() {
@@ -1312,7 +1314,8 @@ func (s *PublicPortalLinkIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *PublicPortalLinkIntegrationTestSuite) TearDownTest() {
@@ -1571,7 +1574,8 @@ func (s *PublicProjectIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *PublicProjectIntegrationTestSuite) TestGetProjectWithPersonalAPIKey() {
@@ -1599,7 +1603,7 @@ func (s *PublicProjectIntegrationTestSuite) TestGetProjectWithPersonalAPIKey() {
 }
 
 func (s *PublicProjectIntegrationTestSuite) TestGetProjectWithPersonalAPIKey_UnauthorizedRole() {
-	expectedStatusCode := http.StatusForbidden
+	expectedStatusCode := http.StatusBadRequest
 
 	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
@@ -1648,7 +1652,7 @@ func (s *PublicProjectIntegrationTestSuite) TestDeleteProjectWithPersonalAPIKey(
 }
 
 func (s *PublicProjectIntegrationTestSuite) TestDeleteProjectWithPersonalAPIKey_UnauthorizedRole() {
-	expectedStatusCode := http.StatusForbidden
+	expectedStatusCode := http.StatusBadRequest
 
 	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
@@ -1728,6 +1732,29 @@ func (s *PublicProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey(
 func (s *PublicProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey_UnauthorizedRole() {
 	expectedStatusCode := http.StatusForbidden
 
+	bodyStr := `{
+        "name": "test-project",
+        "type": "outgoing",
+        "logo_url": "",
+        "config": {
+            "strategy": {
+                "type": "linear",
+                "duration": 10,
+                "retry_count": 2
+            },
+            "signature": {
+                "header": "X-Convoy-Signature",
+                "hash": "SHA512"
+            },
+            "disable_endpoint": false,
+            "replay_attacks": false,
+            "ratelimit": {
+                "count": 8000,
+                "duration": 60
+            }
+        }
+    }`
+
 	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
 
@@ -1735,7 +1762,8 @@ func (s *PublicProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey_
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/projects?orgID=%s", s.DefaultOrg.UID)
-	req := createRequest(http.MethodPost, url, key, nil)
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPost, url, key, body)
 
 	w := httptest.NewRecorder()
 
@@ -1777,7 +1805,7 @@ func (s *PublicProjectIntegrationTestSuite) TestUpdateProjectWithPersonalAPIKey(
 }
 
 func (s *PublicProjectIntegrationTestSuite) TestUpdateProjectWithPersonalAPIKey_UnauthorizedRole() {
-	expectedStatusCode := http.StatusForbidden
+	expectedStatusCode := http.StatusBadRequest
 
 	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
@@ -1888,7 +1916,8 @@ func (s *PublicSourceIntegrationTestSuite) SetupTest() {
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
 	// orgRepo := postgres.NewOrgRepo(s.ConvoyApp.A.DB, nil)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *PublicSourceIntegrationTestSuite) TearDownTest() {
@@ -2220,7 +2249,8 @@ func (s *PublicSubscriptionIntegrationTestSuite) SetupTest() {
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
 
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *PublicSubscriptionIntegrationTestSuite) TearDownTest() {
@@ -2720,7 +2750,8 @@ func (s *PublicMetaEventIntegrationTestSuite) SetupTest() {
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
 
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *PublicMetaEventIntegrationTestSuite) TearDownTest() {

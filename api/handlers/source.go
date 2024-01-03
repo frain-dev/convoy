@@ -1,4 +1,4 @@
-package public
+package handlers
 
 import (
 	"errors"
@@ -17,6 +17,7 @@ import (
 )
 
 // CreateSource
+//
 //	@Summary		Create a source
 //	@Description	This endpoint creates a source
 //	@Tags			Sources
@@ -28,7 +29,13 @@ import (
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/sources [post]
-func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateSource(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	var newSource models.CreateSource
 	if err := util.ReadJSON(r, &newSource); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -40,15 +47,9 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
 	cs := services.CreateSourceService{
-		SourceRepo: postgres.NewSourceRepo(a.A.DB, a.A.Cache),
-		Cache:      a.A.Cache,
+		SourceRepo: postgres.NewSourceRepo(h.A.DB, h.A.Cache),
+		Cache:      h.A.Cache,
 		NewSource:  &newSource,
 		Project:    project,
 	}
@@ -59,14 +60,14 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := postgres.NewOrgRepo(a.A.DB, a.A.Cache).FetchOrganisationByID(r.Context(), project.OrganisationID)
+	org, err := postgres.NewOrgRepo(h.A.DB, h.A.Cache).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	baseUrl, err := a.retrieveHost()
+	baseUrl, err := h.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -78,7 +79,8 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Source created successfully", resp, http.StatusCreated))
 }
 
-// GetSourceByID
+// GetSource
+//
 //	@Summary		Retrieve a source
 //	@Description	This endpoint retrieves a source by its id
 //	@Tags			Sources
@@ -90,14 +92,14 @@ func (a *PublicHandler) CreateSource(w http.ResponseWriter, r *http.Request) {
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/sources/{sourceID} [get]
-func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
-	project, err := a.retrieveProject(r)
+func (h *Handler) GetSource(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
+	source, err := postgres.NewSourceRepo(h.A.DB, h.A.Cache).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
@@ -108,14 +110,14 @@ func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := postgres.NewOrgRepo(a.A.DB, a.A.Cache).FetchOrganisationByID(r.Context(), project.OrganisationID)
+	org, err := postgres.NewOrgRepo(h.A.DB, h.A.Cache).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	baseUrl, err := a.retrieveHost()
+	baseUrl, err := h.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -128,6 +130,7 @@ func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateSource
+//
 //	@Summary		Update a source
 //	@Description	This endpoint updates a source
 //	@Tags			Sources
@@ -140,9 +143,15 @@ func (a *PublicHandler) GetSourceByID(w http.ResponseWriter, r *http.Request) {
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/sources/{sourceID} [put]
-func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateSource(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	var sourceUpdate models.UpdateSource
-	err := util.ReadJSON(r, &sourceUpdate)
+	err = util.ReadJSON(r, &sourceUpdate)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -153,13 +162,7 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, err := a.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
+	source, err := postgres.NewSourceRepo(h.A.DB, h.A.Cache).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
@@ -171,8 +174,8 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	us := services.UpdateSourceService{
-		SourceRepo:   postgres.NewSourceRepo(a.A.DB, a.A.Cache),
-		Cache:        a.A.Cache,
+		SourceRepo:   postgres.NewSourceRepo(h.A.DB, h.A.Cache),
+		Cache:        h.A.Cache,
 		Project:      project,
 		SourceUpdate: &sourceUpdate,
 		Source:       source,
@@ -184,14 +187,14 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := postgres.NewOrgRepo(a.A.DB, a.A.Cache).FetchOrganisationByID(r.Context(), project.OrganisationID)
+	org, err := postgres.NewOrgRepo(h.A.DB, h.A.Cache).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	baseUrl, err := a.retrieveHost()
+	baseUrl, err := h.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -204,6 +207,7 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteSource
+//
 //	@Summary		Delete a source
 //	@Description	This endpoint deletes a source
 //	@Tags			Sources
@@ -215,14 +219,14 @@ func (a *PublicHandler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/sources/{sourceID} [delete]
-func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
-	sourceRepo := postgres.NewSourceRepo(a.A.DB, a.A.Cache)
-
-	project, err := a.retrieveProject(r)
+func (h *Handler) DeleteSource(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+
+	sourceRepo := postgres.NewSourceRepo(h.A.DB, h.A.Cache)
 
 	source, err := sourceRepo.FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
@@ -245,6 +249,7 @@ func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 }
 
 // LoadSourcesPaged
+//
 //	@Summary		List all sources
 //	@Description	This endpoint fetches multiple sources
 //	@Tags			Sources
@@ -256,29 +261,32 @@ func (a *PublicHandler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/sources [get]
-func (a *PublicHandler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
-	var q *models.QueryListSource
-	project, err := a.retrieveProject(r)
+func (h *Handler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
+	var q *models.QueryListSource
+
 	data := q.Transform(r)
-	sources, paginationData, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).LoadSourcesPaged(r.Context(), project.UID, data.SourceFilter, data.Pageable)
+	sources, paginationData, err := postgres.NewSourceRepo(h.A.DB, h.A.Cache).LoadSourcesPaged(r.Context(), project.UID, data.SourceFilter, data.Pageable)
 	if err != nil {
 		log.WithError(err).Error("an error occurred while fetching sources")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching sources", http.StatusBadRequest))
 		return
 	}
 
-	baseUrl, err := a.retrieveHost()
+	baseUrl, err := h.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	org, err := a.retrieveOrganisation(r)
+	var org *datastore.Organisation
+	orgRepo := postgres.NewOrgRepo(h.A.DB, h.A.Cache)
+	org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

@@ -214,8 +214,16 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 			}, nil
 		}
 
+		parts := strings.Split(authToken, ".")
+		if len(parts) == 3 {
+			return &auth.Credential{
+				Type:  auth.CredentialTypeJWT,
+				Token: authToken,
+			}, nil
+		}
+
 		return &auth.Credential{
-			Type:  auth.CredentialTypeJWT,
+			Type:  auth.CredentialTypeToken,
 			Token: authToken,
 		}, nil
 
