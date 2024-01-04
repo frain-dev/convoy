@@ -1038,6 +1038,8 @@ definitions:
         type: string
       event_metadata:
         $ref: '#/definitions/datastore.Event'
+      event_type:
+        type: string
       headers:
         $ref: '#/definitions/httpheader.HTTPHeader'
       idempotency_key:

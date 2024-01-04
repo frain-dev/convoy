@@ -37,8 +37,8 @@ var (
 
 const (
 	createEventDelivery = `
-    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,idempotency_key,created_at,updated_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16);
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,created_at,updated_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17);
     `
 
 	baseFetchEventDelivery = `
@@ -48,6 +48,7 @@ const (
         COALESCE(ed.url_query_params, '') AS url_query_params,
         COALESCE(ed.idempotency_key, '') AS idempotency_key,
         ed.description,ed.created_at,ed.updated_at,
+        COALESCE(ed.event_type,'') AS "event_type",
         COALESCE(ed.device_id,'') AS "device_id",
         COALESCE(ed.endpoint_id,'') AS "endpoint_id",
         COALESCE(ep.id, '') AS "endpoint_metadata.id",
@@ -84,9 +85,7 @@ const (
 	    LIMIT :limit
 	)
 
-	SELECT * FROM event_deliveries
-	WHERE ("event_metadata.event_type" = :event_type OR :event_type = '')
-    ORDER BY id %s
+	SELECT * FROM event_deliveries ORDER BY id %s
 	`
 
 	baseEventDeliveryPagedBackward = `
@@ -99,32 +98,27 @@ const (
 		LIMIT :limit
 	)
 
-	SELECT * FROM event_deliveries
-	WHERE ("event_metadata.event_type" = :event_type OR :event_type = '')
-    ORDER BY id %s
+	SELECT * FROM event_deliveries ORDER BY id %s
 	`
 
 	fetchEventDeliveryByID = baseFetchEventDelivery + ` AND ed.id = $1 AND ed.project_id = $2`
 
 	baseEventDeliveryFilter = ` AND (ed.project_id = :project_id OR :project_id = '')
 	AND (ed.event_id = :event_id OR :event_id = '')
+    AND (ed.event_type = :event_type OR :event_type = '')
 	AND ed.created_at >= :start_date
 	AND ed.created_at <= :end_date
 	AND ed.deleted_at IS NULL`
 
 	countPrevEventDeliveries = `
-	WITH event_deliveries AS (
-        SELECT ed.id AS "id", ev.event_type AS "event_type"
-	    FROM convoy.event_deliveries ed
-    	LEFT JOIN convoy.events ev ON ed.event_id = ev.id
-	    WHERE ed.deleted_at IS NULL
-	    %s
-	    AND ed.id > :cursor
-        GROUP BY ed.id, ev.id
-        ORDER BY ed.id %s
-	)
-
-	SELECT COUNT(DISTINCT("id")) AS count FROM event_deliveries WHERE ("event_type" = :event_type OR :event_type = '')
+    SELECT COUNT(DISTINCT(ed.id))
+	FROM convoy.event_deliveries ed
+    LEFT JOIN convoy.events ev ON ed.event_id = ev.id
+	WHERE ed.deleted_at IS NULL
+	%s
+	AND ed.id > :cursor
+    GROUP BY ed.id, ev.id
+    ORDER BY ed.id %s
 	`
 
 	loadEventDeliveriesIntervals = `
@@ -153,6 +147,7 @@ const (
         COALESCE(ed.idempotency_key, '') AS idempotency_key,
         COALESCE(url_query_params, '') AS url_query_params,
         description,created_at,updated_at,
+        COALESCE(event_type,'') AS "event_type",
         COALESCE(device_id,'') AS "device_id",
         COALESCE(endpoint_id,'') AS "endpoint_id"
     FROM convoy.event_deliveries ed
@@ -165,6 +160,7 @@ const (
         COALESCE(idempotency_key, '') AS idempotency_key,
         COALESCE(url_query_params, '') AS url_query_params,
         description,created_at,updated_at,
+        COALESCE(event_type,'') AS "event_type",
         COALESCE(device_id,'') AS "device_id"
     FROM convoy.event_deliveries
 	WHERE status=$1 AND project_id = $2 AND device_id = $3
@@ -217,7 +213,7 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 		ctx, createEventDelivery, delivery.UID, delivery.ProjectID,
 		delivery.EventID, endpointID, deviceID,
 		delivery.SubscriptionID, delivery.Headers, delivery.DeliveryAttempts, delivery.Status,
-		delivery.Metadata, delivery.CLIMetadata, delivery.Description, delivery.URLQueryParams, delivery.IdempotencyKey,
+		delivery.Metadata, delivery.CLIMetadata, delivery.Description, delivery.URLQueryParams, delivery.IdempotencyKey, delivery.EventType,
 		delivery.CreatedAt, delivery.UpdatedAt,
 	)
 	if err != nil {
@@ -580,6 +576,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 			Headers:        ev.Headers,
 			URLQueryParams: ev.URLQueryParams,
 			Latency:        ev.Latency,
+			EventType:      ev.EventType,
 			Endpoint: &datastore.Endpoint{
 				UID:          ev.Endpoint.UID.ValueOrZero(),
 				ProjectID:    ev.Endpoint.ProjectID.ValueOrZero(),
@@ -824,6 +821,7 @@ type EventDeliveryPaginated struct {
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
 	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
 	Latency        string                `json:"latency" db:"latency"`
+	EventType      datastore.EventType   `json:"event_type,omitempty" db:"event_type"`
 
 	Endpoint *EndpointMetadata `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *EventMetadata    `json:"event_metadata,omitempty" db:"event_metadata"`
