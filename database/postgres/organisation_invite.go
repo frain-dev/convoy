@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/frain-dev/convoy/cache"
 
 	"github.com/frain-dev/convoy/util"
@@ -34,7 +35,8 @@ const (
 		role_endpoint = $4,
 		status = $5,
 		expires_at = $6,
-		updated_at = NOW()
+		updated_at = NOW(),
+		deleted_at = $7
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
@@ -280,6 +282,7 @@ func (i *orgInviteRepo) UpdateOrganisationInvite(ctx context.Context, iv *datast
 		endpointID,
 		iv.Status,
 		iv.ExpiresAt,
+		iv.DeletedAt,
 	)
 	if err != nil {
 		return err

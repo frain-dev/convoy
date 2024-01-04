@@ -15,7 +15,7 @@
 # vendor/
 .idea
 
-/api/ui/build/*
+/api/dashboard/ui/build/*
 !/api/ui/build/go_test_stub.txt
 /data/mongo/
 .DS_Store
