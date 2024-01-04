@@ -151,7 +151,7 @@
 </div>
 
 <dialog #teamsDialog convoy-dialog>
-	<div convoy-dialog-header (closeDialog)="memberForm.reset(); teamsDialog.close()">
+	<div convoy-dialog-header (closeDialog)="closeInviteModal()">
 		<h2 class="font-semibold text-14 capitalize">{{ action === 'update' ? 'Update' : 'Add' }} Team Member</h2>
 	</div>
 
@@ -179,7 +179,7 @@
 				<button convoy-button class="ml-16px" [disabled]="invitingUser || inviteUserForm.disabled || inviteLink">
 					{{ invitingUser ? 'Inviting User...' : 'Send Invite' }}
 				</button>
-				<button convoy-button class="ml-16px text-14" type="button" fill="outline" *ngIf="inviteLink" (click)="inviteUserForm.reset(); toggleFilter('pending'); teamsDialog.close()">Done</button>
+				<button convoy-button class="ml-16px text-14" type="button" fill="outline" *ngIf="inviteLink" (click)="closeInviteModal(); toggleFilter('pending')">Done</button>
 			</div>
 		</form>
 
