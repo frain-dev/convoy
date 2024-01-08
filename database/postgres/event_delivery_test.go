@@ -61,6 +61,7 @@ func generateEventDelivery(project *datastore.Project, endpoint *datastore.Endpo
 		EndpointID:     endpoint.UID,
 		DeviceID:       device.UID,
 		SubscriptionID: sub.UID,
+		EventType:      event.EventType,
 		Headers:        httpheader.HTTPHeader{"X-sig": []string{"3787 fmmfbf"}},
 		DeliveryAttempts: []datastore.DeliveryAttempt{
 			{UID: ulid.Make().String()},

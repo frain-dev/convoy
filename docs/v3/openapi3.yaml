@@ -1039,6 +1039,8 @@ components:
           type: string
         event_metadata:
           $ref: '#/components/schemas/datastore.Event'
+        event_type:
+          type: string
         headers:
           $ref: '#/components/schemas/httpheader.HTTPHeader'
         idempotency_key:
