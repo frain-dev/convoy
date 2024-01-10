@@ -54,6 +54,14 @@ func Init(tCfg config.TracerConfiguration) error {
 		dt := DatadogTracer{}
 		return dt.Init("web")
 
+	case config.OTelTracerProvider:
+		if tCfg.OTel == (config.OTelConfiguration{}) {
+			return ErrInvalidTracerConfiguration
+		}
+
+		ot := OTelTracer{}
+		return ot.Init("web")
+
 	case config.ElasticTracerProvider:
 		et := ElasticTracer{}
 		return et.Init("web")
