@@ -6656,6 +6656,9 @@ const docTemplate = `{
                 "event_metadata": {
                     "$ref": "#/definitions/datastore.Event"
                 },
+                "event_type": {
+                    "type": "string"
+                },
                 "headers": {
                     "$ref": "#/definitions/httpheader.HTTPHeader"
                 },

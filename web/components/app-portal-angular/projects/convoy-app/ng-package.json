@@ -1,8 +1,0 @@
-{
-	"$schema": "../../node_modules/ng-packagr/ng-package.schema.json",
-	"dest": "../../dist/convoy-app",
-	"lib": {
-		"entryFile": "src/public-api.ts"
-	},
-	"allowedNonPeerDependencies": ["@angular/material", "chart.js", "date-fns", "prismjs", "convoy-ui"]
-}

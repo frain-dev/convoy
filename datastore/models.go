@@ -892,6 +892,7 @@ type EventDelivery struct {
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
 	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
 	Latency        string                `json:"latency" db:"latency"`
+	EventType      EventType             `json:"event_type,omitempty" db:"event_type"`
 
 	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`

@@ -187,9 +187,7 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 			})
 
 			r.HandleFunc("/*", handler.RedirectToProjects)
-
 		})
-
 	})
 
 	// Dashboard API.
@@ -226,12 +224,10 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
-
 			orgRouter.Post("/", handler.CreateOrganisation)
 			orgRouter.With(middleware.Pagination).Get("/", handler.GetOrganisationsPaged)
 
 			orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
-
 				orgSubRouter.Get("/", handler.GetOrganisation)
 				orgSubRouter.Put("/", handler.UpdateOrganisation)
 				orgSubRouter.Delete("/", handler.DeleteOrganisation)
@@ -257,7 +253,6 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 					projectRouter.Post("/", handler.CreateProject)
 
 					projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
-
 						projectSubRouter.Get("/", handler.GetProject)
 						projectSubRouter.Put("/", handler.UpdateProject)
 						projectSubRouter.Delete("/", handler.DeleteProject)
@@ -278,12 +273,10 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 								e.Put("/toggle_status", handler.ToggleEndpointStatus)
 								e.Put("/expire_secret", handler.ExpireSecret)
 								e.Put("/pause", handler.PauseEndpoint)
-
 							})
 						})
 
 						projectSubRouter.Route("/events", func(eventRouter chi.Router) {
-
 							eventRouter.Post("/", handler.CreateEndpointEvent)
 							eventRouter.Post("/fanout", handler.CreateEndpointFanoutEvent)
 							eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
@@ -324,7 +317,6 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 						})
 
 						projectSubRouter.Route("/sources", func(sourceRouter chi.Router) {
-
 							sourceRouter.Post("/", handler.CreateSource)
 							sourceRouter.Get("/{sourceID}", handler.GetSource)
 							sourceRouter.With(middleware.Pagination).Get("/", handler.LoadSourcesPaged)
@@ -355,7 +347,6 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 					})
 				})
 			})
-
 		})
 
 		uiRouter.Route("/configuration", func(configRouter chi.Router) {
