@@ -10,8 +10,6 @@ import (
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
-	"github.com/frain-dev/convoy/internal/pkg/apm"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -65,16 +63,13 @@ func (s *SourceLoader) Run(ctx context.Context, interval int, stop <-chan struct
 }
 
 func (s *SourceLoader) fetchSources(ctx context.Context, projectIDs []string, cursor string) error {
-	txn, innerCtx := apm.StartTransaction(ctx, "fetchSources")
-	defer txn.End()
-
 	pageable := datastore.Pageable{
 		NextCursor: cursor,
 		Direction:  datastore.Next,
 		PerPage:    perPage,
 	}
 
-	sources, pagination, err := s.sourceRepo.LoadPubSubSourcesByProjectIDs(innerCtx, projectIDs, pageable)
+	sources, pagination, err := s.sourceRepo.LoadPubSubSourcesByProjectIDs(ctx, projectIDs, pageable)
 	if err != nil {
 		return err
 	}
@@ -94,17 +89,14 @@ func (s *SourceLoader) fetchSources(ctx context.Context, projectIDs []string, cu
 
 	if pagination.HasNextPage {
 		cursor = pagination.NextPageCursor
-		return s.fetchSources(innerCtx, projectIDs, cursor)
+		return s.fetchSources(ctx, projectIDs, cursor)
 	}
 
 	return nil
 }
 
 func (s *SourceLoader) fetchProjectSources(ctx context.Context) error {
-	txn, innerCtx := apm.StartTransaction(ctx, "fetchProjectSources")
-	defer txn.End()
-
-	projects, err := s.projectRepo.LoadProjects(innerCtx, &datastore.ProjectFilter{})
+	projects, err := s.projectRepo.LoadProjects(ctx, &datastore.ProjectFilter{})
 	if err != nil {
 		return err
 	}
@@ -114,7 +106,7 @@ func (s *SourceLoader) fetchProjectSources(ctx context.Context) error {
 		ids[i] = projects[i].UID
 	}
 
-	err = s.fetchSources(innerCtx, ids, "")
+	err = s.fetchSources(ctx, ids, "")
 	if err != nil {
 		s.log.WithError(err).Error("failed to load sources")
 		return err

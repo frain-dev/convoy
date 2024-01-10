@@ -2,8 +2,8 @@ package worker
 
 import (
 	"context"
+
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/internal/pkg/apm"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker/task"
@@ -76,10 +76,7 @@ func (c *Consumer) Stop() {
 
 func (c *Consumer) loggingMiddleware(h asynq.Handler) asynq.Handler {
 	return asynq.HandlerFunc(func(ctx context.Context, t *asynq.Task) error {
-		txn, innerCtx := apm.StartTransaction(ctx, t.Type())
-		defer txn.End()
-
-		err := h.ProcessTask(innerCtx, t)
+		err := h.ProcessTask(ctx, t)
 		if err != nil {
 			c.log.WithError(err).WithField("job", t.Type()).Error("job failed")
 			return err

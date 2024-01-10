@@ -211,6 +211,8 @@ type LoggerConfiguration struct {
 type TracerConfiguration struct {
 	Type     TracerProvider        `json:"type" envconfig:"CONVOY_TRACER_PROVIDER"`
 	NewRelic NewRelicConfiguration `json:"new_relic"`
+	Sentry   SentryConfiguration   `json:"sentry"`
+	Datadog  DatadogConfiguration  `json:"datadog"`
 }
 
 type NewRelicConfiguration struct {
@@ -218,6 +220,16 @@ type NewRelicConfiguration struct {
 	LicenseKey               string `json:"license_key" envconfig:"CONVOY_NEWRELIC_LICENSE_KEY"`
 	ConfigEnabled            bool   `json:"config_enabled" envconfig:"CONVOY_NEWRELIC_CONFIG_ENABLED"`
 	DistributedTracerEnabled bool   `json:"distributed_tracer_enabled" envconfig:"CONVOY_NEWRELIC_DISTRIBUTED_TRACER_ENABLED"`
+}
+
+type DatadogConfiguration struct {
+	AgentURL   string `json:"agent_url" envconfig:"CONVOY_DATADOG_AGENT_URL"`
+	AppName    string `json:"app_name" envconfig:"CONVOY_DATADOG_APP_NAME"`
+	LicenseKey string `json:"license_key" envconfig:"CONVOY_DATADOG_LICENSE_KEY"`
+}
+
+type SentryConfiguration struct {
+	DSN string `json:"dsn" envconfig:"CONVOY_SENTRY_DSN"`
 }
 
 type AnalyticsConfiguration struct {
@@ -250,9 +262,15 @@ const (
 )
 
 const (
+	SentryTracerProvider   TracerProvider = "sentry"
+	ElasticTracerProvider  TracerProvider = "elastic"
+	DatadogTracerProvider  TracerProvider = "datadog"
+	NewRelicTracerProvider TracerProvider = "new_relic"
+)
+
+const (
 	RedisQueueProvider       QueueProvider           = "redis"
 	DefaultSignatureHeader   SignatureHeaderProvider = "X-Convoy-Signature"
-	NewRelicTracerProvider   TracerProvider          = "new_relic"
 	PostgresDatabaseProvider DatabaseProvider        = "postgres"
 	TypesenseSearchProvider  SearchProvider          = "typesense"
 )

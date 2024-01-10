@@ -20,13 +20,11 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/apm"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/log"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/frain-dev/convoy/tracer"
-	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/spf13/cobra"
 )
 
@@ -57,20 +55,11 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
-		nwCfg := cfg.Tracer.NewRelic
-		nRApp, err := newrelic.NewApplication(
-			newrelic.ConfigAppName(nwCfg.AppName),
-			newrelic.ConfigLicense(nwCfg.LicenseKey),
-			newrelic.ConfigDistributedTracerEnabled(nwCfg.DistributedTracerEnabled),
-			newrelic.ConfigEnabled(nwCfg.ConfigEnabled),
-		)
+		err = tracer.Init(cfg.Tracer)
 		if err != nil {
 			return err
 		}
 
-		apm.SetApplication(nRApp)
-
-		var tr tracer.Tracer
 		var ca cache.Cache
 		var q queue.Queuer
 
@@ -96,13 +85,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		q = redisQueue.NewQueue(opts)
 
 		lo := log.NewLogger(os.Stdout)
-
-		if cfg.Tracer.Type == config.NewRelicTracerProvider {
-			tr, err = tracer.NewTracer(cfg, lo.WithLogger())
-			if err != nil {
-				return err
-			}
-		}
 
 		ca, err = cache.NewCache(cfg.Redis)
 		if err != nil {
@@ -142,7 +124,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		app.DB = postgresDB
 		app.Queue = q
 		app.Logger = lo
-		app.Tracer = tr
 		app.Cache = ca
 
 		if ok := shouldBootstrap(cmd); ok {

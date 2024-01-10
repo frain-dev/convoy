@@ -12,12 +12,11 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/riandyrn/otelchi"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/frain-dev/convoy/internal/pkg/apm"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/newrelic/go-agent/v3/newrelic"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -29,6 +28,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 )
@@ -54,15 +54,8 @@ func InstrumentPath(path string) func(http.Handler) http.Handler {
 	}
 }
 
-func InstrumentRequests() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			txn, r, w := apm.StartWebTransaction(r.URL.Path, r, w)
-			defer txn.End()
-
-			next.ServeHTTP(w, r)
-		})
-	}
+func InstrumentRequests(serverName string, r chi.Router) func(next http.Handler) http.Handler {
+	return otelchi.Middleware(serverName, otelchi.WithChiRoutes(r))
 }
 
 func WriteRequestIDHeader(next http.Handler) http.Handler {
@@ -175,7 +168,6 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 
 	if len(authInfo) != 2 {
 		err := errors.New("invalid header structure")
-		apm.NoticeError(r.Context(), err)
 		return nil, err
 	}
 
@@ -328,22 +320,22 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 		requestFields["header"] = headerFields(r.Header)
 	}
 
-	cfg, err := config.Get()
-	if err != nil {
-		return nil
-	}
+	//cfg, err := config.Get()
+	//if err != nil {
+	//	return nil
+	//}
 
-	if cfg.Tracer.Type == config.NewRelicTracerProvider {
-		txn := newrelic.FromContext(r.Context()).GetLinkingMetadata()
+	//if cfg.Tracer.Type == config.NewRelicTracerProvider {
+	//	txn := newrelic.FromContext(r.Context()).GetLinkingMetadata()
 
-		if cfg.Tracer.NewRelic.DistributedTracerEnabled {
-			requestFields["traceId"] = txn.TraceID
-			requestFields["spanId"] = txn.SpanID
-		}
+	//	if cfg.Tracer.NewRelic.DistributedTracerEnabled {
+	//		requestFields["traceId"] = txn.TraceID
+	//      requestFields["spanId"] = txn.SpanID
+	//	}
 
-		requestFields["entity.guid"] = txn.EntityGUID
-		requestFields["entity.name"] = txn.EntityName
-	}
+	//	requestFields["entity.guid"] = txn.EntityGUID
+	//	requestFields["entity.name"] = txn.EntityName
+	//}
 
 	return requestFields
 }
