@@ -409,30 +409,30 @@ func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, 
 	return nil
 }
 
-func (e *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
+func (e *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, projectID string, f *datastore.EventDeliveryFilter) (int64, error) {
 	count := struct {
 		Count int64
 	}{}
 
-	start := time.Unix(params.CreatedAtStart, 0)
-	end := time.Unix(params.CreatedAtEnd, 0)
+	start := time.Unix(f.CreatedAtStart, 0)
+	end := time.Unix(f.CreatedAtEnd, 0)
 
 	args := []interface{}{
 		projectID, projectID,
-		eventID, eventID,
+		f.EventID, f.EventID,
 		start, end,
 	}
 
 	q := countEventDeliveries
 
-	if len(endpointIDs) > 0 {
+	if len(f.EndpointIDs) > 0 {
 		q += ` AND endpoint_id IN (?)`
-		args = append(args, endpointIDs)
+		args = append(args, f.EndpointIDs)
 	}
 
-	if len(status) > 0 {
+	if len(f.Status) > 0 {
 		q += ` AND status IN (?)`
-		args = append(args, status)
+		args = append(args, f.Status)
 	}
 
 	query, args, err := sqlx.In(q, args...)
@@ -479,52 +479,52 @@ func (e *eventDeliveryRepo) DeleteProjectEventDeliveries(ctx context.Context, pr
 	return nil
 }
 
-func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable, idempotencyKey, eventType string) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projectID string, f *datastore.EventDeliveryFilter) ([]datastore.EventDelivery, datastore.PaginationData, error) {
 	eventDeliveriesP := make([]EventDeliveryPaginated, 0)
 
-	start := time.Unix(params.CreatedAtStart, 0)
-	end := time.Unix(params.CreatedAtEnd, 0)
+	start := time.Unix(f.CreatedAtStart, 0)
+	end := time.Unix(f.CreatedAtEnd, 0)
 
 	arg := map[string]interface{}{
-		"endpoint_ids":    endpointIDs,
-		"project_id":      projectID,
-		"limit":           pageable.Limit(),
-		"subscription_id": subscriptionID,
-		"start_date":      start,
-		"event_id":        eventID,
-		"event_type":      eventType,
-		"end_date":        end,
-		"status":          status,
-		"cursor":          pageable.Cursor(),
-		"idempotency_key": idempotencyKey,
+		"endpoint_ids":     f.EndpointIDs,
+		"project_id":       projectID,
+		"limit":            f.Pageable.Limit(),
+		"subscription_ids": f.SubscriptionIDs,
+		"start_date":       start,
+		"event_id":         f.EventID,
+		"event_type":       f.EventTypes,
+		"end_date":         end,
+		"status":           f.Status,
+		"cursor":           f.Pageable.Cursor(),
+		"idempotency_key":  f.IdempotencyKeys,
 	}
 
 	var query, filterQuery string
-	if pageable.Direction == datastore.Next {
-		query = getFwdDeliveryPageQuery(pageable.SortOrder())
+	if f.Pageable.Direction == datastore.Next {
+		query = getFwdDeliveryPageQuery(f.Sort)
 	} else {
-		query = getBackwardDeliveryPageQuery(pageable.SortOrder())
+		query = getBackwardDeliveryPageQuery(f.Sort)
 	}
 
 	filterQuery = baseEventDeliveryFilter
-	if len(endpointIDs) > 0 {
+	if len(f.EndpointIDs) > 0 {
 		filterQuery += ` AND ed.endpoint_id IN (:endpoint_ids)`
 	}
 
-	if len(status) > 0 {
+	if len(f.Status) > 0 {
 		filterQuery += ` AND ed.status IN (:status)`
 	}
 
-	if !util.IsStringEmpty(subscriptionID) {
-		filterQuery += ` AND ed.subscription_id = :subscription_id`
+	if len(f.SubscriptionIDs) > 0 {
+		filterQuery += ` AND ed.subscription_id IN (:subscription_ids)`
 	}
 
-	preOrder := pageable.SortOrder()
-	if pageable.Direction == datastore.Prev {
+	preOrder := f.Sort
+	if f.Pageable.Direction == datastore.Prev {
 		preOrder = reverseOrder(preOrder)
 	}
 
-	query = fmt.Sprintf(query, baseFetchEventDelivery, filterQuery, preOrder, pageable.SortOrder())
+	query = fmt.Sprintf(query, baseFetchEventDelivery, filterQuery, preOrder, f.Sort)
 
 	query, args, err := sqlx.Named(query, arg)
 	if err != nil {
@@ -614,9 +614,9 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		qarg := arg
 		qarg["cursor"] = first.UID
 
-		tmp := getCountEventPrevRowQuery(pageable.SortOrder())
+		tmp := getCountEventPrevRowQuery(f.Sort)
 
-		cq := fmt.Sprintf(tmp, filterQuery, pageable.SortOrder())
+		cq := fmt.Sprintf(tmp, filterQuery, f.Sort)
 		countQuery, qargs, err = sqlx.Named(cq, qarg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -649,12 +649,12 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		ids[i] = eventDeliveries[i].UID
 	}
 
-	if len(eventDeliveries) > pageable.PerPage {
+	if len(eventDeliveries) > f.Pageable.PerPage {
 		eventDeliveries = eventDeliveries[:len(eventDeliveries)-1]
 	}
 
 	pagination := &datastore.PaginationData{PrevRowCount: count}
-	pagination = pagination.Build(pageable, ids)
+	pagination = pagination.Build(f.Pageable, ids)
 
 	return eventDeliveries, *pagination, nil
 }
@@ -859,35 +859,35 @@ func (m *CLIMetadata) Scan(value interface{}) error {
 	return nil
 }
 
-func getFwdDeliveryPageQuery(sortOrder string) string {
-	if sortOrder == "ASC" {
+func getFwdDeliveryPageQuery(sortOrder datastore.Sort) string {
+	if sortOrder == datastore.Asc {
 		return strings.Replace(baseEventDeliveryPagedForward, "<=", ">=", 1)
 	}
 
 	return baseEventDeliveryPagedForward
 }
 
-func getBackwardDeliveryPageQuery(sortOrder string) string {
-	if sortOrder == "ASC" {
+func getBackwardDeliveryPageQuery(sortOrder datastore.Sort) string {
+	if sortOrder == datastore.Asc {
 		return strings.Replace(baseEventDeliveryPagedBackward, ">=", "<=", 1)
 	}
 
 	return baseEventDeliveryPagedBackward
 }
 
-func getCountEventPrevRowQuery(sortOrder string) string {
-	if sortOrder == "ASC" {
+func getCountEventPrevRowQuery(sortOrder datastore.Sort) string {
+	if sortOrder == datastore.Asc {
 		return strings.Replace(countPrevEventDeliveries, ">", "<", 1)
 	}
 
 	return countPrevEventDeliveries
 }
 
-func reverseOrder(sortOrder string) string {
+func reverseOrder(sortOrder datastore.Sort) datastore.Sort {
 	switch sortOrder {
-	case "ASC":
-		return "DESC"
+	case datastore.Asc:
+		return datastore.Desc
 	default:
-		return "ASC"
+		return datastore.Asc
 	}
 }

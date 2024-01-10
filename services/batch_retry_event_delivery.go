@@ -14,11 +14,12 @@ type BatchRetryEventDeliveryService struct {
 	Queue             queue.Queuer
 	EventRepo         datastore.EventRepository
 
-	Filter *datastore.Filter
+	Project *datastore.Project
+	Filter  *datastore.EventDeliveryFilter
 }
 
 func (e *BatchRetryEventDeliveryService) Run(ctx context.Context) (int, int, error) {
-	deliveries, _, err := e.EventDeliveryRepo.LoadEventDeliveriesPaged(ctx, e.Filter.Project.UID, e.Filter.EndpointIDs, e.Filter.EventID, e.Filter.SubscriptionID, e.Filter.Status, e.Filter.SearchParams, e.Filter.Pageable, e.Filter.IdempotencyKey, e.Filter.EventType)
+	deliveries, _, err := e.EventDeliveryRepo.LoadEventDeliveriesPaged(ctx, e.Project.UID, e.Filter)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch event deliveries by ids")
 		return 0, 0, &ServiceError{ErrMsg: "failed to fetch event deliveries", Err: err}
@@ -28,7 +29,7 @@ func (e *BatchRetryEventDeliveryService) Run(ctx context.Context) (int, int, err
 		EventDeliveryRepo: e.EventDeliveryRepo,
 		EndpointRepo:      e.EndpointRepo,
 		Queue:             e.Queue,
-		Project:           e.Filter.Project,
+		Project:           e.Project,
 	}
 
 	failures := 0

@@ -268,13 +268,24 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data.Filter.Project = p
+	f := data.Filter
+
+	filter := &datastore.EventFilter{
+		IdempotencyKey: f.IdempotencyKey,
+		SourceID:       f.SourceID,
+		Query:          f.Query,
+		DateTimeFilter: datastore.DateTimeFilter{
+			CreatedAtStart: f.SearchParams.CreatedAtStart,
+			CreatedAtEnd:   f.SearchParams.CreatedAtEnd,
+		},
+	}
 
 	bs := services.BatchReplayEventService{
 		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
 		Queue:        h.A.Queue,
 		EventRepo:    postgres.NewEventRepo(h.A.DB, h.A.Cache),
-		Filter:       data.Filter,
+		Project:      p,
+		Filter:       filter,
 	}
 
 	successes, failures, err := bs.Run(r.Context())
@@ -362,7 +373,22 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data.Filter.Project = project
-	eventsPaged, paginationData, err := postgres.NewEventRepo(h.A.DB, h.A.Cache).LoadEventsPaged(r.Context(), project.UID, data.Filter)
+
+	f := data.Filter
+
+	filter := &datastore.EventFilter{
+		IdempotencyKey: f.IdempotencyKey,
+		SourceID:       f.SourceID,
+		Query:          f.Query,
+		Pageable:       f.Pageable,
+		Sort:           datastore.Sort(r.URL.Query().Get("sort")),
+		DateTimeFilter: datastore.DateTimeFilter{
+			CreatedAtStart: f.SearchParams.CreatedAtStart,
+			CreatedAtEnd:   f.SearchParams.CreatedAtEnd,
+		},
+	}
+
+	eventsPaged, paginationData, err := postgres.NewEventRepo(h.A.DB, h.A.Cache).LoadEventsPaged(r.Context(), project.UID, filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch events")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))

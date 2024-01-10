@@ -392,8 +392,6 @@ components:
           type: integer
         prev_page_cursor:
           type: string
-        sort:
-          type: string
       type: object
     datastore.PaginationData:
       properties:

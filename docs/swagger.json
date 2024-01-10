@@ -5727,9 +5727,6 @@
                 },
                 "prev_page_cursor": {
                     "type": "string"
-                },
-                "sort": {
-                    "type": "string"
                 }
             }
         },

@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
-	"os"
-	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/exporter"
 
@@ -175,11 +176,15 @@ func ExportCollection(
 		return err
 	}
 
+	dt := datastore.DateTimeFilter{
+		CreatedAtStart: 0,
+		CreatedAtEnd:   expDate.Unix(),
+	}
+
 	switch tableName {
 	case eventsTable:
 		eventFilter := &datastore.EventFilter{
-			CreatedAtStart: 0,
-			CreatedAtEnd:   expDate.Unix(),
+			DateTimeFilter: dt,
 		}
 		err = eventRepo.DeleteProjectEvents(ctx, project.UID, eventFilter, true)
 		if err != nil {
@@ -199,8 +204,7 @@ func ExportCollection(
 
 	case eventDeliveriesTable:
 		eventDeliveryFilter := &datastore.EventDeliveryFilter{
-			CreatedAtStart: 0,
-			CreatedAtEnd:   expDate.Unix(),
+			DateTimeFilter: dt,
 		}
 		err = eventDeliveriesRepo.DeleteProjectEventDeliveries(ctx, project.UID, eventDeliveryFilter, true)
 		if err != nil {

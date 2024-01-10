@@ -12,12 +12,13 @@ type BatchReplayEventService struct {
 	EndpointRepo datastore.EndpointRepository
 	Queue        queue.Queuer
 	EventRepo    datastore.EventRepository
+	Project      *datastore.Project
 
-	Filter *datastore.Filter
+	Filter *datastore.EventFilter
 }
 
 func (e *BatchReplayEventService) Run(ctx context.Context) (int, int, error) {
-	events, _, err := e.EventRepo.LoadEventsPaged(ctx, e.Filter.Project.UID, e.Filter)
+	events, _, err := e.EventRepo.LoadEventsPaged(ctx, e.Project.UID, e.Filter)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch events")
 		return 0, 0, &ServiceError{ErrMsg: "failed to fetch event deliveries", Err: err}

@@ -22,13 +22,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type Pageable struct {
-	PerPage    int           `json:"per_page"`
-	Direction  PageDirection `json:"direction"`
-	Sort       string        `json:"sort"`
-	PrevCursor string        `json:"prev_page_cursor"`
-	NextCursor string        `json:"next_page_cursor"`
+type Sort string
+
+func (s Sort) String() string {
+	if isStringEmpty(string(s)) {
+		return string(Desc)
+	}
+
+	return string(s)
 }
+
+const (
+	Asc  Sort = "ASC"
+	Desc Sort = "DESC"
+)
 
 type PageDirection string
 
@@ -36,6 +43,13 @@ const (
 	Next PageDirection = "next"
 	Prev PageDirection = "prev"
 )
+
+type Pageable struct {
+	PerPage    int           `json:"per_page"`
+	Direction  PageDirection `json:"direction"`
+	PrevCursor string        `json:"prev_page_cursor"`
+	NextCursor string        `json:"next_page_cursor"`
+}
 
 func (p Pageable) Cursor() string {
 	if p.Direction == Next {
@@ -45,21 +59,13 @@ func (p Pageable) Cursor() string {
 	return p.PrevCursor
 }
 
-func (p Pageable) SortOrder() string {
-	if p.Sort == "ASC" || p.Sort == "DESC" {
-		return p.Sort
-	}
-
-	return "DESC"
-}
-
 func (p Pageable) Limit() int {
 	return p.PerPage + 1
 }
 
-func (p *Pageable) SetCursors() {
-	switch p.Sort {
-	case "ASC":
+func (p *Pageable) SetCursors(sort Sort) {
+	switch sort {
+	case Asc:
 		if isStringEmpty(p.NextCursor) {
 			p.NextCursor = "" // still set it empty, it might be filled with spaces
 		}
@@ -614,18 +620,6 @@ type ProjectStatistics struct {
 
 type ProjectFilter struct {
 	OrgID string `json:"org_id" bson:"org_id"`
-}
-
-type EventFilter struct {
-	ProjectID      string `json:"project_id" bson:"project_id"`
-	CreatedAtStart int64  `json:"created_at_start" bson:"created_at_start"`
-	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
-}
-
-type EventDeliveryFilter struct {
-	ProjectID      string `json:"project_id" bson:"project_id"`
-	CreatedAtStart int64  `json:"created_at_start" bson:"created_at_start"`
-	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
 }
 
 func (o *Project) IsDeleted() bool { return o.DeletedAt.Valid }

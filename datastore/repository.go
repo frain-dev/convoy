@@ -7,30 +7,32 @@ import (
 )
 
 type APIKeyRepository interface {
-	CreateAPIKey(context.Context, *APIKey) error
-	UpdateAPIKey(context.Context, *APIKey) error
-	FindAPIKeyByID(context.Context, string) (*APIKey, error)
-	FindAPIKeyByProjectID(context.Context, string) (*APIKey, error)
-	FindAPIKeyByMaskID(context.Context, string) (*APIKey, error)
-	FindAPIKeyByHash(context.Context, string) (*APIKey, error)
-	RevokeAPIKeys(context.Context, []string) error
-	LoadAPIKeysPaged(context.Context, *ApiKeyFilter, *Pageable) ([]APIKey, PaginationData, error)
+	CreateAPIKey(ctx context.Context, key *APIKey) error
+	UpdateAPIKey(ctx context.Context, key *APIKey) error
+	FindAPIKeyByID(ctx context.Context, id string) (*APIKey, error)
+
+	// TODO(subomi): Change name to FindProjectAPIKey.
+	FindAPIKeyByProjectID(ctx context.Context, projectID string) (*APIKey, error)
+	FindAPIKeyByMaskID(ctx context.Context, maskID string) (*APIKey, error)
+	FindAPIKeyByHash(ctx context.Context, hash string) (*APIKey, error)
+	RevokeAPIKeys(ctx context.Context, keyIDs []string) error
+	LoadAPIKeysPaged(ctx context.Context, keyFilter *ApiKeyFilter, pagination *Pageable) ([]APIKey, PaginationData, error)
 }
 
 type EventDeliveryRepository interface {
-	CreateEventDelivery(context.Context, *EventDelivery) error
+	CreateEventDelivery(ctx context.Context, body *EventDelivery) error
 	FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*EventDelivery, error)
 	FindEventDeliveriesByIDs(ctx context.Context, projectID string, ids []string) ([]EventDelivery, error)
 	FindEventDeliveriesByEventID(ctx context.Context, projectID string, id string) ([]EventDelivery, error)
-	CountDeliveriesByStatus(ctx context.Context, projectID string, status EventDeliveryStatus, params SearchParams) (int64, error)
+	//CountDeliveriesByStatus(ctx context.Context, projectID string, status EventDeliveryStatus, params SearchParams) (int64, error)
 	UpdateStatusOfEventDelivery(ctx context.Context, projectID string, eventDelivery EventDelivery, status EventDeliveryStatus) error
 	UpdateStatusOfEventDeliveries(ctx context.Context, projectID string, ids []string, status EventDeliveryStatus) error
 	FindDiscardedEventDeliveries(ctx context.Context, projectID, deviceId string, params SearchParams) ([]EventDelivery, error)
 
 	UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, eventDelivery EventDelivery, attempt DeliveryAttempt) error
-	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
+	CountEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter) (int64, error)
 	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error
-	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable, idempotencyKey, eventType string) ([]EventDelivery, PaginationData, error)
+	LoadEventDeliveriesPaged(ctx context.Context, projectID string, filter *EventDeliveryFilter) ([]EventDelivery, PaginationData, error)
 	LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params SearchParams, period Period) ([]EventInterval, error)
 }
 
@@ -40,7 +42,7 @@ type EventRepository interface {
 	FindEventsByIDs(ctx context.Context, projectID string, ids []string) ([]Event, error)
 	CountProjectMessages(ctx context.Context, projectID string) (int64, error)
 	CountEvents(ctx context.Context, projectID string, f *Filter) (int64, error)
-	LoadEventsPaged(ctx context.Context, projectID string, f *Filter) ([]Event, PaginationData, error)
+	LoadEventsPaged(ctx context.Context, projectID string, f *EventFilter) ([]Event, PaginationData, error)
 	DeleteProjectEvents(ctx context.Context, projectID string, f *EventFilter, hardDelete bool) error
 	DeleteProjectTokenizedEvents(ctx context.Context, projectID string, filter *EventFilter) error
 	FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) ([]Event, error)

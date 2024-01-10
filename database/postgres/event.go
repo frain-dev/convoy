@@ -348,53 +348,44 @@ func (e *eventRepo) CountEvents(ctx context.Context, projectID string, filter *d
 	return count, nil
 }
 
-func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
+func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, f *datastore.EventFilter) ([]datastore.Event, datastore.PaginationData, error) {
 	var query, countQuery, filterQuery string
 	var err error
 	var args, qargs []interface{}
 
-	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
-	if !util.IsStringEmpty(filter.EndpointID) {
-		filter.EndpointIDs = append(filter.EndpointIDs, filter.EndpointID)
-	}
+	startDate, endDate := getCreatedDateFilter(f.CreatedAtStart, f.CreatedAtEnd)
 
 	arg := map[string]interface{}{
-		"endpoint_ids":    filter.EndpointIDs,
 		"project_id":      projectID,
-		"source_id":       filter.SourceID,
-		"limit":           filter.Pageable.Limit(),
+		"source_id":       f.SourceID,
+		"limit":           f.Pageable.Limit(),
 		"start_date":      startDate,
 		"end_date":        endDate,
-		"query":           filter.Query,
-		"cursor":          filter.Pageable.Cursor(),
-		"idempotency_key": filter.IdempotencyKey,
-		"event_id":        filter.Query,
+		"query":           f.Query,
+		"cursor":          f.Pageable.Cursor(),
+		"idempotency_key": f.IdempotencyKey,
 	}
 
 	base := baseEventsPaged
 	var baseQueryPagination string
-	if filter.Pageable.Direction == datastore.Next {
-		baseQueryPagination = getFwdEventPageQuery(filter.Pageable.SortOrder())
+	if f.Pageable.Direction == datastore.Next {
+		baseQueryPagination = getFwdEventPageQuery(f.Sort)
 	} else {
-		baseQueryPagination = getBackwardEventPageQuery(filter.Pageable.SortOrder())
+		baseQueryPagination = getBackwardEventPageQuery(f.Sort)
 	}
 
 	filterQuery = baseEventFilter
-	if len(filter.EndpointIDs) > 0 {
-		filterQuery += endpointFilter
-	}
-
-	if !util.IsStringEmpty(filter.Query) {
+	if !util.IsStringEmpty(f.Query) {
 		filterQuery += searchFilter
 		base = baseEventsSearch
 	}
 
-	preOrder := filter.Pageable.SortOrder()
-	if filter.Pageable.Direction == datastore.Prev {
+	preOrder := f.Sort
+	if f.Pageable.Direction == datastore.Prev {
 		preOrder = reverseOrder(preOrder)
 	}
 
-	query = fmt.Sprintf(baseQueryPagination, base, filterQuery, preOrder, filter.Pageable.SortOrder())
+	query = fmt.Sprintf(baseQueryPagination, base, filterQuery, preOrder, f.Sort)
 	query, args, err = sqlx.Named(query, arg)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
@@ -431,12 +422,12 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		qarg["cursor"] = first.UID
 
 		baseCountEvents := baseCountPrevEvents
-		if !util.IsStringEmpty(filter.Query) {
+		if !util.IsStringEmpty(f.Query) {
 			baseCountEvents = baseCountPrevEventSearch
 		}
 
-		tmp := getCountDeliveriesPrevRowQuery(filter.Pageable.SortOrder())
-		tmp = fmt.Sprintf(tmp, filter.Pageable.SortOrder())
+		tmp := getCountDeliveriesPrevRowQuery(f.Sort)
+		tmp = fmt.Sprintf(tmp, f.Sort)
 
 		cq := baseCountEvents + filterQuery + tmp
 		countQuery, qargs, err = sqlx.Named(cq, qarg)
@@ -470,12 +461,12 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		ids[i] = events[i].UID
 	}
 
-	if len(events) > filter.Pageable.PerPage {
+	if len(events) > f.Pageable.PerPage {
 		events = events[:len(events)-1]
 	}
 
 	pagination := &datastore.PaginationData{PrevRowCount: count}
-	pagination = pagination.Build(filter.Pageable, ids)
+	pagination = pagination.Build(f.Pageable, ids)
 
 	return events, *pagination, nil
 }
@@ -540,24 +531,24 @@ type EventEndpoint struct {
 	EndpointID string `db:"endpoint_id"`
 }
 
-func getFwdEventPageQuery(sortOrder string) string {
-	if sortOrder == "ASC" {
+func getFwdEventPageQuery(sortOrder datastore.Sort) string {
+	if sortOrder == datastore.Asc {
 		return strings.Replace(baseEventsPagedForward, "<=", ">=", 1)
 	}
 
 	return baseEventsPagedForward
 }
 
-func getBackwardEventPageQuery(sortOrder string) string {
-	if sortOrder == "ASC" {
+func getBackwardEventPageQuery(sortOrder datastore.Sort) string {
+	if sortOrder == datastore.Asc {
 		return strings.Replace(baseEventsPagedBackward, ">=", "<=", 1)
 	}
 
 	return baseEventsPagedBackward
 }
 
-func getCountDeliveriesPrevRowQuery(sortOrder string) string {
-	if sortOrder == "ASC" {
+func getCountDeliveriesPrevRowQuery(sortOrder datastore.Sort) string {
+	if sortOrder == datastore.Asc {
 		return strings.Replace(countPrevEvents, ">", "<", 1)
 	}
 

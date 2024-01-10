@@ -15,7 +15,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 )
 
-func provideBatchReplayEventService(ctrl *gomock.Controller, f *datastore.Filter) *BatchReplayEventService {
+func provideBatchReplayEventService(ctrl *gomock.Controller, f *datastore.EventFilter) *BatchReplayEventService {
 	return &BatchReplayEventService{
 		EndpointRepo: mocks.NewMockEndpointRepository(ctrl),
 		Queue:        mocks.NewMockQueuer(ctrl),
@@ -28,8 +28,9 @@ func TestBatchReplayEventService_Run(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
-		ctx context.Context
-		f   *datastore.Filter
+		ctx     context.Context
+		Project *datastore.Project
+		f       *datastore.EventFilter
 	}
 	tests := []struct {
 		name          string
@@ -44,7 +45,7 @@ func TestBatchReplayEventService_Run(t *testing.T) {
 			name: "should_batch_replay_events",
 			dbFn: func(br *BatchReplayEventService) {
 				e, _ := br.EventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
+				e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", br.Filter).Times(1).Return(
 					[]datastore.Event{
 						{UID: "event1"},
 						{UID: "event2"},
@@ -57,10 +58,9 @@ func TestBatchReplayEventService_Run(t *testing.T) {
 				q.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(2).Return(nil)
 			},
 			args: args{
-				ctx: ctx,
-				f: &datastore.Filter{
-					Project: &datastore.Project{UID: "1234"},
-				},
+				ctx:     ctx,
+				Project: &datastore.Project{UID: "1234"},
+				f:       &datastore.EventFilter{},
 			},
 			wantSuccesses: 2,
 			wantFailures:  0,
@@ -71,7 +71,7 @@ func TestBatchReplayEventService_Run(t *testing.T) {
 			name: "should_batch_replay_one_event",
 			dbFn: func(br *BatchReplayEventService) {
 				e, _ := br.EventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
+				e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", br.Filter).Times(1).Return(
 					[]datastore.Event{
 						{UID: "event1"},
 						{UID: "event2"},
@@ -86,10 +86,9 @@ func TestBatchReplayEventService_Run(t *testing.T) {
 				q.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(1).Return(errors.New("failed"))
 			},
 			args: args{
-				ctx: ctx,
-				f: &datastore.Filter{
-					Project: &datastore.Project{UID: "1234"},
-				},
+				ctx:     ctx,
+				Project: &datastore.Project{UID: "1234"},
+				f:       &datastore.EventFilter{},
 			},
 			wantSuccesses: 2,
 			wantFailures:  1,
@@ -100,17 +99,16 @@ func TestBatchReplayEventService_Run(t *testing.T) {
 			name: "should_fail_to_load_events",
 			dbFn: func(br *BatchReplayEventService) {
 				e, _ := br.EventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
+				e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", br.Filter).Times(1).Return(
 					[]datastore.Event{},
 					datastore.PaginationData{},
 					errors.New("failed"),
 				)
 			},
 			args: args{
-				ctx: ctx,
-				f: &datastore.Filter{
-					Project: &datastore.Project{UID: "1234"},
-				},
+				ctx:     ctx,
+				Project: &datastore.Project{UID: "1234"},
+				f:       &datastore.EventFilter{},
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to fetch event deliveries",

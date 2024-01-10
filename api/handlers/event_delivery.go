@@ -114,14 +114,25 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	data.Filter.Project = project
+	f := data.Filter
+	filter := &datastore.EventDeliveryFilter{
+		EventTypes:      []string{f.EventType},
+		SubscriptionIDs: []string{f.SubscriptionID},
+		EndpointIDs:     f.EndpointIDs,
+		Status:          f.Status,
+		DateTimeFilter: datastore.DateTimeFilter{
+			CreatedAtStart: f.SearchParams.CreatedAtStart,
+			CreatedAtEnd:   f.SearchParams.CreatedAtEnd,
+		},
+	}
 
 	br := services.BatchRetryEventDeliveryService{
 		EventDeliveryRepo: postgres.NewEventDeliveryRepo(h.A.DB, h.A.Cache),
 		EndpointRepo:      postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
 		Queue:             h.A.Queue,
 		EventRepo:         postgres.NewEventRepo(h.A.DB, h.A.Cache),
-		Filter:            data.Filter,
+		Project:           project,
+		Filter:            filter,
 	}
 
 	successes, failures, err := br.Run(r.Context())
@@ -241,7 +252,20 @@ func (h *Handler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request
 
 	f := data.Filter
 
-	ed, paginationData, err := postgres.NewEventDeliveryRepo(h.A.DB, h.A.Cache).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey, f.EventType)
+	filter := &datastore.EventDeliveryFilter{
+		EventTypes:      []string{f.EventType},
+		SubscriptionIDs: []string{f.SubscriptionID},
+		EndpointIDs:     f.EndpointIDs,
+		Status:          f.Status,
+		Pageable:        f.Pageable,
+		Sort:            datastore.Sort(r.URL.Query().Get("sort")),
+		DateTimeFilter: datastore.DateTimeFilter{
+			CreatedAtStart: f.SearchParams.CreatedAtStart,
+			CreatedAtEnd:   f.SearchParams.CreatedAtEnd,
+		},
+	}
+
+	ed, paginationData, err := postgres.NewEventDeliveryRepo(h.A.DB, h.A.Cache).LoadEventDeliveriesPaged(r.Context(), project.UID, filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch event deliveries")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
@@ -272,7 +296,21 @@ func (h *Handler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Re
 	}
 
 	f := data.Filter
-	count, err := postgres.NewEventDeliveryRepo(h.A.DB, h.A.Cache).CountEventDeliveries(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams)
+
+	filter := &datastore.EventDeliveryFilter{
+		EventTypes:      []string{f.EventType},
+		SubscriptionIDs: []string{f.SubscriptionID},
+		EndpointIDs:     f.EndpointIDs,
+		Status:          f.Status,
+		Pageable:        f.Pageable,
+		Sort:            datastore.Sort(r.URL.Query().Get("sort")),
+		DateTimeFilter: datastore.DateTimeFilter{
+			CreatedAtStart: f.SearchParams.CreatedAtStart,
+			CreatedAtEnd:   f.SearchParams.CreatedAtEnd,
+		},
+	}
+
+	count, err := postgres.NewEventDeliveryRepo(h.A.DB, h.A.Cache).CountEventDeliveries(r.Context(), project.UID, filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event deliveries")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

@@ -254,13 +254,12 @@ func Pagination(next http.Handler) http.Handler {
 		}
 
 		pageable := datastore.Pageable{
-			Sort:       strings.ToUpper(sort),
 			PerPage:    perPage,
 			Direction:  datastore.PageDirection(rawDirection),
 			NextCursor: rawNextCursor,
 			PrevCursor: rawPrevCursor,
 		}
-		pageable.SetCursors()
+		pageable.SetCursors(datastore.Sort(sort))
 
 		r = r.WithContext(setPageableInContext(r.Context(), pageable))
 		next.ServeHTTP(w, r)

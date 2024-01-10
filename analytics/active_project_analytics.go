@@ -50,9 +50,9 @@ func (a *ActiveProjectAnalytics) track(perPage, count int, cursor string) error 
 		}
 
 		for _, project := range projects {
-			filter := &datastore.Filter{
+			filter := &datastore.EventFilter{
 				Pageable: datastore.Pageable{PerPage: perPage, NextCursor: cursor, Direction: datastore.Next},
-				SearchParams: datastore.SearchParams{
+				DateTimeFilter: datastore.DateTimeFilter{
 					CreatedAtStart: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix(),
 					CreatedAtEnd:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC).Unix(),
 				},

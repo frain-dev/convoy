@@ -69,3 +69,31 @@ type SearchFilter struct {
 	FilterBy FilterBy
 	Pageable Pageable
 }
+
+type EventDeliveryFilter struct {
+	Sort           `json:"sort"`
+	Pageable       `json:"pageable"`
+	DateTimeFilter `json:"date_time_filter"`
+
+	IdempotencyKeys []string              `json:"idempotency_keys"`
+	SubscriptionIDs []string              `json:"subscription_ids"`
+	EventID         string                `json:"event_id"`
+	EndpointIDs     []string              `json:"endpoint_ids"`
+	EventTypes      []string              `json:"event_types"`
+	Status          []EventDeliveryStatus `json:"status"`
+}
+
+type DateTimeFilter struct {
+	CreatedAtStart int64
+	CreatedAtEnd   int64
+}
+
+type EventFilter struct {
+	Query          string `json:"query"`
+	IdempotencyKey string `json:"idempotency_key"`
+	SourceID       string `json:"source_id"`
+
+	Sort           `json:"sort"`
+	Pageable       `json:"pageable"`
+	DateTimeFilter `json:"date_time_filter"`
+}

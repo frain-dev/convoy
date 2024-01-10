@@ -37,7 +37,7 @@ func RetryEventDeliveries(db database.Database, cache cache.Cache, eventQueue qu
 
 	for _, status := range statuses {
 		log.Printf("Searching for events with status %s", status)
-		searchParams := datastore.SearchParams{
+		dtFilter := datastore.DateTimeFilter{
 			CreatedAtStart: then.Unix(),
 			CreatedAtEnd:   now.Unix(),
 		}
@@ -65,14 +65,19 @@ func RetryEventDeliveries(db database.Database, cache cache.Cache, eventQueue qu
 
 		go processEventDeliveryBatch(ctx, status, eventDeliveryRepo, deliveryChan, q, &wg)
 
-		counter, err := eventDeliveryRepo.CountDeliveriesByStatus(ctx, "", status, searchParams)
+		f := &datastore.EventDeliveryFilter{
+			Pageable:       pageable,
+			DateTimeFilter: dtFilter,
+			Status:         []datastore.EventDeliveryStatus{status},
+		}
+		counter, err := eventDeliveryRepo.CountEventDeliveries(ctx, "", f)
 		if err != nil {
 			log.Error("Failed to count event deliveries")
 		}
 		log.Infof("Total number of event deliveries to requeue is %d", counter)
 
 		for {
-			deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", []string{}, eventId, "", []datastore.EventDeliveryStatus{status}, searchParams, pageable, "", "")
+			deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", f)
 			if err != nil {
 				log.WithError(err).Errorf("successfully fetched %d event deliveries", count)
 				close(deliveryChan)

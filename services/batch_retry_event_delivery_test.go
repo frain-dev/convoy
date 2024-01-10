@@ -12,7 +12,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 )
 
-func provideBatchRetryEventDeliveryService(ctrl *gomock.Controller, f *datastore.Filter) *BatchRetryEventDeliveryService {
+func provideBatchRetryEventDeliveryService(ctrl *gomock.Controller, f *datastore.EventDeliveryFilter) *BatchRetryEventDeliveryService {
 	return &BatchRetryEventDeliveryService{
 		EventDeliveryRepo: mocks.NewMockEventDeliveryRepository(ctrl),
 		EndpointRepo:      mocks.NewMockEndpointRepository(ctrl),
@@ -25,8 +25,9 @@ func provideBatchRetryEventDeliveryService(ctrl *gomock.Controller, f *datastore
 func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
-		ctx    context.Context
-		filter *datastore.Filter
+		ctx     context.Context
+		Project *datastore.Project
+		filter  *datastore.EventDeliveryFilter
 	}
 	tests := []struct {
 		name          string
@@ -40,9 +41,9 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 		{
 			name: "should_batch_retry_event_deliveries",
 			args: args{
-				ctx: ctx,
-				filter: &datastore.Filter{
-					Project:     &datastore.Project{UID: "123"},
+				ctx:     ctx,
+				Project: &datastore.Project{UID: "123"},
+				filter: &datastore.EventDeliveryFilter{
 					EndpointIDs: []string{"abc"},
 					EventID:     "13429",
 					Pageable: datastore.Pageable{
@@ -51,7 +52,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 						NextCursor: datastore.DefaultCursor,
 					},
 					Status: []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.RetryEventStatus},
-					SearchParams: datastore.SearchParams{
+					DateTimeFilter: datastore.DateTimeFilter{
 						CreatedAtStart: 1342,
 						CreatedAtEnd:   1332,
 					},
@@ -70,20 +71,8 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 
 				ed.EXPECT().LoadEventDeliveriesPaged(
 					gomock.Any(),
-					"123",
-					[]string{"abc"},
-					"13429", "",
-					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.RetryEventStatus},
-					datastore.SearchParams{
-						CreatedAtStart: 1342,
-						CreatedAtEnd:   1332,
-					},
-					datastore.Pageable{
-						PerPage:    10,
-						Direction:  datastore.Next,
-						NextCursor: datastore.DefaultCursor,
-					},
-					gomock.Any(), gomock.Any()).
+					es.Project.UID,
+					es.Filter).
 					Times(1).
 					Return(
 						[]datastore.EventDelivery{
@@ -112,19 +101,19 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 		{
 			name: "should_batch_retry_event_deliveries_with_one_failure",
 			args: args{
-				ctx: ctx,
-				filter: &datastore.Filter{
-					Project:        &datastore.Project{UID: "123"},
-					EndpointIDs:    []string{"abc"},
-					SubscriptionID: "sub-1",
-					EventID:        "13429",
+				ctx:     ctx,
+				Project: &datastore.Project{UID: "123"},
+				filter: &datastore.EventDeliveryFilter{
+					EndpointIDs:     []string{"abc"},
+					SubscriptionIDs: []string{"sub-1"},
+					EventID:         "13429",
 					Pageable: datastore.Pageable{
 						PerPage:    10,
 						Direction:  datastore.Next,
 						NextCursor: datastore.DefaultCursor,
 					},
 					Status: []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.RetryEventStatus},
-					SearchParams: datastore.SearchParams{
+					DateTimeFilter: datastore.DateTimeFilter{
 						CreatedAtStart: 1342,
 						CreatedAtEnd:   1332,
 					},
@@ -140,21 +129,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 					}, nil).Times(1)
 
 				ed.EXPECT().LoadEventDeliveriesPaged(
-					gomock.Any(),
-					"123",
-					[]string{"abc"},
-					"13429", "sub-1",
-					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.RetryEventStatus},
-					datastore.SearchParams{
-						CreatedAtStart: 1342,
-						CreatedAtEnd:   1332,
-					},
-					datastore.Pageable{
-						PerPage:    10,
-						Direction:  datastore.Next,
-						NextCursor: datastore.DefaultCursor,
-					},
-					gomock.Any(), gomock.Any()).
+					gomock.Any(), es.Project.UID, es.Filter).
 					Times(1).
 					Return(
 						[]datastore.EventDelivery{
