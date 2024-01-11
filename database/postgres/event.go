@@ -368,7 +368,6 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		"query":           filter.Query,
 		"cursor":          filter.Pageable.Cursor(),
 		"idempotency_key": filter.IdempotencyKey,
-		"event_id":        filter.EventID,
 	}
 
 	base := baseEventsPaged
