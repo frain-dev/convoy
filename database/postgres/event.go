@@ -139,7 +139,6 @@ const (
 	baseEventFilter = ` AND ev.project_id = :project_id
 	AND (ev.source_id = :source_id OR :source_id = '')
 	AND (ev.idempotency_key = :idempotency_key OR :idempotency_key = '')
-    AND (ev.id = :event_id OR :event_id = '')
 	AND ev.created_at >= :start_date
 	AND ev.created_at <= :end_date`
 
