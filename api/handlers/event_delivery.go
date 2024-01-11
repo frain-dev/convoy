@@ -100,7 +100,7 @@ func (h *Handler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/eventdeliveries/batchretry [post]
 func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request) {
-	var q *models.QueryBatchRetryEventDelivery
+	var q *models.QueryListEventDelivery
 
 	data, err := q.Transform(r)
 	if err != nil {
@@ -141,7 +141,7 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string					true	"Project ID"
-//	@Param			deliveryIds	body		Stub{ids=models.IDs}	true	"event delivery ids"
+//	@Param			deliveryIds	body		models.IDs	            true	"event delivery ids"
 //	@Success		200			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
@@ -257,7 +257,7 @@ func (h *Handler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request
 }
 
 func (h *Handler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {
-	var q *models.QueryCountAffectedEventDeliveries
+	var q *models.QueryListEventDelivery
 
 	data, err := q.Transform(r)
 	if err != nil {
