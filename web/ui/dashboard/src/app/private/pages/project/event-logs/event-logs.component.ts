@@ -117,7 +117,7 @@ export class EventLogsComponent implements OnInit {
 	}
 
 	paginateEvents(event: CURSOR) {
-		this.queryParams = this.generalService.addFilterToURL({...this.queryParams, ...event});
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...event });
 		this.handleTailing({ data: this.queryParams, tailModeConfig: this.checkIfTailModeIsEnabled() });
 		this.getEventLogs({ ...this.queryParams, showLoader: true });
 	}
@@ -131,7 +131,9 @@ export class EventLogsComponent implements OnInit {
 		if (requestDetails?.showLoader) this.isloadingEvents = true;
 
 		try {
-			const eventsResponse = await this.eventsService.getEvents(requestDetails);
+			const cleanedQuery = JSON.parse(JSON.stringify(requestDetails));
+			delete cleanedQuery.showLoader;
+			const eventsResponse = await this.eventsService.getEvents(cleanedQuery);
 			this.events = eventsResponse.data;
 
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content, this.queryParams?.sort || 'desc');
