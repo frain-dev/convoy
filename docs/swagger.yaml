@@ -734,11 +734,6 @@ definitions:
     type: object
   models.CreateEndpoint:
     properties:
-      advanced_signatures:
-        description: |-
-          Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)
-          -- simple or advanced. If left unspecified, we default to false.
-        type: boolean
       appID:
         description: Deprecated but necessary for backward compatibility
         type: string
@@ -751,7 +746,7 @@ definitions:
           the internet.
       description:
         description: |-
-          Human readable description of the endpoint. Think of this as metadata describing
+          Human-readable description of the endpoint. Think of this as metadata describing
           the endpoint
         type: string
       http_timeout:
@@ -2005,67 +2000,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Pause endpoint
-      tags:
-      - Endpoints
-  /v1/projects/{projectID}/endpoints/{endpointID}/toggle_status:
-    put:
-      consumes:
-      - application/json
-      description: This endpoint toggles an endpoint status between the active and
-        inactive statetes
-      parameters:
-      - description: Project ID
-        in: path
-        name: projectID
-        required: true
-        type: string
-      - description: Endpoint ID
-        in: path
-        name: endpointID
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/models.EndpointResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/handlers.Stub'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/handlers.Stub'
-              type: object
-        "404":
-          description: Not Found
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ServerResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/handlers.Stub'
-              type: object
-      security:
-      - ApiKeyAuth: []
-      summary: Toggle endpoint status
       tags:
       - Endpoints
   /v1/projects/{projectID}/eventdeliveries:
