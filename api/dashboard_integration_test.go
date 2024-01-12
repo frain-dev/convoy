@@ -966,111 +966,6 @@ func (s *EndpointIntegrationTestSuite) Test_ExpireEndpointSecret() {
 	require.NotEmpty(s.T(), endpoint2.Secrets[0].ExpiresAt)
 }
 
-func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_ActiveStatus() {
-	endpointId := ulid.Make().String()
-
-	// Just Before
-	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.ActiveEndpointStatus)
-	require.NoError(s.T(), err)
-
-	// Arrange Request
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointId)
-	req := createRequest(http.MethodPut, url, "", nil)
-	err = s.AuthenticatorFn(req, s.Router)
-	require.NoError(s.T(), err)
-
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusAccepted, w.Code)
-
-	// Deep Asset
-	var endpoint *datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &endpoint)
-
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointId, s.DefaultProject.UID)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), endpointId, dbEndpoint.UID)
-	require.Equal(s.T(), datastore.InactiveEndpointStatus, dbEndpoint.Status)
-}
-
-func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_InactiveStatus() {
-	endpointId := ulid.Make().String()
-
-	// Just Before
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.InactiveEndpointStatus)
-
-	// Arrange Request
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointId)
-	req := createRequest(http.MethodPut, url, "", nil)
-	err := s.AuthenticatorFn(req, s.Router)
-	require.NoError(s.T(), err)
-
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusAccepted, w.Code)
-
-	// Deep Assert
-	var endpoint *datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &endpoint)
-
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointId, s.DefaultProject.UID)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), endpointId, dbEndpoint.UID)
-	require.Equal(s.T(), datastore.ActiveEndpointStatus, dbEndpoint.Status)
-}
-
-func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_PendingStatus() {
-	endpointId := ulid.Make().String()
-
-	// Just Before
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.PendingEndpointStatus)
-
-	// Arrange Request
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointId)
-	req := createRequest(http.MethodPut, url, "", nil)
-	err := s.AuthenticatorFn(req, s.Router)
-	require.NoError(s.T(), err)
-
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusBadRequest, w.Code)
-}
-
-func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_UnknownStatus() {
-	endpointID := ulid.Make().String()
-
-	// Just Before
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.EndpointStatus("abc"))
-
-	// Arrange Request
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointID)
-	req := createRequest(http.MethodPut, url, "", nil)
-	err := s.AuthenticatorFn(req, s.Router)
-	require.NoError(s.T(), err)
-
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusBadRequest, w.Code)
-}
-
 func (s *EndpointIntegrationTestSuite) Test_PauseEndpoint_PausedStatus() {
 	endpointId := ulid.Make().String()
 
@@ -1215,7 +1110,6 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-
 }
 
 func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_Event() {
