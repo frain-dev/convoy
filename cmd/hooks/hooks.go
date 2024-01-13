@@ -311,6 +311,75 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		c.FeatureFlag = config.ExperimentalFlagLevel
 	}
 
+	// tracing
+	tracingProvider, err := cmd.Flags().GetString("tracer-type")
+	if err != nil {
+		return nil, err
+	}
+
+	c.Tracer = config.TracerConfiguration{
+		Type: config.TracerProvider(tracingProvider),
+	}
+
+	switch c.Tracer.Type {
+	case config.DatadogTracerProvider:
+		agentURL, err := cmd.Flags().GetString("datadog-agent-url")
+		if err != nil {
+			return nil, err
+		}
+
+		licenseKey, err := cmd.Flags().GetString("datadog-license-key")
+		if err != nil {
+			return nil, err
+		}
+
+		c.Tracer.Datadog = config.DatadogConfiguration{
+			AgentURL:   agentURL,
+			LicenseKey: licenseKey,
+		}
+
+	case config.OTelTracerProvider:
+		sampleRate, err := cmd.Flags().GetFloat64("otel-sample-rate")
+		if err != nil {
+			return nil, err
+		}
+
+		collectorURL, err := cmd.Flags().GetString("otel-collector-url")
+		if err != nil {
+			return nil, err
+		}
+
+		headerName, err := cmd.Flags().GetString("otel-auth-header-name")
+		if err != nil {
+			return nil, err
+		}
+
+		headerValue, err := cmd.Flags().GetString("otel-auth-header-value")
+		if err != nil {
+			return nil, err
+		}
+
+		c.Tracer.OTel = config.OTelConfiguration{
+			SampleRate:   sampleRate,
+			CollectorURL: collectorURL,
+			OTelAuth: config.OTelAuthConfiguration{
+				HeaderName:  headerName,
+				HeaderValue: headerValue,
+			},
+		}
+
+	case config.SentryTracerProvider:
+		dsn, err := cmd.Flags().GetString("sentry-dsn")
+		if err != nil {
+			return nil, err
+		}
+
+		c.Tracer.Sentry = config.SentryConfiguration{
+			DSN: dsn,
+		}
+
+	}
+
 	return c, nil
 }
 

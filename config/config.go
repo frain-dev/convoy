@@ -214,11 +214,10 @@ type LoggerConfiguration struct {
 }
 
 type TracerConfiguration struct {
-	Type     TracerProvider        `json:"type" envconfig:"CONVOY_TRACER_PROVIDER"`
-	OTel     OTelConfiguration     `json:"otel"`
-	NewRelic NewRelicConfiguration `json:"new_relic"`
-	Sentry   SentryConfiguration   `json:"sentry"`
-	Datadog  DatadogConfiguration  `json:"datadog"`
+	Type    TracerProvider       `json:"type" envconfig:"CONVOY_TRACER_PROVIDER"`
+	OTel    OTelConfiguration    `json:"otel"`
+	Sentry  SentryConfiguration  `json:"sentry"`
+	Datadog DatadogConfiguration `json:"datadog"`
 }
 
 type OTelConfiguration struct {
@@ -230,13 +229,6 @@ type OTelConfiguration struct {
 type OTelAuthConfiguration struct {
 	HeaderName  string `json:"header_name" envconfig:"CONVOY_OTel_AUTH_HEADER_NAME"`
 	HeaderValue string `json:"header_value" envconfig:"CONVOY_OTel_AUTH_HEADER_VALUE"`
-}
-
-type NewRelicConfiguration struct {
-	AppName                  string `json:"app_name" envconfig:"CONVOY_NEWRELIC_APP_NAME"`
-	LicenseKey               string `json:"license_key" envconfig:"CONVOY_NEWRELIC_LICENSE_KEY"`
-	ConfigEnabled            bool   `json:"config_enabled" envconfig:"CONVOY_NEWRELIC_CONFIG_ENABLED"`
-	DistributedTracerEnabled bool   `json:"distributed_tracer_enabled" envconfig:"CONVOY_NEWRELIC_DISTRIBUTED_TRACER_ENABLED"`
 }
 
 type DatadogConfiguration struct {
