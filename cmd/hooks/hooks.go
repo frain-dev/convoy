@@ -59,7 +59,9 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		if err != nil {
 			return err
 		}
-		defer shutdown(context.Background())
+		defer func() {
+			_ = shutdown(context.Background())
+		}()
 
 		var ca cache.Cache
 		var q queue.Queuer

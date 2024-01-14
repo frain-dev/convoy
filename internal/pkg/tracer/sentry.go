@@ -14,13 +14,16 @@ type SentryTracer struct {
 }
 
 func (st *SentryTracer) Init(componentName string) (shutdownFn, error) {
-	sentry.Init(sentry.ClientOptions{
+	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              st.cfg.DSN,
 		ServerName:       componentName,
 		EnableTracing:    true,
 		TracesSampleRate: 1.0,
 		Debug:            true,
 	})
+	if err != nil {
+		return noopShutdownFn, err
+	}
 
 	// Configure Tracer Provider.
 	tp := sdktrace.NewTracerProvider(

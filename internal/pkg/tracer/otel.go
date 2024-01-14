@@ -56,6 +56,9 @@ func (ot *OTelTracer) Init(componentName string) (shutdownFn, error) {
 			},
 		),
 	)
+	if err != nil {
+		return noopShutdownFn, err
+	}
 
 	// Configure Tracer Provider.
 	tp := sdktrace.NewTracerProvider(
