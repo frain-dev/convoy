@@ -280,7 +280,6 @@ const (
 const (
 	OTelTracerProvider    TracerProvider = "otel"
 	SentryTracerProvider  TracerProvider = "sentry"
-	ElasticTracerProvider TracerProvider = "elastic"
 	DatadogTracerProvider TracerProvider = "datadog"
 )
 

@@ -93,7 +93,7 @@ func main() {
 	c.Flags().BoolVar(&enableProfiling, "enable-profiling", false, "Enable profiling")
 
 	// tracing
-	c.Flags().StringVar(&tracerType, "tracer-type", "", "Tracer backend, e.g. sentry, datadog, elastic or otel")
+	c.Flags().StringVar(&tracerType, "tracer-type", "", "Tracer backend, e.g. sentry, datadog or otel")
 	c.Flags().StringVar(&sentryDSN, "sentry-dsn", "", "Sentry backend dsn")
 	c.Flags().StringVar(&datadogAgentURL, "datadog-agent-url", "", "Datadog agent URL")
 	c.Flags().StringVar(&datadogLicenseKey, "datadog-license-key", "", "Datadog license key")

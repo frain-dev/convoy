@@ -67,10 +67,6 @@ func Init(tCfg config.TracerConfiguration, componentName string) (shutdownFn, er
 
 		ot := OTelTracer{tCfg.OTel}
 		return ot.Init(componentName)
-
-	case config.ElasticTracerProvider:
-		et := ElasticTracer{}
-		return et.Init(componentName)
 	}
 
 	return noopShutdownFn, nil
