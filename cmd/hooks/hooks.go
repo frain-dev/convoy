@@ -148,7 +148,6 @@ func PostRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args 
 		if err == nil {
 			os.Exit(0)
 		}
-		return err
 
 		err = app.TracerShutdown(context.Background())
 		if err == nil {
