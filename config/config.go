@@ -222,13 +222,13 @@ type TracerConfiguration struct {
 
 type OTelConfiguration struct {
 	OTelAuth     OTelAuthConfiguration `json:"otel_auth"`
-	SampleRate   float64               `json:"sample_rate" envconfig:"CONVOY_OTel_SAMPLE_RATE"`
-	CollectorURL string                `json:"collector_url" envconfig:"CONVOY_OTel_COLLECTOR_URL"`
+	SampleRate   float64               `json:"sample_rate" envconfig:"CONVOY_OTEL_SAMPLE_RATE"`
+	CollectorURL string                `json:"collector_url" envconfig:"CONVOY_OTEL_COLLECTOR_URL"`
 }
 
 type OTelAuthConfiguration struct {
-	HeaderName  string `json:"header_name" envconfig:"CONVOY_OTel_AUTH_HEADER_NAME"`
-	HeaderValue string `json:"header_value" envconfig:"CONVOY_OTel_AUTH_HEADER_VALUE"`
+	HeaderName  string `json:"header_name" envconfig:"CONVOY_OTEL_AUTH_HEADER_NAME"`
+	HeaderValue string `json:"header_value" envconfig:"CONVOY_OTEL_AUTH_HEADER_VALUE"`
 }
 
 type DatadogConfiguration struct {
@@ -271,11 +271,10 @@ const (
 )
 
 const (
-	OTelTracerProvider     TracerProvider = "otel"
-	SentryTracerProvider   TracerProvider = "sentry"
-	ElasticTracerProvider  TracerProvider = "elastic"
-	DatadogTracerProvider  TracerProvider = "datadog"
-	NewRelicTracerProvider TracerProvider = "new_relic"
+	OTelTracerProvider    TracerProvider = "otel"
+	SentryTracerProvider  TracerProvider = "sentry"
+	ElasticTracerProvider TracerProvider = "elastic"
+	DatadogTracerProvider TracerProvider = "datadog"
 )
 
 const (

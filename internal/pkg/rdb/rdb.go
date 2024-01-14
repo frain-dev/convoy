@@ -44,7 +44,7 @@ func NewClient(addresses []string) (*Redis, error) {
 
 	// Enable tracing instrumentation.
 	if err := redisotel.InstrumentTracing(client); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return &Redis{addresses: addresses, client: client}, nil

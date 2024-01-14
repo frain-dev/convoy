@@ -23,11 +23,11 @@ type OTelTracer struct {
 	cfg config.OTelConfiguration
 }
 
-func (ot *OTelTracer) Init(componentName string) error {
+func (ot *OTelTracer) Init(componentName string) (shutdownFn, error) {
 	var opts []otlptracegrpc.Option
 
 	if util.IsStringEmpty(ot.cfg.CollectorURL) {
-		return ErrInvalidCollectorURL
+		return noopShutdownFn, ErrInvalidCollectorURL
 	}
 	opts = append(opts, otlptracegrpc.WithEndpoint(ot.cfg.CollectorURL))
 
@@ -39,7 +39,7 @@ func (ot *OTelTracer) Init(componentName string) error {
 
 	exporter, err := otlptrace.New(context.Background(), otlptracegrpc.NewClient(opts...))
 	if err != nil {
-		return err
+		return noopShutdownFn, err
 	}
 
 	// Configure Resources.
@@ -67,5 +67,5 @@ func (ot *OTelTracer) Init(componentName string) error {
 	// Configure OTel SDK
 	otel.SetTracerProvider(tp)
 
-	return nil
+	return tp.Shutdown, nil
 }

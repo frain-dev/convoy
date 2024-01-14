@@ -7,14 +7,14 @@ import (
 
 type ElasticTracer struct{}
 
-func (et *ElasticTracer) Init(componentName string) error {
+func (et *ElasticTracer) Init(componentName string) (shutdownFn, error) {
 	provider, err := apmotel.NewTracerProvider()
 	if err != nil {
-		return err
+		return noopShutdownFn, err
 	}
 
 	// Configure Tracer Provider.
 	otel.SetTracerProvider(provider)
 
-	return nil
+	return noopShutdownFn, nil
 }

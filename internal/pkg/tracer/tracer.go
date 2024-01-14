@@ -35,12 +35,18 @@ type Backend interface {
 	Init(componentName string) error
 }
 
+type shutdownFn func(context.Context) error
+
+func noopShutdownFn(context.Context) error {
+	return nil
+}
+
 // Global tracer Init function
-func Init(tCfg config.TracerConfiguration) error {
+func Init(tCfg config.TracerConfiguration) (shutdownFn, error) {
 	switch tCfg.Type {
 	case config.SentryTracerProvider:
 		if tCfg.Sentry == (config.SentryConfiguration{}) {
-			return ErrInvalidTracerConfiguration
+			return noopShutdownFn, ErrInvalidTracerConfiguration
 		}
 
 		st := &SentryTracer{tCfg.Sentry}
@@ -48,7 +54,7 @@ func Init(tCfg config.TracerConfiguration) error {
 
 	case config.DatadogTracerProvider:
 		if tCfg.Datadog == (config.DatadogConfiguration{}) {
-			return ErrInvalidTracerConfiguration
+			return noopShutdownFn, ErrInvalidTracerConfiguration
 		}
 
 		dt := DatadogTracer{}
@@ -56,7 +62,7 @@ func Init(tCfg config.TracerConfiguration) error {
 
 	case config.OTelTracerProvider:
 		if tCfg.OTel == (config.OTelConfiguration{}) {
-			return ErrInvalidTracerConfiguration
+			return noopShutdownFn, ErrInvalidTracerConfiguration
 		}
 
 		ot := OTelTracer{}
@@ -67,5 +73,5 @@ func Init(tCfg config.TracerConfiguration) error {
 		return et.Init("web")
 	}
 
-	return nil
+	return noopShutdownFn, nil
 }

@@ -55,10 +55,11 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
-		err = tracer.Init(cfg.Tracer)
+		shutdown, err := tracer.Init(cfg.Tracer)
 		if err != nil {
 			return err
 		}
+		defer shutdown(context.Background())
 
 		var ca cache.Cache
 		var q queue.Queuer

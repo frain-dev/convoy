@@ -3,7 +3,7 @@ package tracer
 import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/getsentry/sentry-go"
-	"github.com/getsentry/sentry-go/otel"
+	sentryotel "github.com/getsentry/sentry-go/otel"
 	"go.opentelemetry.io/otel"
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -13,7 +13,7 @@ type SentryTracer struct {
 	cfg config.SentryConfiguration
 }
 
-func (st *SentryTracer) Init(componentName string) error {
+func (st *SentryTracer) Init(componentName string) (shutdownFn, error) {
 	sentry.Init(sentry.ClientOptions{
 		Dsn:              st.cfg.DSN,
 		ServerName:       componentName,
@@ -33,5 +33,5 @@ func (st *SentryTracer) Init(componentName string) error {
 	// Configure Propagator.
 	otel.SetTextMapPropagator(sentryotel.NewSentryPropagator())
 
-	return nil
+	return tp.Shutdown, nil
 }
