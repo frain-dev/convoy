@@ -42,7 +42,7 @@ func noopShutdownFn(context.Context) error {
 }
 
 // Global tracer Init function
-func Init(tCfg config.TracerConfiguration) (shutdownFn, error) {
+func Init(tCfg config.TracerConfiguration, componentName string) (shutdownFn, error) {
 	switch tCfg.Type {
 	case config.SentryTracerProvider:
 		if tCfg.Sentry == (config.SentryConfiguration{}) {
@@ -50,27 +50,27 @@ func Init(tCfg config.TracerConfiguration) (shutdownFn, error) {
 		}
 
 		st := &SentryTracer{tCfg.Sentry}
-		return st.Init("web")
+		return st.Init(componentName)
 
 	case config.DatadogTracerProvider:
 		if tCfg.Datadog == (config.DatadogConfiguration{}) {
 			return noopShutdownFn, ErrInvalidTracerConfiguration
 		}
 
-		dt := DatadogTracer{}
-		return dt.Init("web")
+		dt := DatadogTracer{tCfg.Datadog}
+		return dt.Init(componentName)
 
 	case config.OTelTracerProvider:
 		if tCfg.OTel == (config.OTelConfiguration{}) {
 			return noopShutdownFn, ErrInvalidTracerConfiguration
 		}
 
-		ot := OTelTracer{}
-		return ot.Init("web")
+		ot := OTelTracer{tCfg.OTel}
+		return ot.Init(componentName)
 
 	case config.ElasticTracerProvider:
 		et := ElasticTracer{}
-		return et.Init("web")
+		return et.Init(componentName)
 	}
 
 	return noopShutdownFn, nil

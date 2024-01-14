@@ -8,16 +8,20 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/util"
 	"go.opentelemetry.io/otel"
+	"google.golang.org/grpc/credentials"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 )
 
-var ErrInvalidCollectorURL = errors.New("Invalid OTel Collector URL")
+var ErrInvalidCollectorURL = errors.New("invalid OTel Collector URL")
+var ErrInvalidOTelSSLConfig = errors.New("invalid OTel ssl cert or key configuration")
+var ErrFailedToCreateTLSCredentials = errors.New("failed to create tls credentials from config")
 
 type OTelTracer struct {
 	cfg config.OTelConfiguration
@@ -35,6 +39,25 @@ func (ot *OTelTracer) Init(componentName string) (shutdownFn, error) {
 		opts = append(opts, otlptracegrpc.WithHeaders(
 			map[string]string{
 				ot.cfg.OTelAuth.HeaderName: ot.cfg.OTelAuth.HeaderValue}))
+	}
+
+	if ot.cfg.TLS != (config.TLSConfig{}) {
+		if ot.cfg.TLS.SkipVerify {
+			secureOption := otlptracegrpc.WithInsecure()
+			opts = append(opts, secureOption)
+		}
+
+		if util.IsStringEmpty(ot.cfg.TLS.SSLCertFile) || util.IsStringEmpty(ot.cfg.TLS.SSLKeyFile) {
+			return noopShutdownFn, ErrInvalidOTelSSLConfig
+		}
+
+		creds, err := credentials.NewServerTLSFromFile(ot.cfg.TLS.SSLCertFile, ot.cfg.TLS.SSLKeyFile)
+		if err != nil {
+			return noopShutdownFn, ErrFailedToCreateTLSCredentials
+		}
+
+		tlsConfig := otlptracegrpc.WithTLSCredentials(creds)
+		opts = append(opts, tlsConfig)
 	}
 
 	exporter, err := otlptrace.New(context.Background(), otlptracegrpc.NewClient(opts...))
@@ -69,6 +92,7 @@ func (ot *OTelTracer) Init(componentName string) (shutdownFn, error) {
 
 	// Configure OTel SDK
 	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 	return tp.Shutdown, nil
 }

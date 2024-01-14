@@ -55,13 +55,10 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
-		shutdown, err := tracer.Init(cfg.Tracer)
+		app.TracerShutdown, err = tracer.Init(cfg.Tracer, cmd.Name())
 		if err != nil {
 			return err
 		}
-		defer func() {
-			_ = shutdown(context.Background())
-		}()
 
 		var ca cache.Cache
 		var q queue.Queuer
@@ -148,6 +145,12 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 func PostRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		err := db.Close()
+		if err == nil {
+			os.Exit(0)
+		}
+		return err
+
+		err = app.TracerShutdown(context.Background())
 		if err == nil {
 			os.Exit(0)
 		}
@@ -362,9 +365,29 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 			return nil, err
 		}
 
+		skipVerify, err := cmd.Flags().GetBool("otel-tls-skip-verify")
+		if err != nil {
+			return nil, err
+		}
+
+		sslCertFile, err := cmd.Flags().GetString("otel-tls-ssl-cert-file")
+		if err != nil {
+			return nil, err
+		}
+
+		sslKeyFile, err := cmd.Flags().GetString("otel-tls-ssl-key-file")
+		if err != nil {
+			return nil, err
+		}
+
 		c.Tracer.OTel = config.OTelConfiguration{
 			SampleRate:   sampleRate,
 			CollectorURL: collectorURL,
+			TLS: config.TLSConfig{
+				SkipVerify:  skipVerify,
+				SSLCertFile: sslCertFile,
+				SSLKeyFile:  sslKeyFile,
+			},
 			OTelAuth: config.OTelAuthConfiguration{
 				HeaderName:  headerName,
 				HeaderValue: headerValue,
