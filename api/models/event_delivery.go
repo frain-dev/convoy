@@ -19,6 +19,7 @@ var defaultPageable datastore.Pageable = datastore.Pageable{
 }
 
 type IDs struct {
+	// A list of event delivery IDs to forcefully resend.
 	IDs []string `json:"ids"`
 }
 
