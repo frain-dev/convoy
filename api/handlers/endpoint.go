@@ -31,9 +31,15 @@ import (
 func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	authUser := middleware.GetAuthUserFromContext(r.Context())
 
+	err := h.RM.VersionRequest(r, "CreateEndpoint")
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	var e models.CreateEndpoint
 
-	err := util.ReadJSON(r, &e)
+	err = util.ReadJSON(r, &e)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return

@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/subomi/requestmigrations"
 )
 
 type pagedResponse struct {
@@ -21,7 +22,8 @@ type pagedResponse struct {
 }
 
 type Handler struct {
-	A *types.APIOptions
+	A  *types.APIOptions
+	RM *requestmigrations.RequestMigration
 }
 
 func (h *Handler) IsReqWithProjectAPIKey(authUser *auth.AuthenticatedUser) bool {
