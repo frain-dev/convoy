@@ -100,6 +100,7 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/valid-convoy.json",
 			},
 			wantCfg: Configuration{
+				APIVersion:       DefaultAPIVersion,
 				Host:             "localhost:5005",
 				ConsumerPoolSize: 100,
 				Database: DatabaseConfiguration{
@@ -157,6 +158,7 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/valid-convoy-redis-cluster.json",
 			},
 			wantCfg: Configuration{
+				APIVersion:       DefaultAPIVersion,
 				Host:             "localhost:5005",
 				ConsumerPoolSize: 100,
 				Database: DatabaseConfiguration{
@@ -215,6 +217,7 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/zero-max-response-size-convoy.json",
 			},
 			wantCfg: Configuration{
+				APIVersion:       DefaultAPIVersion,
 				Host:             "localhost:5005",
 				ConsumerPoolSize: 100,
 				Database: DatabaseConfiguration{

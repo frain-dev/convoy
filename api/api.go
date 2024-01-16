@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/api/handlers"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -51,8 +52,7 @@ const (
 )
 
 const (
-	VersionHeader  = "X-Convoy-Version"
-	CurrentVersion = "2024-25-01"
+	VersionHeader = "X-Convoy-Version"
 )
 
 type ApplicationHandler struct {
@@ -68,16 +68,27 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 		AuthCtxKey: authz.AuthCtxType(middleware.AuthUserCtx),
 	})
 	if err != nil {
-		return appHandler, err
+		return nil, err
 	}
 	appHandler.A.Authz = az
 
 	opts := &requestmigrations.RequestMigrationOptions{
 		VersionHeader:  VersionHeader,
-		CurrentVersion: CurrentVersion,
+		CurrentVersion: config.DefaultAPIVersion,
 		VersionFormat:  requestmigrations.DateFormat,
+		GetUserVersionFunc: func(r *http.Request) (string, error) {
+			cfg, err := config.Get()
+			if err != nil {
+				return "", err
+			}
+
+			return cfg.APIVersion, nil
+		},
 	}
 	rm, err := requestmigrations.NewRequestMigration(opts)
+	if err != nil {
+		return nil, err
+	}
 
 	rm.RegisterMigrations(migrations)
 
