@@ -1710,6 +1710,7 @@
 			"models.IDs": {
 				"properties": {
 					"ids": {
+						"description": "A list of event delivery IDs to forcefully resend.",
 						"items": {
 							"type": "string"
 						},
@@ -3453,6 +3454,14 @@
 						}
 					},
 					{
+						"description": "The end date",
+						"in": "query",
+						"name": "endDate",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "A list of endpoint IDs to filter by",
 						"in": "query",
 						"name": "endpointId",
@@ -3466,6 +3475,60 @@
 					{
 						"in": "query",
 						"name": "eventId",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "event_type",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "idempotencyKey",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "A pagination cursor to fetch the next page of a list",
+						"in": "query",
+						"name": "next_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "The number of items to return per page",
+						"in": "query",
+						"name": "perPage",
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"description": "A pagination cursor to fetch the previous page of a list",
+						"in": "query",
+						"name": "prev_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "The start date",
+						"in": "query",
+						"name": "startDate",
 						"schema": {
 							"type": "string"
 						}
@@ -3608,19 +3671,7 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"allOf": [
-									{
-										"$ref": "#/components/schemas/handlers.Stub"
-									},
-									{
-										"properties": {
-											"ids": {
-												"$ref": "#/components/schemas/models.IDs"
-											}
-										},
-										"type": "object"
-									}
-								]
+								"$ref": "#/components/schemas/models.IDs"
 							}
 						}
 					},

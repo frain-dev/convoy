@@ -37,12 +37,12 @@ export class HttpService {
 		const cleanedQuery = Object.fromEntries(Object.entries(query).filter(([_, q]) => q !== '' && q !== undefined && q !== null && typeof q !== 'object'));
 		// convert object to query param
 		let cleanedQueryString: string = '';
-		Object.keys(cleanedQuery).forEach(q => {
+		Object.keys(cleanedQuery).forEach((q, i) => {
 			try {
 				const queryItem = JSON.parse(query[q]);
-				queryItem.forEach((item: any) => (cleanedQueryString += `${q}=${item}&`));
+				queryItem.forEach((item: any) => (cleanedQueryString += `${q}=${item}${Object.keys(cleanedQuery).length - 1 !== i ? '&' : ''}`));
 			} catch (error) {
-				cleanedQueryString += `${q}=${query[q]}&`;
+				cleanedQueryString += `${q}=${query[q]}${Object.keys(cleanedQuery).length - 1 !== i ? '&' : ''}`;
 			}
 		});
 

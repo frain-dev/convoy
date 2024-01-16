@@ -18,7 +18,6 @@ services:
         depends_on:
             - postgres
             - redis_server
-            - typesense
 
     worker:
         image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.11.1
@@ -67,16 +66,6 @@ services:
         volumes:
           - redis_data:/data
 
-    typesense:
-        image: typesense/typesense:0.24.0
-        restart: always
-        environment:
-            TYPESENSE_DATA_DIR: /data/typesense
-            TYPESENSE_ENABLE_CORS: "true"
-            TYPESENSE_API_KEY: "convoy"
-        volumes:
-            - typesense_data:/data/typesense
 volumes:
     postgres_data:
-    typesense_data:
     redis_data:
