@@ -90,7 +90,10 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 		return nil, err
 	}
 
-	rm.RegisterMigrations(migrations)
+	err = rm.RegisterMigrations(migrations)
+	if err != nil {
+		return nil, err
+	}
 
 	return &ApplicationHandler{A: a, rm: rm}, nil
 }
