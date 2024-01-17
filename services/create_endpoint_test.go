@@ -57,6 +57,11 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				g: project,
 			},
 			dbFn: func(app *CreateEndpointService) {
+				p, _ := app.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(project, nil)
+
 				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
@@ -99,6 +104,11 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				g: project,
 			},
 			dbFn: func(app *CreateEndpointService) {
+				p, _ := app.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(project, nil)
+
 				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
@@ -156,6 +166,11 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				g: project,
 			},
 			dbFn: func(app *CreateEndpointService) {
+				p, _ := app.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(project, nil)
+
 				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},

@@ -53,6 +53,23 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		}
 	}
 
+	project, err := a.ProjectRepo.FetchProjectByID(ctx, a.ProjectID)
+	if err != nil {
+		return nil, &ServiceError{ErrMsg: "failed to load endpoint project", Err: err}
+	}
+
+	truthValue := true
+	switch project.Type {
+	case datastore.IncomingProject:
+		a.E.AdvancedSignatures = &truthValue
+	case datastore.OutgoingProject:
+		if a.E.AdvancedSignatures != nil {
+			break
+		}
+
+		a.E.AdvancedSignatures = &truthValue
+	}
+
 	endpoint := &datastore.Endpoint{
 		UID:                ulid.Make().String(),
 		ProjectID:          a.ProjectID,
