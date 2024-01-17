@@ -149,7 +149,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Tracer: TracerConfiguration{
 					OTel: OTelConfiguration{
-						SampleRate: 1.0,
+						SampleRate:         1.0,
+						InsecureSkipVerify: true,
 					},
 				},
 			},
@@ -212,7 +213,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Tracer: TracerConfiguration{
 					OTel: OTelConfiguration{
-						SampleRate: 1.0,
+						SampleRate:         1.0,
+						InsecureSkipVerify: true,
 					},
 				},
 			},
@@ -274,7 +276,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Tracer: TracerConfiguration{
 					OTel: OTelConfiguration{
-						SampleRate: 1.0,
+						SampleRate:         1.0,
+						InsecureSkipVerify: true,
 					},
 				},
 			},
