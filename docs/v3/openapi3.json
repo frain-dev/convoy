@@ -1086,6 +1086,10 @@
 			},
 			"models.CreateEndpoint": {
 				"properties": {
+					"advanced_signatures": {
+						"description": "Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
+						"type": "boolean"
+					},
 					"appID": {
 						"description": "Deprecated but necessary for backward compatibility",
 						"type": "string"

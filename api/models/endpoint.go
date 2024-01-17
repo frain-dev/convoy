@@ -25,6 +25,10 @@ type CreateEndpoint struct {
 	// the endpoint
 	Description string `json:"description"`
 
+	// Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)
+	// -- simple or advanced. If left unspecified, we default to false.
+	AdvancedSignatures *bool `json:"advanced_signatures"`
+
 	// Endpoint name.
 	Name string `json:"name" valid:"required~please provide your endpointName"`
 
