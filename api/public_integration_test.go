@@ -857,13 +857,6 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_V
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	//// Deep Assert.
-	//var event datastore.Event
-	//parseResponse(s.T(), w.Result(), &event)
-
-	//require.NotEmpty(s.T(), event.UID)
-	//require.Equal(s.T(), event.Endpoints[0], endpointID)
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_Endpoint_is_disabled() {
@@ -911,27 +904,6 @@ func (s *PublicEventIntegrationTestSuite) Test_GetEndpointEvent_Valid_Event() {
 	var respEvent datastore.Event
 	parseResponse(s.T(), w.Result(), &respEvent)
 	require.Equal(s.T(), event.UID, respEvent.UID)
-}
-
-func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_Valid_Event_RedirectToProjects() {
-	s.T().Skip("Deprecated Redirects")
-	//	endpointID := ulid.Make().String()
-	//	expectedStatusCode := http.StatusTemporaryRedirect
-	//
-	//	// Just Before.
-	//	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
-	//
-	//	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
-	//	body := serialize(bodyStr, endpointID)
-	//
-	//	url := fmt.Sprintf("/api/v1/events?projectID=%s", s.DefaultProject.UID)
-	//	req := createRequest(http.MethodPost, url, s.APIKey, body)
-	//	w := httptest.NewRecorder()
-	//	// Act.
-	//	s.Router.ServeHTTP(w, req)
-	//
-	//	// Assert.
-	//	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_ReplayEndpointEvent_Valid_Event() {
