@@ -533,99 +533,6 @@ func (s *PublicEndpointIntegrationTestSuite) Test_ExpireEndpointSecret() {
 	require.NotEmpty(s.T(), endpoint2.Secrets[0].ExpiresAt)
 }
 
-func (s *PublicEndpointIntegrationTestSuite) Test_ToggleEndpointStatus_ActiveStatus() {
-	endpointId := ulid.Make().String()
-
-	// Just Before
-	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.ActiveEndpointStatus)
-	require.NoError(s.T(), err)
-
-	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.UID, endpointId)
-	req := createRequest(http.MethodPut, url, s.APIKey, nil)
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusAccepted, w.Code)
-
-	// Deep Asset
-	var endpoint *datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &endpoint)
-
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
-	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointId, s.DefaultProject.UID)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), endpointId, dbEndpoint.UID)
-	require.Equal(s.T(), datastore.InactiveEndpointStatus, dbEndpoint.Status)
-}
-
-func (s *PublicEndpointIntegrationTestSuite) Test_ToggleEndpointStatus_InactiveStatus() {
-	endpointId := ulid.Make().String()
-
-	// Just Before
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.InactiveEndpointStatus)
-
-	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.UID, endpointId)
-	req := createRequest(http.MethodPut, url, s.APIKey, nil)
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusAccepted, w.Code)
-
-	// Deep Assert
-	var endpoint *datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &endpoint)
-
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
-	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointId, s.DefaultProject.UID)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), endpointId, dbEndpoint.UID)
-	require.Equal(s.T(), datastore.ActiveEndpointStatus, dbEndpoint.Status)
-}
-
-func (s *PublicEndpointIntegrationTestSuite) Test_ToggleEndpointStatus_PendingStatus() {
-	endpointId := ulid.Make().String()
-
-	// Just Before
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.PendingEndpointStatus)
-
-	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.UID, endpointId)
-	req := createRequest(http.MethodPut, url, s.APIKey, nil)
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusBadRequest, w.Code)
-}
-
-func (s *PublicEndpointIntegrationTestSuite) Test_ToggleEndpointStatus_UnknownStatus() {
-	endpointID := ulid.Make().String()
-
-	// Just Before
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, "abc")
-
-	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.UID, endpointID)
-	req := createRequest(http.MethodPut, url, s.APIKey, nil)
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusBadRequest, w.Code)
-}
-
 func (s *PublicEndpointIntegrationTestSuite) Test_PauseEndpoint_PausedStatus() {
 	endpointId := ulid.Make().String()
 
@@ -857,13 +764,6 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_V
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	//// Deep Assert.
-	//var event datastore.Event
-	//parseResponse(s.T(), w.Result(), &event)
-
-	//require.NotEmpty(s.T(), event.UID)
-	//require.Equal(s.T(), event.Endpoints[0], endpointID)
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_Endpoint_is_disabled() {
@@ -911,27 +811,6 @@ func (s *PublicEventIntegrationTestSuite) Test_GetEndpointEvent_Valid_Event() {
 	var respEvent datastore.Event
 	parseResponse(s.T(), w.Result(), &respEvent)
 	require.Equal(s.T(), event.UID, respEvent.UID)
-}
-
-func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_Valid_Event_RedirectToProjects() {
-	s.T().Skip("Deprecated Redirects")
-	//	endpointID := ulid.Make().String()
-	//	expectedStatusCode := http.StatusTemporaryRedirect
-	//
-	//	// Just Before.
-	//	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
-	//
-	//	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
-	//	body := serialize(bodyStr, endpointID)
-	//
-	//	url := fmt.Sprintf("/api/v1/events?projectID=%s", s.DefaultProject.UID)
-	//	req := createRequest(http.MethodPost, url, s.APIKey, body)
-	//	w := httptest.NewRecorder()
-	//	// Act.
-	//	s.Router.ServeHTTP(w, req)
-	//
-	//	// Assert.
-	//	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_ReplayEndpointEvent_Valid_Event() {

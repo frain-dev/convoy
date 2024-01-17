@@ -332,42 +332,6 @@ func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 		resp, http.StatusOK))
 }
 
-// ToggleEndpointStatus
-//
-//	@Summary		Toggle endpoint status
-//	@Description	This endpoint toggles an endpoint status between the active and inactive statetes
-//	@Tags			Endpoints
-//	@Accept			json
-//	@Produce		json
-//	@Param			projectID	path		string	true	"Project ID"
-//	@Param			endpointID	path		string	true	"Endpoint ID"
-//	@Success		200			{object}	util.ServerResponse{data=models.EndpointResponse}
-//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
-//	@Security		ApiKeyAuth
-//	@Router			/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status [put]
-func (h *Handler) ToggleEndpointStatus(w http.ResponseWriter, r *http.Request) {
-	project, err := h.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
-
-	te := services.ToggleEndpointStatusService{
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
-		ProjectID:    project.UID,
-		EndpointId:   chi.URLParam(r, "endpointID"),
-	}
-
-	endpoint, err := te.Run(r.Context())
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-
-	resp := &models.EndpointResponse{Endpoint: endpoint}
-	_ = render.Render(w, r, util.NewServerResponse("endpoint status updated successfully", resp, http.StatusAccepted))
-}
-
 // PauseEndpoint
 //
 //	@Summary		Pause endpoint

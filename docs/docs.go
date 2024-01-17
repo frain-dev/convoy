@@ -858,116 +858,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status": {
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint toggles an endpoint status between the active and inactive statetes",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Endpoints"
-                ],
-                "summary": "Toggle endpoint status",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project ID",
-                        "name": "projectID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Endpoint ID",
-                        "name": "endpointID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/models.EndpointResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/handlers.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/handlers.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/handlers.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
         "/v1/projects/{projectID}/eventdeliveries": {
             "get": {
                 "security": [
@@ -1193,6 +1083,13 @@ const docTemplate = `{
                         "required": true
                     },
                     {
+                        "type": "string",
+                        "example": "2008-05-02T15:04:05",
+                        "description": "The end date",
+                        "name": "endDate",
+                        "in": "query"
+                    },
+                    {
                         "type": "array",
                         "items": {
                             "type": "string"
@@ -1204,6 +1101,51 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "name": "eventId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "event_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "idempotencyKey",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "01H0JA5MEES38RRK3HTEJC647K",
+                        "description": "A pagination cursor to fetch the next page of a list",
+                        "name": "next_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 20,
+                        "description": "The number of items to return per page",
+                        "name": "perPage",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "01H0JATTVCXZK8FRDX1M1JN3QY",
+                        "description": "A pagination cursor to fetch the previous page of a list",
+                        "name": "prev_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "2006-01-02T15:04:05",
+                        "description": "The start date",
+                        "name": "startDate",
                         "in": "query"
                     },
                     {
@@ -1329,19 +1271,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/handlers.Stub"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "ids": {
-                                            "$ref": "#/definitions/models.IDs"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/models.IDs"
                         }
                     }
                 ],
@@ -6241,10 +6171,6 @@ const docTemplate = `{
         "models.CreateEndpoint": {
             "type": "object",
             "properties": {
-                "advanced_signatures": {
-                    "description": "Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
-                    "type": "boolean"
-                },
                 "appID": {
                     "description": "Deprecated but necessary for backward compatibility",
                     "type": "string"
@@ -6258,7 +6184,7 @@ const docTemplate = `{
                     ]
                 },
                 "description": {
-                    "description": "Human readable description of the endpoint. Think of this as metadata describing\nthe endpoint",
+                    "description": "Human-readable description of the endpoint. Think of this as metadata describing\nthe endpoint",
                     "type": "string"
                 },
                 "http_timeout": {
@@ -6869,6 +6795,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "ids": {
+                    "description": "A list of event delivery IDs to forcefully resend.",
                     "type": "array",
                     "items": {
                         "type": "string"

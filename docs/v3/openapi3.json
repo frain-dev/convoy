@@ -1086,10 +1086,6 @@
 			},
 			"models.CreateEndpoint": {
 				"properties": {
-					"advanced_signatures": {
-						"description": "Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
-						"type": "boolean"
-					},
 					"appID": {
 						"description": "Deprecated but necessary for backward compatibility",
 						"type": "string"
@@ -1103,7 +1099,7 @@
 						"description": "This is used to define any custom authentication required by the endpoint. This\nshouldn't be needed often because webhook endpoints usually should be exposed to\nthe internet."
 					},
 					"description": {
-						"description": "Human readable description of the endpoint. Think of this as metadata describing\nthe endpoint",
+						"description": "Human-readable description of the endpoint. Think of this as metadata describing\nthe endpoint",
 						"type": "string"
 					},
 					"http_timeout": {
@@ -1714,6 +1710,7 @@
 			"models.IDs": {
 				"properties": {
 					"ids": {
+						"description": "A list of event delivery IDs to forcefully resend.",
 						"items": {
 							"type": "string"
 						},
@@ -3215,130 +3212,6 @@
 				]
 			}
 		},
-		"/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status": {
-			"put": {
-				"description": "This endpoint toggles an endpoint status between the active and inactive statetes",
-				"parameters": [
-					{
-						"description": "Project ID",
-						"in": "path",
-						"name": "projectID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "Endpoint ID",
-						"in": "path",
-						"name": "endpointID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/models.EndpointResponse"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/handlers.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/handlers.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"404": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/handlers.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Not Found"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Toggle endpoint status",
-				"tags": [
-					"Endpoints"
-				]
-			}
-		},
 		"/v1/projects/{projectID}/eventdeliveries": {
 			"get": {
 				"description": "This endpoint retrieves all event deliveries paginated.",
@@ -3581,6 +3454,14 @@
 						}
 					},
 					{
+						"description": "The end date",
+						"in": "query",
+						"name": "endDate",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "A list of endpoint IDs to filter by",
 						"in": "query",
 						"name": "endpointId",
@@ -3594,6 +3475,60 @@
 					{
 						"in": "query",
 						"name": "eventId",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "event_type",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "idempotencyKey",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "A pagination cursor to fetch the next page of a list",
+						"in": "query",
+						"name": "next_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "The number of items to return per page",
+						"in": "query",
+						"name": "perPage",
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"description": "A pagination cursor to fetch the previous page of a list",
+						"in": "query",
+						"name": "prev_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "The start date",
+						"in": "query",
+						"name": "startDate",
 						"schema": {
 							"type": "string"
 						}
@@ -3736,19 +3671,7 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"allOf": [
-									{
-										"$ref": "#/components/schemas/handlers.Stub"
-									},
-									{
-										"properties": {
-											"ids": {
-												"$ref": "#/components/schemas/models.IDs"
-											}
-										},
-										"type": "object"
-									}
-								]
+								"$ref": "#/components/schemas/models.IDs"
 							}
 						}
 					},
