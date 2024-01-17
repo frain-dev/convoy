@@ -333,14 +333,8 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 			return nil, err
 		}
 
-		licenseKey, err := cmd.Flags().GetString("datadog-license-key")
-		if err != nil {
-			return nil, err
-		}
-
 		c.Tracer.Datadog = config.DatadogConfiguration{
-			AgentURL:   agentURL,
-			LicenseKey: licenseKey,
+			AgentURL: agentURL,
 		}
 
 	case config.OTelTracerProvider:

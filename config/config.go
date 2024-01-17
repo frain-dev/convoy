@@ -234,9 +234,7 @@ type OTelAuthConfiguration struct {
 }
 
 type DatadogConfiguration struct {
-	AgentURL   string `json:"agent_url" envconfig:"CONVOY_DATADOG_AGENT_URL"`
-	AppName    string `json:"app_name" envconfig:"CONVOY_DATADOG_APP_NAME"`
-	LicenseKey string `json:"license_key" envconfig:"CONVOY_DATADOG_LICENSE_KEY"`
+	AgentURL string `json:"agent_url" envconfig:"CONVOY_DATADOG_AGENT_URL"`
 }
 
 type SentryConfiguration struct {

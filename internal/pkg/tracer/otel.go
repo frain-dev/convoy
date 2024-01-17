@@ -77,6 +77,8 @@ func (ot *OTelTracer) Init(componentName string) (shutdownFn, error) {
 
 	// Configure OTel SDK
 	otel.SetTracerProvider(tp)
+
+	// Configure Propagator
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 	return tp.Shutdown, nil
