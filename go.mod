@@ -48,6 +48,7 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.1
+	github.com/subomi/requestmigrations v0.4.0
 	github.com/swaggo/swag v1.8.12
 	github.com/tidwall/gjson v1.14.4
 	github.com/xdg-go/pbkdf2 v1.0.0
@@ -67,7 +68,6 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
-	github.com/subomi/requestmigrations v0.4.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect

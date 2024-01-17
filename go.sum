@@ -554,7 +554,7 @@ github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6L
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.6.1/go.mod h1:xXDCJY+GAPziupqXw64V24skbSoqbTEfhy4qGm1nDQc=
 github.com/rogpeppe/go-internal v1.8.0/go.mod h1:WmiCO8CzOY8rg0OYDC4/i/2WRWAB6poM+XZ2dLUbcbE=
-github.com/rogpeppe/go-internal v1.9.0 h1:73kH8U+JUqXU8lRuOHeVHaa/SZPifC7BkcraZVejAe8=
+github.com/rogpeppe/go-internal v1.11.0 h1:cWPaGQEPrBb5/AsnsZesgZZ9yb1OQ+GOISoDNXVBh4M=
 github.com/rs/cors v1.7.0/go.mod h1:gFx+x8UowdsKA9AchylcLynDq+nNFfI8FkUZdN/jGCU=
 github.com/rubenv/sql-migrate v1.3.0 h1:4/aYosSBTTDYKxRKdftREUV21d9hPc24mfIKZBosMsQ=
 github.com/rubenv/sql-migrate v1.3.0/go.mod h1:rmTcbW9Xfv90gWPRV4stgofRrAagqmzlm6bQQzghoz0=
@@ -608,8 +608,6 @@ github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKs
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stvp/tempredis v0.0.0-20181119212430-b82af8480203 h1:QVqDTf3h2WHt08YuiTGPZLls0Wq99X9bWd0Q5ZSBesM=
 github.com/stvp/tempredis v0.0.0-20181119212430-b82af8480203/go.mod h1:oqN97ltKNihBbwlX8dLpwxCl3+HnXKV/R0e+sRLd9C8=
-github.com/subomi/requestmigrations v0.3.0 h1:pse2y+zpQ47urLyiCnhxy7n2njS9o1h8mgc8AqU3jXs=
-github.com/subomi/requestmigrations v0.3.0/go.mod h1:vadXwLm1DExF3s/U/wEoeQQiopmnAU8/YiWxCt/SRbI=
 github.com/subomi/requestmigrations v0.4.0 h1:xMhkzWWZn00Oqb13amqiunyjhzDMoij+WOaPvdtzsxY=
 github.com/subomi/requestmigrations v0.4.0/go.mod h1:vadXwLm1DExF3s/U/wEoeQQiopmnAU8/YiWxCt/SRbI=
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
