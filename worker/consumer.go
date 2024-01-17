@@ -8,6 +8,7 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/hibiken/asynq"
+	"go.opentelemetry.io/otel"
 )
 
 type Consumer struct {
@@ -76,6 +77,12 @@ func (c *Consumer) Stop() {
 
 func (c *Consumer) loggingMiddleware(h asynq.Handler) asynq.Handler {
 	return asynq.HandlerFunc(func(ctx context.Context, t *asynq.Task) error {
+		traceProvider := otel.GetTracerProvider()
+		tracer := traceProvider.Tracer("asynq.workers")
+
+		ctx, span := tracer.Start(ctx, t.Type())
+		defer span.End()
+
 		err := h.ProcessTask(ctx, t)
 		if err != nil {
 			c.log.WithError(err).WithField("job", t.Type()).Error("job failed")

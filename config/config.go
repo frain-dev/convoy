@@ -77,7 +77,8 @@ var DefaultConfiguration = Configuration{
 	ConsumerPoolSize: 100,
 	Tracer: TracerConfiguration{
 		OTel: OTelConfiguration{
-			SampleRate: 1.0,
+			SampleRate:         1.0,
+			InsecureSkipVerify: true,
 		},
 	},
 	EnableProfiling: false,
@@ -221,21 +222,15 @@ type TracerConfiguration struct {
 }
 
 type OTelConfiguration struct {
-	OTelAuth     OTelAuthConfiguration `json:"otel_auth"`
-	TLS          TLSConfig             `json:"tls_config"`
-	SampleRate   float64               `json:"sample_rate" envconfig:"CONVOY_OTEL_SAMPLE_RATE"`
-	CollectorURL string                `json:"collector_url" envconfig:"CONVOY_OTEL_COLLECTOR_URL"`
+	OTelAuth           OTelAuthConfiguration `json:"otel_auth"`
+	SampleRate         float64               `json:"sample_rate" envconfig:"CONVOY_OTEL_SAMPLE_RATE"`
+	CollectorURL       string                `json:"collector_url" envconfig:"CONVOY_OTEL_COLLECTOR_URL"`
+	InsecureSkipVerify bool                  `json:"insecure_skip_verify" envconfig:"CONVOY_OTEL_INSECURE_SKIP_VERIFY"`
 }
 
 type OTelAuthConfiguration struct {
 	HeaderName  string `json:"header_name" envconfig:"CONVOY_OTEL_AUTH_HEADER_NAME"`
 	HeaderValue string `json:"header_value" envconfig:"CONVOY_OTEL_AUTH_HEADER_VALUE"`
-}
-
-type TLSConfig struct {
-	SkipVerify  bool   `json:"skip_verify" envconfig:"CONVOY_OTEL_TLS_SKIP_VERIFY"`
-	SSLCertFile string `json:"ssl_cert_file" envconfig:"CONVOY_OTEL_TLS_SSL_CERT_FILE"`
-	SSLKeyFile  string `json:"ssl_key_file" envconfig:"CONVOY_OTEL_TLS_SSL_KEY_FILE"`
 }
 
 type DatadogConfiguration struct {

@@ -8,7 +8,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/util"
 	"go.opentelemetry.io/otel"
-	"google.golang.org/grpc/credentials"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -41,23 +40,9 @@ func (ot *OTelTracer) Init(componentName string) (shutdownFn, error) {
 				ot.cfg.OTelAuth.HeaderName: ot.cfg.OTelAuth.HeaderValue}))
 	}
 
-	if ot.cfg.TLS != (config.TLSConfig{}) {
-		if ot.cfg.TLS.SkipVerify {
-			secureOption := otlptracegrpc.WithInsecure()
-			opts = append(opts, secureOption)
-		}
-
-		if util.IsStringEmpty(ot.cfg.TLS.SSLCertFile) || util.IsStringEmpty(ot.cfg.TLS.SSLKeyFile) {
-			return noopShutdownFn, ErrInvalidOTelSSLConfig
-		}
-
-		creds, err := credentials.NewServerTLSFromFile(ot.cfg.TLS.SSLCertFile, ot.cfg.TLS.SSLKeyFile)
-		if err != nil {
-			return noopShutdownFn, ErrFailedToCreateTLSCredentials
-		}
-
-		tlsConfig := otlptracegrpc.WithTLSCredentials(creds)
-		opts = append(opts, tlsConfig)
+	if ot.cfg.InsecureSkipVerify {
+		secureOption := otlptracegrpc.WithInsecure()
+		opts = append(opts, secureOption)
 	}
 
 	exporter, err := otlptrace.New(context.Background(), otlptracegrpc.NewClient(opts...))
