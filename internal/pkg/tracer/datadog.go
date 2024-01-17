@@ -15,6 +15,7 @@ type DatadogTracer struct {
 
 func (dt *DatadogTracer) Init(componentName string) (shutdownFn, error) {
 	provider := ddotel.NewTracerProvider(
+		tracer.WithLogStartup(false),
 		tracer.WithAgentAddr(dt.cfg.AgentURL),
 		tracer.WithService(componentName))
 
