@@ -33,7 +33,10 @@ func Test_Migrate(t *testing.T) {
 			}
 
 			migration := CreateEndpointRequestMigration{}
-			res, header, err := migration.Migrate(body, header)
+			res, _, err := migration.Migrate(body, header)
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			var endpoint models.CreateEndpoint
 			err = json.Unmarshal(res, &endpoint)
