@@ -1,6 +1,6 @@
 module github.com/frain-dev/convoy
 
-go 1.18
+go 1.20
 
 require (
 	cloud.google.com/go/pubsub v1.26.0
