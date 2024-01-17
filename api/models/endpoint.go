@@ -21,13 +21,9 @@ type CreateEndpoint struct {
 	// [fanout](https://getconvoy.io/docs/manual/endpoints#Endpoint%20Owner%20ID)
 	OwnerID string `json:"owner_id"`
 
-	// Human readable description of the endpoint. Think of this as metadata describing
+	// Human-readable description of the endpoint. Think of this as metadata describing
 	// the endpoint
 	Description string `json:"description"`
-
-	// Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)
-	// -- simple or advanced. If left unspecified, we default to false.
-	AdvancedSignatures bool `json:"advanced_signatures"`
 
 	// Endpoint name.
 	Name string `json:"name" valid:"required~please provide your endpointName"`

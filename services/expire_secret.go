@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"net/http"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
@@ -37,7 +38,7 @@ func (a *ExpireSecretService) Run(ctx context.Context) (*datastore.Endpoint, err
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	expiresAt := time.Now().Add(time.Hour * time.Duration(a.S.Expiration))
+	expiresAt := time.Now().Add(time.Second * time.Duration(a.S.Expiration))
 	a.Endpoint.Secrets[idx].ExpiresAt = null.TimeFrom(expiresAt)
 
 	secret := a.Endpoint.Secrets[idx]
