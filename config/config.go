@@ -21,7 +21,7 @@ const (
 	DefaultHost                       = "localhost:5005"
 	DefaultSearchTokenizationInterval = 1
 	DefaultCacheTTL                   = time.Minute * 10
-	DefaultAPIVersion                 = "2024-25-01"
+	DefaultAPIVersion                 = "2024-01-01"
 )
 
 var cfgSingleton atomic.Value
@@ -301,7 +301,7 @@ func (ft FlagLevel) MarshalJSON() ([]byte, error) {
 }
 
 type Configuration struct {
-	APIVersion         string                     `json:"api_version"`
+	APIVersion         string                     `json:"api_version" envconfig:"CONVOY_API_VERSION"`
 	Auth               AuthConfiguration          `json:"auth,omitempty"`
 	Database           DatabaseConfiguration      `json:"database"`
 	Redis              RedisConfiguration         `json:"redis"`
