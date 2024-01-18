@@ -2,7 +2,7 @@ version: "3"
 
 services:
     web:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.10.1
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.11.1
         command: ["/start.sh"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -18,20 +18,9 @@ services:
         depends_on:
             - postgres
             - redis_server
-            - typesense
-
-    scheduler:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.10.1
-        command: ["./cmd", "scheduler", "--config", "convoy.json"]
-        volumes:
-            - ./convoy.json:/convoy.json
-        restart: on-failure
-        depends_on:
-            web:
-                condition: service_healthy
 
     worker:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.10.1
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.11.1
         command: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -41,7 +30,7 @@ services:
                 condition: service_healthy
 
     stream:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.10.1
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.11.1
         command: ["./cmd", "stream", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -51,7 +40,7 @@ services:
                 condition: service_healthy
 
     ingest:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.10.1
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.11.1
         command: ["./cmd", "ingest", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -77,16 +66,6 @@ services:
         volumes:
           - redis_data:/data
 
-    typesense:
-        image: typesense/typesense:0.24.0
-        restart: always
-        environment:
-            TYPESENSE_DATA_DIR: /data/typesense
-            TYPESENSE_ENABLE_CORS: "true"
-            TYPESENSE_API_KEY: "convoy"
-        volumes:
-            - typesense_data:/data/typesense
 volumes:
     postgres_data:
-    typesense_data:
     redis_data:

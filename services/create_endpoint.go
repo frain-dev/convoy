@@ -53,15 +53,6 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		}
 	}
 
-	project, err := a.ProjectRepo.FetchProjectByID(ctx, a.ProjectID)
-	if err != nil {
-		return nil, &ServiceError{ErrMsg: "failed to load endpoint project", Err: err}
-	}
-
-	if project.Type == datastore.IncomingProject {
-		a.E.AdvancedSignatures = true
-	}
-
 	endpoint := &datastore.Endpoint{
 		UID:                ulid.Make().String(),
 		ProjectID:          a.ProjectID,
@@ -73,7 +64,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		Description:        a.E.Description,
 		RateLimit:          a.E.RateLimit,
 		HttpTimeout:        a.E.HttpTimeout,
-		AdvancedSignatures: a.E.AdvancedSignatures,
+		AdvancedSignatures: true,
 		AppID:              a.E.AppID,
 		RateLimitDuration:  duration.String(),
 		Status:             datastore.ActiveEndpointStatus,
@@ -118,38 +109,6 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create endpoint")
 		return nil, &ServiceError{ErrMsg: "an error occurred while adding endpoint", Err: err}
-	}
-
-	if !util.IsStringEmpty(endpoint.OwnerID) {
-		portalLink, err := a.PortalLinkRepo.FindPortalLinkByOwnerID(ctx, a.ProjectID, endpoint.OwnerID)
-		if err != nil {
-			if errors.Is(err, datastore.ErrPortalLinkNotFound) {
-				return endpoint, nil
-			}
-
-			log.FromContext(ctx).WithError(err).Error("Failed to retrieve portal link for endpoint")
-			return endpoint, nil
-		}
-
-		update := models.PortalLink{
-			Name:              portalLink.Name,
-			Endpoints:         append(portalLink.Endpoints, endpoint.UID),
-			OwnerID:           portalLink.OwnerID,
-			CanManageEndpoint: portalLink.CanManageEndpoint,
-		}
-		upl := UpdatePortalLinkService{
-			PortalLinkRepo: a.PortalLinkRepo,
-			EndpointRepo:   a.EndpointRepo,
-			Project:        project,
-			Update:         &update,
-			PortalLink:     portalLink,
-		}
-
-		_, err = upl.Run(ctx)
-		if err != nil {
-			log.FromContext(ctx).WithError(err).Error("Failed to update portal link endpoints")
-			return endpoint, nil
-		}
 	}
 
 	return endpoint, nil

@@ -214,8 +214,16 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 			}, nil
 		}
 
+		parts := strings.Split(authToken, ".")
+		if len(parts) == 3 {
+			return &auth.Credential{
+				Type:  auth.CredentialTypeJWT,
+				Token: authToken,
+			}, nil
+		}
+
 		return &auth.Credential{
-			Type:  auth.CredentialTypeJWT,
+			Type:  auth.CredentialTypeToken,
 			Token: authToken,
 		}, nil
 
@@ -404,7 +412,11 @@ func setPageableInContext(ctx context.Context, pageable datastore.Pageable) cont
 }
 
 func GetPageableFromContext(ctx context.Context) datastore.Pageable {
-	return ctx.Value(pageableCtx).(datastore.Pageable)
+	v := ctx.Value(pageableCtx)
+	if v != nil {
+		return v.(datastore.Pageable)
+	}
+	return datastore.Pageable{}
 }
 
 func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) context.Context {

@@ -57,11 +57,6 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				g: project,
 			},
 			dbFn: func(app *CreateEndpointService) {
-				p, _ := app.ProjectRepo.(*mocks.MockProjectRepository)
-				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(project, nil)
-
 				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
@@ -73,11 +68,12 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				Secrets: []datastore.Secret{
 					{Value: "1234"},
 				},
-				TargetURL:         "https://google.com",
-				Description:       "test_endpoint",
-				RateLimit:         5000,
-				Status:            datastore.ActiveEndpointStatus,
-				RateLimitDuration: "1m0s",
+				AdvancedSignatures: true,
+				TargetURL:          "https://google.com",
+				Description:        "test_endpoint",
+				RateLimit:          5000,
+				Status:             datastore.ActiveEndpointStatus,
+				RateLimitDuration:  "1m0s",
 			},
 			wantErr: false,
 		},
@@ -103,11 +99,6 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				g: project,
 			},
 			dbFn: func(app *CreateEndpointService) {
-				p, _ := app.ProjectRepo.(*mocks.MockProjectRepository)
-				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(project, nil)
-
 				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
@@ -117,11 +108,12 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				Secrets: []datastore.Secret{
 					{Value: "1234"},
 				},
-				TargetURL:         "https://google.com",
-				Description:       "test_endpoint",
-				RateLimit:         100,
-				Status:            datastore.ActiveEndpointStatus,
-				RateLimitDuration: "1m0s",
+				TargetURL:          "https://google.com",
+				AdvancedSignatures: true,
+				Description:        "test_endpoint",
+				RateLimit:          100,
+				Status:             datastore.ActiveEndpointStatus,
+				RateLimitDuration:  "1m0s",
 				Authentication: &datastore.EndpointAuthentication{
 					Type: datastore.APIKeyAuthentication,
 					ApiKey: &datastore.ApiKey{
@@ -164,11 +156,6 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				g: project,
 			},
 			dbFn: func(app *CreateEndpointService) {
-				p, _ := app.ProjectRepo.(*mocks.MockProjectRepository)
-				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(project, nil)
-
 				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},

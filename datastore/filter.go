@@ -24,6 +24,7 @@ type Filter struct {
 type SourceFilter struct {
 	Type     string
 	Provider string
+	Query    string
 }
 
 type ApiKeyFilter struct {

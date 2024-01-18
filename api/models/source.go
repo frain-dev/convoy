@@ -3,23 +3,41 @@ package models
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
-	"net/http"
-	"strings"
 )
 
 type CreateSource struct {
-	Name            string                   `json:"name" valid:"required~please provide a source name"`
-	Type            datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
-	Provider        datastore.SourceProvider `json:"provider"`
-	IsDisabled      bool                     `json:"is_disabled"`
-	CustomResponse  CustomResponse           `json:"custom_response"`
-	Verifier        VerifierConfig           `json:"verifier"`
-	PubSub          PubSubConfig             `json:"pub_sub"`
-	IdempotencyKeys []string                 `json:"idempotency_keys"`
-	IdempotencyTTL  string                   `json:"idempotency_ttl"`
+	// Source name.
+	Name string `json:"name" valid:"required~please provide a source name"`
+
+	// Source Type. Currently supported values are - sqs, kafka or pubsub.
+	Type datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+
+	Provider datastore.SourceProvider `json:"provider"`
+
+	// This is used to manually enable/disable the source.
+	IsDisabled bool `json:"is_disabled"`
+
+	// Custom response is used to define a custom response for incoming
+	// webhooks project sources only.
+	CustomResponse CustomResponse `json:"custom_response"`
+
+	// Verifiers are used to verify webhook events ingested in incoming
+	// webhooks projects.
+	Verifier VerifierConfig `json:"verifier"`
+
+	// PubSub are used to specify message broker sources for outgoing
+	// webhooks projects.
+	PubSub PubSubConfig `json:"pub_sub"`
+
+	// IdempotencyKeys are used to specify parts of a webhook request to uniquely
+	// identify the event in an incoming webhooks project.
+	IdempotencyKeys []string `json:"idempotency_keys"`
 }
 
 func (cs *CreateSource) Validate() error {
@@ -114,7 +132,6 @@ type UpdateSource struct {
 	Verifier        VerifierConfig       `json:"verifier"`
 	PubSub          *PubSubConfig        `json:"pub_sub"`
 	IdempotencyKeys []string             `json:"idempotency_keys"`
-	IdempotencyTTL  string               `json:"idempotency_ttl"`
 }
 
 func (us *UpdateSource) Validate() error {
@@ -142,6 +159,7 @@ type QueryListSource struct {
 }
 
 type Pageable struct {
+	Sort string `json:"sort"  example:"ASC | DESC"` // sort order
 	// The number of items to return per page
 	PerPage   int                     `json:"perPage" example:"20"`
 	Direction datastore.PageDirection `json:"direction"`
@@ -160,6 +178,7 @@ func (ls *QueryListSource) Transform(r *http.Request) *QueryListSourceResponse {
 	return &QueryListSourceResponse{
 		Pageable: m.GetPageableFromContext(r.Context()),
 		SourceFilter: &datastore.SourceFilter{
+			Query:    r.URL.Query().Get("q"),
 			Type:     r.URL.Query().Get("type"),
 			Provider: r.URL.Query().Get("provider"),
 		},

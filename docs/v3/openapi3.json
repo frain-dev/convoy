@@ -465,21 +465,6 @@
 				},
 				"type": "object"
 			},
-			"datastore.KeyType": {
-				"enum": [
-					"project",
-					"app_portal",
-					"cli",
-					"personal_key"
-				],
-				"type": "string",
-				"x-enum-varnames": [
-					"ProjectKey",
-					"AppPortalKey",
-					"CLIKey",
-					"PersonalKey"
-				]
-			},
 			"datastore.M": {
 				"additionalProperties": true,
 				"type": "object"
@@ -1045,41 +1030,24 @@
 					"APIKeyVerifier"
 				]
 			},
+			"handlers.Stub": {
+				"type": "object"
+			},
+			"handlers.pagedResponse": {
+				"properties": {
+					"content": {},
+					"pagination": {
+						"$ref": "#/components/schemas/datastore.PaginationData"
+					}
+				},
+				"type": "object"
+			},
 			"httpheader.HTTPHeader": {
 				"additionalProperties": {
 					"items": {
 						"type": "string"
 					},
 					"type": "array"
-				},
-				"type": "object"
-			},
-			"models.APIKeyResponse": {
-				"properties": {
-					"created_at": {
-						"type": "string"
-					},
-					"expires_at": {
-						"type": "string"
-					},
-					"key": {
-						"type": "string"
-					},
-					"key_type": {
-						"$ref": "#/components/schemas/datastore.KeyType"
-					},
-					"name": {
-						"type": "string"
-					},
-					"role": {
-						"$ref": "#/components/schemas/models.Role"
-					},
-					"uid": {
-						"type": "string"
-					},
-					"user_id": {
-						"type": "string"
-					}
 				},
 				"type": "object"
 			},
@@ -1118,47 +1086,60 @@
 			},
 			"models.CreateEndpoint": {
 				"properties": {
-					"advanced_signatures": {
-						"type": "boolean"
-					},
 					"appID": {
 						"description": "Deprecated but necessary for backward compatibility",
 						"type": "string"
 					},
 					"authentication": {
-						"$ref": "#/components/schemas/models.EndpointAuthentication"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.EndpointAuthentication"
+							}
+						],
+						"description": "This is used to define any custom authentication required by the endpoint. This\nshouldn't be needed often because webhook endpoints usually should be exposed to\nthe internet."
 					},
 					"description": {
+						"description": "Human-readable description of the endpoint. Think of this as metadata describing\nthe endpoint",
 						"type": "string"
 					},
 					"http_timeout": {
+						"description": "Define endpoint http timeout in seconds. It uses Go's time duration syntax.\nE.g. 3s, 1m",
 						"type": "string"
 					},
 					"is_disabled": {
+						"description": "This is used to manually enable/disable the endpoint.",
 						"type": "boolean"
 					},
 					"name": {
+						"description": "Endpoint name.",
 						"type": "string"
 					},
 					"owner_id": {
+						"description": "The OwnerID is used to group more than one endpoint together to achieve\n[fanout](https://getconvoy.io/docs/manual/endpoints#Endpoint%20Owner%20ID)",
 						"type": "string"
 					},
 					"rate_limit": {
+						"description": "Rate limit is the total number of requests to be sent to an endpoint in\nthe time duration specified in RateLimitDuration",
 						"type": "integer"
 					},
 					"rate_limit_duration": {
+						"description": "Rate limit duration specifies the time range for the rate limit. It uses\nGo's time duration syntax. E.g. 3s, 1m",
 						"type": "string"
 					},
 					"secret": {
+						"description": "Endpoint's webhook secret. If not provided, Convoy autogenerates one for the endpoint.",
 						"type": "string"
 					},
 					"slack_webhook_url": {
+						"description": "Slack webhook URL is an alternative method to support email where endpoint developers\ncan receive failure notifications.",
 						"type": "string"
 					},
 					"support_email": {
+						"description": "Endpoint developers support email. This is used for communicating endpoint state\nchanges. You should always turn this on when disabling endpoints are enabled.",
 						"type": "string"
 					},
 					"url": {
+						"description": "URL is the endpoint's URL prefixed with https. non-https urls are currently\nnot supported.",
 						"type": "string"
 					}
 				},
@@ -1200,65 +1181,57 @@
 				},
 				"type": "object"
 			},
-			"models.CreateProject": {
-				"properties": {
-					"config": {
-						"$ref": "#/components/schemas/models.ProjectConfig"
-					},
-					"logo_url": {
-						"type": "string"
-					},
-					"name": {
-						"type": "string"
-					},
-					"type": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"models.CreateProjectResponse": {
-				"properties": {
-					"api_key": {
-						"$ref": "#/components/schemas/models.APIKeyResponse"
-					},
-					"project": {
-						"$ref": "#/components/schemas/models.ProjectResponse"
-					}
-				},
-				"type": "object"
-			},
 			"models.CreateSource": {
 				"properties": {
 					"custom_response": {
-						"$ref": "#/components/schemas/models.CustomResponse"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.CustomResponse"
+							}
+						],
+						"description": "Custom response is used to define a custom response for incoming\nwebhooks project sources only."
 					},
 					"idempotency_keys": {
+						"description": "IdempotencyKeys are used to specify parts of a webhook request to uniquely\nidentify the event in an incoming webhooks project.",
 						"items": {
 							"type": "string"
 						},
 						"type": "array"
 					},
-					"idempotency_ttl": {
-						"type": "string"
-					},
 					"is_disabled": {
+						"description": "This is used to manually enable/disable the source.",
 						"type": "boolean"
 					},
 					"name": {
+						"description": "Source name.",
 						"type": "string"
 					},
 					"provider": {
 						"$ref": "#/components/schemas/datastore.SourceProvider"
 					},
 					"pub_sub": {
-						"$ref": "#/components/schemas/models.PubSubConfig"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.PubSubConfig"
+							}
+						],
+						"description": "PubSub are used to specify message broker sources for outgoing\nwebhooks projects."
 					},
 					"type": {
-						"$ref": "#/components/schemas/datastore.SourceType"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.SourceType"
+							}
+						],
+						"description": "Source Type. Currently supported values are - sqs, kafka or pubsub."
 					},
 					"verifier": {
-						"$ref": "#/components/schemas/models.VerifierConfig"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.VerifierConfig"
+							}
+						],
+						"description": "Verifiers are used to verify webhook events ingested in incoming\nwebhooks projects."
 					}
 				},
 				"type": "object"
@@ -1524,10 +1497,16 @@
 					"event_metadata": {
 						"$ref": "#/components/schemas/datastore.Event"
 					},
+					"event_type": {
+						"type": "string"
+					},
 					"headers": {
 						"$ref": "#/components/schemas/httpheader.HTTPHeader"
 					},
 					"idempotency_key": {
+						"type": "string"
+					},
+					"latency": {
 						"type": "string"
 					},
 					"metadata": {
@@ -1731,6 +1710,7 @@
 			"models.IDs": {
 				"properties": {
 					"ids": {
+						"description": "A list of event delivery IDs to forcefully resend.",
 						"items": {
 							"type": "string"
 						},
@@ -1774,29 +1754,6 @@
 						"type": "string"
 					},
 					"topic_name": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"models.MetaEventConfiguration": {
-				"properties": {
-					"event_type": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array"
-					},
-					"is_enabled": {
-						"type": "boolean"
-					},
-					"secret": {
-						"type": "string"
-					},
-					"type": {
-						"type": "string"
-					},
-					"url": {
 						"type": "string"
 					}
 				},
@@ -1904,79 +1861,6 @@
 				},
 				"type": "object"
 			},
-			"models.ProjectConfig": {
-				"properties": {
-					"add_event_id_trace_headers": {
-						"type": "boolean"
-					},
-					"disable_endpoint": {
-						"type": "boolean"
-					},
-					"max_payload_read_size": {
-						"type": "integer"
-					},
-					"meta_event": {
-						"$ref": "#/components/schemas/models.MetaEventConfiguration"
-					},
-					"ratelimit": {
-						"$ref": "#/components/schemas/models.RateLimitConfiguration"
-					},
-					"replay_attacks_prevention_enabled": {
-						"type": "boolean"
-					},
-					"retention_policy": {
-						"$ref": "#/components/schemas/models.RetentionPolicyConfiguration"
-					},
-					"retention_policy_enabled": {
-						"type": "boolean"
-					},
-					"signature": {
-						"$ref": "#/components/schemas/models.SignatureConfiguration"
-					},
-					"strategy": {
-						"$ref": "#/components/schemas/models.StrategyConfiguration"
-					}
-				},
-				"type": "object"
-			},
-			"models.ProjectResponse": {
-				"properties": {
-					"config": {
-						"$ref": "#/components/schemas/datastore.ProjectConfig"
-					},
-					"created_at": {
-						"type": "string"
-					},
-					"deleted_at": {
-						"type": "string"
-					},
-					"logo_url": {
-						"type": "string"
-					},
-					"name": {
-						"type": "string"
-					},
-					"organisation_id": {
-						"type": "string"
-					},
-					"retained_events": {
-						"type": "integer"
-					},
-					"statistics": {
-						"$ref": "#/components/schemas/datastore.ProjectStatistics"
-					},
-					"type": {
-						"$ref": "#/components/schemas/datastore.ProjectType"
-					},
-					"uid": {
-						"type": "string"
-					},
-					"updated_at": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"models.PubSubConfig": {
 				"properties": {
 					"google": {
@@ -2008,17 +1892,6 @@
 				},
 				"type": "object"
 			},
-			"models.RetentionPolicyConfiguration": {
-				"properties": {
-					"policy": {
-						"type": "string"
-					},
-					"search_policy": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"models.RetryConfiguration": {
 				"properties": {
 					"duration": {
@@ -2036,20 +1909,6 @@
 				},
 				"type": "object"
 			},
-			"models.Role": {
-				"properties": {
-					"app": {
-						"type": "string"
-					},
-					"project": {
-						"type": "string"
-					},
-					"type": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"models.SQSPubSubConfig": {
 				"properties": {
 					"access_key_id": {
@@ -2062,37 +1921,6 @@
 						"type": "string"
 					},
 					"secret_key": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"models.SignatureConfiguration": {
-				"properties": {
-					"header": {
-						"$ref": "#/components/schemas/config.SignatureHeaderProvider"
-					},
-					"versions": {
-						"items": {
-							"$ref": "#/components/schemas/models.SignatureVersion"
-						},
-						"type": "array"
-					}
-				},
-				"type": "object"
-			},
-			"models.SignatureVersion": {
-				"properties": {
-					"created_at": {
-						"type": "string"
-					},
-					"encoding": {
-						"type": "string"
-					},
-					"hash": {
-						"type": "string"
-					},
-					"uid": {
 						"type": "string"
 					}
 				},
@@ -2156,20 +1984,6 @@
 					},
 					"verifier": {
 						"$ref": "#/components/schemas/datastore.VerifierConfig"
-					}
-				},
-				"type": "object"
-			},
-			"models.StrategyConfiguration": {
-				"properties": {
-					"duration": {
-						"type": "integer"
-					},
-					"retry_count": {
-						"type": "integer"
-					},
-					"type": {
-						"type": "string"
 					}
 				},
 				"type": "object"
@@ -2316,26 +2130,6 @@
 				},
 				"type": "object"
 			},
-			"models.UpdateProject": {
-				"properties": {
-					"config": {
-						"$ref": "#/components/schemas/models.ProjectConfig"
-					},
-					"logo_url": {
-						"type": "string"
-					},
-					"name": {
-						"type": "string"
-					},
-					"rate_limit": {
-						"type": "integer"
-					},
-					"rate_limit_duration": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"models.UpdateSource": {
 				"properties": {
 					"custom_response": {
@@ -2352,9 +2146,6 @@
 							"type": "string"
 						},
 						"type": "array"
-					},
-					"idempotency_ttl": {
-						"type": "string"
 					},
 					"is_disabled": {
 						"type": "boolean"
@@ -2435,18 +2226,6 @@
 				},
 				"type": "object"
 			},
-			"public.Stub": {
-				"type": "object"
-			},
-			"public.pagedResponse": {
-				"properties": {
-					"content": {},
-					"pagination": {
-						"$ref": "#/components/schemas/datastore.PaginationData"
-					}
-				},
-				"type": "object"
-			},
 			"util.ServerResponse": {
 				"properties": {
 					"data": {
@@ -2490,610 +2269,6 @@
 	},
 	"openapi": "3.0.3",
 	"paths": {
-		"/v1/projects": {
-			"get": {
-				"description": "This endpoint fetches projects",
-				"parameters": [
-					{
-						"description": "Project name",
-						"in": "query",
-						"name": "name",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "organisation id",
-						"in": "query",
-						"name": "orgID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"items": {
-														"$ref": "#/components/schemas/models.ProjectResponse"
-													},
-													"type": "array"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"404": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Not Found"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "List all projects",
-				"tags": [
-					"Projects"
-				]
-			},
-			"post": {
-				"description": "This endpoint creates a project",
-				"parameters": [
-					{
-						"description": "Organisation id",
-						"in": "query",
-						"name": "orgID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.CreateProject"
-							}
-						}
-					},
-					"description": "Project Details",
-					"required": true,
-					"x-originalParamName": "project"
-				},
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/models.CreateProjectResponse"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"404": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Not Found"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Create a project",
-				"tags": [
-					"Projects"
-				]
-			}
-		},
-		"/v1/projects/{projectID}": {
-			"delete": {
-				"description": "This endpoint deletes a project using its id",
-				"parameters": [
-					{
-						"description": "Project ID",
-						"in": "path",
-						"name": "projectID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"404": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Not Found"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Delete a project",
-				"tags": [
-					"Projects"
-				]
-			},
-			"get": {
-				"description": "This endpoint fetches a project by its id",
-				"parameters": [
-					{
-						"description": "Project ID",
-						"in": "path",
-						"name": "projectID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/models.ProjectResponse"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"404": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Not Found"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Retrieve a project",
-				"tags": [
-					"Projects"
-				]
-			},
-			"put": {
-				"description": "This endpoint updates a project",
-				"parameters": [
-					{
-						"description": "Project ID",
-						"in": "path",
-						"name": "projectID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"requestBody": {
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/models.UpdateProject"
-							}
-						}
-					},
-					"description": "Project Details",
-					"required": true,
-					"x-originalParamName": "project"
-				},
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/models.ProjectResponse"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"404": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Not Found"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Update a project",
-				"tags": [
-					"Projects"
-				]
-			}
-		},
 		"/v1/projects/{projectID}/endpoints": {
 			"get": {
 				"description": "This endpoint fetches an endpoints",
@@ -3146,6 +2321,14 @@
 						"schema": {
 							"type": "string"
 						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
 					}
 				],
 				"responses": {
@@ -3162,7 +2345,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/public.pagedResponse"
+															"$ref": "#/components/schemas/handlers.pagedResponse"
 														},
 														{
 															"properties": {
@@ -3197,7 +2380,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3219,7 +2402,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3241,7 +2424,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3322,7 +2505,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3344,7 +2527,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3366,7 +2549,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3424,7 +2607,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3446,7 +2629,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3468,7 +2651,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3490,7 +2673,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3568,7 +2751,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3590,7 +2773,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3612,7 +2795,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3702,7 +2885,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3724,7 +2907,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3746,7 +2929,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3838,7 +3021,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3860,7 +3043,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3882,7 +3065,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3962,7 +3145,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -3984,7 +3167,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4006,7 +3189,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4024,130 +3207,6 @@
 					}
 				],
 				"summary": "Pause endpoint",
-				"tags": [
-					"Endpoints"
-				]
-			}
-		},
-		"/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status": {
-			"put": {
-				"description": "This endpoint toggles an endpoint status between the active and inactive statetes",
-				"parameters": [
-					{
-						"description": "Project ID",
-						"in": "path",
-						"name": "projectID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "Endpoint ID",
-						"in": "path",
-						"name": "endpointID",
-						"required": true,
-						"schema": {
-							"type": "string"
-						}
-					}
-				],
-				"responses": {
-					"200": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/models.EndpointResponse"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "OK"
-					},
-					"400": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Bad Request"
-					},
-					"401": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Unauthorized"
-					},
-					"404": {
-						"content": {
-							"application/json": {
-								"schema": {
-									"allOf": [
-										{
-											"$ref": "#/components/schemas/util.ServerResponse"
-										},
-										{
-											"properties": {
-												"data": {
-													"$ref": "#/components/schemas/public.Stub"
-												}
-											},
-											"type": "object"
-										}
-									]
-								}
-							}
-						},
-						"description": "Not Found"
-					}
-				},
-				"security": [
-					{
-						"ApiKeyAuth": []
-					}
-				],
-				"summary": "Toggle endpoint status",
 				"tags": [
 					"Endpoints"
 				]
@@ -4194,6 +3253,13 @@
 					},
 					{
 						"in": "query",
+						"name": "event_type",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
 						"name": "idempotencyKey",
 						"schema": {
 							"type": "string"
@@ -4219,6 +3285,14 @@
 						"description": "A pagination cursor to fetch the previous page of a list",
 						"in": "query",
 						"name": "prev_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
 						"schema": {
 							"type": "string"
 						}
@@ -4264,7 +3338,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/public.pagedResponse"
+															"$ref": "#/components/schemas/handlers.pagedResponse"
 														},
 														{
 															"properties": {
@@ -4299,7 +3373,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4321,7 +3395,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4343,7 +3417,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4380,6 +3454,14 @@
 						}
 					},
 					{
+						"description": "The end date",
+						"in": "query",
+						"name": "endDate",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "A list of endpoint IDs to filter by",
 						"in": "query",
 						"name": "endpointId",
@@ -4393,6 +3475,60 @@
 					{
 						"in": "query",
 						"name": "eventId",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "event_type",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "idempotencyKey",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "A pagination cursor to fetch the next page of a list",
+						"in": "query",
+						"name": "next_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "The number of items to return per page",
+						"in": "query",
+						"name": "perPage",
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"description": "A pagination cursor to fetch the previous page of a list",
+						"in": "query",
+						"name": "prev_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "The start date",
+						"in": "query",
+						"name": "startDate",
 						"schema": {
 							"type": "string"
 						}
@@ -4428,7 +3564,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4450,7 +3586,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4472,7 +3608,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4494,7 +3630,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4535,19 +3671,7 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"allOf": [
-									{
-										"$ref": "#/components/schemas/public.Stub"
-									},
-									{
-										"properties": {
-											"ids": {
-												"$ref": "#/components/schemas/models.IDs"
-											}
-										},
-										"type": "object"
-									}
-								]
+								"$ref": "#/components/schemas/models.IDs"
 							}
 						}
 					},
@@ -4567,7 +3691,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4589,7 +3713,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4611,7 +3735,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4633,7 +3757,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4713,7 +3837,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4735,7 +3859,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4757,7 +3881,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4840,7 +3964,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4862,7 +3986,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4884,7 +4008,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4973,7 +4097,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4995,7 +4119,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5017,7 +4141,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5097,7 +4221,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5119,7 +4243,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5141,7 +4265,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5236,6 +4360,14 @@
 						}
 					},
 					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"in": "query",
 						"name": "sourceId",
 						"schema": {
@@ -5265,7 +4397,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/public.pagedResponse"
+															"$ref": "#/components/schemas/handlers.pagedResponse"
 														},
 														{
 															"properties": {
@@ -5300,7 +4432,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5322,7 +4454,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5344,7 +4476,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5425,7 +4557,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5447,7 +4579,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5469,7 +4601,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5591,7 +4723,7 @@
 														{
 															"properties": {
 																"data": {
-																	"$ref": "#/components/schemas/public.Stub"
+																	"$ref": "#/components/schemas/handlers.Stub"
 																}
 															},
 															"type": "object"
@@ -5618,7 +4750,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5640,7 +4772,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5662,7 +4794,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5716,7 +4848,7 @@
 						"content": {
 							"application/json": {
 								"schema": {
-									"$ref": "#/components/schemas/public.Stub"
+									"$ref": "#/components/schemas/handlers.Stub"
 								}
 							}
 						},
@@ -5733,7 +4865,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5755,7 +4887,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5777,7 +4909,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5860,7 +4992,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5882,7 +5014,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5904,7 +5036,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5984,7 +5116,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6006,7 +5138,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6028,7 +5160,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6108,7 +5240,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6130,7 +5262,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6152,7 +5284,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6221,6 +5353,14 @@
 						}
 					},
 					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "The start date",
 						"in": "query",
 						"name": "startDate",
@@ -6243,7 +5383,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/public.pagedResponse"
+															"$ref": "#/components/schemas/handlers.pagedResponse"
 														},
 														{
 															"properties": {
@@ -6278,7 +5418,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6300,7 +5440,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6322,7 +5462,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6402,7 +5542,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6424,7 +5564,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6446,7 +5586,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6526,7 +5666,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6548,7 +5688,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6570,7 +5710,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6645,7 +5785,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/public.pagedResponse"
+															"$ref": "#/components/schemas/handlers.pagedResponse"
 														},
 														{
 															"properties": {
@@ -6680,7 +5820,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6702,7 +5842,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6724,7 +5864,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6805,7 +5945,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6827,7 +5967,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6849,7 +5989,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6929,7 +6069,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6951,7 +6091,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -6973,7 +6113,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7063,7 +6203,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7085,7 +6225,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7107,7 +6247,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7165,7 +6305,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7187,7 +6327,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7209,7 +6349,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7231,7 +6371,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7300,6 +6440,14 @@
 						}
 					},
 					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "The source type e.g. http, pub_sub",
 						"in": "query",
 						"name": "type",
@@ -7322,7 +6470,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/public.pagedResponse"
+															"$ref": "#/components/schemas/handlers.pagedResponse"
 														},
 														{
 															"properties": {
@@ -7357,7 +6505,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7379,7 +6527,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7401,7 +6549,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7482,7 +6630,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7504,7 +6652,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7526,7 +6674,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7584,7 +6732,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7606,7 +6754,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7628,7 +6776,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7650,7 +6798,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7728,7 +6876,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7750,7 +6898,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7772,7 +6920,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7862,7 +7010,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7884,7 +7032,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7906,7 +7054,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -7976,6 +7124,14 @@
 						"schema": {
 							"type": "string"
 						}
+					},
+					{
+						"description": "sort order",
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
 					}
 				],
 				"responses": {
@@ -7992,7 +7148,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/public.pagedResponse"
+															"$ref": "#/components/schemas/handlers.pagedResponse"
 														},
 														{
 															"properties": {
@@ -8027,7 +7183,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8049,7 +7205,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8071,7 +7227,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8152,7 +7308,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8174,7 +7330,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8196,7 +7352,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8279,7 +7435,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8301,7 +7457,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8323,7 +7479,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8406,7 +7562,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8428,7 +7584,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8450,7 +7606,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8508,7 +7664,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8530,7 +7686,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8552,7 +7708,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8574,7 +7730,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8652,7 +7808,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8674,7 +7830,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8696,7 +7852,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8786,7 +7942,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8808,7 +7964,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -8830,7 +7986,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/public.Stub"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"

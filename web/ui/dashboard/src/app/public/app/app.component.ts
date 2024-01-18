@@ -53,7 +53,7 @@ export class AppComponent implements OnInit {
 		this.isloadingSubscriptions = true;
 		try {
 			const endpoints = await this.privateService.getEndpoints();
-			this.endpoints = endpoints.data;
+			this.endpoints = endpoints.data.content;
 			const endpointIds = this.endpoints.map(endpoint => endpoint.uid);
 
 			const subscriptions = await this.privateService.getSubscriptions({ endpointId: endpointIds });

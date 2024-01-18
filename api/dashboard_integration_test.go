@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/auth"
@@ -63,7 +62,8 @@ func (u *AuthIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(u.ConvoyApp.A.DB, u.ConvoyApp.A.Cache)
 	userRepo := postgres.NewUserRepo(u.ConvoyApp.A.DB, u.ConvoyApp.A.Cache)
-	initRealmChain(u.T(), apiRepo, userRepo, u.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(u.ConvoyApp.A.DB, u.ConvoyApp.A.Cache)
+	initRealmChain(u.T(), apiRepo, userRepo, portalLinkRepo, u.ConvoyApp.A.Cache)
 }
 
 func (u *AuthIntegrationTestSuite) TearDownTest() {
@@ -309,152 +309,6 @@ func TestAuthIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(AuthIntegrationTestSuite))
 }
 
-type ConfigurationIntegrationTestSuite struct {
-	suite.Suite
-	DB              database.Database
-	Router          http.Handler
-	ConvoyApp       *ApplicationHandler
-	AuthenticatorFn AuthenticatorFn
-	DefaultOrg      *datastore.Organisation
-	DefaultProject  *datastore.Project
-	DefaultUser     *datastore.User
-}
-
-func (c *ConfigurationIntegrationTestSuite) SetupSuite() {
-	c.DB = getDB()
-	c.ConvoyApp = buildServer()
-	c.Router = c.ConvoyApp.BuildRoutes()
-}
-
-func (c *ConfigurationIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(c.T(), c.DB)
-
-	// Setup Default Project
-	c.DefaultProject, _ = testdb.SeedDefaultProject(c.ConvoyApp.A.DB, "")
-
-	user, err := testdb.SeedDefaultUser(c.ConvoyApp.A.DB)
-	require.NoError(c.T(), err)
-	c.DefaultUser = user
-
-	org, err := testdb.SeedDefaultOrganisation(c.ConvoyApp.A.DB, user)
-	require.NoError(c.T(), err)
-	c.DefaultOrg = org
-
-	c.AuthenticatorFn = authenticateRequest(&models.LoginUser{
-		Username: user.Email,
-		Password: testdb.DefaultUserPassword,
-	})
-
-	// Setup Config.
-	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
-	require.NoError(c.T(), err)
-
-	apiRepo := postgres.NewAPIKeyRepo(c.ConvoyApp.A.DB, nil)
-	userRepo := postgres.NewUserRepo(c.ConvoyApp.A.DB, nil)
-	initRealmChain(c.T(), apiRepo, userRepo, c.ConvoyApp.A.Cache)
-}
-
-func (c *ConfigurationIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(c.T(), c.DB)
-	metrics.Reset()
-}
-
-func (c *ConfigurationIntegrationTestSuite) Test_LoadConfiguration() {
-	configuration, err := testdb.SeedConfiguration(c.ConvoyApp.A.DB)
-	require.NoError(c.T(), err)
-
-	// Arrange Request
-	url := "/ui/configuration"
-	req := createRequest(http.MethodGet, url, "", nil)
-	err = c.AuthenticatorFn(req, c.Router)
-	require.NoError(c.T(), err)
-
-	w := httptest.NewRecorder()
-
-	// Act
-	c.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(c.T(), http.StatusOK, w.Code)
-
-	var newConfig []*models.ConfigurationResponse
-	parseResponse(c.T(), w.Result(), &newConfig)
-
-	require.NotEmpty(c.T(), newConfig[0].UID)
-	require.Equal(c.T(), configuration.UID, newConfig[0].UID)
-	require.Equal(c.T(), configuration.IsAnalyticsEnabled, newConfig[0].IsAnalyticsEnabled)
-	require.Equal(c.T(), configuration.StoragePolicy.OnPrem.Path.ValueOrZero(), convoy.DefaultOnPremDir)
-	require.Equal(c.T(), convoy.GetVersion(), newConfig[0].ApiVersion)
-}
-
-func (c *ConfigurationIntegrationTestSuite) Test_CreateConfiguration() {
-	// Arrange Request
-	bodyStr := `{
-		"is_analytics_enabled": true,
-		"is_signup_enabled": true
-	}`
-
-	body := serialize(bodyStr)
-	req := createRequest(http.MethodPost, "/ui/configuration", "", body)
-	err := c.AuthenticatorFn(req, c.Router)
-	require.NoError(c.T(), err)
-	w := httptest.NewRecorder()
-
-	// Act
-	c.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(c.T(), http.StatusCreated, w.Code)
-
-	var configuration datastore.Configuration
-	parseResponse(c.T(), w.Result(), &configuration)
-
-	require.NotEmpty(c.T(), configuration.UID)
-	require.True(c.T(), configuration.IsAnalyticsEnabled)
-	require.True(c.T(), configuration.IsSignupEnabled)
-}
-
-func (c *ConfigurationIntegrationTestSuite) Test_UpdateConfiguration() {
-	_, err := testdb.SeedConfiguration(c.ConvoyApp.A.DB)
-	require.NoError(c.T(), err)
-
-	// Arrange Request
-	bodyStr := `{
-		"is_analytics_enabled": false,
-		"is_signup_enabled": false,
-		"storage_policy": {
-			"type": "on_prem",
-			"on_prem":{
-				"path":"/tmp"
-			}
-		}
-	}`
-
-	body := serialize(bodyStr)
-	req := createRequest(http.MethodPut, "/ui/configuration", "", body)
-	err = c.AuthenticatorFn(req, c.Router)
-	require.NoError(c.T(), err)
-	w := httptest.NewRecorder()
-
-	// Act
-	c.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(c.T(), http.StatusAccepted, w.Code)
-
-	var configuration datastore.Configuration
-	parseResponse(c.T(), w.Result(), &configuration)
-
-	require.NotEmpty(c.T(), configuration.UID)
-	require.Equal(c.T(), "/tmp", configuration.StoragePolicy.OnPrem.Path.ValueOrZero())
-	require.False(c.T(), configuration.IsAnalyticsEnabled)
-	require.False(c.T(), configuration.IsSignupEnabled)
-}
-
-func TestConfigurationIntegrationTestSuite(t *testing.T) {
-	suite.Run(t, new(ConfigurationIntegrationTestSuite))
-}
-
 type DashboardIntegrationTestSuite struct {
 	suite.Suite
 	DB              database.Database
@@ -499,7 +353,8 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *DashboardIntegrationTestSuite) TearDownTest() {
@@ -702,7 +557,8 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			}
 			apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
 			userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-			initRealmChain(t, apiRepo, userRepo, s.ConvoyApp.A.Cache)
+			portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+			initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 
 			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/organisations/%s/projects/%s/dashboard/summary?startDate=%s&endDate=%s&type=%s", s.DefaultOrg.UID, tc.urlQuery.projectID, tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type), nil)
 			err = s.AuthenticatorFn(req, s.Router)
@@ -778,7 +634,8 @@ func (s *EndpointIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *EndpointIntegrationTestSuite) TearDownTest() {
@@ -1109,111 +966,6 @@ func (s *EndpointIntegrationTestSuite) Test_ExpireEndpointSecret() {
 	require.NotEmpty(s.T(), endpoint2.Secrets[0].ExpiresAt)
 }
 
-func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_ActiveStatus() {
-	endpointId := ulid.Make().String()
-
-	// Just Before
-	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.ActiveEndpointStatus)
-	require.NoError(s.T(), err)
-
-	// Arrange Request
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointId)
-	req := createRequest(http.MethodPut, url, "", nil)
-	err = s.AuthenticatorFn(req, s.Router)
-	require.NoError(s.T(), err)
-
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusAccepted, w.Code)
-
-	// Deep Asset
-	var endpoint *datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &endpoint)
-
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointId, s.DefaultProject.UID)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), endpointId, dbEndpoint.UID)
-	require.Equal(s.T(), datastore.InactiveEndpointStatus, dbEndpoint.Status)
-}
-
-func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_InactiveStatus() {
-	endpointId := ulid.Make().String()
-
-	// Just Before
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.InactiveEndpointStatus)
-
-	// Arrange Request
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointId)
-	req := createRequest(http.MethodPut, url, "", nil)
-	err := s.AuthenticatorFn(req, s.Router)
-	require.NoError(s.T(), err)
-
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusAccepted, w.Code)
-
-	// Deep Assert
-	var endpoint *datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &endpoint)
-
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointId, s.DefaultProject.UID)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), endpointId, dbEndpoint.UID)
-	require.Equal(s.T(), datastore.ActiveEndpointStatus, dbEndpoint.Status)
-}
-
-func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_PendingStatus() {
-	endpointId := ulid.Make().String()
-
-	// Just Before
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.PendingEndpointStatus)
-
-	// Arrange Request
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointId)
-	req := createRequest(http.MethodPut, url, "", nil)
-	err := s.AuthenticatorFn(req, s.Router)
-	require.NoError(s.T(), err)
-
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusBadRequest, w.Code)
-}
-
-func (s *EndpointIntegrationTestSuite) Test_ToggleEndpointStatus_UnknownStatus() {
-	endpointID := ulid.Make().String()
-
-	// Just Before
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.EndpointStatus("abc"))
-
-	// Arrange Request
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointID)
-	req := createRequest(http.MethodPut, url, "", nil)
-	err := s.AuthenticatorFn(req, s.Router)
-	require.NoError(s.T(), err)
-
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusBadRequest, w.Code)
-}
-
 func (s *EndpointIntegrationTestSuite) Test_PauseEndpoint_PausedStatus() {
 	endpointId := ulid.Make().String()
 
@@ -1326,7 +1078,8 @@ func (s *EventIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *EventIntegrationTestSuite) TearDownTest() {
@@ -1357,13 +1110,6 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var event datastore.Event
-	parseResponse(s.T(), w.Result(), &event)
-
-	//require.NotEmpty(s.T(), event.UID)
-	require.Equal(s.T(), event.Endpoints[0], endpointID)
 }
 
 func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_Event() {
@@ -1402,13 +1148,6 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_E
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var event datastore.Event
-	parseResponse(s.T(), w.Result(), &event)
-
-	//require.NotEmpty(s.T(), event.UID)
-	require.Equal(s.T(), event.Endpoints[0], endpointID)
 }
 
 func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_Endpoint_is_disabled() {
@@ -1890,7 +1629,8 @@ func (s *OrganisationIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *OrganisationIntegrationTestSuite) TearDownTest() {
@@ -2194,7 +1934,8 @@ func (s *OrganisationInviteIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *OrganisationInviteIntegrationTestSuite) TearDownTest() {
@@ -2622,7 +2363,8 @@ func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) TearDownTest() {
@@ -2862,7 +2604,8 @@ func (s *PortalLinkIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *PortalLinkIntegrationTestSuite) TearDownTest() {
@@ -3137,7 +2880,8 @@ func (s *ProjectIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *ProjectIntegrationTestSuite) TestGetProject() {
@@ -3448,7 +3192,8 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *SourceIntegrationTestSuite) TearDownTest() {
@@ -3780,7 +3525,8 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *SubscriptionIntegrationTestSuite) TearDownTest() {
@@ -4256,7 +4002,8 @@ func (u *UserIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(u.ConvoyApp.A.DB, u.ConvoyApp.A.Cache)
 	userRepo := postgres.NewUserRepo(u.ConvoyApp.A.DB, u.ConvoyApp.A.Cache)
-	initRealmChain(u.T(), apiRepo, userRepo, u.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(u.ConvoyApp.A.DB, u.ConvoyApp.A.Cache)
+	initRealmChain(u.T(), apiRepo, userRepo, portalLinkRepo, u.ConvoyApp.A.Cache)
 }
 
 func (u *UserIntegrationTestSuite) TearDownTest() {
@@ -4758,7 +4505,8 @@ func (s *MetaEventIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *MetaEventIntegrationTestSuite) TearDownTest() {

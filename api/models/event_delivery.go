@@ -18,38 +18,8 @@ var defaultPageable datastore.Pageable = datastore.Pageable{
 	NextCursor: datastore.DefaultCursor,
 }
 
-type QueryBatchRetryEventDelivery struct {
-	SubscriptionID string `json:"subscriptionId"`
-	// A list of endpoint IDs to filter by
-	EndpointIDs []string `json:"endpointId"`
-	EventID     string   `json:"eventId"`
-	// A list of event delivery statuses to filter by
-	Status []string `json:"status"`
-}
-
-type QueryBatchRetryEventDeliveryResponse struct {
-	*datastore.Filter
-}
-
-func (qb *QueryBatchRetryEventDelivery) Transform(r *http.Request) (*QueryBatchRetryEventDeliveryResponse, error) {
-	searchParams, err := getSearchParams(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return &QueryBatchRetryEventDeliveryResponse{
-		Filter: &datastore.Filter{
-			EndpointIDs:    getEndpointIDs(r),
-			SubscriptionID: r.URL.Query().Get("subscriptionId"),
-			EventID:        r.URL.Query().Get("eventId"),
-			Status:         getEventDeliveryStatus(r),
-			Pageable:       defaultPageable,
-			SearchParams:   searchParams,
-		},
-	}, nil
-}
-
 type IDs struct {
+	// A list of event delivery IDs to forcefully resend.
 	IDs []string `json:"ids"`
 }
 
@@ -59,6 +29,7 @@ type QueryListEventDelivery struct {
 	EventID        string   `json:"eventId"`
 	SubscriptionID string   `json:"subscriptionId"`
 	IdempotencyKey string   `json:"idempotencyKey"`
+	EventType      string   `json:"event_type"`
 	// A list of event delivery statuses to filter by
 	Status []string `json:"status"`
 	SearchParams
@@ -85,35 +56,6 @@ func (ql *QueryListEventDelivery) Transform(r *http.Request) (*QueryListEventDel
 			Status:         getEventDeliveryStatus(r),
 			Pageable:       m.GetPageableFromContext(r.Context()),
 			SearchParams:   searchParams,
-		},
-	}, nil
-}
-
-type QueryCountAffectedEventDeliveries struct {
-	// A list of endpoint IDs to filter by
-	EndpointIDs []string `json:"endpointId"`
-	EventID     string   `json:"eventId"`
-	// A list of event delivery statuses to filter by
-	Status []string `json:"status"`
-	SearchParams
-}
-
-type QueryCountAffectedEventDeliveriesResponse struct {
-	*datastore.Filter
-}
-
-func (qc *QueryCountAffectedEventDeliveries) Transform(r *http.Request) (*QueryCountAffectedEventDeliveriesResponse, error) {
-	searchParams, err := getSearchParams(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return &QueryCountAffectedEventDeliveriesResponse{
-		Filter: &datastore.Filter{
-			EndpointIDs:  getEndpointIDs(r),
-			EventID:      r.URL.Query().Get("eventId"),
-			Status:       getEventDeliveryStatus(r),
-			SearchParams: searchParams,
 		},
 	}, nil
 }

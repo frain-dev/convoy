@@ -40,7 +40,8 @@ type CreateEvent struct {
 func ProcessEventCreation(
 	endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer,
-	subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
+	subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository,
+) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var createEvent CreateEvent
 		var event *datastore.Event
@@ -164,6 +165,7 @@ func ProcessEventCreation(
 			eventDelivery := &datastore.EventDelivery{
 				UID:              ulid.Make().String(),
 				SubscriptionID:   s.UID,
+				EventType:        event.EventType,
 				Metadata:         metadata,
 				ProjectID:        project.UID,
 				EventID:          event.UID,
@@ -227,7 +229,8 @@ func ProcessEventCreation(
 }
 
 func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepository,
-	subRepo datastore.SubscriptionRepository, project *datastore.Project, event *datastore.Event, shouldCreateSubscription bool) ([]datastore.Subscription, error) {
+	subRepo datastore.SubscriptionRepository, project *datastore.Project, event *datastore.Event, shouldCreateSubscription bool,
+) ([]datastore.Subscription, error) {
 	var subscriptions []datastore.Subscription
 	var err error
 
@@ -324,8 +327,8 @@ func matchSubscriptions(eventType string, subscriptions []datastore.Subscription
 }
 
 func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscription, endpoint *datastore.Endpoint,
-	deviceRepo datastore.DeviceRepository) datastore.EventDeliveryStatus {
-
+	deviceRepo datastore.DeviceRepository,
+) datastore.EventDeliveryStatus {
 	switch subscription.Type {
 	case datastore.SubscriptionTypeAPI:
 		if endpoint.Status != datastore.ActiveEndpointStatus {
@@ -367,7 +370,8 @@ func generateSubscription(project *datastore.Project, endpoint *datastore.Endpoi
 }
 
 func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpointRepo datastore.EndpointRepository,
-	eventParams *CreateEventTaskParams, project *datastore.Project) (*datastore.Event, error) {
+	eventParams *CreateEventTaskParams, project *datastore.Project,
+) (*datastore.Event, error) {
 	var isDuplicate bool
 	if !util.IsStringEmpty(eventParams.IdempotencyKey) {
 		events, err := eventRepo.FindEventsByIdempotencyKey(ctx, project.UID, eventParams.IdempotencyKey)
@@ -426,7 +430,8 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 }
 
 func findEndpoints(ctx context.Context, endpointRepo datastore.EndpointRepository, newMessage *CreateEventTaskParams,
-	project *datastore.Project) ([]datastore.Endpoint, error) {
+	project *datastore.Project,
+) ([]datastore.Endpoint, error) {
 	var endpoints []datastore.Endpoint
 
 	if !util.IsStringEmpty(newMessage.EndpointID) {

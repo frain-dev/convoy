@@ -10,7 +10,7 @@ helpFunc() {
 
 buildConvoy() {
 	# Build UI.
-	UIDIR="api/dashboard/ui/build"
+	UIDIR="api/ui/build"
 
 	# Remove build folder
 	rm -rf $UIDIR

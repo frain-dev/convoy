@@ -21,542 +21,6 @@
     "host": "dashboard.getconvoy.io",
     "basePath": "/api",
     "paths": {
-        "/v1/projects": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint fetches projects",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Projects"
-                ],
-                "summary": "List all projects",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project name",
-                        "name": "name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "organisation id",
-                        "name": "orgID",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/models.ProjectResponse"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint creates a project",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Projects"
-                ],
-                "summary": "Create a project",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organisation id",
-                        "name": "orgID",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "description": "Project Details",
-                        "name": "project",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.CreateProject"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/models.CreateProjectResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/projects/{projectID}": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint fetches a project by its id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Projects"
-                ],
-                "summary": "Retrieve a project",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project ID",
-                        "name": "projectID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/models.ProjectResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint updates a project",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Projects"
-                ],
-                "summary": "Update a project",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project ID",
-                        "name": "projectID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Project Details",
-                        "name": "project",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.UpdateProject"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/models.ProjectResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint deletes a project using its id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Projects"
-                ],
-                "summary": "Delete a project",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project ID",
-                        "name": "projectID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
         "/v1/projects/{projectID}/endpoints": {
             "get": {
                 "security": [
@@ -617,6 +81,13 @@
                         "description": "The name of the endpoint",
                         "name": "q",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -633,7 +104,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/public.pagedResponse"
+                                                    "$ref": "#/definitions/handlers.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -664,7 +135,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -682,7 +153,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -700,7 +171,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -774,7 +245,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -792,7 +263,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -810,7 +281,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -884,7 +355,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -902,7 +373,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -920,7 +391,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1001,7 +472,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1019,7 +490,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1037,7 +508,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1091,7 +562,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1109,7 +580,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1127,7 +598,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1145,7 +616,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1228,7 +699,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1246,7 +717,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1264,7 +735,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1338,7 +809,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1356,7 +827,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1374,117 +845,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/projects/{projectID}/endpoints/{endpointID}/toggle_status": {
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "This endpoint toggles an endpoint status between the active and inactive statetes",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Endpoints"
-                ],
-                "summary": "Toggle endpoint status",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project ID",
-                        "name": "projectID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Endpoint ID",
-                        "name": "endpointID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/models.EndpointResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ServerResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1543,6 +904,11 @@
                     },
                     {
                         "type": "string",
+                        "name": "event_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "name": "idempotencyKey",
                         "in": "query"
                     },
@@ -1565,6 +931,13 @@
                         "example": "01H0JATTVCXZK8FRDX1M1JN3QY",
                         "description": "A pagination cursor to fetch the previous page of a list",
                         "name": "prev_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
                         "in": "query"
                     },
                     {
@@ -1603,7 +976,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/public.pagedResponse"
+                                                    "$ref": "#/definitions/handlers.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -1634,7 +1007,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1652,7 +1025,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1670,7 +1043,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1707,6 +1080,13 @@
                         "required": true
                     },
                     {
+                        "type": "string",
+                        "example": "2008-05-02T15:04:05",
+                        "description": "The end date",
+                        "name": "endDate",
+                        "in": "query"
+                    },
+                    {
                         "type": "array",
                         "items": {
                             "type": "string"
@@ -1718,6 +1098,51 @@
                     {
                         "type": "string",
                         "name": "eventId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "event_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "idempotencyKey",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "01H0JA5MEES38RRK3HTEJC647K",
+                        "description": "A pagination cursor to fetch the next page of a list",
+                        "name": "next_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 20,
+                        "description": "The number of items to return per page",
+                        "name": "perPage",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "01H0JATTVCXZK8FRDX1M1JN3QY",
+                        "description": "A pagination cursor to fetch the previous page of a list",
+                        "name": "prev_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "2006-01-02T15:04:05",
+                        "description": "The start date",
+                        "name": "startDate",
                         "in": "query"
                     },
                     {
@@ -1747,7 +1172,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1765,7 +1190,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1783,7 +1208,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1801,7 +1226,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1843,19 +1268,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/public.Stub"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "ids": {
-                                            "$ref": "#/definitions/models.IDs"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/models.IDs"
                         }
                     }
                 ],
@@ -1871,7 +1284,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1889,7 +1302,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1907,7 +1320,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1925,7 +1338,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -1999,7 +1412,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2017,7 +1430,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2035,7 +1448,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2112,7 +1525,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2130,7 +1543,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2148,7 +1561,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2229,7 +1642,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2247,7 +1660,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2265,7 +1678,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2339,7 +1752,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2357,7 +1770,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2375,7 +1788,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2461,6 +1874,13 @@
                     },
                     {
                         "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "name": "sourceId",
                         "in": "query"
                     },
@@ -2486,7 +1906,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/public.pagedResponse"
+                                                    "$ref": "#/definitions/handlers.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -2517,7 +1937,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2535,7 +1955,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2553,7 +1973,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2627,7 +2047,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2645,7 +2065,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2663,7 +2083,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2768,7 +2188,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "data": {
-                                                            "$ref": "#/definitions/public.Stub"
+                                                            "$ref": "#/definitions/handlers.Stub"
                                                         }
                                                     }
                                                 }
@@ -2790,7 +2210,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2808,7 +2228,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2826,7 +2246,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2876,7 +2296,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/public.Stub"
+                            "$ref": "#/definitions/handlers.Stub"
                         }
                     },
                     "400": {
@@ -2890,7 +2310,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2908,7 +2328,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2926,7 +2346,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3002,7 +2422,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3020,7 +2440,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3038,7 +2458,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3112,7 +2532,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3130,7 +2550,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3148,7 +2568,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3222,7 +2642,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3240,7 +2660,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3258,7 +2678,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3324,6 +2744,13 @@
                     },
                     {
                         "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "example": "2006-01-02T15:04:05",
                         "description": "The start date",
                         "name": "startDate",
@@ -3344,7 +2771,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/public.pagedResponse"
+                                                    "$ref": "#/definitions/handlers.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -3375,7 +2802,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3393,7 +2820,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3411,7 +2838,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3485,7 +2912,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3503,7 +2930,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3521,7 +2948,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3595,7 +3022,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3613,7 +3040,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3631,7 +3058,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3700,7 +3127,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/public.pagedResponse"
+                                                    "$ref": "#/definitions/handlers.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -3731,7 +3158,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3749,7 +3176,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3767,7 +3194,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3841,7 +3268,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3859,7 +3286,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3877,7 +3304,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3951,7 +3378,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3969,7 +3396,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -3987,7 +3414,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4068,7 +3495,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4086,7 +3513,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4104,7 +3531,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4160,7 +3587,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4178,7 +3605,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4196,7 +3623,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4214,7 +3641,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4280,6 +3707,13 @@
                     },
                     {
                         "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "example": "http",
                         "description": "The source type e.g. http, pub_sub",
                         "name": "type",
@@ -4300,7 +3734,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/public.pagedResponse"
+                                                    "$ref": "#/definitions/handlers.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -4331,7 +3765,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4349,7 +3783,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4367,7 +3801,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4441,7 +3875,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4459,7 +3893,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4477,7 +3911,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4551,7 +3985,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4569,7 +4003,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4587,7 +4021,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4668,7 +4102,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4686,7 +4120,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4704,7 +4138,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4758,7 +4192,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4776,7 +4210,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4794,7 +4228,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4812,7 +4246,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4877,6 +4311,13 @@
                         "description": "A pagination cursor to fetch the previous page of a list",
                         "name": "prev_page_cursor",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4893,7 +4334,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/public.pagedResponse"
+                                                    "$ref": "#/definitions/handlers.pagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -4924,7 +4365,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4942,7 +4383,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -4960,7 +4401,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5034,7 +4475,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5052,7 +4493,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5070,7 +4511,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5146,7 +4587,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5164,7 +4605,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5182,7 +4623,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5258,7 +4699,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5276,7 +4717,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5294,7 +4735,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5368,7 +4809,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5386,7 +4827,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5404,7 +4845,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5485,7 +4926,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5503,7 +4944,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5521,7 +4962,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5575,7 +5016,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5593,7 +5034,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5611,7 +5052,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -5629,7 +5070,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/public.Stub"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -6104,21 +5545,6 @@
                     "type": "string"
                 }
             }
-        },
-        "datastore.KeyType": {
-            "type": "string",
-            "enum": [
-                "project",
-                "app_portal",
-                "cli",
-                "personal_key"
-            ],
-            "x-enum-varnames": [
-                "ProjectKey",
-                "AppPortalKey",
-                "CLIKey",
-                "PersonalKey"
-            ]
         },
         "datastore.M": {
             "type": "object",
@@ -6685,40 +6111,23 @@
                 "APIKeyVerifier"
             ]
         },
+        "handlers.Stub": {
+            "type": "object"
+        },
+        "handlers.pagedResponse": {
+            "type": "object",
+            "properties": {
+                "content": {},
+                "pagination": {
+                    "$ref": "#/definitions/datastore.PaginationData"
+                }
+            }
+        },
         "httpheader.HTTPHeader": {
             "type": "object",
             "additionalProperties": {
                 "type": "array",
                 "items": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.APIKeyResponse": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "expires_at": {
-                    "type": "string"
-                },
-                "key": {
-                    "type": "string"
-                },
-                "key_type": {
-                    "$ref": "#/definitions/datastore.KeyType"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "role": {
-                    "$ref": "#/definitions/models.Role"
-                },
-                "uid": {
-                    "type": "string"
-                },
-                "user_id": {
                     "type": "string"
                 }
             }
@@ -6759,47 +6168,60 @@
         "models.CreateEndpoint": {
             "type": "object",
             "properties": {
-                "advanced_signatures": {
-                    "type": "boolean"
-                },
                 "appID": {
                     "description": "Deprecated but necessary for backward compatibility",
                     "type": "string"
                 },
                 "authentication": {
-                    "$ref": "#/definitions/models.EndpointAuthentication"
+                    "description": "This is used to define any custom authentication required by the endpoint. This\nshouldn't be needed often because webhook endpoints usually should be exposed to\nthe internet.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.EndpointAuthentication"
+                        }
+                    ]
                 },
                 "description": {
+                    "description": "Human-readable description of the endpoint. Think of this as metadata describing\nthe endpoint",
                     "type": "string"
                 },
                 "http_timeout": {
+                    "description": "Define endpoint http timeout in seconds. It uses Go's time duration syntax.\nE.g. 3s, 1m",
                     "type": "string"
                 },
                 "is_disabled": {
+                    "description": "This is used to manually enable/disable the endpoint.",
                     "type": "boolean"
                 },
                 "name": {
+                    "description": "Endpoint name.",
                     "type": "string"
                 },
                 "owner_id": {
+                    "description": "The OwnerID is used to group more than one endpoint together to achieve\n[fanout](https://getconvoy.io/docs/manual/endpoints#Endpoint%20Owner%20ID)",
                     "type": "string"
                 },
                 "rate_limit": {
+                    "description": "Rate limit is the total number of requests to be sent to an endpoint in\nthe time duration specified in RateLimitDuration",
                     "type": "integer"
                 },
                 "rate_limit_duration": {
+                    "description": "Rate limit duration specifies the time range for the rate limit. It uses\nGo's time duration syntax. E.g. 3s, 1m",
                     "type": "string"
                 },
                 "secret": {
+                    "description": "Endpoint's webhook secret. If not provided, Convoy autogenerates one for the endpoint.",
                     "type": "string"
                 },
                 "slack_webhook_url": {
+                    "description": "Slack webhook URL is an alternative method to support email where endpoint developers\ncan receive failure notifications.",
                     "type": "string"
                 },
                 "support_email": {
+                    "description": "Endpoint developers support email. This is used for communicating endpoint state\nchanges. You should always turn this on when disabling endpoints are enabled.",
                     "type": "string"
                 },
                 "url": {
+                    "description": "URL is the endpoint's URL prefixed with https. non-https urls are currently\nnot supported.",
                     "type": "string"
                 }
             }
@@ -6840,66 +6262,58 @@
                 }
             }
         },
-        "models.CreateProject": {
-            "type": "object",
-            "properties": {
-                "config": {
-                    "$ref": "#/definitions/models.ProjectConfig"
-                },
-                "logo_url": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.CreateProjectResponse": {
-            "type": "object",
-            "properties": {
-                "api_key": {
-                    "$ref": "#/definitions/models.APIKeyResponse"
-                },
-                "project": {
-                    "$ref": "#/definitions/models.ProjectResponse"
-                }
-            }
-        },
         "models.CreateSource": {
             "type": "object",
             "properties": {
                 "custom_response": {
-                    "$ref": "#/definitions/models.CustomResponse"
+                    "description": "Custom response is used to define a custom response for incoming\nwebhooks project sources only.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.CustomResponse"
+                        }
+                    ]
                 },
                 "idempotency_keys": {
+                    "description": "IdempotencyKeys are used to specify parts of a webhook request to uniquely\nidentify the event in an incoming webhooks project.",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "idempotency_ttl": {
-                    "type": "string"
-                },
                 "is_disabled": {
+                    "description": "This is used to manually enable/disable the source.",
                     "type": "boolean"
                 },
                 "name": {
+                    "description": "Source name.",
                     "type": "string"
                 },
                 "provider": {
                     "$ref": "#/definitions/datastore.SourceProvider"
                 },
                 "pub_sub": {
-                    "$ref": "#/definitions/models.PubSubConfig"
+                    "description": "PubSub are used to specify message broker sources for outgoing\nwebhooks projects.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.PubSubConfig"
+                        }
+                    ]
                 },
                 "type": {
-                    "$ref": "#/definitions/datastore.SourceType"
+                    "description": "Source Type. Currently supported values are - sqs, kafka or pubsub.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/datastore.SourceType"
+                        }
+                    ]
                 },
                 "verifier": {
-                    "$ref": "#/definitions/models.VerifierConfig"
+                    "description": "Verifiers are used to verify webhook events ingested in incoming\nwebhooks projects.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.VerifierConfig"
+                        }
+                    ]
                 }
             }
         },
@@ -7165,10 +6579,16 @@
                 "event_metadata": {
                     "$ref": "#/definitions/datastore.Event"
                 },
+                "event_type": {
+                    "type": "string"
+                },
                 "headers": {
                     "$ref": "#/definitions/httpheader.HTTPHeader"
                 },
                 "idempotency_key": {
+                    "type": "string"
+                },
+                "latency": {
                     "type": "string"
                 },
                 "metadata": {
@@ -7372,6 +6792,7 @@
             "type": "object",
             "properties": {
                 "ids": {
+                    "description": "A list of event delivery IDs to forcefully resend.",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -7415,29 +6836,6 @@
                     "type": "string"
                 },
                 "topic_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.MetaEventConfiguration": {
-            "type": "object",
-            "properties": {
-                "event_type": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "is_enabled": {
-                    "type": "boolean"
-                },
-                "secret": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                },
-                "url": {
                     "type": "string"
                 }
             }
@@ -7544,79 +6942,6 @@
                 }
             }
         },
-        "models.ProjectConfig": {
-            "type": "object",
-            "properties": {
-                "add_event_id_trace_headers": {
-                    "type": "boolean"
-                },
-                "disable_endpoint": {
-                    "type": "boolean"
-                },
-                "max_payload_read_size": {
-                    "type": "integer"
-                },
-                "meta_event": {
-                    "$ref": "#/definitions/models.MetaEventConfiguration"
-                },
-                "ratelimit": {
-                    "$ref": "#/definitions/models.RateLimitConfiguration"
-                },
-                "replay_attacks_prevention_enabled": {
-                    "type": "boolean"
-                },
-                "retention_policy": {
-                    "$ref": "#/definitions/models.RetentionPolicyConfiguration"
-                },
-                "retention_policy_enabled": {
-                    "type": "boolean"
-                },
-                "signature": {
-                    "$ref": "#/definitions/models.SignatureConfiguration"
-                },
-                "strategy": {
-                    "$ref": "#/definitions/models.StrategyConfiguration"
-                }
-            }
-        },
-        "models.ProjectResponse": {
-            "type": "object",
-            "properties": {
-                "config": {
-                    "$ref": "#/definitions/datastore.ProjectConfig"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "logo_url": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "organisation_id": {
-                    "type": "string"
-                },
-                "retained_events": {
-                    "type": "integer"
-                },
-                "statistics": {
-                    "$ref": "#/definitions/datastore.ProjectStatistics"
-                },
-                "type": {
-                    "$ref": "#/definitions/datastore.ProjectType"
-                },
-                "uid": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
         "models.PubSubConfig": {
             "type": "object",
             "properties": {
@@ -7648,17 +6973,6 @@
                 }
             }
         },
-        "models.RetentionPolicyConfiguration": {
-            "type": "object",
-            "properties": {
-                "policy": {
-                    "type": "string"
-                },
-                "search_policy": {
-                    "type": "string"
-                }
-            }
-        },
         "models.RetryConfiguration": {
             "type": "object",
             "properties": {
@@ -7676,20 +6990,6 @@
                 }
             }
         },
-        "models.Role": {
-            "type": "object",
-            "properties": {
-                "app": {
-                    "type": "string"
-                },
-                "project": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
         "models.SQSPubSubConfig": {
             "type": "object",
             "properties": {
@@ -7703,37 +7003,6 @@
                     "type": "string"
                 },
                 "secret_key": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.SignatureConfiguration": {
-            "type": "object",
-            "properties": {
-                "header": {
-                    "$ref": "#/definitions/config.SignatureHeaderProvider"
-                },
-                "versions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.SignatureVersion"
-                    }
-                }
-            }
-        },
-        "models.SignatureVersion": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "encoding": {
-                    "type": "string"
-                },
-                "hash": {
-                    "type": "string"
-                },
-                "uid": {
                     "type": "string"
                 }
             }
@@ -7797,20 +7066,6 @@
                 },
                 "verifier": {
                     "$ref": "#/definitions/datastore.VerifierConfig"
-                }
-            }
-        },
-        "models.StrategyConfiguration": {
-            "type": "object",
-            "properties": {
-                "duration": {
-                    "type": "integer"
-                },
-                "retry_count": {
-                    "type": "integer"
-                },
-                "type": {
-                    "type": "string"
                 }
             }
         },
@@ -7956,26 +7211,6 @@
                 }
             }
         },
-        "models.UpdateProject": {
-            "type": "object",
-            "properties": {
-                "config": {
-                    "$ref": "#/definitions/models.ProjectConfig"
-                },
-                "logo_url": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "rate_limit": {
-                    "type": "integer"
-                },
-                "rate_limit_duration": {
-                    "type": "string"
-                }
-            }
-        },
         "models.UpdateSource": {
             "type": "object",
             "properties": {
@@ -7993,9 +7228,6 @@
                     "items": {
                         "type": "string"
                     }
-                },
-                "idempotency_ttl": {
-                    "type": "string"
                 },
                 "is_disabled": {
                     "type": "boolean"
@@ -8072,18 +7304,6 @@
                 "valid": {
                     "description": "Valid is true if String is not NULL",
                     "type": "boolean"
-                }
-            }
-        },
-        "public.Stub": {
-            "type": "object"
-        },
-        "public.pagedResponse": {
-            "type": "object",
-            "properties": {
-                "content": {},
-                "pagination": {
-                    "$ref": "#/definitions/datastore.PaginationData"
                 }
             }
         },

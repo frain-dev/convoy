@@ -79,7 +79,8 @@ func (s *PublicEndpointIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *PublicEndpointIntegrationTestSuite) TearDownTest() {
@@ -532,99 +533,6 @@ func (s *PublicEndpointIntegrationTestSuite) Test_ExpireEndpointSecret() {
 	require.NotEmpty(s.T(), endpoint2.Secrets[0].ExpiresAt)
 }
 
-func (s *PublicEndpointIntegrationTestSuite) Test_ToggleEndpointStatus_ActiveStatus() {
-	endpointId := ulid.Make().String()
-
-	// Just Before
-	_, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.ActiveEndpointStatus)
-	require.NoError(s.T(), err)
-
-	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.UID, endpointId)
-	req := createRequest(http.MethodPut, url, s.APIKey, nil)
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusAccepted, w.Code)
-
-	// Deep Asset
-	var endpoint *datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &endpoint)
-
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
-	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointId, s.DefaultProject.UID)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), endpointId, dbEndpoint.UID)
-	require.Equal(s.T(), datastore.InactiveEndpointStatus, dbEndpoint.Status)
-}
-
-func (s *PublicEndpointIntegrationTestSuite) Test_ToggleEndpointStatus_InactiveStatus() {
-	endpointId := ulid.Make().String()
-
-	// Just Before
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.InactiveEndpointStatus)
-
-	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.UID, endpointId)
-	req := createRequest(http.MethodPut, url, s.APIKey, nil)
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusAccepted, w.Code)
-
-	// Deep Assert
-	var endpoint *datastore.Endpoint
-	parseResponse(s.T(), w.Result(), &endpoint)
-
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
-	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointId, s.DefaultProject.UID)
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), endpointId, dbEndpoint.UID)
-	require.Equal(s.T(), datastore.ActiveEndpointStatus, dbEndpoint.Status)
-}
-
-func (s *PublicEndpointIntegrationTestSuite) Test_ToggleEndpointStatus_PendingStatus() {
-	endpointId := ulid.Make().String()
-
-	// Just Before
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointId, "", "", false, datastore.PendingEndpointStatus)
-
-	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.UID, endpointId)
-	req := createRequest(http.MethodPut, url, s.APIKey, nil)
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusBadRequest, w.Code)
-}
-
-func (s *PublicEndpointIntegrationTestSuite) Test_ToggleEndpointStatus_UnknownStatus() {
-	endpointID := ulid.Make().String()
-
-	// Just Before
-	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, "abc")
-
-	// Arrange Request
-	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s/toggle_status", s.DefaultProject.UID, endpointID)
-	req := createRequest(http.MethodPut, url, s.APIKey, nil)
-	w := httptest.NewRecorder()
-
-	// Act
-	s.Router.ServeHTTP(w, req)
-
-	// Assert
-	require.Equal(s.T(), http.StatusBadRequest, w.Code)
-}
-
 func (s *PublicEndpointIntegrationTestSuite) Test_PauseEndpoint_PausedStatus() {
 	endpointId := ulid.Make().String()
 
@@ -728,7 +636,8 @@ func (s *PublicEventIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *PublicEventIntegrationTestSuite) TearDownTest() {
@@ -855,13 +764,6 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_V
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	//// Deep Assert.
-	//var event datastore.Event
-	//parseResponse(s.T(), w.Result(), &event)
-
-	//require.NotEmpty(s.T(), event.UID)
-	//require.Equal(s.T(), event.Endpoints[0], endpointID)
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_Endpoint_is_disabled() {
@@ -909,27 +811,6 @@ func (s *PublicEventIntegrationTestSuite) Test_GetEndpointEvent_Valid_Event() {
 	var respEvent datastore.Event
 	parseResponse(s.T(), w.Result(), &respEvent)
 	require.Equal(s.T(), event.UID, respEvent.UID)
-}
-
-func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_Valid_Event_RedirectToProjects() {
-	s.T().Skip("Deprecated Redirects")
-	//	endpointID := ulid.Make().String()
-	//	expectedStatusCode := http.StatusTemporaryRedirect
-	//
-	//	// Just Before.
-	//	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
-	//
-	//	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
-	//	body := serialize(bodyStr, endpointID)
-	//
-	//	url := fmt.Sprintf("/api/v1/events?projectID=%s", s.DefaultProject.UID)
-	//	req := createRequest(http.MethodPost, url, s.APIKey, body)
-	//	w := httptest.NewRecorder()
-	//	// Act.
-	//	s.Router.ServeHTTP(w, req)
-	//
-	//	// Assert.
-	//	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_ReplayEndpointEvent_Valid_Event() {
@@ -1312,7 +1193,8 @@ func (s *PublicPortalLinkIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *PublicPortalLinkIntegrationTestSuite) TearDownTest() {
@@ -1571,7 +1453,8 @@ func (s *PublicProjectIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *PublicProjectIntegrationTestSuite) TestGetProjectWithPersonalAPIKey() {
@@ -1599,7 +1482,7 @@ func (s *PublicProjectIntegrationTestSuite) TestGetProjectWithPersonalAPIKey() {
 }
 
 func (s *PublicProjectIntegrationTestSuite) TestGetProjectWithPersonalAPIKey_UnauthorizedRole() {
-	expectedStatusCode := http.StatusForbidden
+	expectedStatusCode := http.StatusBadRequest
 
 	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
@@ -1648,7 +1531,7 @@ func (s *PublicProjectIntegrationTestSuite) TestDeleteProjectWithPersonalAPIKey(
 }
 
 func (s *PublicProjectIntegrationTestSuite) TestDeleteProjectWithPersonalAPIKey_UnauthorizedRole() {
-	expectedStatusCode := http.StatusForbidden
+	expectedStatusCode := http.StatusBadRequest
 
 	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
@@ -1728,6 +1611,29 @@ func (s *PublicProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey(
 func (s *PublicProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey_UnauthorizedRole() {
 	expectedStatusCode := http.StatusForbidden
 
+	bodyStr := `{
+        "name": "test-project",
+        "type": "outgoing",
+        "logo_url": "",
+        "config": {
+            "strategy": {
+                "type": "linear",
+                "duration": 10,
+                "retry_count": 2
+            },
+            "signature": {
+                "header": "X-Convoy-Signature",
+                "hash": "SHA512"
+            },
+            "disable_endpoint": false,
+            "replay_attacks": false,
+            "ratelimit": {
+                "count": 8000,
+                "duration": 60
+            }
+        }
+    }`
+
 	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
 
@@ -1735,7 +1641,8 @@ func (s *PublicProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey_
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/projects?orgID=%s", s.DefaultOrg.UID)
-	req := createRequest(http.MethodPost, url, key, nil)
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPost, url, key, body)
 
 	w := httptest.NewRecorder()
 
@@ -1777,7 +1684,7 @@ func (s *PublicProjectIntegrationTestSuite) TestUpdateProjectWithPersonalAPIKey(
 }
 
 func (s *PublicProjectIntegrationTestSuite) TestUpdateProjectWithPersonalAPIKey_UnauthorizedRole() {
-	expectedStatusCode := http.StatusForbidden
+	expectedStatusCode := http.StatusBadRequest
 
 	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
@@ -1888,7 +1795,8 @@ func (s *PublicSourceIntegrationTestSuite) SetupTest() {
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
 	// orgRepo := postgres.NewOrgRepo(s.ConvoyApp.A.DB, nil)
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *PublicSourceIntegrationTestSuite) TearDownTest() {
@@ -2220,7 +2128,8 @@ func (s *PublicSubscriptionIntegrationTestSuite) SetupTest() {
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
 
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *PublicSubscriptionIntegrationTestSuite) TearDownTest() {
@@ -2720,7 +2629,8 @@ func (s *PublicMetaEventIntegrationTestSuite) SetupTest() {
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
 
-	initRealmChain(s.T(), apiRepo, userRepo, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *PublicMetaEventIntegrationTestSuite) TearDownTest() {

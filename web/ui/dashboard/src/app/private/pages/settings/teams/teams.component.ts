@@ -185,6 +185,23 @@ export class TeamsComponent implements OnInit {
 		}
 	}
 
+	closeInviteModal() {
+		this.memberForm.reset();
+		this.inviteUserForm.reset();
+		this.inviteUserForm.patchValue({
+			role: {
+				type: 'super_user'
+			}
+		});
+		this.memberForm.patchValue({
+			role: {
+				type: 'super_user'
+			}
+		});
+		this.inviteLink = '';
+		this.teamsDialog.nativeElement.close();
+	}
+
 	showUpdateMemberModal(member: TEAM) {
 		this.selectedMember = member;
 		this.memberForm.patchValue(member);
