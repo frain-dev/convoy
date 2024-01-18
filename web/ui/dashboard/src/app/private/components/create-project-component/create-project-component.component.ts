@@ -123,6 +123,7 @@ export class CreateProjectComponent implements OnInit {
 	toggleConfigForm(configValue: string) {
 		this.configurations.forEach(config => {
 			if (config.uid === configValue) config.show = !config.show;
+			if (configValue === 'retention_policy' && config.uid === 'retention_policy') this.projectForm.patchValue({ config: { retention_policy_enabled: config.show } });
 		});
 	}
 
@@ -146,10 +147,11 @@ export class CreateProjectComponent implements OnInit {
 			this.projectForm.get('config.retention_policy.policy')?.patchValue(policy);
 			this.projectForm.get('config.meta_event.type')?.patchValue('http');
 
-			this.configurations.forEach(config => {
-				if (this.projectDetails?.type === 'outgoing') this.toggleConfigForm(config.uid);
-				else if (config.uid !== 'signature') this.toggleConfigForm(config.uid);
-			});
+			let filteredConfigs: string[] = [];
+			if (this.projectDetails?.type === 'incoming') filteredConfigs.push('signature');
+			if (!this.projectDetails?.config.retention_policy_enabled) filteredConfigs.push('retention_policy');
+
+			this.configurations.filter(item => !filteredConfigs.includes(item.uid)).forEach(config => this.toggleConfigForm(config.uid));
 
 			const versions = this.projectDetails.config.signature.versions;
 			if (!versions?.length) return;
