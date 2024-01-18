@@ -44,7 +44,7 @@
 							<div class="flex justify-between items-center mb-24px">
 								<p class="text-12 font-medium text-new.gray-500 flex items-center">
 									Signature Details
-									<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
+									<convoy-tooltip size="sm" position="top-right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 								</p>
 								<button convoy-permission="Project Settings|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
 									<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
@@ -79,7 +79,7 @@
 							<div class="flex justify-between items-center mb-24px">
 								<p class="flex items-center text-12 font-semibold text-new.gray-500">
 									Retry Logic
-									<convoy-tooltip size="sm" position="right" class="ml-4px">
+									<convoy-tooltip size="sm" position="top-right" class="ml-4px">
 										These are the specifications for the retry mechanism for your endpoints. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time before the next
 										retry attempt.
 									</convoy-tooltip>
@@ -120,7 +120,7 @@
 							<div class="flex justify-between items-center mb-24px">
 								<p class="flex items-center text-12 font-medium text-new.gray-500">
 									Rate Limit Parameters
-									<convoy-tooltip size="sm" position="right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
+									<convoy-tooltip size="sm" position="top-right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
 								</p>
 								<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('ratelimit')">
 									<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
@@ -155,7 +155,7 @@
 									</svg>
 								</button>
 							</div>
-							<ng-container *ngIf="projectForm.get('config.is_retention_policy_enabled')?.value">
+							<ng-container *ngIf="projectForm.get('config.retention_policy_enabled')?.value">
 								<div formGroupName="retention_policy">
 									<div class="grid grid-cols-2 gap-24px">
 										<convoy-input-field>
