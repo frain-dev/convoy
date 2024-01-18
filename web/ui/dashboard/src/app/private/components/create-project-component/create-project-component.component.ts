@@ -43,7 +43,7 @@ export class CreateProjectComponent implements OnInit {
 				duration: [null]
 			}),
 			retention_policy: this.formBuilder.group({
-				policy: ['720h'],
+				policy: [720],
 				search_policy: [720]
 			}),
 			disable_endpoint: [false, Validators.required],
@@ -140,11 +140,13 @@ export class CreateProjectComponent implements OnInit {
 			this.projectForm.get('config.strategy')?.patchValue(this.projectDetails.config.strategy);
 			this.projectForm.get('config.signature')?.patchValue(this.projectDetails.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(this.projectDetails.config.ratelimit);
-			const digits = this.projectDetails.config.retention_policy.search_policy.match(/\d+/g);
-			this.projectForm.get('config.retention_policy.search_policy')?.patchValue(digits);
-            this.projectForm.get('config.meta_event.type')?.patchValue('http');
+			const search_policy = this.projectDetails.config.retention_policy.search_policy.match(/\d+/g);
+			this.projectForm.get('config.retention_policy.search_policy')?.patchValue(search_policy);
+			const policy = this.projectDetails.config.retention_policy.policy.match(/\d+/g);
+			this.projectForm.get('config.retention_policy.policy')?.patchValue(policy);
+			this.projectForm.get('config.meta_event.type')?.patchValue('http');
 
-            this.configurations.forEach(config => {
+			this.configurations.forEach(config => {
 				if (this.projectDetails?.type === 'outgoing') this.toggleConfigForm(config.uid);
 				else if (config.uid !== 'signature') this.toggleConfigForm(config.uid);
 			});
@@ -199,7 +201,11 @@ export class CreateProjectComponent implements OnInit {
 		if (typeof this.projectForm.value.config.strategy.duration === 'string') this.projectForm.value.config.strategy.duration = this.getTimeValue(this.projectForm.value.config.strategy.duration);
 		if (typeof this.projectForm.value.config.strategy.retry_count === 'string') this.projectForm.value.config.strategy.retry_count = parseInt(this.projectForm.value.config.strategy.retry_count);
 		if (typeof this.projectForm.value.config.ratelimit.count === 'string') this.projectForm.value.config.ratelimit.count = parseInt(this.projectForm.value.config.ratelimit.count);
-		if (this.projectForm.value.config.retention_policy.search_policy) this.projectForm.value.config.retention_policy.search_policy = `${this.projectForm.value.config.retention_policy.search_policy}h`;
+		if (this.projectForm.value.config.retention_policy.search_policy)
+			this.projectForm.value.config.retention_policy.search_policy =
+				typeof this.projectForm.value.config.retention_policy.search_policy === 'string' ? this.projectForm.value.config.retention_policy.search_policy : `${this.projectForm.value.config.retention_policy.search_policy}h`;
+		if (this.projectForm.value.config.retention_policy.policy)
+			this.projectForm.value.config.retention_policy.policy = typeof this.projectForm.value.config.retention_policy.policy === 'string' ? this.projectForm.value.config.retention_policy.policy : `${this.projectForm.value.config.retention_policy.policy}h`;
 		this.isCreatingProject = true;
 
 		try {
@@ -249,6 +255,7 @@ export class CreateProjectComponent implements OnInit {
 		if (this.showConfig('retention_policy')) {
 			projectData.config.retention_policy_enabled = true;
 			projectData.config.retention_policy.search_policy = typeof projectData.config.retention_policy.search_policy === 'string' ? projectData.config.retention_policy.search_policy : `${projectData.config.retention_policy.search_policy}h`;
+			projectData.config.retention_policy.policy = typeof projectData.config.retention_policy.policy === 'string' ? projectData.config.retention_policy.policy : `${projectData.config.retention_policy.policy}h`;
 		}
 
 		return projectData;
