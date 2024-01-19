@@ -43,7 +43,6 @@ export class ProjectComponent implements OnInit {
 			route: '/meta-events'
 		}
 	];
-	shouldShowFullSideBar = true;
 	projectDetails?: PROJECT;
 	isLoadingProjectDetails: boolean = true;
 	showHelpDropdown = false;

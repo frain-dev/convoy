@@ -22,9 +22,8 @@
 						<convoy-tooltip
 							class="ml-4px"
 							size="sm"
-							type="white"
 							tooltipContent="A unique id for identifying a group of endpoints, like a user id. Useful for fanning out an event to multiple endpoints and creating portal link for multiple endpoints."
-							position="right"
+							position="top-right"
 						></convoy-tooltip>
 					</label>
 					<input type="text" id="owner_id" convoy-input autocomplete="owner_id" formControlName="owner_id" placeholder="Enter owner id here" />
@@ -97,7 +96,7 @@
 					<div class="flex justify-between items-center mb-16px">
 						<p class="flex items-center text-12 font-medium text-new.gray-500">
 							Endpoint Authentication
-							<convoy-tooltip size="sm" position="right" class="ml-4px">You can set your provided endpoint authentication is any is required</convoy-tooltip>
+							<convoy-tooltip size="sm" position="top-right" class="ml-4px">You can set your provided endpoint authentication is any is required</convoy-tooltip>
 						</p>
 						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('auth')">
 							<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
@@ -129,7 +128,7 @@
 					<div class="flex justify-between items-center mb-16px">
 						<p class="text-12 font-medium text-new.gray-500 flex items-center">
 							Signature Format
-							<convoy-tooltip size="sm" position="right" class="ml-4px">This specifies your signature format for your project.</convoy-tooltip>
+							<convoy-tooltip size="sm" position="top-right" class="ml-4px">This specifies your signature format for your project.</convoy-tooltip>
 						</p>
 						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
 							<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
@@ -149,7 +148,7 @@
 					<div class="flex justify-between items-center mb-16px">
 						<p class="flex items-center text-12 font-medium text-new.gray-500">
 							Endpoint Timeout
-							<convoy-tooltip size="sm" position="right" class="ml-4px">How many seconds should Convoy wait for a response from this endpoint before timing out?</convoy-tooltip>
+							<convoy-tooltip size="sm" position="top-right" class="ml-4px">How many seconds should Convoy wait for a response from this endpoint before timing out?</convoy-tooltip>
 						</p>
 						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('http_timeout')">
 							<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
