@@ -31,6 +31,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
+	sdktrace "go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -320,22 +321,10 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 		requestFields["header"] = headerFields(r.Header)
 	}
 
-	//cfg, err := config.Get()
-	//if err != nil {
-	//	return nil
-	//}
+	span := sdktrace.SpanFromContext(r.Context())
 
-	//if cfg.Tracer.Type == config.NewRelicTracerProvider {
-	//	txn := newrelic.FromContext(r.Context()).GetLinkingMetadata()
-
-	//	if cfg.Tracer.NewRelic.DistributedTracerEnabled {
-	//		requestFields["traceId"] = txn.TraceID
-	//      requestFields["spanId"] = txn.SpanID
-	//	}
-
-	//	requestFields["entity.guid"] = txn.EntityGUID
-	//	requestFields["entity.name"] = txn.EntityName
-	//}
+	requestFields["traceId"] = span.SpanContext().SpanID()
+	requestFields["spanId"] = span.SpanContext().TraceID()
 
 	return requestFields
 }

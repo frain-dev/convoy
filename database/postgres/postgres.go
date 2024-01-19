@@ -35,8 +35,6 @@ func NewDB(cfg config.Configuration) (*Postgres, error) {
 		otelsql.WithDBName("postgres"),
 		otelsql.WithAttributes(semconv.DBSystemPostgreSQL))
 
-	log.Info(dbConfig)
-
 	if err != nil {
 		return nil, fmt.Errorf("[%s]: failed to open database - %v", pkgName, err)
 	}
