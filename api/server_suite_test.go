@@ -34,7 +34,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/frain-dev/convoy/tracer"
 )
 
 // TEST HELPERS.
@@ -102,7 +101,6 @@ func getQueueOptions() (queue.QueueOptions, error) {
 }
 
 func buildServer() *ApplicationHandler {
-	var t tracer.Tracer = nil
 	var logger *log.Logger
 	var qOpts queue.QueueOptions
 
@@ -120,7 +118,6 @@ func buildServer() *ApplicationHandler {
 			DB:     db,
 			Queue:  newQueue,
 			Logger: logger,
-			Tracer: t,
 			Cache:  noopCache,
 		})
 

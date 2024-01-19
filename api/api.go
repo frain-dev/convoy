@@ -49,6 +49,10 @@ const (
 	DELETE = "DELETE"
 )
 
+const (
+	serverName = "apiserver"
+)
+
 type ApplicationHandler struct {
 	Router http.Handler
 	A      *types.APIOptions
@@ -72,7 +76,7 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 	router.Use(chiMiddleware.RequestID)
 	router.Use(chiMiddleware.Recoverer)
 	router.Use(middleware.WriteRequestIDHeader)
-	router.Use(middleware.InstrumentRequests())
+	router.Use(middleware.InstrumentRequests(serverName, router))
 	router.Use(middleware.LogHttpRequest(a.A))
 	router.Use(chiMiddleware.Maybe(middleware.SetupCORS, shouldApplyCORS))
 
