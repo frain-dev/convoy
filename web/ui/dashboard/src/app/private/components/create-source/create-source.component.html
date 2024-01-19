@@ -177,7 +177,7 @@
 			<convoy-select label="Source Type" name="type" formControlName="type" [options]="pubSubTypes" errorMessage="Select source type" [required]="true" className="mb-0" (selectedOption)="sourceForm.get('pub_sub.type')?.patchValue($event)"></convoy-select>
 
 			<convoy-input-field class="mt-24px">
-				<label for="workers" required="true" convoy-label required="true" tooltip="This specifies the number of consumers you want polling messages from your queue.">Workers</label>
+				<label for="workers" convoy-label required="true" tooltip="This specifies the number of consumers you want polling messages from your queue.">Workers</label>
 				<input type="number" id="workers" convoy-input autocomplete="workers" formControlName="workers" placeholder="Workers" />
 				<convoy-input-error *ngIf="sourceForm.get('pub_sub.workers')?.touched && sourceForm.get('pub_sub.workers')?.invalid">Enter number of workers</convoy-input-error>
 			</convoy-input-field>
@@ -188,18 +188,18 @@
 				<div formGroupName="google">
 					<div class="grid grid-cols-2 gap-6">
 						<convoy-input-field>
-							<label for="project_id" required="true" convoy-label required="true">Project ID</label>
+							<label for="project_id" convoy-label required="true">Project ID</label>
 							<input type="text" id="project_id" convoy-input autocomplete="project_id" formControlName="project_id" placeholder="Project ID goes here" />
 							<convoy-input-error *ngIf="sourceForm.get('pub_sub.google.project_id')?.touched && sourceForm.get('pub_sub.google.project_id')?.invalid">Enter your project ID</convoy-input-error>
 						</convoy-input-field>
 						<convoy-input-field>
-							<label for="subscription_id" required="true" convoy-label required="true">Subscription ID</label>
+							<label for="subscription_id" convoy-label required="true">Subscription ID</label>
 							<input type="text" id="subscription_id" convoy-input autocomplete="subscription_id" formControlName="subscription_id" placeholder="Subscription ID goes here" />
 							<convoy-input-error *ngIf="sourceForm.get('pub_sub.google.subscription_id')?.touched && sourceForm.get('pub_sub.google.subscription_id')?.invalid">Enter your subscription ID</convoy-input-error>
 						</convoy-input-field>
 					</div>
 					<convoy-input-field>
-						<label for="service_account" required="true" convoy-label required="true" tooltip="Service accounts provide a way to manage authentication into your Google Pub/Sub.">Service Account</label>
+						<label for="service_account" convoy-label required="true" tooltip="Service accounts provide a way to manage authentication into your Google Pub/Sub.">Service Account</label>
 						<convoy-file-input (selectedFile)="parseJsonFile($event)" (deleteFile)="deleteJsonFile()">
 							<p class="text-center text-12 text-grey-60 max-w-[186px] mx-auto">
 								<span class="text-primary-100 font-bold">Click to {{ action === 'update' ? 'update' : 'upload' }}</span>
@@ -216,12 +216,12 @@
 
 				<div class="grid grid-cols-2 gap-6" formGroupName="sqs">
 					<convoy-input-field>
-						<label for="access_key_id" required="true" convoy-label required="true">AWS Access Key ID</label>
+						<label for="access_key_id" convoy-label required="true">AWS Access Key ID</label>
 						<input type="text" id="access_key_id" convoy-input autocomplete="access_key_id" formControlName="access_key_id" placeholder="Access Key ID" />
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.sqs.access_key_id')?.touched && sourceForm.get('pub_sub.sqs.access_key_id')?.invalid">Enter access key ID</convoy-input-error>
 					</convoy-input-field>
 					<convoy-input-field>
-						<label for="secret_key" required="true" convoy-label required="true">AWS Secret Access Key</label>
+						<label for="secret_key" convoy-label required="true">AWS Secret Access Key</label>
 						<input type="text" id="secret_key" convoy-input autocomplete="secret_key" formControlName="secret_key" placeholder="Secret Access Key" />
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.sqs.secret_key')?.touched && sourceForm.get('pub_sub.sqs.secret_key')?.invalid">Enter secret access key</convoy-input-error>
 					</convoy-input-field>
@@ -238,7 +238,7 @@
 						></convoy-select>
 					</convoy-input-field>
 					<convoy-input-field>
-						<label for="queue_name" required="true" convoy-label required="true">Queue Name</label>
+						<label for="queue_name" convoy-label required="true">Queue Name</label>
 						<input type="text" id="queue_name" convoy-input autocomplete="queue_name" formControlName="queue_name" placeholder="Queue name" />
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.sqs.queue_name')?.touched && sourceForm.get('pub_sub.sqs.queue_name')?.invalid">Enter queue name</convoy-input-error>
 					</convoy-input-field>
@@ -253,13 +253,13 @@
 
 				<div class="grid grid-cols-2 gap-6 mt-24px">
 					<convoy-input-field [className]="'mb-0'">
-						<label for="topic_name" required="true" convoy-label required="true">Topic Name</label>
+						<label for="topic_name" convoy-label required="true">Topic Name</label>
 						<input type="text" id="topic_name" convoy-input autocomplete="topic_name" formControlName="topic_name" placeholder="Topic name" />
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.topic_name')?.touched && sourceForm.get('pub_sub.kafka.topic_name')?.invalid">Enter topic name</convoy-input-error>
 					</convoy-input-field>
 
 					<convoy-input-field [className]="'mb-0'">
-						<label for="consumer_group_id" required="true" convoy-label required="true">Consumer ID</label>
+						<label for="consumer_group_id" convoy-label required="true">Consumer ID</label>
 						<input type="text" id="consumer_group_id" convoy-input autocomplete="consumer_group_id" formControlName="consumer_group_id" placeholder="Consumer Group Id" />
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.consumer_group_id')?.touched && sourceForm.get('pub_sub.kafka.consumer_group_id')?.invalid">Enter consumer group ID</convoy-input-error>
 					</convoy-input-field>

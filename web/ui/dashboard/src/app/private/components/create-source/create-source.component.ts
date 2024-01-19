@@ -251,6 +251,9 @@ export class CreateSourceComponent implements OnInit {
 			this.isloading = false;
 			return this.sourceForm.markAllAsTouched();
 		}
+
+		// if (!this.addKafkaAuthentication) delete sourceData.pub_sub.kafka.auth;
+
 		this.isloading = true;
 
 		try {
@@ -323,49 +326,26 @@ export class CreateSourceComponent implements OnInit {
 			this.sourceForm.get('verifier.type')?.addValidators(Validators.required);
 			this.sourceForm.get('verifier.type')?.updateValueAndValidity();
 
-			if (this.sourceForm.get('verifier')?.value.type === 'api_key') {
-				this.sourceForm.get('verifier.api_key.header_name')?.addValidators(Validators.required);
-				this.sourceForm.get('verifier.api_key.header_value')?.addValidators(Validators.required);
-				this.sourceForm.get('verifier.api_key.header_name')?.updateValueAndValidity();
-				this.sourceForm.get('verifier.api_key.header_value')?.updateValueAndValidity();
-			} else {
-				this.sourceForm.get('verifier.api_key.header_name')?.removeValidators(Validators.required);
-				this.sourceForm.get('verifier.api_key.header_value')?.removeValidators(Validators.required);
-				this.sourceForm.get('verifier.api_key.header_name')?.updateValueAndValidity();
-				this.sourceForm.get('verifier.api_key.header_value')?.updateValueAndValidity();
-			}
+			const verifiers: any = {
+				api_key: ['verifier.api_key.header_name', 'verifier.api_key.header_value'],
+				basic_auth: ['verifier.basic_auth.password', 'verifier.basic_auth.username'],
+				hmac: ['verifier.hmac.encoding', 'verifier.hmac.hash', 'verifier.hmac.header', 'verifier.hmac.secret']
+			};
 
-			if (this.sourceForm.get('verifier')?.value.type === 'basic_auth') {
-				this.sourceForm.get('verifier.basic_auth.password')?.addValidators(Validators.required);
-				this.sourceForm.get('verifier.basic_auth.username')?.addValidators(Validators.required);
-				this.sourceForm.get('verifier.basic_auth.password')?.updateValueAndValidity();
-				this.sourceForm.get('verifier.basic_auth.username')?.updateValueAndValidity();
-			} else {
-				this.sourceForm.get('verifier.basic_auth.password')?.removeValidators(Validators.required);
-				this.sourceForm.get('verifier.basic_auth.username')?.removeValidators(Validators.required);
-				this.sourceForm.get('verifier.basic_auth.password')?.updateValueAndValidity();
-				this.sourceForm.get('verifier.basic_auth.username')?.updateValueAndValidity();
-			}
-
-			if (this.sourceForm.get('verifier')?.value.type === 'hmac') {
-				this.sourceForm.get('verifier.hmac.encoding')?.addValidators(Validators.required);
-				this.sourceForm.get('verifier.hmac.hash')?.addValidators(Validators.required);
-				this.sourceForm.get('verifier.hmac.header')?.addValidators(Validators.required);
-				this.sourceForm.get('verifier.hmac.secret')?.addValidators(Validators.required);
-				this.sourceForm.get('verifier.hmac.encoding')?.updateValueAndValidity();
-				this.sourceForm.get('verifier.hmac.hash')?.updateValueAndValidity();
-				this.sourceForm.get('verifier.hmac.header')?.updateValueAndValidity();
-				this.sourceForm.get('verifier.hmac.secret')?.updateValueAndValidity();
-			} else {
-				this.sourceForm.get('verifier.hmac.encoding')?.removeValidators(Validators.required);
-				this.sourceForm.get('verifier.hmac.hash')?.removeValidators(Validators.required);
-				this.sourceForm.get('verifier.hmac.header')?.removeValidators(Validators.required);
-				this.sourceForm.get('verifier.hmac.secret')?.removeValidators(Validators.required);
-				this.sourceForm.get('verifier.hmac.encoding')?.updateValueAndValidity();
-				this.sourceForm.get('verifier.hmac.hash')?.updateValueAndValidity();
-				this.sourceForm.get('verifier.hmac.header')?.updateValueAndValidity();
-				this.sourceForm.get('verifier.hmac.secret')?.updateValueAndValidity();
-			}
+			Object.keys(verifiers).forEach((verifier: any) => {
+				const fields = verifiers[verifier];
+				if (this.sourceForm.get('verifier')?.value.type === verifier) {
+					fields?.forEach((item: string) => {
+						this.sourceForm.get(item)?.addValidators(Validators.required);
+						this.sourceForm.get(item)?.updateValueAndValidity();
+					});
+				} else {
+					fields?.forEach((item: string) => {
+						this.sourceForm.get(item)?.removeValidators(Validators.required);
+						this.sourceForm.get(item)?.updateValueAndValidity();
+					});
+				}
+			});
 		} else {
 			this.sourceForm.get('verifier.type')?.removeValidators(Validators.required);
 			this.sourceForm.get('verifier.type')?.updateValueAndValidity();
@@ -377,76 +357,39 @@ export class CreateSourceComponent implements OnInit {
 			this.sourceForm.get('pub_sub.type')?.addValidators(Validators.required);
 			this.sourceForm.get('pub_sub.type')?.updateValueAndValidity();
 
-			if (this.sourceForm.get('pub_sub')?.value.type === 'google') {
-				this.sourceForm.get('pub_sub.google.service_account')?.addValidators(Validators.required);
-				this.sourceForm.get('pub_sub.google.subscription_id')?.addValidators(Validators.required);
-				this.sourceForm.get('pub_sub.google.project_id')?.addValidators(Validators.required);
-				this.sourceForm.get('pub_sub.google.service_account')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.google.subscription_id')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.google.project_id')?.updateValueAndValidity();
-			} else {
-				this.sourceForm.get('pub_sub.google.service_account')?.removeValidators(Validators.required);
-				this.sourceForm.get('pub_sub.google.subscription_id')?.removeValidators(Validators.required);
-				this.sourceForm.get('pub_sub.google.project_id')?.removeValidators(Validators.required);
-				this.sourceForm.get('pub_sub.google.service_account')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.google.subscription_id')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.google.project_id')?.updateValueAndValidity();
-			}
+			const pubSubs: any = {
+				google: ['pub_sub.google.service_account', 'pub_sub.google.subscription_id', 'pub_sub.google.project_id'],
+				sqs: ['pub_sub.sqs.queue_name', 'pub_sub.sqs.access_key_id', 'pub_sub.sqs.secret_key', 'pub_sub.sqs.default_region'],
+				kafka: ['pub_sub.kafka.brokers', 'pub_sub.kafka.consumer_group_id', 'pub_sub.kafka.topic_name']
+			};
 
-			if (this.sourceForm.get('pub_sub')?.value.type === 'sqs') {
-				this.sourceForm.get('pub_sub.sqs.queue_name')?.addValidators(Validators.required);
-				this.sourceForm.get('pub_sub.sqs.access_key_id')?.addValidators(Validators.required);
-				this.sourceForm.get('pub_sub.sqs.secret_key')?.addValidators(Validators.required);
-				this.sourceForm.get('pub_sub.sqs.default_region')?.addValidators(Validators.required);
-				this.sourceForm.get('pub_sub.sqs.queue_name')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.sqs.access_key_id')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.sqs.secret_key')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.sqs.default_region')?.updateValueAndValidity();
-			} else {
-				this.sourceForm.get('pub_sub.sqs.queue_name')?.removeValidators(Validators.required);
-				this.sourceForm.get('pub_sub.sqs.access_key_id')?.removeValidators(Validators.required);
-				this.sourceForm.get('pub_sub.sqs.secret_key')?.removeValidators(Validators.required);
-				this.sourceForm.get('pub_sub.sqs.default_region')?.removeValidators(Validators.required);
-				this.sourceForm.get('pub_sub.sqs.queue_name')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.sqs.access_key_id')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.sqs.secret_key')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.sqs.default_region')?.updateValueAndValidity();
-			}
+			Object.keys(pubSubs).forEach((pubSub: any) => {
+				const fields = pubSubs[pubSub];
+				if (this.sourceForm.get('pub_sub')?.value.type === pubSub) {
+					fields?.forEach((item: string) => {
+						this.sourceForm.get(item)?.addValidators(Validators.required);
+						this.sourceForm.get(item)?.updateValueAndValidity();
+					});
+				} else {
+					fields?.forEach((item: string) => {
+						this.sourceForm.get(item)?.removeValidators(Validators.required);
+						this.sourceForm.get(item)?.updateValueAndValidity();
+					});
+				}
+			});
 
-			if (this.sourceForm.get('pub_sub')?.value.type === 'kafka') {
-				this.sourceForm.get('pub_sub.kafka.brokers')?.addValidators(Validators.required);
-				this.sourceForm.get('pub_sub.kafka.consumer_group_id')?.addValidators(Validators.required);
-				this.sourceForm.get('pub_sub.kafka.topic_name')?.addValidators(Validators.required);
-				this.sourceForm.get('pub_sub.kafka.brokers')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.kafka.consumer_group_id')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.kafka.topic_name')?.updateValueAndValidity();
-			} else {
-				this.sourceForm.get('pub_sub.kafka.brokers')?.removeValidators(Validators.required);
-				this.sourceForm.get('pub_sub.kafka.consumer_group_id')?.removeValidators(Validators.required);
-				this.sourceForm.get('pub_sub.kafka.topic_name')?.removeValidators(Validators.required);
-				this.sourceForm.get('pub_sub.kafka.brokers')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.kafka.consumer_group_id')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.kafka.topic_name')?.updateValueAndValidity();
-			}
+			const kafkaAuths = ['pub_sub.kafka.auth.type', 'pub_sub.kafka.auth.tls', 'pub_sub.kafka.auth.username', 'pub_sub.kafka.auth.password'];
 
 			if (this.addKafkaAuthentication) {
-				this.sourceForm.get('pub_sub.kafka.auth.type')?.addValidators(Validators.required);
-				this.sourceForm.get('pub_sub.kafka.auth.tls')?.addValidators(Validators.required);
-				this.sourceForm.get('pub_sub.kafka.auth.username')?.addValidators(Validators.required);
-				this.sourceForm.get('pub_sub.kafka.auth.password')?.addValidators(Validators.required);
-				this.sourceForm.get('pub_sub.kafka.auth.type')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.kafka.auth.tls')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.kafka.auth.username')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.kafka.auth.password')?.updateValueAndValidity();
+				kafkaAuths?.forEach((item: string) => {
+					this.sourceForm.get(item)?.addValidators(Validators.required);
+					this.sourceForm.get(item)?.updateValueAndValidity();
+				});
 			} else {
-				this.sourceForm.get('pub_sub.kafka.auth.type')?.removeValidators(Validators.required);
-				this.sourceForm.get('pub_sub.kafka.auth.tls')?.removeValidators(Validators.required);
-				this.sourceForm.get('pub_sub.kafka.auth.username')?.removeValidators(Validators.required);
-				this.sourceForm.get('pub_sub.kafka.auth.password')?.removeValidators(Validators.required);
-				this.sourceForm.get('pub_sub.kafka.auth.type')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.kafka.auth.tls')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.kafka.auth.username')?.updateValueAndValidity();
-				this.sourceForm.get('pub_sub.kafka.auth.password')?.updateValueAndValidity();
+				kafkaAuths?.forEach((item: string) => {
+					this.sourceForm.get(item)?.removeValidators(Validators.required);
+					this.sourceForm.get(item)?.updateValueAndValidity();
+				});
 			}
 		} else {
 			this.sourceForm.get('pub_sub.workers')?.removeValidators(Validators.required);
