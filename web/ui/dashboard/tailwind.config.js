@@ -16,6 +16,18 @@ function customSpacing() {
 	return spaces;
 }
 
+function generateColorScale(name) {
+	let scale = Array.from({ length: 12 }, (_, i) => {
+		let id = i + 1;
+		return [
+			[id, `var(--${name}-${id})`],
+			[`a${id}`, `var(--${name}-a${id})`]
+		];
+	}).flat();
+
+	return Object.fromEntries(scale);
+}
+
 module.exports = {
 	mode: 'jit',
 	content: ['./src/**/*.{html,ts}'],
@@ -170,6 +182,8 @@ module.exports = {
 				800: '#1D2939',
 				900: '#101828'
 			},
+			neutral: generateColorScale('gray'),
+			error: generateColorScale('red'),
 			grey: {
 				100: '#000624',
 				80: '#31323D',
@@ -195,6 +209,7 @@ module.exports = {
 				500: '#EDF2F7'
 			},
 			success: {
+                ...generateColorScale('green'),
 				100: '#25C26E',
 				200: '#66D49A',
 				300: '#92E1B7',

@@ -21,6 +21,7 @@
 		"@angular/router": "^14.0.3",
 		"@auth0/angular-jwt": "^5.1.2",
 		"@markdoc/markdoc": "^0.1.12",
+		"@radix-ui/colors": "^3.0.0",
 		"@tailwindcss/container-queries": "^0.1.1",
 		"@types/markdown-it": "^12.2.3",
 		"@types/react": "^18.0.21",
