@@ -52,14 +52,6 @@ func Init(tCfg config.TracerConfiguration, componentName string) (shutdownFn, er
 		st := &SentryTracer{tCfg.Sentry}
 		return st.Init(componentName)
 
-	case config.DatadogTracerProvider:
-		if tCfg.Datadog == (config.DatadogConfiguration{}) {
-			return noopShutdownFn, ErrInvalidTracerConfiguration
-		}
-
-		dt := DatadogTracer{tCfg.Datadog}
-		return dt.Init(componentName)
-
 	case config.OTelTracerProvider:
 		if tCfg.OTel == (config.OTelConfiguration{}) {
 			return noopShutdownFn, ErrInvalidTracerConfiguration

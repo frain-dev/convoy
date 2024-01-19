@@ -215,10 +215,9 @@ type LoggerConfiguration struct {
 }
 
 type TracerConfiguration struct {
-	Type    TracerProvider       `json:"type" envconfig:"CONVOY_TRACER_PROVIDER"`
-	OTel    OTelConfiguration    `json:"otel"`
-	Sentry  SentryConfiguration  `json:"sentry"`
-	Datadog DatadogConfiguration `json:"datadog"`
+	Type   TracerProvider      `json:"type" envconfig:"CONVOY_TRACER_PROVIDER"`
+	OTel   OTelConfiguration   `json:"otel"`
+	Sentry SentryConfiguration `json:"sentry"`
 }
 
 type OTelConfiguration struct {
@@ -231,10 +230,6 @@ type OTelConfiguration struct {
 type OTelAuthConfiguration struct {
 	HeaderName  string `json:"header_name" envconfig:"CONVOY_OTEL_AUTH_HEADER_NAME"`
 	HeaderValue string `json:"header_value" envconfig:"CONVOY_OTEL_AUTH_HEADER_VALUE"`
-}
-
-type DatadogConfiguration struct {
-	AgentURL string `json:"agent_url" envconfig:"CONVOY_DATADOG_AGENT_URL"`
 }
 
 type SentryConfiguration struct {

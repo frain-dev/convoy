@@ -327,16 +327,6 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	}
 
 	switch c.Tracer.Type {
-	case config.DatadogTracerProvider:
-		agentURL, err := cmd.Flags().GetString("datadog-agent-url")
-		if err != nil {
-			return nil, err
-		}
-
-		c.Tracer.Datadog = config.DatadogConfiguration{
-			AgentURL: agentURL,
-		}
-
 	case config.OTelTracerProvider:
 		sampleRate, err := cmd.Flags().GetFloat64("otel-sample-rate")
 		if err != nil {
