@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -84,7 +85,19 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &models.EndpointResponse{Endpoint: endpoint}
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint created successfully", resp, http.StatusCreated))
+	rb, err := json.Marshal(resp)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	resBytes, err := h.RM.VersionResponse(r, rb, "CreateEndpoint")
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	util.WriteResponse(w, r, resBytes)
 }
 
 // GetEndpoint

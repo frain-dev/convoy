@@ -5,8 +5,8 @@ ALTER TABLE convoy.endpoints
 
 -- +migrate Up
 UPDATE convoy.endpoints
-    SET new_http_timeout = duration_to_seconds(http_timeout::interval),
-        new_rate_limit_duration = duration_to_seconds(rate_limit_duration::interval);
+    SET new_http_timeout = convoy.duration_to_seconds(http_timeout::interval),
+        new_rate_limit_duration = convoy.duration_to_seconds(rate_limit_duration::interval);
 
 -- +migrate Up
 ALTER TABLE convoy.endpoints
@@ -34,7 +34,7 @@ ALTER TABLE convoy.endpoints
 -- +migrate Down
 UPDATE convoy.endpoints
     SET old_http_timeout = convoy.seconds_to_interval(http_timeout),
-    SET old_rate_limit_duration = convoy.seconds_to_interval(rate_limit_duration);
+        old_rate_limit_duration = convoy.seconds_to_interval(rate_limit_duration);
 
 -- +migrate Down
 ALTER TABLE convoy.endpoints

@@ -9,25 +9,50 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	truthValue = true
+	falseValue = false
+)
+
 func Test_Migrate(t *testing.T) {
 	tests := []struct {
 		name    string
-		wantErr bool
+		want    bool
+		payload *oldCreateEndpoint
 	}{
 		{
-			name:    "should_transform_advanced_signature",
-			wantErr: false,
+			name: "should_set_advanced_signatures_to_false_by_default",
+			want: false,
+			payload: &oldCreateEndpoint{
+				Name: "test-endpoint",
+				URL:  "https://google.com",
+			},
+		},
+		{
+			name: "should_set_advanced_signatures_to_true",
+			want: true,
+			payload: &oldCreateEndpoint{
+				Name:               "test-endpoint",
+				URL:                "https://google.com",
+				AdvancedSignatures: &truthValue,
+			},
+		},
+		{
+			name: "should_set_advanced_signatures_to_false",
+			want: false,
+			payload: &oldCreateEndpoint{
+				Name:               "test-endpoint",
+				URL:                "https://google.com",
+				AdvancedSignatures: &falseValue,
+			},
 		},
 	}
+
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var header http.Header
-			payload := &oldCreateEndpoint{
-				Name: "test-endpoint",
-				URL:  "https://google.com",
-			}
 
-			body, err := json.Marshal(payload)
+			body, err := json.Marshal(tc.payload)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -44,7 +69,7 @@ func Test_Migrate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			require.Equal(t, *endpoint.AdvancedSignatures, false)
+			require.Equal(t, *endpoint.AdvancedSignatures, tc.want)
 			require.Nil(t, err)
 		})
 	}

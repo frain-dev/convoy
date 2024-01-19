@@ -8,5 +8,6 @@ import (
 var migrations = requestmigrations.MigrationStore{
 	"2024-01-01": requestmigrations.Migrations{
 		&v20240101.CreateEndpointRequestMigration{},
+		&v20240101.CreateEndpointResponseMigration{},
 	},
 }

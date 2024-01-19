@@ -1,6 +1,7 @@
 package util
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 
@@ -88,4 +89,14 @@ func newServerResponseWithStatus(status bool, msg string, data json.RawMessage, 
 			StatusCode: statusCode,
 		},
 	}
+}
+
+func WriteResponse(w http.ResponseWriter, r *http.Request, v []byte) {
+	buf := bytes.NewBuffer(v)
+
+	w.Header().Set("Content-Type", "application/json")
+	if status, ok := r.Context().Value(render.StatusCtxKey).(int); ok {
+		w.WriteHeader(status)
+	}
+	w.Write(buf.Bytes()) //nolint:errcheck
 }

@@ -70,20 +70,15 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint, proje
 		endpoint.RateLimit = e.RateLimit
 	}
 
-	if !util.IsStringEmpty(e.RateLimitDuration) {
-		duration, err := time.ParseDuration(e.RateLimitDuration)
-		if err != nil {
-			return nil, err
-		}
-
-		endpoint.RateLimitDuration = duration.String()
+	if e.RateLimitDuration != 0 {
+		endpoint.RateLimitDuration = e.RateLimitDuration
 	}
 
 	if e.AdvancedSignatures != nil && project.Type == datastore.OutgoingProject {
 		endpoint.AdvancedSignatures = *e.AdvancedSignatures
 	}
 
-	if !util.IsStringEmpty(e.HttpTimeout) {
+	if e.HttpTimeout != 0 {
 		endpoint.HttpTimeout = e.HttpTimeout
 	}
 

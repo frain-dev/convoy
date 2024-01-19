@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -230,20 +229,15 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 			endpoint.RateLimit = newEndpoint.RateLimit
 		}
 
-		if !util.IsStringEmpty(newEndpoint.RateLimitDuration) {
-			duration, err := time.ParseDuration(newEndpoint.RateLimitDuration)
-			if err != nil {
-				return nil, err
-			}
-
-			endpoint.RateLimitDuration = duration.String()
+		if newEndpoint.RateLimitDuration != 0 {
+			endpoint.RateLimitDuration = newEndpoint.RateLimitDuration
 		}
 
 		if (newEndpoint.AdvancedSignatures != endpoint.AdvancedSignatures) && project.Type == datastore.OutgoingProject {
 			endpoint.AdvancedSignatures = newEndpoint.AdvancedSignatures
 		}
 
-		if !util.IsStringEmpty(newEndpoint.HttpTimeout) {
+		if newEndpoint.HttpTimeout != 0 {
 			endpoint.HttpTimeout = newEndpoint.HttpTimeout
 		}
 
@@ -270,13 +264,8 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 			newEndpoint.RateLimit = convoy.RATE_LIMIT
 		}
 
-		if util.IsStringEmpty(newEndpoint.RateLimitDuration) {
+		if newEndpoint.RateLimitDuration == 0 {
 			newEndpoint.RateLimitDuration = convoy.RATE_LIMIT_DURATION
-		}
-
-		duration, err := time.ParseDuration(newEndpoint.RateLimitDuration)
-		if err != nil {
-			return nil, fmt.Errorf("an error occurred parsing the rate limit duration: %v", err)
 		}
 
 		endpoint = &datastore.Endpoint{
@@ -292,7 +281,7 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 			HttpTimeout:        newEndpoint.HttpTimeout,
 			AdvancedSignatures: newEndpoint.AdvancedSignatures,
 			AppID:              newEndpoint.AppID,
-			RateLimitDuration:  duration.String(),
+			RateLimitDuration:  newEndpoint.RateLimitDuration,
 			Status:             datastore.ActiveEndpointStatus,
 			CreatedAt:          time.Now(),
 			UpdatedAt:          time.Now(),
