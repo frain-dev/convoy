@@ -1,11 +1,11 @@
 -- +migrate Up
-ALTER TABLE convoy.portal_links ADD CONSTRAINT portal_links_owner_id unique (owner_id, deleted_at);
 CREATE TABLE IF NOT EXISTS convoy.endpoints_portal_links (
     endpoint_id VARCHAR NOT NULL REFERENCES convoy.endpoints (id),
     owner_id VARCHAR NOT NULL,
     deleted_at TIMESTAMPTZ,
     FOREIGN KEY (owner_id, deleted_at) REFERENCES convoy.portal_links (owner_id, deleted_at)
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_owner_id_deleted_at ON convoy.portal_links (owner_id, deleted_at) WHERE deleted_at IS NOT NULL;
 
 -- +migrate Up
 CREATE INDEX IF NOT EXISTS idx_endpoints_portal_links_endpoint_id ON convoy.endpoints_portal_links (endpoint_id, owner_id, deleted_at);
@@ -20,7 +20,7 @@ WHERE e.owner_id IS NOT NULL AND COALESCE(TRIM(e.owner_id), '') <> '';
 DROP table IF EXISTS convoy.endpoints_portal_links;
 
 -- +migrate Down
-ALTER TABLE convoy.portal_links DROP CONSTRAINT IF EXISTS portal_links_owner_id;
+ALTER TABLE convoy.portal_links DROP CONSTRAINT IF EXISTS idx_unique_owner_id_deleted_at;
 
 -- +migrate Down
 DROP INDEX IF EXISTS convoy.idx_endpoints_portal_links_endpoint_id;

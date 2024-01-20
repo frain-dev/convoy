@@ -29,6 +29,10 @@ const (
 	INSERT INTO convoy.portal_links_endpoints (portal_link_id, endpoint_id) VALUES (:portal_link_id, :endpoint_id)
 	`
 
+	createEndpointPortalLinks = `
+	INSERT INTO convoy.endpoints_portal_links (owner_id, endpoint_id) VALUES (:owner_id, :endpoint_id)
+	`
+
 	updatePortalLink = `
 	UPDATE convoy.portal_links
 	SET
@@ -45,6 +49,15 @@ const (
 	WHERE portal_link_id = $1 OR endpoint_id = $2
 	`
 
+	deleteEndpointPortalLinks = `
+	DELETE FROM convoy.endpoints_portal_links
+	WHERE owner_id = $1 OR endpoint_id = $2
+	`
+
+	fetchExistingLinkWithOwnerId = `
+    select count(*) from convoy.portal_links where owner_id = $1 and id <> $2 and deleted_at is null;
+    `
+
 	fetchPortalLinkById = `
 	SELECT
 	p.id,
@@ -56,8 +69,9 @@ const (
 	COALESCE(p.owner_id, '') AS "owner_id",
 	p.created_at,
 	p.updated_at,
-    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT cast(JSON_BUILD_OBJECT('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url) as jsonb))) AS endpoints_metadata
-	FROM convoy.portal_links p
+    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL
+	        THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url, 'secrets', e.secrets) as jsonb)
+	        END)) AS endpoints_metadata	FROM convoy.portal_links p
 	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
 	LEFT JOIN convoy.endpoints e
@@ -77,8 +91,9 @@ const (
 	COALESCE(p.owner_id, '') AS "owner_id",
 	p.created_at,
 	p.updated_at,
-	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT cast(JSON_BUILD_OBJECT('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url) as jsonb))) AS endpoints_metadata
-	FROM convoy.portal_links p
+    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL
+	        THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url, 'secrets', e.secrets) as jsonb)
+	        END)) AS endpoints_metadata	FROM convoy.portal_links p
 	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
 	LEFT JOIN convoy.endpoints e
@@ -98,8 +113,9 @@ const (
 	COALESCE(p.owner_id, '') AS "owner_id",
 	p.created_at,
 	p.updated_at,
-	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT cast(JSON_BUILD_OBJECT('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url, 'secrets', e.secrets) as jsonb)))  AS endpoints_metadata
-	FROM convoy.portal_links p
+    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL
+	        THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url, 'secrets', e.secrets) as jsonb)
+	        END)) AS endpoints_metadata	FROM convoy.portal_links p
 	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
 	LEFT JOIN convoy.endpoints e
@@ -130,7 +146,9 @@ const (
         COALESCE(p.owner_id, '') AS "owner_id",
         p.created_at,
         p.updated_at,
-    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT cast(JSON_BUILD_OBJECT('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url) as jsonb))) AS endpoints_metadata
+	    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL
+	        THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url, 'secrets', e.secrets) as jsonb)
+	        END)) AS endpoints_metadata
     FROM convoy.portal_links p
         LEFT JOIN convoy.portal_links_endpoints pe ON p.id = pe.portal_link_id
         LEFT JOIN convoy.endpoints_portal_links ep ON p.owner_id = ep.owner_id
@@ -179,6 +197,18 @@ func NewPortalLinkRepo(db database.Database, cache cache.Cache) datastore.Portal
 }
 
 func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore.PortalLink) error {
+	rows := struct {
+		Count int
+	}{}
+	err := p.db.QueryRowxContext(ctx, fetchExistingLinkWithOwnerId, portal.OwnerID, portal.UID).StructScan(&rows)
+	if err != nil {
+		return err
+	}
+
+	if rows.Count > 0 {
+		return fmt.Errorf("a portal link with owner_id (%s) exists", portal.OwnerID)
+	}
+
 	tx, err := p.db.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
