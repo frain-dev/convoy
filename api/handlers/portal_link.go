@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -25,7 +26,7 @@ import (
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
-//	@Param			portallink	body		models.PortalLink	true	"Portal Link Details"
+//	@Param			portal_link	body		models.PortalLink	true	"Portal Link Details"
 //	@Success		200			{object}	util.ServerResponse{data=models.PortalLinkResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
@@ -66,7 +67,7 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Portal link created successfully", pl, http.StatusCreated))
 }
 
-// GetPortalLinkByID
+// GetPortalLink
 //
 //	@Summary		Retrieve a portal link
 //	@Description	This endpoint retrieves a portal link by its id.
@@ -98,7 +99,7 @@ func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
 		portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache)
 		pLink, err = portalLinkRepo.FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 		if err != nil {
-			if err == datastore.ErrPortalLinkNotFound {
+			if errors.Is(err, datastore.ErrPortalLinkNotFound) {
 				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 				return
 			}
@@ -148,7 +149,7 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 
 	portalLink, err := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache).FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
-		if err == datastore.ErrPortalLinkNotFound {
+		if errors.Is(err, datastore.ErrPortalLinkNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
@@ -204,7 +205,7 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache)
 	portalLink, err := portalLinkRepo.FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
-		if err == datastore.ErrPortalLinkNotFound {
+		if errors.Is(err, datastore.ErrPortalLinkNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
@@ -247,7 +248,8 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 	}
 
 	endpointIDs := getEndpointIDs(r)
-	filter := &datastore.FilterBy{EndpointIDs: endpointIDs}
+	ownerId := r.URL.Query().Get("ownerId")
+	filter := &datastore.PortalLinkFilter{EndpointIDs: endpointIDs, OwnerID: ownerId}
 
 	portalLinks, paginationData, err := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache).LoadPortalLinksPaged(r.Context(), project.UID, filter, pageable)
 	if err != nil {
@@ -256,7 +258,7 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	plResponse := []*models.PortalLinkResponse{}
+	var plResponse []*models.PortalLinkResponse
 	baseUrl, err := h.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

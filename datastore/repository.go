@@ -173,7 +173,7 @@ type PortalLinkRepository interface {
 	FindPortalLinkByID(ctx context.Context, projectID string, id string) (*PortalLink, error)
 	FindPortalLinkByOwnerID(ctx context.Context, projectID string, id string) (*PortalLink, error)
 	FindPortalLinkByToken(ctx context.Context, token string) (*PortalLink, error)
-	LoadPortalLinksPaged(ctx context.Context, projectID string, f *FilterBy, pageable Pageable) ([]PortalLink, PaginationData, error)
+	LoadPortalLinksPaged(ctx context.Context, projectID string, f *PortalLinkFilter, pageable Pageable) ([]PortalLink, PaginationData, error)
 	RevokePortalLink(ctx context.Context, projectID string, id string) error
 }
 

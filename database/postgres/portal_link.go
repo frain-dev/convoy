@@ -37,7 +37,7 @@ const (
 		owner_id = $4,
 		can_manage_endpoint = $5,
 		updated_at = NOW()
-	WHERE id = $1 AND deleted_at IS NULL;
+	WHERE id = $1 AND project_id = $6 AND deleted_at IS NULL;
 	`
 
 	deletePortalLinkEndpoints = `
@@ -56,7 +56,7 @@ const (
 	COALESCE(p.owner_id, '') AS "owner_id",
 	p.created_at,
 	p.updated_at,
-	ARRAY_TO_JSON(ARRAY_AGG(JSON_BUILD_OBJECT('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url)))  AS endpoints_metadata
+    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT cast(JSON_BUILD_OBJECT('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url) as jsonb))) AS endpoints_metadata
 	FROM convoy.portal_links p
 	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
@@ -77,7 +77,7 @@ const (
 	COALESCE(p.owner_id, '') AS "owner_id",
 	p.created_at,
 	p.updated_at,
-	ARRAY_TO_JSON(ARRAY_AGG(JSON_BUILD_OBJECT('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url)))  AS endpoints_metadata
+	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT cast(JSON_BUILD_OBJECT('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url) as jsonb))) AS endpoints_metadata
 	FROM convoy.portal_links p
 	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
@@ -98,7 +98,7 @@ const (
 	COALESCE(p.owner_id, '') AS "owner_id",
 	p.created_at,
 	p.updated_at,
-	ARRAY_TO_JSON(ARRAY_AGG(JSON_BUILD_OBJECT('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url, 'secrets', e.secrets)))  AS endpoints_metadata
+	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT cast(JSON_BUILD_OBJECT('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url, 'secrets', e.secrets) as jsonb)))  AS endpoints_metadata
 	FROM convoy.portal_links p
 	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
@@ -121,28 +121,27 @@ const (
 
 	fetchPortalLinksPaginated = `
 	SELECT
-	p.id,
-	p.project_id,
-	p.name,
-	p.token,
-	p.endpoints,
-	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
-	COALESCE(p.owner_id, '') AS "owner_id",
-	p.created_at,
-	p.updated_at,
-	ARRAY_TO_JSON(ARRAY_AGG(JSON_BUILD_OBJECT('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url)))  AS endpoints_metadata
-	FROM convoy.portal_links p
-	LEFT JOIN convoy.portal_links_endpoints pe
-		ON p.id = pe.portal_link_id
-	LEFT JOIN convoy.endpoints e
-		ON e.id = pe.endpoint_id
-	WHERE p.deleted_at IS NULL`
+        p.id,
+        p.project_id,
+        p.name,
+        p.token,
+        p.endpoints,
+        COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
+        COALESCE(p.owner_id, '') AS "owner_id",
+        p.created_at,
+        p.updated_at,
+    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT cast(JSON_BUILD_OBJECT('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url) as jsonb))) AS endpoints_metadata
+    FROM convoy.portal_links p
+        LEFT JOIN convoy.portal_links_endpoints pe ON p.id = pe.portal_link_id
+        LEFT JOIN convoy.endpoints_portal_links ep ON p.owner_id = ep.owner_id
+        LEFT JOIN convoy.endpoints e ON e.id = pe.endpoint_id OR e.id = ep.endpoint_id
+    WHERE p.deleted_at IS NULL`
 
 	baseFetchPortalLinksPagedForward = `
 	%s
 	%s
 	AND p.id <= :cursor
-	GROUP BY p.id
+	GROUP BY p.id, p.project_id, p.name, p.token, p.endpoints, p.can_manage_endpoint, p.owner_id, p.created_at, p.updated_at
 	ORDER BY p.id DESC
 	LIMIT :limit
 	`
@@ -152,7 +151,7 @@ const (
 		%s
 		%s
 		AND p.id >= :cursor
-		GROUP BY p.id
+		GROUP BY p.id, p.project_id, p.name, p.token, p.endpoints, p.can_manage_endpoint, p.owner_id, p.created_at, p.updated_at
 		ORDER BY p.id ASC
 		LIMIT :limit
 	)
@@ -227,6 +226,7 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 		portal.Endpoints,
 		portal.OwnerID,
 		portal.CanManageEndpoint,
+		projectID,
 	)
 	if err != nil {
 		return err
@@ -288,18 +288,15 @@ func (p *portalLinkRepo) FindPortalLinkByToken(ctx context.Context, token string
 	return portalLink, nil
 }
 
-func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID string, filter *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
+func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID string, filter *datastore.PortalLinkFilter, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
 	var err error
 	var args []interface{}
 	var query, filterQuery string
 
-	if !util.IsStringEmpty(filter.EndpointID) {
-		filter.EndpointIDs = append(filter.EndpointIDs, filter.EndpointID)
-	}
-
 	arg := map[string]interface{}{
 		"project_id":   projectID,
 		"endpoint_ids": filter.EndpointIDs,
+		"owner_id":     filter.OwnerID,
 		"limit":        pageable.Limit(),
 		"cursor":       pageable.Cursor(),
 	}

@@ -69,3 +69,10 @@ type SearchFilter struct {
 	FilterBy FilterBy
 	Pageable Pageable
 }
+
+type PortalLinkFilter struct {
+	Pageable    Pageable
+	EndpointIDs []string
+	OwnerID     string
+	Query       string
+}
