@@ -2,8 +2,9 @@ package rdb
 
 import (
 	"errors"
+
 	"github.com/frain-dev/convoy/util"
-	"github.com/newrelic/go-agent/v3/integrations/nrredis-v9"
+	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -35,14 +36,15 @@ func NewClient(addresses []string) (*Redis, error) {
 		}
 
 		client = redis.NewClient(opts)
-		// Add Instrumentation
-		client.AddHook(nrredis.NewHook(opts))
 	} else {
 		client = redis.NewUniversalClient(&redis.UniversalOptions{
 			Addrs: addresses,
 		})
-		// Add Instrumentation
-		client.AddHook(nrredis.NewHook(nil))
+	}
+
+	// Enable tracing instrumentation.
+	if err := redisotel.InstrumentTracing(client); err != nil {
+		return nil, err
 	}
 
 	return &Redis{addresses: addresses, client: client}, nil

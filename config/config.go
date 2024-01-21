@@ -77,7 +77,13 @@ var DefaultConfiguration = Configuration{
 		},
 	},
 	ConsumerPoolSize: 100,
-	EnableProfiling:  false,
+	Tracer: TracerConfiguration{
+		OTel: OTelConfiguration{
+			SampleRate:         1.0,
+			InsecureSkipVerify: true,
+		},
+	},
+	EnableProfiling: false,
 }
 
 type DatabaseConfiguration struct {
@@ -211,15 +217,25 @@ type LoggerConfiguration struct {
 }
 
 type TracerConfiguration struct {
-	Type     TracerProvider        `json:"type" envconfig:"CONVOY_TRACER_PROVIDER"`
-	NewRelic NewRelicConfiguration `json:"new_relic"`
+	Type   TracerProvider      `json:"type" envconfig:"CONVOY_TRACER_PROVIDER"`
+	OTel   OTelConfiguration   `json:"otel"`
+	Sentry SentryConfiguration `json:"sentry"`
 }
 
-type NewRelicConfiguration struct {
-	AppName                  string `json:"app_name" envconfig:"CONVOY_NEWRELIC_APP_NAME"`
-	LicenseKey               string `json:"license_key" envconfig:"CONVOY_NEWRELIC_LICENSE_KEY"`
-	ConfigEnabled            bool   `json:"config_enabled" envconfig:"CONVOY_NEWRELIC_CONFIG_ENABLED"`
-	DistributedTracerEnabled bool   `json:"distributed_tracer_enabled" envconfig:"CONVOY_NEWRELIC_DISTRIBUTED_TRACER_ENABLED"`
+type OTelConfiguration struct {
+	OTelAuth           OTelAuthConfiguration `json:"otel_auth"`
+	SampleRate         float64               `json:"sample_rate" envconfig:"CONVOY_OTEL_SAMPLE_RATE"`
+	CollectorURL       string                `json:"collector_url" envconfig:"CONVOY_OTEL_COLLECTOR_URL"`
+	InsecureSkipVerify bool                  `json:"insecure_skip_verify" envconfig:"CONVOY_OTEL_INSECURE_SKIP_VERIFY"`
+}
+
+type OTelAuthConfiguration struct {
+	HeaderName  string `json:"header_name" envconfig:"CONVOY_OTEL_AUTH_HEADER_NAME"`
+	HeaderValue string `json:"header_value" envconfig:"CONVOY_OTEL_AUTH_HEADER_VALUE"`
+}
+
+type SentryConfiguration struct {
+	DSN string `json:"dsn" envconfig:"CONVOY_SENTRY_DSN"`
 }
 
 type AnalyticsConfiguration struct {
@@ -252,9 +268,14 @@ const (
 )
 
 const (
+	OTelTracerProvider    TracerProvider = "otel"
+	SentryTracerProvider  TracerProvider = "sentry"
+	DatadogTracerProvider TracerProvider = "datadog"
+)
+
+const (
 	RedisQueueProvider       QueueProvider           = "redis"
 	DefaultSignatureHeader   SignatureHeaderProvider = "X-Convoy-Signature"
-	NewRelicTracerProvider   TracerProvider          = "new_relic"
 	PostgresDatabaseProvider DatabaseProvider        = "postgres"
 	TypesenseSearchProvider  SearchProvider          = "typesense"
 )

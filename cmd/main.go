@@ -47,6 +47,7 @@ func main() {
 	var dbDatabase string
 
 	var fflag string
+	var enableProfiling bool
 
 	var redisPort int
 	var redisHost string
@@ -55,7 +56,15 @@ func main() {
 	var redisUsername string
 	var redisPassword string
 	var redisDatabase string
-	var enableProfiling bool
+
+	var tracerType string
+	var sentryDSN string
+	var datadogAgentURL string
+	var datadogLicenseKey string
+	var otelSampleRate float64
+	var otelCollectorURL string
+	var otelAuthHeaderName string
+	var otelAuthHeaderValue string
 
 	var configFile string
 
@@ -82,6 +91,16 @@ func main() {
 
 	c.Flags().StringVar(&fflag, "feature-flag", "", "Enable feature flags (experimental)")
 	c.Flags().BoolVar(&enableProfiling, "enable-profiling", false, "Enable profiling")
+
+	// tracing
+	c.Flags().StringVar(&tracerType, "tracer-type", "", "Tracer backend, e.g. sentry, datadog or otel")
+	c.Flags().StringVar(&sentryDSN, "sentry-dsn", "", "Sentry backend dsn")
+	c.Flags().StringVar(&datadogAgentURL, "datadog-agent-url", "", "Datadog agent URL")
+	c.Flags().StringVar(&datadogLicenseKey, "datadog-license-key", "", "Datadog license key")
+	c.Flags().Float64Var(&otelSampleRate, "otel-sample-rate", 1.0, "OTel tracing sample rate")
+	c.Flags().StringVar(&otelCollectorURL, "otel-collector-url", "", "OTel collector URL")
+	c.Flags().StringVar(&otelAuthHeaderName, "otel-auth-header-name", "", "OTel backend auth header name")
+	c.Flags().StringVar(&otelAuthHeaderValue, "otel-auth-header-value", "", "OTel backend auth header value")
 
 	c.PersistentPreRunE(hooks.PreRun(app, db))
 	c.PersistentPostRunE(hooks.PostRun(app, db))

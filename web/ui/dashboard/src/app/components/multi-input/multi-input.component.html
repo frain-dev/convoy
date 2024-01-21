@@ -1,7 +1,7 @@
 <label for="input" class="text-12 text-new.gray-400 mt-24px flex items-center justify-between" *ngIf="label">
 	<div class="flex items-center">
 		{{ label }}
-		<convoy-tooltip size="sm" position="right" class="ml-4px" *ngIf="tooltip">{{ tooltip }}</convoy-tooltip>
+		<convoy-tooltip size="sm" position="top-right" class="ml-4px" *ngIf="tooltip">{{ tooltip }}</convoy-tooltip>
 	</div>
 	<span *ngIf="required === 'true'" class="text-10 text-new.gray-400 px-6px rounded-22px font-medium bg-new.gray-100">required</span>
 </label>

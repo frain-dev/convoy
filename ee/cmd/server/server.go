@@ -38,8 +38,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	var smtpPassword string
 	var smtpReplyTo string
 	var smtpFrom string
-	var newReplicApp string
-	var newReplicKey string
 	var promaddr string
 
 	var apiKeyAuthConfig string
@@ -50,8 +48,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	var replayAttacks bool
 	var multipleTenants bool
 	var nativeRealmEnabled bool
-	var newReplicTracerEnabled bool
-	var newReplicConfigEnabled bool
 
 	var port uint32
 	var smtpPort uint32
@@ -104,17 +100,13 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&smtpPassword, "smtp-password", "", "SMTP authentication password")
 	cmd.Flags().StringVar(&smtpFrom, "smtp-from", "", "Sender email address")
 	cmd.Flags().StringVar(&smtpReplyTo, "smtp-reply-to", "", "Email address to reply to")
-	cmd.Flags().StringVar(&newReplicApp, "new-relic-app", "", "NewRelic application name")
-	cmd.Flags().StringVar(&newReplicKey, "new-relic-key", "", "NewRelic application license key")
 	cmd.Flags().StringVar(&promaddr, "promaddr", "", `Prometheus dsn`)
 
 	cmd.Flags().BoolVar(&ssl, "ssl", false, "Configure SSL")
 	cmd.Flags().BoolVar(&nativeRealmEnabled, "native", false, "Enable native-realm authentication")
 	cmd.Flags().BoolVar(&disableEndpoint, "disable-endpoint", false, "Disable all application endpoints")
 	cmd.Flags().BoolVar(&replayAttacks, "replay-attacks", false, "Enable feature to prevent replay attacks")
-	cmd.Flags().BoolVar(&newReplicConfigEnabled, "new-relic-config-enabled", false, "Enable new-relic config")
 	cmd.Flags().BoolVar(&multipleTenants, "multi-tenant", false, "Start convoy in single- or multi-tenant mode")
-	cmd.Flags().BoolVar(&newReplicTracerEnabled, "new-relic-tracer-enabled", false, "Enable new-relic distributed tracer")
 
 	cmd.Flags().Uint32Var(&port, "port", 0, "Server port")
 	cmd.Flags().Uint32Var(&smtpPort, "smtp-port", 0, "Server port")
@@ -169,7 +161,6 @@ func StartConvoyServer(a *cli.App) error {
 			DB:     a.DB,
 			Queue:  a.Queue,
 			Logger: lo,
-			Tracer: a.Tracer,
 			Cache:  a.Cache,
 		})
 	if err != nil {
@@ -382,48 +373,6 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	if maxResponseSize != 0 {
 		c.MaxResponseSize = maxResponseSize
-	}
-
-	// CONVOY_NEWRELIC_APP_NAME
-	newReplicApp, err := cmd.Flags().GetString("new-relic-app")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(newReplicApp) {
-		c.Tracer.NewRelic.AppName = newReplicApp
-	}
-
-	// CONVOY_NEWRELIC_LICENSE_KEY
-	newReplicKey, err := cmd.Flags().GetString("new-relic-key")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(newReplicKey) {
-		c.Tracer.NewRelic.LicenseKey = newReplicKey
-	}
-
-	// CONVOY_NEWRELIC_CONFIG_ENABLED
-	isNRCESet := cmd.Flags().Changed("new-relic-config-enabled")
-	if isNRCESet {
-		newReplicConfigEnabled, err := cmd.Flags().GetBool("new-relic-config-enabled")
-		if err != nil {
-			return nil, err
-		}
-
-		c.Tracer.NewRelic.ConfigEnabled = newReplicConfigEnabled
-	}
-
-	// CONVOY_NEWRELIC_DISTRIBUTED_TRACER_ENABLED
-	isNRTESet := cmd.Flags().Changed("new-relic-tracer-enabled")
-	if isNRTESet {
-		newReplicTracerEnabled, err := cmd.Flags().GetBool("new-relic-tracer-enabled")
-		if err != nil {
-			return nil, err
-		}
-
-		c.Tracer.NewRelic.DistributedTracerEnabled = newReplicTracerEnabled
 	}
 
 	// CONVOY_NATIVE_REALM_ENABLED

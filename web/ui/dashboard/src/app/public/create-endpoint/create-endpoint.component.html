@@ -5,7 +5,7 @@
 
 		<h2 class="font-medium text-14 text-new.gray-400 mt-40px -mb-6px flex items-center">
 			Subscription Configurations
-			<convoy-tooltip class="ml-4px" size="sm" type="white" tooltipContent="Configure how and what events this endpoint should receive" position="right"></convoy-tooltip>
+			<convoy-tooltip class="ml-4px" size="sm" tooltipContent="Configure how and what events this endpoint should receive" position="right"></convoy-tooltip>
 		</h2>
 		<convoy-create-subscription [action]="endpoint ? 'update' : 'create'" isPortal="true" [subscriptionId]="endpoint?.subscription?.uid || ''"></convoy-create-subscription>
 

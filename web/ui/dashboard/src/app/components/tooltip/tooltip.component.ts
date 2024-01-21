@@ -11,11 +11,12 @@ import { ButtonComponent } from '../button/button.component';
 })
 export class TooltipComponent implements OnInit {
 	@Input('size') size: 'sm' | 'md' = 'md';
-	@Input('position') position: 'left' | 'right' | 'center' = 'left';
+	@Input('position') position: 'left' | 'right' | 'bottom' | 'top' | 'top-right' | 'top-left' = 'top-left';
 	@Input('img') img!: string;
+	@Input('color') color: 'primary' | 'white' = 'white';
 	@Input('withIcon') withIcon = true;
 	@Input('tooltipContent') tooltipContent!: string;
-	@Input('type') type?: 'primary' | 'white' = 'primary';
+	@Input('type') type: 'primary' | 'white' = 'white';
 	@Input('className') class!: string;
 
 	constructor() {}
@@ -23,15 +24,18 @@ export class TooltipComponent implements OnInit {
 	ngOnInit(): void {}
 
 	get classes(): string {
-		const positions = {
-			left: `-right-[16px] after:right-[15px]`,
-			right: `-right-[160px] after:right-[157px]`,
-			center: `left-1/2 -translate-x-1/2 after:left-1/2 after:-translate-x-1/2`
+		const colors = {
+			primary: 'bg-primary-100 after:border-primary-100 text-white-100',
+			white: 'shadow-[0px_20px_25px_-5px_rgba(51,65,85,0.1),0px_10px_10px_-5px_rgba(51,65,85,0.04)] bg-white-100 text-black after:border-white-100'
 		};
-		return `${positions[this.position]} ${
-			this.type === 'primary'
-				? 'bg-primary-100 after:border-t-primary-100 text-white-100 w-192px'
-				: 'shadow-[0px_20px_25px_-5px_rgba(51,65,85,0.1),0px_10px_10px_-5px_rgba(51,65,85,0.04)] bg-white-100 rounded-bl-[0] text-black after:border-t-white-100 after:w-20px'
-		} ${this.class}`;
+		const positions = {
+			bottom: `left-1/2 -translate-x-1/2 after:left-1/2 after:-translate-x-1/2 top-[calc(100%+20px)] after:-top-[19px] after:border-t-transparent after:border-x-transparent`,
+			right: `left-[calc(100%+20px)] -top-[100%] after:-left-[20px] after:top-[10px] after:border-l-transparent after:border-y-transparent`,
+			left: `right-[calc(100%+20px)] -top-[100%] after:-right-[20px] after:top-[10px] after:border-r-transparent after:border-y-transparent`,
+			top: `left-1/2 -translate-x-1/2 after:left-1/2 after:-translate-x-1/2 bottom-[calc(100%+20px)] after:-bottom-[19px] after:border-b-transparent after:border-x-transparent`,
+			'top-right': `-right-[160px] after:right-[157px] bottom-[calc(100%+20px)] after:-bottom-[19px] after:border-b-transparent after:border-x-transparent`,
+			'top-left': `-right-[16px] after:right-[15px] bottom-[calc(100%+20px)] after:-bottom-[19px] after:border-b-transparent after:border-x-transparent`
+		};
+		return `${positions[this.position]} ${colors[this.color]}  min-w-[192px] ${this.class}`;
 	}
 }

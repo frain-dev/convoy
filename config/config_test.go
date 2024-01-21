@@ -148,6 +148,12 @@ func TestLoadConfig(t *testing.T) {
 						Path: convoy.DefaultOnPremDir,
 					},
 				},
+				Tracer: TracerConfiguration{
+					OTel: OTelConfiguration{
+						SampleRate:         1.0,
+						InsecureSkipVerify: true,
+					},
+				},
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -207,6 +213,12 @@ func TestLoadConfig(t *testing.T) {
 						Path: convoy.DefaultOnPremDir,
 					},
 				},
+				Tracer: TracerConfiguration{
+					OTel: OTelConfiguration{
+						SampleRate:         1.0,
+						InsecureSkipVerify: true,
+					},
+				},
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -263,6 +275,12 @@ func TestLoadConfig(t *testing.T) {
 					Type: "on-prem",
 					OnPrem: OnPremStorage{
 						Path: convoy.DefaultOnPremDir,
+					},
+				},
+				Tracer: TracerConfiguration{
+					OTel: OTelConfiguration{
+						SampleRate:         1.0,
+						InsecureSkipVerify: true,
 					},
 				},
 			},
