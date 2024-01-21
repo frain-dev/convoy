@@ -272,11 +272,11 @@ func Test_FillProjectStatistics(t *testing.T) {
 				ExpiresAt: null.Time{},
 			},
 		},
-		HttpTimeout:       "10s",
+		HttpTimeout:       60,
 		RateLimit:         3000,
 		Events:            0,
 		Status:            "",
-		RateLimitDuration: "",
+		RateLimitDuration: 10,
 		Authentication:    nil,
 		CreatedAt:         time.Time{},
 		UpdatedAt:         time.Time{},
@@ -378,7 +378,7 @@ func Test_DeleteProject(t *testing.T) {
 				ExpiresAt: null.Time{},
 			},
 		},
-		HttpTimeout: "10s",
+		HttpTimeout: 60,
 		RateLimit:   3000,
 	}
 
