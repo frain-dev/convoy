@@ -67,7 +67,7 @@ CREATE INDEX IF NOT EXISTS idx_portal_links_endpoints_portal_link_id ON convoy.p
 
 --+ migrate Up
 -- convoy.project_configurations
-ALTER TABLE convoy.project_configurations ADD disable_endpoint BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE convoy.project_configurations ADD IF NOT EXISTS disable_endpoint BOOLEAN NOT NULL DEFAULT FALSE;
 
 
 -- +migrate Down
