@@ -175,6 +175,9 @@ const (
 	GROUP BY s.id
 	ORDER BY s.id DESC
 	LIMIT 1`
+
+	updateEndpointPortalOwnerId = `
+    update convoy.endpoints_portal_owner_ids set owner_id = $1 where endpoint_id = $2;`
 )
 
 type endpointRepo struct {
@@ -285,7 +288,13 @@ func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID str
 func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ac := endpoint.GetAuthConfig()
 
-	r, err := e.db.ExecContext(ctx, updateEndpoint, endpoint.UID, projectID, endpoint.Title, endpoint.Status, endpoint.OwnerID, endpoint.TargetURL,
+	tx, err := e.db.BeginTxx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer rollbackTx(tx)
+
+	r, err := tx.ExecContext(ctx, updateEndpoint, endpoint.UID, projectID, endpoint.Title, endpoint.Status, endpoint.OwnerID, endpoint.TargetURL,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail,
 		ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, endpoint.Secrets,
@@ -301,6 +310,16 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 
 	if rowsAffected < 1 {
 		return ErrEndpointNotUpdated
+	}
+
+	_, err = tx.ExecContext(ctx, updateEndpointPortalOwnerId, endpoint.OwnerID, endpoint.UID)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
 	}
 
 	endpointCacheKey := convoy.EndpointCacheKey.Get(endpoint.UID).String()

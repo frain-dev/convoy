@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy/cache"
+	"gopkg.in/guregu/null.v4"
+	"time"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -29,8 +31,8 @@ const (
 	INSERT INTO convoy.portal_links_endpoints (portal_link_id, endpoint_id) VALUES (:portal_link_id, :endpoint_id)
 	`
 
-	createEndpointPortalLinks = `
-	INSERT INTO convoy.endpoints_portal_links (owner_id, endpoint_id) VALUES (:owner_id, :endpoint_id)
+	createEndpointPortalOwnerIds = `
+	INSERT INTO convoy.endpoints_portal_owner_ids (owner_id, endpoint_id) VALUES (:owner_id, :endpoint_id)
 	`
 
 	updatePortalLink = `
@@ -45,13 +47,11 @@ const (
 	`
 
 	deletePortalLinkEndpoints = `
-	DELETE FROM convoy.portal_links_endpoints
-	WHERE portal_link_id = $1 OR endpoint_id = $2
+	DELETE FROM convoy.portal_links_endpoints WHERE portal_link_id = $1;
 	`
 
-	deleteEndpointPortalLinks = `
-	DELETE FROM convoy.endpoints_portal_links
-	WHERE owner_id = $1 OR endpoint_id = $2
+	deleteEndpointPortalOwnerIds = `
+	DELETE FROM convoy.endpoints_portal_owner_ids WHERE owner_id = $1;
 	`
 
 	fetchExistingLinkWithOwnerId = `
@@ -151,7 +151,7 @@ const (
 	        END)) AS endpoints_metadata
     FROM convoy.portal_links p
         LEFT JOIN convoy.portal_links_endpoints pe ON p.id = pe.portal_link_id
-        LEFT JOIN convoy.endpoints_portal_links ep ON p.owner_id = ep.owner_id
+        LEFT JOIN convoy.endpoints_portal_owner_ids ep ON p.owner_id = ep.owner_id
         LEFT JOIN convoy.endpoints e ON e.id = pe.endpoint_id OR e.id = ep.endpoint_id
     WHERE p.deleted_at IS NULL`
 
@@ -213,6 +213,7 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 	if err != nil {
 		return err
 	}
+	defer rollbackTx(tx)
 
 	r, err := tx.ExecContext(ctx, createPortalLink,
 		portal.UID,
@@ -249,6 +250,7 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 	if err != nil {
 		return err
 	}
+	defer rollbackTx(tx)
 
 	r, err := tx.ExecContext(ctx, updatePortalLink,
 		portal.UID,
@@ -449,6 +451,16 @@ func (p *portalLinkRepo) upsertPortalLinkEndpoint(ctx context.Context, tx *sqlx.
 		for _, endpointID := range portal.Endpoints {
 			ids = append(ids, &PortalLinkEndpoint{PortalLinkID: portal.UID, EndpointID: endpointID})
 		}
+
+		_, err := tx.ExecContext(ctx, deletePortalLinkEndpoints, portal.UID)
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.NamedExecContext(ctx, createPortalLinkEndpoints, ids)
+		if err != nil {
+			return err
+		}
 	} else if !util.IsStringEmpty(portal.OwnerID) {
 		rows, err := p.db.QueryxContext(ctx, fetchEndpointsByOwnerId, portal.ProjectID, portal.OwnerID)
 		if err != nil {
@@ -463,24 +475,24 @@ func (p *portalLinkRepo) upsertPortalLinkEndpoint(ctx context.Context, tx *sqlx.
 				return err
 			}
 
-			ids = append(ids, &PortalLinkEndpoint{PortalLinkID: portal.UID, EndpointID: endpoint.UID})
+			ids = append(ids, &EndpointPortalLinkOwnerId{OwnerID: portal.OwnerID, EndpointID: endpoint.UID, DeletedAt: null.NewTime(time.Now(), false)})
 		}
 
 		if len(ids) == 0 {
 			return nil
 		}
+
+		_, err = tx.ExecContext(ctx, deleteEndpointPortalOwnerIds, portal.OwnerID)
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.NamedExecContext(ctx, createEndpointPortalOwnerIds, ids)
+		if err != nil {
+			return err
+		}
 	} else {
 		return errors.New("owner_id or endpoints must be present")
-	}
-
-	_, err := tx.ExecContext(ctx, deletePortalLinkEndpoints, portal.UID, nil)
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.NamedExecContext(ctx, createPortalLinkEndpoints, ids)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -489,6 +501,12 @@ func (p *portalLinkRepo) upsertPortalLinkEndpoint(ctx context.Context, tx *sqlx.
 type PortalLinkEndpoint struct {
 	PortalLinkID string `db:"portal_link_id"`
 	EndpointID   string `db:"endpoint_id"`
+}
+
+type EndpointPortalLinkOwnerId struct {
+	OwnerID    string    `db:"owner_id"`
+	EndpointID string    `db:"endpoint_id"`
+	DeletedAt  null.Time `db:"deleted_at"`
 }
 
 type PortalLinkPaginated struct {

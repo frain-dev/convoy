@@ -44,13 +44,12 @@ const (
 	provider = $5,
 	is_disabled=$6,
 	forward_headers=$7,
-	project_id =$8,
 	pub_sub= $9,
 	custom_response_body = $10,
 	custom_response_content_type = $11,
 	idempotency_keys = $12,
 	updated_at = NOW()
-	WHERE id = $1 AND deleted_at IS NULL ;
+	WHERE id = $1 AND deleted_at IS NULL AND project_id = $8;
 	`
 
 	updateSourceVerifierById = `
@@ -204,6 +203,7 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 	if err != nil {
 		return err
 	}
+	defer rollbackTx(tx)
 
 	var (
 		hmac   datastore.HMac
@@ -284,10 +284,11 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 	if err != nil {
 		return err
 	}
+	defer rollbackTx(tx)
 
 	result, err := tx.ExecContext(
 		ctx, updateSourceById, source.UID, source.Name, source.Type, source.MaskID,
-		source.Provider, source.IsDisabled, source.ForwardHeaders, source.ProjectID,
+		source.Provider, source.IsDisabled, source.ForwardHeaders, projectID,
 		source.PubSub, source.CustomResponse.Body, source.CustomResponse.ContentType,
 		source.IdempotencyKeys,
 	)
@@ -419,6 +420,7 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectId string, id,
 	if err != nil {
 		return err
 	}
+	defer rollbackTx(tx)
 
 	_, err = tx.ExecContext(ctx, deleteSourceVerifier, sourceVerifierId)
 	if err != nil {
