@@ -2169,7 +2169,7 @@ func (mr *MockPortalLinkRepositoryMockRecorder) FindPortalLinkByToken(ctx, token
 }
 
 // LoadPortalLinksPaged mocks base method.
-func (m *MockPortalLinkRepository) LoadPortalLinksPaged(ctx context.Context, projectID string, f *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
+func (m *MockPortalLinkRepository) LoadPortalLinksPaged(ctx context.Context, projectID string, f *datastore.PortalLinkFilter, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadPortalLinksPaged", ctx, projectID, f, pageable)
 	ret0, _ := ret[0].([]datastore.PortalLink)
