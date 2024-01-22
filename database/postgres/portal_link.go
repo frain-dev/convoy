@@ -47,7 +47,7 @@ const (
 	`
 
 	deletePortalLinkEndpoints = `
-	DELETE FROM convoy.portal_links_endpoints WHERE portal_link_id = $1;
+	DELETE FROM convoy.portal_links_endpoints WHERE portal_link_id = $1 OR endpoint_id = $2;
 	`
 
 	deleteEndpointPortalOwnerIds = `
@@ -55,7 +55,7 @@ const (
 	`
 
 	fetchExistingLinkWithOwnerId = `
-    select count(*) from convoy.portal_links where owner_id = $1 and id <> $2 and deleted_at is null;
+    select count(*) from convoy.portal_links where owner_id IS NOT NULL AND COALESCE(TRIM(owner_id), '') <> '' and owner_id = $1 and id <> $2 and deleted_at is null;
     `
 
 	fetchPortalLinkById = `
@@ -452,7 +452,7 @@ func (p *portalLinkRepo) upsertPortalLinkEndpoint(ctx context.Context, tx *sqlx.
 			ids = append(ids, &PortalLinkEndpoint{PortalLinkID: portal.UID, EndpointID: endpointID})
 		}
 
-		_, err := tx.ExecContext(ctx, deletePortalLinkEndpoints, portal.UID)
+		_, err := tx.ExecContext(ctx, deletePortalLinkEndpoints, portal.UID, nil)
 		if err != nil {
 			return err
 		}

@@ -115,7 +115,7 @@ func Test_UpdatePortalLink(t *testing.T) {
 	newPortalLink, err := portalLinkRepo.FindPortalLinkByID(ctx, portalLink.ProjectID, portalLink.UID)
 	require.NoError(t, err)
 
-	total, _, err := portalLinkRepo.LoadPortalLinksPaged(ctx, project.UID, &datastore.FilterBy{EndpointIDs: []string{endpoint.UID}}, datastore.Pageable{PerPage: 10, Direction: datastore.Next, NextCursor: fmt.Sprintf("%d", math.MaxInt)})
+	total, _, err := portalLinkRepo.LoadPortalLinksPaged(ctx, project.UID, &datastore.PortalLinkFilter{EndpointIDs: []string{endpoint.UID}}, datastore.Pageable{PerPage: 10, Direction: datastore.Next, NextCursor: fmt.Sprintf("%d", math.MaxInt)})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(total))
@@ -202,7 +202,7 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 			project := seedProject(t, db)
 			endpoint := generateEndpoint(project)
 			portalLinkRepo := NewPortalLinkRepo(db, nil)
-			NewEndpointRepo(db, nil).CreateEndpoint(context.Background(), endpoint, project.UID)
+			require.NoError(t, NewEndpointRepo(db, nil).CreateEndpoint(context.Background(), endpoint, project.UID))
 
 			for i := 0; i < tc.count; i++ {
 				portalLink := &datastore.PortalLink{
@@ -215,7 +215,7 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 				require.NoError(t, portalLinkRepo.CreatePortalLink(context.Background(), portalLink))
 			}
 
-			_, pageable, err := portalLinkRepo.LoadPortalLinksPaged(context.Background(), project.UID, &datastore.FilterBy{EndpointID: endpoint.UID}, tc.pageData)
+			_, pageable, err := portalLinkRepo.LoadPortalLinksPaged(context.Background(), project.UID, &datastore.PortalLinkFilter{EndpointIDs: []string{endpoint.UID}}, tc.pageData)
 
 			require.NoError(t, err)
 			require.Equal(t, tc.expected.paginationData.PerPage, pageable.PerPage)

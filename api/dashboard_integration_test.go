@@ -2732,6 +2732,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLinks() 
 	// Deep Assert
 	var resp pagedResponse
 	parseResponse(s.T(), w.Result(), &resp)
+	fmt.Printf("%+v\n", resp)
 	require.Equal(s.T(), totalLinks, len(resp.Content.([]interface{})))
 }
 
