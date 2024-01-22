@@ -252,8 +252,6 @@ export class CreateSourceComponent implements OnInit {
 			return this.sourceForm.markAllAsTouched();
 		}
 
-		// if (!this.addKafkaAuthentication) delete sourceData.pub_sub.kafka.auth;
-
 		this.isloading = true;
 
 		try {
