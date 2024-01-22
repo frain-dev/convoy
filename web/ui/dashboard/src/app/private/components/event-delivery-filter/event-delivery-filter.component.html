@@ -1,6 +1,6 @@
 <div class="flex py-20px items-start justify-between">
 	<div class="flex items-start gap-x-16px">
-		<div class="flex gap-x-16px items-start">
+		<div class="flex gap-x-16px items-center">
 			<div *ngIf="type === 'logs'">
 				<form class="border border-new.primary-100 h-36px px-14px py-0 max-w-[200px] w-full rounded-[10px] flex items-center bg-transparent" [ngClass]="{ 'border-new.primary-200': eventsSearchString != undefined && eventsSearchString != '' }">
 					<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
@@ -193,7 +193,7 @@
 			<div class="flex items-center gap-x-2px">
 				<div convoy-dropdown size="sm" position="left">
 					<button dropdownTrigger convoy-button fill="outline" title="Add new filter" class="!px-8px !py-6px gap-8px !text-neutral-11 !border-new.primary-200 h-32px transition-all duration-300" [ngClass]="{ 'w-32px rounded-8px': isAnyFilterSelected() }">
-						<svg width="14" height="14" class="fill-new.gray-400">
+						<svg width="14" height="14" class="fill-neutral-11">
 							<use xlink:href="#plus-icon"></use>
 						</svg>
 
@@ -210,7 +210,7 @@
 				</div>
 				<ng-container *ngIf="isAnyFilterSelected()">
 					<button convoy-button size="sm" color="danger" fill="outline" title="Clear filters" class="!border-new.error-200 !px-8px h-32px w-32px rounded-8px" (click)="clearFilters()">
-						<svg width="10" height="10" class="fill-new.gray-400 scale-125">
+						<svg width="10" height="10" class="fill-neutral-11 scale-125">
 							<use xlink:href="#close-icon-3"></use>
 						</svg>
 					</button>
