@@ -147,7 +147,7 @@ func (ex *Exporter) Prune(ctx context.Context) error {
 }
 
 func (ex *Exporter) exportTable(ctx context.Context, table tablename, expDate time.Time) (*ExportTableResult, error) {
-	var result *ExportTableResult
+	result := &ExportTableResult{}
 	exportFileFormat, ok := tableToFileMapping[table]
 	if !ok {
 		return result, ErrInvalidTable
