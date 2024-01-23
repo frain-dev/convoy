@@ -44,14 +44,14 @@ type CreateEndpoint struct {
 	SlackWebhookURL string `json:"slack_webhook_url"`
 
 	// Define endpoint http timeout in seconds.
-	HttpTimeout int64 `json:"http_timeout" copier:"-"`
+	HttpTimeout uint64 `json:"http_timeout" copier:"-"`
 
 	// Rate limit is the total number of requests to be sent to an endpoint in
 	// the time duration specified in RateLimitDuration
 	RateLimit int `json:"rate_limit"`
 
 	// Rate limit duration specifies the time range for the rate limit.
-	RateLimitDuration int64 `json:"rate_limit_duration" copier:"-"`
+	RateLimitDuration uint64 `json:"rate_limit_duration" copier:"-"`
 
 	// This is used to define any custom authentication required by the endpoint. This
 	// shouldn't be needed often because webhook endpoints usually should be exposed to
@@ -77,9 +77,9 @@ type UpdateEndpoint struct {
 	IsDisabled         *bool   `json:"is_disabled"`
 	SlackWebhookURL    *string `json:"slack_webhook_url"`
 
-	HttpTimeout       int64                   `json:"http_timeout"`
+	HttpTimeout       uint64                  `json:"http_timeout"`
 	RateLimit         int                     `json:"rate_limit"`
-	RateLimitDuration int64                   `json:"rate_limit_duration"`
+	RateLimitDuration uint64                  `json:"rate_limit_duration"`
 	Authentication    *EndpointAuthentication `json:"authentication"`
 }
 
@@ -98,9 +98,9 @@ type DynamicEndpoint struct {
 	IsDisabled         bool   `json:"is_disabled"`
 	SlackWebhookURL    string `json:"slack_webhook_url"`
 
-	HttpTimeout       int64                   `json:"http_timeout"`
+	HttpTimeout       uint64                  `json:"http_timeout"`
 	RateLimit         int                     `json:"rate_limit"`
-	RateLimitDuration int64                   `json:"rate_limit_duration"`
+	RateLimitDuration uint64                  `json:"rate_limit_duration"`
 	Authentication    *EndpointAuthentication `json:"authentication"`
 	// Deprecated but necessary for backward compatibility
 	AppID string

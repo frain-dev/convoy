@@ -40,10 +40,6 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		a.E.RateLimitDuration = convoy.RATE_LIMIT_DURATION
 	}
 
-	if a.E.HttpTimeout == 0 {
-		a.E.HttpTimeout = convoy.HTTP_TIMEOUT
-	}
-
 	project, err := a.ProjectRepo.FetchProjectByID(ctx, a.ProjectID)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: "failed to load endpoint project", Err: err}

@@ -39,23 +39,20 @@ func (c *CreateEndpointRequestMigration) Migrate(b []byte, h http.Header) ([]byt
 		return nil, nil, err
 	}
 
-	if payload.AdvancedSignatures != nil {
-		// the user specified an advanced signature, do nothing.
-		return b, h, nil
-	}
-
-	httpTimeout := payload.HttpTimeout
-	rateLimitDuration := payload.RateLimitDuration
-
 	var endpoint models.CreateEndpoint
 	err = copier.Copy(&endpoint, &payload)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// set advanced signature to the previous default.
-	val := false
-	endpoint.AdvancedSignatures = &val
+	if payload.AdvancedSignatures == nil {
+		// set advanced signature to the previous default.
+		val := false
+		endpoint.AdvancedSignatures = &val
+	}
+
+	httpTimeout := payload.HttpTimeout
+	rateLimitDuration := payload.RateLimitDuration
 
 	// set timeout
 	if util.IsStringEmpty(httpTimeout) {

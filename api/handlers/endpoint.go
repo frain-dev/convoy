@@ -97,7 +97,7 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	util.WriteResponse(w, r, resBytes)
+	util.WriteResponse(w, r, resBytes, http.StatusCreated)
 }
 
 // GetEndpoint

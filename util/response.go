@@ -91,7 +91,9 @@ func newServerResponseWithStatus(status bool, msg string, data json.RawMessage, 
 	}
 }
 
-func WriteResponse(w http.ResponseWriter, r *http.Request, v []byte) {
+func WriteResponse(w http.ResponseWriter, r *http.Request, v []byte, status int) {
+	render.Status(r, status)
+
 	buf := bytes.NewBuffer(v)
 
 	w.Header().Set("Content-Type", "application/json")

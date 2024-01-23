@@ -397,12 +397,12 @@ type Endpoint struct {
 	SupportEmail       string  `json:"support_email,omitempty" db:"support_email"`
 	AppID              string  `json:"-" db:"app_id"` // Deprecated but necessary for backward compatibility
 
-	HttpTimeout int64          `json:"http_timeout" db:"http_timeout"`
+	HttpTimeout uint64         `json:"http_timeout" db:"http_timeout"`
 	RateLimit   int            `json:"rate_limit" db:"rate_limit"`
 	Events      int64          `json:"events,omitempty" db:"event_count"`
 	Status      EndpointStatus `json:"status" db:"status"`
 
-	RateLimitDuration int64                   `json:"rate_limit_duration" db:"rate_limit_duration"`
+	RateLimitDuration uint64                  `json:"rate_limit_duration" db:"rate_limit_duration"`
 	Authentication    *EndpointAuthentication `json:"authentication" db:"authentication"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`

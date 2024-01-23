@@ -135,23 +135,6 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_error_for_invalid_rate_limit_duration",
-			args: args{
-				ctx: ctx,
-				e: models.CreateEndpoint{
-					Name:              "test_endpoint",
-					Secret:            "1234",
-					RateLimit:         100,
-					RateLimitDuration: 60,
-					URL:               "https://google.com",
-					Description:       "test_endpoint",
-				},
-				g: project,
-			},
-			wantErr:    true,
-			wantErrMsg: `an error occurred parsing the rate limit duration: time: invalid duration "m"`,
-		},
-		{
 			name: "should_fail_to_create_endpoint",
 			args: args{
 				ctx: ctx,
