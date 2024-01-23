@@ -171,13 +171,17 @@ export class CreateSourceComponent implements OnInit {
 			const sourceProvider = response.data?.provider;
 
 			this.sourceForm.patchValue(response.data);
+
 			if (this.sourceDetails.custom_response.body || this.sourceDetails.custom_response.content_type) this.toggleConfigForm('custom_response');
-			if (this.sourceDetails.idempotency_keys.length) this.toggleConfigForm('idempotency');
+			if (this.sourceDetails.idempotency_keys?.length) this.toggleConfigForm('idempotency');
 
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
 
-			if (response.data.pub_sub.kafka.auth.type) this.addKafkaAuthentication = true;
-			if (response.data.pub_sub.kafka.brokers) this.brokerAddresses = response.data.pub_sub.kafka.brokers;
+            if (response.data.pub_sub.kafka.brokers) this.brokerAddresses = response.data.pub_sub.kafka.brokers;
+
+			if (response.data.pub_sub.kafka.auth?.type) this.addKafkaAuthentication = true;
+
+
 			this.isloading = false;
 
 			return;
@@ -252,7 +256,7 @@ export class CreateSourceComponent implements OnInit {
 			return this.sourceForm.markAllAsTouched();
 		}
 
-        if (!this.addKafkaAuthentication) delete sourceData.pub_sub.kafka.auth;
+		if (!this.addKafkaAuthentication) delete sourceData.pub_sub.kafka.auth;
 
 		this.isloading = true;
 
