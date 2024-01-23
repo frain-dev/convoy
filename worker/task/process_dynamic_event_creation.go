@@ -203,6 +203,9 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 
 func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo datastore.EndpointRepository, dynamicEvent *models.DynamicEvent) (*datastore.Endpoint, error) {
 	endpoint, err := endpointRepo.FindEndpointByTargetURL(ctx, project.UID, dynamicEvent.URL)
+	if err == nil {
+		return endpoint, nil
+	}
 
 	switch {
 	case errors.Is(err, datastore.ErrEndpointNotFound):
@@ -262,11 +265,15 @@ func findDynamicSubscription(ctx context.Context, dynamicEvent *models.DynamicEv
 	case err == nil:
 		subscription = &subscriptions[0]
 		if len(dynamicEvent.EventTypes) > 0 {
+			if subscription.FilterConfig == nil {
+				subscription.FilterConfig = &datastore.FilterConfiguration{}
+			}
 			subscription.FilterConfig.EventTypes = dynamicEvent.EventTypes
-		}
-		err = subRepo.UpdateSubscription(ctx, project.UID, subscription)
-		if err != nil {
-			return nil, &EndpointError{Err: err, delay: 10 * time.Second}
+
+			err = subRepo.UpdateSubscription(ctx, project.UID, subscription)
+			if err != nil {
+				return nil, &EndpointError{Err: err, delay: 10 * time.Second}
+			}
 		}
 	case errors.Is(err, datastore.ErrSubscriptionNotFound):
 		subscription = &datastore.Subscription{
