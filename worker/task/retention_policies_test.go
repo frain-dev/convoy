@@ -359,7 +359,7 @@ func seedEventDelivery(db database.Database, eventID string, endpointID string, 
 
 func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 	defaultStorage := &datastore.DefaultStoragePolicy
-	defaultStorage.OnPrem.Path = null.NewString("/tmp/convoy/export/", true)
+	defaultStorage.OnPrem.Path = null.NewString("/tmp/convoy/export", true)
 
 	c := &datastore.Configuration{
 		UID:                ulid.Make().String(),
