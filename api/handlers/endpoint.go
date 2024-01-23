@@ -85,7 +85,11 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &models.EndpointResponse{Endpoint: endpoint}
-	rb, err := json.Marshal(resp)
+	serverResponse := util.NewServerResponse(
+		"Endpoint created successfully",
+		resp, http.StatusCreated)
+
+	rb, err := json.Marshal(serverResponse)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

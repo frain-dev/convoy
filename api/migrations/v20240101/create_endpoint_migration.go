@@ -115,8 +115,14 @@ type oldEndpoint struct {
 type CreateEndpointResponseMigration struct{}
 
 func (c *CreateEndpointResponseMigration) Migrate(b []byte, h http.Header) ([]byte, http.Header, error) {
+	var serverResponse util.ServerResponse
+	err := json.Unmarshal(b, &serverResponse)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	var endpointResp *models.EndpointResponse
-	err := json.Unmarshal(b, &endpointResp)
+	err = json.Unmarshal(serverResponse.Data, &endpointResp)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -152,5 +158,12 @@ func (c *CreateEndpointResponseMigration) Migrate(b []byte, h http.Header) ([]by
 		return nil, nil, err
 	}
 
-	return b, h, nil
+	serverResponse.Data = json.RawMessage(b)
+
+	sb, err := json.Marshal(serverResponse)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return sb, h, nil
 }
