@@ -68,7 +68,7 @@ func TestCreateDynamicEventService_Run(t *testing.T) {
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
-			wantErrMsg:  "an error occurred while creating event - invalid project",
+			wantErrMsg:  "an error occurred while creating dynamic event - invalid project",
 		},
 	}
 	for _, tc := range tests {

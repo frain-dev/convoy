@@ -683,6 +683,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateDynamicEvent() {
             "url":"https://testing.com",
             "secret": "12345",
             "event_type":"*",
+            "event_types":["*"],
             "data": {"name":"daniel"},
             "idempotency_key": "idem-key-1"
         }

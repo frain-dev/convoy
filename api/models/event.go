@@ -31,7 +31,7 @@ type DynamicEvent struct {
 	Secret         string          `json:"secret" valid:"required~please provide a secret"`
 	EventTypes     []string        `json:"event_types"`
 	Data           json.RawMessage `json:"data" valid:"required~please provide your data"`
-	ProjectID      string          `json:"project_id" valid:"required~please provide your data" swaggerignore:"true"`
+	ProjectID      string          `json:"project_id" swaggerignore:"true"`
 	EventType      string          `json:"event_type" valid:"required~please provide an event type"`
 	IdempotencyKey string          `json:"idempotency_key"`
 }
