@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -731,6 +732,10 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, pr
 	}
 
 	return intervals, nil
+}
+
+func (e *eventDeliveryRepo) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
+	return exportRecords(ctx, e.db, "event_deliveries", projectID, createdAt, w)
 }
 
 const minLen = 30
