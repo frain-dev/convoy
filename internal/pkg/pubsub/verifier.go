@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"errors"
+
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/kafka"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -25,7 +26,7 @@ type SqsPubSub struct {
 
 type KafkaPubSub struct {
 	Brokers         []string   `json:"brokers" valid:"required~brokers list is required"`
-	ConsumerGroupID string     `json:"consumer_group_id" valid:"required~consumer group ID is required"`
+	ConsumerGroupID string     `json:"consumer_group_id"`
 	TopicName       string     `json:"topic_name" valid:"required~topic name is required"`
 	Auth            *KafkaAuth `json:"auth"`
 }
