@@ -47,25 +47,12 @@ func TestCreateDynamicEventService_Run(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				dynamicEvent: &models.DynamicEvent{
-					Endpoint: models.DynamicEndpoint{
-						URL:    "https://google.com",
-						Secret: "abc",
-						Name:   "test_endpoint",
-					},
-					Subscription: models.DynamicSubscription{
-						Name:            "test-sub",
-						AlertConfig:     nil,
-						RetryConfig:     nil,
-						FilterConfig:    nil,
-						RateLimitConfig: nil,
-					},
-					Event: models.DynamicEventStub{
-						EventType: "*",
-						Data:      []byte(`{"name":"daniel"}`),
-						CustomHeaders: map[string]string{
-							"X-signature": "HEX",
-						},
-					},
+					URL:            "https://google.com",
+					Secret:         "abc",
+					EventTypes:     []string{"*"},
+					Data:           []byte(`{"name":"daniel"}`),
+					EventType:      "*",
+					IdempotencyKey: "",
 				},
 				g: &datastore.Project{UID: "12345"},
 			},

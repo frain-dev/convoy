@@ -680,14 +680,11 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateDynamicEvent() {
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
 
 	bodyStr := `{
-        "endpoint": {
             "url":"https://testing.com",
-            "secret": "12345"
-        },
-        "event": {
+            "secret": "12345",
             "event_type":"*",
             "data": {"name":"daniel"},
-            "custom_headers": {"x-sig":"convoy"}
+            "idempotency_key": "idem-key-1"
         }
 }`
 	body := serialize(bodyStr, endpointID)
