@@ -287,7 +287,6 @@ type applicationHandler struct {
 	eventRepo         datastore.EventRepository
 	configRepo        datastore.ConfigurationRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
-	exportRepo        datastore.ExportRepository
 	database          database.Database
 	redis             *rdb.Redis
 }

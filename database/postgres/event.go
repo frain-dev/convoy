@@ -531,7 +531,7 @@ func (e *eventRepo) CopyRows(ctx context.Context, projectID string, interval int
 }
 
 func (e *eventRepo) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
-	return exportRecords(ctx, e.db, "events", projectID, createdAt, w)
+	return exportRecords(ctx, e.db, "convoy.events", projectID, createdAt, w)
 }
 
 func getCreatedDateFilter(startDate, endDate int64) (time.Time, time.Time) {
