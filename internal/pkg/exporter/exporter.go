@@ -95,7 +95,7 @@ func (ex *Exporter) Export(ctx context.Context) (ExportResult, error) {
 	return ex.result, nil
 }
 
-func (ex *Exporter) Prune(ctx context.Context) error {
+func (ex *Exporter) Cleanup(ctx context.Context) error {
 	for _, table := range tables {
 		switch table {
 		case eventsTable:

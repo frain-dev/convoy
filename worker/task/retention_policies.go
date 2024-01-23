@@ -84,7 +84,7 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 			}
 
 			// prune tables and files.
-			err = exporter.Prune(ctx)
+			err = exporter.Cleanup(ctx)
 			if err != nil {
 				return err
 			}
