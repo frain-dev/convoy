@@ -252,6 +252,8 @@ export class CreateSourceComponent implements OnInit {
 			return this.sourceForm.markAllAsTouched();
 		}
 
+        if (!this.addKafkaAuthentication) delete sourceData.pub_sub.kafka.auth;
+
 		this.isloading = true;
 
 		try {
@@ -358,7 +360,7 @@ export class CreateSourceComponent implements OnInit {
 			const pubSubs: any = {
 				google: ['pub_sub.google.service_account', 'pub_sub.google.subscription_id', 'pub_sub.google.project_id'],
 				sqs: ['pub_sub.sqs.queue_name', 'pub_sub.sqs.access_key_id', 'pub_sub.sqs.secret_key', 'pub_sub.sqs.default_region'],
-				kafka: ['pub_sub.kafka.brokers', 'pub_sub.kafka.consumer_group_id', 'pub_sub.kafka.topic_name']
+				kafka: ['pub_sub.kafka.brokers', 'pub_sub.kafka.topic_name']
 			};
 
 			Object.keys(pubSubs).forEach((pubSub: any) => {

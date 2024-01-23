@@ -259,7 +259,7 @@
 					</convoy-input-field>
 
 					<convoy-input-field [className]="'mb-0'">
-						<label for="consumer_group_id" convoy-label required="true">Consumer ID</label>
+						<label for="consumer_group_id" convoy-label>Consumer ID</label>
 						<input type="text" id="consumer_group_id" convoy-input autocomplete="consumer_group_id" formControlName="consumer_group_id" placeholder="Consumer Group Id" />
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.consumer_group_id')?.touched && sourceForm.get('pub_sub.kafka.consumer_group_id')?.invalid">Enter consumer group ID</convoy-input-error>
 					</convoy-input-field>
