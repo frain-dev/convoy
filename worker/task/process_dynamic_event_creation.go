@@ -209,10 +209,11 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 
 	switch {
 	case errors.Is(err, datastore.ErrEndpointNotFound):
+		uid := ulid.Make().String()
 		endpoint = &datastore.Endpoint{
-			UID:                ulid.Make().String(),
+			UID:                uid,
 			ProjectID:          project.UID,
-			Title:              fmt.Sprintf("endpoint-%s", uuid.NewString()),
+			Title:              fmt.Sprintf("endpoint-%s", uid),
 			TargetURL:          dynamicEvent.URL,
 			RateLimit:          convoy.RATE_LIMIT,
 			HttpTimeout:        convoy.HTTP_TIMEOUT,
