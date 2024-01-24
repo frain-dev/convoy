@@ -6361,79 +6361,10 @@
                 }
             }
         },
-        "models.DynamicEndpoint": {
-            "type": "object",
-            "properties": {
-                "advanced_signatures": {
-                    "type": "boolean"
-                },
-                "appID": {
-                    "description": "Deprecated but necessary for backward compatibility",
-                    "type": "string"
-                },
-                "authentication": {
-                    "$ref": "#/definitions/models.EndpointAuthentication"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "http_timeout": {
-                    "type": "string"
-                },
-                "is_disabled": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "owner_id": {
-                    "type": "string"
-                },
-                "rate_limit": {
-                    "type": "integer"
-                },
-                "rate_limit_duration": {
-                    "type": "string"
-                },
-                "secret": {
-                    "type": "string"
-                },
-                "slack_webhook_url": {
-                    "type": "string"
-                },
-                "support_email": {
-                    "type": "string"
-                },
-                "url": {
-                    "type": "string"
-                }
-            }
-        },
         "models.DynamicEvent": {
             "type": "object",
             "properties": {
-                "endpoint": {
-                    "$ref": "#/definitions/models.DynamicEndpoint"
-                },
-                "event": {
-                    "$ref": "#/definitions/models.DynamicEventStub"
-                },
-                "subscription": {
-                    "$ref": "#/definitions/models.DynamicSubscription"
-                }
-            }
-        },
-        "models.DynamicEventStub": {
-            "type": "object",
-            "properties": {
-                "custom_headers": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
                 "data": {
-                    "description": "Data is an arbitrary JSON value that gets sent as the body of the webhook to the endpoints",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -6442,31 +6373,20 @@
                 "event_type": {
                     "type": "string"
                 },
+                "event_types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "idempotency_key": {
                     "type": "string"
                 },
-                "project_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.DynamicSubscription": {
-            "type": "object",
-            "properties": {
-                "alert_config": {
-                    "$ref": "#/definitions/models.AlertConfiguration"
-                },
-                "filter_config": {
-                    "$ref": "#/definitions/models.FilterConfiguration"
-                },
-                "name": {
+                "secret": {
                     "type": "string"
                 },
-                "rate_limit_config": {
-                    "$ref": "#/definitions/models.RateLimitConfiguration"
-                },
-                "retry_config": {
-                    "$ref": "#/definitions/models.RetryConfiguration"
+                "url": {
+                    "type": "string"
                 }
             }
         },
