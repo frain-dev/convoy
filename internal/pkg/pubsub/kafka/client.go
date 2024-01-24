@@ -5,13 +5,14 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/sasl"
 	"github.com/segmentio/kafka-go/sasl/plain"
 	"github.com/segmentio/kafka-go/sasl/scram"
-	"time"
 )
 
 var ErrInvalidCredentials = errors.New("your kafka credentials are invalid. please verify you're providing the correct credentials")
@@ -52,43 +53,42 @@ func (k *Kafka) dialer() (*kafka.Dialer, error) {
 	var mechanism sasl.Mechanism
 	var err error
 
-	auth := k.Cfg.Auth
-	if auth == nil {
-		return nil, nil
-	}
-
-	if auth.Type != "plain" && auth.Type != "scram" {
-		return nil, fmt.Errorf("auth type: %s is not supported", auth.Type)
-	}
-
-	if auth.Type == "plain" {
-		mechanism = plain.Mechanism{
-			Username: auth.Username,
-			Password: auth.Password,
-		}
-	}
-
-	if auth.Type == "scram" {
-		algo := scram.SHA512
-
-		if auth.Hash == "SHA256" {
-			algo = scram.SHA256
-		}
-
-		mechanism, err = scram.Mechanism(algo, auth.Username, auth.Password)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	dialer := &kafka.Dialer{
-		Timeout:       15 * time.Second,
-		DualStack:     true,
-		SASLMechanism: mechanism,
+		Timeout:   15 * time.Second,
+		DualStack: true,
 	}
 
-	if auth.TLS {
-		dialer.TLS = &tls.Config{}
+	auth := k.Cfg.Auth
+	if auth != nil {
+		if auth.Type != "plain" && auth.Type != "scram" {
+			return nil, fmt.Errorf("auth type: %s is not supported", auth.Type)
+		}
+
+		if auth.Type == "plain" {
+			mechanism = plain.Mechanism{
+				Username: auth.Username,
+				Password: auth.Password,
+			}
+		}
+
+		if auth.Type == "scram" {
+			algo := scram.SHA512
+
+			if auth.Hash == "SHA256" {
+				algo = scram.SHA256
+			}
+
+			mechanism, err = scram.Mechanism(algo, auth.Username, auth.Password)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		dialer.SASLMechanism = mechanism
+
+		if auth.TLS {
+			dialer.TLS = &tls.Config{}
+		}
 	}
 
 	return dialer, nil
