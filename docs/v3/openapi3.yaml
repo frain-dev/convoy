@@ -3434,18 +3434,26 @@ paths:
         required: true
         schema:
           type: string
-      - description: results per page
+      - description: list of endpoint ids
         in: query
-        name: perPage
+        name: endpointID
+        schema:
+          items:
+            type: string
+          type: array
+      - in: query
+        name: next_page_cursor
         schema:
           type: string
-      - description: page number
-        in: query
-        name: page
+      - in: query
+        name: per_page
+        schema:
+          type: integer
+      - in: query
+        name: prev_page_cursor
         schema:
           type: string
-      - description: sort order
-        in: query
+      - in: query
         name: sort
         schema:
           type: string

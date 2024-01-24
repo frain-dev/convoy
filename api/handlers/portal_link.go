@@ -231,9 +231,8 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string	true	"Project ID"
-//	@Param			perPage		query		string	false	"results per page"
-//	@Param			page		query		string	false	"page number"
-//	@Param			sort		query		string	false	"sort order"
+//	@Param			endpointID		query		[]string	false	"list of endpoint ids"
+//	@Param			request		query		datastore.Pageable	false	"Pagination Params"
 //	@Success		200			{object}	util.ServerResponse{data=pagedResponse{content=[]models.PortalLinkResponse}}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
