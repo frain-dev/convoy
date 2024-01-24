@@ -888,78 +888,24 @@ definitions:
       content_type:
         type: string
     type: object
-  models.DynamicEndpoint:
-    properties:
-      advanced_signatures:
-        type: boolean
-      appID:
-        description: Deprecated but necessary for backward compatibility
-        type: string
-      authentication:
-        $ref: '#/definitions/models.EndpointAuthentication'
-      description:
-        type: string
-      http_timeout:
-        type: string
-      is_disabled:
-        type: boolean
-      name:
-        type: string
-      owner_id:
-        type: string
-      rate_limit:
-        type: integer
-      rate_limit_duration:
-        type: string
-      secret:
-        type: string
-      slack_webhook_url:
-        type: string
-      support_email:
-        type: string
-      url:
-        type: string
-    type: object
   models.DynamicEvent:
     properties:
-      endpoint:
-        $ref: '#/definitions/models.DynamicEndpoint'
-      event:
-        $ref: '#/definitions/models.DynamicEventStub'
-      subscription:
-        $ref: '#/definitions/models.DynamicSubscription'
-    type: object
-  models.DynamicEventStub:
-    properties:
-      custom_headers:
-        additionalProperties:
-          type: string
-        type: object
       data:
-        description: Data is an arbitrary JSON value that gets sent as the body of
-          the webhook to the endpoints
         items:
           type: integer
         type: array
       event_type:
         type: string
+      event_types:
+        items:
+          type: string
+        type: array
       idempotency_key:
         type: string
-      project_id:
+      secret:
         type: string
-    type: object
-  models.DynamicSubscription:
-    properties:
-      alert_config:
-        $ref: '#/definitions/models.AlertConfiguration'
-      filter_config:
-        $ref: '#/definitions/models.FilterConfiguration'
-      name:
+      url:
         type: string
-      rate_limit_config:
-        $ref: '#/definitions/models.RateLimitConfiguration'
-      retry_config:
-        $ref: '#/definitions/models.RetryConfiguration'
     type: object
   models.EndpointAuthentication:
     properties:

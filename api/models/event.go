@@ -3,11 +3,12 @@ package models
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
+	"time"
+
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
-	"net/http"
-	"time"
 )
 
 type CreateEvent struct {
@@ -26,9 +27,13 @@ func (e *CreateEvent) Validate() error {
 }
 
 type DynamicEvent struct {
-	Endpoint     DynamicEndpoint     `json:"endpoint"`
-	Subscription DynamicSubscription `json:"subscription"`
-	Event        DynamicEventStub    `json:"event"`
+	URL            string          `json:"url" valid:"required~please provide a url"`
+	Secret         string          `json:"secret" valid:"required~please provide a secret"`
+	EventTypes     []string        `json:"event_types"`
+	Data           json.RawMessage `json:"data" valid:"required~please provide your data"`
+	ProjectID      string          `json:"project_id" swaggerignore:"true"`
+	EventType      string          `json:"event_type" valid:"required~please provide an event type"`
+	IdempotencyKey string          `json:"idempotency_key"`
 }
 
 func (de *DynamicEvent) Validate() error {
