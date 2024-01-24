@@ -93,7 +93,7 @@ func (h *Handler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Event Deliveries
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string								true	"Project ID"
+//	@Param			projectID	path		string							true	"Project ID"
 //	@Param			request		query		models.QueryListEventDelivery	false	"Query Params"
 //	@Success		200			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
@@ -140,8 +140,8 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 //	@Tags			Event Deliveries
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string					true	"Project ID"
-//	@Param			deliveryIds	body		models.IDs	            true	"event delivery ids"
+//	@Param			projectID	path		string		true	"Project ID"
+//	@Param			deliveryIds	body		models.IDs	true	"event delivery ids"
 //	@Success		200			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
