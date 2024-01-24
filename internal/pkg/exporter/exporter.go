@@ -97,40 +97,42 @@ func (ex *Exporter) Export(ctx context.Context) (ExportResult, error) {
 
 func (ex *Exporter) Cleanup(ctx context.Context) error {
 	for _, table := range tables {
-		switch table {
-		case eventsTable:
-			eventFilter := &datastore.EventFilter{
-				CreatedAtStart: 0,
-				CreatedAtEnd:   ex.expDate.Unix(),
-			}
-			err := ex.eventRepo.DeleteProjectEvents(ctx, ex.project.UID, eventFilter, true)
-			if err != nil {
-				return err
-			}
+		if ex.result[table].NumDocs > 0 {
+			switch table {
+			case eventsTable:
+				eventFilter := &datastore.EventFilter{
+					CreatedAtStart: 0,
+					CreatedAtEnd:   ex.expDate.Unix(),
+				}
+				err := ex.eventRepo.DeleteProjectEvents(ctx, ex.project.UID, eventFilter, true)
+				if err != nil {
+					return err
+				}
 
-			err = ex.eventRepo.DeleteProjectTokenizedEvents(ctx, ex.project.UID, eventFilter)
-			if err != nil {
-				return err
-			}
+				err = ex.eventRepo.DeleteProjectTokenizedEvents(ctx, ex.project.UID, eventFilter)
+				if err != nil {
+					return err
+				}
 
-			ex.project.RetainedEvents += int(ex.result[table].NumDocs)
-			err = ex.projectRepo.UpdateProject(ctx, ex.project)
-			if err != nil {
-				return err
-			}
-		case eventDeliveriesTable:
-			eventDeliveryFilter := &datastore.EventDeliveryFilter{
-				CreatedAtStart: 0,
-				CreatedAtEnd:   ex.expDate.Unix(),
-			}
+				ex.project.RetainedEvents += int(ex.result[table].NumDocs)
+				err = ex.projectRepo.UpdateProject(ctx, ex.project)
+				if err != nil {
+					return err
+				}
+			case eventDeliveriesTable:
+				eventDeliveryFilter := &datastore.EventDeliveryFilter{
+					CreatedAtStart: 0,
+					CreatedAtEnd:   ex.expDate.Unix(),
+				}
 
-			err := ex.eventDeliveryRepo.DeleteProjectEventDeliveries(ctx, ex.project.UID, eventDeliveryFilter, true)
-			if err != nil {
-				return err
-			}
+				err := ex.eventDeliveryRepo.DeleteProjectEventDeliveries(ctx, ex.project.UID, eventDeliveryFilter, true)
+				if err != nil {
+					return err
+				}
 
-		default:
-			return ErrInvalidTable
+			default:
+				return ErrInvalidTable
+			}
 		}
 
 		// remove export file.
