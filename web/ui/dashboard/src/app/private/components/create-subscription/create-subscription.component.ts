@@ -228,7 +228,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		// check if configs are added, else delete the properties
 		const subscriptionData = structuredClone(this.subscriptionForm.value);
 		const retryDuration = this.subscriptionForm.get('retry_config.duration');
-		this.configurations[2]?.show ? (subscriptionData.retry_config.duration = retryDuration?.value + 's') : delete subscriptionData.retry_config;
+		this.configurations[1]?.show ? (subscriptionData.retry_config.duration = retryDuration?.value + 's') : delete subscriptionData.retry_config;
 
 		// create subscription
 		try {
