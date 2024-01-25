@@ -7,6 +7,7 @@ import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { differenceInSeconds } from 'date-fns';
 import { Observable, Subscription } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 @Component({
 	selector: 'app-private',
@@ -44,6 +45,7 @@ export class PrivateComponent implements OnInit {
 			currentStage: 'pending'
 		}
 	];
+    isEnterprise = environment.enterprise;
 	private jwtHelper: JwtHelperService = new JwtHelperService();
 	private shouldShowOrgSubscription: Subscription | undefined;
 

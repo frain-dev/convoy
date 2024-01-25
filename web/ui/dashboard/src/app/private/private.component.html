@@ -46,7 +46,7 @@
 							</li>
 						</ul>
 
-						<li class="border-t border-t-grey-10">
+						<li class="border-t border-t-grey-10" *ngIf="isEnterprise">
 							<button convoy-dropdown-option convoy-button fill="text" size="sm" class="p-16px" (click)="dialog.nativeElement.showModal()">
 								<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
 								Add {{ organisations?.length ? 'another' : 'an' }} Organization

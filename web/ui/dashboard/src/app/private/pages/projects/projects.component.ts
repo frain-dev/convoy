@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
 import { Router } from '@angular/router';
+import { environment } from 'src/environments/environment';
 
 @Component({
 	selector: 'app-projects',
@@ -14,6 +15,7 @@ export class ProjectsComponent implements OnInit {
 	projectsLoaderIndex: number[] = [0, 1, 2, 3, 4];
 	showOrganisationModal = false;
 	isLoadingProject: boolean = false;
+	isEnterprise = environment.enterprise;
 
 	constructor(private privateService: PrivateService, private router: Router) {
 		this.privateService.projects$.subscribe(projects => (this.projects = projects.data));

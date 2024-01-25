@@ -47,11 +47,13 @@
 					<hr class="border-t border-t-new.primary-25" *ngIf="projects.length" />
 
 					<div class="flex items-center">
-						<a routerLink="../new" class="text-12 text-new.primary-800 py-12px px-18px w-full text-left hover:bg-new.primary-25 flex items-center">
-							<img src="assets/img/svg/plus-icon.svg" class="w-12px mr-8px" alt="plus icon" />
-							New Project
-						</a>
-						<div class="h-44px w-2px bg-new.primary-25"></div>
+						<ng-container *ngIf="isEnterprise">
+							<a routerLink="../new" class="text-12 text-new.primary-800 py-12px px-18px w-full text-left hover:bg-new.primary-25 flex items-center">
+								<img src="assets/img/svg/plus-icon.svg" class="w-12px mr-8px" alt="plus icon" />
+								New Project
+							</a>
+							<div class="h-44px w-2px bg-new.primary-25"></div>
+						</ng-container>
 						<a routerLink="../" class="text-12 text-new.primary-800 py-12px px-18px w-full text-left hover:bg-new.primary-25 flex items-center">
 							<img src="assets/img/svg/projects.svg" class="w-12px mr-8px" alt="plus icon" />
 							All Projects
