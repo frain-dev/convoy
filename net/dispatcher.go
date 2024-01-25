@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptrace"
@@ -23,6 +24,7 @@ type Dispatcher struct {
 func NewDispatcher(timeout time.Duration, httpProxy string) (*Dispatcher, error) {
 	d := &Dispatcher{client: &http.Client{Timeout: timeout}}
 
+	fmt.Printf(">>>>>>>>>>> %+v\n", httpProxy)
 	if len(httpProxy) > 0 {
 		proxyUrl, err := url.Parse(httpProxy)
 		if err != nil {

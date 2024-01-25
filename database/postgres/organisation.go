@@ -27,6 +27,9 @@ const (
 	VALUES ($1, $2, $3, $4, $5);
 	`
 
+	countOrganisations = `
+    select count(*) from convoy.organisations where owner_id = $1 and deleted_at is null`
+
 	fetchOrganisation = `
 	SELECT * FROM convoy.organisations
 	WHERE deleted_at IS NULL
@@ -94,6 +97,26 @@ func NewOrgRepo(db database.Database, ca cache.Cache) datastore.OrganisationRepo
 }
 
 func (o *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organisation) error {
+	rowCount := struct {
+		Count int `db:"count"`
+	}{}
+
+	rows, err := o.db.QueryxContext(ctx, countOrganisations, org.OwnerID)
+	if err != nil {
+		return err
+	}
+
+	if rows.Next() {
+		err = rows.StructScan(&rowCount)
+		if err != nil {
+			return err
+		}
+	}
+
+	if rowCount.Count > 0 {
+		return fmt.Errorf("can't create more than one project")
+	}
+
 	result, err := o.db.ExecContext(ctx, createOrganization, org.UID, org.Name, org.OwnerID, org.CustomDomain, org.AssignedDomain)
 	if err != nil {
 		return err
