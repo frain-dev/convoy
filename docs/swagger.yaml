@@ -699,12 +699,6 @@ definitions:
     - APIKeyVerifier
   handlers.Stub:
     type: object
-  handlers.pagedResponse:
-    properties:
-      content: {}
-      pagination:
-        $ref: '#/definitions/datastore.PaginationData'
-    type: object
   httpheader.HTTPHeader:
     additionalProperties:
       items:
@@ -887,38 +881,6 @@ definitions:
       body:
         type: string
       content_type:
-        type: string
-    type: object
-  models.DynamicEndpoint:
-    properties:
-      advanced_signatures:
-        type: boolean
-      appID:
-        description: Deprecated but necessary for backward compatibility
-        type: string
-      authentication:
-        $ref: '#/definitions/models.EndpointAuthentication'
-      description:
-        type: string
-      http_timeout:
-        type: integer
-      is_disabled:
-        type: boolean
-      name:
-        type: string
-      owner_id:
-        type: string
-      rate_limit:
-        type: integer
-      rate_limit_duration:
-        type: integer
-      secret:
-        type: string
-      slack_webhook_url:
-        type: string
-      support_email:
-        type: string
-      url:
         type: string
     type: object
   models.DynamicEvent:
@@ -1208,6 +1170,12 @@ definitions:
         type: string
       updated_at:
         type: string
+    type: object
+  models.PagedResponse:
+    properties:
+      content: {}
+      pagination:
+        $ref: '#/definitions/datastore.PaginationData'
     type: object
   models.PortalLink:
     properties:
@@ -1571,7 +1539,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -2058,7 +2026,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -2583,7 +2551,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -3064,7 +3032,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -3258,7 +3226,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -3595,7 +3563,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -3927,7 +3895,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:

@@ -104,7 +104,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/handlers.pagedResponse"
+                                                    "$ref": "#/definitions/models.PagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -976,7 +976,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/handlers.pagedResponse"
+                                                    "$ref": "#/definitions/models.PagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -1906,7 +1906,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/handlers.pagedResponse"
+                                                    "$ref": "#/definitions/models.PagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -2771,7 +2771,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/handlers.pagedResponse"
+                                                    "$ref": "#/definitions/models.PagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -3127,7 +3127,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/handlers.pagedResponse"
+                                                    "$ref": "#/definitions/models.PagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -3734,7 +3734,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/handlers.pagedResponse"
+                                                    "$ref": "#/definitions/models.PagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -4334,7 +4334,7 @@
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/handlers.pagedResponse"
+                                                    "$ref": "#/definitions/models.PagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -6114,15 +6114,6 @@
         "handlers.Stub": {
             "type": "object"
         },
-        "handlers.pagedResponse": {
-            "type": "object",
-            "properties": {
-                "content": {},
-                "pagination": {
-                    "$ref": "#/definitions/datastore.PaginationData"
-                }
-            }
-        },
         "httpheader.HTTPHeader": {
             "type": "object",
             "additionalProperties": {
@@ -6361,54 +6352,6 @@
                     "type": "string"
                 },
                 "content_type": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.DynamicEndpoint": {
-            "type": "object",
-            "properties": {
-                "advanced_signatures": {
-                    "type": "boolean"
-                },
-                "appID": {
-                    "description": "Deprecated but necessary for backward compatibility",
-                    "type": "string"
-                },
-                "authentication": {
-                    "$ref": "#/definitions/models.EndpointAuthentication"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "http_timeout": {
-                    "type": "integer"
-                },
-                "is_disabled": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "owner_id": {
-                    "type": "string"
-                },
-                "rate_limit": {
-                    "type": "integer"
-                },
-                "rate_limit_duration": {
-                    "type": "integer"
-                },
-                "secret": {
-                    "type": "string"
-                },
-                "slack_webhook_url": {
-                    "type": "string"
-                },
-                "support_email": {
-                    "type": "string"
-                },
-                "url": {
                     "type": "string"
                 }
             }
@@ -6841,6 +6784,15 @@
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "models.PagedResponse": {
+            "type": "object",
+            "properties": {
+                "content": {},
+                "pagination": {
+                    "$ref": "#/definitions/datastore.PaginationData"
                 }
             }
         },
