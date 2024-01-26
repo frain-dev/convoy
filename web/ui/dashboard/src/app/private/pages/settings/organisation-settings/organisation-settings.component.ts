@@ -5,6 +5,7 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { Router } from '@angular/router';
 import { PrivateService } from 'src/app/private/private.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
+import { environment } from 'src/environments/environment';
 
 @Component({
 	selector: 'organisation-settings',
@@ -20,6 +21,7 @@ export class OrganisationSettingsComponent implements OnInit {
 	editOrganisationForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required]
 	});
+    isEnterprise = environment.enterprise
 	private rbacService = inject(RbacService);
 
 	constructor(private formBuilder: FormBuilder, private settingService: SettingsService, private generalService: GeneralService, private router: Router, private privateService: PrivateService) {}
