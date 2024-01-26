@@ -2,7 +2,6 @@ import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
 import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
 import { Router } from '@angular/router';
-import { environment } from 'src/environments/environment';
 
 @Component({
 	selector: 'app-project',
@@ -48,7 +47,6 @@ export class ProjectComponent implements OnInit {
 	isLoadingProjectDetails: boolean = true;
 	showHelpDropdown = false;
 	projects: PROJECT[] = [];
-	isEnterprise = environment.enterprise;
 	activeNavTab: any;
 
 	constructor(private privateService: PrivateService, private router: Router) {}
