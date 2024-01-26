@@ -87,29 +87,6 @@ func (uE *UpdateEndpoint) Validate() error {
 	return util.Validate(uE)
 }
 
-type DynamicEndpoint struct {
-	URL                string `json:"url" valid:"required~please provide a url for your endpoint"`
-	Secret             string `json:"secret"`
-	OwnerID            string `json:"owner_id"`
-	Description        string `json:"description"`
-	AdvancedSignatures bool   `json:"advanced_signatures"`
-	Name               string `json:"name"`
-	SupportEmail       string `json:"support_email"`
-	IsDisabled         bool   `json:"is_disabled"`
-	SlackWebhookURL    string `json:"slack_webhook_url"`
-
-	HttpTimeout       uint64                  `json:"http_timeout"`
-	RateLimit         int                     `json:"rate_limit"`
-	RateLimitDuration uint64                  `json:"rate_limit_duration"`
-	Authentication    *EndpointAuthentication `json:"authentication"`
-	// Deprecated but necessary for backward compatibility
-	AppID string
-}
-
-func (dE *DynamicEndpoint) Validate() error {
-	return util.Validate(dE)
-}
-
 type QueryListEndpoint struct {
 	// The name of the endpoint
 	Name string `json:"q" example:"endpoint-1"`

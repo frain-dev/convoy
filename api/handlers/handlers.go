@@ -16,11 +16,6 @@ import (
 	"github.com/subomi/requestmigrations"
 )
 
-type pagedResponse struct {
-	Content    interface{}               `json:"content,omitempty"`
-	Pagination *datastore.PaginationData `json:"pagination,omitempty"`
-}
-
 type Handler struct {
 	A  *types.APIOptions
 	RM *requestmigrations.RequestMigration

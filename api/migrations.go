@@ -9,5 +9,7 @@ var migrations = requestmigrations.MigrationStore{
 	"2024-01-01": requestmigrations.Migrations{
 		&v20240101.CreateEndpointRequestMigration{},
 		&v20240101.CreateEndpointResponseMigration{},
+		&v20240101.GetEndpointResponseMigration{},
+		&v20240101.GetEndpointsResponseMigration{},
 	},
 }

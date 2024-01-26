@@ -79,7 +79,7 @@ func (h *Handler) GetPendingOrganisationInvites(w http.ResponseWriter, r *http.R
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Invites fetched successfully",
-		pagedResponse{Content: &invites, Pagination: &paginationData}, http.StatusOK))
+		models.PagedResponse{Content: &invites, Pagination: &paginationData}, http.StatusOK))
 }
 
 func (h *Handler) ProcessOrganisationMemberInvite(w http.ResponseWriter, r *http.Request) {

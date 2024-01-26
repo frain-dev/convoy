@@ -83,7 +83,7 @@ func (c *CreateEndpointRequestMigration) Migrate(b []byte, h http.Header) ([]byt
 }
 
 type endpointResponse struct {
-	Endpoint *oldEndpoint
+	*oldEndpoint
 }
 
 type oldEndpoint struct {
@@ -121,6 +121,11 @@ func (c *CreateEndpointResponseMigration) Migrate(b []byte, h http.Header) ([]by
 		return nil, nil, err
 	}
 
+	if len(serverResponse.Data) == 0 {
+		// nothing to transform.
+		return b, h, nil
+	}
+
 	var endpointResp *models.EndpointResponse
 	err = json.Unmarshal(serverResponse.Data, &endpointResp)
 	if err != nil {
@@ -149,9 +154,7 @@ func (c *CreateEndpointResponseMigration) Migrate(b []byte, h http.Header) ([]by
 		return nil, nil, err
 	}
 
-	newEndpointResponse := &endpointResponse{
-		Endpoint: &oldEndpoint,
-	}
+	newEndpointResponse := &endpointResponse{&oldEndpoint}
 
 	b, err = json.Marshal(newEndpointResponse)
 	if err != nil {

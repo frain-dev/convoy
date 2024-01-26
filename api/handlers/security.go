@@ -166,7 +166,7 @@ func (h *Handler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 
 	apiKeyByIDResponse := apiKeyByIDResponse(apiKeys)
 	_ = render.Render(w, r, util.NewServerResponse("api keys fetched successfully",
-		pagedResponse{Content: &apiKeyByIDResponse, Pagination: &paginationData}, http.StatusOK))
+		models.PagedResponse{Content: &apiKeyByIDResponse, Pagination: &paginationData}, http.StatusOK))
 }
 
 func apiKeyByIDResponse(apiKeys []datastore.APIKey) []models.APIKeyByIDResponse {

@@ -132,7 +132,22 @@ func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &models.EndpointResponse{Endpoint: endpoint}
-	_ = render.Render(w, r, util.NewServerResponse("Endpoint fetched successfully", resp, http.StatusOK))
+	serverResponse := util.NewServerResponse(
+		"Endpoint fetched successfully", resp, http.StatusOK)
+
+	rb, err := json.Marshal(serverResponse)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	resBytes, err := h.RM.VersionResponse(r, rb, "GetEndpoint")
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	util.WriteResponse(w, r, resBytes, http.StatusOK)
 }
 
 // GetEndpoints
@@ -144,7 +159,7 @@ func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			projectID	path		string						true	"Project ID"
 //	@Param			request		query		models.QueryListEndpoint	false	"Query Params"
-//	@Success		200			{object}	util.ServerResponse{data=pagedResponse{content=[]models.EndpointResponse}}
+//	@Success		200			{object}	util.ServerResponse{data=models.PagedResponse{content=[]models.EndpointResponse}}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints [get]
@@ -174,7 +189,7 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 
 		if len(endpointIDs) == 0 {
 			_ = render.Render(w, r, util.NewServerResponse("App events fetched successfully",
-				pagedResponse{Content: endpointIDs, Pagination: &datastore.PaginationData{PerPage: int64(data.Filter.Pageable.PerPage)}}, http.StatusOK))
+				models.PagedResponse{Content: endpointIDs, Pagination: &datastore.PaginationData{PerPage: int64(data.Filter.Pageable.PerPage)}}, http.StatusOK))
 			return
 		}
 
@@ -191,8 +206,23 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	resp := models.NewListResponse(endpoints, func(endpoint datastore.Endpoint) models.EndpointResponse {
 		return models.EndpointResponse{Endpoint: &endpoint}
 	})
-	_ = render.Render(w, r, util.NewServerResponse("Endpoints fetched successfully",
-		pagedResponse{Content: &resp, Pagination: &paginationData}, http.StatusOK))
+	serverResponse := util.NewServerResponse(
+		"Endpoints fetched successfully",
+		models.PagedResponse{Content: &resp, Pagination: &paginationData}, http.StatusOK)
+
+	rb, err := json.Marshal(serverResponse)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	resBytes, err := h.RM.VersionResponse(r, rb, "GetEndpoints")
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	util.WriteResponse(w, r, resBytes, http.StatusOK)
 }
 
 // UpdateEndpoint

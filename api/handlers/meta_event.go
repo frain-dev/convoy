@@ -50,7 +50,7 @@ func (h *Handler) GetMetaEventsPaged(w http.ResponseWriter, r *http.Request) {
 		return models.MetaEventResponse{MetaEvent: &metaEvent}
 	})
 	_ = render.Render(w, r, util.NewServerResponse("Meta events fetched successfully",
-		pagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
+		models.PagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 // GetMetaEvent
