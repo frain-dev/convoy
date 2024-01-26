@@ -1,6 +1,6 @@
 -- +migrate Up
 -- +migrate StatementBegin
-CREATE OR REPLACE FUNCTION convoy.duration_to_seconds(duration_text interval) RETURNS INTEGER AS $$
+CREATE OR REPLACE FUNCTION convoy.duration_to_seconds(duration_text interval default '10s') RETURNS INTEGER AS $$
 DECLARE
     duration_interval INTERVAL;
 BEGIN

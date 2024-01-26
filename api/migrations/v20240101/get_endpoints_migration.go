@@ -2,7 +2,6 @@ package v20240101
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -33,7 +32,6 @@ func (g *GetEndpointsResponseMigration) Migrate(b []byte, h http.Header) ([]byte
 	endpoints, ok := pResp.Content.([]any)
 	if !ok {
 		// invalid type.
-		fmt.Println("Amen")
 		return b, h, nil
 	}
 
