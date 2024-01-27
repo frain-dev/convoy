@@ -11,5 +11,7 @@ var migrations = requestmigrations.MigrationStore{
 		&v20240101.CreateEndpointResponseMigration{},
 		&v20240101.GetEndpointResponseMigration{},
 		&v20240101.GetEndpointsResponseMigration{},
+		&v20240101.UpdateEndpointRequestMigration{},
+		&v20240101.UpdateEndpointResponseMigration{},
 	},
 }

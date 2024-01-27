@@ -77,9 +77,9 @@ type UpdateEndpoint struct {
 	IsDisabled         *bool   `json:"is_disabled"`
 	SlackWebhookURL    *string `json:"slack_webhook_url"`
 
-	HttpTimeout       uint64                  `json:"http_timeout"`
+	HttpTimeout       uint64                  `json:"http_timeout" copier:"-"`
 	RateLimit         int                     `json:"rate_limit"`
-	RateLimitDuration uint64                  `json:"rate_limit_duration"`
+	RateLimitDuration uint64                  `json:"rate_limit_duration" copier:"-"`
 	Authentication    *EndpointAuthentication `json:"authentication"`
 }
 
