@@ -67,7 +67,10 @@ func migrateEndpoint(oldPayload, newPayload interface{}, direction direction) er
 			}
 		}
 
-		newStruct.Field(f.Name()).Set(value)
+		err = newStruct.Field(f.Name()).Set(value)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
