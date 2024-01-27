@@ -12,6 +12,7 @@ require (
 	github.com/dop251/goja v0.0.0-20230828202809-3dbe69dd2b8e
 	github.com/dop251/goja_nodejs v0.0.0-20230821135201-94e508132562
 	github.com/dukex/mixpanel v0.0.0-20220410140740-e82251311162
+	github.com/fatih/structs v1.1.0
 	github.com/felixge/httpsnoop v1.0.3
 	github.com/getkin/kin-openapi v0.80.0
 	github.com/getsentry/sentry-go v0.25.0
@@ -29,7 +30,6 @@ require (
 	github.com/hibiken/asynq/x v0.0.0-20221219051101-0b8cfad70341
 	github.com/jarcoal/httpmock v1.3.0
 	github.com/jaswdr/faker v1.10.2
-	github.com/jinzhu/copier v0.4.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.10.7

@@ -6,7 +6,6 @@ import (
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/jinzhu/copier"
 )
 
 type oldUpdateEndpoint struct {
@@ -35,28 +34,10 @@ func (u *UpdateEndpointRequestMigration) Migrate(b []byte, h http.Header) ([]byt
 		return nil, nil, err
 	}
 
-	httpTimeout := payload.HttpTimeout
-	rateLimitDuration := payload.RateLimitDuration
-
 	var endpoint models.UpdateEndpoint
-	err = copier.Copy(&endpoint, &payload)
+	err = migrateEndpoint(&payload, &endpoint, forward)
 	if err != nil {
 		return nil, nil, err
-	}
-
-	// set timeout
-	if !util.IsStringEmpty(httpTimeout) {
-		endpoint.HttpTimeout, err = transformDurationStringToInt(httpTimeout)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-
-	if !util.IsStringEmpty(rateLimitDuration) {
-		endpoint.RateLimitDuration, err = transformDurationStringToInt(rateLimitDuration)
-		if err != nil {
-			return nil, nil, err
-		}
 	}
 
 	b, err = json.Marshal(endpoint)
@@ -89,22 +70,8 @@ func (u *UpdateEndpointResponseMigration) Migrate(b []byte, h http.Header) ([]by
 
 	endpoint := endpointResp.Endpoint
 
-	httpTimeout := endpoint.HttpTimeout
-	rateLimitDuration := endpoint.RateLimitDuration
-
 	var oldEndpoint oldEndpoint
-	err = copier.Copy(&oldEndpoint, &endpoint)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// set timeout
-	oldEndpoint.HttpTimeout, err = transformIntToDurationString(httpTimeout)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	oldEndpoint.RateLimitDuration, err = transformIntToDurationString(rateLimitDuration)
+	err = migrateEndpoint(&endpoint, &oldEndpoint, backward)
 	if err != nil {
 		return nil, nil, err
 	}

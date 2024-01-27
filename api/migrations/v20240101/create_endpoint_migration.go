@@ -5,11 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"github.com/jinzhu/copier"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -40,7 +38,8 @@ func (c *CreateEndpointRequestMigration) Migrate(b []byte, h http.Header) ([]byt
 	}
 
 	var endpoint models.CreateEndpoint
-	err = copier.Copy(&endpoint, &payload)
+
+	err = migrateEndpoint(&payload, &endpoint, forward)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -49,29 +48,6 @@ func (c *CreateEndpointRequestMigration) Migrate(b []byte, h http.Header) ([]byt
 		// set advanced signature to the previous default.
 		val := false
 		endpoint.AdvancedSignatures = &val
-	}
-
-	httpTimeout := payload.HttpTimeout
-	rateLimitDuration := payload.RateLimitDuration
-
-	// set timeout
-	if util.IsStringEmpty(httpTimeout) {
-		httpTimeout = convoy.HTTP_TIMEOUT_IN_DURATION.String()
-	}
-
-	endpoint.HttpTimeout, err = transformDurationStringToInt(httpTimeout)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// set rate limit duration
-	if util.IsStringEmpty(rateLimitDuration) {
-		rateLimitDuration = convoy.RATE_LIMIT_DURATION_IN_DURATION.String()
-	}
-
-	endpoint.RateLimitDuration, err = transformDurationStringToInt(rateLimitDuration)
-	if err != nil {
-		return nil, nil, err
 	}
 
 	b, err = json.Marshal(endpoint)
@@ -134,22 +110,8 @@ func (c *CreateEndpointResponseMigration) Migrate(b []byte, h http.Header) ([]by
 
 	endpoint := endpointResp.Endpoint
 
-	httpTimeout := endpoint.HttpTimeout
-	rateLimitDuration := endpoint.RateLimitDuration
-
 	var oldEndpoint oldEndpoint
-	err = copier.Copy(&oldEndpoint, &endpoint)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// set timeout
-	oldEndpoint.HttpTimeout, err = transformIntToDurationString(httpTimeout)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	oldEndpoint.RateLimitDuration, err = transformIntToDurationString(rateLimitDuration)
+	err = migrateEndpoint(&endpoint, &oldEndpoint, backward)
 	if err != nil {
 		return nil, nil, err
 	}

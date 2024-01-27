@@ -53,7 +53,7 @@ const (
 
 const (
 	VersionHeader = "X-Convoy-Version"
-	serverName = "apiserver"
+	serverName    = "apiserver"
 )
 
 type ApplicationHandler struct {
@@ -77,14 +77,6 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 		VersionHeader:  VersionHeader,
 		CurrentVersion: config.DefaultAPIVersion,
 		VersionFormat:  requestmigrations.DateFormat,
-		GetUserVersionFunc: func(r *http.Request) (string, error) {
-			cfg, err := config.Get()
-			if err != nil {
-				return "", err
-			}
-
-			return cfg.APIVersion, nil
-		},
 	}
 	rm, err := requestmigrations.NewRequestMigration(opts)
 	if err != nil {

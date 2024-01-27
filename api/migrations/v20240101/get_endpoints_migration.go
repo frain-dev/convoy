@@ -6,7 +6,6 @@ import (
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/util"
-	"github.com/jinzhu/copier"
 )
 
 type GetEndpointsResponseMigration struct{}
@@ -43,28 +42,16 @@ func (g *GetEndpointsResponseMigration) Migrate(b []byte, h http.Header) ([]byte
 			return nil, nil, err
 		}
 
-		var endpoint models.EndpointResponse
-		err = json.Unmarshal(endpointBytes, &endpoint)
+		var endpointResp models.EndpointResponse
+		err = json.Unmarshal(endpointBytes, &endpointResp)
 		if err != nil {
 			return nil, nil, err
 		}
-
-		httpTimeout := endpoint.HttpTimeout
-		rateLimitDuration := endpoint.RateLimitDuration
 
 		var oldEndpointBody oldEndpoint
-		err = copier.Copy(&oldEndpointBody, &endpoint.Endpoint)
-		if err != nil {
-			return nil, nil, err
-		}
+		endpoint := endpointResp.Endpoint
 
-		// set timeout
-		oldEndpointBody.HttpTimeout, err = transformIntToDurationString(httpTimeout)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		oldEndpointBody.RateLimitDuration, err = transformIntToDurationString(rateLimitDuration)
+		err = migrateEndpoint(&endpoint, &oldEndpointBody, backward)
 		if err != nil {
 			return nil, nil, err
 		}
