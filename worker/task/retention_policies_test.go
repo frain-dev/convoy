@@ -3,11 +3,12 @@ package task
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"github.com/frain-dev/convoy/pkg/log"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/pkg/log"
 
 	"gopkg.in/guregu/null.v4"
 
@@ -126,7 +127,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	// call handler
 	task := asynq.NewTask("retention-policies", nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
-	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.exportRepo, r.ConvoyApp.redis)
+	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.redis)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
 
@@ -200,7 +201,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	// call handler
 	task := asynq.NewTask(string(convoy.TaskName("retention-policies")), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
-	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.exportRepo, r.ConvoyApp.redis)
+	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.redis)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
 
@@ -268,7 +269,6 @@ func buildApplication() *applicationHandler {
 	eventRepo := postgres.NewEventRepo(db, nil)
 	configRepo := postgres.NewConfigRepo(db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db, nil)
-	exportRepo := postgres.NewExportRepo(db)
 
 	app := &applicationHandler{
 		projectRepo:       projectRepo,
@@ -276,7 +276,6 @@ func buildApplication() *applicationHandler {
 		configRepo:        configRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
 		database:          db,
-		exportRepo:        exportRepo,
 		redis:             redis,
 	}
 
@@ -288,7 +287,6 @@ type applicationHandler struct {
 	eventRepo         datastore.EventRepository
 	configRepo        datastore.ConfigurationRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
-	exportRepo        datastore.ExportRepository
 	database          database.Database
 	redis             *rdb.Redis
 }
@@ -361,7 +359,7 @@ func seedEventDelivery(db database.Database, eventID string, endpointID string, 
 
 func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 	defaultStorage := &datastore.DefaultStoragePolicy
-	defaultStorage.OnPrem.Path = null.NewString("/tmp/convoy/export/", true)
+	defaultStorage.OnPrem.Path = null.NewString("/tmp/convoy/export", true)
 
 	c := &datastore.Configuration{
 		UID:                ulid.Make().String(),

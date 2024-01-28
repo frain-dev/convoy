@@ -132,7 +132,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				projectRepo,
 				eventRepo,
 				eventDeliveryRepo,
-				postgres.NewExportRepo(a.DB),
 				rd,
 			))
 
