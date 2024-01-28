@@ -45,6 +45,7 @@ func main() {
 	var dbDatabase string
 
 	var fflag string
+	var tracerType string
 
 	var redisPort int
 	var redisHost string
@@ -79,6 +80,7 @@ func main() {
 	c.Flags().IntVar(&redisPort, "redis-port", 0, "Redis Port")
 
 	c.Flags().StringVar(&fflag, "feature-flag", "", "Enable feature flags (experimental)")
+	c.Flags().StringVar(&tracerType, "tracer-type", "", "Tracer backend, e.g. sentry, datadog or otel")
 	c.Flags().BoolVar(&enableProfiling, "enable-profiling", false, "Enable profiling")
 
 	c.PersistentPreRunE(hooks.PreRun(app, db))

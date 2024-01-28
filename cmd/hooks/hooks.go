@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/auth"
 	"io"
 	"os"
 	"time"
@@ -128,11 +127,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		app.Cache = ca
 
 		if ok := shouldBootstrap(cmd); ok {
-			err = ensureDefaultUserAndOrganisation(context.Background(), app)
-			if err != nil {
-				return err
-			}
-
 			err = ensureInstanceConfig(context.Background(), app, cfg)
 			if err != nil {
 				return err
@@ -461,80 +455,6 @@ func shouldBootstrap(cmd *cobra.Command) bool {
 	}
 
 	return false
-}
-
-func ensureDefaultUserAndOrganisation(ctx context.Context, a *cli.App) error {
-	pageable := datastore.Pageable{PerPage: 10, Direction: datastore.Next, NextCursor: datastore.DefaultCursor}
-	userRepo := postgres.NewUserRepo(a.DB, a.Cache)
-	users, _, err := userRepo.LoadUsersPaged(ctx, pageable)
-	if err != nil {
-		return fmt.Errorf("failed to load users - %w", err)
-	}
-
-	if len(users) > 0 {
-		return nil
-	}
-
-	p := datastore.Password{Plaintext: "default"}
-	err = p.GenerateHash()
-
-	if err != nil {
-		return err
-	}
-
-	defaultUser := &datastore.User{
-		UID:           ulid.Make().String(),
-		FirstName:     "default",
-		LastName:      "default",
-		Email:         "superuser@default.com",
-		Password:      string(p.Hash),
-		EmailVerified: true,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-	}
-
-	err = userRepo.CreateUser(ctx, defaultUser)
-	if err != nil {
-		return fmt.Errorf("failed to create user - %w", err)
-	}
-
-	a.Logger.Infof("Created Superuser with username: %s and password: %s", defaultUser.Email, p.Plaintext)
-
-	defaultOrg := &datastore.Organisation{
-		UID:       ulid.Make().String(),
-		OwnerID:   defaultUser.UID,
-		Name:      "default",
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-	orgRepo := postgres.NewOrgRepo(a.DB, a.Cache)
-	err = orgRepo.CreateOrganisation(ctx, defaultOrg)
-
-	if err != nil {
-		return fmt.Errorf("failed to create default organisation - %w", err)
-	}
-
-	a.Logger.Infof("Created default organisation")
-
-	orgMemberRepo := postgres.NewOrgMemberRepo(a.DB, a.Cache)
-	err = orgMemberRepo.CreateOrganisationMember(ctx, &datastore.OrganisationMember{
-		UID:            ulid.Make().String(),
-		OrganisationID: defaultOrg.UID,
-		UserID:         defaultUser.UID,
-		Role: auth.Role{
-			Type: auth.RoleSuperUser,
-		},
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	})
-
-	if err != nil {
-		return fmt.Errorf("failed to create default organisation member - %w", err)
-	}
-
-	a.Logger.Infof("Created default organisation member")
-
-	return nil
 }
 
 func closeWithError(closer io.Closer) {
