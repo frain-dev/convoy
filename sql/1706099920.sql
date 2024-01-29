@@ -35,24 +35,6 @@ $$ LANGUAGE plpgsql;
 -- +migrate Up
 select convoy.bootstrap_default_user_and_organisation();
 
--- -- +migrate Up
--- -- +migrate StatementBegin
--- DO
--- $$
---     DECLARE
---         oid text;
---         BEGIN
---         select id into oid from convoy.organisations where organisations.name = 'default' limit 1;
---         alter table convoy.organisation_members drop constraint if exists organisation_members_user_id_org_id_key;
---         UPDATE convoy.projects SET name = name || '-' || created_at, organisation_id = oid where deleted_at is null;
---         UPDATE convoy.organisation_members set organisation_id = oid where deleted_at is null;
---         UPDATE convoy.organisation_invites set organisation_id = oid where deleted_at is null;
---         update convoy.organisations set deleted_at = now() where name <> 'default';
---         END
--- $$ LANGUAGE plpgsql;
--- -- +migrate StatementEnd
-
-
 
 
 

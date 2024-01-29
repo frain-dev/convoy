@@ -186,7 +186,6 @@ func StartConvoyServer(a *cli.App) error {
 		return nil
 	}
 
-	convoy.GetVersion()
 	a.Logger.Infof("Server running on port %v", cfg.Server.HTTP.Port)
 	srv.Listen()
 	return nil
