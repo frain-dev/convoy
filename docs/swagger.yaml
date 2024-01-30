@@ -3221,6 +3221,18 @@ paths:
       - in: query
         name: sort
         type: string
+      - description: results per page
+        in: query
+        name: perPage
+        type: string
+      - description: page number
+        in: query
+        name: page
+        type: string
+      - description: sort order
+        in: query
+        name: sort
+        type: string
       produces:
       - application/json
       responses:

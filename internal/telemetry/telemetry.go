@@ -68,6 +68,11 @@ func NewTelemetry(log *log.Logger, config *datastore.Configuration, opts ...Tele
 
 // on startup: telemetry.Identify(instanceId)
 func (t *Telemetry) Identify(ctx context.Context, instanceID string) error {
+	isEnabled := t.config.IsAnalyticsEnabled
+	if !isEnabled {
+		return nil
+	}
+
 	for _, b := range t.backends {
 		t.wg.Add(1)
 		go func(b backend) {

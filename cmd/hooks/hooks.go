@@ -133,19 +133,23 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 				return err
 			}
 
-			cfg, err := ensureInstanceConfig(context.Background(), app, cfg)
+			dbCfg, err := ensureInstanceConfig(context.Background(), app, cfg)
 			if err != nil {
 				return err
 			}
 
-			t := telemetry.NewTelemetry(lo, cfg,
-				telemetry.OptionBackend(telemetry.NewposthogBackend()),
-				telemetry.OptionBackend(telemetry.NewmixpanelBackend()))
+			// TODO(subomi): refactor this using another mechanism.
+			// only run if you're not on local.
+			if cfg.Database.Host != "localhost" {
+				t := telemetry.NewTelemetry(lo, dbCfg,
+					telemetry.OptionBackend(telemetry.NewposthogBackend()),
+					telemetry.OptionBackend(telemetry.NewmixpanelBackend()))
 
-			err = t.Identify(cmd.Context(), cfg.UID)
-			if err != nil {
-				// do nothing?
-				return err
+				err = t.Identify(cmd.Context(), dbCfg.UID)
+				if err != nil {
+					// do nothing?
+					return err
+				}
 			}
 		}
 

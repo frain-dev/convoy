@@ -3122,6 +3122,24 @@
                         "type": "string",
                         "name": "sort",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "results per page",
+                        "name": "perPage",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
                     }
                 ],
                 "responses": {

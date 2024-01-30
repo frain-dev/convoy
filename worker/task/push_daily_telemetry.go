@@ -54,44 +54,46 @@ func PushDailyTelemetry(log *log.Logger, db database.Database, cache cache.Cache
 			}
 		}()
 
-		orgRepo := postgres.NewOrgRepo(db, cache)
-		orgs, err := getAllOrganisations(ctx, orgRepo)
-		if err != nil {
-			return err
-		}
+		if cfg.Database.Host != "localhost" {
+			orgRepo := postgres.NewOrgRepo(db, cache)
+			orgs, err := getAllOrganisations(ctx, orgRepo)
+			if err != nil {
+				return err
+			}
 
-		configRepo := postgres.NewConfigRepo(db)
-		config, err := configRepo.LoadConfiguration(context.Background())
-		if err != nil {
-			return err
-		}
-		eventRepo := postgres.NewEventRepo(db, cache)
-		projectRepo := postgres.NewProjectRepo(db, cache)
+			configRepo := postgres.NewConfigRepo(db)
+			config, err := configRepo.LoadConfiguration(context.Background())
+			if err != nil {
+				return err
+			}
+			eventRepo := postgres.NewEventRepo(db, cache)
+			projectRepo := postgres.NewProjectRepo(db, cache)
 
-		totalEventsTracker := &telemetry.TotalEventsTracker{
-			Orgs:        orgs,
-			EventRepo:   eventRepo,
-			ProjectRepo: projectRepo,
-		}
+			totalEventsTracker := &telemetry.TotalEventsTracker{
+				Orgs:        orgs,
+				EventRepo:   eventRepo,
+				ProjectRepo: projectRepo,
+			}
 
-		totalActiveProjectTracker := &telemetry.TotalActiveProjectTracker{
-			Orgs:        orgs,
-			EventRepo:   eventRepo,
-			ProjectRepo: projectRepo,
-		}
+			totalActiveProjectTracker := &telemetry.TotalActiveProjectTracker{
+				Orgs:        orgs,
+				EventRepo:   eventRepo,
+				ProjectRepo: projectRepo,
+			}
 
-		pb := telemetry.NewposthogBackend()
-		mb := telemetry.NewmixpanelBackend()
+			pb := telemetry.NewposthogBackend()
+			mb := telemetry.NewmixpanelBackend()
 
-		telemetry := telemetry.NewTelemetry(log, config,
-			telemetry.OptionTracker(totalEventsTracker),
-			telemetry.OptionTracker(totalActiveProjectTracker),
-			telemetry.OptionBackend(pb),
-			telemetry.OptionBackend(mb))
+			telemetry := telemetry.NewTelemetry(log, config,
+				telemetry.OptionTracker(totalEventsTracker),
+				telemetry.OptionTracker(totalActiveProjectTracker),
+				telemetry.OptionBackend(pb),
+				telemetry.OptionBackend(mb))
 
-		err = telemetry.Capture(ctx)
-		if err != nil {
-			return err
+			err = telemetry.Capture(ctx)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
