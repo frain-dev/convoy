@@ -12,7 +12,7 @@ import (
 )
 
 type CreateEvent struct {
-	UID            string            `json:"uid"`
+	UID            string            `json:"uid" swaggerignore:"true"`
 	AppID          string            `json:"app_id"` // Deprecated but necessary for backward compatibility
 	OwnerID        string            `json:"owner_id"`
 	EndpointID     string            `json:"endpoint_id"`
@@ -49,9 +49,9 @@ type SearchParams struct {
 
 type QueryListEvent struct {
 	// Any arbitrary value to filter the events payload
-	Query          string `json:"query"`
-	SourceID       string `json:"sourceId"`
-	IdempotencyKey string `json:"idempotencyKey"`
+	Query          string   `json:"query"`
+	SourceIDs      []string `json:"sourceId"`
+	IdempotencyKey string   `json:"idempotencyKey"`
 	SearchParams
 	// A list of endpoint ids to filter by
 	EndpointIDs []string `json:"endpointId"`
@@ -73,7 +73,7 @@ func (qs *QueryListEvent) Transform(r *http.Request) (*QueryListEventResponse, e
 			Query:          r.URL.Query().Get("query"),
 			IdempotencyKey: r.URL.Query().Get("idempotencyKey"),
 			EndpointIDs:    getEndpointIDs(r),
-			SourceID:       r.URL.Query().Get("sourceId"),
+			SourceIDs:      getSourceIDs(r),
 			SearchParams:   searchParams,
 			Pageable:       m.GetPageableFromContext(r.Context()),
 		},
@@ -112,34 +112,6 @@ type EventResponse struct {
 	*datastore.Event
 }
 
-type QueryBatchReplayEvent struct {
-	// The endpoint ID to filter by
-	EndpointID string `json:"endpointId"`
-	// The source ID to filter by
-	SourceID string `json:"sourceId"`
-	SearchParams
-}
-
-type QueryBatchReplayEventResponse struct {
-	*datastore.Filter
-}
-
-func (qb *QueryBatchReplayEvent) Transform(r *http.Request) (*QueryBatchReplayEventResponse, error) {
-	searchParams, err := getSearchParams(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return &QueryBatchReplayEventResponse{
-		Filter: &datastore.Filter{
-			Pageable:     defaultPageable,
-			SourceID:     r.URL.Query().Get("sourceId"),
-			EndpointID:   r.URL.Query().Get("endpointId"),
-			SearchParams: searchParams,
-		},
-	}, nil
-}
-
 type QueryCountAffectedEvents struct {
 	SourceID   string `json:"sourceId"`
 	EndpointID string `json:"endpointId"`
@@ -176,6 +148,18 @@ func getEndpointIDs(r *http.Request) []string {
 	}
 
 	return endpoints
+}
+
+func getSourceIDs(r *http.Request) []string {
+	var sources []string
+
+	for _, id := range r.URL.Query()["sourceId"] {
+		if !util.IsStringEmpty(id) {
+			sources = append(sources, id)
+		}
+	}
+
+	return sources
 }
 
 func getSearchParams(r *http.Request) (datastore.SearchParams, error) {

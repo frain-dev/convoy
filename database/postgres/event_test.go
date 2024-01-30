@@ -230,11 +230,13 @@ func Test_LoadEventsPaged(t *testing.T) {
 	}`))
 
 	tests := []struct {
-		name       string
-		pageData   datastore.Pageable
-		count      int
-		endpointID string
-		expected   Expected
+		name          string
+		pageData      datastore.Pageable
+		count         int
+		expectedCount int
+		endpointID    string
+		sourceID      string
+		expected      Expected
 	}{
 		{
 			name: "Load Events Paged - 10 records",
@@ -290,6 +292,24 @@ func Test_LoadEventsPaged(t *testing.T) {
 			},
 			count:      1,
 			endpointID: ulid.Make().String(),
+			sourceID:   ulid.Make().String(),
+			expected: Expected{
+				paginationData: datastore.PaginationData{
+					PerPage: 3,
+				},
+			},
+		},
+
+		{
+			name: "Filter Events Paged By Source ID - 1 record",
+			pageData: datastore.Pageable{
+				PerPage:    3,
+				Direction:  datastore.Next,
+				NextCursor: datastore.DefaultCursor,
+			},
+			count: 3,
+
+			sourceID: ulid.Make().String(),
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					PerPage: 3,
@@ -305,13 +325,21 @@ func Test_LoadEventsPaged(t *testing.T) {
 
 			project := seedProject(t, db)
 			endpoint := generateEndpoint(project)
+			source := generateSource(t, db)
+			source.ProjectID = project.UID
+			if !util.IsStringEmpty(tc.sourceID) {
+				source.UID = tc.sourceID
+			}
 			eventRepo := NewEventRepo(db, nil)
 
 			if !util.IsStringEmpty(tc.endpointID) {
 				endpoint.UID = tc.endpointID
 			}
 
-			err := NewEndpointRepo(db, nil).CreateEndpoint(context.Background(), endpoint, project.UID)
+			err := NewSourceRepo(db, nil).CreateSource(context.Background(), source)
+			require.NoError(t, err)
+
+			err = NewEndpointRepo(db, nil).CreateEndpoint(context.Background(), endpoint, project.UID)
 			require.NoError(t, err)
 
 			for i := 0; i < tc.count; i++ {
@@ -321,6 +349,7 @@ func Test_LoadEventsPaged(t *testing.T) {
 					Endpoints: []string{endpoint.UID},
 					ProjectID: project.UID,
 					Headers:   httpheader.HTTPHeader{},
+					SourceID:  source.UID,
 					Raw:       string(data),
 					Data:      data,
 					CreatedAt: time.Now(),
@@ -333,6 +362,7 @@ func Test_LoadEventsPaged(t *testing.T) {
 
 			_, pageable, err := eventRepo.LoadEventsPaged(context.Background(), project.UID, &datastore.Filter{
 				EndpointID: endpoint.UID,
+				SourceIDs:  []string{source.UID},
 				SearchParams: datastore.SearchParams{
 					CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
 					CreatedAtEnd:   time.Now().Add(5 * time.Minute).Unix(),

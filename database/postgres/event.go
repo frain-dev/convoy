@@ -138,12 +138,13 @@ const (
 	`
 
 	baseEventFilter = ` AND ev.project_id = :project_id
-	AND (ev.source_id = :source_id OR :source_id = '')
 	AND (ev.idempotency_key = :idempotency_key OR :idempotency_key = '')
 	AND ev.created_at >= :start_date
 	AND ev.created_at <= :end_date`
 
 	endpointFilter = ` AND ee.endpoint_id IN (:endpoint_ids) `
+
+	sourceFilter = ` AND ev.source_id IN (:source_ids) `
 
 	searchFilter = ` AND search_token @@ websearch_to_tsquery('simple',:query) `
 
@@ -362,7 +363,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 	arg := map[string]interface{}{
 		"endpoint_ids":    filter.EndpointIDs,
 		"project_id":      projectID,
-		"source_id":       filter.SourceID,
+		"source_ids":      filter.SourceIDs,
 		"limit":           filter.Pageable.Limit(),
 		"start_date":      startDate,
 		"end_date":        endDate,
@@ -380,6 +381,11 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 	}
 
 	filterQuery = baseEventFilter
+
+	if len(filter.SourceIDs) > 0 {
+		filterQuery += sourceFilter
+	}
+
 	if len(filter.EndpointIDs) > 0 {
 		filterQuery += endpointFilter
 	}

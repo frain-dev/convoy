@@ -15,6 +15,7 @@ type Filter struct {
 	EventID        string
 	EventType      string
 	SourceID       string
+	SourceIDs      []string
 	Pageable       Pageable
 	IdempotencyKey string
 	Status         []EventDeliveryStatus
