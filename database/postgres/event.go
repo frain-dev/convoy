@@ -208,6 +208,7 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 	if err != nil {
 		return err
 	}
+	defer rollbackTx(tx)
 
 	_, err = tx.ExecContext(ctx, createEvent,
 		event.UID,

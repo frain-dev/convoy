@@ -140,10 +140,10 @@ const (
 	WHERE e.deleted_at IS NULL
 	AND e.project_id = :project_id
 	AND (e.owner_id = :owner_id OR :owner_id = '')
-	AND (e.title ILIKE :title OR :title = '')
-	`
+	AND (e.title ILIKE :title OR :title = '')`
 
 	fetchEndpointsPagedForward = `
+	%s
 	%s
 	AND e.id <= :cursor
 	GROUP BY e.id
@@ -153,6 +153,7 @@ const (
 
 	fetchEndpointsPagedBackward = `
 	WITH endpoints AS (
+	    %s
 		%s
 		AND e.id >= :cursor
 		GROUP BY e.id
