@@ -275,7 +275,6 @@ const (
 	RedisQueueProvider       QueueProvider           = "redis"
 	DefaultSignatureHeader   SignatureHeaderProvider = "X-Convoy-Signature"
 	PostgresDatabaseProvider DatabaseProvider        = "postgres"
-	TypesenseSearchProvider  SearchProvider          = "typesense"
 )
 
 type (
@@ -404,7 +403,7 @@ func LoadConfig(p string) error {
 			return err
 		}
 
-		defer f.Close()
+		defer convoy.CloseWithError(f)
 
 		// load config from config.json
 		if err := json.NewDecoder(f).Decode(&c); err != nil {

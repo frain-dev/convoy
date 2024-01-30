@@ -167,6 +167,7 @@ type ConfigurationRepository interface {
 	CreateConfiguration(context.Context, *Configuration) error
 	LoadConfiguration(context.Context) (*Configuration, error)
 	UpdateConfiguration(context.Context, *Configuration) error
+	HasValidLicense(ctx context.Context) bool
 }
 
 type PortalLinkRepository interface {

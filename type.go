@@ -2,6 +2,8 @@ package convoy
 
 import (
 	"embed"
+	"fmt"
+	"io"
 	"strings"
 )
 
@@ -54,8 +56,7 @@ func readVersion(fs embed.FS) ([]byte, error) {
 	return data, nil
 }
 
-// TODO(subomi): This needs to be refactored for everywhere we depend
-// on this code.
+// GetVersion TODO(subomi): This needs to be refactored for everywhere we depend on this code.
 func GetVersion() string {
 	v := "0.1.0"
 
@@ -80,6 +81,10 @@ func GetVersionFromFS(fs embed.FS) string {
 	return v
 }
 
+func ErrFeatureNotAccessible(feature string) error {
+	return fmt.Errorf("%s are not available in the open source version", feature)
+}
+
 const (
 	EventProcessor               TaskName = "EventProcessor"
 	CreateEventProcessor         TaskName = "CreateEventProcessor"
@@ -96,15 +101,14 @@ const (
 	ExpireSecretsProcessor       TaskName = "ExpireSecretsProcessor"
 	DeleteArchivedTasksProcessor TaskName = "DeleteArchivedTasksProcessor"
 
-	EndpointCacheKey           CacheKey = "endpoints"
-	UserCacheKey               CacheKey = "users"
-	ApiKeyCacheKey             CacheKey = "api_keys"
-	OrganisationCacheKey       CacheKey = "organisations"
-	OrganisationMemberCacheKey CacheKey = "organisation_members"
-	ProjectsCacheKey           CacheKey = "projects"
-	SubscriptionCacheKey       CacheKey = "subscriptions"
-	TokenCacheKey              CacheKey = "tokens"
-	SourceCacheKey             CacheKey = "sources"
+	EndpointCacheKey     CacheKey = "endpoints"
+	UserCacheKey         CacheKey = "users"
+	ApiKeyCacheKey       CacheKey = "api_keys"
+	OrganisationCacheKey CacheKey = "organisations"
+	ProjectsCacheKey     CacheKey = "projects"
+	SubscriptionCacheKey CacheKey = "subscriptions"
+	TokenCacheKey        CacheKey = "tokens"
+	SourceCacheKey       CacheKey = "sources"
 )
 
 // queues
@@ -112,7 +116,6 @@ const (
 	EventQueue       QueueName = "EventQueue"
 	CreateEventQueue QueueName = "CreateEventQueue"
 	MetaEventQueue   QueueName = "MetaEventQueue"
-	SearchIndexQueue QueueName = "SearchIndexQueue"
 	StreamQueue      QueueName = "StreamQueue"
 	ScheduleQueue    QueueName = "ScheduleQueue"
 	DefaultQueue     QueueName = "DefaultQueue"
@@ -123,3 +126,10 @@ const (
 	DefaultOnPremDir = "/var/convoy/export"
 	TmpExportDir     = "/tmp/convoy/export"
 )
+
+func CloseWithError(closer io.Closer) {
+	err := closer.Close()
+	if err != nil {
+		fmt.Printf("%v, an error occurred while closing the client", err)
+	}
+}

@@ -1234,6 +1234,7 @@ type Configuration struct {
 	IsAnalyticsEnabled bool                        `json:"is_analytics_enabled" db:"is_analytics_enabled"`
 	IsSignupEnabled    bool                        `json:"is_signup_enabled" db:"is_signup_enabled"`
 	StoragePolicy      *StoragePolicyConfiguration `json:"storage_policy" db:"storage_policy"`
+	License            null.String                 `json:"license" db:"license"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
@@ -1286,9 +1287,8 @@ type Device struct {
 type DeviceStatus string
 
 const (
-	DeviceStatusOffline  DeviceStatus = "offline"
-	DeviceStatusOnline   DeviceStatus = "online"
-	DeviceStatusDisabled DeviceStatus = "disabled"
+	DeviceStatusOffline DeviceStatus = "offline"
+	DeviceStatusOnline  DeviceStatus = "online"
 )
 
 type Job struct {

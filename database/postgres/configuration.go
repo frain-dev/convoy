@@ -17,14 +17,15 @@ const (
 		id, is_analytics_enabled, is_signup_enabled,
 		storage_policy_type, on_prem_path, s3_prefix,
 		s3_bucket, s3_access_key, s3_secret_key,
-		s3_region, s3_session_token, s3_endpoint
+		s3_region, s3_session_token, s3_endpoint, license
 	  )
-	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);
 	`
 
 	fetchConfiguration = `
 	SELECT
 		id,
+		license,
 		is_analytics_enabled,
 		is_signup_enabled,
 		storage_policy_type AS "storage_policy.type",
@@ -58,6 +59,7 @@ const (
 		s3_session_token = $10,
 		s3_endpoint = $11,
 		s3_prefix = $12,
+		license = $13,
 		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -101,6 +103,7 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 		config.StoragePolicy.S3.Region,
 		config.StoragePolicy.S3.SessionToken,
 		config.StoragePolicy.S3.Endpoint,
+		config.License,
 	)
 	if err != nil {
 		return err
@@ -161,6 +164,7 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 		cfg.StoragePolicy.S3.SessionToken,
 		cfg.StoragePolicy.S3.Endpoint,
 		cfg.StoragePolicy.S3.Prefix,
+		cfg.License,
 	)
 	if err != nil {
 		return err
@@ -176,4 +180,8 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 	}
 
 	return nil
+}
+
+func (c *configRepo) HasValidLicense(ctx context.Context) bool {
+	return true
 }

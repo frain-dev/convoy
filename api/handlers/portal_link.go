@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy"
 	"net/http"
 
 	"github.com/frain-dev/convoy/pkg/log"
@@ -31,6 +33,12 @@ import (
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links [post]
 func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
+	configRepo := postgres.NewConfigRepo(h.A.DB)
+	if !configRepo.HasValidLicense(r.Context()) {
+		_ = render.Render(w, r, util.NewServiceErrResponse(convoy.ErrFeatureNotAccessible("portal links")))
+		return
+	}
+
 	var newPortalLink models.PortalLink
 	if err := util.ReadJSON(r, &newPortalLink); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -66,7 +74,7 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Portal link created successfully", pl, http.StatusCreated))
 }
 
-// GetPortalLinkByID
+// GetPortalLink
 //
 //	@Summary		Retrieve a portal link
 //	@Description	This endpoint retrieves a portal link by its id.
@@ -80,6 +88,12 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID} [get]
 func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
+	configRepo := postgres.NewConfigRepo(h.A.DB)
+	if !configRepo.HasValidLicense(r.Context()) {
+		_ = render.Render(w, r, util.NewServiceErrResponse(convoy.ErrFeatureNotAccessible("portal links")))
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -98,7 +112,7 @@ func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
 		portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache)
 		pLink, err = portalLinkRepo.FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 		if err != nil {
-			if err == datastore.ErrPortalLinkNotFound {
+			if errors.Is(err, datastore.ErrPortalLinkNotFound) {
 				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 				return
 			}
@@ -133,6 +147,12 @@ func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID} [put]
 func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
+	configRepo := postgres.NewConfigRepo(h.A.DB)
+	if !configRepo.HasValidLicense(r.Context()) {
+		_ = render.Render(w, r, util.NewServiceErrResponse(convoy.ErrFeatureNotAccessible("portal links")))
+		return
+	}
+
 	var updatePortalLink models.PortalLink
 	err := util.ReadJSON(r, &updatePortalLink)
 	if err != nil {
@@ -148,7 +168,7 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 
 	portalLink, err := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache).FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
-		if err == datastore.ErrPortalLinkNotFound {
+		if errors.Is(err, datastore.ErrPortalLinkNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
@@ -195,6 +215,12 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke [put]
 func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
+	configRepo := postgres.NewConfigRepo(h.A.DB)
+	if !configRepo.HasValidLicense(r.Context()) {
+		_ = render.Render(w, r, util.NewServiceErrResponse(convoy.ErrFeatureNotAccessible("portal links")))
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -204,7 +230,7 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache)
 	portalLink, err := portalLinkRepo.FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
-		if err == datastore.ErrPortalLinkNotFound {
+		if errors.Is(err, datastore.ErrPortalLinkNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
@@ -238,6 +264,12 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links [get]
 func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
+	configRepo := postgres.NewConfigRepo(h.A.DB)
+	if !configRepo.HasValidLicense(r.Context()) {
+		_ = render.Render(w, r, util.NewServiceErrResponse(convoy.ErrFeatureNotAccessible("portal links")))
+		return
+	}
+
 	pageable := middleware.GetPageableFromContext(r.Context())
 	project, err := h.retrieveProject(r)
 	if err != nil {

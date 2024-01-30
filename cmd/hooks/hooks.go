@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"time"
 
@@ -405,7 +404,7 @@ func checkPendingMigrations(db database.Database) error {
 	if err != nil {
 		return err
 	}
-	defer closeWithError(rows)
+	defer convoy.CloseWithError(rows)
 
 	for rows.Next() {
 		var id ID
@@ -500,11 +499,4 @@ func ensureDefaultUser(ctx context.Context, a *cli.App) error {
 	a.Logger.Infof("Created Superuser with username: %s and password: %s", defaultUser.Email, p.Plaintext)
 
 	return nil
-}
-
-func closeWithError(closer io.Closer) {
-	err := closer.Close()
-	if err != nil {
-		fmt.Printf("%v, an error occurred while closing the client", err)
-	}
 }
