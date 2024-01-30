@@ -204,8 +204,6 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		sourceID = &event.SourceID
 	}
 
-	fmt.Println("ssss", sourceID)
-
 	tx, err := e.db.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -386,8 +384,6 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		filterQuery += sourceFilter
 	}
 
-	fmt.Println("ffff", filterQuery)
-
 	if len(filter.EndpointIDs) > 0 {
 		filterQuery += endpointFilter
 	}
@@ -414,7 +410,6 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 	}
 
 	query = e.db.Rebind(query)
-	fmt.Println("qq", query)
 	rows, err := e.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
