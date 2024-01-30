@@ -2,12 +2,13 @@ package telemetry
 
 import (
 	"context"
+	"os"
 
 	"github.com/mixpanel/mixpanel-go"
 )
 
 const (
-	mixpanelToken string = "YWViNzUwYWRmYjM0YTZmZjJkMzg2YTYyYWVhY2M2NWI="
+	mixpanelToken string = "50452b2e0f9390a48c97a06c09e7df79"
 )
 
 type mixpanelBackend struct {
@@ -15,7 +16,7 @@ type mixpanelBackend struct {
 }
 
 func NewmixpanelBackend() *mixpanelBackend {
-	client := mixpanel.NewApiClient(mixpanelToken)
+	client := mixpanel.NewApiClient(mixpanelToken, mixpanel.DebugHttpCalls(os.Stdout))
 	return &mixpanelBackend{client: client}
 }
 

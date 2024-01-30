@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"context"
+	"sync"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -16,7 +17,7 @@ const (
 	DailyUserCount          string = "Daily User Count"
 )
 
-type Backend interface {
+type backend interface {
 	Capture(ctx context.Context, metric metric) error
 	Identify(ctx context.Context, instanceID string) error
 }
@@ -42,9 +43,16 @@ func OptionTracker(tr tracker) func(*Telemetry) {
 	}
 }
 
+func OptionBackend(b backend) func(*Telemetry) {
+	return func(t *Telemetry) {
+		t.backends = append(t.backends, b)
+	}
+}
+
 type Telemetry struct {
+	wg       sync.WaitGroup
 	config   *datastore.Configuration
-	backends []Backend
+	backends []backend
 	trackers []tracker
 	Logger   *log.Logger
 }
@@ -65,7 +73,8 @@ func NewTelemetry(log *log.Logger, config *datastore.Configuration, opts ...Tele
 // on startup: telemetry.Identify(instanceId)
 func (t *Telemetry) Identify(ctx context.Context, instanceID string) error {
 	for _, b := range t.backends {
-		go func(b Backend) {
+		t.wg.Add(1)
+		go func(b backend) {
 			err := b.Identify(ctx, instanceID)
 			if err != nil {
 				t.Logger.Error(err)
@@ -73,6 +82,7 @@ func (t *Telemetry) Identify(ctx context.Context, instanceID string) error {
 		}(b)
 	}
 
+	t.wg.Wait()
 	return nil
 }
 
@@ -97,7 +107,8 @@ func (t *Telemetry) Capture(ctx context.Context) error {
 	}
 
 	for _, b := range t.backends {
-		go func(b Backend) {
+		t.wg.Add(1)
+		go func(b backend) {
 			for _, m := range metrics {
 				err := b.Capture(ctx, m)
 				if err != nil {
@@ -107,5 +118,6 @@ func (t *Telemetry) Capture(ctx context.Context) error {
 		}(b)
 	}
 
+	t.wg.Wait()
 	return nil
 }

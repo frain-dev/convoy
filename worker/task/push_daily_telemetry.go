@@ -80,9 +80,14 @@ func PushDailyTelemetry(log *log.Logger, db database.Database, cache cache.Cache
 			ProjectRepo: projectRepo,
 		}
 
+		pb := telemetry.NewposthogBackend()
+		mb := telemetry.NewmixpanelBackend()
+
 		telemetry := telemetry.NewTelemetry(log, config,
 			telemetry.OptionTracker(totalEventsTracker),
-			telemetry.OptionTracker(totalActiveProjectTracker))
+			telemetry.OptionTracker(totalActiveProjectTracker),
+			telemetry.OptionBackend(pb),
+			telemetry.OptionBackend(mb))
 
 		err = telemetry.Capture(ctx)
 		if err != nil {
