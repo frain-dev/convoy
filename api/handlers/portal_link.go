@@ -246,7 +246,8 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 	}
 
 	endpointIDs := getEndpointIDs(r)
-	filter := &datastore.FilterBy{EndpointIDs: endpointIDs}
+	ownerId := r.URL.Query().Get("ownerId")
+	filter := &datastore.FilterBy{EndpointIDs: endpointIDs, OwnerID: ownerId}
 
 	portalLinks, paginationData, err := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache).LoadPortalLinksPaged(r.Context(), project.UID, filter, pageable)
 	if err != nil {

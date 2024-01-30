@@ -36,6 +36,7 @@ type ApiKeyFilter struct {
 }
 
 type FilterBy struct {
+	OwnerID      string
 	EndpointID   string
 	EndpointIDs  []string
 	ProjectID    string
