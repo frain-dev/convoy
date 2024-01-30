@@ -255,7 +255,7 @@ func (h *Handler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/batchreplay [post]
 func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
-	var q *models.QueryBatchReplayEvent
+	var q *models.QueryListEvent
 	p, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -377,7 +377,7 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
-	var q *models.QueryCountAffectedEvents
+	var q *models.QueryListEvent
 	p, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

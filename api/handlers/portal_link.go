@@ -66,7 +66,7 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Portal link created successfully", pl, http.StatusCreated))
 }
 
-// GetPortalLinkByID
+// GetPortalLink
 //
 //	@Summary		Retrieve a portal link
 //	@Description	This endpoint retrieves a portal link by its id.
