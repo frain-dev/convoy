@@ -11,6 +11,7 @@ require (
 	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5
 	github.com/dop251/goja v0.0.0-20230828202809-3dbe69dd2b8e
 	github.com/dop251/goja_nodejs v0.0.0-20230821135201-94e508132562
+	github.com/fatih/structs v1.1.0
 	github.com/felixge/httpsnoop v1.0.3
 	github.com/getkin/kin-openapi v0.80.0
 	github.com/getsentry/sentry-go v0.25.0
@@ -51,6 +52,7 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
+	github.com/subomi/requestmigrations v0.4.0
 	github.com/swaggo/swag v1.8.12
 	github.com/tidwall/gjson v1.16.0
 	github.com/uptrace/opentelemetry-go-extra/otelsql v0.2.3
@@ -68,6 +70,7 @@ require (
 )
 
 require (
+	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/dlclark/regexp2 v1.7.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect

@@ -107,7 +107,7 @@ const docTemplate = `{
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/handlers.pagedResponse"
+                                                    "$ref": "#/definitions/models.PagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -979,7 +979,7 @@ const docTemplate = `{
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/handlers.pagedResponse"
+                                                    "$ref": "#/definitions/models.PagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -1909,7 +1909,7 @@ const docTemplate = `{
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/handlers.pagedResponse"
+                                                    "$ref": "#/definitions/models.PagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -2774,7 +2774,7 @@ const docTemplate = `{
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/handlers.pagedResponse"
+                                                    "$ref": "#/definitions/models.PagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -3098,20 +3098,31 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "results per page",
-                        "name": "perPage",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "list of endpoint ids",
+                        "name": "endpointID",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "page number",
-                        "name": "page",
+                        "name": "next_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "per_page",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "sort order",
+                        "name": "prev_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "name": "sort",
                         "in": "query"
                     }
@@ -3130,7 +3141,7 @@ const docTemplate = `{
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/handlers.pagedResponse"
+                                                    "$ref": "#/definitions/models.PagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -3737,7 +3748,7 @@ const docTemplate = `{
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/handlers.pagedResponse"
+                                                    "$ref": "#/definitions/models.PagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -4337,7 +4348,7 @@ const docTemplate = `{
                                         "data": {
                                             "allOf": [
                                                 {
-                                                    "$ref": "#/definitions/handlers.pagedResponse"
+                                                    "$ref": "#/definitions/models.PagedResponse"
                                                 },
                                                 {
                                                     "type": "object",
@@ -5280,7 +5291,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "http_timeout": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "owner_id": {
                     "type": "string"
@@ -5292,7 +5303,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "rate_limit_duration": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "secrets": {
                     "type": "array",
@@ -6117,15 +6128,6 @@ const docTemplate = `{
         "handlers.Stub": {
             "type": "object"
         },
-        "handlers.pagedResponse": {
-            "type": "object",
-            "properties": {
-                "content": {},
-                "pagination": {
-                    "$ref": "#/definitions/datastore.PaginationData"
-                }
-            }
-        },
         "httpheader.HTTPHeader": {
             "type": "object",
             "additionalProperties": {
@@ -6171,6 +6173,10 @@ const docTemplate = `{
         "models.CreateEndpoint": {
             "type": "object",
             "properties": {
+                "advanced_signatures": {
+                    "description": "Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
+                    "type": "boolean"
+                },
                 "appID": {
                     "description": "Deprecated but necessary for backward compatibility",
                     "type": "string"
@@ -6188,8 +6194,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "http_timeout": {
-                    "description": "Define endpoint http timeout in seconds. It uses Go's time duration syntax.\nE.g. 3s, 1m",
-                    "type": "string"
+                    "description": "Define endpoint http timeout in seconds.",
+                    "type": "integer"
                 },
                 "is_disabled": {
                     "description": "This is used to manually enable/disable the endpoint.",
@@ -6208,8 +6214,8 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "rate_limit_duration": {
-                    "description": "Rate limit duration specifies the time range for the rate limit. It uses\nGo's time duration syntax. E.g. 3s, 1m",
-                    "type": "string"
+                    "description": "Rate limit duration specifies the time range for the rate limit.",
+                    "type": "integer"
                 },
                 "secret": {
                     "description": "Endpoint's webhook secret. If not provided, Convoy autogenerates one for the endpoint.",
@@ -6426,7 +6432,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "http_timeout": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "owner_id": {
                     "type": "string"
@@ -6438,7 +6444,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "rate_limit_duration": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "secrets": {
                     "type": "array",
@@ -6795,6 +6801,15 @@ const docTemplate = `{
                 }
             }
         },
+        "models.PagedResponse": {
+            "type": "object",
+            "properties": {
+                "content": {},
+                "pagination": {
+                    "$ref": "#/definitions/datastore.PaginationData"
+                }
+            }
+        },
         "models.PortalLink": {
             "type": "object",
             "properties": {
@@ -7103,7 +7118,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "http_timeout": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "is_disabled": {
                     "type": "boolean"
@@ -7118,7 +7133,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "rate_limit_duration": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "secret": {
                     "type": "string"

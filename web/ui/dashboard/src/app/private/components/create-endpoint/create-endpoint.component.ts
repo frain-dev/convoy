@@ -130,8 +130,6 @@ export class CreateEndpointComponent implements OnInit {
 		const endpointValue = structuredClone(this.addNewEndpointForm.value);
 
 		if (!this.addNewEndpointForm.value.authentication.api_key.header_name && !this.addNewEndpointForm.value.authentication.api_key.header_value) delete endpointValue.authentication;
-		if (this.addNewEndpointForm.get('http_timeout')?.value) endpointValue.http_timeout = endpointValue.http_timeout + 's';
-		if (this.addNewEndpointForm.get('rate_limit_duration')?.value) endpointValue.rate_limit_duration = endpointValue.rate_limit_duration + 's';
 
 		try {
 			const response = this.endpointUid && this.editMode ? await this.createEndpointService.editEndpoint({ endpointId: this.endpointUid || '', body: endpointValue }) : await this.createEndpointService.addNewEndpoint({ body: endpointValue });
@@ -154,20 +152,15 @@ export class CreateEndpointComponent implements OnInit {
 			const response = await this.endpointService.getEndpoint(this.endpointUid);
 			const endpointDetails: ENDPOINT = response.data;
 			if (endpointDetails.rate_limit_duration) this.toggleConfigForm('rate_limit');
-			const duration = this.getDurationInSeconds(endpointDetails.rate_limit_duration);
 			this.addNewEndpointForm.patchValue(endpointDetails);
 			this.addNewEndpointForm.patchValue({
 				name: endpointDetails.title,
-				url: endpointDetails.target_url,
-				rate_limit_duration: duration
+				url: endpointDetails.target_url
 			});
 
 			if (endpointDetails.support_email) this.toggleConfigForm('alert_config');
 			if (endpointDetails.authentication.api_key.header_value || endpointDetails.authentication.api_key.header_name) this.toggleConfigForm('auth');
-			if (endpointDetails.http_timeout) {
-				this.toggleConfigForm('http_timeout');
-				this.addNewEndpointForm.patchValue({ http_timeout: endpointDetails.http_timeout.split('s')[0] });
-			}
+			if (endpointDetails.http_timeout) this.toggleConfigForm('http_timeout');
 
 			this.isLoadingEndpointDetails = false;
 		} catch {

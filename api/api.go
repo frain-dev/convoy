@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/api/handlers"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -19,6 +20,7 @@ import (
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/subomi/requestmigrations"
 )
 
 //go:embed ui/build
@@ -50,24 +52,43 @@ const (
 )
 
 const (
-	serverName = "apiserver"
+	VersionHeader = "X-Convoy-Version"
+	serverName    = "apiserver"
 )
 
 type ApplicationHandler struct {
 	Router http.Handler
+	rm     *requestmigrations.RequestMigration
 	A      *types.APIOptions
 }
 
 func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
+	appHandler := &ApplicationHandler{A: a}
+
 	az, err := authz.NewAuthz(&authz.AuthzOpts{
 		AuthCtxKey: authz.AuthCtxType(middleware.AuthUserCtx),
 	})
 	if err != nil {
-		return &ApplicationHandler{}, err
+		return nil, err
 	}
-	a.Authz = az
+	appHandler.A.Authz = az
 
-	return &ApplicationHandler{A: a}, nil
+	opts := &requestmigrations.RequestMigrationOptions{
+		VersionHeader:  VersionHeader,
+		CurrentVersion: config.DefaultAPIVersion,
+		VersionFormat:  requestmigrations.DateFormat,
+	}
+	rm, err := requestmigrations.NewRequestMigration(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	err = rm.RegisterMigrations(migrations)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ApplicationHandler{A: a, rm: rm}, nil
 }
 
 func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
@@ -86,7 +107,7 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
 
-	handler := &handlers.Handler{A: a.A}
+	handler := &handlers.Handler{A: a.A, RM: a.rm}
 
 	// Public API.
 	router.Route("/api", func(v1Router chi.Router) {

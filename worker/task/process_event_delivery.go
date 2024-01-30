@@ -110,18 +110,10 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		var attempt datastore.DeliveryAttempt
 
 		var httpDuration time.Duration
-		if util.IsStringEmpty(endpoint.HttpTimeout) {
-			httpDuration, err = time.ParseDuration(convoy.HTTP_TIMEOUT)
-			if err != nil {
-				log.WithError(err).Errorf("failed to parse endpoint duration")
-				return nil
-			}
+		if endpoint.HttpTimeout == 0 {
+			httpDuration = convoy.HTTP_TIMEOUT_IN_DURATION
 		} else {
-			httpDuration, err = time.ParseDuration(endpoint.HttpTimeout)
-			if err != nil {
-				log.WithError(err).Errorf("failed to parse endpoint duration")
-				return nil
-			}
+			httpDuration = time.Duration(endpoint.HttpTimeout) * time.Second
 		}
 
 		done := true

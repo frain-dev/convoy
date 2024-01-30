@@ -130,7 +130,7 @@ definitions:
       events:
         type: integer
       http_timeout:
-        type: string
+        type: integer
       owner_id:
         type: string
       project_id:
@@ -138,7 +138,7 @@ definitions:
       rate_limit:
         type: integer
       rate_limit_duration:
-        type: string
+        type: integer
       secrets:
         items:
           $ref: '#/definitions/datastore.Secret'
@@ -699,12 +699,6 @@ definitions:
     - APIKeyVerifier
   handlers.Stub:
     type: object
-  handlers.pagedResponse:
-    properties:
-      content: {}
-      pagination:
-        $ref: '#/definitions/datastore.PaginationData'
-    type: object
   httpheader.HTTPHeader:
     additionalProperties:
       items:
@@ -734,6 +728,11 @@ definitions:
     type: object
   models.CreateEndpoint:
     properties:
+      advanced_signatures:
+        description: |-
+          Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)
+          -- simple or advanced. If left unspecified, we default to false.
+        type: boolean
       appID:
         description: Deprecated but necessary for backward compatibility
         type: string
@@ -750,10 +749,8 @@ definitions:
           the endpoint
         type: string
       http_timeout:
-        description: |-
-          Define endpoint http timeout in seconds. It uses Go's time duration syntax.
-          E.g. 3s, 1m
-        type: string
+        description: Define endpoint http timeout in seconds.
+        type: integer
       is_disabled:
         description: This is used to manually enable/disable the endpoint.
         type: boolean
@@ -771,10 +768,8 @@ definitions:
           the time duration specified in RateLimitDuration
         type: integer
       rate_limit_duration:
-        description: |-
-          Rate limit duration specifies the time range for the rate limit. It uses
-          Go's time duration syntax. E.g. 3s, 1m
-        type: string
+        description: Rate limit duration specifies the time range for the rate limit.
+        type: integer
       secret:
         description: Endpoint's webhook secret. If not provided, Convoy autogenerates
           one for the endpoint.
@@ -929,7 +924,7 @@ definitions:
       events:
         type: integer
       http_timeout:
-        type: string
+        type: integer
       owner_id:
         type: string
       project_id:
@@ -937,7 +932,7 @@ definitions:
       rate_limit:
         type: integer
       rate_limit_duration:
-        type: string
+        type: integer
       secrets:
         items:
           $ref: '#/definitions/datastore.Secret'
@@ -1176,6 +1171,12 @@ definitions:
       updated_at:
         type: string
     type: object
+  models.PagedResponse:
+    properties:
+      content: {}
+      pagination:
+        $ref: '#/definitions/datastore.PaginationData'
+    type: object
   models.PortalLink:
     properties:
       can_manage_endpoint:
@@ -1377,7 +1378,7 @@ definitions:
       description:
         type: string
       http_timeout:
-        type: string
+        type: integer
       is_disabled:
         type: boolean
       name:
@@ -1387,7 +1388,7 @@ definitions:
       rate_limit:
         type: integer
       rate_limit_duration:
-        type: string
+        type: integer
       secret:
         type: string
       slack_webhook_url:
@@ -1538,7 +1539,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -2025,7 +2026,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -2550,7 +2551,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -3031,7 +3032,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -3202,16 +3203,22 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: results per page
+      - description: list of endpoint ids
         in: query
-        name: perPage
+        items:
+          type: string
+        name: endpointID
+        type: array
+      - in: query
+        name: next_page_cursor
         type: string
-      - description: page number
-        in: query
-        name: page
+      - in: query
+        name: per_page
+        type: integer
+      - in: query
+        name: prev_page_cursor
         type: string
-      - description: sort order
-        in: query
+      - in: query
         name: sort
         type: string
       produces:
@@ -3225,7 +3232,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -3562,7 +3569,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -3894,7 +3901,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:

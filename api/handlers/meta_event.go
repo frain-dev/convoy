@@ -22,7 +22,7 @@ import (
 //	@Produce		json
 //	@Param			projectID	path		string						true	"Project ID"
 //	@Param			request		query		models.QueryListMetaEvent	false	"Query Params"
-//	@Success		200			{object}	util.ServerResponse{data=pagedResponse{content=[]models.MetaEventResponse}}
+//	@Success		200			{object}	util.ServerResponse{data=models.PagedResponse{content=[]models.MetaEventResponse}}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/meta-events [get]
@@ -50,7 +50,7 @@ func (h *Handler) GetMetaEventsPaged(w http.ResponseWriter, r *http.Request) {
 		return models.MetaEventResponse{MetaEvent: &metaEvent}
 	})
 	_ = render.Render(w, r, util.NewServerResponse("Meta events fetched successfully",
-		pagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
+		models.PagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 // GetMetaEvent

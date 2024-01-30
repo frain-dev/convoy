@@ -204,6 +204,7 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 	if err != nil {
 		return err
 	}
+	defer rollbackTx(tx)
 
 	var (
 		hmac   datastore.HMac
@@ -284,6 +285,7 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 	if err != nil {
 		return err
 	}
+	defer rollbackTx(tx)
 
 	result, err := tx.ExecContext(
 		ctx, updateSourceById, source.UID, source.Name, source.Type, source.MaskID,
@@ -419,6 +421,7 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectId string, id,
 	if err != nil {
 		return err
 	}
+	defer rollbackTx(tx)
 
 	_, err = tx.ExecContext(ctx, deleteSourceVerifier, sourceVerifierId)
 	if err != nil {

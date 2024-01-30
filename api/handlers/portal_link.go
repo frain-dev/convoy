@@ -231,10 +231,12 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string	true	"Project ID"
+//	@Param			endpointID		query		[]string	false	"list of endpoint ids"
+//	@Param			request		query		datastore.Pageable	false	"Pagination Params"
 //	@Param			perPage		query		string	false	"results per page"
 //	@Param			page		query		string	false	"page number"
 //	@Param			sort		query		string	false	"sort order"
-//	@Success		200			{object}	util.ServerResponse{data=pagedResponse{content=[]models.PortalLinkResponse}}
+//	@Success		200			{object}	util.ServerResponse{data=models.PagedResponse{content=[]models.PortalLinkResponse}}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links [get]
@@ -247,7 +249,8 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 	}
 
 	endpointIDs := getEndpointIDs(r)
-	filter := &datastore.FilterBy{EndpointIDs: endpointIDs}
+	ownerId := r.URL.Query().Get("ownerId")
+	filter := &datastore.FilterBy{EndpointIDs: endpointIDs, OwnerID: ownerId}
 
 	portalLinks, paginationData, err := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache).LoadPortalLinksPaged(r.Context(), project.UID, filter, pageable)
 	if err != nil {
@@ -268,7 +271,7 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 		plResponse = append(plResponse, pl)
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Portal links fetched successfully", pagedResponse{Content: plResponse, Pagination: &paginationData}, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Portal links fetched successfully", models.PagedResponse{Content: plResponse, Pagination: &paginationData}, http.StatusOK))
 }
 
 func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.PortalLinkResponse {

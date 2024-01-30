@@ -291,8 +291,19 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		return ErrSubscriptionNotUpdated
 	}
 
+	_subscription := &datastore.Subscription{}
+	err = s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.id", "s.project_id"), subscription.UID, projectID).StructScan(_subscription)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return datastore.ErrSubscriptionNotFound
+		}
+		return err
+	}
+
+	nullifyEmptyConfig(_subscription)
+
 	subscriptionCacheKey := convoy.SubscriptionCacheKey.Get(subscription.UID).String()
-	err = s.cache.Set(ctx, subscriptionCacheKey, &subscription, config.DefaultCacheTTL)
+	err = s.cache.Set(ctx, subscriptionCacheKey, &_subscription, config.DefaultCacheTTL)
 	if err != nil {
 		return err
 	}
