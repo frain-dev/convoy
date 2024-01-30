@@ -9,12 +9,8 @@ import (
 )
 
 const (
-	posthogKey              string = ""
 	DailyEventCount         string = "Daily Event Count"
-	DailyOrganisationCount  string = "Daily Organization Count"
-	DailyProjectCount       string = "Daily Project Count"
 	DailyActiveProjectCount string = "Daily Active Project Count"
-	DailyUserCount          string = "Daily User Count"
 )
 
 type backend interface {
