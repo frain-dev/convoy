@@ -50,6 +50,7 @@ export class EndpointSecretComponent implements OnInit {
 		try {
 			const response = await this.endpointService.expireSecret({ endpointId: this.endpointDetails?.uid || '', body: this.expireSecretForm.value });
 			this.generalService.showNotification({ style: 'success', message: response.message });
+			this.endpointDetails = response.data;
 			this.isExpiringSecret = false;
 			this.expireCurrentSecret.emit();
 			this.showExpireSecret = false;
