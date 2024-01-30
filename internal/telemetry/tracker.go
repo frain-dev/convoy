@@ -2,34 +2,33 @@ package telemetry
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/util"
 )
 
-const perPage = 50
+var ErrInvalidInstanceID = errors.New("invalid instance id provided")
 
 type TotalEventsTracker struct {
-	ConfigRepo  datastore.ConfigurationRepository
+	Orgs        []datastore.Organisation
 	EventRepo   datastore.EventRepository
 	ProjectRepo datastore.ProjectRepository
-	OrgRepo     datastore.OrganisationRepository
 }
 
-func (te *TotalEventsTracker) Track() (metric, error) {
-	var mt metric
-	ctx := context.Background()
-	orgs, pagination, err := te.OrgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{PerPage: perPage, NextCursor: cursor, Direction: datastore.Next})
-	if err != nil {
-		return mt, err
+func (te *TotalEventsTracker) Track(ctx context.Context, instanceID string) (metric, error) {
+	if util.IsStringEmpty(instanceID) {
+		return metric{}, ErrInvalidInstanceID
 	}
 
-	if len(orgs) == 0 && !pagination.HasNextPage {
-		return mt, nil
+	mt := metric{
+		Name:       metricName(DailyEventCount),
+		InstanceID: instanceID,
 	}
 
-	for _, org := range orgs {
+	for _, org := range te.Orgs {
 		projects, err := te.ProjectRepo.LoadProjects(ctx, &datastore.ProjectFilter{OrgID: org.UID})
 		if err != nil {
 			log.WithError(err).Error("failed to load organisation projects")
@@ -43,42 +42,31 @@ func (te *TotalEventsTracker) Track() (metric, error) {
 				continue
 			}
 
-			err = te.client.Export(te.Name(), Event{"Count": count, "instanceID": te.instanceID})
-			if err != nil {
-				log.WithError(err).Error("failed to load export metrics")
-				continue
-			}
+			mt.Count += uint64(count)
 		}
 	}
 
-	cursor = pagination.NextPageCursor
-	return te.track(perPage, cursor)
+	return mt, nil
 }
 
 type TotalActiveProjectTracker struct {
-	OrgRepo     datastore.OrganisationRepository
+	Orgs        []datastore.Organisation
 	EventRepo   datastore.EventRepository
-	ConfigRepo  datastore.ConfigurationRepository
 	ProjectRepo datastore.ProjectRepository
 }
 
-func (ta *TotalActiveProjectTracker) Track() (metric, error) {
-	return ta.track(PerPage, 0, DefaultCursor)
-}
-
-func (ta *TotalActiveProjectTracker) track(perPage, count int, cursor string) error {
-	ctx := context.Background()
-	orgs, pagination, err := ta.OrgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{PerPage: perPage, NextCursor: cursor, Direction: datastore.Next})
-	if err != nil {
-		return err
+func (ta *TotalActiveProjectTracker) Track(ctx context.Context, instanceID string) (metric, error) {
+	if util.IsStringEmpty(instanceID) {
+		return metric{}, ErrInvalidInstanceID
 	}
 
-	if len(orgs) == 0 && !pagination.HasNextPage {
-		return a.client.Export(a.Name(), Event{"Count": count, "instanceID": a.instanceID})
+	mt := metric{
+		Name:       metricName(DailyActiveProjectCount),
+		InstanceID: instanceID,
 	}
 
 	now := time.Now()
-	for _, org := range orgs {
+	for _, org := range ta.Orgs {
 		projects, err := ta.ProjectRepo.LoadProjects(ctx, &datastore.ProjectFilter{OrgID: org.UID})
 		if err != nil {
 			log.WithError(err).Error("failed to load organisation projects")
@@ -87,25 +75,21 @@ func (ta *TotalActiveProjectTracker) track(perPage, count int, cursor string) er
 
 		for _, project := range projects {
 			filter := &datastore.Filter{
-				Pageable: datastore.Pageable{PerPage: perPage, NextCursor: cursor, Direction: datastore.Next},
 				SearchParams: datastore.SearchParams{
 					CreatedAtStart: time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix(),
 					CreatedAtEnd:   time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, time.UTC).Unix(),
 				},
 			}
 
-			events, _, err := ta.EventRepo.LoadEventsPaged(ctx, project.UID, filter)
+			count, err := ta.EventRepo.CountEvents(ctx, project.UID, filter)
 			if err != nil {
 				log.WithError(err).Error("failed to load events paged")
 				continue
 			}
 
-			if len(events) > 0 {
-				count += 1
-			}
+			mt.Count += uint64(count)
 		}
 	}
 
-	cursor = pagination.NextPageCursor
-	return ta.track(perPage, count, cursor)
+	return mt, nil
 }

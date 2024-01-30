@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -16,6 +17,8 @@ import (
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/hibiken/asynq"
 )
+
+const perPage = 50
 
 func PushDailyTelemetry(log *log.Logger, db database.Database, cache cache.Cache, cfg config.Configuration, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
 	// Create a pool with go-redis
@@ -51,26 +54,33 @@ func PushDailyTelemetry(log *log.Logger, db database.Database, cache cache.Cache
 			}
 		}()
 
+		orgRepo := postgres.NewOrgRepo(db, cache)
+		orgs, err := getAllOrganisations(ctx, orgRepo)
+		if err != nil {
+			return err
+		}
+
 		configRepo := postgres.NewConfigRepo(db)
+		config, err := configRepo.LoadConfiguration(context.Background())
+		if err != nil {
+			return err
+		}
 		eventRepo := postgres.NewEventRepo(db, cache)
 		projectRepo := postgres.NewProjectRepo(db, cache)
-		orgRepo := postgres.NewOrgRepo(db, cache)
 
 		totalEventsTracker := &telemetry.TotalEventsTracker{
-			OrgRepo:     orgRepo,
+			Orgs:        orgs,
 			EventRepo:   eventRepo,
-			ConfigRepo:  configRepo,
 			ProjectRepo: projectRepo,
 		}
 
 		totalActiveProjectTracker := &telemetry.TotalActiveProjectTracker{
-			OrgRepo:     orgRepo,
+			Orgs:        orgs,
 			EventRepo:   eventRepo,
-			ConfigRepo:  configRepo,
 			ProjectRepo: projectRepo,
 		}
 
-		telemetry := telemetry.NewTelemetry(log,
+		telemetry := telemetry.NewTelemetry(log, config,
 			telemetry.OptionTracker(totalEventsTracker),
 			telemetry.OptionTracker(totalActiveProjectTracker))
 
@@ -81,4 +91,25 @@ func PushDailyTelemetry(log *log.Logger, db database.Database, cache cache.Cache
 
 		return nil
 	}
+}
+
+func getAllOrganisations(ctx context.Context, orgRepo datastore.OrganisationRepository) ([]datastore.Organisation, error) {
+	var cursor string
+	var orgs []datastore.Organisation
+
+	for {
+		orgs, pagination, err := orgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{PerPage: perPage, NextCursor: cursor, Direction: datastore.Next})
+		if err != nil {
+			return nil, err
+		}
+
+		if len(orgs) == 0 && !pagination.HasNextPage {
+			break
+		}
+
+		cursor = pagination.NextPageCursor
+	}
+
+	return orgs, nil
+
 }

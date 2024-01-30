@@ -3,6 +3,7 @@ package telemetry
 import (
 	"context"
 
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
@@ -30,7 +31,7 @@ type metric struct {
 }
 
 type tracker interface {
-	Track() (metric, error)
+	Track(ctx context.Context, instanceID string) (metric, error)
 }
 
 type TelemetryOption func(*Telemetry)
@@ -42,13 +43,15 @@ func OptionTracker(tr tracker) func(*Telemetry) {
 }
 
 type Telemetry struct {
+	config   *datastore.Configuration
 	backends []Backend
 	trackers []tracker
 	Logger   *log.Logger
 }
 
-func NewTelemetry(log *log.Logger, opts ...TelemetryOption) *Telemetry {
+func NewTelemetry(log *log.Logger, config *datastore.Configuration, opts ...TelemetryOption) *Telemetry {
 	t := &Telemetry{
+		config: config,
 		Logger: log,
 	}
 
@@ -75,13 +78,19 @@ func (t *Telemetry) Identify(ctx context.Context, instanceID string) error {
 
 // at an interval: telemetry.Track()
 func (t *Telemetry) Capture(ctx context.Context) error {
+	isEnabled := t.config.IsAnalyticsEnabled
+	if !isEnabled {
+		return nil
+	}
+
 	var metrics []metric
 
 	// generate metrics
 	for _, tr := range t.trackers {
-		metric, err := tr.Track()
+		metric, err := tr.Track(ctx, t.config.UID)
 		if err != nil {
 			// what do we do when one tracker fails?
+			continue
 		}
 
 		metrics = append(metrics, metric)
