@@ -2,7 +2,6 @@ package telemetry
 
 import (
 	"context"
-	"os"
 
 	"github.com/mixpanel/mixpanel-go"
 )
@@ -16,7 +15,7 @@ type mixpanelBackend struct {
 }
 
 func NewmixpanelBackend() *mixpanelBackend {
-	client := mixpanel.NewApiClient(mixpanelToken, mixpanel.DebugHttpCalls(os.Stdout))
+	client := mixpanel.NewApiClient(mixpanelToken)
 	return &mixpanelBackend{client: client}
 }
 
@@ -35,4 +34,9 @@ func (mb *mixpanelBackend) Capture(ctx context.Context, metric metric) error {
 			"Count": metric.Count,
 		}),
 	})
+}
+
+func (mb *mixpanelBackend) Close() error {
+	// noop.
+	return nil
 }

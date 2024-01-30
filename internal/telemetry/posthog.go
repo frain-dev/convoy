@@ -20,8 +20,6 @@ func NewposthogBackend() *posthogBackend {
 }
 
 func (pb *posthogBackend) Identify(ctx context.Context, instanceID string) error {
-	defer pb.client.Close()
-
 	return pb.client.Enqueue(
 		posthog.Identify{
 			DistinctId: instanceID,
@@ -31,8 +29,6 @@ func (pb *posthogBackend) Identify(ctx context.Context, instanceID string) error
 }
 
 func (pb *posthogBackend) Capture(ctx context.Context, metric metric) error {
-	defer pb.client.Close()
-
 	return pb.client.Enqueue(
 		posthog.Capture{
 			DistinctId: metric.InstanceID,
@@ -40,4 +36,8 @@ func (pb *posthogBackend) Capture(ctx context.Context, metric metric) error {
 			Properties: posthog.NewProperties().
 				Set("Count", metric.Count),
 		})
+}
+
+func (pb *posthogBackend) Close() error {
+	return pb.client.Close()
 }

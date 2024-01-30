@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"context"
+	"io"
 	"sync"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -14,6 +15,7 @@ const (
 )
 
 type backend interface {
+	io.Closer
 	Capture(ctx context.Context, metric metric) error
 	Identify(ctx context.Context, instanceID string) error
 }
@@ -80,6 +82,11 @@ func (t *Telemetry) Identify(ctx context.Context, instanceID string) error {
 			if err != nil {
 				t.Logger.Error(err)
 			}
+
+			err = b.Close()
+			if err != nil {
+				t.Logger.Error(err)
+			}
 		}(b)
 	}
 
@@ -115,6 +122,11 @@ func (t *Telemetry) Capture(ctx context.Context) error {
 				if err != nil {
 					t.Logger.Error(err)
 				}
+			}
+
+			err := b.Close()
+			if err != nil {
+				t.Logger.Error(err)
 			}
 		}(b)
 	}
