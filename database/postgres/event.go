@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -207,6 +208,7 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 	if err != nil {
 		return err
 	}
+	defer rollbackTx(tx)
 
 	_, err = tx.ExecContext(ctx, createEvent,
 		event.UID,
@@ -527,6 +529,10 @@ func (e *eventRepo) CopyRows(ctx context.Context, projectID string, interval int
 	}
 
 	return tx.Commit()
+}
+
+func (e *eventRepo) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
+	return exportRecords(ctx, e.db, "convoy.events", projectID, createdAt, w)
 }
 
 func getCreatedDateFilter(startDate, endDate int64) (time.Time, time.Time) {

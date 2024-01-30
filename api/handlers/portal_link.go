@@ -231,6 +231,8 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string	true	"Project ID"
+//	@Param			endpointID		query		[]string	false	"list of endpoint ids"
+//	@Param			request		query		datastore.Pageable	false	"Pagination Params"
 //	@Param			perPage		query		string	false	"results per page"
 //	@Param			page		query		string	false	"page number"
 //	@Param			sort		query		string	false	"sort order"
@@ -247,7 +249,8 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 	}
 
 	endpointIDs := getEndpointIDs(r)
-	filter := &datastore.FilterBy{EndpointIDs: endpointIDs}
+	ownerId := r.URL.Query().Get("ownerId")
+	filter := &datastore.FilterBy{EndpointIDs: endpointIDs, OwnerID: ownerId}
 
 	portalLinks, paginationData, err := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache).LoadPortalLinksPaged(r.Context(), project.UID, filter, pageable)
 	if err != nil {

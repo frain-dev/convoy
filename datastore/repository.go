@@ -18,6 +18,7 @@ type APIKeyRepository interface {
 }
 
 type EventDeliveryRepository interface {
+	ExportRepository
 	CreateEventDelivery(context.Context, *EventDelivery) error
 	FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*EventDelivery, error)
 	FindEventDeliveriesByIDs(ctx context.Context, projectID string, ids []string) ([]EventDelivery, error)
@@ -35,6 +36,7 @@ type EventDeliveryRepository interface {
 }
 
 type EventRepository interface {
+	ExportRepository
 	CreateEvent(context.Context, *Event) error
 	FindEventByID(ctx context.Context, projectID string, id string) (*Event, error)
 	FindEventsByIDs(ctx context.Context, projectID string, ids []string) ([]Event, error)
@@ -177,13 +179,13 @@ type PortalLinkRepository interface {
 	RevokePortalLink(ctx context.Context, projectID string, id string) error
 }
 
-type ExportRepository interface {
-	ExportRecords(ctx context.Context, tableName, projectID string, createdAt time.Time, w io.Writer) (int64, error)
-}
-
 type MetaEventRepository interface {
 	CreateMetaEvent(context.Context, *MetaEvent) error
 	FindMetaEventByID(ctx context.Context, projectID string, id string) (*MetaEvent, error)
 	LoadMetaEventsPaged(ctx context.Context, projectID string, f *Filter) ([]MetaEvent, PaginationData, error)
 	UpdateMetaEvent(ctx context.Context, projectID string, metaEvent *MetaEvent) error
+}
+
+type ExportRepository interface {
+	ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error)
 }

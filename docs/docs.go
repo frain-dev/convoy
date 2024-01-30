@@ -3098,20 +3098,31 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "results per page",
-                        "name": "perPage",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "list of endpoint ids",
+                        "name": "endpointID",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "page number",
-                        "name": "page",
+                        "name": "next_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "per_page",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "sort order",
+                        "name": "prev_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "name": "sort",
                         "in": "query"
                     }

@@ -675,10 +675,21 @@ func (s *EndpointMetadata) Scan(v interface{}) error {
 	}
 
 	if string(b) == "null" {
+		*s = nil // Set the pointer to nil
 		return nil
 	}
 
-	return json.Unmarshal(b, s)
+	err := json.Unmarshal(b, s)
+	if err != nil {
+		return err
+	}
+
+	// Check if the slice only contains a nil element, and if so, set it to an empty slice
+	if len(*s) == 1 && (*s)[0] == nil {
+		*s = EndpointMetadata{}
+	}
+
+	return nil
 }
 
 // Event defines a payload to be sent to an application
