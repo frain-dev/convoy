@@ -13,15 +13,12 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/subomi/requestmigrations"
 )
 
-type pagedResponse struct {
-	Content    interface{}               `json:"content,omitempty"`
-	Pagination *datastore.PaginationData `json:"pagination,omitempty"`
-}
-
 type Handler struct {
-	A *types.APIOptions
+	A  *types.APIOptions
+	RM *requestmigrations.RequestMigration
 }
 
 func (h *Handler) IsReqWithProjectAPIKey(authUser *auth.AuthenticatedUser) bool {

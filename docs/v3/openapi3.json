@@ -195,7 +195,7 @@
 						"type": "integer"
 					},
 					"http_timeout": {
-						"type": "string"
+						"type": "integer"
 					},
 					"owner_id": {
 						"type": "string"
@@ -207,7 +207,7 @@
 						"type": "integer"
 					},
 					"rate_limit_duration": {
-						"type": "string"
+						"type": "integer"
 					},
 					"secrets": {
 						"items": {
@@ -1033,15 +1033,6 @@
 			"handlers.Stub": {
 				"type": "object"
 			},
-			"handlers.pagedResponse": {
-				"properties": {
-					"content": {},
-					"pagination": {
-						"$ref": "#/components/schemas/datastore.PaginationData"
-					}
-				},
-				"type": "object"
-			},
 			"httpheader.HTTPHeader": {
 				"additionalProperties": {
 					"items": {
@@ -1086,6 +1077,10 @@
 			},
 			"models.CreateEndpoint": {
 				"properties": {
+					"advanced_signatures": {
+						"description": "Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
+						"type": "boolean"
+					},
 					"appID": {
 						"description": "Deprecated but necessary for backward compatibility",
 						"type": "string"
@@ -1103,8 +1098,8 @@
 						"type": "string"
 					},
 					"http_timeout": {
-						"description": "Define endpoint http timeout in seconds. It uses Go's time duration syntax.\nE.g. 3s, 1m",
-						"type": "string"
+						"description": "Define endpoint http timeout in seconds.",
+						"type": "integer"
 					},
 					"is_disabled": {
 						"description": "This is used to manually enable/disable the endpoint.",
@@ -1123,8 +1118,8 @@
 						"type": "integer"
 					},
 					"rate_limit_duration": {
-						"description": "Rate limit duration specifies the time range for the rate limit. It uses\nGo's time duration syntax. E.g. 3s, 1m",
-						"type": "string"
+						"description": "Rate limit duration specifies the time range for the rate limit.",
+						"type": "integer"
 					},
 					"secret": {
 						"description": "Endpoint's webhook secret. If not provided, Convoy autogenerates one for the endpoint.",
@@ -1341,7 +1336,7 @@
 						"type": "integer"
 					},
 					"http_timeout": {
-						"type": "string"
+						"type": "integer"
 					},
 					"owner_id": {
 						"type": "string"
@@ -1353,7 +1348,7 @@
 						"type": "integer"
 					},
 					"rate_limit_duration": {
-						"type": "string"
+						"type": "integer"
 					},
 					"secrets": {
 						"items": {
@@ -1711,6 +1706,15 @@
 				},
 				"type": "object"
 			},
+			"models.PagedResponse": {
+				"properties": {
+					"content": {},
+					"pagination": {
+						"$ref": "#/components/schemas/datastore.PaginationData"
+					}
+				},
+				"type": "object"
+			},
 			"models.PortalLink": {
 				"properties": {
 					"can_manage_endpoint": {
@@ -2018,7 +2022,7 @@
 						"type": "string"
 					},
 					"http_timeout": {
-						"type": "string"
+						"type": "integer"
 					},
 					"is_disabled": {
 						"type": "boolean"
@@ -2033,7 +2037,7 @@
 						"type": "integer"
 					},
 					"rate_limit_duration": {
-						"type": "string"
+						"type": "integer"
 					},
 					"secret": {
 						"type": "string"
@@ -2265,7 +2269,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/handlers.pagedResponse"
+															"$ref": "#/components/schemas/models.PagedResponse"
 														},
 														{
 															"properties": {
@@ -3258,7 +3262,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/handlers.pagedResponse"
+															"$ref": "#/components/schemas/models.PagedResponse"
 														},
 														{
 															"properties": {
@@ -4317,7 +4321,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/handlers.pagedResponse"
+															"$ref": "#/components/schemas/models.PagedResponse"
 														},
 														{
 															"properties": {
@@ -5303,7 +5307,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/handlers.pagedResponse"
+															"$ref": "#/components/schemas/models.PagedResponse"
 														},
 														{
 															"properties": {
@@ -5720,7 +5724,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/handlers.pagedResponse"
+															"$ref": "#/components/schemas/models.PagedResponse"
 														},
 														{
 															"properties": {
@@ -6405,7 +6409,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/handlers.pagedResponse"
+															"$ref": "#/components/schemas/models.PagedResponse"
 														},
 														{
 															"properties": {
@@ -7083,7 +7087,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/handlers.pagedResponse"
+															"$ref": "#/components/schemas/models.PagedResponse"
 														},
 														{
 															"properties": {

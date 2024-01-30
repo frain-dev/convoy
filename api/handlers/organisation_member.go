@@ -39,7 +39,7 @@ func (h *Handler) GetOrganisationMembers(w http.ResponseWriter, r *http.Request)
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Organisation members fetched successfully",
-		pagedResponse{Content: &members, Pagination: &paginationData}, http.StatusOK))
+		models.PagedResponse{Content: &members, Pagination: &paginationData}, http.StatusOK))
 }
 
 func (h *Handler) GetOrganisationMember(w http.ResponseWriter, r *http.Request) {

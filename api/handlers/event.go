@@ -320,7 +320,7 @@ func (h *Handler) GetEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			projectID	path		string					true	"Project ID"
 //	@Param			request		query		models.QueryListEvent	false	"Query Params"
-//	@Success		200			{object}	util.ServerResponse{data=pagedResponse{content=[]models.EventResponse}}
+//	@Success		200			{object}	util.ServerResponse{data=models.PagedResponse{content=[]models.EventResponse}}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events [get]
@@ -354,7 +354,7 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 
 		if len(endpointIDs) == 0 {
 			_ = render.Render(w, r, util.NewServerResponse("App events fetched successfully",
-				pagedResponse{Content: endpointIDs, Pagination: &datastore.PaginationData{PerPage: int64(data.Filter.Pageable.PerPage)}}, http.StatusOK))
+				models.PagedResponse{Content: endpointIDs, Pagination: &datastore.PaginationData{PerPage: int64(data.Filter.Pageable.PerPage)}}, http.StatusOK))
 			return
 		}
 
@@ -373,7 +373,7 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 		return models.EventResponse{Event: &event}
 	})
 	_ = render.Render(w, r, util.NewServerResponse("App events fetched successfully",
-		pagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
+		models.PagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {

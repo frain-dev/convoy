@@ -9,6 +9,11 @@ import (
 	"gopkg.in/guregu/null.v4"
 )
 
+type PagedResponse struct {
+	Content    interface{}               `json:"content,omitempty"`
+	Pagination *datastore.PaginationData `json:"pagination,omitempty"`
+}
+
 type Organisation struct {
 	Name         string `json:"name" bson:"name"`
 	CustomDomain string `json:"custom_domain" bson:"custom_domain"`

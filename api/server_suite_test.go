@@ -200,6 +200,7 @@ func createRequest(method, url, auth string, body io.Reader) *http.Request {
 	req := httptest.NewRequest(method, url, body)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", auth))
+	req.Header.Add(VersionHeader, config.DefaultAPIVersion)
 
 	return req
 }

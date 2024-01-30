@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -37,20 +36,25 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		a.E.RateLimit = convoy.RATE_LIMIT
 	}
 
-	if util.IsStringEmpty(a.E.RateLimitDuration) {
+	if a.E.RateLimitDuration == 0 {
 		a.E.RateLimitDuration = convoy.RATE_LIMIT_DURATION
 	}
 
-	duration, err := time.ParseDuration(a.E.RateLimitDuration)
+	project, err := a.ProjectRepo.FetchProjectByID(ctx, a.ProjectID)
 	if err != nil {
-		return nil, &ServiceError{ErrMsg: fmt.Sprintf("an error occurred parsing the rate limit duration: %v", err)}
+		return nil, &ServiceError{ErrMsg: "failed to load endpoint project", Err: err}
 	}
 
-	if !util.IsStringEmpty(a.E.HttpTimeout) {
-		_, err = time.ParseDuration(a.E.HttpTimeout)
-		if err != nil {
-			return nil, &ServiceError{ErrMsg: fmt.Sprintf("an error occurred parsing the http timeout: %v", err)}
+	truthValue := true
+	switch project.Type {
+	case datastore.IncomingProject:
+		a.E.AdvancedSignatures = &truthValue
+	case datastore.OutgoingProject:
+		if a.E.AdvancedSignatures != nil {
+			break
 		}
+
+		a.E.AdvancedSignatures = &truthValue
 	}
 
 	endpoint := &datastore.Endpoint{
@@ -64,9 +68,9 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		Description:        a.E.Description,
 		RateLimit:          a.E.RateLimit,
 		HttpTimeout:        a.E.HttpTimeout,
-		AdvancedSignatures: true,
+		AdvancedSignatures: *a.E.AdvancedSignatures,
 		AppID:              a.E.AppID,
-		RateLimitDuration:  duration.String(),
+		RateLimitDuration:  a.E.RateLimitDuration,
 		Status:             datastore.ActiveEndpointStatus,
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),

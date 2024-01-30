@@ -43,10 +43,10 @@ func Test_UpdateEndpoint(t *testing.T) {
 		Description:        "9897fdkhkhd",
 		SlackWebhookURL:    "https:/899gfnnn",
 		SupportEmail:       "ex@convoybbb.com",
-		HttpTimeout:        "88s",
+		HttpTimeout:        88,
 		RateLimit:          8898,
 		Status:             datastore.ActiveEndpointStatus,
-		RateLimitDuration:  "48s",
+		RateLimitDuration:  10,
 		Authentication: &datastore.EndpointAuthentication{
 			Type: datastore.APIKeyAuthentication,
 			ApiKey: &datastore.ApiKey{
@@ -574,10 +574,10 @@ func generateEndpoint(project *datastore.Project) *datastore.Endpoint {
 		SlackWebhookURL:    "https:/gggggg",
 		SupportEmail:       "ex@convoy.com",
 		AppID:              "app1",
-		HttpTimeout:        "30s",
+		HttpTimeout:        30,
 		RateLimit:          300,
 		Status:             datastore.ActiveEndpointStatus,
-		RateLimitDuration:  "4s",
+		RateLimitDuration:  10,
 		Secrets: []datastore.Secret{
 			{
 				UID:       ulid.Make().String(),

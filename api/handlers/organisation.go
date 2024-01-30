@@ -45,7 +45,7 @@ func (h *Handler) GetOrganisationsPaged(w http.ResponseWriter, r *http.Request) 
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Organisations fetched successfully",
-		pagedResponse{Content: &organisations, Pagination: &paginationData}, http.StatusOK))
+		models.PagedResponse{Content: &organisations, Pagination: &paginationData}, http.StatusOK))
 }
 
 func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {

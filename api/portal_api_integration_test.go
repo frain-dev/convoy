@@ -164,7 +164,6 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpoints() {
 	resp := pagedResponse{Content: &respEndpoints}
 	parseResponse(s.T(), w.Result(), &resp)
 	require.Equal(s.T(), 2, len(respEndpoints))
-
 }
 
 func (s *PortalEndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
