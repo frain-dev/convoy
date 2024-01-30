@@ -3404,6 +3404,21 @@ paths:
         name: sort
         schema:
           type: string
+      - description: results per page
+        in: query
+        name: perPage
+        schema:
+          type: string
+      - description: page number
+        in: query
+        name: page
+        schema:
+          type: string
+      - description: sort order
+        in: query
+        name: sort
+        schema:
+          type: string
       responses:
         "200":
           content:

@@ -11,7 +11,6 @@ require (
 	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5
 	github.com/dop251/goja v0.0.0-20230828202809-3dbe69dd2b8e
 	github.com/dop251/goja_nodejs v0.0.0-20230821135201-94e508132562
-	github.com/dukex/mixpanel v0.0.0-20220410140740-e82251311162
 	github.com/fatih/structs v1.1.0
 	github.com/felixge/httpsnoop v1.0.3
 	github.com/getkin/kin-openapi v0.80.0
@@ -28,16 +27,18 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/hibiken/asynq v0.24.1
 	github.com/hibiken/asynq/x v0.0.0-20221219051101-0b8cfad70341
-	github.com/jarcoal/httpmock v1.3.0
+	github.com/jarcoal/httpmock v1.3.1
 	github.com/jaswdr/faker v1.10.2
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.10.7
 	github.com/mattn/go-sqlite3 v1.14.16
+	github.com/mixpanel/mixpanel-go v1.2.1
 	github.com/newrelic/go-agent/v3 v3.20.4
 	github.com/newrelic/go-agent/v3/integrations/nrpq v1.1.1
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/pkg/errors v0.9.1
+	github.com/posthog/posthog-go v0.0.0-20240115103626-fbd687c18571
 	github.com/prometheus/client_golang v1.16.0
 	github.com/r3labs/diff/v3 v3.0.1
 	github.com/redis/go-redis/extra/redisotel/v9 v9.0.5

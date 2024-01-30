@@ -23,6 +23,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/pkg/log"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/spf13/cobra"
@@ -132,9 +133,23 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 				return err
 			}
 
-			err = ensureInstanceConfig(context.Background(), app, cfg)
+			dbCfg, err := ensureInstanceConfig(context.Background(), app, cfg)
 			if err != nil {
 				return err
+			}
+
+			// TODO(subomi): refactor this using another mechanism.
+			// only run if you're not on local.
+			if cfg.Database.Host != "localhost" {
+				t := telemetry.NewTelemetry(lo, dbCfg,
+					telemetry.OptionBackend(telemetry.NewposthogBackend()),
+					telemetry.OptionBackend(telemetry.NewmixpanelBackend()))
+
+				err = t.Identify(cmd.Context(), dbCfg.UID)
+				if err != nil {
+					// do nothing?
+					return err
+				}
 			}
 		}
 
@@ -157,7 +172,7 @@ func PostRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args 
 	}
 }
 
-func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configuration) error {
+func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configuration) (*datastore.Configuration, error) {
 	configRepo := postgres.NewConfigRepo(a.DB)
 
 	s3 := datastore.S3Storage{
@@ -184,17 +199,19 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	if err != nil {
 		if errors.Is(err, datastore.ErrConfigNotFound) {
 			a.Logger.Info("Creating Instance Config")
-			return configRepo.CreateConfiguration(ctx, &datastore.Configuration{
+			cfg := &datastore.Configuration{
 				UID:                ulid.Make().String(),
 				StoragePolicy:      storagePolicy,
 				IsAnalyticsEnabled: cfg.Analytics.IsEnabled,
 				IsSignupEnabled:    cfg.Auth.IsSignupEnabled,
 				CreatedAt:          time.Now(),
 				UpdatedAt:          time.Now(),
-			})
+			}
+
+			return cfg, configRepo.CreateConfiguration(ctx, cfg)
 		}
 
-		return err
+		return configuration, err
 	}
 
 	configuration.StoragePolicy = storagePolicy
@@ -202,7 +219,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
 	configuration.UpdatedAt = time.Now()
 
-	return configRepo.UpdateConfiguration(ctx, configuration)
+	return configuration, configRepo.UpdateConfiguration(ctx, configuration)
 }
 
 func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {

@@ -230,12 +230,12 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Portal Links
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string	true	"Project ID"
-//	@Param			endpointID		query		[]string	false	"list of endpoint ids"
+//	@Param			projectID	path		string				true	"Project ID"
+//	@Param			endpointID	query		[]string			false	"list of endpoint ids"
 //	@Param			request		query		datastore.Pageable	false	"Pagination Params"
-//	@Param			perPage		query		string	false	"results per page"
-//	@Param			page		query		string	false	"page number"
-//	@Param			sort		query		string	false	"sort order"
+//	@Param			perPage		query		string				false	"results per page"
+//	@Param			page		query		string				false	"page number"
+//	@Param			sort		query		string				false	"sort order"
 //	@Success		200			{object}	util.ServerResponse{data=models.PagedResponse{content=[]models.PortalLinkResponse}}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
