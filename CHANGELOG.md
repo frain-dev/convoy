@@ -1,6 +1,10 @@
 # 24.01.1 
 
 ### API Changes
+
+> [!NOTE]
+> All API Changes are backward-compatible, so you shouldn't need to change any code to get them to work, however, you need specify which version you're running in your convoy.json.
+
 - changed `http_timeout` and `rate_limit_duration` in endpoints from duration string to `int`.
 - changed the default signature format from `simple` to `advanced`. 
 - stripped out unnecessary fields from dynamic api endpoint. 
