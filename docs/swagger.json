@@ -1880,7 +1880,10 @@
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
                         "name": "sourceId",
                         "in": "query"
                     },
@@ -2121,7 +2124,9 @@
                     },
                     {
                         "type": "string",
-                        "name": "endpointID",
+                        "example": "2008-05-02T15:04:05",
+                        "description": "The end date",
+                        "name": "endDate",
                         "in": "query"
                     },
                     {
@@ -2129,17 +2134,8 @@
                         "items": {
                             "type": "string"
                         },
-                        "name": "endpointIDs",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "name": "eventID",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "name": "eventType",
+                        "description": "A list of endpoint ids to filter by",
+                        "name": "endpointId",
                         "in": "query"
                     },
                     {
@@ -2149,22 +2145,51 @@
                     },
                     {
                         "type": "string",
-                        "name": "ownerID",
+                        "example": "01H0JA5MEES38RRK3HTEJC647K",
+                        "description": "A pagination cursor to fetch the next page of a list",
+                        "name": "next_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 20,
+                        "description": "The number of items to return per page",
+                        "name": "perPage",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "example": "01H0JATTVCXZK8FRDX1M1JN3QY",
+                        "description": "A pagination cursor to fetch the previous page of a list",
+                        "name": "prev_page_cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Any arbitrary value to filter the events payload",
                         "name": "query",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "name": "sourceID",
+                        "example": "ASC | DESC",
+                        "description": "sort order",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "name": "sourceId",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "name": "subscriptionID",
+                        "example": "2006-01-02T15:04:05",
+                        "description": "The start date",
+                        "name": "startDate",
                         "in": "query"
                     }
                 ],
@@ -5111,15 +5136,6 @@
         }
     },
     "definitions": {
-        "config.SignatureHeaderProvider": {
-            "type": "string",
-            "enum": [
-                "X-Convoy-Signature"
-            ],
-            "x-enum-varnames": [
-                "DefaultSignatureHeader"
-            ]
-        },
         "datastore.AlertConfiguration": {
             "type": "object",
             "properties": {
@@ -5593,43 +5609,6 @@
                 }
             }
         },
-        "datastore.MetaEventConfiguration": {
-            "type": "object",
-            "properties": {
-                "event_type": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "is_enabled": {
-                    "type": "boolean"
-                },
-                "pub_sub": {
-                    "$ref": "#/definitions/datastore.PubSubConfig"
-                },
-                "secret": {
-                    "type": "string"
-                },
-                "type": {
-                    "$ref": "#/definitions/datastore.MetaEventType"
-                },
-                "url": {
-                    "type": "string"
-                }
-            }
-        },
-        "datastore.MetaEventType": {
-            "type": "string",
-            "enum": [
-                "http",
-                "pub_sub"
-            ],
-            "x-enum-varnames": [
-                "HTTPMetaEvent",
-                "PubSubMetaEvent"
-            ]
-        },
         "datastore.Metadata": {
             "type": "object",
             "properties": {
@@ -5672,26 +5651,6 @@
                 "Prev"
             ]
         },
-        "datastore.Pageable": {
-            "type": "object",
-            "properties": {
-                "direction": {
-                    "$ref": "#/definitions/datastore.PageDirection"
-                },
-                "next_page_cursor": {
-                    "type": "string"
-                },
-                "per_page": {
-                    "type": "integer"
-                },
-                "prev_page_cursor": {
-                    "type": "string"
-                },
-                "sort": {
-                    "type": "string"
-                }
-            }
-        },
         "datastore.PaginationData": {
             "type": "object",
             "properties": {
@@ -5711,107 +5670,6 @@
                     "type": "string"
                 }
             }
-        },
-        "datastore.Project": {
-            "type": "object",
-            "properties": {
-                "config": {
-                    "$ref": "#/definitions/datastore.ProjectConfig"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "logo_url": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "organisation_id": {
-                    "type": "string"
-                },
-                "retained_events": {
-                    "type": "integer"
-                },
-                "statistics": {
-                    "$ref": "#/definitions/datastore.ProjectStatistics"
-                },
-                "type": {
-                    "$ref": "#/definitions/datastore.ProjectType"
-                },
-                "uid": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "datastore.ProjectConfig": {
-            "type": "object",
-            "properties": {
-                "add_event_id_trace_headers": {
-                    "type": "boolean"
-                },
-                "disable_endpoint": {
-                    "type": "boolean"
-                },
-                "max_payload_read_size": {
-                    "type": "integer"
-                },
-                "meta_event": {
-                    "$ref": "#/definitions/datastore.MetaEventConfiguration"
-                },
-                "ratelimit": {
-                    "$ref": "#/definitions/datastore.RateLimitConfiguration"
-                },
-                "replay_attacks_prevention_enabled": {
-                    "type": "boolean"
-                },
-                "retention_policy": {
-                    "$ref": "#/definitions/datastore.RetentionPolicyConfiguration"
-                },
-                "retention_policy_enabled": {
-                    "type": "boolean"
-                },
-                "signature": {
-                    "$ref": "#/definitions/datastore.SignatureConfiguration"
-                },
-                "strategy": {
-                    "$ref": "#/definitions/datastore.StrategyConfiguration"
-                }
-            }
-        },
-        "datastore.ProjectStatistics": {
-            "type": "object",
-            "properties": {
-                "messages_sent": {
-                    "type": "integer"
-                },
-                "total_endpoints": {
-                    "type": "integer"
-                },
-                "total_sources": {
-                    "type": "integer"
-                },
-                "total_subscriptions": {
-                    "type": "integer"
-                }
-            }
-        },
-        "datastore.ProjectType": {
-            "type": "string",
-            "enum": [
-                "outgoing",
-                "incoming"
-            ],
-            "x-enum-varnames": [
-                "OutgoingProject",
-                "IncomingProject"
-            ]
         },
         "datastore.ProviderConfig": {
             "type": "object",
@@ -5865,17 +5723,6 @@
                 }
             }
         },
-        "datastore.RetentionPolicyConfiguration": {
-            "type": "object",
-            "properties": {
-                "policy": {
-                    "type": "string"
-                },
-                "search_policy": {
-                    "type": "string"
-                }
-            }
-        },
         "datastore.RetryConfiguration": {
             "type": "object",
             "properties": {
@@ -5907,17 +5754,6 @@
                 }
             }
         },
-        "datastore.SearchParams": {
-            "type": "object",
-            "properties": {
-                "created_at_end": {
-                    "type": "integer"
-                },
-                "created_at_start": {
-                    "type": "integer"
-                }
-            }
-        },
         "datastore.Secret": {
             "type": "object",
             "properties": {
@@ -5937,37 +5773,6 @@
                     "type": "string"
                 },
                 "value": {
-                    "type": "string"
-                }
-            }
-        },
-        "datastore.SignatureConfiguration": {
-            "type": "object",
-            "properties": {
-                "header": {
-                    "$ref": "#/definitions/config.SignatureHeaderProvider"
-                },
-                "versions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/datastore.SignatureVersion"
-                    }
-                }
-            }
-        },
-        "datastore.SignatureVersion": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "encoding": {
-                    "$ref": "#/definitions/datastore.EncodingType"
-                },
-                "hash": {
-                    "type": "string"
-                },
-                "uid": {
                     "type": "string"
                 }
             }
@@ -6061,20 +5866,6 @@
                 "PubSubSource",
                 "DBChangeStream"
             ]
-        },
-        "datastore.StrategyConfiguration": {
-            "type": "object",
-            "properties": {
-                "duration": {
-                    "type": "integer"
-                },
-                "retry_count": {
-                    "type": "integer"
-                },
-                "type": {
-                    "$ref": "#/definitions/datastore.StrategyProvider"
-                }
-            }
         },
         "datastore.StrategyProvider": {
             "type": "string",
@@ -6279,9 +6070,6 @@
                     "type": "string"
                 },
                 "owner_id": {
-                    "type": "string"
-                },
-                "uid": {
                     "type": "string"
                 }
             }
