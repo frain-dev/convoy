@@ -1,15 +1,6 @@
 {
 	"components": {
 		"schemas": {
-			"config.SignatureHeaderProvider": {
-				"enum": [
-					"X-Convoy-Signature"
-				],
-				"type": "string",
-				"x-enum-varnames": [
-					"DefaultSignatureHeader"
-				]
-			},
 			"datastore.AlertConfiguration": {
 				"properties": {
 					"count": {
@@ -483,43 +474,6 @@
 				},
 				"type": "object"
 			},
-			"datastore.MetaEventConfiguration": {
-				"properties": {
-					"event_type": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array"
-					},
-					"is_enabled": {
-						"type": "boolean"
-					},
-					"pub_sub": {
-						"$ref": "#/components/schemas/datastore.PubSubConfig"
-					},
-					"secret": {
-						"type": "string"
-					},
-					"type": {
-						"$ref": "#/components/schemas/datastore.MetaEventType"
-					},
-					"url": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.MetaEventType": {
-				"enum": [
-					"http",
-					"pub_sub"
-				],
-				"type": "string",
-				"x-enum-varnames": [
-					"HTTPMetaEvent",
-					"PubSubMetaEvent"
-				]
-			},
 			"datastore.Metadata": {
 				"properties": {
 					"data": {
@@ -562,26 +516,6 @@
 					"Prev"
 				]
 			},
-			"datastore.Pageable": {
-				"properties": {
-					"direction": {
-						"$ref": "#/components/schemas/datastore.PageDirection"
-					},
-					"next_page_cursor": {
-						"type": "string"
-					},
-					"per_page": {
-						"type": "integer"
-					},
-					"prev_page_cursor": {
-						"type": "string"
-					},
-					"sort": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"datastore.PaginationData": {
 				"properties": {
 					"has_next_page": {
@@ -601,107 +535,6 @@
 					}
 				},
 				"type": "object"
-			},
-			"datastore.Project": {
-				"properties": {
-					"config": {
-						"$ref": "#/components/schemas/datastore.ProjectConfig"
-					},
-					"created_at": {
-						"type": "string"
-					},
-					"deleted_at": {
-						"type": "string"
-					},
-					"logo_url": {
-						"type": "string"
-					},
-					"name": {
-						"type": "string"
-					},
-					"organisation_id": {
-						"type": "string"
-					},
-					"retained_events": {
-						"type": "integer"
-					},
-					"statistics": {
-						"$ref": "#/components/schemas/datastore.ProjectStatistics"
-					},
-					"type": {
-						"$ref": "#/components/schemas/datastore.ProjectType"
-					},
-					"uid": {
-						"type": "string"
-					},
-					"updated_at": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.ProjectConfig": {
-				"properties": {
-					"add_event_id_trace_headers": {
-						"type": "boolean"
-					},
-					"disable_endpoint": {
-						"type": "boolean"
-					},
-					"max_payload_read_size": {
-						"type": "integer"
-					},
-					"meta_event": {
-						"$ref": "#/components/schemas/datastore.MetaEventConfiguration"
-					},
-					"ratelimit": {
-						"$ref": "#/components/schemas/datastore.RateLimitConfiguration"
-					},
-					"replay_attacks_prevention_enabled": {
-						"type": "boolean"
-					},
-					"retention_policy": {
-						"$ref": "#/components/schemas/datastore.RetentionPolicyConfiguration"
-					},
-					"retention_policy_enabled": {
-						"type": "boolean"
-					},
-					"signature": {
-						"$ref": "#/components/schemas/datastore.SignatureConfiguration"
-					},
-					"strategy": {
-						"$ref": "#/components/schemas/datastore.StrategyConfiguration"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.ProjectStatistics": {
-				"properties": {
-					"messages_sent": {
-						"type": "integer"
-					},
-					"total_endpoints": {
-						"type": "integer"
-					},
-					"total_sources": {
-						"type": "integer"
-					},
-					"total_subscriptions": {
-						"type": "integer"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.ProjectType": {
-				"enum": [
-					"outgoing",
-					"incoming"
-				],
-				"type": "string",
-				"x-enum-varnames": [
-					"OutgoingProject",
-					"IncomingProject"
-				]
 			},
 			"datastore.ProviderConfig": {
 				"properties": {
@@ -755,17 +588,6 @@
 				},
 				"type": "object"
 			},
-			"datastore.RetentionPolicyConfiguration": {
-				"properties": {
-					"policy": {
-						"type": "string"
-					},
-					"search_policy": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"datastore.RetryConfiguration": {
 				"properties": {
 					"duration": {
@@ -797,17 +619,6 @@
 				},
 				"type": "object"
 			},
-			"datastore.SearchParams": {
-				"properties": {
-					"created_at_end": {
-						"type": "integer"
-					},
-					"created_at_start": {
-						"type": "integer"
-					}
-				},
-				"type": "object"
-			},
 			"datastore.Secret": {
 				"properties": {
 					"created_at": {
@@ -826,37 +637,6 @@
 						"type": "string"
 					},
 					"value": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.SignatureConfiguration": {
-				"properties": {
-					"header": {
-						"$ref": "#/components/schemas/config.SignatureHeaderProvider"
-					},
-					"versions": {
-						"items": {
-							"$ref": "#/components/schemas/datastore.SignatureVersion"
-						},
-						"type": "array"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.SignatureVersion": {
-				"properties": {
-					"created_at": {
-						"type": "string"
-					},
-					"encoding": {
-						"$ref": "#/components/schemas/datastore.EncodingType"
-					},
-					"hash": {
-						"type": "string"
-					},
-					"uid": {
 						"type": "string"
 					}
 				},
@@ -951,20 +731,6 @@
 					"PubSubSource",
 					"DBChangeStream"
 				]
-			},
-			"datastore.StrategyConfiguration": {
-				"properties": {
-					"duration": {
-						"type": "integer"
-					},
-					"retry_count": {
-						"type": "integer"
-					},
-					"type": {
-						"$ref": "#/components/schemas/datastore.StrategyProvider"
-					}
-				},
-				"type": "object"
 			},
 			"datastore.StrategyProvider": {
 				"enum": [
@@ -1168,9 +934,6 @@
 						"type": "string"
 					},
 					"owner_id": {
-						"type": "string"
-					},
-					"uid": {
 						"type": "string"
 					}
 				},
@@ -4295,7 +4058,10 @@
 						"in": "query",
 						"name": "sourceId",
 						"schema": {
-							"type": "string"
+							"items": {
+								"type": "string"
+							},
+							"type": "array"
 						}
 					},
 					{
@@ -4562,34 +4328,22 @@
 						}
 					},
 					{
+						"description": "The end date",
 						"in": "query",
-						"name": "endpointID",
+						"name": "endDate",
 						"schema": {
 							"type": "string"
 						}
 					},
 					{
+						"description": "A list of endpoint ids to filter by",
 						"in": "query",
-						"name": "endpointIDs",
+						"name": "endpointId",
 						"schema": {
 							"items": {
 								"type": "string"
 							},
 							"type": "array"
-						}
-					},
-					{
-						"in": "query",
-						"name": "eventID",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"in": "query",
-						"name": "eventType",
-						"schema": {
-							"type": "string"
 						}
 					},
 					{
@@ -4600,13 +4354,31 @@
 						}
 					},
 					{
+						"description": "A pagination cursor to fetch the next page of a list",
 						"in": "query",
-						"name": "ownerID",
+						"name": "next_page_cursor",
 						"schema": {
 							"type": "string"
 						}
 					},
 					{
+						"description": "The number of items to return per page",
+						"in": "query",
+						"name": "perPage",
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"description": "A pagination cursor to fetch the previous page of a list",
+						"in": "query",
+						"name": "prev_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "Any arbitrary value to filter the events payload",
 						"in": "query",
 						"name": "query",
 						"schema": {
@@ -4614,15 +4386,27 @@
 						}
 					},
 					{
+						"description": "sort order",
 						"in": "query",
-						"name": "sourceID",
+						"name": "sort",
 						"schema": {
 							"type": "string"
 						}
 					},
 					{
 						"in": "query",
-						"name": "subscriptionID",
+						"name": "sourceId",
+						"schema": {
+							"items": {
+								"type": "string"
+							},
+							"type": "array"
+						}
+					},
+					{
+						"description": "The start date",
+						"in": "query",
+						"name": "startDate",
 						"schema": {
 							"type": "string"
 						}

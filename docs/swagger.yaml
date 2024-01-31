@@ -1,11 +1,5 @@
 basePath: /api
 definitions:
-  config.SignatureHeaderProvider:
-    enum:
-    - X-Convoy-Signature
-    type: string
-    x-enum-varnames:
-    - DefaultSignatureHeader
   datastore.AlertConfiguration:
     properties:
       count:
@@ -326,31 +320,6 @@ definitions:
       response_http_header:
         $ref: '#/definitions/datastore.HttpHeader'
     type: object
-  datastore.MetaEventConfiguration:
-    properties:
-      event_type:
-        items:
-          type: string
-        type: array
-      is_enabled:
-        type: boolean
-      pub_sub:
-        $ref: '#/definitions/datastore.PubSubConfig'
-      secret:
-        type: string
-      type:
-        $ref: '#/definitions/datastore.MetaEventType'
-      url:
-        type: string
-    type: object
-  datastore.MetaEventType:
-    enum:
-    - http
-    - pub_sub
-    type: string
-    x-enum-varnames:
-    - HTTPMetaEvent
-    - PubSubMetaEvent
   datastore.Metadata:
     properties:
       data:
@@ -382,19 +351,6 @@ definitions:
     x-enum-varnames:
     - Next
     - Prev
-  datastore.Pageable:
-    properties:
-      direction:
-        $ref: '#/definitions/datastore.PageDirection'
-      next_page_cursor:
-        type: string
-      per_page:
-        type: integer
-      prev_page_cursor:
-        type: string
-      sort:
-        type: string
-    type: object
   datastore.PaginationData:
     properties:
       has_next_page:
@@ -408,73 +364,6 @@ definitions:
       prev_page_cursor:
         type: string
     type: object
-  datastore.Project:
-    properties:
-      config:
-        $ref: '#/definitions/datastore.ProjectConfig'
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      logo_url:
-        type: string
-      name:
-        type: string
-      organisation_id:
-        type: string
-      retained_events:
-        type: integer
-      statistics:
-        $ref: '#/definitions/datastore.ProjectStatistics'
-      type:
-        $ref: '#/definitions/datastore.ProjectType'
-      uid:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  datastore.ProjectConfig:
-    properties:
-      add_event_id_trace_headers:
-        type: boolean
-      disable_endpoint:
-        type: boolean
-      max_payload_read_size:
-        type: integer
-      meta_event:
-        $ref: '#/definitions/datastore.MetaEventConfiguration'
-      ratelimit:
-        $ref: '#/definitions/datastore.RateLimitConfiguration'
-      replay_attacks_prevention_enabled:
-        type: boolean
-      retention_policy:
-        $ref: '#/definitions/datastore.RetentionPolicyConfiguration'
-      retention_policy_enabled:
-        type: boolean
-      signature:
-        $ref: '#/definitions/datastore.SignatureConfiguration'
-      strategy:
-        $ref: '#/definitions/datastore.StrategyConfiguration'
-    type: object
-  datastore.ProjectStatistics:
-    properties:
-      messages_sent:
-        type: integer
-      total_endpoints:
-        type: integer
-      total_sources:
-        type: integer
-      total_subscriptions:
-        type: integer
-    type: object
-  datastore.ProjectType:
-    enum:
-    - outgoing
-    - incoming
-    type: string
-    x-enum-varnames:
-    - OutgoingProject
-    - IncomingProject
   datastore.ProviderConfig:
     properties:
       twitter:
@@ -510,13 +399,6 @@ definitions:
       duration:
         type: integer
     type: object
-  datastore.RetentionPolicyConfiguration:
-    properties:
-      policy:
-        type: string
-      search_policy:
-        type: string
-    type: object
   datastore.RetryConfiguration:
     properties:
       duration:
@@ -537,13 +419,6 @@ definitions:
       secret_key:
         type: string
     type: object
-  datastore.SearchParams:
-    properties:
-      created_at_end:
-        type: integer
-      created_at_start:
-        type: integer
-    type: object
   datastore.Secret:
     properties:
       created_at:
@@ -557,26 +432,6 @@ definitions:
       updated_at:
         type: string
       value:
-        type: string
-    type: object
-  datastore.SignatureConfiguration:
-    properties:
-      header:
-        $ref: '#/definitions/config.SignatureHeaderProvider'
-      versions:
-        items:
-          $ref: '#/definitions/datastore.SignatureVersion'
-        type: array
-    type: object
-  datastore.SignatureVersion:
-    properties:
-      created_at:
-        type: string
-      encoding:
-        $ref: '#/definitions/datastore.EncodingType'
-      hash:
-        type: string
-      uid:
         type: string
     type: object
   datastore.Source:
@@ -642,15 +497,6 @@ definitions:
     - RestApiSource
     - PubSubSource
     - DBChangeStream
-  datastore.StrategyConfiguration:
-    properties:
-      duration:
-        type: integer
-      retry_count:
-        type: integer
-      type:
-        $ref: '#/definitions/datastore.StrategyProvider'
-    type: object
   datastore.StrategyProvider:
     enum:
     - linear
@@ -810,8 +656,6 @@ definitions:
       idempotency_key:
         type: string
       owner_id:
-        type: string
-      uid:
         type: string
     type: object
   models.CreateSource:
@@ -2533,8 +2377,10 @@ paths:
         name: sort
         type: string
       - in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       - description: The start date
         example: 2006-01-02T15:04:05
         in: query
@@ -2782,34 +2628,53 @@ paths:
         name: projectID
         required: true
         type: string
+      - description: The end date
+        example: 2008-05-02T15:04:05
+        in: query
+        name: endDate
+        type: string
+      - description: A list of endpoint ids to filter by
+        in: query
+        items:
+          type: string
+        name: endpointId
+        type: array
       - in: query
-        name: endpointID
+        name: idempotencyKey
+        type: string
+      - description: A pagination cursor to fetch the next page of a list
+        example: 01H0JA5MEES38RRK3HTEJC647K
+        in: query
+        name: next_page_cursor
+        type: string
+      - description: The number of items to return per page
+        example: 20
+        in: query
+        name: perPage
+        type: integer
+      - description: A pagination cursor to fetch the previous page of a list
+        example: 01H0JATTVCXZK8FRDX1M1JN3QY
+        in: query
+        name: prev_page_cursor
+        type: string
+      - description: Any arbitrary value to filter the events payload
+        in: query
+        name: query
+        type: string
+      - description: sort order
+        example: ASC | DESC
+        in: query
+        name: sort
         type: string
       - in: query
         items:
           type: string
-        name: endpointIDs
+        name: sourceId
         type: array
-      - in: query
-        name: eventID
-        type: string
-      - in: query
-        name: eventType
-        type: string
-      - in: query
-        name: idempotencyKey
-        type: string
-      - in: query
-        name: ownerID
-        type: string
-      - in: query
-        name: query
-        type: string
-      - in: query
-        name: sourceID
-        type: string
-      - in: query
-        name: subscriptionID
+      - description: The start date
+        example: 2006-01-02T15:04:05
+        in: query
+        name: startDate
         type: string
       produces:
       - application/json
