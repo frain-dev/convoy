@@ -1,3 +1,21 @@
+## 24.01.1
+- [Feature] Add OTel support #1865
+- [Feature] Added backwards compatible api version #1871
+- [Enhancement] Improve dynamic api support #1884
+- [Enhancement] Improve endpoints api #1870
+- [Enhancement] QoL improvements to the api layer #1851
+- [Enhancement] QoL improvements to retention policies export worker #1882
+- [Bugfix] Added `eventType` to `QueryListEventDelivery` #1843
+- [Bugfix] Fixed source and subscription forms #1876
+- [Bugfix] Fixed source and endpoint dropdown with search box #1850
+- [Bugfix] Fixed retrieving portal links by `endpoints` or `owner_id` #1894
+- [Bugfix] Update endpoints in cache when all the endpoints are re-enabled #1847
+- [Bugfix] Update subscription endpoint metadata when a subscription is updated #1891
+- [Bugfix] Fixed event deliveries pagination #1846
+- [Bugfix] Delete invite after cancellation #1860
+- [Bugfix] Enabled multi user invite without refresh #1861
+- [Bugfix] Set `event_id` in events filter #1866
+
 ## 23.11.1
 
 - [Feature] add cache to the organisations and api key repositories, add profiling route #1822
