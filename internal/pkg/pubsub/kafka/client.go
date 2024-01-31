@@ -9,6 +9,7 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/util"
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/sasl"
 	"github.com/segmentio/kafka-go/sasl/plain"
@@ -126,10 +127,16 @@ func (k *Kafka) Consume() {
 		return
 	}
 
+	consumerGroup := k.Cfg.ConsumerGroupID
+	if util.IsStringEmpty(consumerGroup) {
+		// read from all groups.
+		consumerGroup = " "
+	}
+
 	// make a new reader that consumes from topic
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: k.Cfg.Brokers,
-		GroupID: k.Cfg.ConsumerGroupID,
+		GroupID: consumerGroup,
 		Topic:   k.Cfg.TopicName,
 		Dialer:  dialer,
 	})
