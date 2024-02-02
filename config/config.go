@@ -21,6 +21,7 @@ const (
 	DefaultHost                       = "localhost:5005"
 	DefaultSearchTokenizationInterval = 1
 	DefaultCacheTTL                   = time.Minute * 10
+	LicenseVersionEnv                 = "CONVOY_LICENSE_VERSION"
 )
 
 var cfgSingleton atomic.Value

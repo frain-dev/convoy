@@ -182,6 +182,7 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 	return nil
 }
 
+// HasValidLicense stub implementation
 func (c *configRepo) HasValidLicense(ctx context.Context) bool {
 	return true
 }

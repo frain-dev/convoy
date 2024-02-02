@@ -201,7 +201,12 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
 	configuration.UpdatedAt = time.Now()
 
-	return configRepo.UpdateConfiguration(ctx, configuration)
+	err = configRepo.UpdateConfiguration(ctx, configuration)
+	if err != nil {
+		return err
+	}
+
+	return os.Setenv(config.LicenseVersionEnv, configuration.License.String)
 }
 
 func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {

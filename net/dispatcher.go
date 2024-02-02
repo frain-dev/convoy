@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/frain-dev/convoy/config"
 	"io"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -23,7 +25,8 @@ type Dispatcher struct {
 func NewDispatcher(timeout time.Duration, httpProxy string) (*Dispatcher, error) {
 	d := &Dispatcher{client: &http.Client{Timeout: timeout}}
 
-	if len(httpProxy) > 0 {
+	valid := os.Getenv(config.LicenseVersionEnv)
+	if len(valid) > 0 && len(httpProxy) > 0 {
 		proxyUrl, err := url.Parse(httpProxy)
 		if err != nil {
 			return nil, err
