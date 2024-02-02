@@ -3,7 +3,6 @@ package telemetry
 import (
 	"context"
 	"io"
-	"sync"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -48,7 +47,6 @@ func OptionBackend(b backend) func(*Telemetry) {
 }
 
 type Telemetry struct {
-	wg       sync.WaitGroup
 	config   *datastore.Configuration
 	backends []backend
 	trackers []tracker
@@ -76,7 +74,6 @@ func (t *Telemetry) Identify(ctx context.Context, instanceID string) error {
 	}
 
 	for _, b := range t.backends {
-		t.wg.Add(1)
 		go func(b backend) {
 			err := b.Identify(ctx, instanceID)
 			if err != nil {
@@ -90,7 +87,6 @@ func (t *Telemetry) Identify(ctx context.Context, instanceID string) error {
 		}(b)
 	}
 
-	t.wg.Wait()
 	return nil
 }
 
@@ -115,7 +111,6 @@ func (t *Telemetry) Capture(ctx context.Context) error {
 	}
 
 	for _, b := range t.backends {
-		t.wg.Add(1)
 		go func(b backend) {
 			for _, m := range metrics {
 				err := b.Capture(ctx, m)
@@ -131,6 +126,5 @@ func (t *Telemetry) Capture(ctx context.Context) error {
 		}(b)
 	}
 
-	t.wg.Wait()
 	return nil
 }
