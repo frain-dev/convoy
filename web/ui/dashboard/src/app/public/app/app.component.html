@@ -66,7 +66,7 @@
 							</button>
 						</li>
 						<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px" *ngIf="portalDetails?.can_manage_endpoint">
-							<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start px-8px py-4px" color="grey" (click)="showEndpointSecret = true; activeEndpoint = endpoint">
+							<button convoy-dropdown-option convoy-button size="sm" fill="clear" class="w-full !justify-start px-8px py-4px" color="grey" (click)="activeEndpoint = endpoint; secretDialog.showModal()">
 								<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-8px">
 									<path
 										d="M6.99344 1.48703L3.66677 2.74036C2.9001 3.02703 2.27344 3.9337 2.27344 4.74703V9.70036C2.27344 10.487 2.79344 11.5204 3.42677 11.9937L6.29344 14.1337C7.23344 14.8404 8.7801 14.8404 9.7201 14.1337L12.5868 11.9937C13.2201 11.5204 13.7401 10.487 13.7401 9.70036V4.74703C13.7401 3.92703 13.1134 3.02036 12.3468 2.7337L9.0201 1.48703C8.45344 1.28036 7.54677 1.28036 6.99344 1.48703Z"
@@ -290,9 +290,11 @@
 
 	<div id="convoy-app"></div>
 
-	<convoy-endpoint-secret class="z-20 relative" *ngIf="showEndpointSecret" [endpointDetails]="activeEndpoint" (closeSecretModal)="showEndpointSecret = false" (expireCurrentSecret)="getEndpoints()"></convoy-endpoint-secret>
-
 	<div class="fixed top-0 left-0 right-0 bottom-0 bg-[#fff] z-20 pb-100px overflow-auto" *ngIf="showCreateEndpoint === true">
 		<convoy-create-portal-endpoint (onAction)="onCloseEndpointForm()" [endpoint]="activeEndpoint"></convoy-create-portal-endpoint>
 	</div>
 </div>
+
+<dialog #secretDialog convoy-dialog position="center">
+	<convoy-endpoint-secret [endpointDetails]="activeEndpoint" (closeSecretModal)="secretDialog.close()" (expireCurrentSecret)="getEndpoints(); secretDialog.close()"></convoy-endpoint-secret>
+</dialog>
