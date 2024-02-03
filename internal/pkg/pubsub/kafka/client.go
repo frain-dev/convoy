@@ -121,6 +121,7 @@ func (k *Kafka) Verify() error {
 }
 
 func (k *Kafka) Consume() {
+	
 	dialer, err := k.dialer()
 	if err != nil {
 		log.WithError(err).Error("failed to fetch kafka auth")

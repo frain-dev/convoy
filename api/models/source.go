@@ -273,6 +273,7 @@ type PubSubConfig struct {
 	Sqs     *SQSPubSubConfig     `json:"sqs"`
 	Google  *GooglePubSubConfig  `json:"google"`
 	Kafka   *KafkaPubSubConfig   `json:"kafka"`
+	Amqp    *AmqpPubSubconfig    `json:"amqp"`
 }
 
 func (pc *PubSubConfig) Transform() *datastore.PubSubConfig {
@@ -286,6 +287,7 @@ func (pc *PubSubConfig) Transform() *datastore.PubSubConfig {
 		Sqs:     pc.Sqs.transform(),
 		Google:  pc.Google.transform(),
 		Kafka:   pc.Kafka.transform(),
+		Amqp:    pc.Amqp.transform(),
 	}
 }
 
@@ -332,6 +334,37 @@ type KafkaPubSubConfig struct {
 	ConsumerGroupID string     `json:"consumer_group_id"`
 	TopicName       string     `json:"topic_name"`
 	Auth            *KafkaAuth `json:"auth"`
+}
+
+type AmqpPubSubconfig struct {
+	Schema         string    `json:"schema"`
+	Host           string    `json:"host"`
+	Port           string    `json:"port"`
+	Auth           *AmqpAuth `json:"auth"`
+	Queue          string    `json:"queue"`
+	BindedExchange *string   `json:"bindedExchange"`
+	RoutingKey     *string   `json:"routingKey"`
+}
+
+type AmqpAuth struct {
+	User     string `json:"user"`
+	Password string `json:"password"`
+}
+
+func (ac *AmqpPubSubconfig) transform() *datastore.AmqpPubSubConfig {
+	if ac == nil {
+		return nil
+	}
+
+	return &datastore.AmqpPubSubConfig{
+		Schema:         ac.Schema,
+		Host:           ac.Host,
+		Port:           ac.Port,
+		Queue:          ac.Queue,
+		BindedExchange: ac.BindedExchange,
+		RoutingKey:     *ac.RoutingKey,
+		Auth:           (*datastore.AmqpCredentials)(ac.Auth),
+	}
 }
 
 func (kc *KafkaPubSubConfig) transform() *datastore.KafkaPubSubConfig {

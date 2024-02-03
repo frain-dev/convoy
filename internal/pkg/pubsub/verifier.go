@@ -3,6 +3,7 @@ package pubsub
 import (
 	"errors"
 
+	rqm "github.com/frain-dev/convoy/internal/pkg/pubsub/amqp"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/kafka"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -22,6 +23,21 @@ type SqsPubSub struct {
 	SecretKey     string `json:"secret_key" valid:"required"`
 	DefaultRegion string `json:"default_region" valid:"required"`
 	QueueName     string `json:"queue_name" valid:"required"`
+}
+
+type AmqpPubSub struct {
+	Host           string    `json:"host" valid:"amqp host is required"`
+	Port           string    `json:"port" valid:"amqp port is required"`
+	Queue          string    `json:"queue" valid:"amqp queue name is required"`
+	Schema         string    `json:"schema" valid:"amqp schema is required"`
+	Auth           *AmqpAuth `json:"auth"`
+	BindedExchange *string   `json:"bindedExchange"`
+	RoutingKey     string    `json:"routingKey"`
+}
+
+type AmqpAuth struct {
+	User     string `json:"user"`
+	Password string `json:"password"`
 }
 
 type KafkaPubSub struct {
@@ -100,6 +116,40 @@ func Validate(cfg *datastore.PubSubConfig) error {
 
 		s := &sqs.Sqs{Cfg: cfg.Sqs}
 		if err := s.Verify(); err != nil {
+			return err
+		}
+
+		return nil
+
+	case datastore.AmqpPubSub:
+		if cfg.Amqp == nil {
+			return errors.New("amqp config is required")
+		}
+
+		var aAuth *AmqpAuth
+		if cfg.Amqp.Auth != nil {
+			aAuth = &AmqpAuth{
+				User:     cfg.Amqp.Auth.User,
+				Password: cfg.Amqp.Auth.Password,
+			}
+		}
+
+		aPubSub := &AmqpPubSub{
+			Schema:         cfg.Amqp.Schema,
+			Host:           cfg.Amqp.Host,
+			Port:           cfg.Amqp.Port,
+			Queue:          cfg.Amqp.Queue,
+			Auth:           aAuth,
+			BindedExchange: cfg.Amqp.BindedExchange,
+			RoutingKey:     cfg.Amqp.RoutingKey,
+		}
+
+		if err := util.Validate(aPubSub); err != nil {
+			return err
+		}
+
+		a := &rqm.Amqp{Cfg: cfg.Amqp}
+		if err := a.Verify(); err != nil {
 			return err
 		}
 
