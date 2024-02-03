@@ -13,6 +13,7 @@ import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/d
 import { CreateEndpointComponent } from 'src/app/private/components/create-endpoint/create-endpoint.component';
 import { CreatePortalEndpointComponent } from '../create-endpoint/create-endpoint.component';
 import { EndpointSecretComponent } from 'src/app/private/pages/project/endpoints/endpoint-secret/endpoint-secret.component';
+import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 
 const routes: Routes = [{ path: '', component: AppComponent }];
 
@@ -32,7 +33,8 @@ const routes: Routes = [{ path: '', component: AppComponent }];
 		DropdownOptionDirective,
 		TagComponent,
 		EndpointSecretComponent,
-		CreatePortalEndpointComponent
+		CreatePortalEndpointComponent,
+        DialogDirective
 	]
 })
 export class AppModule {}
