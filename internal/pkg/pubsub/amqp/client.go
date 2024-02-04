@@ -96,7 +96,11 @@ func (k *Amqp) Consume() {
 	)
 
 	if k.Cfg.BindedExchange != nil && *k.Cfg.BindedExchange != "" {
-		ch.QueueBind(q.Name, k.Cfg.RoutingKey, *k.Cfg.BindedExchange, false, nil)
+		err := ch.QueueBind(q.Name, k.Cfg.RoutingKey, *k.Cfg.BindedExchange, false, nil)
+		if err != nil {
+			log.WithError(err).Error("failed to bind queue to exchange")
+			return
+		}
 	}
 
 	if err != nil {
