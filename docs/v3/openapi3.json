@@ -12,6 +12,43 @@
 				},
 				"type": "object"
 			},
+			"datastore.AmqpCredentials": {
+				"properties": {
+					"password": {
+						"type": "string"
+					},
+					"user": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.AmqpPubSubConfig": {
+				"properties": {
+					"auth": {
+						"$ref": "#/components/schemas/datastore.AmqpCredentials"
+					},
+					"bindedExchange": {
+						"type": "string"
+					},
+					"host": {
+						"type": "string"
+					},
+					"port": {
+						"type": "string"
+					},
+					"queue": {
+						"type": "string"
+					},
+					"routingKey": {
+						"type": "string"
+					},
+					"schema": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.ApiKey": {
 				"properties": {
 					"header_name": {
@@ -546,6 +583,9 @@
 			},
 			"datastore.PubSubConfig": {
 				"properties": {
+					"amqp": {
+						"$ref": "#/components/schemas/datastore.AmqpPubSubConfig"
+					},
 					"google": {
 						"$ref": "#/components/schemas/datastore.GooglePubSubConfig"
 					},
@@ -568,13 +608,15 @@
 				"enum": [
 					"sqs",
 					"google",
-					"kafka"
+					"kafka",
+					"amqp"
 				],
 				"type": "string",
 				"x-enum-varnames": [
 					"SqsPubSub",
 					"GooglePubSub",
-					"KafkaPubSub"
+					"KafkaPubSub",
+					"AmqpPubSub"
 				]
 			},
 			"datastore.RateLimitConfiguration": {
@@ -814,6 +856,51 @@
 						"type": "integer"
 					},
 					"threshold": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.AmqpAuth": {
+				"properties": {
+					"password": {
+						"type": "string"
+					},
+					"user": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.AmqpExchange": {
+				"properties": {
+					"exchange": {
+						"type": "string"
+					},
+					"routingKey": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.AmqpPubSubconfig": {
+				"properties": {
+					"auth": {
+						"$ref": "#/components/schemas/models.AmqpAuth"
+					},
+					"bindExchange": {
+						"$ref": "#/components/schemas/models.AmqpExchange"
+					},
+					"host": {
+						"type": "string"
+					},
+					"port": {
+						"type": "string"
+					},
+					"queue": {
+						"type": "string"
+					},
+					"schema": {
 						"type": "string"
 					}
 				},
@@ -1550,6 +1637,9 @@
 			},
 			"models.PubSubConfig": {
 				"properties": {
+					"amqp": {
+						"$ref": "#/components/schemas/models.AmqpPubSubconfig"
+					},
 					"google": {
 						"$ref": "#/components/schemas/models.GooglePubSubConfig"
 					},
@@ -1968,6 +2058,21 @@
 						"schema": {
 							"type": "string"
 						}
+					},
+					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
 					},
 					{
 						"description": "A pagination cursor to fetch the next page of a list",
@@ -2913,6 +3018,21 @@
 						}
 					},
 					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
+					},
+					{
 						"description": "The end date",
 						"in": "query",
 						"name": "endDate",
@@ -3139,6 +3259,21 @@
 						"schema": {
 							"type": "string"
 						}
+					},
+					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
 					},
 					{
 						"description": "The end date",
@@ -3989,6 +4124,21 @@
 						}
 					},
 					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
+					},
+					{
 						"description": "The end date",
 						"in": "query",
 						"name": "endDate",
@@ -4326,6 +4476,21 @@
 						"schema": {
 							"type": "string"
 						}
+					},
+					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
 					},
 					{
 						"description": "The end date",
@@ -5029,6 +5194,21 @@
 						}
 					},
 					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
+					},
+					{
 						"description": "The end date",
 						"in": "query",
 						"name": "endDate",
@@ -5464,6 +5644,21 @@
 							},
 							"type": "array"
 						}
+					},
+					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
 					},
 					{
 						"in": "query",
@@ -6155,6 +6350,21 @@
 						}
 					},
 					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
+					},
+					{
 						"description": "A pagination cursor to fetch the next page of a list",
 						"in": "query",
 						"name": "next_page_cursor",
@@ -6836,6 +7046,21 @@
 						"schema": {
 							"type": "string"
 						}
+					},
+					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
 					},
 					{
 						"description": "A list of endpointIDs to filter by",
