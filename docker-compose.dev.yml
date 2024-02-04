@@ -17,6 +17,8 @@ services:
         ports:
           - "5005:5005"
         depends_on:
+            - postgres
+            - redis_server
             - typesense
 
     scheduler:
@@ -28,6 +30,8 @@ services:
             - ./convoy.json:/convoy.json
         restart: on-failure
         depends_on:
+            - postgres
+            - redis_server
             - typesense
 
     worker:
@@ -39,6 +43,8 @@ services:
             - ./convoy.json:/convoy.json
         restart: on-failure
         depends_on:
+            - postgres
+            - redis_server
             - typesense
 
     ingest:
@@ -50,24 +56,26 @@ services:
         - ./convoy.json:/convoy.json
       restart: on-failure
       depends_on:
+        - postgres
+        - redis_server
         - typesense
 
-    # postgres:
-    #   image: postgres:15.2-alpine
-    #   restart: unless-stopped
-    #   environment:
-    #     POSTGRES_DB: convoy
-    #     POSTGRES_USER: convoy
-    #     POSTGRES_PASSWORD: convoy
-    #     PGDATA: /data/postgres
-    #   volumes:
-    #     - ./postgres_data:/data/postgres
+    postgres:
+      image: postgres:15.2-alpine
+      restart: unless-stopped
+      environment:
+        POSTGRES_DB: convoy
+        POSTGRES_USER: convoy
+        POSTGRES_PASSWORD: convoy
+        PGDATA: /data/postgres
+      volumes:
+        - ./postgres_data:/data/postgres
 
-    # redis_server:
-    #     image: redis:alpine
-    #     restart: always
-    #     volumes:
-    #       - ./redis_data:/data
+    redis_server:
+        image: redis:alpine
+        restart: always
+        volumes:
+          - ./redis_data:/data
 
     typesense:
         image: typesense/typesense:0.22.2
