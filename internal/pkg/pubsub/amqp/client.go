@@ -95,7 +95,7 @@ func (k *Amqp) Consume() {
 		nil,         // arguments
 	)
 
-	if k.Cfg.BindedExchange != nil || *k.Cfg.BindedExchange != "" {
+	if k.Cfg.BindedExchange != nil && *k.Cfg.BindedExchange != "" {
 		ch.QueueBind(q.Name, k.Cfg.RoutingKey, *k.Cfg.BindedExchange, false, nil)
 	}
 
@@ -104,8 +104,7 @@ func (k *Amqp) Consume() {
 		return
 	}
 
-	msgs, err := ch.ConsumeWithContext(
-		k.ctx,  // ctx
+	msgs, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer
 		true,   // auto-ack
@@ -126,11 +125,13 @@ func (k *Amqp) Consume() {
 		ctx := context.Background()
 
 		if err := k.handler(ctx, k.source, string(d.Body)); err != nil {
-			k.log.WithError(err).Error("failed to write message to create event queue - kafka pub sub")
+			k.log.WithError(err).Error("failed to write message to create event queue - amqp pub sub")
 		}
 	}
 
 	<-forever
+
+	return
 }
 
 func (k *Amqp) Stop() {

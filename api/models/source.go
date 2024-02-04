@@ -337,13 +337,12 @@ type KafkaPubSubConfig struct {
 }
 
 type AmqpPubSubconfig struct {
-	Schema         string    `json:"schema"`
-	Host           string    `json:"host"`
-	Port           string    `json:"port"`
-	Auth           *AmqpAuth `json:"auth"`
-	Queue          string    `json:"queue"`
-	BindedExchange *string   `json:"bindedExchange"`
-	RoutingKey     *string   `json:"routingKey"`
+	Schema         string        `json:"schema"`
+	Host           string        `json:"host"`
+	Port           string        `json:"port"`
+	Auth           *AmqpAuth     `json:"auth"`
+	Queue          string        `json:"queue"`
+	BindedExchange *AmqpExchange `json:"bindExchange"`
 }
 
 type AmqpAuth struct {
@@ -351,9 +350,23 @@ type AmqpAuth struct {
 	Password string `json:"password"`
 }
 
+type AmqpExchange struct {
+	Exchange   *string `json:"exchange"`
+	RoutingKey *string `json:"routingKey"`
+}
+
 func (ac *AmqpPubSubconfig) transform() *datastore.AmqpPubSubConfig {
 	if ac == nil {
 		return nil
+	}
+
+	bind := AmqpExchange{
+		Exchange:   nil,
+		RoutingKey: nil,
+	}
+
+	if ac.BindedExchange != nil {
+		bind = *ac.BindedExchange
 	}
 
 	return &datastore.AmqpPubSubConfig{
@@ -361,8 +374,8 @@ func (ac *AmqpPubSubconfig) transform() *datastore.AmqpPubSubConfig {
 		Host:           ac.Host,
 		Port:           ac.Port,
 		Queue:          ac.Queue,
-		BindedExchange: ac.BindedExchange,
-		RoutingKey:     *ac.RoutingKey,
+		BindedExchange: bind.Exchange,
+		RoutingKey:     *bind.RoutingKey,
 		Auth:           (*datastore.AmqpCredentials)(ac.Auth),
 	}
 }

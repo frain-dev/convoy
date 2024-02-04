@@ -26,10 +26,10 @@ type SqsPubSub struct {
 }
 
 type AmqpPubSub struct {
-	Host           string    `json:"host" valid:"amqp host is required"`
-	Port           string    `json:"port" valid:"amqp port is required"`
-	Queue          string    `json:"queue" valid:"amqp queue name is required"`
-	Schema         string    `json:"schema" valid:"amqp schema is required"`
+	Host           string    `json:"host"`
+	Port           string    `json:"port"`
+	Queue          string    `json:"queue"`
+	Schema         string    `json:"schema"`
 	Auth           *AmqpAuth `json:"auth"`
 	BindedExchange *string   `json:"bindedExchange"`
 	RoutingKey     string    `json:"routingKey"`

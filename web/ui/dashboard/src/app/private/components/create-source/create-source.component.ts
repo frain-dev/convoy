@@ -58,6 +58,20 @@ export class CreateSourceComponent implements OnInit {
 				secret_key: [''],
 				default_region: ['']
 			}),
+			amqp: this.formBuilder.group({
+				schema: [''],
+				host: [''],
+				port: [''],
+				queue: [''],
+				auth: this.formBuilder.group({
+					user: [''],
+					password: ['']
+				}),
+				bindExchange: this.formBuilder.group({
+					exchange: [''],
+					routingKey: ['""']
+				}),
+			}),
 			kafka: this.formBuilder.group({
 				brokers: [null],
 				consumer_group_id: [null],
@@ -81,7 +95,8 @@ export class CreateSourceComponent implements OnInit {
 	pubSubTypes = [
 		{ uid: 'google', name: 'Google Pub/Sub' },
 		{ uid: 'kafka', name: 'Kafka' },
-		{ uid: 'sqs', name: 'AWS SQS' }
+		{ uid: 'sqs', name: 'AWS SQS' },
+		{ uid: 'amqp', name: 'AMQP / RabbitMQ' },
 	];
 	httpTypes = [
 		{ value: 'noop', viewValue: 'None' },
@@ -141,6 +156,8 @@ export class CreateSourceComponent implements OnInit {
 	isloading = false;
 	confirmModal = false;
 	addKafkaAuthentication = false;
+	addAmqpAuthentication = false;
+	addAmqpQueueBinding = false;
 	sourceDetails!: SOURCE;
 	sourceCreated: boolean = false;
 	showSourceUrl = false;
@@ -364,7 +381,8 @@ export class CreateSourceComponent implements OnInit {
 			const pubSubs: any = {
 				google: ['pub_sub.google.service_account', 'pub_sub.google.subscription_id', 'pub_sub.google.project_id'],
 				sqs: ['pub_sub.sqs.queue_name', 'pub_sub.sqs.access_key_id', 'pub_sub.sqs.secret_key', 'pub_sub.sqs.default_region'],
-				kafka: ['pub_sub.kafka.brokers', 'pub_sub.kafka.topic_name']
+				kafka: ['pub_sub.kafka.brokers', 'pub_sub.kafka.topic_name'],
+				amqp: ['pub_sub.amqp.schema', 'pub_sub.amqp.host', 'pub_sub.amqp.port', 'pub_sub.amqp.queue']
 			};
 
 			Object.keys(pubSubs).forEach((pubSub: any) => {
@@ -395,6 +413,34 @@ export class CreateSourceComponent implements OnInit {
 					this.sourceForm.get(item)?.updateValueAndValidity();
 				});
 			}
+
+			// AMQP
+			const amqpAuths = ['pub_sub.amqp.amqp-auth.user', 'pub_sub.amqp.amqp-auth.password'];
+			if (this.addAmqpAuthentication) {
+				amqpAuths?.forEach((item: string) => {
+					this.sourceForm.get(item)?.addValidators(Validators.required);
+					this.sourceForm.get(item)?.updateValueAndValidity();
+				});
+			} else {
+				amqpAuths?.forEach((item: string) => {
+					this.sourceForm.get(item)?.removeValidators(Validators.required);
+					this.sourceForm.get(item)?.updateValueAndValidity();
+				});
+			}
+
+			const amqpExchange = ['pub_sub.amqp.exchange.routingKey', 'pub_sub.amqp.exchange.exchange']
+			if (this.addAmqpQueueBinding) {
+				amqpExchange?.forEach((item: string) => {
+					this.sourceForm.get(item)?.addValidators(Validators.required);
+					this.sourceForm.get(item)?.updateValueAndValidity();
+				});
+			} else {
+				amqpExchange?.forEach((item: string) => {
+					this.sourceForm.get(item)?.removeValidators(Validators.required);
+					this.sourceForm.get(item)?.updateValueAndValidity();
+				});
+			}
+			
 		} else {
 			this.sourceForm.get('pub_sub.workers')?.removeValidators(Validators.required);
 			this.sourceForm.get('pub_sub.workers')?.updateValueAndValidity();

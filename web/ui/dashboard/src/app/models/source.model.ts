@@ -45,6 +45,20 @@ export interface SOURCE {
 			queue_name: string;
 			secret_key: string;
 		};
+		amqp: {
+			schema: string,
+			host: string,
+			port: string,
+			queueName: string,
+			auth: {
+				user: string,
+				password: string,
+			},
+			bindExchange: {
+				exchange: string,
+				routingKey: string,
+			},
+		};
 		kafka: {
 			brokers: string[];
 			consumer_group_id: string;
