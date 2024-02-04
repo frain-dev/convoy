@@ -134,8 +134,6 @@ func (k *Amqp) Consume() {
 	}
 
 	<-forever
-
-	return
 }
 
 func (k *Amqp) Stop() {
