@@ -2,8 +2,6 @@ module github.com/frain-dev/convoy
 
 go 1.21
 
-toolchain go1.21.2
-
 require (
 	cloud.google.com/go/pubsub v1.33.0
 	github.com/Subomi/go-authz v0.2.0
