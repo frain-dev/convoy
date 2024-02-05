@@ -3,8 +3,11 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
+
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
@@ -72,6 +75,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 					},
 				}
 				a.EXPECT().FindEndpointByTargetURL(gomock.Any(), "project-id-1", "https://google.com").Times(1).Return(endpoint, nil)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", "project-id-1").Times(1).Return(endpoint, nil)
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				subscriptions := []datastore.Subscription{
@@ -133,6 +137,19 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
 				a.EXPECT().FindEndpointByTargetURL(gomock.Any(), "project-id-1", "https://google.com").Times(1).Return(nil, datastore.ErrEndpointNotFound)
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "project-id-1").Times(1).Return(&datastore.Endpoint{
+					UID:                "endpoint-id-1",
+					ProjectID:          project.UID,
+					Title:              fmt.Sprintf("endpoint-%s", ulid.Make().String()),
+					TargetURL:          "https:/google.com",
+					RateLimit:          convoy.RATE_LIMIT,
+					HttpTimeout:        convoy.HTTP_TIMEOUT,
+					AdvancedSignatures: true,
+					RateLimitDuration:  convoy.RATE_LIMIT_DURATION,
+					Status:             datastore.ActiveEndpointStatus,
+					CreatedAt:          time.Now(),
+					UpdatedAt:          time.Now(),
+				}, nil)
 
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), "project-id-1").
 					Times(1).Return(nil)
