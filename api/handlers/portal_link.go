@@ -4,11 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
-	"net/http"
-	"os"
-
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/log"
+	"net/http"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -35,8 +33,8 @@ import (
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links [post]
 func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
-	valid := os.Getenv(config.LicenseVersionEnv)
-	if len(valid) > 0 {
+	valid := license.LICENSE.Load()
+	if valid {
 		_ = render.Render(w, r, util.NewServiceErrResponse(convoy.ErrFeatureNotAccessible("portal links")))
 		return
 	}
@@ -90,8 +88,8 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID} [get]
 func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
-	valid := os.Getenv(config.LicenseVersionEnv)
-	if len(valid) > 0 {
+	valid := license.LICENSE.Load()
+	if valid {
 		_ = render.Render(w, r, util.NewServiceErrResponse(convoy.ErrFeatureNotAccessible("portal links")))
 		return
 	}
@@ -149,8 +147,8 @@ func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID} [put]
 func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
-	valid := os.Getenv(config.LicenseVersionEnv)
-	if len(valid) > 0 {
+	valid := license.LICENSE.Load()
+	if valid {
 		_ = render.Render(w, r, util.NewServiceErrResponse(convoy.ErrFeatureNotAccessible("portal links")))
 		return
 	}
@@ -217,8 +215,8 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke [put]
 func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
-	valid := os.Getenv(config.LicenseVersionEnv)
-	if len(valid) > 0 {
+	valid := license.LICENSE.Load()
+	if valid {
 		_ = render.Render(w, r, util.NewServiceErrResponse(convoy.ErrFeatureNotAccessible("portal links")))
 		return
 	}
@@ -266,8 +264,8 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links [get]
 func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
-	valid := os.Getenv(config.LicenseVersionEnv)
-	if len(valid) > 0 {
+	valid := license.LICENSE.Load()
+	if valid {
 		_ = render.Render(w, r, util.NewServiceErrResponse(convoy.ErrFeatureNotAccessible("portal links")))
 		return
 	}

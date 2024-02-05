@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"os"
 	"time"
 
@@ -206,7 +207,9 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		return err
 	}
 
-	return os.Setenv(config.LicenseVersionEnv, configuration.License.String)
+	license.NewLicense().Set(len(configuration.License.String) > 0)
+
+	return nil
 }
 
 func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
