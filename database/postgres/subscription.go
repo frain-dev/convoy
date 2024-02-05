@@ -543,10 +543,9 @@ func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID s
 }
 
 func (s *subscriptionRepo) FindSubscriptionByEventType(ctx context.Context, projectID, eventType string) ([]datastore.Subscription, error) {
-	q := eventType
 	query := baseFetchSubscription + " AND s.project_id = $1 "
 	if eventType != "*" {
-		q = strings.Replace(eventType, "*", "%", -1)
+		q := strings.Replace(eventType, "*", "%", -1)
 
 		query += fmt.Sprintf(`
                 AND EXISTS (
