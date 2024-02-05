@@ -75,7 +75,10 @@ export class CreateEndpointComponent implements OnInit {
 	token: string = this.route.snapshot.params.token;
 	@Input('endpointId') endpointUid: string = this.route.snapshot.params.id;
 	enableMoreConfig = false;
-	configurations = [{ uid: 'http_timeout', name: 'Timeout ', show: false }];
+	configurations = [
+		{ uid: 'http_timeout', name: 'Timeout ', show: false },
+		{ uid: 'owner_id', name: 'Owner ID ', show: false }
+	];
 	endpointCreated: boolean = false;
 	endpointSecret?: SECRET;
 	private rbacService = inject(RbacService);
@@ -92,13 +95,7 @@ export class CreateEndpointComponent implements OnInit {
 
 	async ngOnInit() {
 		if (this.type !== 'portal')
-			this.configurations.push(
-				{ uid: 'owner_id', name: 'Owner ID ', show: false },
-				{ uid: 'rate_limit', name: 'Rate Limit ', show: false },
-				{ uid: 'alert_config', name: 'Notifications', show: false },
-				{ uid: 'auth', name: 'Auth', show: false },
-				{ uid: 'signature', name: 'Signature Format', show: false }
-			);
+			this.configurations.push({ uid: 'rate_limit', name: 'Rate Limit ', show: false }, { uid: 'alert_config', name: 'Notifications', show: false }, { uid: 'auth', name: 'Auth', show: false }, { uid: 'signature', name: 'Signature Format', show: false });
 		if (this.endpointUid && this.editMode) this.getEndpointDetails();
 		if (!(await this.rbacService.userCanAccess('Endpoints|MANAGE'))) this.addNewEndpointForm.disable();
 	}

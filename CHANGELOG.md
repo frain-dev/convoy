@@ -1,3 +1,8 @@
+# 24.1.2
+
+### Bug Fixes 
+- fixed sync bug in oss telemetry library #1906
+
 # 24.1.1 
 
 ### API Changes
