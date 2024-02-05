@@ -544,18 +544,21 @@ func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID s
 
 func (s *subscriptionRepo) FindSubscriptionByEventType(ctx context.Context, projectID, eventType string) ([]datastore.Subscription, error) {
 	query := baseFetchSubscription + " AND s.project_id = $1 "
+
+	args := []interface{}{projectID}
 	if eventType != "*" {
 		q := strings.Replace(eventType, "*", "%", -1)
 
-		query += fmt.Sprintf(`
-                AND EXISTS (
+		query += `AND EXISTS (
                 SELECT 1 FROM unnest(s.filter_config_event_types) AS et
-                WHERE et LIKE '%s'
-                )`, q)
+                WHERE et LIKE $2
+                )`
+
+		args = append(args, q)
 	}
 
 	subscriptions, err := s.readManyFromCache(ctx, projectID, func() ([]datastore.Subscription, error) {
-		rows, err := s.db.QueryxContext(ctx, query, projectID)
+		rows, err := s.db.QueryxContext(ctx, query, args...)
 		if err != nil {
 			return nil, err
 		}
