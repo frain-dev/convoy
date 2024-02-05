@@ -117,6 +117,15 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				subRepo,
 				deviceRepo))
 
+			consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
+				endpointRepo,
+				eventRepo,
+				projectRepo,
+				eventDeliveryRepo,
+				a.Queue,
+				subRepo,
+				deviceRepo))
+
 			consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
 				endpointRepo,
 				eventRepo,
