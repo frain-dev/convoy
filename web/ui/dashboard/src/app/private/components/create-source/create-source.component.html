@@ -223,7 +223,7 @@
 					</convoy-input-field>
 
 					<convoy-input-field [className]="'mb-0'">
-						<label for="host" convoy-label>Host</label>
+						<label for="host" convoy-label required="true">Host</label>
 						<input type="text" id="host" convoy-input autocomplete="host" formControlName="host" placeholder="Host" />
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.host')?.touched && sourceForm.get('pub_sub.amqp.host')?.invalid">Enter Host</convoy-input-error>
 					</convoy-input-field>
@@ -237,7 +237,7 @@
 					</convoy-input-field>
 
 					<convoy-input-field [className]="'mb-0'">
-						<label for="queue" convoy-label>Queue</label>
+						<label for="queue" convoy-label required="true">Queue</label>
 						<input type="text" id="queue" convoy-input autocomplete="queue" formControlName="queue" placeholder="Queue Name" />
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.queue')?.touched && sourceForm.get('pub_sub.amqp.queue')?.invalid">Enter amqp-queue</convoy-input-error>
 					</convoy-input-field>
