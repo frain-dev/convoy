@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/dop251/goja"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
@@ -454,7 +456,6 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, projectID s
 
 		return subscription, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -475,7 +476,6 @@ func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, proj
 
 		return scanSubscriptions(rows)
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -496,7 +496,6 @@ func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, pr
 
 		return scanSubscriptions(rows)
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -520,7 +519,6 @@ func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, proje
 
 		return subscription, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -537,7 +535,34 @@ func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID s
 
 		return scanSubscriptions(rows)
 	})
+	if err != nil {
+		return nil, err
+	}
 
+	return subscriptions, nil
+}
+
+func (s *subscriptionRepo) FindSubscriptionByEventType(ctx context.Context, projectID, eventType string) ([]datastore.Subscription, error) {
+	q := eventType
+	query := baseFetchSubscription + " AND s.project_id = $1 "
+	if eventType != "*" {
+		q = strings.Replace(eventType, "*", "%", -1)
+
+		query += fmt.Sprintf(`
+                AND EXISTS (
+                SELECT 1 FROM unnest(s.filter_config_event_types) AS et
+                WHERE et LIKE '%s'
+                )`, q)
+	}
+
+	subscriptions, err := s.readManyFromCache(ctx, projectID, func() ([]datastore.Subscription, error) {
+		rows, err := s.db.QueryxContext(ctx, query, projectID)
+		if err != nil {
+			return nil, err
+		}
+
+		return scanSubscriptions(rows)
+	})
 	if err != nil {
 		return nil, err
 	}

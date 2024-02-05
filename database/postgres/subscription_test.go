@@ -493,6 +493,63 @@ func Test_FindCLISubscriptions(t *testing.T) {
 	require.Equal(t, 8, len(dbSubs))
 }
 
+func Test_FindSubscriptionByEventType(t *testing.T) {
+	db, _ := getDB(t)
+	// defer closeFn()
+
+	subRepo := NewSubscriptionRepo(db, nil)
+
+	source := seedSource(t, db)
+	project := seedProject(t, db)
+	endpoint := seedEndpoint(t, db)
+
+	for i := 0; i < 8; i++ {
+		newSub := &datastore.Subscription{
+			UID:        ulid.Make().String(),
+			Name:       "Subscription",
+			Type:       datastore.SubscriptionTypeCLI,
+			ProjectID:  project.UID,
+			SourceID:   source.UID,
+			EndpointID: endpoint.UID,
+			AlertConfig: &datastore.AlertConfiguration{
+				Count:     10,
+				Threshold: "1m",
+			},
+			RetryConfig: &datastore.RetryConfiguration{
+				Type:       "linear",
+				Duration:   3,
+				RetryCount: 10,
+			},
+			FilterConfig: &datastore.FilterConfiguration{
+				EventTypes: []string{"some.event"},
+				Filter: datastore.FilterSchema{
+					Headers: datastore.M{},
+					Body:    datastore.M{},
+				},
+			},
+		}
+
+		require.NoError(t, subRepo.CreateSubscription(context.Background(), project.UID, newSub))
+	}
+
+	// Fetch sub again
+	dbSubs, err := subRepo.FindSubscriptionByEventType(context.Background(), project.UID, "*.event")
+	require.NoError(t, err)
+	require.Equal(t, 8, len(dbSubs))
+
+	dbSubs, err = subRepo.FindSubscriptionByEventType(context.Background(), project.UID, "some.*")
+	require.NoError(t, err)
+	require.Equal(t, 8, len(dbSubs))
+
+	dbSubs, err = subRepo.FindSubscriptionByEventType(context.Background(), project.UID, "some.*nt")
+	require.NoError(t, err)
+	require.Equal(t, 8, len(dbSubs))
+
+	dbSubs, err = subRepo.FindSubscriptionByEventType(context.Background(), project.UID, "*")
+	require.NoError(t, err)
+	require.Equal(t, 8, len(dbSubs))
+}
+
 func seedDevice(t *testing.T, db database.Database) *datastore.Device {
 	project := seedProject(t, db)
 	endpoint := seedEndpoint(t, db)
