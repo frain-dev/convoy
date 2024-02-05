@@ -47,7 +47,7 @@ func (e *CreateBroadcastEventService) Run(ctx context.Context) error {
 
 	err = e.Queue.Write(taskName, convoy.CreateEventQueue, job)
 	if err != nil {
-		log.FromContext(ctx).Errorf("Error occurred sending new dynamic event to the queue %s", err)
+		log.FromContext(ctx).Errorf("Error occurred sending new broadcast event to the queue %s", err)
 		return &ServiceError{ErrMsg: "failed to create dynamic event"}
 	}
 
