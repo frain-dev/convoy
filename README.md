@@ -4,7 +4,7 @@
 [![Build and run all tests](https://github.com/frain-dev/convoy/actions/workflows/go.yml/badge.svg)](https://github.com/frain-dev/convoy/actions/workflows/go.yml)
 - Website: https://getconvoy.io
 - Forum: [Github Discussions](https://github.com/frain-dev/convoy/discussions)
-- Documentation: [docs.getconvoy.io](https:docs.getconvoy.io)
+- Documentation: [docs.getconvoy.io](https://docs.getconvoy.io)
 - Deploy: [Install Convoy](https://docs.getconvoy.io/deployment/install-convoy/docker)
 - Slack: [Join the Community](https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ)
 
