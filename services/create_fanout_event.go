@@ -2,7 +2,16 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"time"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/pkg/httpheader"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/worker/task"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/queue"
@@ -18,6 +27,24 @@ type CreateFanoutEventService struct {
 
 	NewMessage *models.FanoutEvent
 	Project    *datastore.Project
+}
+
+var (
+	ErrInvalidEventDeliveryStatus  = errors.New("only successful events can be force resent")
+	ErrNoValidEndpointFound        = errors.New("no valid endpoint found")
+	ErrNoValidOwnerIDEndpointFound = errors.New("owner ID has no configured endpoints")
+	ErrInvalidEndpointID           = errors.New("please provide an endpoint ID")
+)
+
+type newEvent struct {
+	UID            string
+	Raw            string
+	Data           json.RawMessage
+	EventType      string
+	EndpointID     string
+	CustomHeaders  map[string]string
+	IdempotencyKey string
+	IsDuplicate    bool
 }
 
 func (e *CreateFanoutEventService) Run(ctx context.Context) (*datastore.Event, error) {
@@ -71,4 +98,67 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (*datastore.Event, e
 	}
 
 	return event, nil
+}
+
+func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage *newEvent, g *datastore.Project, queuer queue.Queuer) (*datastore.Event, error) {
+	var endpointIDs []string
+
+	for _, endpoint := range endpoints {
+		endpointIDs = append(endpointIDs, endpoint.UID)
+	}
+
+	event := &datastore.Event{
+		UID:              newMessage.UID,
+		EventType:        datastore.EventType(newMessage.EventType),
+		Data:             newMessage.Data,
+		Raw:              newMessage.Raw,
+		IdempotencyKey:   newMessage.IdempotencyKey,
+		IsDuplicateEvent: newMessage.IsDuplicate,
+		Headers:          getCustomHeaders(newMessage.CustomHeaders),
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
+		Endpoints:        endpointIDs,
+		ProjectID:        g.UID,
+	}
+
+	if (g.Config == nil || g.Config.Strategy == nil) ||
+		(g.Config.Strategy != nil && g.Config.Strategy.Type != datastore.LinearStrategyProvider && g.Config.Strategy.Type != datastore.ExponentialStrategyProvider) {
+		return nil, &ServiceError{ErrMsg: "retry strategy not defined in configuration"}
+	}
+
+	e := task.CreateEvent{
+		Event:              event,
+		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
+	}
+
+	eventByte, err := msgpack.EncodeMsgPack(e)
+	if err != nil {
+		return nil, &ServiceError{ErrMsg: err.Error()}
+	}
+
+	job := &queue.Job{
+		ID:      event.UID,
+		Payload: eventByte,
+		Delay:   0,
+	}
+	err = queuer.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	if err != nil {
+		log.FromContext(ctx).Errorf("Error occurred sending new event to the queue %s", err)
+	}
+
+	return event, nil
+}
+
+func getCustomHeaders(customHeaders map[string]string) httpheader.HTTPHeader {
+	var headers map[string][]string
+
+	if customHeaders != nil {
+		headers = make(map[string][]string)
+
+		for key, value := range customHeaders {
+			headers[key] = []string{value}
+		}
+	}
+
+	return headers
 }
