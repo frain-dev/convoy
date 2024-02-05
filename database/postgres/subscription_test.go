@@ -494,8 +494,8 @@ func Test_FindCLISubscriptions(t *testing.T) {
 }
 
 func Test_FindSubscriptionByEventType(t *testing.T) {
-	db, _ := getDB(t)
-	// defer closeFn()
+	db, closeFn := getDB(t)
+	defer closeFn()
 
 	subRepo := NewSubscriptionRepo(db, nil)
 
