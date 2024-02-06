@@ -1396,21 +1396,6 @@ func (mr *MockSubscriptionRepositoryMockRecorder) FindSubscriptionByDeviceID(ctx
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSubscriptionByDeviceID", reflect.TypeOf((*MockSubscriptionRepository)(nil).FindSubscriptionByDeviceID), ctx, projectId, deviceID, subscriptionType)
 }
 
-// FindSubscriptionByEventType mocks base method.
-func (m *MockSubscriptionRepository) FindSubscriptionByEventType(ctx context.Context, projectID, eventType string) ([]datastore.Subscription, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindSubscriptionByEventType", ctx, projectID, eventType)
-	ret0, _ := ret[0].([]datastore.Subscription)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// FindSubscriptionByEventType indicates an expected call of FindSubscriptionByEventType.
-func (mr *MockSubscriptionRepositoryMockRecorder) FindSubscriptionByEventType(ctx, projectID, eventType interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindSubscriptionByEventType", reflect.TypeOf((*MockSubscriptionRepository)(nil).FindSubscriptionByEventType), ctx, projectID, eventType)
-}
-
 // FindSubscriptionByID mocks base method.
 func (m *MockSubscriptionRepository) FindSubscriptionByID(ctx context.Context, projectID, id string) (*datastore.Subscription, error) {
 	m.ctrl.T.Helper()
