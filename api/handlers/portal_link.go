@@ -265,7 +265,7 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Router			/v1/projects/{projectID}/portal-links [get]
 func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 	valid := license.LICENSE.Load()
-	if valid {
+	if !valid {
 		_ = render.Render(w, r, util.NewServiceErrResponse(convoy.ErrFeatureNotAccessible("portal links")))
 		return
 	}

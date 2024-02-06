@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"errors"
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"net/http"
 
 	"github.com/frain-dev/convoy/pkg/log"
@@ -271,7 +273,7 @@ func (h *Handler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Reques
 
 // TestSubscriptionFilter
 //
-//	@Summary		Validate subscription filter
+//	@Summary	Validate subscription filter
 //	@Description	This endpoint validates that a filter will match a certain payload structure.
 //	@Tags			Subscriptions
 //	@Accept			json
@@ -283,6 +285,12 @@ func (h *Handler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Reques
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/test_filter [post]
 func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request) {
+	valid := license.LICENSE.Load()
+	if !valid {
+		_ = render.Render(w, r, util.NewServiceErrResponse(convoy.ErrFeatureNotAccessible("subscription filters")))
+		return
+	}
+
 	var test models.TestFilter
 	err := util.ReadJSON(r, &test)
 	if err != nil {
@@ -324,6 +332,12 @@ func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request)
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/test_function [post]
 func (h *Handler) TestSubscriptionFunction(w http.ResponseWriter, r *http.Request) {
+	valid := license.LICENSE.Load()
+	if !valid {
+		_ = render.Render(w, r, util.NewServiceErrResponse(convoy.ErrFeatureNotAccessible("subscription functions")))
+		return
+	}
+
 	var test models.TestWebhookFunction
 	err := util.ReadJSON(r, &test)
 	if err != nil {

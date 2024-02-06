@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -132,25 +133,28 @@ func ProcessEventCreation(
 			raw := event.Raw
 			data := event.Data
 
-			if s.Function.Ptr() != nil && !util.IsStringEmpty(s.Function.String) {
-				var payload map[string]interface{}
-				err = json.Unmarshal(event.Data, &payload)
-				if err != nil {
-					return &EndpointError{Err: err, delay: 10 * time.Second}
-				}
+			valid := license.LICENSE.Load()
+			if valid {
+				if s.Function.Ptr() != nil && !util.IsStringEmpty(s.Function.String) {
+					var payload map[string]interface{}
+					err = json.Unmarshal(event.Data, &payload)
+					if err != nil {
+						return &EndpointError{Err: err, delay: 10 * time.Second}
+					}
 
-				mutated, _, err := subRepo.TransformPayload(ctx, s.Function.String, payload)
-				if err != nil {
-					return &EndpointError{Err: err, delay: 10 * time.Second}
-				}
+					mutated, _, err := subRepo.TransformPayload(ctx, s.Function.String, payload)
+					if err != nil {
+						return &EndpointError{Err: err, delay: 10 * time.Second}
+					}
 
-				bytes, err := json.Marshal(mutated)
-				if err != nil {
-					return &EndpointError{Err: err, delay: 10 * time.Second}
-				}
+					bytes, err := json.Marshal(mutated)
+					if err != nil {
+						return &EndpointError{Err: err, delay: 10 * time.Second}
+					}
 
-				raw = string(bytes)
-				data = bytes
+					raw = string(bytes)
+					data = bytes
+				}
 			}
 
 			metadata := &datastore.Metadata{

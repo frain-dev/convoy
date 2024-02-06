@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"net/http"
 
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
@@ -127,13 +128,15 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				subRepo,
 				deviceRepo))
 
-			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
-				configRepo,
-				projectRepo,
-				eventRepo,
-				eventDeliveryRepo,
-				rd,
-			))
+			if license.LICENSE.Load() {
+				consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
+					configRepo,
+					projectRepo,
+					eventRepo,
+					eventDeliveryRepo,
+					rd,
+				))
+			}
 
 			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Cache, a.Queue, rd))
 

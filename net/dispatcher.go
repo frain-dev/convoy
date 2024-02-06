@@ -4,12 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"io"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -25,8 +24,7 @@ type Dispatcher struct {
 func NewDispatcher(timeout time.Duration, httpProxy string) (*Dispatcher, error) {
 	d := &Dispatcher{client: &http.Client{Timeout: timeout}}
 
-	valid := os.Getenv(config.LicenseVersionEnv)
-	if len(valid) > 0 && len(httpProxy) > 0 {
+	if license.LICENSE.Load() && len(httpProxy) > 0 {
 		proxyUrl, err := url.Parse(httpProxy)
 		if err != nil {
 			return nil, err
@@ -128,7 +126,7 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 		log.WithError(err).Error("couldn't parse response body")
 		return err
 	}
-	defer response.Body.Close()
+	defer convoy.CloseWithError(response.Body)
 
 	return nil
 }
