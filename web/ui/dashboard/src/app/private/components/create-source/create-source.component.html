@@ -239,7 +239,15 @@
 					<convoy-input-field [className]="'mb-0'">
 						<label for="queue" convoy-label required="true">Queue</label>
 						<input type="text" id="queue" convoy-input autocomplete="queue" formControlName="queue" placeholder="Queue Name" />
-						<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.queue')?.touched && sourceForm.get('pub_sub.amqp.queue')?.invalid">Enter amqp-queue</convoy-input-error>
+						<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.queue')?.touched && sourceForm.get('pub_sub.amqp.queue')?.invalid">Enter queue name</convoy-input-error>
+					</convoy-input-field>
+				</div>
+
+				<div [className]="'mt-24px'">
+					<convoy-input-field [className]="'mb-0'">
+						<label for="deadLetterExchange" convoy-label tooltip="In case of failure, the message will be published to the dlx, please note that this will not declare the dlx." required="false">Dead Letter Exchange</label>
+						<input type="text" id="deadLetterExchange" convoy-input autocomplete="deadLetterExchange" formControlName="deadLetterExchange" placeholder="Dead Letter Exchange" />
+						<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.deadLetterExchange')?.touched && sourceForm.get('pub_sub.amqp.deadLetterExchange')?.invalid">Enter dead letter exhange name</convoy-input-error>
 					</convoy-input-field>
 				</div>
 
@@ -260,7 +268,7 @@
 							<convoy-input-field [className]="'mb-0'">
 								<label for="password" convoy-label>Password</label>
 								<input type="password" id="password" convoy-input autocomplete="password" formControlName="password" placeholder="Password" />
-								<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.amqp-auth.password')?.touched && sourceForm.get('pub_sub.amqp.amqp-auth.password')?.invalid">Enter Password</convoy-input-error>
+								<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.auth.password')?.touched && sourceForm.get('pub_sub.amqp.auth.password')?.invalid">Enter Password</convoy-input-error>
 							</convoy-input-field>
 						</div>
 					</ng-container>

@@ -20,6 +20,8 @@ definitions:
         $ref: '#/definitions/datastore.AmqpCredentials'
       bindedExchange:
         type: string
+      deadLetterExchange:
+        type: string
       host:
         type: string
       port:
@@ -606,6 +608,8 @@ definitions:
         $ref: '#/definitions/models.AmqpAuth'
       bindExchange:
         $ref: '#/definitions/models.AmqpExchange'
+      deadLetterExchange:
+        type: string
       host:
         type: string
       port:

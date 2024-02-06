@@ -31,6 +31,9 @@
 					"bindedExchange": {
 						"type": "string"
 					},
+					"deadLetterExchange": {
+						"type": "string"
+					},
 					"host": {
 						"type": "string"
 					},
@@ -890,6 +893,9 @@
 					},
 					"bindExchange": {
 						"$ref": "#/components/schemas/models.AmqpExchange"
+					},
+					"deadLetterExchange": {
+						"type": "string"
 					},
 					"host": {
 						"type": "string"

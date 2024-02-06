@@ -63,12 +63,13 @@ export class CreateSourceComponent implements OnInit {
 				host: [''],
 				port: [''],
 				queue: [''],
+				deadLetterExchange: [null],
 				auth: this.formBuilder.group({
-					user: [''],
-					password: ['']
+					user: [null],
+					password: [null]
 				}),
 				bindExchange: this.formBuilder.group({
-					exchange: [''],
+					exchange: [null],
 					routingKey: ['""']
 				}),
 			}),
@@ -194,10 +195,13 @@ export class CreateSourceComponent implements OnInit {
 
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
 
-            if (response.data.pub_sub.kafka.brokers) this.brokerAddresses = response.data.pub_sub.kafka.brokers;
+    	if (response.data.pub_sub.kafka.brokers) this.brokerAddresses = response.data.pub_sub.kafka.brokers;
 
 			if (response.data.pub_sub.kafka.auth?.type) this.addKafkaAuthentication = true;
+			
+			if (response.data.pub_sub.amqp.auth?.user) this.addAmqpAuthentication = true;
 
+			if (response.data.pub_sub.amqp.bindedExchange) this.addAmqpQueueBinding = true;
 
 			this.isloading = false;
 
@@ -382,7 +386,7 @@ export class CreateSourceComponent implements OnInit {
 				google: ['pub_sub.google.service_account', 'pub_sub.google.subscription_id', 'pub_sub.google.project_id'],
 				sqs: ['pub_sub.sqs.queue_name', 'pub_sub.sqs.access_key_id', 'pub_sub.sqs.secret_key', 'pub_sub.sqs.default_region'],
 				kafka: ['pub_sub.kafka.brokers', 'pub_sub.kafka.topic_name'],
-				amqp: ['pub_sub.amqp.schema', 'pub_sub.amqp.host', 'pub_sub.amqp.port', 'pub_sub.amqp.queue']
+				amqp: ['pub_sub.amqp.schema', 'pub_sub.amqp.host', 'pub_sub.amqp.port', 'pub_sub.amqp.queue', 'pub_sub_amqp.deadLetterExchange']
 			};
 
 			Object.keys(pubSubs).forEach((pubSub: any) => {
@@ -415,7 +419,7 @@ export class CreateSourceComponent implements OnInit {
 			}
 
 			// AMQP
-			const amqpAuths = ['pub_sub.amqp.amqp-auth.user', 'pub_sub.amqp.amqp-auth.password'];
+			const amqpAuths = ['pub_sub.amqp.auth.user', 'pub_sub.amqp.auth.password'];
 			if (this.addAmqpAuthentication) {
 				amqpAuths?.forEach((item: string) => {
 					this.sourceForm.get(item)?.addValidators(Validators.required);

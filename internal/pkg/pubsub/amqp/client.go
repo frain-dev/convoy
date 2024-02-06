@@ -2,7 +2,6 @@ package rqm
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -10,7 +9,9 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-var ErrInvalidCredentials = errors.New("your kafka credentials are invalid. please verify you're providing the correct credentials")
+const (
+	DEAD_LETTER_EXCHANGE_HEADER = "x-dead-letter-exchange"
+)
 
 type Amqp struct {
 	Cfg     *datastore.AmqpPubSubConfig
@@ -86,13 +87,18 @@ func (k *Amqp) Consume() {
 		return
 	}
 
+	queueArgs := amqp.Table{}
+	if k.Cfg.DeadLetterExchange != nil {
+		queueArgs[DEAD_LETTER_EXCHANGE_HEADER] = *k.Cfg.DeadLetterExchange
+	}
+
 	q, err := ch.QueueDeclare(
 		k.Cfg.Queue, // name
 		true,        // durable
 		false,       // delete when unused
 		false,       // exclusive
 		false,       // no-wait
-		nil,         // arguments
+		queueArgs,   // arguments
 	)
 
 	if k.Cfg.BindedExchange != nil && *k.Cfg.BindedExchange != "" {
@@ -111,7 +117,7 @@ func (k *Amqp) Consume() {
 	msgs, err := ch.Consume(
 		q.Name, // queue
 		"",     // consumer
-		true,   // auto-ack
+		false,  // auto-ack
 		false,  // exclusive
 		false,  // no-local
 		false,  // no-wait
@@ -130,6 +136,10 @@ func (k *Amqp) Consume() {
 
 		if err := k.handler(ctx, k.source, string(d.Body)); err != nil {
 			k.log.WithError(err).Error("failed to write message to create event queue - amqp pub sub")
+			d.Ack(false)
+		} else {
+			// Reject the mesage and send it to DLQ
+			d.Nack(false, false)
 		}
 	}
 

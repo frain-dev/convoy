@@ -50,6 +50,7 @@ export interface SOURCE {
 			host: string,
 			port: string,
 			queueName: string,
+			deadLetterExchange: string,
 			auth: {
 				user: string,
 				password: string,

@@ -26,13 +26,14 @@ type SqsPubSub struct {
 }
 
 type AmqpPubSub struct {
-	Host           string    `json:"host"`
-	Port           string    `json:"port"`
-	Queue          string    `json:"queue"`
-	Schema         string    `json:"schema"`
-	Auth           *AmqpAuth `json:"auth"`
-	BindedExchange *string   `json:"bindedExchange"`
-	RoutingKey     string    `json:"routingKey"`
+	Host               string    `json:"host"`
+	Port               string    `json:"port"`
+	Queue              string    `json:"queue"`
+	Schema             string    `json:"schema"`
+	Auth               *AmqpAuth `json:"auth"`
+	BindedExchange     *string   `json:"bindedExchange"`
+	RoutingKey         string    `json:"routingKey"`
+	DeadLetterExchange *string   `json:"deadLetterExchange"`
 }
 
 type AmqpAuth struct {
@@ -135,13 +136,14 @@ func Validate(cfg *datastore.PubSubConfig) error {
 		}
 
 		aPubSub := &AmqpPubSub{
-			Schema:         cfg.Amqp.Schema,
-			Host:           cfg.Amqp.Host,
-			Port:           cfg.Amqp.Port,
-			Queue:          cfg.Amqp.Queue,
-			Auth:           aAuth,
-			BindedExchange: cfg.Amqp.BindedExchange,
-			RoutingKey:     cfg.Amqp.RoutingKey,
+			Schema:             cfg.Amqp.Schema,
+			Host:               cfg.Amqp.Host,
+			Port:               cfg.Amqp.Port,
+			Queue:              cfg.Amqp.Queue,
+			Auth:               aAuth,
+			BindedExchange:     cfg.Amqp.BindedExchange,
+			RoutingKey:         cfg.Amqp.RoutingKey,
+			DeadLetterExchange: cfg.Amqp.DeadLetterExchange,
 		}
 
 		if err := util.Validate(aPubSub); err != nil {

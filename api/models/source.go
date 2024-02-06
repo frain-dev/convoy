@@ -337,12 +337,13 @@ type KafkaPubSubConfig struct {
 }
 
 type AmqpPubSubconfig struct {
-	Schema         string        `json:"schema"`
-	Host           string        `json:"host"`
-	Port           string        `json:"port"`
-	Auth           *AmqpAuth     `json:"auth"`
-	Queue          string        `json:"queue"`
-	BindedExchange *AmqpExchange `json:"bindExchange"`
+	Schema             string        `json:"schema"`
+	Host               string        `json:"host"`
+	Port               string        `json:"port"`
+	Auth               *AmqpAuth     `json:"auth"`
+	Queue              string        `json:"queue"`
+	BindedExchange     *AmqpExchange `json:"bindExchange"`
+	DeadLetterExchange *string       `json:"deadLetterExchange"`
 }
 
 type AmqpAuth struct {
@@ -370,13 +371,14 @@ func (ac *AmqpPubSubconfig) transform() *datastore.AmqpPubSubConfig {
 	}
 
 	return &datastore.AmqpPubSubConfig{
-		Schema:         ac.Schema,
-		Host:           ac.Host,
-		Port:           ac.Port,
-		Queue:          ac.Queue,
-		BindedExchange: bind.Exchange,
-		RoutingKey:     *bind.RoutingKey,
-		Auth:           (*datastore.AmqpCredentials)(ac.Auth),
+		Schema:             ac.Schema,
+		Host:               ac.Host,
+		Port:               ac.Port,
+		Queue:              ac.Queue,
+		BindedExchange:     bind.Exchange,
+		RoutingKey:         *bind.RoutingKey,
+		Auth:               (*datastore.AmqpCredentials)(ac.Auth),
+		DeadLetterExchange: ac.DeadLetterExchange,
 	}
 }
 

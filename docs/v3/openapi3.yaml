@@ -20,6 +20,8 @@ components:
           $ref: '#/components/schemas/datastore.AmqpCredentials'
         bindedExchange:
           type: string
+        deadLetterExchange:
+          type: string
         host:
           type: string
         port:
@@ -606,6 +608,8 @@ components:
           $ref: '#/components/schemas/models.AmqpAuth'
         bindExchange:
           $ref: '#/components/schemas/models.AmqpExchange'
+        deadLetterExchange:
+          type: string
         host:
           type: string
         port:

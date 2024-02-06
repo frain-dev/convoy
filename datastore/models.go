@@ -1118,13 +1118,14 @@ type KafkaPubSubConfig struct {
 }
 
 type AmqpPubSubConfig struct {
-	Schema         string           `json:"schema" db:"schema"`
-	Host           string           `json:"host" db:"host"`
-	Port           string           `json:"port" db:"port"`
-	Queue          string           `json:"queue" db:"queue"`
-	Auth           *AmqpCredentials `json:"auth" db:"auth"`
-	BindedExchange *string          `json:"bindedExchange" db:"binded_exchange"`
-	RoutingKey     string           `json:"routingKey" db:"routing_key"`
+	Schema             string           `json:"schema" db:"schema"`
+	Host               string           `json:"host" db:"host"`
+	Port               string           `json:"port" db:"port"`
+	Queue              string           `json:"queue" db:"queue"`
+	Auth               *AmqpCredentials `json:"auth" db:"auth"`
+	BindedExchange     *string          `json:"bindedExchange" db:"binded_exchange"`
+	RoutingKey         string           `json:"routingKey" db:"routing_key"`
+	DeadLetterExchange *string          `json:"deadLetterExchange" db:"dead_letter_exchange"`
 }
 
 type AmqpCredentials struct {
