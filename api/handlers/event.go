@@ -101,7 +101,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Event queued successfully", 200, http.StatusCreated))
 }
 
-// CreateBraodcastEvent
+// CreateBroadcastEvent
 //
 //	@Summary		Create an event
 //	@Description	This endpoint creates an endpoint event
@@ -114,7 +114,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events [post]
-func (h *Handler) CreateBraodcastEvent(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 	var newMessage models.BroadcastEvent
 	err := util.ReadJSON(r, &newMessage)
 	if err != nil {

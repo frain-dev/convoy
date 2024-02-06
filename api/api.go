@@ -142,7 +142,7 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 						// TODO(all): should the InstrumentPath change?
 						eventRouter.With(middleware.InstrumentPath("/events")).Post("/", handler.CreateEndpointEvent)
 						eventRouter.Post("/fanout", handler.CreateEndpointFanoutEvent)
-						eventRouter.Post("/broadcast", handler.CreateBraodcastEvent)
+						eventRouter.Post("/broadcast", handler.CreateBroadcastEvent)
 						eventRouter.Post("/dynamic", handler.CreateDynamicEvent)
 						eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
 						eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
