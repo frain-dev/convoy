@@ -4,6 +4,7 @@ import (
 	"os"
 	_ "time/tzdata"
 
+	"github.com/frain-dev/convoy/cmd/agent"
 	"github.com/frain-dev/convoy/cmd/bootstrap"
 
 	configCmd "github.com/frain-dev/convoy/cmd/config"
@@ -114,6 +115,7 @@ func main() {
 	c.AddCommand(stream.AddStreamCommand(app))
 	c.AddCommand(ingest.AddIngestCommand(app))
 	c.AddCommand(bootstrap.AddBootstrapCommand(app))
+	c.AddCommand(agent.AddAgentCommand(app))
 
 	if err := c.Execute(); err != nil {
 		slog.Fatal(err)
