@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/dop251/goja"
 	"github.com/frain-dev/convoy"
@@ -529,36 +528,6 @@ func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, proje
 func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID string) ([]datastore.Subscription, error) {
 	subscriptions, err := s.readManyFromCache(ctx, projectID, func() ([]datastore.Subscription, error) {
 		rows, err := s.db.QueryxContext(ctx, fmt.Sprintf(fetchCLISubscriptions, "s.project_id", "s.type"), projectID, datastore.SubscriptionTypeCLI)
-		if err != nil {
-			return nil, err
-		}
-
-		return scanSubscriptions(rows)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return subscriptions, nil
-}
-
-func (s *subscriptionRepo) FindSubscriptionByEventType(ctx context.Context, projectID, eventType string) ([]datastore.Subscription, error) {
-	query := baseFetchSubscription + " AND s.project_id = $1 "
-
-	args := []interface{}{projectID}
-	if eventType != "*" {
-		q := strings.Replace(eventType, "*", "%", -1)
-
-		query += `AND EXISTS (
-                SELECT 1 FROM unnest(s.filter_config_event_types) AS et
-                WHERE et LIKE $2
-                )`
-
-		args = append(args, q)
-	}
-
-	subscriptions, err := s.readManyFromCache(ctx, projectID, func() ([]datastore.Subscription, error) {
-		rows, err := s.db.QueryxContext(ctx, query, args...)
 		if err != nil {
 			return nil, err
 		}

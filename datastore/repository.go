@@ -116,7 +116,6 @@ type SubscriptionRepository interface {
 	FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string, subscriptionType SubscriptionType) (*Subscription, error)
 	FindCLISubscriptions(ctx context.Context, projectID string) ([]Subscription, error)
 	CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error)
-	FindSubscriptionByEventType(ctx context.Context, projectID, eventType string) ([]Subscription, error)
 	TestSubscriptionFilter(ctx context.Context, payload, filter interface{}) (bool, error)
 	TransformPayload(ctx context.Context, function string, payload map[string]interface{}) (interface{}, []string, error)
 }
