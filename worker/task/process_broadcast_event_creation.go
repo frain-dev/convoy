@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/frain-dev/convoy/util"
@@ -44,16 +45,22 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			isDuplicate = len(events) > 0
 		}
 
-		subscriptions, err := subRepo.FindSubscriptionByEventType(ctx, project.UID, broadcastEvent.EventType)
+		pageable := datastore.Pageable{
+			PerPage:    3500,
+			Direction:  datastore.Next,
+			NextCursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF",
+		}
+
+		subscriptions, err := getAllSubscriptions(ctx, subRepo, project.UID, pageable)
 		if err != nil {
-			return err
+			log.WithError(err).Error("failed to fetch all subscriptions")
+			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
 		event := &datastore.Event{
 			UID:              ulid.Make().String(),
 			EventType:        datastore.EventType(broadcastEvent.EventType),
 			ProjectID:        project.UID,
-			Endpoints:        getEndpointIDs(subscriptions),
 			Data:             broadcastEvent.Data,
 			IdempotencyKey:   broadcastEvent.IdempotencyKey,
 			IsDuplicateEvent: isDuplicate,
@@ -61,6 +68,17 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			CreatedAt:        time.Now(),
 			UpdatedAt:        time.Now(),
 		}
+
+		subs1 := matchSubscriptions(string(event.EventType), subscriptions)
+
+		subs2, err := matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions)
+		if err != nil {
+			return &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: defaultDelay}
+		}
+
+		subscriptions = append(subs1, subs2...)
+
+		event.Endpoints = getEndpointIDs(subscriptions)
 
 		err = eventRepo.CreateEvent(ctx, event)
 		if err != nil {
@@ -71,6 +89,7 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			log.FromContext(ctx).Infof("[asynq]: duplicate event with idempotency key %v will not be sent", event.IdempotencyKey)
 			return nil
 		}
+
 		return writeEventDeliveriesToQueue(
 			ctx, subscriptions, event, project, eventDeliveryRepo,
 			subRepo, eventQueue, deviceRepo, endpointRepo,
@@ -89,4 +108,23 @@ func getEndpointIDs(subs []datastore.Subscription) []string {
 	}
 
 	return ids
+}
+
+func getAllSubscriptions(ctx context.Context, subRepo datastore.SubscriptionRepository, projectID string, pageable datastore.Pageable) ([]datastore.Subscription, error) {
+	subscriptions, paginationData, err := subRepo.LoadSubscriptionsPaged(ctx, projectID, &datastore.FilterBy{}, pageable)
+	if err != nil {
+		return nil, err
+	}
+
+	if paginationData.HasNextPage {
+		pageable.NextCursor = subscriptions[len(subscriptions)-1].UID
+		subs, err := getAllSubscriptions(ctx, subRepo, projectID, pageable)
+		if err != nil {
+		}
+
+		subscriptions = append(subscriptions, subs...)
+
+	}
+
+	return subscriptions, nil
 }
