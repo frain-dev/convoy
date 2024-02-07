@@ -74,18 +74,32 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				subscriptions := []datastore.Subscription{
 					{
-						UID:             "sub-1",
-						Name:            "test-sub",
-						Type:            datastore.SubscriptionTypeAPI,
-						ProjectID:       "project-id-1",
-						EndpointID:      "endpoint-id-1",
+						UID:        "sub-1",
+						Name:       "test-sub",
+						Type:       datastore.SubscriptionTypeAPI,
+						ProjectID:  "project-id-1",
+						EndpointID: "endpoint-id-1",
+						FilterConfig: &datastore.FilterConfiguration{
+							EventTypes: []string{"*"},
+						},
 						AlertConfig:     nil,
 						RetryConfig:     nil,
 						RateLimitConfig: nil,
 					},
 				}
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
 
-				s.EXPECT().FindSubscriptionByEventType(gomock.Any(), "project-id-1", "some.*").Times(1).Return(subscriptions, nil)
+				s.EXPECT().LoadSubscriptionsPaged(gomock.Any(), "project-id-1", &datastore.FilterBy{}, datastore.Pageable{
+					PerPage:    3500,
+					Direction:  datastore.Next,
+					NextCursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF",
+				}).Times(1).Return(subscriptions, datastore.PaginationData{
+					PerPage:         3500,
+					HasNextPage:     false,
+					HasPreviousPage: false,
+					PrevPageCursor:  "",
+					NextPageCursor:  "",
+				}, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), "project-id-1", "idem-key-1").Times(1).Return(nil, nil)

@@ -69,14 +69,12 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			UpdatedAt:        time.Now(),
 		}
 
-		subs1 := matchSubscriptions(string(event.EventType), subscriptions)
+		subscriptions = matchSubscriptions(string(event.EventType), subscriptions)
 
-		subs2, err := matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions)
+		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions)
 		if err != nil {
 			return &EndpointError{Err: errors.New("failed to match subscriptions using filter"), delay: defaultDelay}
 		}
-
-		subscriptions = append(subs1, subs2...)
 
 		event.Endpoints = getEndpointIDs(subscriptions)
 
