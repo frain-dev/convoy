@@ -58,6 +58,9 @@ type CreateEndpoint struct {
 	// the internet.
 	Authentication *EndpointAuthentication `json:"authentication"`
 
+	// Endpoint specific circuit breaker configuration.
+	CircuitBreaker *CircuitBreaker `json:"circuit_breaker"`
+
 	// Deprecated but necessary for backward compatibility
 	AppID string
 }

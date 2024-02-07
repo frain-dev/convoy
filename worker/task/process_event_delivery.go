@@ -21,6 +21,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/notifications"
+	"github.com/frain-dev/convoy/internal/pkg/breaker"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
@@ -45,7 +46,8 @@ type EventDelivery struct {
 }
 
 func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	projectRepo datastore.ProjectRepository, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter,
+	projectRepo datastore.ProjectRepository, subRepo datastore.SubscriptionRepository,
+	notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter, m *breaker.Manager,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
@@ -163,7 +165,18 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			eventDelivery.Headers["X-Convoy-Event-ID"] = []string{eventDelivery.EventID}
 		}
 
-		resp, err := dispatch.SendRequest(targetURL, string(convoy.HttpPost), sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey)
+		cb := m.Get(endpoint.UID)
+
+		var resp *net.Response
+		if cb != nil {
+			err = cb.Run(ctx, func(ctx context.Context) error {
+				resp, err = dispatch.SendRequest(targetURL, string(convoy.HttpPost), sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey)
+				return err
+			})
+		} else {
+			resp, err = dispatch.SendRequest(targetURL, string(convoy.HttpPost), sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey)
+		}
+
 		status := "-"
 		statusCode := 0
 		if resp != nil {

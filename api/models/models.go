@@ -14,6 +14,19 @@ type PagedResponse struct {
 	Pagination *datastore.PaginationData `json:"pagination,omitempty"`
 }
 
+type CircuitBreaker struct {
+	Duration       int     `json:"duration"`
+	ErrorThreshold float64 `json:"error_threshold"`
+}
+
+func (cb *CircuitBreaker) Transform() *datastore.CircuitBreakerConfiguration {
+	if cb == nil {
+		return nil
+	}
+
+	return &datastore.CircuitBreakerConfiguration{Duration: cb.Duration, ErrorThreshold: cb.ErrorThreshold}
+}
+
 type Organisation struct {
 	Name         string `json:"name" bson:"name"`
 	CustomDomain string `json:"custom_domain" bson:"custom_domain"`

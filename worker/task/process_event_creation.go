@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/breaker"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/util"
 
@@ -41,6 +42,7 @@ func ProcessEventCreation(
 	endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer,
 	subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository,
+	m *breaker.Manager,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var createEvent CreateEvent
@@ -193,7 +195,16 @@ func ProcessEventCreation(
 				return &EndpointError{Err: err, delay: defaultDelay}
 			}
 
-			if eventDelivery.Status != datastore.DiscardedEventStatus {
+			cb := m.Get(s.EndpointID)
+			var shouldWriteToQueue bool
+
+			if cb != nil {
+				shouldWriteToQueue = eventDelivery.Status != datastore.DiscardedEventStatus && cb.IsOpen()
+			} else {
+				shouldWriteToQueue = eventDelivery.Status != datastore.DiscardedEventStatus
+			}
+
+			if shouldWriteToQueue {
 				payload := EventDelivery{
 					EventDeliveryID: eventDelivery.UID,
 					ProjectID:       eventDelivery.ProjectID,

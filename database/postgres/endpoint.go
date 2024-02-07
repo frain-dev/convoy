@@ -5,12 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
-	"strings"
-	"time"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/hooks"
@@ -32,12 +33,12 @@ const (
 		id, title, status, secrets, owner_id, target_url, description, http_timeout,
 		rate_limit, rate_limit_duration, advanced_signatures, slack_webhook_url,
 		support_email, app_id, project_id, authentication_type, authentication_type_api_key_header_name,
-		authentication_type_api_key_header_value
+		authentication_type_api_key_header_value, circuit_breaker_duration, circuit_breaker_error_threshold
 	)
 	VALUES
 	  (
 		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-		$14, $15, $16, $17, $18
+		$14, $15, $16, $17, $18, $19, $20
 	  );
 	`
 
@@ -50,7 +51,9 @@ const (
 	e.project_id, e.secrets, e.created_at, e.updated_at,
 	e.authentication_type AS "authentication.type",
 	e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
-	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value"
+	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value",
+    e.circuit_breaker_duration AS "circuit_breaker.duration",
+    e.circuit_breaker_error_threshold AS "circuit_breaker.error_threshold"
 	FROM convoy.endpoints AS e
 	WHERE e.deleted_at IS NULL
 	`
@@ -70,7 +73,9 @@ const (
     e.app_id, e.project_id, e.secrets, e.created_at, e.updated_at,
     e.authentication_type AS "authentication.type",
     e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
-    e.authentication_type_api_key_header_value AS "authentication.api_key.header_value"
+    e.authentication_type_api_key_header_value AS "authentication.api_key.header_value",
+    e.circuit_breaker_duration AS "circuit_breaker.duration",
+    e.circuit_breaker_error_threshold AS "circuit_breaker.error_threshold"
     FROM convoy.endpoints AS e WHERE e.deleted_at IS NULL AND e.target_url = $1 AND e.project_id = $2;
     `
 
@@ -82,6 +87,7 @@ const (
 	slack_webhook_url = $12, support_email = $13,
 	authentication_type = $14, authentication_type_api_key_header_name = $15,
 	authentication_type_api_key_header_value = $16, secrets = $17,
+    circuit_breaker_duration = $18, circuit_breaker_error_threshold = $19,
 	updated_at = NOW()
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
@@ -95,7 +101,9 @@ const (
     app_id, project_id, secrets, created_at, updated_at,
     authentication_type AS "authentication.type",
     authentication_type_api_key_header_name AS "authentication.api_key.header_name",
-    authentication_type_api_key_header_value AS "authentication.api_key.header_value";
+    authentication_type_api_key_header_value AS "authentication.api_key.header_value",
+    circuit_breaker_duration AS "circuit_breaker.duration",
+    circuit_breaker_error_threshold AS "circuit_breaker.error_threshold";
 	`
 
 	updateEndpointSecrets = `
@@ -108,7 +116,9 @@ const (
     app_id, project_id, secrets, created_at, updated_at,
     authentication_type AS "authentication.type",
     authentication_type_api_key_header_name AS "authentication.api_key.header_name",
-    authentication_type_api_key_header_value AS "authentication.api_key.header_value";
+    authentication_type_api_key_header_value AS "authentication.api_key.header_value",
+    circuit_breaker_duration AS "circuit_breaker.duration",
+    circuit_breaker_error_threshold AS "circuit_breaker.error_threshold";
 	`
 
 	deleteEndpoint = `
@@ -135,7 +145,9 @@ const (
 	e.project_id, e.secrets, e.created_at, e.updated_at,
 	e.authentication_type AS "authentication.type",
 	e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
-	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value"
+	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value",
+    e.circuit_breaker_duration AS "circuit_breaker.duration",
+    e.circuit_breaker_error_threshold AS "circuit_breaker.error_threshold"
 	FROM convoy.endpoints AS e
 	WHERE e.deleted_at IS NULL
 	AND e.project_id = :project_id
@@ -191,12 +203,13 @@ func NewEndpointRepo(db database.Database, ca cache.Cache) datastore.EndpointRep
 
 func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ac := endpoint.GetAuthConfig()
+	cb := endpoint.GetCircuitBreakerConfig()
 
 	args := []interface{}{
 		endpoint.UID, endpoint.Title, endpoint.Status, endpoint.Secrets, endpoint.OwnerID, endpoint.TargetURL,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail, endpoint.AppID,
-		projectID, ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue,
+		projectID, ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, cb.Duration, cb.ErrorThreshold,
 	}
 
 	result, err := e.db.ExecContext(ctx, createEndpoint, args...)
@@ -283,11 +296,12 @@ func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID str
 
 func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ac := endpoint.GetAuthConfig()
+	cb := endpoint.GetCircuitBreakerConfig()
 
 	r, err := e.db.ExecContext(ctx, updateEndpoint, endpoint.UID, projectID, endpoint.Title, endpoint.Status, endpoint.OwnerID, endpoint.TargetURL,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail,
-		ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, endpoint.Secrets,
+		ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, endpoint.Secrets, cb.Duration, cb.ErrorThreshold,
 	)
 	if err != nil {
 		return err

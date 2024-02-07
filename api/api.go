@@ -77,6 +77,9 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 		VersionHeader:  VersionHeader,
 		CurrentVersion: config.DefaultAPIVersion,
 		VersionFormat:  requestmigrations.DateFormat,
+		GetUserVersionFunc: func(req *http.Request) (string, error) {
+			return config.DefaultAPIVersion, nil
+		},
 	}
 	rm, err := requestmigrations.NewRequestMigration(opts)
 	if err != nil {

@@ -7,6 +7,7 @@ require (
 	github.com/Subomi/go-authz v0.2.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go v1.44.327
+	github.com/cep21/circuit/v4 v4.0.0
 	github.com/danvixent/asynqmon v0.7.3
 	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5
 	github.com/dop251/goja v0.0.0-20230828202809-3dbe69dd2b8e

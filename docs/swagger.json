@@ -5180,6 +5180,17 @@
                 }
             }
         },
+        "datastore.CircuitBreakerConfiguration": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "integer"
+                },
+                "error_threshold": {
+                    "type": "number"
+                }
+            }
+        },
         "datastore.CustomResponse": {
             "type": "object",
             "properties": {
@@ -5308,6 +5319,9 @@
                 },
                 "authentication": {
                     "$ref": "#/definitions/datastore.EndpointAuthentication"
+                },
+                "circuit_breaker": {
+                    "$ref": "#/definitions/datastore.CircuitBreakerConfiguration"
                 },
                 "created_at": {
                     "type": "string"
@@ -5976,6 +5990,17 @@
                 }
             }
         },
+        "models.CircuitBreaker": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "integer"
+                },
+                "error_threshold": {
+                    "type": "number"
+                }
+            }
+        },
         "models.CreateEndpoint": {
             "type": "object",
             "properties": {
@@ -5992,6 +6017,14 @@
                     "allOf": [
                         {
                             "$ref": "#/definitions/models.EndpointAuthentication"
+                        }
+                    ]
+                },
+                "circuit_breaker": {
+                    "description": "Endpoint specific circuit breaker configuration.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.CircuitBreaker"
                         }
                     ]
                 },
@@ -6221,6 +6254,9 @@
                 },
                 "authentication": {
                     "$ref": "#/definitions/datastore.EndpointAuthentication"
+                },
+                "circuit_breaker": {
+                    "$ref": "#/definitions/datastore.CircuitBreakerConfiguration"
                 },
                 "created_at": {
                     "type": "string"

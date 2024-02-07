@@ -4,13 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/r3labs/diff/v3"
-	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
@@ -41,12 +42,13 @@ const (
 		strategy_duration, strategy_retry_count,
 		signature_header, signature_versions, disable_endpoint,
 		meta_events_enabled, meta_events_type, meta_events_event_type,
-		meta_events_url, meta_events_secret, meta_events_pub_sub
+		meta_events_url, meta_events_secret, meta_events_pub_sub,
+        circuit_breaker_duration, circuit_breaker_error_threshold
 	  )
 	  VALUES
 		(
 		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-		  $14, $15, $16, $17, $18, $19, $20
+		  $14, $15, $16, $17, $18, $19, $20, $21, $22
 		);
 	`
 
@@ -71,6 +73,8 @@ const (
 		meta_events_secret = $18,
 		meta_events_pub_sub = $19,
 		search_policy = $20,
+        circuit_breaker_duration = $21,
+        circuit_breaker_error_threshold = $22,
 		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -95,6 +99,8 @@ const (
 		c.strategy_retry_count AS "config.strategy.retry_count",
 		c.signature_header AS "config.signature.header",
 		c.signature_versions AS "config.signature.versions",
+        c.circuit_breaker_duration AS "config.circuit_breaker.duration",
+        c.circuit_breaker_error_threshold AS "config.circuit_breaker.error_threshold",
 		c.disable_endpoint AS "config.disable_endpoint",
 		c.meta_events_enabled AS "config.meta_event.is_enabled",
 		COALESCE(c.meta_events_type, '') AS "config.meta_event.type",
@@ -132,6 +138,8 @@ const (
 	c.strategy_retry_count AS "config.strategy.retry_count",
 	c.signature_header AS "config.signature.header",
 	c.signature_versions AS "config.signature.versions",
+    c.circuit_breaker_duration AS "config.circuit_breaker.duration",
+    c.circuit_breaker_error_threshold AS "config.circuit_breaker.error_threshold",
 	c.meta_events_enabled AS "config.meta_event.is_enabled",
 	COALESCE(c.meta_events_type, '') AS "config.meta_event.type",
 	c.meta_events_event_type AS "config.meta_event.event_type",
@@ -235,6 +243,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 	sc := project.Config.GetStrategyConfig()
 	sgc := project.Config.GetSignatureConfig()
 	me := project.Config.GetMetaEventConfig()
+	cb := project.Config.GetCircuitBreakerConfig()
 
 	configID := ulid.Make().String()
 	result, err := tx.ExecContext(ctx, createProjectConfiguration,
@@ -258,6 +267,8 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 		me.URL,
 		me.Secret,
 		me.PubSub,
+		cb.Duration,
+		cb.ErrorThreshold,
 	)
 	if err != nil {
 		return err
@@ -353,6 +364,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 	}
 
 	me := project.Config.GetMetaEventConfig()
+	cb := project.Config.GetCircuitBreakerConfig()
 	cRes, err := tx.ExecContext(ctx, updateProjectConfiguration,
 		project.ProjectConfigID,
 		project.Config.RetentionPolicy.Policy,
@@ -374,6 +386,8 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		me.Secret,
 		me.PubSub,
 		project.Config.RetentionPolicy.SearchPolicy,
+		cb.Duration,
+		cb.ErrorThreshold,
 	)
 	if err != nil {
 		return err

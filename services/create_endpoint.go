@@ -72,6 +72,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		AppID:              a.E.AppID,
 		RateLimitDuration:  a.E.RateLimitDuration,
 		Status:             datastore.ActiveEndpointStatus,
+		CircuitBreaker:     a.E.CircuitBreaker.Transform(),
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
 	}

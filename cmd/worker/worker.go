@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/breaker"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 
 	"github.com/frain-dev/convoy"
@@ -100,13 +102,20 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
+			breakerManager := breaker.NewManager()
+			err = initialiseBreakers(cmd.Context(), breakerManager, projectRepo, endpointRepo)
+			if err != nil {
+				return err
+			}
+
 			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 				endpointRepo,
 				eventDeliveryRepo,
 				projectRepo,
 				subRepo,
 				a.Queue,
-				rateLimiter))
+				rateLimiter,
+				breakerManager))
 
 			consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
 				endpointRepo,
@@ -115,7 +124,8 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				eventDeliveryRepo,
 				a.Queue,
 				subRepo,
-				deviceRepo))
+				deviceRepo,
+				breakerManager))
 
 			consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
 				endpointRepo,
@@ -297,4 +307,52 @@ func buildWorkerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 	}
 
 	return c, nil
+}
+
+func initialiseBreakers(ctx context.Context, m *breaker.Manager,
+	projectRepo datastore.ProjectRepository, endpointRepo datastore.EndpointRepository) error {
+
+	projects, err := projectRepo.LoadProjects(ctx, &datastore.ProjectFilter{})
+	if err != nil {
+		return err
+	}
+
+	for _, project := range projects {
+
+		count, err := endpointRepo.CountProjectEndpoints(ctx, project.UID)
+		if err != nil {
+			return err
+		}
+
+		endpoints, _, err := endpointRepo.LoadEndpointsPaged(ctx, project.UID, &datastore.Filter{}, datastore.Pageable{PerPage: int(count)})
+		if err != nil {
+			return err
+		}
+
+		var duration int
+		var errorThreshold int64
+
+		for _, endpoint := range endpoints {
+
+			if endpoint.CircuitBreaker.Duration == 0 {
+				duration = project.Config.CircuitBreaker.Duration
+			}
+
+			if endpoint.CircuitBreaker.ErrorThreshold == 0 {
+				errorThreshold = int64(project.Config.CircuitBreaker.ErrorThreshold)
+			}
+
+			cfg := &breaker.EndpointConfig{
+				UID:            endpoint.UID,
+				Duration:       int64(duration),
+				ErrorThreshold: float64(errorThreshold),
+			}
+			_, err := m.CreateCircuit(cfg)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }

@@ -384,26 +384,30 @@ func (s Secrets) Value() (driver.Value, error) {
 	return b, nil
 }
 
+type CircuitBreakerConfiguration struct {
+	Duration       int     `json:"duration" db:"duration"`
+	ErrorThreshold float64 `json:"error_threshold" db:"error_threshold"`
+}
+
 type Endpoint struct {
-	UID                string  `json:"uid" db:"id"`
-	ProjectID          string  `json:"project_id" db:"project_id"`
-	OwnerID            string  `json:"owner_id,omitempty" db:"owner_id"`
-	TargetURL          string  `json:"target_url" db:"target_url"`
-	Title              string  `json:"title" db:"title"`
-	Secrets            Secrets `json:"secrets" db:"secrets"`
-	AdvancedSignatures bool    `json:"advanced_signatures" db:"advanced_signatures"`
-	Description        string  `json:"description" db:"description"`
-	SlackWebhookURL    string  `json:"slack_webhook_url,omitempty" db:"slack_webhook_url"`
-	SupportEmail       string  `json:"support_email,omitempty" db:"support_email"`
-	AppID              string  `json:"-" db:"app_id"` // Deprecated but necessary for backward compatibility
-
-	HttpTimeout uint64         `json:"http_timeout" db:"http_timeout"`
-	RateLimit   int            `json:"rate_limit" db:"rate_limit"`
-	Events      int64          `json:"events,omitempty" db:"event_count"`
-	Status      EndpointStatus `json:"status" db:"status"`
-
-	RateLimitDuration uint64                  `json:"rate_limit_duration" db:"rate_limit_duration"`
-	Authentication    *EndpointAuthentication `json:"authentication" db:"authentication"`
+	UID                string                       `json:"uid" db:"id"`
+	ProjectID          string                       `json:"project_id" db:"project_id"`
+	OwnerID            string                       `json:"owner_id,omitempty" db:"owner_id"`
+	TargetURL          string                       `json:"target_url" db:"target_url"`
+	Title              string                       `json:"title" db:"title"`
+	Secrets            Secrets                      `json:"secrets" db:"secrets"`
+	AdvancedSignatures bool                         `json:"advanced_signatures" db:"advanced_signatures"`
+	Description        string                       `json:"description" db:"description"`
+	SlackWebhookURL    string                       `json:"slack_webhook_url,omitempty" db:"slack_webhook_url"`
+	SupportEmail       string                       `json:"support_email,omitempty" db:"support_email"`
+	AppID              string                       `json:"-" db:"app_id"` // Deprecated but necessary for backward compatibility
+	HttpTimeout        uint64                       `json:"http_timeout" db:"http_timeout"`
+	RateLimit          int                          `json:"rate_limit" db:"rate_limit"`
+	Events             int64                        `json:"events,omitempty" db:"event_count"`
+	Status             EndpointStatus               `json:"status" db:"status"`
+	CircuitBreaker     *CircuitBreakerConfiguration `json:"circuit_breaker" db:"circuit_breaker"`
+	RateLimitDuration  uint64                       `json:"rate_limit_duration" db:"rate_limit_duration"`
+	Authentication     *EndpointAuthentication      `json:"authentication" db:"authentication"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
@@ -435,6 +439,14 @@ func (e *Endpoint) GetAuthConfig() EndpointAuthentication {
 	}
 
 	return EndpointAuthentication{ApiKey: &ApiKey{}}
+}
+
+func (e *Endpoint) GetCircuitBreakerConfig() CircuitBreakerConfiguration {
+	if e.CircuitBreaker != nil {
+		return *e.CircuitBreaker
+	}
+
+	return CircuitBreakerConfiguration{}
 }
 
 func (e *Endpoint) GetActiveSecretIndex() (int, error) {
@@ -525,6 +537,7 @@ type ProjectConfig struct {
 	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
 	DisableEndpoint          bool                          `json:"disable_endpoint" db:"disable_endpoint"`
 	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
+	CircuitBreaker           *CircuitBreakerConfiguration  `json:"circuit_breaker" db:"circuit_breaker"`
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
 	Strategy                 *StrategyConfiguration        `json:"strategy" db:"strategy"`
 	Signature                *SignatureConfiguration       `json:"signature" db:"signature"`
@@ -565,6 +578,14 @@ func (p *ProjectConfig) GetMetaEventConfig() MetaEventConfiguration {
 	}
 
 	return MetaEventConfiguration{}
+}
+
+func (p *ProjectConfig) GetCircuitBreakerConfig() CircuitBreakerConfiguration {
+	if p.CircuitBreaker != nil {
+		return *p.CircuitBreaker
+	}
+
+	return CircuitBreakerConfiguration{}
 }
 
 type RateLimitConfiguration struct {

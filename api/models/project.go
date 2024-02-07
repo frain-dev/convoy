@@ -43,6 +43,9 @@ type ProjectConfig struct {
 	Strategy                 *StrategyConfiguration        `json:"strategy"`
 	Signature                *SignatureConfiguration       `json:"signature"`
 	MetaEvent                *MetaEventConfiguration       `json:"meta_event"`
+
+	// Project-wide circuit breaker configuration.
+	CircuitBreaker *CircuitBreaker `json:"circuit_breaker"`
 }
 
 func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
@@ -61,6 +64,7 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 		Strategy:                 pc.Strategy.transform(),
 		Signature:                pc.Signature.transform(),
 		MetaEvent:                pc.MetaEvent.transform(),
+		CircuitBreaker:           pc.CircuitBreaker.Transform(),
 	}
 }
 

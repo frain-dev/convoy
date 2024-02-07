@@ -45,6 +45,17 @@
 				},
 				"type": "object"
 			},
+			"datastore.CircuitBreakerConfiguration": {
+				"properties": {
+					"duration": {
+						"type": "integer"
+					},
+					"error_threshold": {
+						"type": "number"
+					}
+				},
+				"type": "object"
+			},
 			"datastore.CustomResponse": {
 				"properties": {
 					"body": {
@@ -172,6 +183,9 @@
 					},
 					"authentication": {
 						"$ref": "#/components/schemas/datastore.EndpointAuthentication"
+					},
+					"circuit_breaker": {
+						"$ref": "#/components/schemas/datastore.CircuitBreakerConfiguration"
 					},
 					"created_at": {
 						"type": "string"
@@ -841,6 +855,17 @@
 				},
 				"type": "object"
 			},
+			"models.CircuitBreaker": {
+				"properties": {
+					"duration": {
+						"type": "integer"
+					},
+					"error_threshold": {
+						"type": "number"
+					}
+				},
+				"type": "object"
+			},
 			"models.CreateEndpoint": {
 				"properties": {
 					"advanced_signatures": {
@@ -858,6 +883,14 @@
 							}
 						],
 						"description": "This is used to define any custom authentication required by the endpoint. This\nshouldn't be needed often because webhook endpoints usually should be exposed to\nthe internet."
+					},
+					"circuit_breaker": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.CircuitBreaker"
+							}
+						],
+						"description": "Endpoint specific circuit breaker configuration."
 					},
 					"description": {
 						"description": "Human-readable description of the endpoint. Think of this as metadata describing\nthe endpoint",
@@ -1085,6 +1118,9 @@
 					},
 					"authentication": {
 						"$ref": "#/components/schemas/datastore.EndpointAuthentication"
+					},
+					"circuit_breaker": {
+						"$ref": "#/components/schemas/datastore.CircuitBreakerConfiguration"
 					},
 					"created_at": {
 						"type": "string"
