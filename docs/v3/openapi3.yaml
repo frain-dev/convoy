@@ -2618,7 +2618,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/models.EventResponse'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: OK
         "400":
@@ -3011,7 +3011,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/models.EventResponse'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: OK
         "400":

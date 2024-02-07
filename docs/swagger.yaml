@@ -2505,7 +2505,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.EventResponse'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "400":
           description: Bad Request
@@ -2864,7 +2864,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.EventResponse'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "400":
           description: Bad Request

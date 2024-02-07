@@ -4285,7 +4285,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/models.EventResponse"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4753,7 +4753,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/models.EventResponse"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
