@@ -118,6 +118,7 @@ func getAllSubscriptions(ctx context.Context, subRepo datastore.SubscriptionRepo
 		pageable.NextCursor = subscriptions[len(subscriptions)-1].UID
 		subs, err := getAllSubscriptions(ctx, subRepo, projectID, pageable)
 		if err != nil {
+			return nil, err
 		}
 
 		subscriptions = append(subscriptions, subs...)
