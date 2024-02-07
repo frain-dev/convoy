@@ -1,3 +1,8 @@
+# 24.1.3
+
+### Bug Fixes
+- fixed api versioning bug to correctly retrieve instance api version #1918
+
 # 24.1.2
 
 ### Bug Fixes 
