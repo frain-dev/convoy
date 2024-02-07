@@ -47,7 +47,7 @@ type EventDelivery struct {
 
 func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
 	projectRepo datastore.ProjectRepository, subRepo datastore.SubscriptionRepository,
-	notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter, m *breaker.Manager,
+	notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter, m breaker.CircuitManager,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery

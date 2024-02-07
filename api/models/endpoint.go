@@ -84,6 +84,9 @@ type UpdateEndpoint struct {
 	RateLimit         int                     `json:"rate_limit"`
 	RateLimitDuration uint64                  `json:"rate_limit_duration" copier:"-"`
 	Authentication    *EndpointAuthentication `json:"authentication"`
+
+	// Endpoint specific circuit breaker configuration.
+	CircuitBreaker *CircuitBreaker `json:"circuit_breaker"`
 }
 
 func (uE *UpdateEndpoint) Validate() error {

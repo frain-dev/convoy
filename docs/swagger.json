@@ -6953,6 +6953,14 @@
                 "authentication": {
                     "$ref": "#/definitions/models.EndpointAuthentication"
                 },
+                "circuit_breaker": {
+                    "description": "Endpoint specific circuit breaker configuration.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.CircuitBreaker"
+                        }
+                    ]
+                },
                 "description": {
                     "type": "string"
                 },

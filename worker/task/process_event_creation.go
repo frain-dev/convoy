@@ -42,7 +42,7 @@ func ProcessEventCreation(
 	endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer,
 	subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository,
-	m *breaker.Manager,
+	m breaker.CircuitManager,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var createEvent CreateEvent

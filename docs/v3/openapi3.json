@@ -1817,6 +1817,14 @@
 					"authentication": {
 						"$ref": "#/components/schemas/models.EndpointAuthentication"
 					},
+					"circuit_breaker": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.CircuitBreaker"
+							}
+						],
+						"description": "Endpoint specific circuit breaker configuration."
+					},
 					"description": {
 						"type": "string"
 					},

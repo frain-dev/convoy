@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/breaker"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/golang/mock/gomock"
@@ -26,6 +27,7 @@ type args struct {
 	eventQueue        queue.Queuer
 	subRepo           datastore.SubscriptionRepository
 	deviceRepo        datastore.DeviceRepository
+	manager           breaker.CircuitManager
 }
 
 func provideArgs(ctrl *gomock.Controller) *args {
@@ -37,6 +39,7 @@ func provideArgs(ctrl *gomock.Controller) *args {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
+	manager := mocks.NewMockCircuitManager(ctrl)
 
 	return &args{
 		endpointRepo:      endpointRepo,
@@ -47,6 +50,7 @@ func provideArgs(ctrl *gomock.Controller) *args {
 		cache:             mockCache,
 		eventQueue:        mockQueuer,
 		subRepo:           subRepo,
+		manager:           manager,
 	}
 }
 
@@ -437,7 +441,7 @@ func TestProcessEventCreated(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo)
+			fn := ProcessEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo, args.manager)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

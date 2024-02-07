@@ -1241,6 +1241,10 @@ definitions:
         type: boolean
       authentication:
         $ref: '#/definitions/models.EndpointAuthentication'
+      circuit_breaker:
+        allOf:
+        - $ref: '#/definitions/models.CircuitBreaker'
+        description: Endpoint specific circuit breaker configuration.
       description:
         type: string
       http_timeout:

@@ -34,6 +34,11 @@ type EndpointConfig struct {
 	ErrorThreshold float64
 }
 
+type CircuitManager interface {
+	Get(endpointID string) *Circuit
+	CreateCircuit(*EndpointConfig) (*Circuit, error)
+}
+
 type Manager struct {
 	cm *circuit.Manager
 }

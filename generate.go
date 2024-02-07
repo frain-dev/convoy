@@ -8,3 +8,4 @@ package convoy
 //go:generate mockgen --source internal/pkg/socket/socket.go --destination mocks/socket.go -package mocks
 //go:generate mockgen --source internal/pkg/pubsub/pubsub.go --destination mocks/pubsub.go -package mocks
 //go:generate mockgen --source internal/pkg/dedup/dedup.go --destination mocks/dedup.go -package mocks
+//go:generate mockgen --source internal/pkg/breaker/breaker.go --destination mocks/breaker.go -package mocks
