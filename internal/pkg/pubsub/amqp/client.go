@@ -2,6 +2,7 @@ package rqm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -87,6 +88,9 @@ func (k *Amqp) Consume() {
 		return
 	}
 
+	defer conn.Close()
+	defer ch.Close()
+
 	queueArgs := amqp.Table{}
 	if k.Cfg.DeadLetterExchange != nil {
 		queueArgs[DEAD_LETTER_EXCHANGE_HEADER] = *k.Cfg.DeadLetterExchange
@@ -114,7 +118,8 @@ func (k *Amqp) Consume() {
 		return
 	}
 
-	msgs, err := ch.Consume(
+	msgs, err := ch.ConsumeWithContext(
+		k.ctx,
 		q.Name, // queue
 		"",     // consumer
 		false,  // auto-ack
@@ -129,11 +134,12 @@ func (k *Amqp) Consume() {
 		return
 	}
 
-	var forever chan struct{}
-
 	for d := range msgs {
-		ctx := context.Background()
+		if errors.Is(k.ctx.Err(), context.Canceled) {
+			return
+		}
 
+		ctx := context.Background()
 		if err := k.handler(ctx, k.source, string(d.Body)); err != nil {
 			k.log.WithError(err).Error("failed to write message to create event queue - amqp pub sub")
 			d.Ack(false)
@@ -143,7 +149,6 @@ func (k *Amqp) Consume() {
 		}
 	}
 
-	<-forever
 }
 
 func (k *Amqp) Stop() {
