@@ -385,8 +385,8 @@ func (s Secrets) Value() (driver.Value, error) {
 }
 
 type CircuitBreakerConfiguration struct {
-	Duration       int     `json:"duration" db:"duration"`
-	ErrorThreshold float64 `json:"error_threshold" db:"error_threshold"`
+	Duration       int   `json:"duration" db:"duration"`
+	ErrorThreshold int64 `json:"error_threshold" db:"error_threshold"`
 }
 
 type Endpoint struct {

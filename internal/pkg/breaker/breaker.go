@@ -6,26 +6,36 @@ import (
 
 	"github.com/cep21/circuit/v4"
 	"github.com/cep21/circuit/v4/closers/hystrix"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
+// A Circuit that syncs with the database.
 type Circuit struct {
-	c *circuit.Circuit
+	cb       *circuit.Circuit
+	id       string
+	endpoint *datastore.Endpoint
 }
 
-func NewCircuit() *Circuit {
-	return &Circuit{}
+func NewCircuit(cb *circuit.Circuit, id string) *Circuit {
+	// retrieve endpoint from DB.
+
+	return &Circuit{
+		cb: cb,
+		id: id,
+	}
 }
 
 func (c *Circuit) IsOpen() bool {
-	return c.c.IsOpen()
+	return c.cb.IsOpen()
 }
 
 func (c *Circuit) OpenCircuit(ctx context.Context) {
-	c.c.OpenCircuit(ctx)
+	c.cb.OpenCircuit(ctx)
 }
 
 func (c *Circuit) Run(ctx context.Context, runFunc func(context.Context) error) error {
-	return c.c.Run(ctx, runFunc)
+	return c.cb.Run(ctx, runFunc)
 }
 
 type EndpointConfig struct {
@@ -36,7 +46,7 @@ type EndpointConfig struct {
 
 type CircuitManager interface {
 	Get(endpointID string) *Circuit
-	CreateCircuit(*EndpointConfig) (*Circuit, error)
+	CreateCircuit(*datastore.Endpoint, datastore.EndpointRepository) (*Circuit, error)
 }
 
 type Manager struct {
@@ -51,7 +61,7 @@ func NewManager() *Manager {
 func (m *Manager) Get(endpointID string) *Circuit {
 	cb := m.cm.GetCircuit(endpointID)
 	if cb != nil {
-		return &Circuit{cb}
+		return NewCircuit(cb, endpointID)
 	}
 
 	return nil
@@ -59,35 +69,65 @@ func (m *Manager) Get(endpointID string) *Circuit {
 
 // Use this to create the circuit for each endpoint.
 // m.CreateCircuit(EndpointConfig{})
-func (m *Manager) CreateCircuit(e *EndpointConfig) (*Circuit, error) {
+func (m *Manager) CreateCircuit(endpoint *datastore.Endpoint, repo datastore.EndpointRepository) (*Circuit, error) {
+	// TODO(subomi): add config to persist status once the circuit trips!
 	cfg := circuit.Config{
 		General: circuit.GeneralConfig{
-			OpenToClosedFactory: m.createCloser(e),
-			ClosedToOpenFactory: m.createOpener(e),
+			OpenToClosedFactory: m.createCloser(endpoint),
+			ClosedToOpenFactory: m.createOpener(endpoint),
+		},
+		Metrics: circuit.MetricsCollectors{
+			Circuit: []circuit.Metrics{
+				&EndpointStateManager{
+					endpoint:     endpoint,
+					endpointRepo: repo,
+				},
+			},
 		},
 	}
 
-	cc, err := m.cm.CreateCircuit(e.UID, cfg)
+	cb, err := m.cm.CreateCircuit(endpoint.UID, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Circuit{cc}, nil
+	return NewCircuit(cb, endpoint.UID), nil
 }
 
-func (m *Manager) createCloser(e *EndpointConfig) func() circuit.OpenToClosed {
+func (m *Manager) createCloser(endpoint *datastore.Endpoint) func() circuit.OpenToClosed {
 	cc := hystrix.ConfigureCloser{
-		SleepWindow:      time.Duration((time.Duration(e.Duration) * time.Second).Milliseconds()),
+		SleepWindow:      time.Duration((time.Duration(endpoint.CircuitBreaker.Duration) * time.Second).Milliseconds()),
 		HalfOpenAttempts: 1,
 	}
 
 	return hystrix.CloserFactory(cc)
 }
 
-func (m *Manager) createOpener(e *EndpointConfig) func() circuit.ClosedToOpen {
+func (m *Manager) createOpener(endpoint *datastore.Endpoint) func() circuit.ClosedToOpen {
 	co := hystrix.ConfigureOpener{
-		ErrorThresholdPercentage: int64(e.ErrorThreshold),
+		ErrorThresholdPercentage: int64(endpoint.CircuitBreaker.ErrorThreshold),
+		RollingDuration:          time.Duration(endpoint.CircuitBreaker.Duration),
 	}
 
 	return hystrix.OpenerFactory(co)
+}
+
+type EndpointStateManager struct {
+	endpoint     *datastore.Endpoint
+	endpointRepo datastore.EndpointRepository
+}
+
+// TODO(subomi): Add notification logic.
+func (es *EndpointStateManager) Closed(ctx context.Context, now time.Time) {
+	err := es.endpointRepo.UpdateEndpointStatus(ctx, es.endpoint.ProjectID, es.endpoint.UID, datastore.ActiveEndpointStatus)
+	if err != nil {
+		log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
+	}
+}
+func (es *EndpointStateManager) Opened(ctx context.Context, now time.Time) {
+	err := es.endpointRepo.UpdateEndpointStatus(ctx, es.endpoint.ProjectID, es.endpoint.UID, datastore.InactiveEndpointStatus)
+	if err != nil {
+		log.WithError(err).Error("Failed to deactivate endpoint after failed retry")
+	}
+
 }

@@ -195,16 +195,7 @@ func ProcessEventCreation(
 				return &EndpointError{Err: err, delay: defaultDelay}
 			}
 
-			cb := m.Get(s.EndpointID)
-			var shouldWriteToQueue bool
-
-			if cb != nil {
-				shouldWriteToQueue = eventDelivery.Status != datastore.DiscardedEventStatus && cb.IsOpen()
-			} else {
-				shouldWriteToQueue = eventDelivery.Status != datastore.DiscardedEventStatus
-			}
-
-			if shouldWriteToQueue {
+			if eventDelivery.Status != datastore.DiscardedEventStatus {
 				payload := EventDelivery{
 					EventDeliveryID: eventDelivery.UID,
 					ProjectID:       eventDelivery.ProjectID,

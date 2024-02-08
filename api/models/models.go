@@ -15,8 +15,8 @@ type PagedResponse struct {
 }
 
 type CircuitBreaker struct {
-	Duration       int     `json:"duration"`
-	ErrorThreshold float64 `json:"error_threshold"`
+	Duration       int   `json:"duration"`
+	ErrorThreshold int64 `json:"error_threshold"`
 }
 
 func (cb *CircuitBreaker) Transform() *datastore.CircuitBreakerConfiguration {

@@ -33,7 +33,7 @@ components:
         duration:
           type: integer
         error_threshold:
-          type: number
+          type: integer
       type: object
     datastore.CustomResponse:
       properties:
@@ -586,7 +586,7 @@ components:
         duration:
           type: integer
         error_threshold:
-          type: number
+          type: integer
       type: object
     models.CreateEndpoint:
       properties:

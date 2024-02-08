@@ -20,7 +20,6 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/notifications"
 	"github.com/frain-dev/convoy/internal/pkg/breaker"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -222,28 +221,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			log.Errorf("%s failed. Reason: %s", eventDelivery.UID, err)
 		}
 
-		if done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
-			endpointStatus := datastore.ActiveEndpointStatus
-			err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
-			if err != nil {
-				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
-			}
-
-			// send endpoint reactivation notification
-			err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, notificationQueue, false, resp.Error, string(resp.Body), resp.StatusCode)
-			if err != nil {
-				log.FromContext(ctx).WithError(err).Error("failed to send notification")
-			}
-		}
-
-		if !done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
-			endpointStatus := datastore.InactiveEndpointStatus
-			err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
-			if err != nil {
-				log.FromContext(ctx).Info("Failed to reactivate endpoint after successful retry")
-			}
-		}
-
 		attempt = parseAttemptFromResponse(eventDelivery, endpoint, resp, attemptStatus)
 
 		eventDelivery.Metadata.NumTrials++
@@ -258,21 +235,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				log.Errorf("%s retry limit exceeded ", eventDelivery.UID)
 				eventDelivery.Description = "Retry limit exceeded"
 				eventDelivery.Status = datastore.FailureEventStatus
-			}
-
-			if endpoint.Status != datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
-				endpointStatus := datastore.InactiveEndpointStatus
-
-				err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
-				if err != nil {
-					log.WithError(err).Error("failed to deactivate endpoint after failed retry")
-				}
-
-				// send endpoint deactivation notification
-				err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, notificationQueue, true, resp.Error, string(resp.Body), resp.StatusCode)
-				if err != nil {
-					log.WithError(err).Error("failed to send notification")
-				}
 			}
 		}
 

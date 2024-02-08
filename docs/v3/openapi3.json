@@ -51,7 +51,7 @@
 						"type": "integer"
 					},
 					"error_threshold": {
-						"type": "number"
+						"type": "integer"
 					}
 				},
 				"type": "object"
@@ -861,7 +861,7 @@
 						"type": "integer"
 					},
 					"error_threshold": {
-						"type": "number"
+						"type": "integer"
 					}
 				},
 				"type": "object"

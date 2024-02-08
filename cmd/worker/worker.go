@@ -329,25 +329,17 @@ func initialiseBreakers(ctx context.Context, m *breaker.Manager,
 			return err
 		}
 
-		var duration int
-		var errorThreshold int64
-
 		for _, endpoint := range endpoints {
 
 			if endpoint.CircuitBreaker.Duration == 0 {
-				duration = project.Config.CircuitBreaker.Duration
+				endpoint.CircuitBreaker.Duration = project.Config.CircuitBreaker.Duration
 			}
 
 			if endpoint.CircuitBreaker.ErrorThreshold == 0 {
-				errorThreshold = int64(project.Config.CircuitBreaker.ErrorThreshold)
+				endpoint.CircuitBreaker.ErrorThreshold = project.Config.CircuitBreaker.ErrorThreshold
 			}
 
-			cfg := &breaker.EndpointConfig{
-				UID:            endpoint.UID,
-				Duration:       int64(duration),
-				ErrorThreshold: float64(errorThreshold),
-			}
-			_, err := m.CreateCircuit(cfg)
+			_, err := m.CreateCircuit(&endpoint, endpointRepo)
 			if err != nil {
 				return err
 			}
