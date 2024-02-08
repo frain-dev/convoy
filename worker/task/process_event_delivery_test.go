@@ -197,6 +197,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						RateLimit:         10,
 						RateLimitDuration: 60,
 						ProjectID:         "123",
+						DisableEndpoint:   true,
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 
@@ -242,8 +243,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -282,6 +282,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						RateLimit:         10,
 						RateLimitDuration: 60,
+						DisableEndpoint:   true,
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -326,8 +327,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -366,6 +366,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						RateLimit:         10,
 						RateLimitDuration: 60,
+						DisableEndpoint:   true,
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -410,8 +411,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -451,6 +451,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						RateLimit:         10,
 						RateLimitDuration: 60,
+						DisableEndpoint:   true,
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -496,8 +497,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -536,6 +536,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						RateLimit:         10,
 						RateLimitDuration: 60,
+						DisableEndpoint:   true,
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil).Times(1)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -580,8 +581,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -621,6 +621,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						RateLimit:         10,
 						Status:            datastore.ActiveEndpointStatus,
 						RateLimitDuration: 60,
+						DisableEndpoint:   true,
 					}, nil).Times(1)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{}, nil)
@@ -664,8 +665,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 
@@ -710,6 +710,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						RateLimit:         10,
 						TargetURL:         "https://google.com",
 						RateLimitDuration: 60,
+						DisableEndpoint:   true,
 						Status:            datastore.PendingEndpointStatus,
 					}, nil).Times(1)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -754,8 +755,7 @@ func TestProcessEventDelivery(t *testing.T) {
 								Duration:   60,
 								RetryCount: 1,
 							},
-							RateLimit:       &datastore.DefaultRateLimitConfig,
-							DisableEndpoint: true,
+							RateLimit: &datastore.DefaultRateLimitConfig,
 						},
 					}, nil).Times(1)
 

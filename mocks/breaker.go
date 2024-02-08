@@ -36,18 +36,18 @@ func (m *MockCircuitManager) EXPECT() *MockCircuitManagerMockRecorder {
 }
 
 // CreateCircuit mocks base method.
-func (m *MockCircuitManager) CreateCircuit(arg0 *datastore.Endpoint, arg1 datastore.EndpointRepository) (*breaker.Circuit, error) {
+func (m *MockCircuitManager) CreateCircuit(arg0 *datastore.Endpoint) (*breaker.Circuit, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateCircuit", arg0, arg1)
+	ret := m.ctrl.Call(m, "CreateCircuit", arg0)
 	ret0, _ := ret[0].(*breaker.Circuit)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateCircuit indicates an expected call of CreateCircuit.
-func (mr *MockCircuitManagerMockRecorder) CreateCircuit(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockCircuitManagerMockRecorder) CreateCircuit(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCircuit", reflect.TypeOf((*MockCircuitManager)(nil).CreateCircuit), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCircuit", reflect.TypeOf((*MockCircuitManager)(nil).CreateCircuit), arg0)
 }
 
 // Get mocks base method.

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/breaker"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 
@@ -102,11 +101,13 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			breakerManager := breaker.NewManager()
-			err = initialiseBreakers(cmd.Context(), breakerManager, projectRepo, endpointRepo)
+			breakerManager, err := breaker.NewManager(cmd.Context(), projectRepo, endpointRepo)
 			if err != nil {
 				return err
 			}
+
+			interval := 5
+			go breakerManager.DatabaseEndpointSyncer(cmd.Context(), interval)
 
 			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 				endpointRepo,
@@ -307,44 +308,4 @@ func buildWorkerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 	}
 
 	return c, nil
-}
-
-func initialiseBreakers(ctx context.Context, m *breaker.Manager,
-	projectRepo datastore.ProjectRepository, endpointRepo datastore.EndpointRepository) error {
-
-	projects, err := projectRepo.LoadProjects(ctx, &datastore.ProjectFilter{})
-	if err != nil {
-		return err
-	}
-
-	for _, project := range projects {
-
-		count, err := endpointRepo.CountProjectEndpoints(ctx, project.UID)
-		if err != nil {
-			return err
-		}
-
-		endpoints, _, err := endpointRepo.LoadEndpointsPaged(ctx, project.UID, &datastore.Filter{}, datastore.Pageable{PerPage: int(count)})
-		if err != nil {
-			return err
-		}
-
-		for _, endpoint := range endpoints {
-
-			if endpoint.CircuitBreaker.Duration == 0 {
-				endpoint.CircuitBreaker.Duration = project.Config.CircuitBreaker.Duration
-			}
-
-			if endpoint.CircuitBreaker.ErrorThreshold == 0 {
-				endpoint.CircuitBreaker.ErrorThreshold = project.Config.CircuitBreaker.ErrorThreshold
-			}
-
-			_, err := m.CreateCircuit(&endpoint, endpointRepo)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
 }

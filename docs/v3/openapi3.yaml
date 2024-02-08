@@ -130,6 +130,8 @@ components:
           type: string
         description:
           type: string
+        disable_endpoint:
+          type: boolean
         events:
           type: integer
         http_timeout:
@@ -788,6 +790,8 @@ components:
           type: string
         description:
           type: string
+        disable_endpoint:
+          type: boolean
         events:
           type: integer
         http_timeout:

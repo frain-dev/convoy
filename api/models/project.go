@@ -37,7 +37,6 @@ type ProjectConfig struct {
 	ReplayAttacks            bool                          `json:"replay_attacks_prevention_enabled"`
 	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled"`
 	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
-	DisableEndpoint          bool                          `json:"disable_endpoint"`
 	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy"`
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit"`
 	Strategy                 *StrategyConfiguration        `json:"strategy"`
@@ -57,7 +56,6 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 		MaxIngestSize:            pc.MaxIngestSize,
 		ReplayAttacks:            pc.ReplayAttacks,
 		IsRetentionPolicyEnabled: pc.IsRetentionPolicyEnabled,
-		DisableEndpoint:          pc.DisableEndpoint,
 		AddEventIDTraceHeaders:   pc.AddEventIDTraceHeaders,
 		RetentionPolicy:          pc.RetentionPolicy.transform(),
 		RateLimit:                pc.RateLimit.Transform(),

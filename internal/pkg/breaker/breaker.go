@@ -38,24 +38,122 @@ func (c *Circuit) Run(ctx context.Context, runFunc func(context.Context) error) 
 	return c.cb.Run(ctx, runFunc)
 }
 
-type EndpointConfig struct {
-	UID            string
-	Duration       int64
-	ErrorThreshold float64
+func (c *Circuit) Config() circuit.Config {
+	return c.cb.Config()
+}
+
+func (c *Circuit) SetConfig(cfg circuit.Config) {
+	c.cb.SetConfigThreadSafe(cfg)
 }
 
 type CircuitManager interface {
 	Get(endpointID string) *Circuit
-	CreateCircuit(*datastore.Endpoint, datastore.EndpointRepository) (*Circuit, error)
+	CreateCircuit(*datastore.Endpoint) (*Circuit, error)
 }
 
 type Manager struct {
 	cm *circuit.Manager
+
+	projectRepo  datastore.ProjectRepository
+	endpointRepo datastore.EndpointRepository
 }
 
-func NewManager() *Manager {
-	m := circuit.Manager{}
-	return &Manager{&m}
+func NewManager(ctx context.Context, projectRepo datastore.ProjectRepository, endpointRepo datastore.EndpointRepository) (*Manager, error) {
+	m := &Manager{
+		cm:           &circuit.Manager{},
+		projectRepo:  projectRepo,
+		endpointRepo: endpointRepo,
+	}
+
+	if err := m.init(ctx); err != nil {
+		return nil, err
+	}
+
+	return m, nil
+}
+
+func (m *Manager) DatabaseEndpointSyncer(ctx context.Context, interval int) {
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+
+	for {
+		select {
+		case <-ticker.C:
+			// retrieve the endpoint & check if config changed.
+			endpoints, err := m.retrieveAllEndpoints(ctx)
+			if err != nil {
+				continue
+			}
+			for _, endpoint := range endpoints {
+				cb := m.Get(endpoint.UID)
+				if cb == nil {
+					_, err := m.CreateCircuit(&endpoint)
+					if err != nil {
+						log.WithError(err).Errorf("Failed to initialise circuit for %s", endpoint.UID)
+					}
+				}
+
+				// update circuit status.
+				if cb.Config().General.Disabled != endpoint.DisableEndpoint {
+					cfg := m.retrieveDefaultCircuitConfig(&endpoint)
+					cfg.General.Disabled = endpoint.DisableEndpoint
+					cb.SetConfig(*m.retrieveDefaultCircuitConfig(cb.endpoint))
+				}
+			}
+		case <-ctx.Done():
+			// Stop the ticker
+			ticker.Stop()
+
+			return
+		}
+	}
+}
+
+func (m *Manager) init(ctx context.Context) error {
+	endpoints, err := m.retrieveAllEndpoints(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, endpoint := range endpoints {
+		_, err := m.CreateCircuit(&endpoint)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (m *Manager) retrieveAllEndpoints(ctx context.Context) ([]datastore.Endpoint, error) {
+	projects, err := m.projectRepo.LoadProjects(ctx, &datastore.ProjectFilter{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, project := range projects {
+		count, err := m.endpointRepo.CountProjectEndpoints(ctx, project.UID)
+		if err != nil {
+			return nil, err
+		}
+
+		endpoints, _, err := m.endpointRepo.LoadEndpointsPaged(ctx, project.UID, &datastore.Filter{}, datastore.Pageable{PerPage: int(count)})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, endpoint := range endpoints {
+			if endpoint.CircuitBreaker.Duration == 0 {
+				endpoint.CircuitBreaker.Duration = project.Config.CircuitBreaker.Duration
+			}
+
+			if endpoint.CircuitBreaker.ErrorThreshold == 0 {
+				endpoint.CircuitBreaker.ErrorThreshold = project.Config.CircuitBreaker.ErrorThreshold
+			}
+		}
+
+		return endpoints, nil
+	}
+	return nil, nil
 }
 
 func (m *Manager) Get(endpointID string) *Circuit {
@@ -69,10 +167,19 @@ func (m *Manager) Get(endpointID string) *Circuit {
 
 // Use this to create the circuit for each endpoint.
 // m.CreateCircuit(EndpointConfig{})
-func (m *Manager) CreateCircuit(endpoint *datastore.Endpoint, repo datastore.EndpointRepository) (*Circuit, error) {
-	// TODO(subomi): add config to persist status once the circuit trips!
-	cfg := circuit.Config{
+func (m *Manager) CreateCircuit(endpoint *datastore.Endpoint) (*Circuit, error) {
+	cb, err := m.cm.CreateCircuit(endpoint.UID, *m.retrieveDefaultCircuitConfig(endpoint))
+	if err != nil {
+		return nil, err
+	}
+
+	return NewCircuit(cb, endpoint.UID), nil
+}
+
+func (m *Manager) retrieveDefaultCircuitConfig(endpoint *datastore.Endpoint) *circuit.Config {
+	return &circuit.Config{
 		General: circuit.GeneralConfig{
+			Disabled:            endpoint.DisableEndpoint,
 			OpenToClosedFactory: m.createCloser(endpoint),
 			ClosedToOpenFactory: m.createOpener(endpoint),
 		},
@@ -80,18 +187,12 @@ func (m *Manager) CreateCircuit(endpoint *datastore.Endpoint, repo datastore.End
 			Circuit: []circuit.Metrics{
 				&EndpointStateManager{
 					endpoint:     endpoint,
-					endpointRepo: repo,
+					endpointRepo: m.endpointRepo,
 				},
 			},
 		},
 	}
 
-	cb, err := m.cm.CreateCircuit(endpoint.UID, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewCircuit(cb, endpoint.UID), nil
 }
 
 func (m *Manager) createCloser(endpoint *datastore.Endpoint) func() circuit.OpenToClosed {
@@ -110,6 +211,14 @@ func (m *Manager) createOpener(endpoint *datastore.Endpoint) func() circuit.Clos
 	}
 
 	return hystrix.OpenerFactory(co)
+}
+
+func (m *Manager) retrieveEndpoints() error {
+	go func() {
+		// polls for endpoints.
+	}()
+
+	return nil
 }
 
 type EndpointStateManager struct {

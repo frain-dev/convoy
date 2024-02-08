@@ -273,7 +273,6 @@ var (
 		MaxIngestSize:            config.MaxResponseSize,
 		ReplayAttacks:            false,
 		IsRetentionPolicyEnabled: false,
-		DisableEndpoint:          false,
 		AddEventIDTraceHeaders:   false,
 		RateLimit:                &DefaultRateLimitConfig,
 		Strategy:                 &DefaultStrategyConfig,
@@ -405,6 +404,7 @@ type Endpoint struct {
 	RateLimit          int                          `json:"rate_limit" db:"rate_limit"`
 	Events             int64                        `json:"events,omitempty" db:"event_count"`
 	Status             EndpointStatus               `json:"status" db:"status"`
+	DisableEndpoint    bool                         `json:"disable_endpoint" db:"disable_endpoint"`
 	CircuitBreaker     *CircuitBreakerConfiguration `json:"circuit_breaker" db:"circuit_breaker"`
 	RateLimitDuration  uint64                       `json:"rate_limit_duration" db:"rate_limit_duration"`
 	Authentication     *EndpointAuthentication      `json:"authentication" db:"authentication"`
@@ -535,7 +535,6 @@ type ProjectConfig struct {
 	ReplayAttacks            bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
 	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
 	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
-	DisableEndpoint          bool                          `json:"disable_endpoint" db:"disable_endpoint"`
 	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
 	CircuitBreaker           *CircuitBreakerConfiguration  `json:"circuit_breaker" db:"circuit_breaker"`
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`

@@ -5332,6 +5332,9 @@
                 "description": {
                     "type": "string"
                 },
+                "disable_endpoint": {
+                    "type": "boolean"
+                },
                 "events": {
                     "type": "integer"
                 },
@@ -6266,6 +6269,9 @@
                 },
                 "description": {
                     "type": "string"
+                },
+                "disable_endpoint": {
+                    "type": "boolean"
                 },
                 "events": {
                     "type": "integer"

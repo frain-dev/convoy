@@ -48,7 +48,7 @@ const (
 	  VALUES
 		(
 		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-		  $14, $15, $16, $17, $18, $19, $20, $21, $22
+		  $14, $15, $16, $17, $18, $19, $20, $21
 		);
 	`
 
@@ -65,16 +65,15 @@ const (
 		strategy_retry_count = $10,
 		signature_header = $11,
 		signature_versions = $12,
-		disable_endpoint = $13,
-		meta_events_enabled = $14,
-		meta_events_type = $15,
-		meta_events_event_type = $16,
-		meta_events_url = $17,
-		meta_events_secret = $18,
-		meta_events_pub_sub = $19,
-		search_policy = $20,
-        circuit_breaker_duration = $21,
-        circuit_breaker_error_threshold = $22,
+		meta_events_enabled = $13,
+		meta_events_type = $14,
+		meta_events_event_type = $15,
+		meta_events_url = $16,
+		meta_events_secret = $17,
+		meta_events_pub_sub = $18,
+		search_policy = $19,
+        circuit_breaker_duration = $20,
+        circuit_breaker_error_threshold = $21,
 		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -260,7 +259,6 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 		sc.RetryCount,
 		sgc.Header,
 		sgc.Versions,
-		project.Config.DisableEndpoint,
 		me.IsEnabled,
 		me.Type,
 		me.EventType,
@@ -378,7 +376,6 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		project.Config.Strategy.RetryCount,
 		project.Config.Signature.Header,
 		project.Config.Signature.Versions,
-		project.Config.DisableEndpoint,
 		me.IsEnabled,
 		me.Type,
 		me.EventType,
@@ -400,35 +397,6 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 
 	if rowsAffected < 1 {
 		return ErrProjectConfigNotUpdated
-	}
-
-	if !project.Config.DisableEndpoint {
-		status := []datastore.EndpointStatus{datastore.InactiveEndpointStatus, datastore.PendingEndpointStatus}
-		query, args, err := sqlx.In(updateProjectEndpointStatus, datastore.ActiveEndpointStatus, project.UID, status)
-		if err != nil {
-			return err
-		}
-
-		query = p.db.Rebind(query)
-		rows, err := p.db.QueryxContext(ctx, query, args...)
-		if err != nil {
-			return err
-		}
-		defer closeWithError(rows)
-
-		for rows.Next() {
-			var endpoint datastore.Endpoint
-			err := rows.StructScan(&endpoint)
-			if err != nil {
-				return err
-			}
-
-			endpointCacheKey := convoy.EndpointCacheKey.Get(endpoint.UID).String()
-			err = p.cache.Set(ctx, endpointCacheKey, endpoint, config.DefaultCacheTTL)
-			if err != nil {
-				return err
-			}
-		}
 	}
 
 	err = tx.Commit()
