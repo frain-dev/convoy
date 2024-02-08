@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/frain-dev/convoy/datastore"
+	rqm "github.com/frain-dev/convoy/internal/pkg/pubsub/amqp"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/google"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/kafka"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/sqs"
@@ -68,6 +69,11 @@ func (p *PubSubSource) getHash() string {
 		hash = fmt.Sprintf("%s,%s,%s,%v,%v", kq.Brokers, kq.ConsumerGroupID, kq.TopicName, kq.Auth, source.PubSub.Workers)
 	}
 
+	if source.PubSub.Type == datastore.AmqpPubSub {
+		aq := source.PubSub.Amqp
+		hash = fmt.Sprintf("%s,%s,%s,%v", aq.Schema, aq.Host, aq.Queue, source.PubSub.Workers)
+	}
+
 	h := md5.Sum([]byte(hash))
 	hash = hex.EncodeToString(h[:])
 
@@ -127,6 +133,10 @@ func NewPubSubClient(source *datastore.Source, handler datastore.PubSubHandler, 
 
 	if source.PubSub.Type == datastore.KafkaPubSub {
 		return kafka.New(source, handler, log), nil
+	}
+
+	if source.PubSub.Type == datastore.AmqpPubSub {
+		return rqm.New(source, handler, log), nil
 	}
 
 	return nil, fmt.Errorf("pub sub type %s is not supported", source.PubSub.Type)

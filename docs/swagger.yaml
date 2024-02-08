@@ -7,6 +7,32 @@ definitions:
       threshold:
         type: string
     type: object
+  datastore.AmqpCredentials:
+    properties:
+      password:
+        type: string
+      user:
+        type: string
+    type: object
+  datastore.AmqpPubSubConfig:
+    properties:
+      auth:
+        $ref: '#/definitions/datastore.AmqpCredentials'
+      bindedExchange:
+        type: string
+      deadLetterExchange:
+        type: string
+      host:
+        type: string
+      port:
+        type: string
+      queue:
+        type: string
+      routingKey:
+        type: string
+      schema:
+        type: string
+    type: object
   datastore.ApiKey:
     properties:
       header_name:
@@ -371,6 +397,8 @@ definitions:
     type: object
   datastore.PubSubConfig:
     properties:
+      amqp:
+        $ref: '#/definitions/datastore.AmqpPubSubConfig'
       google:
         $ref: '#/definitions/datastore.GooglePubSubConfig'
       kafka:
@@ -387,11 +415,13 @@ definitions:
     - sqs
     - google
     - kafka
+    - amqp
     type: string
     x-enum-varnames:
     - SqsPubSub
     - GooglePubSub
     - KafkaPubSub
+    - AmqpPubSub
   datastore.RateLimitConfiguration:
     properties:
       count:
@@ -556,6 +586,37 @@ definitions:
       count:
         type: integer
       threshold:
+        type: string
+    type: object
+  models.AmqpAuth:
+    properties:
+      password:
+        type: string
+      user:
+        type: string
+    type: object
+  models.AmqpExchange:
+    properties:
+      exchange:
+        type: string
+      routingKey:
+        type: string
+    type: object
+  models.AmqpPubSubconfig:
+    properties:
+      auth:
+        $ref: '#/definitions/models.AmqpAuth'
+      bindExchange:
+        $ref: '#/definitions/models.AmqpExchange'
+      deadLetterExchange:
+        type: string
+      host:
+        type: string
+      port:
+        type: string
+      queue:
+        type: string
+      schema:
         type: string
     type: object
   models.ApiKey:
@@ -1073,6 +1134,8 @@ definitions:
     type: object
   models.PubSubConfig:
     properties:
+      amqp:
+        $ref: '#/definitions/models.AmqpPubSubconfig'
       google:
         $ref: '#/definitions/models.GooglePubSubConfig'
       kafka:

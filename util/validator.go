@@ -106,6 +106,7 @@ func init() {
 			string(datastore.SqsPubSub):    true,
 			string(datastore.GooglePubSub): true,
 			string(datastore.KafkaPubSub):  true,
+			string(datastore.AmqpPubSub):   true,
 		}
 
 		if _, ok := pubsubs[pubsub]; !ok {
