@@ -137,10 +137,15 @@ func (k *Amqp) Consume() {
 		ctx := context.Background()
 		if err := k.handler(ctx, k.source, string(d.Body)); err != nil {
 			k.log.WithError(err).Error("failed to write message to create event queue - amqp pub sub")
-			d.Ack(false)
+			if err := d.Ack(false); err != nil {
+				k.log.WithError(err).Error("failed to ack message")
+			}
+
 		} else {
 			// Reject the mesage and send it to DLQ
-			d.Nack(false, false)
+			if err := d.Nack(false, false); err != nil {
+				k.log.WithError(err).Error("failed to nack message")
+			}
 		}
 	}
 
