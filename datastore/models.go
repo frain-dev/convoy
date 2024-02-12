@@ -1485,6 +1485,15 @@ func (m *MetaEventAttempt) Value() (driver.Value, error) {
 	return b, nil
 }
 
+type EventCatalogue struct {
+	UID    string
+	Fields []Field
+}
+
+type Field struct {
+	Name string
+}
+
 type Password struct {
 	Plaintext string
 	Hash      []byte
