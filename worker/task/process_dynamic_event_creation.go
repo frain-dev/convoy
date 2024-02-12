@@ -66,6 +66,7 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 			Endpoints:        []string{endpoint.UID},
 			Data:             dynamicEvent.Data,
 			IdempotencyKey:   dynamicEvent.IdempotencyKey,
+			Headers:          getCustomHeaders(dynamicEvent.CustomHeaders),
 			IsDuplicateEvent: isDuplicate,
 			Raw:              string(dynamicEvent.Data),
 			CreatedAt:        time.Now(),

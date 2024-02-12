@@ -169,9 +169,10 @@ export class CreateProjectComponent implements OnInit {
 	async createProject() {
 		const projectFormModal = document.getElementById('projectForm');
 
-		if (this.projectForm.get('name')?.invalid && this.projectForm.get('type')?.invalid) {
+		if (this.projectForm.get('name')?.invalid || this.projectForm.get('type')?.invalid) {
 			projectFormModal?.scroll({ top: 0 });
-			return this.projectForm.markAllAsTouched();
+			this.projectForm.markAllAsTouched();
+            return;
 		}
 		const projectData = this.getProjectData();
 

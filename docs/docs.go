@@ -6330,6 +6330,12 @@ const docTemplate = `{
         "models.DynamicEvent": {
             "type": "object",
             "properties": {
+                "custom_headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "data": {
                     "type": "array",
                     "items": {
