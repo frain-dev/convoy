@@ -2,7 +2,6 @@ package task
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"time"
 
@@ -24,10 +23,7 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 
 		err := msgpack.DecodeMsgPack(t.Payload(), &broadcastEvent)
 		if err != nil {
-			err := json.Unmarshal(t.Payload(), &broadcastEvent)
-			if err != nil {
-				return &EndpointError{Err: err, delay: defaultDelay}
-			}
+			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
 		project, err := projectRepo.FetchProjectByID(ctx, broadcastEvent.ProjectID)
