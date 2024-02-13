@@ -29,6 +29,10 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) error {
 
 	e.DynamicEvent.ProjectID = e.Project.UID
 
+	if len(e.DynamicEvent.EventTypes) == 0 {
+		e.DynamicEvent.EventTypes = []string{"*"}
+	}
+
 	taskName := convoy.CreateDynamicEventProcessor
 
 	eventByte, err := msgpack.EncodeMsgPack(e.DynamicEvent)

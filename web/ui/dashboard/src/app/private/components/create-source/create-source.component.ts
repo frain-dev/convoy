@@ -58,6 +58,21 @@ export class CreateSourceComponent implements OnInit {
 				secret_key: [''],
 				default_region: ['']
 			}),
+			amqp: this.formBuilder.group({
+				schema: [''],
+				host: [''],
+				port: [''],
+				queue: [''],
+				deadLetterExchange: [null],
+				auth: this.formBuilder.group({
+					user: [null],
+					password: [null]
+				}),
+				bindExchange: this.formBuilder.group({
+					exchange: [null],
+					routingKey: ['""']
+				}),
+			}),
 			kafka: this.formBuilder.group({
 				brokers: [null],
 				consumer_group_id: [null],
@@ -81,7 +96,8 @@ export class CreateSourceComponent implements OnInit {
 	pubSubTypes = [
 		{ uid: 'google', name: 'Google Pub/Sub' },
 		{ uid: 'kafka', name: 'Kafka' },
-		{ uid: 'sqs', name: 'AWS SQS' }
+		{ uid: 'sqs', name: 'AWS SQS' },
+		{ uid: 'amqp', name: 'AMQP / RabbitMQ' },
 	];
 	httpTypes = [
 		{ value: 'noop', viewValue: 'None' },
@@ -141,6 +157,8 @@ export class CreateSourceComponent implements OnInit {
 	isloading = false;
 	confirmModal = false;
 	addKafkaAuthentication = false;
+	addAmqpAuthentication = false;
+	addAmqpQueueBinding = false;
 	sourceDetails!: SOURCE;
 	sourceCreated: boolean = false;
 	showSourceUrl = false;
@@ -177,10 +195,13 @@ export class CreateSourceComponent implements OnInit {
 
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
 
-            if (response.data.pub_sub.kafka.brokers) this.brokerAddresses = response.data.pub_sub.kafka.brokers;
+    	if (response.data.pub_sub.kafka.brokers) this.brokerAddresses = response.data.pub_sub.kafka.brokers;
 
 			if (response.data.pub_sub.kafka.auth?.type) this.addKafkaAuthentication = true;
+			
+			if (response.data.pub_sub.amqp.auth?.user) this.addAmqpAuthentication = true;
 
+			if (response.data.pub_sub.amqp.bindedExchange) this.addAmqpQueueBinding = true;
 
 			this.isloading = false;
 
@@ -364,7 +385,8 @@ export class CreateSourceComponent implements OnInit {
 			const pubSubs: any = {
 				google: ['pub_sub.google.service_account', 'pub_sub.google.subscription_id', 'pub_sub.google.project_id'],
 				sqs: ['pub_sub.sqs.queue_name', 'pub_sub.sqs.access_key_id', 'pub_sub.sqs.secret_key', 'pub_sub.sqs.default_region'],
-				kafka: ['pub_sub.kafka.brokers', 'pub_sub.kafka.topic_name']
+				kafka: ['pub_sub.kafka.brokers', 'pub_sub.kafka.topic_name'],
+				amqp: ['pub_sub.amqp.schema', 'pub_sub.amqp.host', 'pub_sub.amqp.port', 'pub_sub.amqp.queue', 'pub_sub_amqp.deadLetterExchange']
 			};
 
 			Object.keys(pubSubs).forEach((pubSub: any) => {
@@ -395,6 +417,34 @@ export class CreateSourceComponent implements OnInit {
 					this.sourceForm.get(item)?.updateValueAndValidity();
 				});
 			}
+
+			// AMQP
+			const amqpAuths = ['pub_sub.amqp.auth.user', 'pub_sub.amqp.auth.password'];
+			if (this.addAmqpAuthentication) {
+				amqpAuths?.forEach((item: string) => {
+					this.sourceForm.get(item)?.addValidators(Validators.required);
+					this.sourceForm.get(item)?.updateValueAndValidity();
+				});
+			} else {
+				amqpAuths?.forEach((item: string) => {
+					this.sourceForm.get(item)?.removeValidators(Validators.required);
+					this.sourceForm.get(item)?.updateValueAndValidity();
+				});
+			}
+
+			const amqpExchange = ['pub_sub.amqp.exchange.routingKey', 'pub_sub.amqp.exchange.exchange']
+			if (this.addAmqpQueueBinding) {
+				amqpExchange?.forEach((item: string) => {
+					this.sourceForm.get(item)?.addValidators(Validators.required);
+					this.sourceForm.get(item)?.updateValueAndValidity();
+				});
+			} else {
+				amqpExchange?.forEach((item: string) => {
+					this.sourceForm.get(item)?.removeValidators(Validators.required);
+					this.sourceForm.get(item)?.updateValueAndValidity();
+				});
+			}
+			
 		} else {
 			this.sourceForm.get('pub_sub.workers')?.removeValidators(Validators.required);
 			this.sourceForm.get('pub_sub.workers')?.updateValueAndValidity();
