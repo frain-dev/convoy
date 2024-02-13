@@ -2,9 +2,10 @@ package task
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
@@ -125,7 +126,7 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 				tt.dbFn(args)
 			}
 
-			payload, err := json.Marshal(tt.dynamicEvent)
+			payload, err := msgpack.EncodeMsgPack(tt.dynamicEvent)
 			require.NoError(t, err)
 
 			job := queue.Job{
