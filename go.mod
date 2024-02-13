@@ -41,6 +41,7 @@ require (
 	github.com/posthog/posthog-go v0.0.0-20240115103626-fbd687c18571
 	github.com/prometheus/client_golang v1.16.0
 	github.com/r3labs/diff/v3 v3.0.1
+	github.com/rabbitmq/amqp091-go v1.9.0
 	github.com/redis/go-redis/extra/redisotel/v9 v9.0.5
 	github.com/redis/go-redis/v9 v9.1.0
 	github.com/riandyrn/otelchi v0.5.1
@@ -85,7 +86,6 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
-	github.com/rabbitmq/amqp091-go v1.9.0 // indirect
 	github.com/redis/go-redis/extra/rediscmd/v9 v9.0.5 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
