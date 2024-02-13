@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/dop251/goja"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
@@ -454,7 +455,6 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, projectID s
 
 		return subscription, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -475,7 +475,6 @@ func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, proj
 
 		return scanSubscriptions(rows)
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -496,7 +495,6 @@ func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, pr
 
 		return scanSubscriptions(rows)
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -520,7 +518,6 @@ func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, proje
 
 		return subscription, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -537,7 +534,6 @@ func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID s
 
 		return scanSubscriptions(rows)
 	})
-
 	if err != nil {
 		return nil, err
 	}
