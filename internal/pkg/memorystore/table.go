@@ -2,7 +2,6 @@ package memorystore
 
 import (
 	"context"
-	"errors"
 	"sync"
 )
 
@@ -39,7 +38,7 @@ type Table struct {
 }
 
 func NewTable(opts ...Option) (*Table, error) {
-	t := &Table{}
+	t := &Table{rows: make(map[string]*Row)}
 
 	for _, opt := range opts {
 		opt(t)
@@ -78,7 +77,7 @@ func (t *Table) Add(key string, value interface{}) error {
 	defer t.Unlock()
 
 	if t.Exists(key) {
-		return errors.New("key exists in table already")
+		return nil
 	}
 
 	t.rows[key] = &Row{key: key, value: value}
@@ -86,16 +85,16 @@ func (t *Table) Add(key string, value interface{}) error {
 }
 
 // Removes an item from the store.
-func (t *Table) Delete(key interface{}) error {
+func (t *Table) Delete(key string) {
 	t.Lock()
 	defer t.Unlock()
 
-	return nil
+	delete(t.rows, key)
 }
 
 func (t *Table) GetKeys() []string {
 	var keys []string
-	for k, _ := range t.rows {
+	for k := range t.rows {
 		keys = append(keys, k)
 	}
 

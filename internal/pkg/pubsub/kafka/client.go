@@ -45,6 +45,7 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 }
 
 func (k *Kafka) Start(ctx context.Context) {
+	log.Info("kafka.start")
 	for i := 1; i <= k.workers; i++ {
 		go k.Consume()
 	}
@@ -121,6 +122,7 @@ func (k *Kafka) Verify() error {
 }
 
 func (k *Kafka) Consume() {
+	log.Info("called.")
 
 	dialer, err := k.dialer()
 	if err != nil {

@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 
@@ -50,10 +51,8 @@ func (s *SourceLoader) SyncChanges(ctx context.Context, table *memorystore.Table
 	if len(newRows) != 0 {
 		for _, idx := range newRows {
 			for _, source := range sources {
-				key := generateSourceKey(&source)
-				if key == idx {
+				if generateSourceKey(&source) == idx {
 					table.Add(idx, source)
-					dSourceKeys = append(dSourceKeys, idx)
 				}
 			}
 		}
@@ -61,13 +60,10 @@ func (s *SourceLoader) SyncChanges(ctx context.Context, table *memorystore.Table
 
 	// find deleted rows
 	deletedRows := util.Difference(mSourceKeys, dSourceKeys)
+	fmt.Println(deletedRows, "deletedRows")
 	if len(deletedRows) != 0 {
-		for _, idx := range newRows {
-			for _, source := range sources {
-				if generateSourceKey(&source) == idx {
-					table.Delete(idx)
-				}
-			}
+		for _, idx := range deletedRows {
+			table.Delete(idx)
 		}
 	}
 
@@ -96,6 +92,7 @@ func (s *SourceLoader) fetchSources(ctx context.Context, sources []datastore.Sou
 		return s.fetchSources(ctx, sources, projectIDs, cursor)
 	}
 
+	sources = append(sources, newSources...)
 	return sources, nil
 }
 

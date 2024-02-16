@@ -39,24 +39,26 @@ func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer
 		queue:      queue,
 		log:        log,
 		table:      table,
+		sources:    make(map[string]*PubSubSource),
 		ticker:     time.NewTicker(time.Duration(1) * time.Second),
 	}
 
 	// initialise ingest sources
-	for _, row := range table.GetAll() {
-		r := row.Value()
-		s, ok := r.(*datastore.Source)
-		if !ok {
-			return nil, errors.New("invalid source in memory source table")
-		}
-
-		ps, err := NewPubSubSource(ctx, s, i.handler, i.log)
-		if err != nil {
-			return nil, err
-		}
-
-		i.sources[generateSourceKey(s)] = ps
-	}
+	//for _, row := range table.GetAll() {
+	//	r := row.Value()
+	//	s, ok := r.(*datastore.Source)
+	//	if !ok {
+	//		return nil, errors.New("invalid source in memory source table")
+	//	}
+	//
+	//	ps, err := NewPubSubSource(ctx, s, i.handler, i.log)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	i.sources[generateSourceKey(s)] = ps
+	//	ps.Start()
+	//}
 
 	return i, nil
 }
@@ -91,8 +93,8 @@ func (i *Ingest) Stop() {
 
 func (i *Ingest) getSourceKeys() []string {
 	var s []string
-	for _, v := range i.sources {
-		s = append(s, v.hash)
+	for k := range i.sources {
+		s = append(s, k)
 	}
 
 	return s
@@ -101,38 +103,45 @@ func (i *Ingest) getSourceKeys() []string {
 func (i *Ingest) run() error {
 	ctx := context.WithValue(i.ctx, ingestCtx, nil)
 
-	i.log.Info("refreshing runner...")
-
 	// cancel
-	staleRows := util.Difference(i.table.GetKeys(), i.getSourceKeys())
+	i.log.Info("refreshing runner...", len(i.sources))
+
+	// a - b
+	// [] - [1,2,3]
+	staleRows := util.Difference(i.getSourceKeys(), i.table.GetKeys())
 	for _, s := range staleRows {
 		for _, ps := range i.sources {
 			if s == ps.hash {
 				// cancel context.
+				delete(i.sources, s)
 				ps.Stop()
 			}
 		}
 	}
 
 	// start new & updated.
-	newSourceKeys := util.Difference(i.getSourceKeys(), i.table.GetKeys())
+	// [1,2,3] - []
+	newSourceKeys := util.Difference(i.table.GetKeys(), i.getSourceKeys())
 	for _, s := range newSourceKeys {
 		for _, t := range i.table.GetAll() {
-			ss, ok := t.Value().(*datastore.Source)
+			ss, ok := t.Value().(datastore.Source)
 			if !ok {
 				return errors.New("invalid store in memory table")
 			}
 
-			// start new runners.
-			ps, err := NewPubSubSource(ctx, ss, i.handler, i.log)
-			if err != nil {
-				return err
+			key := generateSourceKey(&ss)
+			if key == s {
+				// start new runners.
+				ps, err := NewPubSubSource(ctx, &ss, i.handler, i.log)
+				if err != nil {
+					return err
+				}
+				ps.hash = key
+
+				ps.Start()
+				i.sources[s] = ps
 			}
-
-			ps.Start()
-			i.sources[s] = ps
 		}
-
 	}
 	return nil
 }
