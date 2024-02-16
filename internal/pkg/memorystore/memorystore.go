@@ -5,8 +5,6 @@ import (
 	"errors"
 	"sync"
 	"time"
-
-	"github.com/frain-dev/convoy/pkg/log"
 )
 
 var DefaultStore = Store{
@@ -44,7 +42,6 @@ func (s *Store) Sync(ctx context.Context, interval int) {
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 
 	for range ticker.C {
-		log.Info("syncing...")
 		// iterate through tables and sync.
 		for _, table := range s.tables {
 			_ = table.Sync(ctx)

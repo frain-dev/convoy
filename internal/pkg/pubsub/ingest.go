@@ -70,7 +70,6 @@ func (i *Ingest) Run() {
 	for {
 		select {
 		case <-i.ticker.C:
-			log.Info("refreshing runner...")
 			err := i.run()
 			if err != nil {
 				i.log.WithError(err).Error("ingest runner failed")

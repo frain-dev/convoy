@@ -38,7 +38,7 @@ type PubSubSource struct {
 }
 
 func NewPubSubSource(ctx context.Context, source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) (*PubSubSource, error) {
-	client, err := NewPubSubClient(source, handler, log)
+	client, err := createClient(source, handler, log)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (p *PubSubSource) Stop() {
 	p.cancelFunc()
 }
 
-func NewPubSubClient(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) (PubSub, error) {
+func createClient(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) (PubSub, error) {
 	if source.PubSub.Type == datastore.SqsPubSub {
 		return sqs.New(source, handler, log), nil
 	}
