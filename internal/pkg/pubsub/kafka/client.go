@@ -44,7 +44,7 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 	}
 }
 
-func (k *Kafka) Start() {
+func (k *Kafka) Start(ctx context.Context) {
 	for i := 1; i <= k.workers; i++ {
 		go k.Consume()
 	}

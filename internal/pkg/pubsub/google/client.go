@@ -1,10 +1,11 @@
 package google
 
 import (
-	"cloud.google.com/go/pubsub"
 	"context"
 	"errors"
 	"fmt"
+
+	"cloud.google.com/go/pubsub"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"google.golang.org/api/option"
@@ -36,7 +37,7 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 	}
 }
 
-func (g *Google) Start() {
+func (g *Google) Start(ctx context.Context) {
 	if g.workers > 0 {
 		go g.Consume()
 	}

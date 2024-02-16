@@ -38,7 +38,7 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 	}
 }
 
-func (s *Sqs) Start() {
+func (s *Sqs) Start(ctx context.Context) {
 	for i := 1; i <= s.workers; i++ {
 		go s.Consume()
 	}
