@@ -66,6 +66,10 @@ func WithError(err error) *logrus.Entry {
 	return stdLogger.entry.WithError(err)
 }
 
+func WithEventid(uid string) *logrus.Entry {
+	return stdLogger.entry.WithField("event_id", uid)
+}
+
 func WithLogger() *logrus.Logger {
 	return stdLogger.logger
 }
