@@ -33,6 +33,8 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, _ := context.WithCancel(cmd.Context())
+
 			// override config with cli flags
 			cliConfig, err := buildAgentCliConfiguration(cmd)
 			if err != nil {
@@ -43,35 +45,27 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			var serverChan chan error
-			var ingestChan chan error
-			var workerChan chan error
-
-			err = startServerComponent(a)
+			err = startServerComponent(ctx, a)
 			if err != nil {
 				a.Logger.Errorf("Error starting data plane server component: %v", err)
 				return err
 			}
 
-			err = startIngestComponent(a, interval)
+			err = startIngestComponent(ctx, a, interval)
 			if err != nil {
 				a.Logger.Errorf("Error starting data plane ingest component: %v", err)
 				return err
 			}
 
-			err = startWorkerComponent(a)
+			err = startWorkerComponent(ctx, a)
 			if err != nil {
 				a.Logger.Errorf("Error starting data plane worker component, err: %v", err)
 				return err
 			}
 
-			select {
-			case <-serverChan:
-			case <-ingestChan:
-			case <-workerChan:
-			}
-
-			return nil
+			// block the main thread.
+			<-cmd.Context().Done()
+			return ctx.Err()
 		},
 	}
 
@@ -82,7 +76,7 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 	return cmd
 }
 
-func startServerComponent(a *cli.App) error {
+func startServerComponent(ctx context.Context, a *cli.App) error {
 	cfg, err := config.Get()
 	if err != nil {
 		a.Logger.WithError(err).Fatal("Failed to load configuration")
@@ -148,7 +142,7 @@ func startServerComponent(a *cli.App) error {
 	return nil
 }
 
-func startIngestComponent(a *cli.App, interval int) error {
+func startIngestComponent(ctx context.Context, a *cli.App, interval int) error {
 	// start message broker ingest.
 	sourceRepo := postgres.NewSourceRepo(a.DB, a.Cache)
 	projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
@@ -163,14 +157,12 @@ func startIngestComponent(a *cli.App, interval int) error {
 	return nil
 }
 
-func startWorkerComponent(a *cli.App) error {
+func startWorkerComponent(ctx context.Context, a *cli.App) error {
 	cfg, err := config.Get()
 	if err != nil {
 		a.Logger.WithError(err).Fatal("Failed to load configuration")
 		return err
 	}
-
-	ctx := context.Background()
 
 	// register worker.
 	consumer := worker.NewConsumer(cfg.ConsumerPoolSize, a.Queue, a.Logger)
