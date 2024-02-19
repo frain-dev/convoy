@@ -100,7 +100,7 @@ func (i *Ingest) run() error {
 			continue
 		}
 
-		ss, ok := sr.(datastore.Source)
+		ss, ok := sr.Value().(datastore.Source)
 		if !ok {
 			return errors.New("invalid source in memory store")
 		}

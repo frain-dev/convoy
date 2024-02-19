@@ -2,7 +2,6 @@ package pubsub
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 
@@ -60,7 +59,6 @@ func (s *SourceLoader) SyncChanges(ctx context.Context, table *memorystore.Table
 
 	// find deleted rows
 	deletedRows := util.Difference(mSourceKeys, dSourceKeys)
-	fmt.Println(deletedRows, "deletedRows")
 	if len(deletedRows) != 0 {
 		for _, idx := range deletedRows {
 			table.Delete(idx)

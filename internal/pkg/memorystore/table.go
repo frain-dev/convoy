@@ -56,7 +56,10 @@ func (t *Table) GetAll() []*Row {
 	return rows
 }
 
-func (t *Table) Get(key string) interface{} {
+func (t *Table) Get(key string) *Row {
+	t.RLock()
+	defer t.RUnlock()
+
 	value, ok := t.rows[key]
 	if !ok {
 		return nil
@@ -93,6 +96,9 @@ func (t *Table) Delete(key string) {
 }
 
 func (t *Table) GetKeys() []string {
+	t.RLock()
+	defer t.RUnlock()
+
 	var keys []string
 	for k := range t.rows {
 		keys = append(keys, k)
