@@ -16,8 +16,6 @@ import (
 
 type PubSub interface {
 	Start(context.Context)
-	Consume()
-	Stop()
 }
 
 type PubSubSource struct {
@@ -44,7 +42,7 @@ func NewPubSubSource(ctx context.Context, source *datastore.Source, handler data
 	}
 
 	ctx, cancelFunc := context.WithCancel(ctx)
-	pubSubSource := &PubSubSource{client: client, source: source}
+	pubSubSource := &PubSubSource{ctx: ctx, cancelFunc: cancelFunc, client: client, source: source}
 	pubSubSource.hash = generateSourceKey(source)
 	pubSubSource.cancelFunc = cancelFunc
 	return pubSubSource, nil

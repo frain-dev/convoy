@@ -71,7 +71,7 @@ func (t *Table) Exists(key string) bool {
 	return ok
 }
 
-// Add new items and emit changes
+// Add a new item if it doesn't exist.
 func (t *Table) Add(key string, value interface{}) error {
 	t.Lock()
 	defer t.Unlock()

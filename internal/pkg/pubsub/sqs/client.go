@@ -40,7 +40,7 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 
 func (s *Sqs) Start(ctx context.Context) {
 	for i := 1; i <= s.workers; i++ {
-		go s.Consume()
+		go s.consume()
 	}
 }
 
@@ -78,7 +78,7 @@ func (s *Sqs) Verify() error {
 	return nil
 }
 
-func (s *Sqs) Consume() {
+func (s *Sqs) consume() {
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String(s.Cfg.DefaultRegion),
 		Credentials: credentials.NewStaticCredentials(s.Cfg.AccessKeyID, s.Cfg.SecretKey, ""),

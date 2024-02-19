@@ -23,31 +23,26 @@ type Kafka struct {
 	source  *datastore.Source
 	workers int
 	ctx     context.Context
-	cancel  context.CancelFunc
-	done    chan struct{}
 	handler datastore.PubSubHandler
 	log     log.StdLogger
 }
 
 func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) *Kafka {
-	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Kafka{
 		Cfg:     source.PubSub.Kafka,
 		source:  source,
 		workers: source.PubSub.Workers,
 		handler: handler,
-		ctx:     ctx,
-		done:    make(chan struct{}),
-		cancel:  cancel,
 		log:     log,
 	}
 }
 
 func (k *Kafka) Start(ctx context.Context) {
-	log.Info("kafka.start")
+	k.ctx = ctx
+
 	for i := 1; i <= k.workers; i++ {
-		go k.Consume()
+		go k.consume()
 	}
 }
 
@@ -96,15 +91,6 @@ func (k *Kafka) dialer() (*kafka.Dialer, error) {
 	return dialer, nil
 }
 
-func (k *Kafka) cancelled() bool {
-	select {
-	case <-k.done:
-		return true
-	default:
-		return false
-	}
-}
-
 func (k *Kafka) Verify() error {
 	dialer, err := k.dialer()
 	if err != nil {
@@ -121,9 +107,7 @@ func (k *Kafka) Verify() error {
 
 }
 
-func (k *Kafka) Consume() {
-	log.Info("called.")
-
+func (k *Kafka) consume() {
 	dialer, err := k.dialer()
 	if err != nil {
 		log.WithError(err).Error("failed to fetch kafka auth")
@@ -147,32 +131,28 @@ func (k *Kafka) Consume() {
 	defer k.handleError(r)
 
 	for {
-		if k.cancelled() {
+		select {
+		case <-k.ctx.Done():
 			return
-		}
-
-		m, err := r.FetchMessage(k.ctx)
-		if err != nil {
-			log.WithError(err).Errorf("failed to fetch message from topic %s - kafka", k.Cfg.TopicName)
-			continue
-		}
-
-		ctx := context.Background()
-		if err := k.handler(ctx, k.source, string(m.Value)); err != nil {
-			k.log.WithError(err).Error("failed to write message to create event queue - kafka pub sub")
-		} else {
-			// acknowledge the message
-			err := r.CommitMessages(ctx, m)
+		default:
+			m, err := r.FetchMessage(k.ctx)
 			if err != nil {
-				k.log.WithError(err).Error("failed to commit message - kafka pub sub")
+				log.WithError(err).Errorf("failed to fetch message from topic %s - kafka", k.Cfg.TopicName)
+				continue
+			}
+
+			ctx := context.Background()
+			if err := k.handler(ctx, k.source, string(m.Value)); err != nil {
+				k.log.WithError(err).Error("failed to write message to create event queue - kafka pub sub")
+			} else {
+				// acknowledge the message
+				err := r.CommitMessages(ctx, m)
+				if err != nil {
+					k.log.WithError(err).Error("failed to commit message - kafka pub sub")
+				}
 			}
 		}
 	}
-}
-
-func (k *Kafka) Stop() {
-	k.cancel()
-	close(k.done)
 }
 
 func (k *Kafka) handleError(reader *kafka.Reader) {

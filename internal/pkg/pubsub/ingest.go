@@ -22,55 +22,37 @@ type IngestCtxKey string
 var ingestCtx IngestCtxKey = "IngestCtx"
 
 type Ingest struct {
-	ctx        context.Context
-	cancelFunc context.CancelFunc
-	ticker     *time.Ticker
-	queue      queue.Queuer
-	sources    map[string]*PubSubSource
-	table      *memorystore.Table
-	log        log.StdLogger
+	ctx     context.Context
+	ticker  *time.Ticker
+	queue   queue.Queuer
+	sources map[string]*PubSubSource
+	table   *memorystore.Table
+	log     log.StdLogger
 }
 
 func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.StdLogger) (*Ingest, error) {
-	ctx, cancel := context.WithCancel(ctx)
+	ctx = context.WithValue(ctx, ingestCtx, nil)
 	i := &Ingest{
-		ctx:        ctx,
-		cancelFunc: cancel,
-		queue:      queue,
-		log:        log,
-		table:      table,
-		sources:    make(map[string]*PubSubSource),
-		ticker:     time.NewTicker(time.Duration(1) * time.Second),
+		ctx:     ctx,
+		queue:   queue,
+		log:     log,
+		table:   table,
+		sources: make(map[string]*PubSubSource),
+		ticker:  time.NewTicker(time.Duration(1) * time.Second),
 	}
-
-	// initialise ingest sources
-	//for _, row := range table.GetAll() {
-	//	r := row.Value()
-	//	s, ok := r.(*datastore.Source)
-	//	if !ok {
-	//		return nil, errors.New("invalid source in memory source table")
-	//	}
-	//
-	//	ps, err := NewPubSubSource(ctx, s, i.handler, i.log)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//
-	//	i.sources[generateSourceKey(s)] = ps
-	//	ps.Start()
-	//}
 
 	return i, nil
 }
 
+// Run is the core of the ingester. It does the following in an infinite loop:
+// 1. Loop through the sources at an interval
+// 2. Compares the retrieved sources with the running
+// 3. Cancels deleted sources.
+// 4. Starts new sources.
 func (i *Ingest) Run() {
-	// loop through the tables in an interval
-	// find the diff
-	// cancel the ctx
-	// start afresh.
-
 	for {
 		select {
+		// retrieve new sources
 		case <-i.ticker.C:
 			err := i.run()
 			if err != nil {
@@ -81,14 +63,9 @@ func (i *Ingest) Run() {
 			// stop ticker.
 			i.ticker.Stop()
 
-			// cancel all sources.
-			i.cancelFunc()
+			// other clean up. :)
 		}
 	}
-}
-
-func (i *Ingest) Stop() {
-	i.cancelFunc()
 }
 
 func (i *Ingest) getSourceKeys() []string {
@@ -101,48 +78,43 @@ func (i *Ingest) getSourceKeys() []string {
 }
 
 func (i *Ingest) run() error {
-	ctx := context.WithValue(i.ctx, ingestCtx, nil)
-
-	// cancel
 	i.log.Info("refreshing runner...", len(i.sources))
 
-	// a - b
-	// [] - [1,2,3]
+	// cancel all stale/outdated source runners.
 	staleRows := util.Difference(i.getSourceKeys(), i.table.GetKeys())
-	for _, s := range staleRows {
-		for _, ps := range i.sources {
-			if s == ps.hash {
-				// cancel context.
-				delete(i.sources, s)
-				ps.Stop()
-			}
+	for _, key := range staleRows {
+		ps, ok := i.sources[key]
+		if !ok {
+			continue
 		}
+
+		ps.Stop()
+		delete(i.sources, key)
 	}
 
-	// start new & updated.
-	// [1,2,3] - []
+	// start all new/updated source runners.
 	newSourceKeys := util.Difference(i.table.GetKeys(), i.getSourceKeys())
-	for _, s := range newSourceKeys {
-		for _, t := range i.table.GetAll() {
-			ss, ok := t.Value().(datastore.Source)
-			if !ok {
-				return errors.New("invalid store in memory table")
-			}
-
-			key := generateSourceKey(&ss)
-			if key == s {
-				// start new runners.
-				ps, err := NewPubSubSource(ctx, &ss, i.handler, i.log)
-				if err != nil {
-					return err
-				}
-				ps.hash = key
-
-				ps.Start()
-				i.sources[s] = ps
-			}
+	for _, key := range newSourceKeys {
+		sr := i.table.Get(key)
+		if sr == nil {
+			continue
 		}
+
+		ss, ok := sr.(datastore.Source)
+		if !ok {
+			return errors.New("invalid source in memory store")
+		}
+
+		ps, err := NewPubSubSource(i.ctx, &ss, i.handler, i.log)
+		if err != nil {
+			return err
+		}
+
+		ps.hash = key
+		ps.Start()
+		i.sources[key] = ps
 	}
+
 	return nil
 }
 
