@@ -22,7 +22,7 @@ type Sqs struct {
 	Cfg     *datastore.SQSPubSubConfig
 	source  *datastore.Source
 	workers int
-	done    chan struct{}
+	ctx     context.Context
 	handler datastore.PubSubHandler
 	log     log.StdLogger
 }
@@ -32,24 +32,16 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 		Cfg:     source.PubSub.Sqs,
 		source:  source,
 		workers: source.PubSub.Workers,
-		done:    make(chan struct{}),
 		handler: handler,
 		log:     log,
 	}
 }
 
 func (s *Sqs) Start(ctx context.Context) {
+	s.ctx = ctx
+
 	for i := 1; i <= s.workers; i++ {
 		go s.consume()
-	}
-}
-
-func (s *Sqs) cancelled() bool {
-	select {
-	case <-s.done:
-		return true
-	default:
-		return false
 	}
 }
 
@@ -120,51 +112,50 @@ func (s *Sqs) consume() {
 	queueURL := url.QueueUrl
 
 	for {
-		if s.cancelled() {
+
+		select {
+		case <-s.ctx.Done():
 			return
-		}
+		default:
 
-		output, err := svc.ReceiveMessage(&sqs.ReceiveMessageInput{
-			QueueUrl:            queueURL,
-			MaxNumberOfMessages: aws.Int64(10),
-			WaitTimeSeconds:     aws.Int64(1),
-		})
+			output, err := svc.ReceiveMessageWithContext(s.ctx, &sqs.ReceiveMessageInput{
+				QueueUrl:            queueURL,
+				MaxNumberOfMessages: aws.Int64(10),
+				WaitTimeSeconds:     aws.Int64(1),
+			})
 
-		if err != nil {
-			s.log.WithError(err).Error("failed to fetch message - sqs")
-			continue
-		}
+			if err != nil {
+				s.log.WithError(err).Error("failed to fetch message - sqs")
+				continue
+			}
 
-		var wg sync.WaitGroup
-		for _, message := range output.Messages {
-			wg.Add(1)
-			go func(m *sqs.Message) {
-				defer wg.Done()
+			var wg sync.WaitGroup
+			for _, message := range output.Messages {
+				wg.Add(1)
+				go func(m *sqs.Message) {
+					defer wg.Done()
 
-				defer s.handleError()
+					defer s.handleError()
 
-				if err := s.handler(context.Background(), s.source, *m.Body); err != nil {
-					s.log.WithError(err).Error("failed to write message to create event queue")
-				} else {
-					_, err = svc.DeleteMessage(&sqs.DeleteMessageInput{
-						QueueUrl:      queueURL,
-						ReceiptHandle: m.ReceiptHandle,
-					})
+					if err := s.handler(context.Background(), s.source, *m.Body); err != nil {
+						s.log.WithError(err).Error("failed to write message to create event queue")
+					} else {
+						_, err = svc.DeleteMessage(&sqs.DeleteMessageInput{
+							QueueUrl:      queueURL,
+							ReceiptHandle: m.ReceiptHandle,
+						})
 
-					if err != nil {
-						s.log.WithError(err).Error("failed to delete message")
+						if err != nil {
+							s.log.WithError(err).Error("failed to delete message")
+						}
 					}
-				}
 
-			}(message)
+				}(message)
 
-			wg.Wait()
+				wg.Wait()
+			}
 		}
 	}
-}
-
-func (s *Sqs) Stop() {
-	close(s.done)
 }
 
 func (s *Sqs) handleError() {
