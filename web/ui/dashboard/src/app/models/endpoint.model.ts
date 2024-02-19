@@ -18,6 +18,7 @@ export interface ENDPOINT {
 		api_key: { header_value: string; header_name: string };
 	};
 	created_at: string;
+    owner_id?:string;
 	description: string;
 	events?: any;
 	status?: string;

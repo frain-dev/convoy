@@ -2014,12 +2014,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Event Details",
+                        "description": "Broadcast Event Details",
                         "name": "event",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.CreateEvent"
+                            "$ref": "#/definitions/models.BroadcastEvent"
                         }
                     }
                 ],
@@ -6068,6 +6068,30 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.BroadcastEvent": {
+            "type": "object",
+            "properties": {
+                "custom_headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "data": {
+                    "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "event_type": {
+                    "type": "string"
+                },
+                "idempotency_key": {
                     "type": "string"
                 }
             }

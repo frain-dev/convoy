@@ -633,6 +633,24 @@ components:
         username:
           type: string
       type: object
+    models.BroadcastEvent:
+      properties:
+        custom_headers:
+          additionalProperties:
+            type: string
+          type: object
+        data:
+          description: |-
+            Data is an arbitrary JSON value that gets sent as the body of the
+            webhook to the endpoints
+          items:
+            type: integer
+          type: array
+        event_type:
+          type: string
+        idempotency_key:
+          type: string
+      type: object
     models.CreateEndpoint:
       properties:
         advanced_signatures:
@@ -2632,8 +2650,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/models.CreateEvent'
-        description: Event Details
+              $ref: '#/components/schemas/models.BroadcastEvent'
+        description: Broadcast Event Details
         required: true
         x-originalParamName: event
       responses:
