@@ -48,6 +48,9 @@ func NewTable(opts ...Option) (*Table, error) {
 }
 
 func (t *Table) GetAll() []*Row {
+	t.RLock()
+	defer t.RUnlock()
+
 	var rows []*Row
 	for _, v := range t.rows {
 		rows = append(rows, v)
@@ -70,6 +73,14 @@ func (t *Table) Get(key string) *Row {
 
 // Checks if an item exists in the table.
 func (t *Table) Exists(key string) bool {
+	t.RLock()
+	defer t.RUnlock()
+
+	return t.existInternal(key)
+}
+
+// This assumes the caller has called Lock()
+func (t *Table) existInternal(key string) bool {
 	_, ok := t.rows[key]
 	return ok
 }
@@ -79,7 +90,7 @@ func (t *Table) Add(key string, value interface{}) error {
 	t.Lock()
 	defer t.Unlock()
 
-	if t.Exists(key) {
+	if t.existInternal(key) {
 		return nil
 	}
 
