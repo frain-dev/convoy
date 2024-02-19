@@ -47,18 +47,6 @@ func NewTable(opts ...Option) (*Table, error) {
 	return t, nil
 }
 
-func (t *Table) GetAll() []*Row {
-	t.RLock()
-	defer t.RUnlock()
-
-	var rows []*Row
-	for _, v := range t.rows {
-		rows = append(rows, v)
-	}
-
-	return rows
-}
-
 func (t *Table) Get(key string) *Row {
 	t.RLock()
 	defer t.RUnlock()

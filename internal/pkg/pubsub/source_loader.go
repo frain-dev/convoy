@@ -31,6 +31,8 @@ func NewSourceLoader(endpointRepo datastore.EndpointRepository, sourceRepo datas
 	}
 }
 
+// TODO(subomi): Refactor source loader to not know about table
+// instead it should return changes through a channel.
 func (s *SourceLoader) SyncChanges(ctx context.Context, table *memorystore.Table) error {
 	mSourceKeys := table.GetKeys()
 
