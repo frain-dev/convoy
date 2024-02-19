@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"reflect"
 	"strings"
@@ -109,7 +110,8 @@ func (dc DatabaseConfiguration) BuildDsn() string {
 
 	authPart := ""
 	if dc.Username != "" || dc.Password != "" {
-		authPart = fmt.Sprintf("%s:%s@", dc.Username, dc.Password)
+		authPrefix := url.UserPassword(dc.Username, dc.Password)
+		authPart = fmt.Sprintf("%s@", authPrefix)
 	}
 
 	dbPart := ""
