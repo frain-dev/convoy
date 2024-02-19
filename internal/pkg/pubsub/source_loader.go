@@ -53,10 +53,7 @@ func (s *SourceLoader) SyncChanges(ctx context.Context, table *memorystore.Table
 		for _, idx := range newRows {
 			for _, source := range sources {
 				if generateSourceKey(&source) == idx {
-					err = table.Add(idx, source)
-					if err != nil {
-						return err
-					}
+					_ = table.Add(idx, source)
 				}
 			}
 		}

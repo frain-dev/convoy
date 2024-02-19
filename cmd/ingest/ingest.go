@@ -56,12 +56,7 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 			lo.SetLevel(lvl)
 
 			sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, lo)
-			sourceTable, err := memorystore.NewTable(
-				memorystore.OptionSyncer(sourceLoader))
-
-			if err != nil {
-				return err
-			}
+			sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
 
 			err = memorystore.DefaultStore.Register("sources", sourceTable)
 			if err != nil {

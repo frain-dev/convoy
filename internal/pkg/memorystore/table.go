@@ -5,18 +5,6 @@ import (
 	"sync"
 )
 
-// In ingest.go
-// configure table for sources
-// sourceTable := memorystore.NewTable(dataLoader)
-//
-// register table in db.
-// err := memorystore.Store.Register(sourceTable)
-// handleError(err)
-//
-// In workers.go
-// endpointTable := memorystore.NewTable(endpointLoader)
-// store := memorystore.Register(endpointTable)
-
 type Syncer interface {
 	SyncChanges(context.Context, *Table) error
 }
@@ -37,26 +25,21 @@ type Table struct {
 	syncer Syncer
 }
 
-func NewTable(opts ...Option) (*Table, error) {
+func NewTable(opts ...Option) *Table {
 	t := &Table{rows: make(map[string]*Row)}
 
 	for _, opt := range opts {
 		opt(t)
 	}
 
-	return t, nil
+	return t
 }
 
 func (t *Table) Get(key string) *Row {
 	t.RLock()
 	defer t.RUnlock()
 
-	value, ok := t.rows[key]
-	if !ok {
-		return nil
-	}
-
-	return value
+	return t.getInternal(key)
 }
 
 // Checks if an item exists in the table.
@@ -68,22 +51,34 @@ func (t *Table) Exists(key string) bool {
 }
 
 // This assumes the caller has called Lock()
+func (t *Table) getInternal(key string) *Row {
+	value, ok := t.rows[key]
+	if !ok {
+		return nil
+	}
+
+	return value
+}
+
+// This assumes the caller has called Lock()
 func (t *Table) existInternal(key string) bool {
 	_, ok := t.rows[key]
 	return ok
 }
 
 // Add a new item if it doesn't exist.
-func (t *Table) Add(key string, value interface{}) error {
+func (t *Table) Add(key string, value interface{}) *Row {
 	t.Lock()
 	defer t.Unlock()
 
-	if t.existInternal(key) {
-		return nil
+	row := t.getInternal(key)
+	if row != nil {
+		return row
 	}
 
-	t.rows[key] = &Row{key: key, value: value}
-	return nil
+	row = &Row{key: key, value: value}
+	t.rows[key] = row
+	return row
 }
 
 // Removes an item from the store.
