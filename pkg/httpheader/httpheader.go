@@ -27,7 +27,7 @@ func (h *HTTPHeader) Scan(value interface{}) error {
 		*h = nil
 		return nil
 	}
-	
+
 	b, ok := value.([]byte)
 	if !ok {
 		return fmt.Errorf("unsupported value type %T", value)

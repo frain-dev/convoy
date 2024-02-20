@@ -193,6 +193,7 @@ const (
 	SqsPubSub    PubSubType = "sqs"
 	GooglePubSub PubSubType = "google"
 	KafkaPubSub  PubSubType = "kafka"
+	AmqpPubSub   PubSubType = "amqp"
 )
 
 func (s SourceProvider) IsValid() bool {
@@ -1068,6 +1069,7 @@ type PubSubConfig struct {
 	Sqs     *SQSPubSubConfig    `json:"sqs" db:"sqs"`
 	Google  *GooglePubSubConfig `json:"google" db:"google"`
 	Kafka   *KafkaPubSubConfig  `json:"kafka" db:"kafka"`
+	Amqp    *AmqpPubSubConfig   `json:"amqp" db:"amqp"`
 }
 
 func (p *PubSubConfig) Scan(value interface{}) error {
@@ -1113,6 +1115,22 @@ type KafkaPubSubConfig struct {
 	ConsumerGroupID string     `json:"consumer_group_id" db:"consumer_group_id"`
 	TopicName       string     `json:"topic_name" db:"topic_name"`
 	Auth            *KafkaAuth `json:"auth" db:"auth"`
+}
+
+type AmqpPubSubConfig struct {
+	Schema             string           `json:"schema" db:"schema"`
+	Host               string           `json:"host" db:"host"`
+	Port               string           `json:"port" db:"port"`
+	Queue              string           `json:"queue" db:"queue"`
+	Auth               *AmqpCredentials `json:"auth" db:"auth"`
+	BindedExchange     *string          `json:"bindedExchange" db:"binded_exchange"`
+	RoutingKey         string           `json:"routingKey" db:"routing_key"`
+	DeadLetterExchange *string          `json:"deadLetterExchange" db:"dead_letter_exchange"`
+}
+
+type AmqpCredentials struct {
+	User     string `json:"user" db:"user"`
+	Password string `json:"password" db:"password"`
 }
 
 type KafkaAuth struct {

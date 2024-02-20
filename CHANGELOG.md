@@ -1,21 +1,31 @@
+# 24.1.4
+
+- [Enhancement] Add custom headers to dynamic event #1923
+- [Feature] Add broadcast event api #1913
+
+# 24.1.3
+
+### Bug Fixes
+- fixed api versioning bug to correctly retrieve the instance api version #1918
+
 # 24.1.2
 
 ### Bug Fixes 
-- fixed sync bug in oss telemetry library #1906
+- fixed sync bug in the oss telemetry library #1906
 
 # 24.1.1 
 
 ### API Changes
 
 > [!NOTE]
-> All API Changes are backward-compatible, so you shouldn't need to change any code to get them to work, however, you need specify which version you're running in your convoy.json.
+> All API Changes are backward-compatible, so you shouldn't need to change any code to get them to work, however, you need to specify which version you're running in your convoy.json.
 
 - changed `http_timeout` and `rate_limit_duration` in endpoints from duration string to `int`.
 - changed the default signature format from `simple` to `advanced`. 
 - stripped out unnecessary fields from dynamic api endpoint. 
 
 ### Features
-- added support for opentelemetry #1865
+- added support for OpenTelemetry #1865
 - added support for sentry as a tracing backend #1865
 - added support for api versioning using rolling versioning strategy backwards compatible #1871
 
@@ -28,7 +38,7 @@
 - update subscription endpoint metadata when a subscription is updated #1891
 - fixed event deliveries pagination #1846
 - delete invite after cancellation #1860
-- enabled multi user invite without refresh #1861
+- enabled multi-user invite without refresh #1861
 - set `event_id` in events filter #1866
 
 ### Enhancements

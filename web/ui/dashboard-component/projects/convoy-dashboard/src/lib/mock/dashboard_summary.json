@@ -1,1 +1,0 @@
-{ "status": true, "message": "Dashboard summary fetched successfully", "data": { "events_sent": 1, "apps": 3, "period": "daily", "event_data": [{ "data": { "index": 81, "date": "2022-03-22" }, "count": 1 }] } }
