@@ -31,7 +31,8 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, _ := context.WithCancel(cmd.Context())
+			ctx, cancel := context.WithCancel(cmd.Context())
+			defer cancel()
 
 			// override config with cli flags
 			cliConfig, err := buildCliFlagConfiguration(cmd)

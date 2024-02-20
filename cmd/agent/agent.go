@@ -36,6 +36,13 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, cancel := context.WithCancel(cmd.Context())
+			quit := make(chan os.Signal, 1)
+			signal.Notify(quit, os.Interrupt)
+
+			defer func() {
+				signal.Stop(quit)
+				cancel()
+			}()
 
 			// override config with cli flags
 			cliConfig, err := buildAgentCliConfiguration(cmd)
@@ -67,13 +74,6 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 
 			// block the main thread.
 			// trap Ctrl+C and call cancel on the context
-			quit := make(chan os.Signal, 1)
-			signal.Notify(quit, os.Interrupt)
-
-			defer func() {
-				signal.Stop(quit)
-				cancel()
-			}()
 
 			select {
 			case <-quit:
