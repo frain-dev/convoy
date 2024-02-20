@@ -186,7 +186,7 @@ type PortalEventIntegrationTestSuite struct {
 func (s *PortalEventIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildDataPlaneRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PortalEventIntegrationTestSuite) SetupTest() {

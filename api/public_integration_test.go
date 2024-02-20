@@ -607,7 +607,7 @@ type PublicEventIntegrationTestSuite struct {
 func (s *PublicEventIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildDataPlaneRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicEventIntegrationTestSuite) SetupTest() {
