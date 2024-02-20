@@ -1427,6 +1427,15 @@ paths:
         name: projectID
         required: true
         type: string
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
+        type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: A pagination cursor to fetch the next page of a list
         example: 01H0JA5MEES38RRK3HTEJC647K
         in: query
@@ -1890,12 +1899,22 @@ paths:
         name: projectID
         required: true
         type: string
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
+        type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: The end date
         example: 2008-05-02T15:04:05
         in: query
         name: endDate
         type: string
-      - description: A list of endpoint IDs to filter by
+      - collectionFormat: csv
+        description: A list of endpoint IDs to filter by
         in: query
         items:
           type: string
@@ -1935,7 +1954,8 @@ paths:
         in: query
         name: startDate
         type: string
-      - description: A list of event delivery statuses to filter by
+      - collectionFormat: csv
+        description: A list of event delivery statuses to filter by
         in: query
         items:
           type: string
@@ -2253,12 +2273,22 @@ paths:
         name: projectID
         required: true
         type: string
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
+        type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: The end date
         example: 2008-05-02T15:04:05
         in: query
         name: endDate
         type: string
-      - description: A list of endpoint IDs to filter by
+      - collectionFormat: csv
+        description: A list of endpoint IDs to filter by
         in: query
         items:
           type: string
@@ -2298,7 +2328,8 @@ paths:
         in: query
         name: startDate
         type: string
-      - description: A list of event delivery statuses to filter by
+      - collectionFormat: csv
+        description: A list of event delivery statuses to filter by
         in: query
         items:
           type: string
@@ -2423,12 +2454,22 @@ paths:
         name: projectID
         required: true
         type: string
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
+        type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: The end date
         example: 2008-05-02T15:04:05
         in: query
         name: endDate
         type: string
-      - description: A list of endpoint ids to filter by
+      - collectionFormat: csv
+        description: A list of endpoint ids to filter by
         in: query
         items:
           type: string
@@ -2461,7 +2502,8 @@ paths:
         in: query
         name: sort
         type: string
-      - in: query
+      - collectionFormat: csv
+        in: query
         items:
           type: string
         name: sourceId
@@ -2548,7 +2590,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/handlers.Stub'
+                  $ref: '#/definitions/models.EventResponse'
               type: object
         "400":
           description: Bad Request
@@ -2713,12 +2755,22 @@ paths:
         name: projectID
         required: true
         type: string
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
+        type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: The end date
         example: 2008-05-02T15:04:05
         in: query
         name: endDate
         type: string
-      - description: A list of endpoint ids to filter by
+      - collectionFormat: csv
+        description: A list of endpoint ids to filter by
         in: query
         items:
           type: string
@@ -2751,7 +2803,8 @@ paths:
         in: query
         name: sort
         type: string
-      - in: query
+      - collectionFormat: csv
+        in: query
         items:
           type: string
         name: sourceId
@@ -2941,6 +2994,15 @@ paths:
         name: projectID
         required: true
         type: string
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
+        type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: The end date
         example: 2008-05-02T15:04:05
         in: query
@@ -3153,12 +3215,22 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: list of endpoint ids
+      - collectionFormat: csv
+        description: list of endpoint ids
         in: query
         items:
           type: string
         name: endpointID
         type: array
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
+        type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - in: query
         name: next_page_cursor
         type: string
@@ -3490,6 +3562,15 @@ paths:
         name: projectID
         required: true
         type: string
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
+        type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: A pagination cursor to fetch the next page of a list
         example: 01H0JA5MEES38RRK3HTEJC647K
         in: query
@@ -3826,7 +3907,17 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: A list of endpointIDs to filter by
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
+        type: string
+        x-enum-varnames:
+        - Next
+        - Prev
+      - collectionFormat: csv
+        description: A list of endpointIDs to filter by
         in: query
         items:
           type: string
