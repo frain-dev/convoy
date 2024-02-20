@@ -48,19 +48,6 @@
                         "required": true
                     },
                     {
-                        "enum": [
-                            "next",
-                            "prev"
-                        ],
-                        "type": "string",
-                        "x-enum-varnames": [
-                            "Next",
-                            "Prev"
-                        ],
-                        "name": "direction",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
                         "example": "01H0JA5MEES38RRK3HTEJC647K",
                         "description": "A pagination cursor to fetch the next page of a list",
@@ -895,19 +882,6 @@
                         "required": true
                     },
                     {
-                        "enum": [
-                            "next",
-                            "prev"
-                        ],
-                        "type": "string",
-                        "x-enum-varnames": [
-                            "Next",
-                            "Prev"
-                        ],
-                        "name": "direction",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
                         "example": "2008-05-02T15:04:05",
                         "description": "The end date",
@@ -919,7 +893,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "A list of endpoint IDs to filter by",
                         "name": "endpointId",
                         "in": "query"
@@ -979,7 +952,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "A list of event delivery statuses to filter by",
                         "name": "status",
                         "in": "query"
@@ -1108,19 +1080,6 @@
                         "required": true
                     },
                     {
-                        "enum": [
-                            "next",
-                            "prev"
-                        ],
-                        "type": "string",
-                        "x-enum-varnames": [
-                            "Next",
-                            "Prev"
-                        ],
-                        "name": "direction",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
                         "example": "2008-05-02T15:04:05",
                         "description": "The end date",
@@ -1132,7 +1091,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "A list of endpoint IDs to filter by",
                         "name": "endpointId",
                         "in": "query"
@@ -1192,7 +1150,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "A list of event delivery statuses to filter by",
                         "name": "status",
                         "in": "query"
@@ -1868,19 +1825,6 @@
                         "required": true
                     },
                     {
-                        "enum": [
-                            "next",
-                            "prev"
-                        ],
-                        "type": "string",
-                        "x-enum-varnames": [
-                            "Next",
-                            "Prev"
-                        ],
-                        "name": "direction",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
                         "example": "2008-05-02T15:04:05",
                         "description": "The end date",
@@ -1892,7 +1836,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "A list of endpoint ids to filter by",
                         "name": "endpointId",
                         "in": "query"
@@ -1941,7 +1884,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "name": "sourceId",
                         "in": "query"
                     },
@@ -2181,19 +2123,6 @@
                         "required": true
                     },
                     {
-                        "enum": [
-                            "next",
-                            "prev"
-                        ],
-                        "type": "string",
-                        "x-enum-varnames": [
-                            "Next",
-                            "Prev"
-                        ],
-                        "name": "direction",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
                         "example": "2008-05-02T15:04:05",
                         "description": "The end date",
@@ -2205,7 +2134,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "A list of endpoint ids to filter by",
                         "name": "endpointId",
                         "in": "query"
@@ -2254,7 +2182,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "name": "sourceId",
                         "in": "query"
                     },
@@ -2813,19 +2740,6 @@
                         "required": true
                     },
                     {
-                        "enum": [
-                            "next",
-                            "prev"
-                        ],
-                        "type": "string",
-                        "x-enum-varnames": [
-                            "Next",
-                            "Prev"
-                        ],
-                        "name": "direction",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
                         "example": "2008-05-02T15:04:05",
                         "description": "The end date",
@@ -3210,22 +3124,8 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "list of endpoint ids",
                         "name": "endpointID",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "next",
-                            "prev"
-                        ],
-                        "type": "string",
-                        "x-enum-varnames": [
-                            "Next",
-                            "Prev"
-                        ],
-                        "name": "direction",
                         "in": "query"
                     },
                     {
@@ -3830,19 +3730,6 @@
                         "name": "projectID",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "enum": [
-                            "next",
-                            "prev"
-                        ],
-                        "type": "string",
-                        "x-enum-varnames": [
-                            "Next",
-                            "Prev"
-                        ],
-                        "name": "direction",
-                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -4450,24 +4337,10 @@
                         "required": true
                     },
                     {
-                        "enum": [
-                            "next",
-                            "prev"
-                        ],
-                        "type": "string",
-                        "x-enum-varnames": [
-                            "Next",
-                            "Prev"
-                        ],
-                        "name": "direction",
-                        "in": "query"
-                    },
-                    {
                         "type": "array",
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "A list of endpointIDs to filter by",
                         "name": "endpointId",
                         "in": "query"

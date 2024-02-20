@@ -18,28 +18,25 @@ type Amqp struct {
 	source  *datastore.Source
 	workers int
 	ctx     context.Context
-	cancel  context.CancelFunc
 	handler datastore.PubSubHandler
 	log     log.StdLogger
 }
 
 func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) *Amqp {
-	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Amqp{
 		Cfg:     source.PubSub.Amqp,
 		source:  source,
 		workers: source.PubSub.Workers,
 		handler: handler,
-		ctx:     ctx,
-		cancel:  cancel,
 		log:     log,
 	}
 }
 
-func (k *Amqp) Start() {
+func (k *Amqp) Start(ctx context.Context) {
+	k.ctx = ctx
 	for i := 1; i <= k.workers; i++ {
-		go k.Consume()
+		go k.consume()
 	}
 }
 
@@ -74,7 +71,7 @@ func (k *Amqp) Verify() error {
 
 }
 
-func (k *Amqp) Consume() {
+func (k *Amqp) consume() {
 	conn, err := k.dialer()
 	if err != nil {
 		log.WithError(err).Error("failed to instanciate a connection")
@@ -134,8 +131,7 @@ func (k *Amqp) Consume() {
 	}
 
 	for d := range msgs {
-		ctx := context.Background()
-		if err := k.handler(ctx, k.source, string(d.Body)); err != nil {
+		if err := k.handler(k.ctx, k.source, string(d.Body)); err != nil {
 			k.log.WithError(err).Error("failed to write message to create event queue - amqp pub sub")
 			if err := d.Ack(false); err != nil {
 				k.log.WithError(err).Error("failed to ack message")
@@ -149,8 +145,4 @@ func (k *Amqp) Consume() {
 		}
 	}
 
-}
-
-func (k *Amqp) Stop() {
-	k.cancel()
 }

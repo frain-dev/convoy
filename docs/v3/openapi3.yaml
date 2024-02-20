@@ -1432,16 +1432,6 @@ paths:
         required: true
         schema:
           type: string
-      - in: query
-        name: direction
-        schema:
-          enum:
-          - next
-          - prev
-          type: string
-        x-enum-varnames:
-        - Next
-        - Prev
       - description: A pagination cursor to fetch the next page of a list
         in: query
         name: next_page_cursor
@@ -1951,16 +1941,6 @@ paths:
         required: true
         schema:
           type: string
-      - in: query
-        name: direction
-        schema:
-          enum:
-          - next
-          - prev
-          type: string
-        x-enum-varnames:
-        - Next
-        - Prev
       - description: The end date
         in: query
         name: endDate
@@ -2360,16 +2340,6 @@ paths:
         required: true
         schema:
           type: string
-      - in: query
-        name: direction
-        schema:
-          enum:
-          - next
-          - prev
-          type: string
-        x-enum-varnames:
-        - Next
-        - Prev
       - description: The end date
         in: query
         name: endDate
@@ -2558,16 +2528,6 @@ paths:
         required: true
         schema:
           type: string
-      - in: query
-        name: direction
-        schema:
-          enum:
-          - next
-          - prev
-          type: string
-        x-enum-varnames:
-        - Next
-        - Prev
       - description: The end date
         in: query
         name: endDate
@@ -2886,16 +2846,6 @@ paths:
         required: true
         schema:
           type: string
-      - in: query
-        name: direction
-        schema:
-          enum:
-          - next
-          - prev
-          type: string
-        x-enum-varnames:
-        - Next
-        - Prev
       - description: The end date
         in: query
         name: endDate
@@ -3147,16 +3097,6 @@ paths:
         required: true
         schema:
           type: string
-      - in: query
-        name: direction
-        schema:
-          enum:
-          - next
-          - prev
-          type: string
-        x-enum-varnames:
-        - Next
-        - Prev
       - description: The end date
         in: query
         name: endDate
@@ -3393,16 +3333,6 @@ paths:
           items:
             type: string
           type: array
-      - in: query
-        name: direction
-        schema:
-          enum:
-          - next
-          - prev
-          type: string
-        x-enum-varnames:
-        - Next
-        - Prev
       - in: query
         name: next_page_cursor
         schema:
@@ -3773,16 +3703,6 @@ paths:
         required: true
         schema:
           type: string
-      - in: query
-        name: direction
-        schema:
-          enum:
-          - next
-          - prev
-          type: string
-        x-enum-varnames:
-        - Next
-        - Prev
       - description: A pagination cursor to fetch the next page of a list
         in: query
         name: next_page_cursor
@@ -4151,16 +4071,6 @@ paths:
         required: true
         schema:
           type: string
-      - in: query
-        name: direction
-        schema:
-          enum:
-          - next
-          - prev
-          type: string
-        x-enum-varnames:
-        - Next
-        - Prev
       - description: A list of endpointIDs to filter by
         in: query
         name: endpointId

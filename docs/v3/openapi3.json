@@ -2096,21 +2096,6 @@
 						}
 					},
 					{
-						"in": "query",
-						"name": "direction",
-						"schema": {
-							"enum": [
-								"next",
-								"prev"
-							],
-							"type": "string"
-						},
-						"x-enum-varnames": [
-							"Next",
-							"Prev"
-						]
-					},
-					{
 						"description": "A pagination cursor to fetch the next page of a list",
 						"in": "query",
 						"name": "next_page_cursor",
@@ -3054,21 +3039,6 @@
 						}
 					},
 					{
-						"in": "query",
-						"name": "direction",
-						"schema": {
-							"enum": [
-								"next",
-								"prev"
-							],
-							"type": "string"
-						},
-						"x-enum-varnames": [
-							"Next",
-							"Prev"
-						]
-					},
-					{
 						"description": "The end date",
 						"in": "query",
 						"name": "endDate",
@@ -3295,21 +3265,6 @@
 						"schema": {
 							"type": "string"
 						}
-					},
-					{
-						"in": "query",
-						"name": "direction",
-						"schema": {
-							"enum": [
-								"next",
-								"prev"
-							],
-							"type": "string"
-						},
-						"x-enum-varnames": [
-							"Next",
-							"Prev"
-						]
 					},
 					{
 						"description": "The end date",
@@ -4160,21 +4115,6 @@
 						}
 					},
 					{
-						"in": "query",
-						"name": "direction",
-						"schema": {
-							"enum": [
-								"next",
-								"prev"
-							],
-							"type": "string"
-						},
-						"x-enum-varnames": [
-							"Next",
-							"Prev"
-						]
-					},
-					{
 						"description": "The end date",
 						"in": "query",
 						"name": "endDate",
@@ -4512,21 +4452,6 @@
 						"schema": {
 							"type": "string"
 						}
-					},
-					{
-						"in": "query",
-						"name": "direction",
-						"schema": {
-							"enum": [
-								"next",
-								"prev"
-							],
-							"type": "string"
-						},
-						"x-enum-varnames": [
-							"Next",
-							"Prev"
-						]
 					},
 					{
 						"description": "The end date",
@@ -5230,21 +5155,6 @@
 						}
 					},
 					{
-						"in": "query",
-						"name": "direction",
-						"schema": {
-							"enum": [
-								"next",
-								"prev"
-							],
-							"type": "string"
-						},
-						"x-enum-varnames": [
-							"Next",
-							"Prev"
-						]
-					},
-					{
 						"description": "The end date",
 						"in": "query",
 						"name": "endDate",
@@ -5680,21 +5590,6 @@
 							},
 							"type": "array"
 						}
-					},
-					{
-						"in": "query",
-						"name": "direction",
-						"schema": {
-							"enum": [
-								"next",
-								"prev"
-							],
-							"type": "string"
-						},
-						"x-enum-varnames": [
-							"Next",
-							"Prev"
-						]
 					},
 					{
 						"in": "query",
@@ -6386,21 +6281,6 @@
 						}
 					},
 					{
-						"in": "query",
-						"name": "direction",
-						"schema": {
-							"enum": [
-								"next",
-								"prev"
-							],
-							"type": "string"
-						},
-						"x-enum-varnames": [
-							"Next",
-							"Prev"
-						]
-					},
-					{
 						"description": "A pagination cursor to fetch the next page of a list",
 						"in": "query",
 						"name": "next_page_cursor",
@@ -7082,21 +6962,6 @@
 						"schema": {
 							"type": "string"
 						}
-					},
-					{
-						"in": "query",
-						"name": "direction",
-						"schema": {
-							"enum": [
-								"next",
-								"prev"
-							],
-							"type": "string"
-						},
-						"x-enum-varnames": [
-							"Next",
-							"Prev"
-						]
 					},
 					{
 						"description": "A list of endpointIDs to filter by",
