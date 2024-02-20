@@ -341,18 +341,6 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			endpointRouter.With(handler.CanManageEndpoint()).Put("/{endpointID}/expire_secret", handler.ExpireSecret)
 		})
 
-		portalLinkRouter.Route("/events", func(eventRouter chi.Router) {
-			eventRouter.Post("/", handler.CreateEndpointEvent)
-			eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
-			eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
-			eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
-
-			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
-				eventSubRouter.Get("/", handler.GetEndpointEvent)
-				eventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
-			})
-		})
-
 		portalLinkRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 			subscriptionRouter.Post("/", handler.CreateSubscription)
 			subscriptionRouter.Post("/test_filter", handler.TestSubscriptionFilter)
@@ -399,6 +387,7 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 						// TODO(all): should the InstrumentPath change?
 						eventRouter.With(middleware.InstrumentPath("/events")).Post("/", handler.CreateEndpointEvent)
 						eventRouter.Post("/fanout", handler.CreateEndpointFanoutEvent)
+						eventRouter.Post("/broadcast", handler.CreateBroadcastEvent)
 						eventRouter.Post("/dynamic", handler.CreateDynamicEvent)
 						eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
 						eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
@@ -433,6 +422,15 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(middleware.JsonResponse)
 		uiRouter.Use(chiMiddleware.Maybe(middleware.RequireAuth(), shouldAuthRoute))
+
+		// TODO(subomi): added these back for the tests to pass.
+		// What should we do in the future?
+		uiRouter.Route("/auth", func(authRouter chi.Router) {
+			authRouter.Post("/login", handler.LoginUser)
+			authRouter.Post("/register", handler.RegisterUser)
+			authRouter.Post("/token/refresh", handler.RefreshToken)
+			authRouter.Post("/logout", handler.LogoutUser)
+		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
 			orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
@@ -479,6 +477,18 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 		portalLinkRouter.Use(middleware.SetupCORS)
 		portalLinkRouter.Use(middleware.RequireAuth())
 
+		portalLinkRouter.Route("/events", func(eventRouter chi.Router) {
+			eventRouter.Post("/", handler.CreateEndpointEvent)
+			eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
+			eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
+			eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
+
+			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
+				eventSubRouter.Get("/", handler.GetEndpointEvent)
+				eventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
+			})
+		})
+
 		portalLinkRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
 			eventDeliveryRouter.With(middleware.Pagination).Get("/", handler.GetEventDeliveriesPaged)
 			eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
@@ -496,6 +506,8 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 			})
 		})
 	})
+
+	a.Router = router
 
 	return router
 }

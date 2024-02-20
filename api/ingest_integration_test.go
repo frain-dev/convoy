@@ -33,7 +33,7 @@ type IngestIntegrationTestSuite struct {
 func (i *IngestIntegrationTestSuite) SetupSuite() {
 	i.DB = getDB()
 	i.ConvoyApp = buildServer()
-	i.Router = i.ConvoyApp.BuildControlPlaneRoutes()
+	i.Router = i.ConvoyApp.BuildDataPlaneRoutes()
 }
 
 func (i *IngestIntegrationTestSuite) SetupTest() {

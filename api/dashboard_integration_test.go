@@ -1048,7 +1048,7 @@ type EventIntegrationTestSuite struct {
 func (s *EventIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	s.Router = s.ConvoyApp.BuildDataPlaneRoutes()
 }
 
 func (s *EventIntegrationTestSuite) SetupTest() {
