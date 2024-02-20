@@ -2035,7 +2035,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.EventResponse"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2432,7 +2432,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.EventResponse"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
