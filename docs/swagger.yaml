@@ -2574,12 +2574,12 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: Broadcast Event Details
+      - description: Event Details
         in: body
         name: event
         required: true
         schema:
-          $ref: '#/definitions/models.BroadcastEvent'
+          $ref: '#/definitions/models.CreateEvent'
       produces:
       - application/json
       responses:
@@ -2590,7 +2590,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.EventResponse'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "400":
           description: Bad Request
@@ -2861,6 +2861,67 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Batch replay events
+      tags:
+      - Events
+  /v1/projects/{projectID}/events/broadcast:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint broadcasts an endpoint event to all matching subscriptions
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Broadcast Event Details
+        in: body
+        name: event
+        required: true
+        schema:
+          $ref: '#/definitions/models.BroadcastEvent'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create a broadcast event
       tags:
       - Events
   /v1/projects/{projectID}/events/dynamic:

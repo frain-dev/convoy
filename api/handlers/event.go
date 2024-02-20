@@ -103,17 +103,17 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 
 // CreateBroadcastEvent
 //
-//	@Summary		Create an event
-//	@Description	This endpoint creates an endpoint event
+//	@Summary		Create a broadcast event
+//	@Description	This endpoint broadcasts an endpoint event to all matching subscriptions
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string					true	"Project ID"
 //	@Param			event		body		models.BroadcastEvent	true	"Broadcast Event Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.EventResponse}
+//	@Success		200			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
-//	@Router			/v1/projects/{projectID}/events [post]
+//	@Router			/v1/projects/{projectID}/events/broadcast [post]
 func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 	var newMessage models.BroadcastEvent
 	err := util.ReadJSON(r, &newMessage)
