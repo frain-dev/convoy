@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/limiter"
@@ -164,11 +165,22 @@ func startIngestComponent(ctx context.Context, a *cli.App, interval int) error {
 	projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
 	endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
 
-	sourcePool := pubsub.NewSourcePool(a.Logger)
-	sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, a.Queue, sourcePool, a.Logger)
+	sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, a.Logger)
+	sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
 
-	stop := make(chan struct{})
-	go sourceLoader.Run(context.Background(), interval, stop)
+	err := memorystore.DefaultStore.Register("sources", sourceTable)
+	if err != nil {
+		return err
+	}
+
+	go memorystore.DefaultStore.Sync(ctx, interval)
+
+	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.Queue, a.Logger)
+	if err != nil {
+		return err
+	}
+
+	go ingest.Run()
 
 	return nil
 }
