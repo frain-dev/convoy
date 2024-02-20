@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"gopkg.in/guregu/null.v4"
+	"github.com/guregu/null/v5"
 )
 
 type Crc interface {

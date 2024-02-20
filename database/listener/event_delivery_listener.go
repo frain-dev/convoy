@@ -6,7 +6,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/services"
-	"gopkg.in/guregu/null.v4"
+	"github.com/guregu/null/v5"
 	"time"
 )
 

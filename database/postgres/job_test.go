@@ -4,7 +4,7 @@ package postgres
 
 import (
 	"context"
-	"gopkg.in/guregu/null.v4"
+	"github.com/guregu/null/v5"
 	"testing"
 	"time"
 

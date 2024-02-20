@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/guregu/null/v5"
 	"github.com/oklog/ulid/v2"
-	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"

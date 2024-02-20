@@ -4,18 +4,16 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx"
+	_ "github.com/jackc/pgx/stdlib"
 	"io"
 	"time"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/uptrace/opentelemetry-go-extra/otelsql"
-	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
-	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
-
-	"github.com/frain-dev/convoy/config"
+	"github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/newrelic/go-agent/v3/integrations/nrpq"
 )
 
 const pkgName = "postgres"
@@ -30,18 +28,31 @@ type Postgres struct {
 }
 
 func NewDB(cfg config.Configuration) (*Postgres, error) {
-	dbConfig := cfg.Database
-	db, err := otelsqlx.Connect("postgres", dbConfig.BuildDsn(),
-		otelsql.WithDBName("postgres"),
-		otelsql.WithAttributes(semconv.DBSystemPostgreSQL))
+	connConfig, err := pgx.ParseConnectionString(cfg.Database.BuildDsn())
+	if err != nil {
+		return nil, fmt.Errorf("[%s]: failed to parse db dsn - %v", pkgName, err)
+	}
 
+	connPool, err := pgx.NewConnPool(pgx.ConnPoolConfig{
+		ConnConfig:     connConfig,
+		MaxConnections: cfg.Database.SetMaxOpenConnections,
+		AcquireTimeout: time.Second * time.Duration(cfg.Database.SetConnMaxLifetime),
+	})
+	if err != nil {
+		connPool.Close()
+		return nil, fmt.Errorf("[%s]: failed to configure connection pool - %v", pkgName, err)
+	}
+
+	pgxdb := stdlib.OpenDBFromPool(connPool)
+
+	db := sqlx.NewDb(pgxdb, "pgx")
 	if err != nil {
 		return nil, fmt.Errorf("[%s]: failed to open database - %v", pkgName, err)
 	}
 
-	db.SetMaxIdleConns(dbConfig.SetMaxIdleConnections)
-	db.SetMaxOpenConns(dbConfig.SetMaxOpenConnections)
-	db.SetConnMaxLifetime(time.Second * time.Duration(dbConfig.SetConnMaxLifetime))
+	db.SetMaxIdleConns(cfg.Database.SetMaxIdleConnections)
+	db.SetMaxOpenConns(cfg.Database.SetMaxOpenConnections)
+	db.SetConnMaxLifetime(time.Second * time.Duration(cfg.Database.SetConnMaxLifetime))
 
 	return &Postgres{dbx: db}, nil
 }
