@@ -18,7 +18,7 @@ type Consumer struct {
 	log   log.StdLogger
 }
 
-func NewConsumer(consumerPoolSize int, q queue.Queuer, lo log.StdLogger) *Consumer {
+func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo log.StdLogger) *Consumer {
 	lo.Infof("The consumer pool size has been set to %d.", consumerPoolSize)
 
 	var opts asynq.RedisConnOpt
@@ -36,7 +36,7 @@ func NewConsumer(consumerPoolSize int, q queue.Queuer, lo log.StdLogger) *Consum
 		asynq.Config{
 			Concurrency: consumerPoolSize,
 			BaseContext: func() context.Context {
-				return log.NewContext(context.Background(), lo, nil)
+				return ctx
 			},
 			Queues: q.Options().Names,
 			IsFailure: func(err error) bool {

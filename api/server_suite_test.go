@@ -166,7 +166,6 @@ func authenticateRequest(auth *models.LoginUser) AuthenticatorFn {
 		}
 
 		req := createRequest(http.MethodPost, "/ui/auth/login", "", bytes.NewBuffer(body))
-
 		w := httptest.NewRecorder()
 
 		// Act

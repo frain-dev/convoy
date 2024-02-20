@@ -124,6 +124,7 @@ func TestLoadConfig(t *testing.T) {
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
+						AgentPort:  5008,
 						WorkerPort: 5006,
 					},
 				},
@@ -189,6 +190,7 @@ func TestLoadConfig(t *testing.T) {
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
+						AgentPort:  5008,
 						WorkerPort: 5006,
 					},
 				},
@@ -253,6 +255,7 @@ func TestLoadConfig(t *testing.T) {
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
+						AgentPort:  5008,
 						WorkerPort: 5006,
 					},
 				},

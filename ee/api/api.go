@@ -36,7 +36,7 @@ func NewEHandler(opts *types.APIOptions) (*EHandler, error) {
 
 func (eh *EHandler) BuildRoutes() http.Handler {
 	// register community routes
-	router := eh.ApplicationHandler.BuildRoutes()
+	router := eh.ApplicationHandler.BuildControlPlaneRoutes()
 
 	// apply overrides
 
