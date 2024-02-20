@@ -633,6 +633,24 @@ definitions:
       username:
         type: string
     type: object
+  models.BroadcastEvent:
+    properties:
+      custom_headers:
+        additionalProperties:
+          type: string
+        type: object
+      data:
+        description: |-
+          Data is an arbitrary JSON value that gets sent as the body of the
+          webhook to the endpoints
+        items:
+          type: integer
+        type: array
+      event_type:
+        type: string
+      idempotency_key:
+        type: string
+    type: object
   models.CreateEndpoint:
     properties:
       advanced_signatures:
@@ -2556,12 +2574,12 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: Event Details
+      - description: Broadcast Event Details
         in: body
         name: event
         required: true
         schema:
-          $ref: '#/definitions/models.CreateEvent'
+          $ref: '#/definitions/models.BroadcastEvent'
       produces:
       - application/json
       responses:
@@ -2931,7 +2949,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.EventResponse'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "400":
           description: Bad Request
