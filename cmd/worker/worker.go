@@ -44,6 +44,8 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, _ := context.WithCancel(cmd.Context())
+
 			// override config with cli Flags
 			cliConfig, err := buildWorkerCliConfiguration(cmd)
 			if err != nil {
@@ -75,10 +77,8 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			ctx := context.Background()
-
 			// register worker.
-			consumer := worker.NewConsumer(cfg.ConsumerPoolSize, a.Queue, lo)
+			consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, a.Queue, lo)
 			projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
 			metaEventRepo := postgres.NewMetaEventRepo(a.DB, a.Cache)
 			endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)

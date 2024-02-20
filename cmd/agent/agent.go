@@ -2,6 +2,8 @@ package agent
 
 import (
 	"context"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -33,7 +35,7 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, _ := context.WithCancel(cmd.Context())
+			ctx, cancel := context.WithCancel(cmd.Context())
 
 			// override config with cli flags
 			cliConfig, err := buildAgentCliConfiguration(cmd)
@@ -64,7 +66,21 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 			}
 
 			// block the main thread.
-			<-cmd.Context().Done()
+			// trap Ctrl+C and call cancel on the context
+			quit := make(chan os.Signal, 1)
+			signal.Notify(quit, os.Interrupt)
+
+			defer func() {
+				signal.Stop(quit)
+				cancel()
+			}()
+
+			select {
+			case <-quit:
+				cancel()
+			case <-ctx.Done():
+			}
+
 			return ctx.Err()
 		},
 	}
@@ -165,7 +181,7 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 	}
 
 	// register worker.
-	consumer := worker.NewConsumer(cfg.ConsumerPoolSize, a.Queue, a.Logger)
+	consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, a.Queue, a.Logger)
 	projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
 	metaEventRepo := postgres.NewMetaEventRepo(a.DB, a.Cache)
 	endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
@@ -209,7 +225,6 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 
 	go func() {
 		consumer.Start()
-
 		<-ctx.Done()
 	}()
 
