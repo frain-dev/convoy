@@ -101,6 +101,54 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Event queued successfully", 200, http.StatusCreated))
 }
 
+// CreateBroadcastEvent
+//
+//	@Summary		Create an event
+//	@Description	This endpoint creates an endpoint event
+//	@Tags			Events
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string					true	"Project ID"
+//	@Param			event		body		models.BroadcastEvent	true	"Broadcast Event Details"
+//	@Success		200			{object}	util.ServerResponse{data=models.EventResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/events [post]
+func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
+	var newMessage models.BroadcastEvent
+	err := util.ReadJSON(r, &newMessage)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	err = newMessage.Validate()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	cbe := services.CreateBroadcastEventService{
+		Queue:          h.A.Queue,
+		BroadcastEvent: &newMessage,
+		Project:        project,
+	}
+
+	err = cbe.Run(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Broadcast event created successfully", nil, http.StatusCreated))
+}
+
 // CreateEndpointFanoutEvent
 //
 //	@Summary		Fan out an event

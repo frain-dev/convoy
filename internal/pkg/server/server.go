@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/config"
 	"net/http"
 	"net/http/pprof"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/frain-dev/convoy/config"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -95,9 +96,6 @@ func (s *Server) gracefulShutdown() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
-
-	// run stop function
-	s.StopFn()
 
 	log.Info("Stopping server")
 

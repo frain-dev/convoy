@@ -7,6 +7,32 @@ components:
         threshold:
           type: string
       type: object
+    datastore.AmqpCredentials:
+      properties:
+        password:
+          type: string
+        user:
+          type: string
+      type: object
+    datastore.AmqpPubSubConfig:
+      properties:
+        auth:
+          $ref: '#/components/schemas/datastore.AmqpCredentials'
+        bindedExchange:
+          type: string
+        deadLetterExchange:
+          type: string
+        host:
+          type: string
+        port:
+          type: string
+        queue:
+          type: string
+        routingKey:
+          type: string
+        schema:
+          type: string
+      type: object
     datastore.ApiKey:
       properties:
         header_name:
@@ -371,6 +397,8 @@ components:
       type: object
     datastore.PubSubConfig:
       properties:
+        amqp:
+          $ref: '#/components/schemas/datastore.AmqpPubSubConfig'
         google:
           $ref: '#/components/schemas/datastore.GooglePubSubConfig'
         kafka:
@@ -387,11 +415,13 @@ components:
       - sqs
       - google
       - kafka
+      - amqp
       type: string
       x-enum-varnames:
       - SqsPubSub
       - GooglePubSub
       - KafkaPubSub
+      - AmqpPubSub
     datastore.RateLimitConfiguration:
       properties:
         count:
@@ -558,6 +588,37 @@ components:
         threshold:
           type: string
       type: object
+    models.AmqpAuth:
+      properties:
+        password:
+          type: string
+        user:
+          type: string
+      type: object
+    models.AmqpExchange:
+      properties:
+        exchange:
+          type: string
+        routingKey:
+          type: string
+      type: object
+    models.AmqpPubSubconfig:
+      properties:
+        auth:
+          $ref: '#/components/schemas/models.AmqpAuth'
+        bindExchange:
+          $ref: '#/components/schemas/models.AmqpExchange'
+        deadLetterExchange:
+          type: string
+        host:
+          type: string
+        port:
+          type: string
+        queue:
+          type: string
+        schema:
+          type: string
+      type: object
     models.ApiKey:
       properties:
         header_name:
@@ -570,6 +631,24 @@ components:
         password:
           type: string
         username:
+          type: string
+      type: object
+    models.BroadcastEvent:
+      properties:
+        custom_headers:
+          additionalProperties:
+            type: string
+          type: object
+        data:
+          description: |-
+            Data is an arbitrary JSON value that gets sent as the body of the
+            webhook to the endpoints
+          items:
+            type: integer
+          type: array
+        event_type:
+          type: string
+        idempotency_key:
           type: string
       type: object
     models.CreateEndpoint:
@@ -730,6 +809,10 @@ components:
       type: object
     models.DynamicEvent:
       properties:
+        custom_headers:
+          additionalProperties:
+            type: string
+          type: object
         data:
           items:
             type: integer
@@ -1070,6 +1153,8 @@ components:
       type: object
     models.PubSubConfig:
       properties:
+        amqp:
+          $ref: '#/components/schemas/models.AmqpPubSubconfig'
         google:
           $ref: '#/components/schemas/models.GooglePubSubConfig'
         kafka:
@@ -2605,8 +2690,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/models.CreateEvent'
-        description: Event Details
+              $ref: '#/components/schemas/models.BroadcastEvent'
+        description: Broadcast Event Details
         required: true
         x-originalParamName: event
       responses:

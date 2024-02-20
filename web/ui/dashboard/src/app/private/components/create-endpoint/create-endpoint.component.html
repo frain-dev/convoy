@@ -1,7 +1,7 @@
 <div [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'">
 	<div convoy-card class="p-24px relative">
 		<form [formGroup]="addNewEndpointForm">
-			<div class="grid gap-24px mb-16px" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
+			<div class="grid gap-24px" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
 				<convoy-input-field>
 					<label for="name" convoy-label required="true">Endpoint Name</label>
 					<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Enter endpoint name here" />
@@ -15,13 +15,13 @@
 				</convoy-input-field>
 			</div>
 
-			<convoy-input-field className="mb-16px">
+			<convoy-input-field className="mb-24px">
 				<label for="secret" convoy-label>Endpoint Secret</label>
-				<div class="flex items-center justify-between w-full h-46px border border-new.gray-200 bg-[#F7F9FC] rounded-[6px] px-16px mb-12px" *ngIf="editMode">
+				<div class="flex items-center justify-between w-full h-46px border border-new.gray-200 bg-[#F7F9FC] rounded-[6px] px-16px mb-12px" *ngIf="editMode && type !== 'portal'">
 					<span class="text-12 text-new.gray-600 font-normal truncate">{{ endpointSecret?.value || '' }}</span>
 					<div class="ml-8px" convoy-copy-button [text]="endpointSecret?.value || ''" notificationText="Endpoint secret copied to clipboard."></div>
 				</div>
-				<input *ngIf="!editMode" type="secret" id="secret" convoy-input formControlName="secret" placeholder="Enter endpoint secret here" />
+				<input *ngIf="!editMode || type === 'portal'" type="secret" id="secret" convoy-input formControlName="secret" placeholder="Enter endpoint secret here" />
 			</convoy-input-field>
 
 			<ng-container *ngIf="showConfig('owner_id')">

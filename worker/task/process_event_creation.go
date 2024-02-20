@@ -103,129 +103,135 @@ func ProcessEventCreation(
 			return nil
 		}
 
-		ec := &EventDeliveryConfig{project: project}
+		return writeEventDeliveriesToQueue(
+			ctx, subscriptions, event, project, eventDeliveryRepo,
+			subRepo, eventQueue, deviceRepo, endpointRepo,
+		)
+	}
+}
 
-		for _, s := range subscriptions {
-			ec.subscription = &s
-			headers := event.Headers
+func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, subRepo datastore.SubscriptionRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository) error {
+	ec := &EventDeliveryConfig{project: project}
+	for _, s := range subscriptions {
+		ec.subscription = &s
+		headers := event.Headers
 
-			if s.Type == datastore.SubscriptionTypeAPI {
-				endpoint, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID, project.UID)
-				if err != nil {
-					return &EndpointError{Err: err, delay: defaultDelay}
-				}
-
-				if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.APIKeyAuthentication {
-					headers = make(httpheader.HTTPHeader)
-					headers[endpoint.Authentication.ApiKey.HeaderName] = []string{endpoint.Authentication.ApiKey.HeaderValue}
-					headers.MergeHeaders(event.Headers)
-				}
-
-				s.Endpoint = endpoint
-			}
-
-			rc, err := ec.retryConfig()
+		if s.Type == datastore.SubscriptionTypeAPI {
+			endpoint, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID, project.UID)
 			if err != nil {
 				return &EndpointError{Err: err, delay: defaultDelay}
 			}
 
-			raw := event.Raw
-			data := event.Data
-
-			if s.Function.Ptr() != nil && !util.IsStringEmpty(s.Function.String) {
-				var payload map[string]interface{}
-				err = json.Unmarshal(event.Data, &payload)
-				if err != nil {
-					return &EndpointError{Err: err, delay: 10 * time.Second}
-				}
-
-				mutated, _, err := subRepo.TransformPayload(ctx, s.Function.String, payload)
-				if err != nil {
-					return &EndpointError{Err: err, delay: 10 * time.Second}
-				}
-
-				bytes, err := json.Marshal(mutated)
-				if err != nil {
-					return &EndpointError{Err: err, delay: 10 * time.Second}
-				}
-
-				raw = string(bytes)
-				data = bytes
+			if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.APIKeyAuthentication {
+				headers = make(httpheader.HTTPHeader)
+				headers[endpoint.Authentication.ApiKey.HeaderName] = []string{endpoint.Authentication.ApiKey.HeaderValue}
+				headers.MergeHeaders(event.Headers)
 			}
 
-			metadata := &datastore.Metadata{
-				Raw:             raw,
-				Data:            data,
-				Strategy:        rc.Type,
-				NextSendTime:    time.Now(),
-				IntervalSeconds: rc.Duration,
-				RetryLimit:      rc.RetryCount,
-			}
+			s.Endpoint = endpoint
+		}
 
-			eventDelivery := &datastore.EventDelivery{
-				UID:              ulid.Make().String(),
-				SubscriptionID:   s.UID,
-				EventType:        event.EventType,
-				Metadata:         metadata,
-				ProjectID:        project.UID,
-				EventID:          event.UID,
-				EndpointID:       s.EndpointID,
-				DeviceID:         s.DeviceID,
-				Headers:          headers,
-				IdempotencyKey:   event.IdempotencyKey,
-				URLQueryParams:   event.URLQueryParams,
-				Status:           getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
-				DeliveryAttempts: []datastore.DeliveryAttempt{},
-				CreatedAt:        time.Now(),
-				UpdatedAt:        time.Now(),
-			}
+		rc, err := ec.retryConfig()
+		if err != nil {
+			return &EndpointError{Err: err, delay: defaultDelay}
+		}
 
-			if s.Type == datastore.SubscriptionTypeCLI {
-				event.Endpoints = []string{}
-				eventDelivery.CLIMetadata = &datastore.CLIMetadata{
-					EventType: string(event.EventType),
-					SourceID:  event.SourceID,
-				}
-			}
+		raw := event.Raw
+		data := event.Data
 
-			err = eventDeliveryRepo.CreateEventDelivery(ctx, eventDelivery)
+		if s.Function.Ptr() != nil && !util.IsStringEmpty(s.Function.String) {
+			var payload map[string]interface{}
+			err = json.Unmarshal(event.Data, &payload)
 			if err != nil {
-				return &EndpointError{Err: err, delay: defaultDelay}
+				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
-			if eventDelivery.Status != datastore.DiscardedEventStatus {
-				payload := EventDelivery{
-					EventDeliveryID: eventDelivery.UID,
-					ProjectID:       eventDelivery.ProjectID,
-				}
+			mutated, _, err := subRepo.TransformPayload(ctx, s.Function.String, payload)
+			if err != nil {
+				return &EndpointError{Err: err, delay: 10 * time.Second}
+			}
 
-				data, err := msgpack.EncodeMsgPack(payload)
-				if err != nil {
-					return &EndpointError{Err: err, delay: defaultDelay}
-				}
+			bytes, err := json.Marshal(mutated)
+			if err != nil {
+				return &EndpointError{Err: err, delay: 10 * time.Second}
+			}
 
-				job := &queue.Job{
-					ID:      eventDelivery.UID,
-					Payload: data,
-					Delay:   1 * time.Second,
-				}
+			raw = string(bytes)
+			data = bytes
+		}
 
-				if s.Type == datastore.SubscriptionTypeAPI {
-					err = eventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
-					if err != nil {
-						log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
-					}
-				} else if s.Type == datastore.SubscriptionTypeCLI {
-					err = eventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
-					if err != nil {
-						log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
-					}
-				}
+		metadata := &datastore.Metadata{
+			Raw:             raw,
+			Data:            data,
+			Strategy:        rc.Type,
+			NextSendTime:    time.Now(),
+			IntervalSeconds: rc.Duration,
+			RetryLimit:      rc.RetryCount,
+		}
+
+		eventDelivery := &datastore.EventDelivery{
+			UID:              ulid.Make().String(),
+			SubscriptionID:   s.UID,
+			EventType:        event.EventType,
+			Metadata:         metadata,
+			ProjectID:        project.UID,
+			EventID:          event.UID,
+			EndpointID:       s.EndpointID,
+			DeviceID:         s.DeviceID,
+			Headers:          headers,
+			IdempotencyKey:   event.IdempotencyKey,
+			URLQueryParams:   event.URLQueryParams,
+			Status:           getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
+			DeliveryAttempts: []datastore.DeliveryAttempt{},
+			CreatedAt:        time.Now(),
+			UpdatedAt:        time.Now(),
+		}
+
+		if s.Type == datastore.SubscriptionTypeCLI {
+			event.Endpoints = []string{}
+			eventDelivery.CLIMetadata = &datastore.CLIMetadata{
+				EventType: string(event.EventType),
+				SourceID:  event.SourceID,
 			}
 		}
 
-		return nil
+		err = eventDeliveryRepo.CreateEventDelivery(ctx, eventDelivery)
+		if err != nil {
+			return &EndpointError{Err: err, delay: defaultDelay}
+		}
+
+		if eventDelivery.Status != datastore.DiscardedEventStatus {
+			payload := EventDelivery{
+				EventDeliveryID: eventDelivery.UID,
+				ProjectID:       eventDelivery.ProjectID,
+			}
+
+			data, err := msgpack.EncodeMsgPack(payload)
+			if err != nil {
+				return &EndpointError{Err: err, delay: defaultDelay}
+			}
+
+			job := &queue.Job{
+				ID:      eventDelivery.UID,
+				Payload: data,
+				Delay:   1 * time.Second,
+			}
+
+			if s.Type == datastore.SubscriptionTypeAPI {
+				err = eventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
+				if err != nil {
+					log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
+				}
+			} else if s.Type == datastore.SubscriptionTypeCLI {
+				err = eventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
+				if err != nil {
+					log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
+				}
+			}
+		}
 	}
+
+	return nil
 }
 
 func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepository,

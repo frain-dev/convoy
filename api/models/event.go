@@ -27,13 +27,14 @@ func (e *CreateEvent) Validate() error {
 }
 
 type DynamicEvent struct {
-	URL            string          `json:"url" valid:"required~please provide a url"`
-	Secret         string          `json:"secret" valid:"required~please provide a secret"`
-	EventTypes     []string        `json:"event_types"`
-	Data           json.RawMessage `json:"data" valid:"required~please provide your data"`
-	ProjectID      string          `json:"project_id" swaggerignore:"true"`
-	EventType      string          `json:"event_type" valid:"required~please provide an event type"`
-	IdempotencyKey string          `json:"idempotency_key"`
+	URL            string            `json:"url" valid:"required~please provide a url"`
+	Secret         string            `json:"secret" valid:"required~please provide a secret"`
+	EventTypes     []string          `json:"event_types"`
+	Data           json.RawMessage   `json:"data" valid:"required~please provide your data"`
+	ProjectID      string            `json:"project_id" swaggerignore:"true"`
+	EventType      string            `json:"event_type" valid:"required~please provide an event type"`
+	CustomHeaders  map[string]string `json:"custom_headers"`
+	IdempotencyKey string            `json:"idempotency_key"`
 }
 
 func (de *DynamicEvent) Validate() error {
@@ -91,6 +92,21 @@ type DynamicEventStub struct {
 
 func (ds *DynamicEventStub) Validate() error {
 	return util.Validate(ds)
+}
+
+type BroadcastEvent struct {
+	EventType string `json:"event_type" valid:"required~please provide an event type"`
+	ProjectID string `json:"project_id" swaggerignore:"true"`
+
+	// Data is an arbitrary JSON value that gets sent as the body of the
+	// webhook to the endpoints
+	Data           json.RawMessage   `json:"data" valid:"required~please provide your data"`
+	CustomHeaders  map[string]string `json:"custom_headers"`
+	IdempotencyKey string            `json:"idempotency_key"`
+}
+
+func (bs *BroadcastEvent) Validate() error {
+	return util.Validate(bs)
 }
 
 type FanoutEvent struct {

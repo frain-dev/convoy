@@ -2069,12 +2069,12 @@
                         "required": true
                     },
                     {
-                        "description": "Event Details",
+                        "description": "Broadcast Event Details",
                         "name": "event",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.CreateEvent"
+                            "$ref": "#/definitions/models.BroadcastEvent"
                         }
                     }
                 ],
@@ -5274,6 +5274,46 @@
                 }
             }
         },
+        "datastore.AmqpCredentials": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "user": {
+                    "type": "string"
+                }
+            }
+        },
+        "datastore.AmqpPubSubConfig": {
+            "type": "object",
+            "properties": {
+                "auth": {
+                    "$ref": "#/definitions/datastore.AmqpCredentials"
+                },
+                "bindedExchange": {
+                    "type": "string"
+                },
+                "deadLetterExchange": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "queue": {
+                    "type": "string"
+                },
+                "routingKey": {
+                    "type": "string"
+                },
+                "schema": {
+                    "type": "string"
+                }
+            }
+        },
         "datastore.ApiKey": {
             "type": "object",
             "properties": {
@@ -5809,6 +5849,9 @@
         "datastore.PubSubConfig": {
             "type": "object",
             "properties": {
+                "amqp": {
+                    "$ref": "#/definitions/datastore.AmqpPubSubConfig"
+                },
                 "google": {
                     "$ref": "#/definitions/datastore.GooglePubSubConfig"
                 },
@@ -5831,12 +5874,14 @@
             "enum": [
                 "sqs",
                 "google",
-                "kafka"
+                "kafka",
+                "amqp"
             ],
             "x-enum-varnames": [
                 "SqsPubSub",
                 "GooglePubSub",
-                "KafkaPubSub"
+                "KafkaPubSub",
+                "AmqpPubSub"
             ]
         },
         "datastore.RateLimitConfiguration": {
@@ -6081,6 +6126,54 @@
                 }
             }
         },
+        "models.AmqpAuth": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "user": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.AmqpExchange": {
+            "type": "object",
+            "properties": {
+                "exchange": {
+                    "type": "string"
+                },
+                "routingKey": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.AmqpPubSubconfig": {
+            "type": "object",
+            "properties": {
+                "auth": {
+                    "$ref": "#/definitions/models.AmqpAuth"
+                },
+                "bindExchange": {
+                    "$ref": "#/definitions/models.AmqpExchange"
+                },
+                "deadLetterExchange": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "queue": {
+                    "type": "string"
+                },
+                "schema": {
+                    "type": "string"
+                }
+            }
+        },
         "models.ApiKey": {
             "type": "object",
             "properties": {
@@ -6099,6 +6192,30 @@
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.BroadcastEvent": {
+            "type": "object",
+            "properties": {
+                "custom_headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "data": {
+                    "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "event_type": {
+                    "type": "string"
+                },
+                "idempotency_key": {
                     "type": "string"
                 }
             }
@@ -6303,6 +6420,12 @@
         "models.DynamicEvent": {
             "type": "object",
             "properties": {
+                "custom_headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "data": {
                     "type": "array",
                     "items": {
@@ -6813,6 +6936,9 @@
         "models.PubSubConfig": {
             "type": "object",
             "properties": {
+                "amqp": {
+                    "$ref": "#/definitions/models.AmqpPubSubconfig"
+                },
                 "google": {
                     "$ref": "#/definitions/models.GooglePubSubConfig"
                 },

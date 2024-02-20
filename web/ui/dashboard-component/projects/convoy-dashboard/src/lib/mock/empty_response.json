@@ -1,8 +1,0 @@
-{
-	"status": true,
-	"message": "App events fetched successfully",
-	"data": {
-		"content": [],
-		"pagination": { "total": 0, "page": 1, "perPage": 0, "prev": 0, "next": 1, "totalPage": 0 }
-	}
-}
