@@ -16,8 +16,8 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
+	"github.com/guregu/null/v5"
 	"github.com/oklog/ulid/v2"
-	"gopkg.in/guregu/null.v4"
 )
 
 type ExpireSecretService struct {

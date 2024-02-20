@@ -1,6 +1,8 @@
 module github.com/frain-dev/convoy
 
-go 1.20
+go 1.21.4
+
+toolchain go1.21.6
 
 require (
 	cloud.google.com/go/pubsub v1.33.0
@@ -27,6 +29,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/hibiken/asynq v0.24.1
 	github.com/hibiken/asynq/x v0.0.0-20221219051101-0b8cfad70341
+	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/jaswdr/faker v1.10.2
 	github.com/jmoiron/sqlx v1.3.5
@@ -67,24 +70,28 @@ require (
 	golang.org/x/crypto v0.18.0
 	google.golang.org/api v0.128.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
-	gopkg.in/guregu/null.v4 v4.0.0
+
 )
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
+	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/dlclark/regexp2 v1.7.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-redis/redis/v7 v7.4.1 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
+	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
 	github.com/google/pprof v0.0.0-20230817174616-7a8ec2ada47b // indirect
 	github.com/google/s2a-go v0.1.5 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.0 // indirect
+	github.com/guregu/null/v5 v5.0.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
 	github.com/redis/go-redis/extra/rediscmd/v9 v9.0.5 // indirect
 	github.com/tidwall/match v1.1.1 // indirect

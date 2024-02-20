@@ -2,13 +2,13 @@ package services
 
 import (
 	"context"
+	"github.com/guregu/null/v5"
 	"net/url"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"gopkg.in/guregu/null.v4"
 )
 
 type UpdateOrganisationService struct {

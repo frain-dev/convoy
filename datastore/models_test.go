@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"gopkg.in/guregu/null.v4"
+	"github.com/guregu/null/v5"
 
 	"github.com/stretchr/testify/require"
 )

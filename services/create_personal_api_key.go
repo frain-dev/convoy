@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"time"
 
-	"gopkg.in/guregu/null.v4"
+	"github.com/guregu/null/v5"
 
 	"github.com/xdg-go/pbkdf2"
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/telemetry"
 	"io"
 	"os"
 	"time"
@@ -11,8 +12,8 @@ import (
 	dbhook "github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/guregu/null/v5"
 	"github.com/oklog/ulid/v2"
-	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
@@ -23,7 +24,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
-	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/pkg/log"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/spf13/cobra"
@@ -172,13 +172,13 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	configRepo := postgres.NewConfigRepo(a.DB)
 
 	s3 := datastore.S3Storage{
-		Prefix:       null.NewString(cfg.StoragePolicy.S3.Prefix, true),
-		Bucket:       null.NewString(cfg.StoragePolicy.S3.Bucket, true),
-		AccessKey:    null.NewString(cfg.StoragePolicy.S3.AccessKey, true),
-		SecretKey:    null.NewString(cfg.StoragePolicy.S3.SecretKey, true),
-		Region:       null.NewString(cfg.StoragePolicy.S3.Region, true),
-		SessionToken: null.NewString(cfg.StoragePolicy.S3.SessionToken, true),
-		Endpoint:     null.NewString(cfg.StoragePolicy.S3.Endpoint, true),
+		Prefix:       null.StringFrom(cfg.StoragePolicy.S3.Prefix),
+		Bucket:       null.StringFrom(cfg.StoragePolicy.S3.Bucket),
+		AccessKey:    null.StringFrom(cfg.StoragePolicy.S3.AccessKey),
+		SecretKey:    null.StringFrom(cfg.StoragePolicy.S3.SecretKey),
+		Region:       null.StringFrom(cfg.StoragePolicy.S3.Region),
+		SessionToken: null.StringFrom(cfg.StoragePolicy.S3.SessionToken),
+		Endpoint:     null.StringFrom(cfg.StoragePolicy.S3.Endpoint),
 	}
 
 	onPrem := datastore.OnPremStorage{

@@ -19,8 +19,8 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
+	"github.com/guregu/null/v5"
 	"github.com/jmoiron/sqlx"
-	"gopkg.in/guregu/null.v4"
 )
 
 type eventDeliveryRepo struct {

@@ -9,8 +9,8 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/golang/mock/gomock"
+	"github.com/guregu/null/v5"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/guregu/null.v4"
 )
 
 func provideUpdateOrganisationService(ctrl *gomock.Controller, org *datastore.Organisation, update *models.Organisation) *UpdateOrganisationService {
