@@ -38,7 +38,7 @@ func (m *MockRateLimiter) EXPECT() *MockRateLimiterMockRecorder {
 // Allow mocks base method.
 func (m *MockRateLimiter) Allow(ctx context.Context, key string, limit, duration int) (*redis_rate.Result, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Allow", ctx, key, limit, duration)
+	ret := m.ctrl.Call(m, "TakeToken", ctx, key, limit, duration)
 	ret0, _ := ret[0].(*redis_rate.Result)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -47,13 +47,13 @@ func (m *MockRateLimiter) Allow(ctx context.Context, key string, limit, duration
 // Allow indicates an expected call of Allow.
 func (mr *MockRateLimiterMockRecorder) Allow(ctx, key, limit, duration interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Allow", reflect.TypeOf((*MockRateLimiter)(nil).Allow), ctx, key, limit, duration)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TakeToken", reflect.TypeOf((*MockRateLimiter)(nil).Allow), ctx, key, limit, duration)
 }
 
 // ShouldAllow mocks base method.
 func (m *MockRateLimiter) ShouldAllow(ctx context.Context, key string, limit, duration int) (*redis_rate.Result, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ShouldAllow", ctx, key, limit, duration)
+	ret := m.ctrl.Call(m, "CanTakeToken", ctx, key, limit, duration)
 	ret0, _ := ret[0].(*redis_rate.Result)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -62,5 +62,5 @@ func (m *MockRateLimiter) ShouldAllow(ctx context.Context, key string, limit, du
 // ShouldAllow indicates an expected call of ShouldAllow.
 func (mr *MockRateLimiterMockRecorder) ShouldAllow(ctx, key, limit, duration interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShouldAllow", reflect.TypeOf((*MockRateLimiter)(nil).ShouldAllow), ctx, key, limit, duration)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanTakeToken", reflect.TypeOf((*MockRateLimiter)(nil).ShouldAllow), ctx, key, limit, duration)
 }

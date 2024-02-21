@@ -13,7 +13,7 @@ import (
 
 	"github.com/frain-dev/convoy/pkg/url"
 
-	"github.com/frain-dev/convoy/limiter"
+	"github.com/frain-dev/convoy/pkg/limiter"
 	"github.com/frain-dev/convoy/pkg/signature"
 	"github.com/oklog/ulid/v2"
 
@@ -91,13 +91,14 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return nil
 		}
 
-		ec := &EventDeliveryConfig{subscription: subscription, project: project}
+		ec := &EventDeliveryConfig{subscription: subscription, project: project, endpoint: endpoint}
 		rlc := ec.rateLimitConfig()
 
-		res, err := rateLimiter.Allow(ctx, endpoint.TargetURL, rlc.Count, int(rlc.Duration))
+		err = rateLimiter.TakeToken(ctx, endpoint.UID, rlc.Count)
 		if err != nil {
-			err := fmt.Errorf("too many events to %s, limit of %v would be reached", endpoint.TargetURL, res.Limit)
-			log.FromContext(ctx).WithError(ErrRateLimit).Error(err.Error())
+			log.FromContext(ctx).WithFields(map[string]interface{}{"id": data.EventDeliveryID}).
+				WithError(err).
+				Error(fmt.Errorf("too many events to %s, limit of %v reqs/min has been reached", endpoint.TargetURL, rlc.Count))
 
 			return &RateLimitError{Err: ErrRateLimit, delay: delayDuration}
 		}
@@ -326,6 +327,7 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 type EventDeliveryConfig struct {
 	project      *datastore.Project
 	subscription *datastore.Subscription
+	endpoint     *datastore.Endpoint
 }
 
 type RetryConfig struct {
@@ -358,13 +360,16 @@ func (ec *EventDeliveryConfig) retryConfig() (*RetryConfig, error) {
 func (ec *EventDeliveryConfig) rateLimitConfig() *RateLimitConfig {
 	rlc := &RateLimitConfig{}
 
-	if ec.subscription.RateLimitConfig != nil {
-		rlc.Count = ec.subscription.RateLimitConfig.Count
-		rlc.Duration = time.Second * time.Duration(ec.subscription.RateLimitConfig.Duration)
-	} else {
-		rlc.Count = ec.project.Config.RateLimit.Count
-		rlc.Duration = time.Second * time.Duration(ec.project.Config.RateLimit.Duration)
-	}
+	rlc.Count = ec.endpoint.RateLimit
+	rlc.Duration = time.Minute * time.Duration(ec.endpoint.RateLimitDuration)
+
+	//if ec.subscription.RateLimitConfig != nil {
+	//	rlc.Count = ec.subscription.RateLimitConfig.Count
+	//	rlc.Duration = time.Minute * time.Duration(ec.subscription.RateLimitConfig.Duration)
+	//} else {
+	//	rlc.Count = ec.project.Config.RateLimit.Count
+	//	rlc.Duration = time.Minute * time.Duration(ec.project.Config.RateLimit.Duration)
+	//}
 
 	return rlc
 }

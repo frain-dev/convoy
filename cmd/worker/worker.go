@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/limiter"
 	"net/http"
 
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
@@ -13,7 +14,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
-	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
@@ -90,10 +90,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			deviceRepo := postgres.NewDeviceRepo(a.DB, a.Cache)
 			configRepo := postgres.NewConfigRepo(a.DB)
 
-			rateLimiter, err := limiter.NewLimiter(cfg.Redis)
-			if err != nil {
-				a.Logger.Debug("Failed to initialise rate limiter")
-			}
+			rateLimiter := limiter.NewLimiter(a.DB)
 
 			rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
 			if err != nil {
