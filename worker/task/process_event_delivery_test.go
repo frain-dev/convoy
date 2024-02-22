@@ -854,8 +854,9 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 		name                string
 		subscription        *datastore.Subscription
 		project             *datastore.Project
+		endpoint            *datastore.Endpoint
 		wantRetryConfig     *datastore.StrategyConfiguration
-		wantRateLimitConfig *datastore.RateLimitConfiguration
+		wantRateLimitConfig *RateLimitConfig
 		wantDisableEndpoint bool
 	}{
 		{
@@ -877,14 +878,18 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 					RateLimit: &datastore.DefaultRateLimitConfig,
 				},
 			},
+			endpoint: &datastore.Endpoint{
+				RateLimit:         100,
+				RateLimitDuration: 60,
+			},
 			wantRetryConfig: &datastore.StrategyConfiguration{
 				Type:       datastore.LinearStrategyProvider,
 				Duration:   2,
 				RetryCount: 3,
 			},
-			wantRateLimitConfig: &datastore.RateLimitConfiguration{
-				Count:    100,
-				Duration: uint64(time.Second),
+			wantRateLimitConfig: &RateLimitConfig{
+				Rate:       100,
+				BucketSize: 60,
 			},
 			wantDisableEndpoint: true,
 		},
@@ -905,14 +910,18 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 					},
 				},
 			},
+			endpoint: &datastore.Endpoint{
+				RateLimit:         100,
+				RateLimitDuration: 600,
+			},
 			wantRetryConfig: &datastore.StrategyConfiguration{
 				Type:       datastore.ExponentialStrategyProvider,
 				Duration:   3,
 				RetryCount: 4,
 			},
-			wantRateLimitConfig: &datastore.RateLimitConfiguration{
-				Count:    100,
-				Duration: uint64(time.Second * 10),
+			wantRateLimitConfig: &RateLimitConfig{
+				Rate:       100,
+				BucketSize: 600,
 			},
 			wantDisableEndpoint: false,
 		},
@@ -920,7 +929,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			evConfig := &EventDeliveryConfig{subscription: tc.subscription, project: tc.project}
+			evConfig := &EventDeliveryConfig{subscription: tc.subscription, project: tc.project, endpoint: tc.endpoint}
 
 			if tc.wantRetryConfig != nil {
 				rc, err := evConfig.retryConfig()
@@ -935,8 +944,8 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 			if tc.wantRateLimitConfig != nil {
 				rlc := evConfig.rateLimitConfig()
 
-				assert.Equal(t, tc.wantRateLimitConfig.Count, rlc.Rate)
-				assert.Equal(t, tc.wantRateLimitConfig.Duration, uint64(rlc.BucketSize))
+				assert.Equal(t, tc.wantRateLimitConfig.Rate, rlc.Rate)
+				assert.Equal(t, tc.wantRateLimitConfig.BucketSize, rlc.BucketSize)
 			}
 		})
 	}
