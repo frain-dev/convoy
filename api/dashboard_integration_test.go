@@ -46,7 +46,7 @@ type AuthIntegrationTestSuite struct {
 func (u *AuthIntegrationTestSuite) SetupSuite() {
 	u.DB = getDB()
 	u.ConvoyApp = buildServer()
-	u.Router = u.ConvoyApp.BuildRoutes()
+	u.Router = u.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (u *AuthIntegrationTestSuite) SetupTest() {
@@ -323,7 +323,7 @@ type DashboardIntegrationTestSuite struct {
 func (s *DashboardIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *DashboardIntegrationTestSuite) SetupTest() {
@@ -604,7 +604,7 @@ type EndpointIntegrationTestSuite struct {
 func (s *EndpointIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *EndpointIntegrationTestSuite) SetupTest() {
@@ -1048,7 +1048,7 @@ type EventIntegrationTestSuite struct {
 func (s *EventIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *EventIntegrationTestSuite) SetupTest() {
@@ -1600,7 +1600,7 @@ type OrganisationIntegrationTestSuite struct {
 func (s *OrganisationIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *OrganisationIntegrationTestSuite) SetupTest() {
@@ -1905,7 +1905,7 @@ type OrganisationInviteIntegrationTestSuite struct {
 func (s *OrganisationInviteIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *OrganisationInviteIntegrationTestSuite) SetupTest() {
@@ -2333,7 +2333,7 @@ type OrganisationMemberIntegrationTestSuite struct {
 func (s *OrganisationMemberIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
@@ -2574,7 +2574,7 @@ type PortalLinkIntegrationTestSuite struct {
 func (s *PortalLinkIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PortalLinkIntegrationTestSuite) SetupTest() {
@@ -2851,7 +2851,7 @@ type ProjectIntegrationTestSuite struct {
 func (s *ProjectIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *ProjectIntegrationTestSuite) SetupTest() {
@@ -3162,7 +3162,7 @@ type SourceIntegrationTestSuite struct {
 func (s *SourceIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *SourceIntegrationTestSuite) SetupTest() {
@@ -3496,7 +3496,7 @@ type SubscriptionIntegrationTestSuite struct {
 func (s *SubscriptionIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *SubscriptionIntegrationTestSuite) SetupTest() {
@@ -3986,7 +3986,7 @@ type UserIntegrationTestSuite struct {
 func (u *UserIntegrationTestSuite) SetupSuite() {
 	u.DB = getDB()
 	u.ConvoyApp = buildServer()
-	u.Router = u.ConvoyApp.BuildRoutes()
+	u.Router = u.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (u *UserIntegrationTestSuite) SetupTest() {
@@ -4475,7 +4475,7 @@ type MetaEventIntegrationTestSuite struct {
 func (s *MetaEventIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *MetaEventIntegrationTestSuite) SetupTest() {

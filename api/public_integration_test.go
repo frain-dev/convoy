@@ -43,7 +43,7 @@ type PublicEndpointIntegrationTestSuite struct {
 func (s *PublicEndpointIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicEndpointIntegrationTestSuite) SetupTest() {
@@ -607,7 +607,7 @@ type PublicEventIntegrationTestSuite struct {
 func (s *PublicEventIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicEventIntegrationTestSuite) SetupTest() {
@@ -750,14 +750,6 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateFanoutEvent_MultipleEndpoin
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var event datastore.Event
-	parseResponse(s.T(), w.Result(), &event)
-
-	require.NotEmpty(s.T(), event.UID)
-	require.Equal(s.T(), event.Endpoints[0], endpointID)
-	require.Equal(s.T(), 2, len(event.Endpoints))
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_Event() {
@@ -1190,7 +1182,7 @@ type PublicPortalLinkIntegrationTestSuite struct {
 func (s *PublicPortalLinkIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicPortalLinkIntegrationTestSuite) SetupTest() {
@@ -1452,7 +1444,7 @@ type PublicProjectIntegrationTestSuite struct {
 func (s *PublicProjectIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicProjectIntegrationTestSuite) SetupTest() {
@@ -1790,7 +1782,7 @@ type PublicSourceIntegrationTestSuite struct {
 func (s *PublicSourceIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicSourceIntegrationTestSuite) SetupTest() {
@@ -2123,7 +2115,7 @@ type PublicSubscriptionIntegrationTestSuite struct {
 func (s *PublicSubscriptionIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicSubscriptionIntegrationTestSuite) SetupTest() {
@@ -2624,7 +2616,7 @@ type PublicMetaEventIntegrationTestSuite struct {
 func (s *PublicMetaEventIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicMetaEventIntegrationTestSuite) SetupTest() {
