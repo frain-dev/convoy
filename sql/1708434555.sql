@@ -1,16 +1,16 @@
 -- +migrate Up
 create unlogged table if not exists convoy.token_bucket (
-   key text not null primary key,
-   rate integer not null, -- 10 per min, 20 per min
-   tokens integer default 1,
-   created_at timestamptz default now(),
-   updated_at timestamptz default now(),
-   expires_at timestamptz not null
+    key text not null primary key,
+    rate integer not null,
+    tokens integer default 1,
+    created_at timestamptz default now(),
+    updated_at timestamptz default now(),
+    expires_at timestamptz not null
 );
 
 -- take_token should be run in a transaction to acquire a row lock, returns true is a token was taken
 -- +migrate StatementBegin
-create function take_token(url text, per_min integer) returns boolean
+create or replace function convoy.convoy.take_token(_key text, _rate integer, _bucket_size integer) returns boolean
     language plpgsql
 as
 $$
@@ -19,15 +19,15 @@ declare
     next_min timestamptz;
     tempRow record;
 begin
-    select * from convoy.token_bucket where key = url FOR UPDATE into row;
+    select * from convoy.token_bucket where key = _key for update into row;
+    next_min := now() + make_interval(secs := _bucket_size);
 
     -- the bucket doesn't exist yet
     if row is null then
-        next_min := now() + make_interval(mins := 1);
         insert into convoy.token_bucket (key, rate, expires_at)
-        SELECT url, per_min, next_min
+        SELECT _key, _rate, next_min
         WHERE NOT EXISTS (
-            SELECT 1 FROM convoy.token_bucket WHERE key = url
+            SELECT 1 FROM convoy.token_bucket WHERE key = _key
         );
 
         return true;
@@ -35,18 +35,15 @@ begin
 
     -- this bucket has expired, reset it
     if now() > row.expires_at then
-        next_min := now() + make_interval(mins := 1);
-
-        SELECT 1 FROM convoy.token_bucket WHERE key = url FOR UPDATE into tempRow;
+        SELECT 1 FROM convoy.token_bucket WHERE key = _key FOR UPDATE into tempRow;
         UPDATE convoy.token_bucket
-        SET tokens = 1, expires_at = next_min, updated_at = now() WHERE key = url;
+        SET tokens = 1, expires_at = next_min, updated_at = default WHERE key = _key;
         return true;
     end if;
 
     -- take a token
     if row.tokens < row.rate then
-        next_min := now() + make_interval(mins := 1);
-        update convoy.token_bucket set tokens = row.tokens + 1, expires_at = next_min, updated_at = now() where key = url;
+        update convoy.token_bucket set tokens = row.tokens + 1, expires_at = next_min, updated_at = default where key = _key;
         return true;
     end if;
 
@@ -57,7 +54,7 @@ $$;
 -- +migrate StatementEnd
 
 -- +migrate Down
-drop function if exists convoy.take_token(url TEXT, per_min INTEGER);
+drop function if exists convoy.take_token(_key text, _rate integer, _bucket_size integer);
 
 -- +migrate Down
 drop table if exists convoy.token_bucket;

@@ -3,11 +3,11 @@ package limiter
 import (
 	"context"
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/pkg/limiter/pg"
+	"github.com/frain-dev/convoy/internal/pkg/limiter/pg"
 )
 
 type RateLimiter interface {
-	TakeToken(ctx context.Context, key string, limit int) error
+	TakeToken(ctx context.Context, key string, rate int, bucketSize int) error
 }
 
 func NewLimiter(db database.Database) RateLimiter {

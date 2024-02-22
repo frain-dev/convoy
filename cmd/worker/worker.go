@@ -3,7 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/limiter"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"net/http"
 
 	"github.com/frain-dev/convoy/internal/pkg/rdb"

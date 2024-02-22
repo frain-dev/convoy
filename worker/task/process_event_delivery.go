@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/frain-dev/convoy/pkg/url"
 
-	"github.com/frain-dev/convoy/pkg/limiter"
 	"github.com/frain-dev/convoy/pkg/signature"
 	"github.com/oklog/ulid/v2"
 
@@ -94,11 +94,11 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		ec := &EventDeliveryConfig{subscription: subscription, project: project, endpoint: endpoint}
 		rlc := ec.rateLimitConfig()
 
-		err = rateLimiter.TakeToken(ctx, endpoint.UID, rlc.Count)
+		err = rateLimiter.TakeToken(ctx, endpoint.UID, rlc.Rate, rlc.BucketSize)
 		if err != nil {
 			log.FromContext(ctx).WithFields(map[string]interface{}{"id": data.EventDeliveryID}).
 				WithError(err).
-				Error(fmt.Errorf("too many events to %s, limit of %v reqs/min has been reached", endpoint.TargetURL, rlc.Count))
+				Error(fmt.Errorf("too many events to %s, limit of %v reqs/min has been reached", endpoint.TargetURL, rlc.Rate))
 
 			return &RateLimitError{Err: ErrRateLimit, delay: delayDuration}
 		}
@@ -337,8 +337,8 @@ type RetryConfig struct {
 }
 
 type RateLimitConfig struct {
-	Count    int
-	Duration time.Duration
+	Rate       int
+	BucketSize int
 }
 
 func (ec *EventDeliveryConfig) retryConfig() (*RetryConfig, error) {
@@ -360,8 +360,8 @@ func (ec *EventDeliveryConfig) retryConfig() (*RetryConfig, error) {
 func (ec *EventDeliveryConfig) rateLimitConfig() *RateLimitConfig {
 	rlc := &RateLimitConfig{}
 
-	rlc.Count = ec.endpoint.RateLimit
-	rlc.Duration = time.Minute * time.Duration(ec.endpoint.RateLimitDuration)
+	rlc.Rate = ec.endpoint.RateLimit
+	rlc.BucketSize = int(ec.endpoint.RateLimitDuration)
 
 	//if ec.subscription.RateLimitConfig != nil {
 	//	rlc.Count = ec.subscription.RateLimitConfig.Count
