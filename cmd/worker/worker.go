@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"net/http"
 
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
@@ -88,8 +87,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			jobRepo := postgres.NewJobRepo(a.DB, a.Cache)
 			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB, a.Cache)
 			configRepo := postgres.NewConfigRepo(a.DB)
-
-			rateLimiter := limiter.NewLimiter(a.DB)
 
 			rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
 			if err != nil {

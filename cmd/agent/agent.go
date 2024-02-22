@@ -14,10 +14,10 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/internal/pkg/server"
-	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
@@ -202,10 +202,7 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 	subRepo := postgres.NewSubscriptionRepo(a.DB, a.Cache)
 	deviceRepo := postgres.NewDeviceRepo(a.DB, a.Cache)
 
-	rateLimiter, err := limiter.NewLimiter(cfg.Redis)
-	if err != nil {
-		a.Logger.Debug("Failed to initialise rate limiter")
-	}
+	rateLimiter := limiter.NewLimiter(a.DB)
 
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 		endpointRepo,
