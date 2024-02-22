@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/uptrace/opentelemetry-go-extra/otelsql"
+	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
 	"io"
 	"time"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/newrelic/go-agent/v3/integrations/nrpq"
+	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 )
 
 const pkgName = "postgres"
@@ -27,7 +30,9 @@ type Postgres struct {
 
 func NewDB(cfg config.Configuration) (*Postgres, error) {
 	dbConfig := cfg.Database
-	db, err := sqlx.Connect("postgres", dbConfig.BuildDsn())
+	db, err := otelsqlx.Connect("postgres", dbConfig.BuildDsn(),
+		otelsql.WithDBName("postgres"),
+		otelsql.WithAttributes(semconv.DBSystemPostgreSQL))
 
 	if err != nil {
 		return nil, fmt.Errorf("[%s]: failed to open database - %v", pkgName, err)
