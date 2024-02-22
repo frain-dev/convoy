@@ -31,7 +31,7 @@ import (
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.CreateEvent	true	"Event Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.EventResponse}
+//	@Success		200			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events [post]
@@ -158,7 +158,7 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.FanoutEvent	true	"Event Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.EventResponse}
+//	@Success		200			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/fanout [post]
@@ -197,11 +197,10 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	resp := &models.EventResponse{Event: event}
 	if event.IsDuplicateEvent {
-		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", resp, http.StatusCreated))
+		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", nil, http.StatusCreated))
 	} else {
-		_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", resp, http.StatusCreated))
+		_ = render.Render(w, r, util.NewServerResponse("Endpoint fanout event queued successfully", nil, http.StatusCreated))
 	}
 }
 

@@ -2078,7 +2078,7 @@
 		},
 		"termsOfService": "https://getconvoy.io/terms",
 		"title": "Convoy API Reference",
-		"version": "0.9.0"
+		"version": "24.1.4"
 	},
 	"openapi": "3.0.3",
 	"paths": {
@@ -2094,6 +2094,21 @@
 						"schema": {
 							"type": "string"
 						}
+					},
+					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
 					},
 					{
 						"description": "A pagination cursor to fetch the next page of a list",
@@ -3039,6 +3054,21 @@
 						}
 					},
 					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
+					},
+					{
 						"description": "The end date",
 						"in": "query",
 						"name": "endDate",
@@ -3265,6 +3295,21 @@
 						"schema": {
 							"type": "string"
 						}
+					},
+					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
 					},
 					{
 						"description": "The end date",
@@ -4115,6 +4160,21 @@
 						}
 					},
 					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
+					},
+					{
 						"description": "The end date",
 						"in": "query",
 						"name": "endDate",
@@ -4452,6 +4512,21 @@
 						"schema": {
 							"type": "string"
 						}
+					},
+					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
 					},
 					{
 						"description": "The end date",
@@ -4804,7 +4879,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/models.EventResponse"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5153,6 +5228,21 @@
 						"schema": {
 							"type": "string"
 						}
+					},
+					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
 					},
 					{
 						"description": "The end date",
@@ -5590,6 +5680,21 @@
 							},
 							"type": "array"
 						}
+					},
+					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
 					},
 					{
 						"in": "query",
@@ -6281,6 +6386,21 @@
 						}
 					},
 					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
+					},
+					{
 						"description": "A pagination cursor to fetch the next page of a list",
 						"in": "query",
 						"name": "next_page_cursor",
@@ -6962,6 +7082,21 @@
 						"schema": {
 							"type": "string"
 						}
+					},
+					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
 					},
 					{
 						"description": "A list of endpointIDs to filter by",
