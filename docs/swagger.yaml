@@ -250,6 +250,40 @@ definitions:
       url_query_params:
         type: string
     type: object
+  datastore.EventCatalogue:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      events:
+        items:
+          $ref: '#/definitions/datastore.EventDataCatalogue'
+        type: array
+      open_api_spec:
+        items:
+          type: integer
+        type: array
+      project_id:
+        type: string
+      type:
+        type: string
+      uid:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  datastore.EventDataCatalogue:
+    properties:
+      data:
+        items:
+          type: integer
+        type: array
+      eventID:
+        type: string
+      name:
+        type: string
+    type: object
   datastore.EventDeliveryStatus:
     enum:
     - Scheduled
@@ -581,6 +615,15 @@ definitions:
         type: string
       type: array
     type: object
+  models.AddEventToCatalogue:
+    properties:
+      event_id:
+        description: EventID for the event to be added to the event catalogue
+        type: string
+      name:
+        description: The name of this event in the catalogue e.g. invoice.paid
+        type: string
+    type: object
   models.AlertConfiguration:
     properties:
       count:
@@ -650,6 +693,17 @@ definitions:
         type: string
       idempotency_key:
         type: string
+    type: object
+  models.CatalogueOpenAPISpec:
+    properties:
+      open_api_spec:
+        description: |-
+          An openapi 3.0+ specification in YAML format. Convoy use the webhook section of the specification.
+          to render the event catalogue. See https://github.com/OAI/OpenAPI-Specification/blob/main/examples/v3.1/webhook-example.yaml
+          https://redocly.com/blog/document-webhooks-with-openapi/
+        items:
+          type: integer
+        type: array
     type: object
   models.CreateEndpoint:
     properties:
@@ -1291,6 +1345,17 @@ definitions:
         additionalProperties: true
         type: object
     type: object
+  models.UpdateCatalogue:
+    properties:
+      events:
+        items:
+          $ref: '#/definitions/datastore.EventDataCatalogue'
+        type: array
+      open_api_spec:
+        items:
+          type: integer
+        type: array
+    type: object
   models.UpdateCustomResponse:
     properties:
       body:
@@ -1416,6 +1481,312 @@ info:
   title: Convoy API Reference
   version: 0.9.0
 paths:
+  /v1/projects/{projectID}/catalogue:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint Fetches the event catalogue for the current project
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.EventCatalogue'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Fetches the event catalogue for the current project.
+      tags:
+      - Events
+  /v1/projects/{projectID}/catalogue/{catalogueID}:
+    delete:
+      consumes:
+      - application/json
+      description: This endpoint Deletes the event catalogue for the current project
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Catalogue ID
+        in: path
+        name: catalogueID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Deletes the event catalogue for the current project.
+      tags:
+      - Events
+    put:
+      consumes:
+      - application/json
+      description: This endpoint Adds an openapi spec to the event catalogue for the
+        current project.
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Catalogue ID
+        in: path
+        name: catalogueID
+        required: true
+        type: string
+      - description: Event Details
+        in: body
+        name: event
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateCatalogue'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.EventCatalogue'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Adds an openapi spec to the event catalogue for the current project.
+      tags:
+      - Events
+  /v1/projects/{projectID}/catalogue/add_event:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint Adds an event to the event catalogue for the current
+        project.
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Event Details
+        in: body
+        name: event
+        required: true
+        schema:
+          $ref: '#/definitions/models.AddEventToCatalogue'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.EventCatalogue'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Adds an event to the event catalogue for the current project.
+      tags:
+      - Events
+  /v1/projects/{projectID}/catalogue/add_openapi_spec:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint Creates an event catalogue for the current project
+        using an openapi spec.
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Event Details
+        in: body
+        name: event
+        required: true
+        schema:
+          $ref: '#/definitions/models.CatalogueOpenAPISpec'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/datastore.EventCatalogue'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Creates an event catalogue for the current project using an openapi
+        spec.
+      tags:
+      - Events
   /v1/projects/{projectID}/endpoints:
     get:
       consumes:

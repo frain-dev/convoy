@@ -50,6 +50,13 @@ type EventRepository interface {
 	CopyRows(ctx context.Context, projectID string, interval int) error
 }
 
+type EventCatalogueRepository interface {
+	CreateEventCatalogue(context.Context, *EventCatalogue) error
+	UpdateEventCatalogue(ctx context.Context, catalogue *EventCatalogue) error
+	FindEventCatalogueByProjectID(context.Context, string) (*EventCatalogue, error)
+	DeleteEventCatalogue(context.Context, string, string) error
+}
+
 type ProjectRepository interface {
 	LoadProjects(context.Context, *ProjectFilter) ([]*Project, error)
 	CreateProject(context.Context, *Project) error

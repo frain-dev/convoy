@@ -100,6 +100,7 @@ const (
 	EndpointCacheKey           CacheKey = "endpoints"
 	UserCacheKey               CacheKey = "users"
 	ApiKeyCacheKey             CacheKey = "api_keys"
+	EventCatalogueCacheKey     CacheKey = "event_catalogue"
 	OrganisationCacheKey       CacheKey = "organisations"
 	OrganisationMemberCacheKey CacheKey = "organisation_members"
 	ProjectsCacheKey           CacheKey = "projects"

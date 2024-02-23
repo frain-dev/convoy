@@ -176,6 +176,16 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 							})
 						})
 					})
+					projectSubRouter.Route("/catalogue", func(catalogueRouter chi.Router) {
+						catalogueRouter.Post("/add_event", handler.AddEventToCatalogue)
+						catalogueRouter.Post("/add_openapi_spec", handler.CreateOpenAPISpecCatalogue)
+						catalogueRouter.Get("/", handler.GetCatalogue)
+
+						catalogueRouter.Route("/{catalogueID}", func(catalogueSubRouter chi.Router) {
+							catalogueSubRouter.Put("/", handler.UpdateCatalogue)
+							catalogueSubRouter.Delete("/", handler.DeleteCatalogue)
+						})
+					})
 
 					projectSubRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 						subscriptionRouter.Post("/", handler.CreateSubscription)
@@ -390,6 +400,7 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 		portalLinkRouter.Use(middleware.RequireAuth())
 
 		portalLinkRouter.Get("/portal_link", handler.GetPortalLink)
+		portalLinkRouter.Get("/view_event_catalogue", handler.GetCatalogue)
 
 		portalLinkRouter.Route("/endpoints", func(endpointRouter chi.Router) {
 			endpointRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
