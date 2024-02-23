@@ -140,10 +140,10 @@ const (
 	WHERE e.deleted_at IS NULL
 	AND e.project_id = :project_id
 	AND (e.owner_id = :owner_id OR :owner_id = '')
-	AND (e.title ILIKE :title OR :title = '')
-	`
+	AND (e.title ILIKE :title OR :title = '')`
 
 	fetchEndpointsPagedForward = `
+	%s
 	%s
 	AND e.id <= :cursor
 	GROUP BY e.id
@@ -153,6 +153,7 @@ const (
 
 	fetchEndpointsPagedBackward = `
 	WITH endpoints AS (
+	    %s
 		%s
 		AND e.id >= :cursor
 		GROUP BY e.id
@@ -402,22 +403,26 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 	}
 
 	arg := map[string]interface{}{
-		"project_id": projectId,
-		"owner_id":   filter.OwnerID,
-		"limit":      pageable.Limit(),
-		"cursor":     pageable.Cursor(),
-		"title":      q,
+		"project_id":   projectId,
+		"owner_id":     filter.OwnerID,
+		"limit":        pageable.Limit(),
+		"cursor":       pageable.Cursor(),
+		"endpoint_ids": filter.EndpointIDs,
+		"title":        q,
 	}
 
-	var query string
+	var query, filterQuery string
 	if pageable.Direction == datastore.Next {
 		query = fetchEndpointsPagedForward
 	} else {
 		query = fetchEndpointsPagedBackward
 	}
 
-	query = fmt.Sprintf(query, baseFetchEndpointsPaged)
+	if len(filter.EndpointIDs) > 0 {
+		filterQuery = ` AND e.id IN (:endpoint_ids)`
+	}
 
+	query = fmt.Sprintf(query, baseFetchEndpointsPaged, filterQuery)
 	query, args, err := sqlx.Named(query, arg)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err

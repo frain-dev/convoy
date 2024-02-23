@@ -34,7 +34,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/frain-dev/convoy/tracer"
 )
 
 // TEST HELPERS.
@@ -102,7 +101,6 @@ func getQueueOptions() (queue.QueueOptions, error) {
 }
 
 func buildServer() *ApplicationHandler {
-	var t tracer.Tracer = nil
 	var logger *log.Logger
 	var qOpts queue.QueueOptions
 
@@ -120,7 +118,6 @@ func buildServer() *ApplicationHandler {
 			DB:     db,
 			Queue:  newQueue,
 			Logger: logger,
-			Tracer: t,
 			Cache:  noopCache,
 		})
 
@@ -169,7 +166,6 @@ func authenticateRequest(auth *models.LoginUser) AuthenticatorFn {
 		}
 
 		req := createRequest(http.MethodPost, "/ui/auth/login", "", bytes.NewBuffer(body))
-
 		w := httptest.NewRecorder()
 
 		// Act
@@ -203,6 +199,7 @@ func createRequest(method, url, auth string, body io.Reader) *http.Request {
 	req := httptest.NewRequest(method, url, body)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", auth))
+	req.Header.Add(VersionHeader, config.DefaultAPIVersion)
 
 	return req
 }

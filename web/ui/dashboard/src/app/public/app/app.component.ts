@@ -27,7 +27,6 @@ export class AppComponent implements OnInit {
 	activeEndpoint?: PORTAL_ENDPOINT;
 	eventDeliveryFilteredByEventId!: string;
 	isloadingSubscriptions = false;
-	showEndpointSecret: boolean = false;
 	showCreateEndpoint = false;
 	isTogglingEndpoint = false;
 	portalDetails!: PORTAL_LINK;

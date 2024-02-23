@@ -38,7 +38,7 @@ type PortalEndpointIntegrationTestSuite struct {
 func (s *PortalEndpointIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PortalEndpointIntegrationTestSuite) SetupTest() {
@@ -164,7 +164,6 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpoints() {
 	resp := pagedResponse{Content: &respEndpoints}
 	parseResponse(s.T(), w.Result(), &resp)
 	require.Equal(s.T(), 2, len(respEndpoints))
-
 }
 
 func (s *PortalEndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
@@ -187,7 +186,7 @@ type PortalEventIntegrationTestSuite struct {
 func (s *PortalEventIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PortalEventIntegrationTestSuite) SetupTest() {

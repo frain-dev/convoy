@@ -4,8 +4,8 @@
 [![Build and run all tests](https://github.com/frain-dev/convoy/actions/workflows/go.yml/badge.svg)](https://github.com/frain-dev/convoy/actions/workflows/go.yml)
 - Website: https://getconvoy.io
 - Forum: [Github Discussions](https://github.com/frain-dev/convoy/discussions)
-- Documentation: [getconvoy.io/docs](https://getconvoy.io/docs)
-- Deploy: [Install Convoy](https://getconvoy.io/docs/deploy/install-convoy)
+- Documentation: [docs.getconvoy.io](https://docs.getconvoy.io)
+- Deploy: [Install Convoy](https://docs.getconvoy.io/deployment/install-convoy/docker)
 - Slack: [Join the Community](https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ)
 
 
@@ -29,21 +29,9 @@ Convoy provides several key features:
 
 - **Endpoint Failure Notifications:** When endpoints consecutively fails to process events, convoy disables the endpoint and sends out a notification. Two types of notifications are supported: Email and Slack Notifications.
 
-## Installation, Getting Started
-To do this make sure you have [Docker 20+](https://docs.docker.com/desktop/) installed.
-
-```bash
-# Get the code
-$ git clone https://github.com/frain-dev/convoy.git
-
-# Go to the Convoy folder
-$ cd convoy
-
-# Start Services
-$ docker compose -f configs/local/docker-compose.yml up
-```
-## Convoy Cloud
-Get started with our free Convoy Cloud version, request access: sales@getconvoy.io
+## Installation
+- [Docker](https://docs.getconvoy.io/deployment/install-convoy/docker)
+- [Kubernetes with Helm](https://docs.getconvoy.io/deployment/install-convoy/kubernetes)
 
 ## Contributing
 Thank you for your interest in contributing! Please refer to [CONTRIBUTING.md](https://github.com/frain-dev/convoy/blob/main/CONTRIBUTING.md) for guidance. For contributions to the Convoy dashboard, please refer to the [web/ui](https://github.com/frain-dev/convoy/tree/main/web/ui) directory.

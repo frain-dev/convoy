@@ -1,10 +1,11 @@
 package google
 
 import (
-	"cloud.google.com/go/pubsub"
 	"context"
 	"errors"
 	"fmt"
+
+	"cloud.google.com/go/pubsub"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"google.golang.org/api/option"
@@ -17,33 +18,25 @@ type Google struct {
 	source  *datastore.Source
 	workers int
 	ctx     context.Context
-	cancel  context.CancelFunc
 	handler datastore.PubSubHandler
 	log     log.StdLogger
 }
 
 func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) *Google {
-	ctx, cancel := context.WithCancel(context.Background())
-
 	return &Google{
 		Cfg:     source.PubSub.Google,
 		source:  source,
-		ctx:     ctx,
-		cancel:  cancel,
 		workers: source.PubSub.Workers,
 		handler: handler,
 		log:     log,
 	}
 }
 
-func (g *Google) Start() {
+func (g *Google) Start(ctx context.Context) {
+	g.ctx = ctx
 	if g.workers > 0 {
-		go g.Consume()
+		go g.consume()
 	}
-}
-
-func (g *Google) Stop() {
-	g.cancel()
 }
 
 // Verify ensures the pub sub credentials are valid
@@ -71,8 +64,8 @@ func (g *Google) Verify() error {
 	return nil
 }
 
-func (g *Google) Consume() {
-	client, err := pubsub.NewClient(context.Background(), g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
+func (g *Google) consume() {
+	client, err := pubsub.NewClient(g.ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
 
 	if err != nil {
 		g.log.WithError(err).Error("failed to create new pubsub client")

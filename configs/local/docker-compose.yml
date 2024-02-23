@@ -2,7 +2,7 @@ version: "3"
 
 services:
     web:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.11.1
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.2
         command: ["/start.sh"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -20,7 +20,7 @@ services:
             - redis_server
 
     worker:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.11.1
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.2
         command: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -30,7 +30,7 @@ services:
                 condition: service_healthy
 
     stream:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.11.1
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.2
         command: ["./cmd", "stream", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -40,7 +40,7 @@ services:
                 condition: service_healthy
 
     ingest:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v23.11.1
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.2
         command: ["./cmd", "ingest", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json

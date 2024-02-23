@@ -1,16 +1,36 @@
 basePath: /api
 definitions:
-  config.SignatureHeaderProvider:
-    enum:
-    - X-Convoy-Signature
-    type: string
-    x-enum-varnames:
-    - DefaultSignatureHeader
   datastore.AlertConfiguration:
     properties:
       count:
         type: integer
       threshold:
+        type: string
+    type: object
+  datastore.AmqpCredentials:
+    properties:
+      password:
+        type: string
+      user:
+        type: string
+    type: object
+  datastore.AmqpPubSubConfig:
+    properties:
+      auth:
+        $ref: '#/definitions/datastore.AmqpCredentials'
+      bindedExchange:
+        type: string
+      deadLetterExchange:
+        type: string
+      host:
+        type: string
+      port:
+        type: string
+      queue:
+        type: string
+      routingKey:
+        type: string
+      schema:
         type: string
     type: object
   datastore.ApiKey:
@@ -130,7 +150,7 @@ definitions:
       events:
         type: integer
       http_timeout:
-        type: string
+        type: integer
       owner_id:
         type: string
       project_id:
@@ -138,7 +158,7 @@ definitions:
       rate_limit:
         type: integer
       rate_limit_duration:
-        type: string
+        type: integer
       secrets:
         items:
           $ref: '#/definitions/datastore.Secret'
@@ -326,31 +346,6 @@ definitions:
       response_http_header:
         $ref: '#/definitions/datastore.HttpHeader'
     type: object
-  datastore.MetaEventConfiguration:
-    properties:
-      event_type:
-        items:
-          type: string
-        type: array
-      is_enabled:
-        type: boolean
-      pub_sub:
-        $ref: '#/definitions/datastore.PubSubConfig'
-      secret:
-        type: string
-      type:
-        $ref: '#/definitions/datastore.MetaEventType'
-      url:
-        type: string
-    type: object
-  datastore.MetaEventType:
-    enum:
-    - http
-    - pub_sub
-    type: string
-    x-enum-varnames:
-    - HTTPMetaEvent
-    - PubSubMetaEvent
   datastore.Metadata:
     properties:
       data:
@@ -382,19 +377,6 @@ definitions:
     x-enum-varnames:
     - Next
     - Prev
-  datastore.Pageable:
-    properties:
-      direction:
-        $ref: '#/definitions/datastore.PageDirection'
-      next_page_cursor:
-        type: string
-      per_page:
-        type: integer
-      prev_page_cursor:
-        type: string
-      sort:
-        type: string
-    type: object
   datastore.PaginationData:
     properties:
       has_next_page:
@@ -408,73 +390,6 @@ definitions:
       prev_page_cursor:
         type: string
     type: object
-  datastore.Project:
-    properties:
-      config:
-        $ref: '#/definitions/datastore.ProjectConfig'
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      logo_url:
-        type: string
-      name:
-        type: string
-      organisation_id:
-        type: string
-      retained_events:
-        type: integer
-      statistics:
-        $ref: '#/definitions/datastore.ProjectStatistics'
-      type:
-        $ref: '#/definitions/datastore.ProjectType'
-      uid:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  datastore.ProjectConfig:
-    properties:
-      add_event_id_trace_headers:
-        type: boolean
-      disable_endpoint:
-        type: boolean
-      max_payload_read_size:
-        type: integer
-      meta_event:
-        $ref: '#/definitions/datastore.MetaEventConfiguration'
-      ratelimit:
-        $ref: '#/definitions/datastore.RateLimitConfiguration'
-      replay_attacks_prevention_enabled:
-        type: boolean
-      retention_policy:
-        $ref: '#/definitions/datastore.RetentionPolicyConfiguration'
-      retention_policy_enabled:
-        type: boolean
-      signature:
-        $ref: '#/definitions/datastore.SignatureConfiguration'
-      strategy:
-        $ref: '#/definitions/datastore.StrategyConfiguration'
-    type: object
-  datastore.ProjectStatistics:
-    properties:
-      messages_sent:
-        type: integer
-      total_endpoints:
-        type: integer
-      total_sources:
-        type: integer
-      total_subscriptions:
-        type: integer
-    type: object
-  datastore.ProjectType:
-    enum:
-    - outgoing
-    - incoming
-    type: string
-    x-enum-varnames:
-    - OutgoingProject
-    - IncomingProject
   datastore.ProviderConfig:
     properties:
       twitter:
@@ -482,6 +397,8 @@ definitions:
     type: object
   datastore.PubSubConfig:
     properties:
+      amqp:
+        $ref: '#/definitions/datastore.AmqpPubSubConfig'
       google:
         $ref: '#/definitions/datastore.GooglePubSubConfig'
       kafka:
@@ -498,24 +415,19 @@ definitions:
     - sqs
     - google
     - kafka
+    - amqp
     type: string
     x-enum-varnames:
     - SqsPubSub
     - GooglePubSub
     - KafkaPubSub
+    - AmqpPubSub
   datastore.RateLimitConfiguration:
     properties:
       count:
         type: integer
       duration:
         type: integer
-    type: object
-  datastore.RetentionPolicyConfiguration:
-    properties:
-      policy:
-        type: string
-      search_policy:
-        type: string
     type: object
   datastore.RetryConfiguration:
     properties:
@@ -537,13 +449,6 @@ definitions:
       secret_key:
         type: string
     type: object
-  datastore.SearchParams:
-    properties:
-      created_at_end:
-        type: integer
-      created_at_start:
-        type: integer
-    type: object
   datastore.Secret:
     properties:
       created_at:
@@ -557,26 +462,6 @@ definitions:
       updated_at:
         type: string
       value:
-        type: string
-    type: object
-  datastore.SignatureConfiguration:
-    properties:
-      header:
-        $ref: '#/definitions/config.SignatureHeaderProvider'
-      versions:
-        items:
-          $ref: '#/definitions/datastore.SignatureVersion'
-        type: array
-    type: object
-  datastore.SignatureVersion:
-    properties:
-      created_at:
-        type: string
-      encoding:
-        $ref: '#/definitions/datastore.EncodingType'
-      hash:
-        type: string
-      uid:
         type: string
     type: object
   datastore.Source:
@@ -642,15 +527,6 @@ definitions:
     - RestApiSource
     - PubSubSource
     - DBChangeStream
-  datastore.StrategyConfiguration:
-    properties:
-      duration:
-        type: integer
-      retry_count:
-        type: integer
-      type:
-        $ref: '#/definitions/datastore.StrategyProvider'
-    type: object
   datastore.StrategyProvider:
     enum:
     - linear
@@ -699,12 +575,6 @@ definitions:
     - APIKeyVerifier
   handlers.Stub:
     type: object
-  handlers.pagedResponse:
-    properties:
-      content: {}
-      pagination:
-        $ref: '#/definitions/datastore.PaginationData'
-    type: object
   httpheader.HTTPHeader:
     additionalProperties:
       items:
@@ -716,6 +586,37 @@ definitions:
       count:
         type: integer
       threshold:
+        type: string
+    type: object
+  models.AmqpAuth:
+    properties:
+      password:
+        type: string
+      user:
+        type: string
+    type: object
+  models.AmqpExchange:
+    properties:
+      exchange:
+        type: string
+      routingKey:
+        type: string
+    type: object
+  models.AmqpPubSubconfig:
+    properties:
+      auth:
+        $ref: '#/definitions/models.AmqpAuth'
+      bindExchange:
+        $ref: '#/definitions/models.AmqpExchange'
+      deadLetterExchange:
+        type: string
+      host:
+        type: string
+      port:
+        type: string
+      queue:
+        type: string
+      schema:
         type: string
     type: object
   models.ApiKey:
@@ -732,8 +633,31 @@ definitions:
       username:
         type: string
     type: object
+  models.BroadcastEvent:
+    properties:
+      custom_headers:
+        additionalProperties:
+          type: string
+        type: object
+      data:
+        description: |-
+          Data is an arbitrary JSON value that gets sent as the body of the
+          webhook to the endpoints
+        items:
+          type: integer
+        type: array
+      event_type:
+        type: string
+      idempotency_key:
+        type: string
+    type: object
   models.CreateEndpoint:
     properties:
+      advanced_signatures:
+        description: |-
+          Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)
+          -- simple or advanced. If left unspecified, we default to false.
+        type: boolean
       appID:
         description: Deprecated but necessary for backward compatibility
         type: string
@@ -750,10 +674,8 @@ definitions:
           the endpoint
         type: string
       http_timeout:
-        description: |-
-          Define endpoint http timeout in seconds. It uses Go's time duration syntax.
-          E.g. 3s, 1m
-        type: string
+        description: Define endpoint http timeout in seconds.
+        type: integer
       is_disabled:
         description: This is used to manually enable/disable the endpoint.
         type: boolean
@@ -771,10 +693,8 @@ definitions:
           the time duration specified in RateLimitDuration
         type: integer
       rate_limit_duration:
-        description: |-
-          Rate limit duration specifies the time range for the rate limit. It uses
-          Go's time duration syntax. E.g. 3s, 1m
-        type: string
+        description: Rate limit duration specifies the time range for the rate limit.
+        type: integer
       secret:
         description: Endpoint's webhook secret. If not provided, Convoy autogenerates
           one for the endpoint.
@@ -815,8 +735,6 @@ definitions:
       idempotency_key:
         type: string
       owner_id:
-        type: string
-      uid:
         type: string
     type: object
   models.CreateSource:
@@ -888,78 +806,28 @@ definitions:
       content_type:
         type: string
     type: object
-  models.DynamicEndpoint:
-    properties:
-      advanced_signatures:
-        type: boolean
-      appID:
-        description: Deprecated but necessary for backward compatibility
-        type: string
-      authentication:
-        $ref: '#/definitions/models.EndpointAuthentication'
-      description:
-        type: string
-      http_timeout:
-        type: string
-      is_disabled:
-        type: boolean
-      name:
-        type: string
-      owner_id:
-        type: string
-      rate_limit:
-        type: integer
-      rate_limit_duration:
-        type: string
-      secret:
-        type: string
-      slack_webhook_url:
-        type: string
-      support_email:
-        type: string
-      url:
-        type: string
-    type: object
   models.DynamicEvent:
-    properties:
-      endpoint:
-        $ref: '#/definitions/models.DynamicEndpoint'
-      event:
-        $ref: '#/definitions/models.DynamicEventStub'
-      subscription:
-        $ref: '#/definitions/models.DynamicSubscription'
-    type: object
-  models.DynamicEventStub:
     properties:
       custom_headers:
         additionalProperties:
           type: string
         type: object
       data:
-        description: Data is an arbitrary JSON value that gets sent as the body of
-          the webhook to the endpoints
         items:
           type: integer
         type: array
       event_type:
         type: string
+      event_types:
+        items:
+          type: string
+        type: array
       idempotency_key:
         type: string
-      project_id:
+      secret:
         type: string
-    type: object
-  models.DynamicSubscription:
-    properties:
-      alert_config:
-        $ref: '#/definitions/models.AlertConfiguration'
-      filter_config:
-        $ref: '#/definitions/models.FilterConfiguration'
-      name:
+      url:
         type: string
-      rate_limit_config:
-        $ref: '#/definitions/models.RateLimitConfiguration'
-      retry_config:
-        $ref: '#/definitions/models.RetryConfiguration'
     type: object
   models.EndpointAuthentication:
     properties:
@@ -983,7 +851,7 @@ definitions:
       events:
         type: integer
       http_timeout:
-        type: string
+        type: integer
       owner_id:
         type: string
       project_id:
@@ -991,7 +859,7 @@ definitions:
       rate_limit:
         type: integer
       rate_limit_duration:
-        type: string
+        type: integer
       secrets:
         items:
           $ref: '#/definitions/datastore.Secret'
@@ -1230,6 +1098,12 @@ definitions:
       updated_at:
         type: string
     type: object
+  models.PagedResponse:
+    properties:
+      content: {}
+      pagination:
+        $ref: '#/definitions/datastore.PaginationData'
+    type: object
   models.PortalLink:
     properties:
       can_manage_endpoint:
@@ -1278,6 +1152,8 @@ definitions:
     type: object
   models.PubSubConfig:
     properties:
+      amqp:
+        $ref: '#/definitions/models.AmqpPubSubconfig'
       google:
         $ref: '#/definitions/models.GooglePubSubConfig'
       kafka:
@@ -1431,7 +1307,7 @@ definitions:
       description:
         type: string
       http_timeout:
-        type: string
+        type: integer
       is_disabled:
         type: boolean
       name:
@@ -1441,7 +1317,7 @@ definitions:
       rate_limit:
         type: integer
       rate_limit_duration:
-        type: string
+        type: integer
       secret:
         type: string
       slack_webhook_url:
@@ -1538,7 +1414,7 @@ info:
     url: https://www.mozilla.org/en-US/MPL/2.0/
   termsOfService: https://getconvoy.io/terms
   title: Convoy API Reference
-  version: 0.9.0
+  version: 24.1.4
 paths:
   /v1/projects/{projectID}/endpoints:
     get:
@@ -1551,6 +1427,15 @@ paths:
         name: projectID
         required: true
         type: string
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
+        type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: A pagination cursor to fetch the next page of a list
         example: 01H0JA5MEES38RRK3HTEJC647K
         in: query
@@ -1592,7 +1477,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -2014,12 +1899,22 @@ paths:
         name: projectID
         required: true
         type: string
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
+        type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: The end date
         example: 2008-05-02T15:04:05
         in: query
         name: endDate
         type: string
-      - description: A list of endpoint IDs to filter by
+      - collectionFormat: csv
+        description: A list of endpoint IDs to filter by
         in: query
         items:
           type: string
@@ -2059,7 +1954,8 @@ paths:
         in: query
         name: startDate
         type: string
-      - description: A list of event delivery statuses to filter by
+      - collectionFormat: csv
+        description: A list of event delivery statuses to filter by
         in: query
         items:
           type: string
@@ -2079,7 +1975,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -2377,12 +2273,22 @@ paths:
         name: projectID
         required: true
         type: string
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
+        type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: The end date
         example: 2008-05-02T15:04:05
         in: query
         name: endDate
         type: string
-      - description: A list of endpoint IDs to filter by
+      - collectionFormat: csv
+        description: A list of endpoint IDs to filter by
         in: query
         items:
           type: string
@@ -2422,7 +2328,8 @@ paths:
         in: query
         name: startDate
         type: string
-      - description: A list of event delivery statuses to filter by
+      - collectionFormat: csv
+        description: A list of event delivery statuses to filter by
         in: query
         items:
           type: string
@@ -2547,12 +2454,22 @@ paths:
         name: projectID
         required: true
         type: string
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
+        type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: The end date
         example: 2008-05-02T15:04:05
         in: query
         name: endDate
         type: string
-      - description: A list of endpoint ids to filter by
+      - collectionFormat: csv
+        description: A list of endpoint ids to filter by
         in: query
         items:
           type: string
@@ -2585,9 +2502,12 @@ paths:
         in: query
         name: sort
         type: string
-      - in: query
+      - collectionFormat: csv
+        in: query
+        items:
+          type: string
         name: sourceId
-        type: string
+        type: array
       - description: The start date
         example: 2006-01-02T15:04:05
         in: query
@@ -2604,7 +2524,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -2654,12 +2574,12 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: Event Details
+      - description: Broadcast Event Details
         in: body
         name: event
         required: true
         schema:
-          $ref: '#/definitions/models.CreateEvent'
+          $ref: '#/definitions/models.BroadcastEvent'
       produces:
       - application/json
       responses:
@@ -2835,34 +2755,64 @@ paths:
         name: projectID
         required: true
         type: string
-      - in: query
-        name: endpointID
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
         type: string
-      - in: query
+        x-enum-varnames:
+        - Next
+        - Prev
+      - description: The end date
+        example: 2008-05-02T15:04:05
+        in: query
+        name: endDate
+        type: string
+      - collectionFormat: csv
+        description: A list of endpoint ids to filter by
+        in: query
         items:
           type: string
-        name: endpointIDs
+        name: endpointId
         type: array
-      - in: query
-        name: eventID
-        type: string
-      - in: query
-        name: eventType
-        type: string
       - in: query
         name: idempotencyKey
         type: string
-      - in: query
-        name: ownerID
+      - description: A pagination cursor to fetch the next page of a list
+        example: 01H0JA5MEES38RRK3HTEJC647K
+        in: query
+        name: next_page_cursor
         type: string
-      - in: query
+      - description: The number of items to return per page
+        example: 20
+        in: query
+        name: perPage
+        type: integer
+      - description: A pagination cursor to fetch the previous page of a list
+        example: 01H0JATTVCXZK8FRDX1M1JN3QY
+        in: query
+        name: prev_page_cursor
+        type: string
+      - description: Any arbitrary value to filter the events payload
+        in: query
         name: query
         type: string
-      - in: query
-        name: sourceID
+      - description: sort order
+        example: ASC | DESC
+        in: query
+        name: sort
         type: string
-      - in: query
-        name: subscriptionID
+      - collectionFormat: csv
+        in: query
+        items:
+          type: string
+        name: sourceId
+        type: array
+      - description: The start date
+        example: 2006-01-02T15:04:05
+        in: query
+        name: startDate
         type: string
       produces:
       - application/json
@@ -2999,7 +2949,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.EventResponse'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "400":
           description: Bad Request
@@ -3044,6 +2994,15 @@ paths:
         name: projectID
         required: true
         type: string
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
+        type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: The end date
         example: 2008-05-02T15:04:05
         in: query
@@ -3085,7 +3044,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -3256,6 +3215,34 @@ paths:
         name: projectID
         required: true
         type: string
+      - collectionFormat: csv
+        description: list of endpoint ids
+        in: query
+        items:
+          type: string
+        name: endpointID
+        type: array
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
+        type: string
+        x-enum-varnames:
+        - Next
+        - Prev
+      - in: query
+        name: next_page_cursor
+        type: string
+      - in: query
+        name: per_page
+        type: integer
+      - in: query
+        name: prev_page_cursor
+        type: string
+      - in: query
+        name: sort
+        type: string
       - description: results per page
         in: query
         name: perPage
@@ -3279,7 +3266,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -3575,6 +3562,15 @@ paths:
         name: projectID
         required: true
         type: string
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
+        type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: A pagination cursor to fetch the next page of a list
         example: 01H0JA5MEES38RRK3HTEJC647K
         in: query
@@ -3616,7 +3612,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:
@@ -3911,7 +3907,17 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: A list of endpointIDs to filter by
+      - enum:
+        - next
+        - prev
+        in: query
+        name: direction
+        type: string
+        x-enum-varnames:
+        - Next
+        - Prev
+      - collectionFormat: csv
+        description: A list of endpointIDs to filter by
         in: query
         items:
           type: string
@@ -3948,7 +3954,7 @@ paths:
             - properties:
                 data:
                   allOf:
-                  - $ref: '#/definitions/handlers.pagedResponse'
+                  - $ref: '#/definitions/models.PagedResponse'
                   - properties:
                       content:
                         items:

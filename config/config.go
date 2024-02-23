@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"reflect"
 	"strings"
@@ -21,11 +22,13 @@ const (
 	DefaultHost                       = "localhost:5005"
 	DefaultSearchTokenizationInterval = 1
 	DefaultCacheTTL                   = time.Minute * 10
+	DefaultAPIVersion                 = "2024-01-01"
 )
 
 var cfgSingleton atomic.Value
 
 var DefaultConfiguration = Configuration{
+	APIVersion:      DefaultAPIVersion,
 	Host:            DefaultHost,
 	Environment:     OSSEnvironment,
 	MaxResponseSize: MaxResponseSizeKb,
@@ -35,6 +38,7 @@ var DefaultConfiguration = Configuration{
 			SSL:        false,
 			Port:       5005,
 			WorkerPort: 5006,
+			AgentPort:  5008,
 		},
 	},
 	Database: DatabaseConfiguration{
@@ -75,7 +79,13 @@ var DefaultConfiguration = Configuration{
 		},
 	},
 	ConsumerPoolSize: 100,
-	EnableProfiling:  false,
+	Tracer: TracerConfiguration{
+		OTel: OTelConfiguration{
+			SampleRate:         1.0,
+			InsecureSkipVerify: true,
+		},
+	},
+	EnableProfiling: false,
 }
 
 type DatabaseConfiguration struct {
@@ -101,7 +111,8 @@ func (dc DatabaseConfiguration) BuildDsn() string {
 
 	authPart := ""
 	if dc.Username != "" || dc.Password != "" {
-		authPart = fmt.Sprintf("%s:%s@", dc.Username, dc.Password)
+		authPrefix := url.UserPassword(dc.Username, dc.Password)
+		authPart = fmt.Sprintf("%s@", authPrefix)
 	}
 
 	dbPart := ""
@@ -126,6 +137,7 @@ type HTTPServerConfiguration struct {
 	SSLCertFile string `json:"ssl_cert_file" envconfig:"CONVOY_SSL_CERT_FILE"`
 	SSLKeyFile  string `json:"ssl_key_file" envconfig:"CONVOY_SSL_KEY_FILE"`
 	Port        uint32 `json:"port" envconfig:"PORT"`
+	AgentPort   uint32 `json:"agent_port" envconfig:"AGENT_PORT"`
 	IngestPort  uint32 `json:"ingest_port" envconfig:"INGEST_PORT"`
 	WorkerPort  uint32 `json:"worker_port" envconfig:"WORKER_PORT"`
 	SocketPort  uint32 `json:"socket_port" envconfig:"SOCKET_PORT"`
@@ -209,15 +221,25 @@ type LoggerConfiguration struct {
 }
 
 type TracerConfiguration struct {
-	Type     TracerProvider        `json:"type" envconfig:"CONVOY_TRACER_PROVIDER"`
-	NewRelic NewRelicConfiguration `json:"new_relic"`
+	Type   TracerProvider      `json:"type" envconfig:"CONVOY_TRACER_PROVIDER"`
+	OTel   OTelConfiguration   `json:"otel"`
+	Sentry SentryConfiguration `json:"sentry"`
 }
 
-type NewRelicConfiguration struct {
-	AppName                  string `json:"app_name" envconfig:"CONVOY_NEWRELIC_APP_NAME"`
-	LicenseKey               string `json:"license_key" envconfig:"CONVOY_NEWRELIC_LICENSE_KEY"`
-	ConfigEnabled            bool   `json:"config_enabled" envconfig:"CONVOY_NEWRELIC_CONFIG_ENABLED"`
-	DistributedTracerEnabled bool   `json:"distributed_tracer_enabled" envconfig:"CONVOY_NEWRELIC_DISTRIBUTED_TRACER_ENABLED"`
+type OTelConfiguration struct {
+	OTelAuth           OTelAuthConfiguration `json:"otel_auth"`
+	SampleRate         float64               `json:"sample_rate" envconfig:"CONVOY_OTEL_SAMPLE_RATE"`
+	CollectorURL       string                `json:"collector_url" envconfig:"CONVOY_OTEL_COLLECTOR_URL"`
+	InsecureSkipVerify bool                  `json:"insecure_skip_verify" envconfig:"CONVOY_OTEL_INSECURE_SKIP_VERIFY"`
+}
+
+type OTelAuthConfiguration struct {
+	HeaderName  string `json:"header_name" envconfig:"CONVOY_OTEL_AUTH_HEADER_NAME"`
+	HeaderValue string `json:"header_value" envconfig:"CONVOY_OTEL_AUTH_HEADER_VALUE"`
+}
+
+type SentryConfiguration struct {
+	DSN string `json:"dsn" envconfig:"CONVOY_SENTRY_DSN"`
 }
 
 type AnalyticsConfiguration struct {
@@ -250,9 +272,14 @@ const (
 )
 
 const (
+	OTelTracerProvider    TracerProvider = "otel"
+	SentryTracerProvider  TracerProvider = "sentry"
+	DatadogTracerProvider TracerProvider = "datadog"
+)
+
+const (
 	RedisQueueProvider       QueueProvider           = "redis"
 	DefaultSignatureHeader   SignatureHeaderProvider = "X-Convoy-Signature"
-	NewRelicTracerProvider   TracerProvider          = "new_relic"
 	PostgresDatabaseProvider DatabaseProvider        = "postgres"
 	TypesenseSearchProvider  SearchProvider          = "typesense"
 )
@@ -299,6 +326,7 @@ func (ft FlagLevel) MarshalJSON() ([]byte, error) {
 }
 
 type Configuration struct {
+	APIVersion         string                     `json:"api_version" envconfig:"CONVOY_API_VERSION"`
 	Auth               AuthConfiguration          `json:"auth,omitempty"`
 	Database           DatabaseConfiguration      `json:"database"`
 	Redis              RedisConfiguration         `json:"redis"`

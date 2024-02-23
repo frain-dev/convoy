@@ -93,7 +93,7 @@ func (h *Handler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Event Deliveries
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string								true	"Project ID"
+//	@Param			projectID	path		string							true	"Project ID"
 //	@Param			request		query		models.QueryListEventDelivery	false	"Query Params"
 //	@Success		200			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
@@ -140,8 +140,8 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 //	@Tags			Event Deliveries
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string					true	"Project ID"
-//	@Param			deliveryIds	body		models.IDs	            true	"event delivery ids"
+//	@Param			projectID	path		string		true	"Project ID"
+//	@Param			deliveryIds	body		models.IDs	true	"event delivery ids"
 //	@Success		200			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
@@ -187,7 +187,7 @@ func (h *Handler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Requ
 //	@Produce		json
 //	@Param			projectID	path		string							true	"Project ID"
 //	@Param			request		query		models.QueryListEventDelivery	false	"Query Params"
-//	@Success		200			{object}	util.ServerResponse{data=pagedResponse{content=[]models.EventDeliveryResponse}}
+//	@Success		200			{object}	util.ServerResponse{data=models.PagedResponse{content=[]models.EventDeliveryResponse}}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/eventdeliveries [get]
@@ -232,7 +232,7 @@ func (h *Handler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request
 
 		if len(endpointIDs) == 0 {
 			_ = render.Render(w, r, util.NewServerResponse("App events fetched successfully",
-				pagedResponse{Content: endpointIDs, Pagination: &datastore.PaginationData{PerPage: int64(data.Filter.Pageable.PerPage)}}, http.StatusOK))
+				models.PagedResponse{Content: endpointIDs, Pagination: &datastore.PaginationData{PerPage: int64(data.Filter.Pageable.PerPage)}}, http.StatusOK))
 			return
 		}
 
@@ -253,7 +253,7 @@ func (h *Handler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request
 	})
 
 	_ = render.Render(w, r, util.NewServerResponse("Event deliveries fetched successfully",
-		pagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
+		models.PagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 func (h *Handler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Request) {

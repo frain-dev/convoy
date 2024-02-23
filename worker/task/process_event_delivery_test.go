@@ -72,7 +72,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
-						RateLimitDuration: "1m",
+						RateLimitDuration: 60,
 						Status:            datastore.InactiveEndpointStatus,
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -114,7 +114,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(&datastore.Endpoint{
 						ProjectID:         "123",
 						RateLimit:         10,
-						RateLimitDuration: "1m",
+						RateLimitDuration: 60,
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
 						},
@@ -195,7 +195,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							{Value: "secret"},
 						},
 						RateLimit:         10,
-						RateLimitDuration: "1m",
+						RateLimitDuration: 60,
 						ProjectID:         "123",
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
@@ -281,7 +281,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							{Value: "secret"},
 						},
 						RateLimit:         10,
-						RateLimitDuration: "1m",
+						RateLimitDuration: 60,
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -365,7 +365,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							{Value: "secret"},
 						},
 						RateLimit:         10,
-						RateLimitDuration: "1m",
+						RateLimitDuration: 60,
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -450,7 +450,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							{Value: "secret"},
 						},
 						RateLimit:         10,
-						RateLimitDuration: "1m",
+						RateLimitDuration: 60,
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -535,7 +535,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							{Value: "secret"},
 						},
 						RateLimit:         10,
-						RateLimitDuration: "1m",
+						RateLimitDuration: 60,
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil).Times(1)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -620,7 +620,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						RateLimit:         10,
 						Status:            datastore.ActiveEndpointStatus,
-						RateLimitDuration: "1m",
+						RateLimitDuration: 60,
 					}, nil).Times(1)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{}, nil)
@@ -709,7 +709,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 						RateLimit:         10,
 						TargetURL:         "https://google.com",
-						RateLimitDuration: "1m",
+						RateLimitDuration: 60,
 						Status:            datastore.PendingEndpointStatus,
 					}, nil).Times(1)
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).

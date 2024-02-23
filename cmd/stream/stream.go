@@ -7,7 +7,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
@@ -25,11 +24,6 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 	var socketPort uint32
 	var logLevel string
 
-	var newRelicApp string
-	var newRelicKey string
-	var newRelicTracerEnabled bool
-	var newRelicConfigEnabled bool
-
 	cmd := &cobra.Command{
 		Use:   "stream",
 		Short: "Start a websocket server to pipe events to a convoy cli instance",
@@ -37,6 +31,9 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, cancel := context.WithCancel(cmd.Context())
+			defer cancel()
+
 			// override config with cli flags
 			cliConfig, err := buildCliFlagConfiguration(cmd)
 			if err != nil {
@@ -116,7 +113,7 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 			}
 			q := redisQueue.NewQueue(opts)
 
-			consumer := worker.NewConsumer(100, q, lo)
+			consumer := worker.NewConsumer(ctx, 100, q, lo)
 			consumer.RegisterHandlers(convoy.StreamCliEventsProcessor, h.EventDeliveryCLiHandler(r))
 
 			// start worker
@@ -141,58 +138,11 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().Uint32Var(&socketPort, "socket-port", 5008, "Socket port")
 	cmd.Flags().StringVar(&logLevel, "log-level", "error", "stream log level")
 
-	cmd.Flags().BoolVar(&newRelicConfigEnabled, "new-relic-config-enabled", false, "Enable new-relic config")
-	cmd.Flags().BoolVar(&newRelicTracerEnabled, "new-relic-tracer-enabled", false, "Enable new-relic distributed tracer")
-	cmd.Flags().StringVar(&newRelicApp, "new-relic-app", "", "NewRelic application name")
-	cmd.Flags().StringVar(&newRelicKey, "new-relic-key", "", "NewRelic application license key")
-
 	return cmd
 }
 
 func buildCliFlagConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	c := &config.Configuration{}
-
-	// CONVOY_NEWRELIC_APP_NAME
-	newReplicApp, err := cmd.Flags().GetString("new-relic-app")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(newReplicApp) {
-		c.Tracer.NewRelic.AppName = newReplicApp
-	}
-
-	// CONVOY_NEWRELIC_LICENSE_KEY
-	newReplicKey, err := cmd.Flags().GetString("new-relic-key")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(newReplicKey) {
-		c.Tracer.NewRelic.LicenseKey = newReplicKey
-	}
-
-	// CONVOY_NEWRELIC_CONFIG_ENABLED
-	isNRCESet := cmd.Flags().Changed("new-relic-config-enabled")
-	if isNRCESet {
-		newReplicConfigEnabled, err := cmd.Flags().GetBool("new-relic-config-enabled")
-		if err != nil {
-			return nil, err
-		}
-
-		c.Tracer.NewRelic.ConfigEnabled = newReplicConfigEnabled
-	}
-
-	// CONVOY_NEWRELIC_DISTRIBUTED_TRACER_ENABLED
-	isNRTESet := cmd.Flags().Changed("new-relic-tracer-enabled")
-	if isNRTESet {
-		newReplicTracerEnabled, err := cmd.Flags().GetBool("new-relic-tracer-enabled")
-		if err != nil {
-			return nil, err
-		}
-
-		c.Tracer.NewRelic.DistributedTracerEnabled = newReplicTracerEnabled
-	}
 
 	return c, nil
 }

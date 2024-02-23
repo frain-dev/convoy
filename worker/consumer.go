@@ -2,12 +2,13 @@ package worker
 
 import (
 	"context"
+
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/internal/pkg/apm"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/hibiken/asynq"
+	"go.opentelemetry.io/otel"
 )
 
 type Consumer struct {
@@ -17,7 +18,7 @@ type Consumer struct {
 	log   log.StdLogger
 }
 
-func NewConsumer(consumerPoolSize int, q queue.Queuer, lo log.StdLogger) *Consumer {
+func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo log.StdLogger) *Consumer {
 	lo.Infof("The consumer pool size has been set to %d.", consumerPoolSize)
 
 	var opts asynq.RedisConnOpt
@@ -35,7 +36,7 @@ func NewConsumer(consumerPoolSize int, q queue.Queuer, lo log.StdLogger) *Consum
 		asynq.Config{
 			Concurrency: consumerPoolSize,
 			BaseContext: func() context.Context {
-				return log.NewContext(context.Background(), lo, nil)
+				return ctx
 			},
 			Queues: q.Options().Names,
 			IsFailure: func(err error) bool {
@@ -76,10 +77,13 @@ func (c *Consumer) Stop() {
 
 func (c *Consumer) loggingMiddleware(h asynq.Handler) asynq.Handler {
 	return asynq.HandlerFunc(func(ctx context.Context, t *asynq.Task) error {
-		txn, innerCtx := apm.StartTransaction(ctx, t.Type())
-		defer txn.End()
+		traceProvider := otel.GetTracerProvider()
+		tracer := traceProvider.Tracer("asynq.workers")
 
-		err := h.ProcessTask(innerCtx, t)
+		ctx, span := tracer.Start(ctx, t.Type())
+		defer span.End()
+
+		err := h.ProcessTask(ctx, t)
 		if err != nil {
 			c.log.WithError(err).WithField("job", t.Type()).Error("job failed")
 			return err

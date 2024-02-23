@@ -43,7 +43,7 @@ type PublicEndpointIntegrationTestSuite struct {
 func (s *PublicEndpointIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicEndpointIntegrationTestSuite) SetupTest() {
@@ -607,7 +607,7 @@ type PublicEventIntegrationTestSuite struct {
 func (s *PublicEventIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicEventIntegrationTestSuite) SetupTest() {
@@ -680,19 +680,47 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateDynamicEvent() {
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
 
 	bodyStr := `{
-        "endpoint": {
             "url":"https://testing.com",
-            "secret": "12345"
-        },
-        "event": {
+            "secret": "12345",
             "event_type":"*",
+            "event_types":["*"],
             "data": {"name":"daniel"},
-            "custom_headers": {"x-sig":"convoy"}
+            "idempotency_key": "idem-key-1"
         }
 }`
 	body := serialize(bodyStr, endpointID)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/events/dynamic", s.DefaultProject.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+}
+
+func (s *PublicEventIntegrationTestSuite) Test_CreateBroadcastEvent() {
+	endpointID := ulid.Make().String()
+	expectedStatusCode := http.StatusCreated
+
+	// Just Before.
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
+
+	_, _ = testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
+		EventTypes: []string{"some.event"},
+		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
+	})
+
+	bodyStr := `{
+            "event_type":"*",
+            "data": {"name":"daniel"},
+            "idempotency_key": "idem-key-1"
+        }
+}`
+	body := serialize(bodyStr, endpointID)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/events/broadcast", s.DefaultProject.UID)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 	// Act.
@@ -722,14 +750,6 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateFanoutEvent_MultipleEndpoin
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// Deep Assert.
-	var event datastore.Event
-	parseResponse(s.T(), w.Result(), &event)
-
-	require.NotEmpty(s.T(), event.UID)
-	require.Equal(s.T(), event.Endpoints[0], endpointID)
-	require.Equal(s.T(), 2, len(event.Endpoints))
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_Event() {
@@ -1162,7 +1182,7 @@ type PublicPortalLinkIntegrationTestSuite struct {
 func (s *PublicPortalLinkIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicPortalLinkIntegrationTestSuite) SetupTest() {
@@ -1424,7 +1444,7 @@ type PublicProjectIntegrationTestSuite struct {
 func (s *PublicProjectIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicProjectIntegrationTestSuite) SetupTest() {
@@ -1762,7 +1782,7 @@ type PublicSourceIntegrationTestSuite struct {
 func (s *PublicSourceIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicSourceIntegrationTestSuite) SetupTest() {
@@ -2095,7 +2115,7 @@ type PublicSubscriptionIntegrationTestSuite struct {
 func (s *PublicSubscriptionIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicSubscriptionIntegrationTestSuite) SetupTest() {
@@ -2596,7 +2616,7 @@ type PublicMetaEventIntegrationTestSuite struct {
 func (s *PublicMetaEventIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicMetaEventIntegrationTestSuite) SetupTest() {

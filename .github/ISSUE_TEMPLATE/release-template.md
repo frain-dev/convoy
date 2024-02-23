@@ -1,5 +1,5 @@
 ---
-name: Release Template
+name: Release template
 about: This template is used to describe all the todo required for releasing a new
   binary
 title: "[Release]"

@@ -1,7 +1,7 @@
 <div [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'">
 	<div convoy-card class="p-24px relative">
 		<form [formGroup]="addNewEndpointForm">
-			<div class="grid gap-24px mb-16px" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
+			<div class="grid gap-24px" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
 				<convoy-input-field>
 					<label for="name" convoy-label required="true">Endpoint Name</label>
 					<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Enter endpoint name here" />
@@ -15,25 +15,39 @@
 				</convoy-input-field>
 			</div>
 
-			<div class="grid gap-24px mb-16px" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
-				<convoy-input-field *ngIf="type !== 'portal'">
-					<label for="owner_id" convoy-label>
-						Owner ID
-						<convoy-tooltip
-							class="ml-4px"
-							size="sm"
-							tooltipContent="A unique id for identifying a group of endpoints, like a user id. Useful for fanning out an event to multiple endpoints and creating portal link for multiple endpoints."
-							position="top-right"
-						></convoy-tooltip>
-					</label>
-					<input type="text" id="owner_id" convoy-input autocomplete="owner_id" formControlName="owner_id" placeholder="Enter owner id here" />
-				</convoy-input-field>
+			<convoy-input-field className="mb-24px">
+				<label for="secret" convoy-label>Endpoint Secret</label>
+				<div class="flex items-center justify-between w-full h-46px border border-new.gray-200 bg-[#F7F9FC] rounded-[6px] px-16px mb-12px" *ngIf="editMode && type !== 'portal'">
+					<span class="text-12 text-new.gray-600 font-normal truncate">{{ endpointSecret?.value || '' }}</span>
+					<div class="ml-8px" convoy-copy-button [text]="endpointSecret?.value || ''" notificationText="Endpoint secret copied to clipboard."></div>
+				</div>
+				<input *ngIf="!editMode || type === 'portal'" type="secret" id="secret" convoy-input formControlName="secret" placeholder="Enter endpoint secret here" />
+			</convoy-input-field>
 
-				<convoy-input-field>
-					<label for="secret" convoy-label>Endpoint Secret</label>
-					<input type="secret" id="secret" convoy-input formControlName="secret" placeholder="Enter endpoint secret here" />
-				</convoy-input-field>
-			</div>
+			<ng-container *ngIf="showConfig('owner_id')">
+				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
+					<div class="flex justify-between items-center mb-16px">
+						<label for="owner_id" convoy-label>
+							Owner ID
+							<convoy-tooltip
+								class="ml-4px"
+								size="sm"
+								tooltipContent="A unique id for identifying a group of endpoints, like a user id. Useful for fanning out an event to multiple endpoints and creating portal link for multiple endpoints."
+								position="top-right"
+							></convoy-tooltip>
+						</label>
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('owner_id')">
+							<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
+								<use xlink:href="#delete-icon2"></use>
+							</svg>
+						</button>
+					</div>
+
+					<convoy-input-field>
+						<input type="text" id="owner_id" convoy-input autocomplete="owner_id" formControlName="owner_id" placeholder="Enter owner id here" />
+					</convoy-input-field>
+				</div>
+			</ng-container>
 
 			<ng-container *ngIf="showConfig('rate_limit')">
 				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">

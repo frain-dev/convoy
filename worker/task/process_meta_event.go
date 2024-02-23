@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"time"
+
 	"github.com/frain-dev/convoy/internal/pkg/dedup"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/util"
-	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -121,12 +122,7 @@ func sendUrlRequest(project *datastore.Project, metaEvent *datastore.MetaEvent) 
 		return nil, err
 	}
 
-	httpDuration, err := time.ParseDuration(convoy.HTTP_TIMEOUT)
-	if err != nil {
-		log.WithError(err).Error("failed to parse timeout duration")
-		return nil, err
-	}
-
+	httpDuration := convoy.HTTP_TIMEOUT_IN_DURATION
 	dispatch, err := net.NewDispatcher(httpDuration, cfg.Server.HTTP.HttpProxy)
 	if err != nil {
 		log.WithError(err).Error("error occurred while creating http client")

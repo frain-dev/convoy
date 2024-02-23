@@ -15,6 +15,7 @@ type Filter struct {
 	EventID        string
 	EventType      string
 	SourceID       string
+	SourceIDs      []string
 	Pageable       Pageable
 	IdempotencyKey string
 	Status         []EventDeliveryStatus
@@ -36,6 +37,7 @@ type ApiKeyFilter struct {
 }
 
 type FilterBy struct {
+	OwnerID      string
 	EndpointID   string
 	EndpointIDs  []string
 	ProjectID    string

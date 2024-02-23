@@ -26,34 +26,20 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	var env string
 	var host string
 	var proxy string
-	var sentry string
 	var limiter string
 	var cache string
 	var logger string
 	var logLevel string
 	var sslKeyFile string
 	var sslCertFile string
-	var retryStrategy string
-	var signatureHash string
-	var signatureHeader string
-	var newRelicApp string
-	var newRelicKey string
 	var promaddr string
 
 	var apiKeyAuthConfig string
 	var basicAuthConfig string
+	var nativeRealmEnabled bool
 
 	var ssl bool
-	var disableEndpoint bool
-	var replayAttacks bool
-	var nativeRealmEnabled bool
-	var newRelicTracerEnabled bool
-	var newRelicConfigEnabled bool
-
 	var port uint32
-	var retryLimit uint64
-	var workerPort uint32
-	var retryInterval uint64
 	var maxResponseSize uint64
 
 	cmd := &cobra.Command{
@@ -71,7 +57,7 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			err = StartConvoyServer(a)
+			err = startConvoyServer(a)
 
 			if err != nil {
 				a.Logger.Errorf("Error starting convoy server: %v", err)
@@ -90,40 +76,27 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&host, "host", "", "Host - The application host name")
 	cmd.Flags().StringVar(&cache, "cache", "redis", `Cache Provider ("redis" or "in-memory")`)
 	cmd.Flags().StringVar(&limiter, "limiter", "redis", `Rate limiter provider ("redis" or "in-memory")`)
-	cmd.Flags().StringVar(&sentry, "sentry", "", "Sentry DSN")
 	cmd.Flags().StringVar(&sslCertFile, "ssl-cert-file", "", "SSL certificate file")
 	cmd.Flags().StringVar(&sslKeyFile, "ssl-key-file", "", "SSL key file")
-	cmd.Flags().StringVar(&retryStrategy, "retry-strategy", "", "Endpoint retry strategy")
-	cmd.Flags().StringVar(&signatureHash, "signature-hash", "", "Application signature hash")
-	cmd.Flags().StringVar(&signatureHeader, "signature-header", "", "Application signature header")
-	cmd.Flags().StringVar(&newRelicApp, "new-relic-app", "", "NewRelic application name")
-	cmd.Flags().StringVar(&newRelicKey, "new-relic-key", "", "NewRelic application license key")
 	cmd.Flags().StringVar(&promaddr, "promaddr", "", `Prometheus dsn`)
 
 	cmd.Flags().BoolVar(&ssl, "ssl", false, "Configure SSL")
 	cmd.Flags().BoolVar(&nativeRealmEnabled, "native", false, "Enable native-realm authentication")
-	cmd.Flags().BoolVar(&disableEndpoint, "disable-endpoint", false, "Disable all application endpoints")
-	cmd.Flags().BoolVar(&replayAttacks, "replay-attacks", false, "Enable feature to prevent replay attacks")
-	cmd.Flags().BoolVar(&newRelicConfigEnabled, "new-relic-config-enabled", false, "Enable new-relic config")
-	cmd.Flags().BoolVar(&newRelicTracerEnabled, "new-relic-tracer-enabled", false, "Enable new-relic distributed tracer")
 
 	cmd.Flags().Uint32Var(&port, "port", 0, "Server port")
-	cmd.Flags().Uint32Var(&workerPort, "worker-port", 0, "Worker port")
-	cmd.Flags().Uint64Var(&retryLimit, "retry-limit", 0, "Endpoint retry limit")
 	cmd.Flags().Uint64Var(&maxResponseSize, "max-response-size", 0, "Max response size")
-	cmd.Flags().Uint64Var(&retryInterval, "retry-interval", 0, "Endpoint retry interval")
 
 	return cmd
 }
 
-func StartConvoyServer(a *cli.App) error {
+func startConvoyServer(a *cli.App) error {
 	cfg, err := config.Get()
 	if err != nil {
 		a.Logger.WithError(err).Fatal("Failed to load configuration")
 	}
 
 	start := time.Now()
-	a.Logger.Info("Starting Convoy server...")
+	a.Logger.Info("Starting Convoy control plane...")
 
 	apiKeyRepo := postgres.NewAPIKeyRepo(a.DB, a.Cache)
 	userRepo := postgres.NewUserRepo(a.DB, a.Cache)
@@ -159,7 +132,6 @@ func StartConvoyServer(a *cli.App) error {
 			DB:     a.DB,
 			Queue:  a.Queue,
 			Logger: lo,
-			Tracer: a.Tracer,
 			Cache:  a.Cache,
 		})
 	if err != nil {
@@ -171,7 +143,7 @@ func StartConvoyServer(a *cli.App) error {
 		return err
 	}
 
-	srv.SetHandler(handler.BuildRoutes())
+	srv.SetHandler(handler.BuildControlPlaneRoutes())
 
 	// initialize scheduler
 	s := worker.NewScheduler(a.Queue, lo)
@@ -351,16 +323,6 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		c.Server.HTTP.Port = port
 	}
 
-	// WORKER_PORT
-	workerPort, err := cmd.Flags().GetUint32("worker-port")
-	if err != nil {
-		return nil, err
-	}
-
-	if workerPort != 0 {
-		c.Server.HTTP.WorkerPort = workerPort
-	}
-
 	// CONVOY_SSL_KEY_FILE
 	sslKeyFile, err := cmd.Flags().GetString("ssl-key-file")
 	if err != nil {
@@ -399,48 +361,6 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	if maxResponseSize != 0 {
 		c.MaxResponseSize = maxResponseSize
-	}
-
-	// CONVOY_NEWRELIC_APP_NAME
-	newReplicApp, err := cmd.Flags().GetString("new-relic-app")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(newReplicApp) {
-		c.Tracer.NewRelic.AppName = newReplicApp
-	}
-
-	// CONVOY_NEWRELIC_LICENSE_KEY
-	newReplicKey, err := cmd.Flags().GetString("new-relic-key")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(newReplicKey) {
-		c.Tracer.NewRelic.LicenseKey = newReplicKey
-	}
-
-	// CONVOY_NEWRELIC_CONFIG_ENABLED
-	isNRCESet := cmd.Flags().Changed("new-relic-config-enabled")
-	if isNRCESet {
-		newReplicConfigEnabled, err := cmd.Flags().GetBool("new-relic-config-enabled")
-		if err != nil {
-			return nil, err
-		}
-
-		c.Tracer.NewRelic.ConfigEnabled = newReplicConfigEnabled
-	}
-
-	// CONVOY_NEWRELIC_DISTRIBUTED_TRACER_ENABLED
-	isNRTESet := cmd.Flags().Changed("new-relic-tracer-enabled")
-	if isNRTESet {
-		newReplicTracerEnabled, err := cmd.Flags().GetBool("new-relic-tracer-enabled")
-		if err != nil {
-			return nil, err
-		}
-
-		c.Tracer.NewRelic.DistributedTracerEnabled = newReplicTracerEnabled
 	}
 
 	// CONVOY_NATIVE_REALM_ENABLED

@@ -31,7 +31,7 @@ import (
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.CreateEvent	true	"Event Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.EventResponse}
+//	@Success		200			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events [post]
@@ -101,6 +101,54 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Event queued successfully", 200, http.StatusCreated))
 }
 
+// CreateBroadcastEvent
+//
+//	@Summary		Create an event
+//	@Description	This endpoint creates an endpoint event
+//	@Tags			Events
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string					true	"Project ID"
+//	@Param			event		body		models.BroadcastEvent	true	"Broadcast Event Details"
+//	@Success		200			{object}	util.ServerResponse{data=models.EventResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/events [post]
+func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
+	var newMessage models.BroadcastEvent
+	err := util.ReadJSON(r, &newMessage)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	err = newMessage.Validate()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	cbe := services.CreateBroadcastEventService{
+		Queue:          h.A.Queue,
+		BroadcastEvent: &newMessage,
+		Project:        project,
+	}
+
+	err = cbe.Run(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Broadcast event created successfully", nil, http.StatusCreated))
+}
+
 // CreateEndpointFanoutEvent
 //
 //	@Summary		Fan out an event
@@ -110,7 +158,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.FanoutEvent	true	"Event Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.EventResponse}
+//	@Success		200			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/fanout [post]
@@ -149,11 +197,10 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	resp := &models.EventResponse{Event: event}
 	if event.IsDuplicateEvent {
-		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", resp, http.StatusCreated))
+		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", nil, http.StatusCreated))
 	} else {
-		_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", resp, http.StatusCreated))
+		_ = render.Render(w, r, util.NewServerResponse("Endpoint fanout event queued successfully", nil, http.StatusCreated))
 	}
 }
 
@@ -248,14 +295,14 @@ func (h *Handler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string									true	"Project ID"
-//	@Param			request		query		models.QueryBatchReplayEventResponse	false	"Query Params"
+//	@Param			projectID	path		string					true	"Project ID"
+//	@Param			request		query		models.QueryListEvent	false	"Query Params"
 //	@Success		200			{object}	util.ServerResponse{data=datastore.Event{data=Stub}}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/batchreplay [post]
 func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
-	var q *models.QueryBatchReplayEvent
+	var q *models.QueryListEvent
 	p, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -320,7 +367,7 @@ func (h *Handler) GetEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			projectID	path		string					true	"Project ID"
 //	@Param			request		query		models.QueryListEvent	false	"Query Params"
-//	@Success		200			{object}	util.ServerResponse{data=pagedResponse{content=[]models.EventResponse}}
+//	@Success		200			{object}	util.ServerResponse{data=models.PagedResponse{content=[]models.EventResponse}}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events [get]
@@ -354,7 +401,7 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 
 		if len(endpointIDs) == 0 {
 			_ = render.Render(w, r, util.NewServerResponse("App events fetched successfully",
-				pagedResponse{Content: endpointIDs, Pagination: &datastore.PaginationData{PerPage: int64(data.Filter.Pageable.PerPage)}}, http.StatusOK))
+				models.PagedResponse{Content: endpointIDs, Pagination: &datastore.PaginationData{PerPage: int64(data.Filter.Pageable.PerPage)}}, http.StatusOK))
 			return
 		}
 
@@ -373,11 +420,11 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 		return models.EventResponse{Event: &event}
 	})
 	_ = render.Render(w, r, util.NewServerResponse("App events fetched successfully",
-		pagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
+		models.PagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
-	var q *models.QueryCountAffectedEvents
+	var q *models.QueryListEvent
 	p, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

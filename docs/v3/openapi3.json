@@ -1,21 +1,52 @@
 {
 	"components": {
 		"schemas": {
-			"config.SignatureHeaderProvider": {
-				"enum": [
-					"X-Convoy-Signature"
-				],
-				"type": "string",
-				"x-enum-varnames": [
-					"DefaultSignatureHeader"
-				]
-			},
 			"datastore.AlertConfiguration": {
 				"properties": {
 					"count": {
 						"type": "integer"
 					},
 					"threshold": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.AmqpCredentials": {
+				"properties": {
+					"password": {
+						"type": "string"
+					},
+					"user": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.AmqpPubSubConfig": {
+				"properties": {
+					"auth": {
+						"$ref": "#/components/schemas/datastore.AmqpCredentials"
+					},
+					"bindedExchange": {
+						"type": "string"
+					},
+					"deadLetterExchange": {
+						"type": "string"
+					},
+					"host": {
+						"type": "string"
+					},
+					"port": {
+						"type": "string"
+					},
+					"queue": {
+						"type": "string"
+					},
+					"routingKey": {
+						"type": "string"
+					},
+					"schema": {
 						"type": "string"
 					}
 				},
@@ -195,7 +226,7 @@
 						"type": "integer"
 					},
 					"http_timeout": {
-						"type": "string"
+						"type": "integer"
 					},
 					"owner_id": {
 						"type": "string"
@@ -207,7 +238,7 @@
 						"type": "integer"
 					},
 					"rate_limit_duration": {
-						"type": "string"
+						"type": "integer"
 					},
 					"secrets": {
 						"items": {
@@ -483,43 +514,6 @@
 				},
 				"type": "object"
 			},
-			"datastore.MetaEventConfiguration": {
-				"properties": {
-					"event_type": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array"
-					},
-					"is_enabled": {
-						"type": "boolean"
-					},
-					"pub_sub": {
-						"$ref": "#/components/schemas/datastore.PubSubConfig"
-					},
-					"secret": {
-						"type": "string"
-					},
-					"type": {
-						"$ref": "#/components/schemas/datastore.MetaEventType"
-					},
-					"url": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.MetaEventType": {
-				"enum": [
-					"http",
-					"pub_sub"
-				],
-				"type": "string",
-				"x-enum-varnames": [
-					"HTTPMetaEvent",
-					"PubSubMetaEvent"
-				]
-			},
 			"datastore.Metadata": {
 				"properties": {
 					"data": {
@@ -562,26 +556,6 @@
 					"Prev"
 				]
 			},
-			"datastore.Pageable": {
-				"properties": {
-					"direction": {
-						"$ref": "#/components/schemas/datastore.PageDirection"
-					},
-					"next_page_cursor": {
-						"type": "string"
-					},
-					"per_page": {
-						"type": "integer"
-					},
-					"prev_page_cursor": {
-						"type": "string"
-					},
-					"sort": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"datastore.PaginationData": {
 				"properties": {
 					"has_next_page": {
@@ -602,107 +576,6 @@
 				},
 				"type": "object"
 			},
-			"datastore.Project": {
-				"properties": {
-					"config": {
-						"$ref": "#/components/schemas/datastore.ProjectConfig"
-					},
-					"created_at": {
-						"type": "string"
-					},
-					"deleted_at": {
-						"type": "string"
-					},
-					"logo_url": {
-						"type": "string"
-					},
-					"name": {
-						"type": "string"
-					},
-					"organisation_id": {
-						"type": "string"
-					},
-					"retained_events": {
-						"type": "integer"
-					},
-					"statistics": {
-						"$ref": "#/components/schemas/datastore.ProjectStatistics"
-					},
-					"type": {
-						"$ref": "#/components/schemas/datastore.ProjectType"
-					},
-					"uid": {
-						"type": "string"
-					},
-					"updated_at": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.ProjectConfig": {
-				"properties": {
-					"add_event_id_trace_headers": {
-						"type": "boolean"
-					},
-					"disable_endpoint": {
-						"type": "boolean"
-					},
-					"max_payload_read_size": {
-						"type": "integer"
-					},
-					"meta_event": {
-						"$ref": "#/components/schemas/datastore.MetaEventConfiguration"
-					},
-					"ratelimit": {
-						"$ref": "#/components/schemas/datastore.RateLimitConfiguration"
-					},
-					"replay_attacks_prevention_enabled": {
-						"type": "boolean"
-					},
-					"retention_policy": {
-						"$ref": "#/components/schemas/datastore.RetentionPolicyConfiguration"
-					},
-					"retention_policy_enabled": {
-						"type": "boolean"
-					},
-					"signature": {
-						"$ref": "#/components/schemas/datastore.SignatureConfiguration"
-					},
-					"strategy": {
-						"$ref": "#/components/schemas/datastore.StrategyConfiguration"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.ProjectStatistics": {
-				"properties": {
-					"messages_sent": {
-						"type": "integer"
-					},
-					"total_endpoints": {
-						"type": "integer"
-					},
-					"total_sources": {
-						"type": "integer"
-					},
-					"total_subscriptions": {
-						"type": "integer"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.ProjectType": {
-				"enum": [
-					"outgoing",
-					"incoming"
-				],
-				"type": "string",
-				"x-enum-varnames": [
-					"OutgoingProject",
-					"IncomingProject"
-				]
-			},
 			"datastore.ProviderConfig": {
 				"properties": {
 					"twitter": {
@@ -713,6 +586,9 @@
 			},
 			"datastore.PubSubConfig": {
 				"properties": {
+					"amqp": {
+						"$ref": "#/components/schemas/datastore.AmqpPubSubConfig"
+					},
 					"google": {
 						"$ref": "#/components/schemas/datastore.GooglePubSubConfig"
 					},
@@ -735,13 +611,15 @@
 				"enum": [
 					"sqs",
 					"google",
-					"kafka"
+					"kafka",
+					"amqp"
 				],
 				"type": "string",
 				"x-enum-varnames": [
 					"SqsPubSub",
 					"GooglePubSub",
-					"KafkaPubSub"
+					"KafkaPubSub",
+					"AmqpPubSub"
 				]
 			},
 			"datastore.RateLimitConfiguration": {
@@ -751,17 +629,6 @@
 					},
 					"duration": {
 						"type": "integer"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.RetentionPolicyConfiguration": {
-				"properties": {
-					"policy": {
-						"type": "string"
-					},
-					"search_policy": {
-						"type": "string"
 					}
 				},
 				"type": "object"
@@ -797,17 +664,6 @@
 				},
 				"type": "object"
 			},
-			"datastore.SearchParams": {
-				"properties": {
-					"created_at_end": {
-						"type": "integer"
-					},
-					"created_at_start": {
-						"type": "integer"
-					}
-				},
-				"type": "object"
-			},
 			"datastore.Secret": {
 				"properties": {
 					"created_at": {
@@ -826,37 +682,6 @@
 						"type": "string"
 					},
 					"value": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.SignatureConfiguration": {
-				"properties": {
-					"header": {
-						"$ref": "#/components/schemas/config.SignatureHeaderProvider"
-					},
-					"versions": {
-						"items": {
-							"$ref": "#/components/schemas/datastore.SignatureVersion"
-						},
-						"type": "array"
-					}
-				},
-				"type": "object"
-			},
-			"datastore.SignatureVersion": {
-				"properties": {
-					"created_at": {
-						"type": "string"
-					},
-					"encoding": {
-						"$ref": "#/components/schemas/datastore.EncodingType"
-					},
-					"hash": {
-						"type": "string"
-					},
-					"uid": {
 						"type": "string"
 					}
 				},
@@ -952,20 +777,6 @@
 					"DBChangeStream"
 				]
 			},
-			"datastore.StrategyConfiguration": {
-				"properties": {
-					"duration": {
-						"type": "integer"
-					},
-					"retry_count": {
-						"type": "integer"
-					},
-					"type": {
-						"$ref": "#/components/schemas/datastore.StrategyProvider"
-					}
-				},
-				"type": "object"
-			},
 			"datastore.StrategyProvider": {
 				"enum": [
 					"linear",
@@ -1033,15 +844,6 @@
 			"handlers.Stub": {
 				"type": "object"
 			},
-			"handlers.pagedResponse": {
-				"properties": {
-					"content": {},
-					"pagination": {
-						"$ref": "#/components/schemas/datastore.PaginationData"
-					}
-				},
-				"type": "object"
-			},
 			"httpheader.HTTPHeader": {
 				"additionalProperties": {
 					"items": {
@@ -1057,6 +859,54 @@
 						"type": "integer"
 					},
 					"threshold": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.AmqpAuth": {
+				"properties": {
+					"password": {
+						"type": "string"
+					},
+					"user": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.AmqpExchange": {
+				"properties": {
+					"exchange": {
+						"type": "string"
+					},
+					"routingKey": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.AmqpPubSubconfig": {
+				"properties": {
+					"auth": {
+						"$ref": "#/components/schemas/models.AmqpAuth"
+					},
+					"bindExchange": {
+						"$ref": "#/components/schemas/models.AmqpExchange"
+					},
+					"deadLetterExchange": {
+						"type": "string"
+					},
+					"host": {
+						"type": "string"
+					},
+					"port": {
+						"type": "string"
+					},
+					"queue": {
+						"type": "string"
+					},
+					"schema": {
 						"type": "string"
 					}
 				},
@@ -1084,8 +934,36 @@
 				},
 				"type": "object"
 			},
+			"models.BroadcastEvent": {
+				"properties": {
+					"custom_headers": {
+						"additionalProperties": {
+							"type": "string"
+						},
+						"type": "object"
+					},
+					"data": {
+						"description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
+						"items": {
+							"type": "integer"
+						},
+						"type": "array"
+					},
+					"event_type": {
+						"type": "string"
+					},
+					"idempotency_key": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"models.CreateEndpoint": {
 				"properties": {
+					"advanced_signatures": {
+						"description": "Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
+						"type": "boolean"
+					},
 					"appID": {
 						"description": "Deprecated but necessary for backward compatibility",
 						"type": "string"
@@ -1103,8 +981,8 @@
 						"type": "string"
 					},
 					"http_timeout": {
-						"description": "Define endpoint http timeout in seconds. It uses Go's time duration syntax.\nE.g. 3s, 1m",
-						"type": "string"
+						"description": "Define endpoint http timeout in seconds.",
+						"type": "integer"
 					},
 					"is_disabled": {
 						"description": "This is used to manually enable/disable the endpoint.",
@@ -1123,8 +1001,8 @@
 						"type": "integer"
 					},
 					"rate_limit_duration": {
-						"description": "Rate limit duration specifies the time range for the rate limit. It uses\nGo's time duration syntax. E.g. 3s, 1m",
-						"type": "string"
+						"description": "Rate limit duration specifies the time range for the rate limit.",
+						"type": "integer"
 					},
 					"secret": {
 						"description": "Endpoint's webhook secret. If not provided, Convoy autogenerates one for the endpoint.",
@@ -1173,9 +1051,6 @@
 						"type": "string"
 					},
 					"owner_id": {
-						"type": "string"
-					},
-					"uid": {
 						"type": "string"
 					}
 				},
@@ -1280,69 +1155,7 @@
 				},
 				"type": "object"
 			},
-			"models.DynamicEndpoint": {
-				"properties": {
-					"advanced_signatures": {
-						"type": "boolean"
-					},
-					"appID": {
-						"description": "Deprecated but necessary for backward compatibility",
-						"type": "string"
-					},
-					"authentication": {
-						"$ref": "#/components/schemas/models.EndpointAuthentication"
-					},
-					"description": {
-						"type": "string"
-					},
-					"http_timeout": {
-						"type": "string"
-					},
-					"is_disabled": {
-						"type": "boolean"
-					},
-					"name": {
-						"type": "string"
-					},
-					"owner_id": {
-						"type": "string"
-					},
-					"rate_limit": {
-						"type": "integer"
-					},
-					"rate_limit_duration": {
-						"type": "string"
-					},
-					"secret": {
-						"type": "string"
-					},
-					"slack_webhook_url": {
-						"type": "string"
-					},
-					"support_email": {
-						"type": "string"
-					},
-					"url": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"models.DynamicEvent": {
-				"properties": {
-					"endpoint": {
-						"$ref": "#/components/schemas/models.DynamicEndpoint"
-					},
-					"event": {
-						"$ref": "#/components/schemas/models.DynamicEventStub"
-					},
-					"subscription": {
-						"$ref": "#/components/schemas/models.DynamicSubscription"
-					}
-				},
-				"type": "object"
-			},
-			"models.DynamicEventStub": {
 				"properties": {
 					"custom_headers": {
 						"additionalProperties": {
@@ -1351,7 +1164,6 @@
 						"type": "object"
 					},
 					"data": {
-						"description": "Data is an arbitrary JSON value that gets sent as the body of the webhook to the endpoints",
 						"items": {
 							"type": "integer"
 						},
@@ -1360,31 +1172,20 @@
 					"event_type": {
 						"type": "string"
 					},
+					"event_types": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
 					"idempotency_key": {
 						"type": "string"
 					},
-					"project_id": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
-			"models.DynamicSubscription": {
-				"properties": {
-					"alert_config": {
-						"$ref": "#/components/schemas/models.AlertConfiguration"
-					},
-					"filter_config": {
-						"$ref": "#/components/schemas/models.FilterConfiguration"
-					},
-					"name": {
+					"secret": {
 						"type": "string"
 					},
-					"rate_limit_config": {
-						"$ref": "#/components/schemas/models.RateLimitConfiguration"
-					},
-					"retry_config": {
-						"$ref": "#/components/schemas/models.RetryConfiguration"
+					"url": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -1421,7 +1222,7 @@
 						"type": "integer"
 					},
 					"http_timeout": {
-						"type": "string"
+						"type": "integer"
 					},
 					"owner_id": {
 						"type": "string"
@@ -1433,7 +1234,7 @@
 						"type": "integer"
 					},
 					"rate_limit_duration": {
-						"type": "string"
+						"type": "integer"
 					},
 					"secrets": {
 						"items": {
@@ -1791,6 +1592,15 @@
 				},
 				"type": "object"
 			},
+			"models.PagedResponse": {
+				"properties": {
+					"content": {},
+					"pagination": {
+						"$ref": "#/components/schemas/datastore.PaginationData"
+					}
+				},
+				"type": "object"
+			},
 			"models.PortalLink": {
 				"properties": {
 					"can_manage_endpoint": {
@@ -1863,6 +1673,9 @@
 			},
 			"models.PubSubConfig": {
 				"properties": {
+					"amqp": {
+						"$ref": "#/components/schemas/models.AmqpPubSubconfig"
+					},
 					"google": {
 						"$ref": "#/components/schemas/models.GooglePubSubConfig"
 					},
@@ -2098,7 +1911,7 @@
 						"type": "string"
 					},
 					"http_timeout": {
-						"type": "string"
+						"type": "integer"
 					},
 					"is_disabled": {
 						"type": "boolean"
@@ -2113,7 +1926,7 @@
 						"type": "integer"
 					},
 					"rate_limit_duration": {
-						"type": "string"
+						"type": "integer"
 					},
 					"secret": {
 						"type": "string"
@@ -2265,7 +2078,7 @@
 		},
 		"termsOfService": "https://getconvoy.io/terms",
 		"title": "Convoy API Reference",
-		"version": "0.9.0"
+		"version": "24.1.4"
 	},
 	"openapi": "3.0.3",
 	"paths": {
@@ -2281,6 +2094,21 @@
 						"schema": {
 							"type": "string"
 						}
+					},
+					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
 					},
 					{
 						"description": "A pagination cursor to fetch the next page of a list",
@@ -2345,7 +2173,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/handlers.pagedResponse"
+															"$ref": "#/components/schemas/models.PagedResponse"
 														},
 														{
 															"properties": {
@@ -3226,6 +3054,21 @@
 						}
 					},
 					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
+					},
+					{
 						"description": "The end date",
 						"in": "query",
 						"name": "endDate",
@@ -3338,7 +3181,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/handlers.pagedResponse"
+															"$ref": "#/components/schemas/models.PagedResponse"
 														},
 														{
 															"properties": {
@@ -3452,6 +3295,21 @@
 						"schema": {
 							"type": "string"
 						}
+					},
+					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
 					},
 					{
 						"description": "The end date",
@@ -4302,6 +4160,21 @@
 						}
 					},
 					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
+					},
+					{
 						"description": "The end date",
 						"in": "query",
 						"name": "endDate",
@@ -4371,7 +4244,10 @@
 						"in": "query",
 						"name": "sourceId",
 						"schema": {
-							"type": "string"
+							"items": {
+								"type": "string"
+							},
+							"type": "array"
 						}
 					},
 					{
@@ -4397,7 +4273,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/handlers.pagedResponse"
+															"$ref": "#/components/schemas/models.PagedResponse"
 														},
 														{
 															"properties": {
@@ -4515,11 +4391,11 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.CreateEvent"
+								"$ref": "#/components/schemas/models.BroadcastEvent"
 							}
 						}
 					},
-					"description": "Event Details",
+					"description": "Broadcast Event Details",
 					"required": true,
 					"x-originalParamName": "event"
 				},
@@ -4639,33 +4515,36 @@
 					},
 					{
 						"in": "query",
-						"name": "endpointID",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
+					},
+					{
+						"description": "The end date",
+						"in": "query",
+						"name": "endDate",
 						"schema": {
 							"type": "string"
 						}
 					},
 					{
+						"description": "A list of endpoint ids to filter by",
 						"in": "query",
-						"name": "endpointIDs",
+						"name": "endpointId",
 						"schema": {
 							"items": {
 								"type": "string"
 							},
 							"type": "array"
-						}
-					},
-					{
-						"in": "query",
-						"name": "eventID",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"in": "query",
-						"name": "eventType",
-						"schema": {
-							"type": "string"
 						}
 					},
 					{
@@ -4676,13 +4555,31 @@
 						}
 					},
 					{
+						"description": "A pagination cursor to fetch the next page of a list",
 						"in": "query",
-						"name": "ownerID",
+						"name": "next_page_cursor",
 						"schema": {
 							"type": "string"
 						}
 					},
 					{
+						"description": "The number of items to return per page",
+						"in": "query",
+						"name": "perPage",
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"description": "A pagination cursor to fetch the previous page of a list",
+						"in": "query",
+						"name": "prev_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "Any arbitrary value to filter the events payload",
 						"in": "query",
 						"name": "query",
 						"schema": {
@@ -4690,15 +4587,27 @@
 						}
 					},
 					{
+						"description": "sort order",
 						"in": "query",
-						"name": "sourceID",
+						"name": "sort",
 						"schema": {
 							"type": "string"
 						}
 					},
 					{
 						"in": "query",
-						"name": "subscriptionID",
+						"name": "sourceId",
+						"schema": {
+							"items": {
+								"type": "string"
+							},
+							"type": "array"
+						}
+					},
+					{
+						"description": "The start date",
+						"in": "query",
+						"name": "startDate",
 						"schema": {
 							"type": "string"
 						}
@@ -4970,7 +4879,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/models.EventResponse"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -5321,6 +5230,21 @@
 						}
 					},
 					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
+					},
+					{
 						"description": "The end date",
 						"in": "query",
 						"name": "endDate",
@@ -5383,7 +5307,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/handlers.pagedResponse"
+															"$ref": "#/components/schemas/models.PagedResponse"
 														},
 														{
 															"properties": {
@@ -5747,6 +5671,60 @@
 						}
 					},
 					{
+						"description": "list of endpoint ids",
+						"in": "query",
+						"name": "endpointID",
+						"schema": {
+							"items": {
+								"type": "string"
+							},
+							"type": "array"
+						}
+					},
+					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
+					},
+					{
+						"in": "query",
+						"name": "next_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "per_page",
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"in": "query",
+						"name": "prev_page_cursor",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "sort",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "results per page",
 						"in": "query",
 						"name": "perPage",
@@ -5785,7 +5763,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/handlers.pagedResponse"
+															"$ref": "#/components/schemas/models.PagedResponse"
 														},
 														{
 															"properties": {
@@ -6408,6 +6386,21 @@
 						}
 					},
 					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
+					},
+					{
 						"description": "A pagination cursor to fetch the next page of a list",
 						"in": "query",
 						"name": "next_page_cursor",
@@ -6470,7 +6463,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/handlers.pagedResponse"
+															"$ref": "#/components/schemas/models.PagedResponse"
 														},
 														{
 															"properties": {
@@ -7091,6 +7084,21 @@
 						}
 					},
 					{
+						"in": "query",
+						"name": "direction",
+						"schema": {
+							"enum": [
+								"next",
+								"prev"
+							],
+							"type": "string"
+						},
+						"x-enum-varnames": [
+							"Next",
+							"Prev"
+						]
+					},
+					{
 						"description": "A list of endpointIDs to filter by",
 						"in": "query",
 						"name": "endpointId",
@@ -7148,7 +7156,7 @@
 												"data": {
 													"allOf": [
 														{
-															"$ref": "#/components/schemas/handlers.pagedResponse"
+															"$ref": "#/components/schemas/models.PagedResponse"
 														},
 														{
 															"properties": {

@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/api/handlers"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -19,6 +20,7 @@ import (
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/subomi/requestmigrations"
 )
 
 //go:embed ui/build
@@ -49,40 +51,79 @@ const (
 	DELETE = "DELETE"
 )
 
+const (
+	VersionHeader = "X-Convoy-Version"
+	serverName    = "apiserver"
+)
+
 type ApplicationHandler struct {
 	Router http.Handler
+	rm     *requestmigrations.RequestMigration
 	A      *types.APIOptions
 }
 
 func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
+	appHandler := &ApplicationHandler{A: a}
+
 	az, err := authz.NewAuthz(&authz.AuthzOpts{
 		AuthCtxKey: authz.AuthCtxType(middleware.AuthUserCtx),
 	})
 	if err != nil {
-		return &ApplicationHandler{}, err
+		return nil, err
 	}
-	a.Authz = az
+	appHandler.A.Authz = az
 
-	return &ApplicationHandler{A: a}, nil
+	opts := &requestmigrations.RequestMigrationOptions{
+		VersionHeader:  VersionHeader,
+		CurrentVersion: config.DefaultAPIVersion,
+		GetUserVersionFunc: func(req *http.Request) (string, error) {
+			cfg, err := config.Get()
+			if err != nil {
+				return "", err
+			}
+
+			return cfg.APIVersion, nil
+		},
+		VersionFormat: requestmigrations.DateFormat,
+	}
+	rm, err := requestmigrations.NewRequestMigration(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	err = rm.RegisterMigrations(migrations)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ApplicationHandler{A: a, rm: rm}, nil
 }
 
-func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
+func (a *ApplicationHandler) buildRouter() *chi.Mux {
 	router := chi.NewMux()
 
 	router.Use(chiMiddleware.RequestID)
 	router.Use(chiMiddleware.Recoverer)
 	router.Use(middleware.WriteRequestIDHeader)
-	router.Use(middleware.InstrumentRequests())
+	router.Use(middleware.InstrumentRequests(serverName, router))
 	router.Use(middleware.LogHttpRequest(a.A))
 	router.Use(chiMiddleware.Maybe(middleware.SetupCORS, shouldApplyCORS))
 
+	return router
+}
+
+func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
+
+	router := a.buildRouter()
+
+	handler := &handlers.Handler{A: a.A, RM: a.rm}
+
+	// TODO(subomi): left this here temporarily till the data plane is stable.
 	// Ingestion API.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
 		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
-
-	handler := &handlers.Handler{A: a.A}
 
 	// Public API.
 	router.Route("/api", func(v1Router chi.Router) {
@@ -113,10 +154,12 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 						})
 					})
 
+					// TODO(subomi): left this here temporarily till the data plane is stable.
 					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
 						// TODO(all): should the InstrumentPath change?
 						eventRouter.With(middleware.InstrumentPath("/events")).Post("/", handler.CreateEndpointEvent)
 						eventRouter.Post("/fanout", handler.CreateEndpointFanoutEvent)
+						eventRouter.Post("/broadcast", handler.CreateBroadcastEvent)
 						eventRouter.Post("/dynamic", handler.CreateDynamicEvent)
 						eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
 						eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
@@ -270,6 +313,7 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 							})
 						})
 
+						// TODO(subomi): left this here temporarily till the data plane is stable.
 						projectSubRouter.Route("/events", func(eventRouter chi.Router) {
 							eventRouter.Post("/", handler.CreateEndpointEvent)
 							eventRouter.Post("/fanout", handler.CreateEndpointFanoutEvent)
@@ -367,6 +411,7 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 			endpointRouter.With(handler.CanManageEndpoint()).Put("/{endpointID}/expire_secret", handler.ExpireSecret)
 		})
 
+		// TODO(subomi): left this here temporarily till the data plane is stable.
 		portalLinkRouter.Route("/events", func(eventRouter chi.Router) {
 			eventRouter.Post("/", handler.CreateEndpointEvent)
 			eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
@@ -379,6 +424,23 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 			})
 		})
 
+		portalLinkRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
+			eventDeliveryRouter.With(middleware.Pagination).Get("/", handler.GetEventDeliveriesPaged)
+			eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
+			eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
+			eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
+
+			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
+				eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
+				eventDeliverySubRouter.Put("/resend", handler.ResendEventDelivery)
+
+				eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
+					deliveryRouter.Get("/", handler.GetDeliveryAttempts)
+					deliveryRouter.Get("/{deliveryAttemptID}", handler.GetDeliveryAttempt)
+				})
+			})
+		})
+
 		portalLinkRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 			subscriptionRouter.Post("/", handler.CreateSubscription)
 			subscriptionRouter.Post("/test_filter", handler.TestSubscriptionFilter)
@@ -386,6 +448,145 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 			subscriptionRouter.Delete("/{subscriptionID}", handler.DeleteSubscription)
 			subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)
 			subscriptionRouter.Put("/{subscriptionID}", handler.UpdateSubscription)
+		})
+
+	})
+
+	router.Handle("/queue/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
+	router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
+	router.HandleFunc("/*", reactRootHandler)
+
+	metrics.RegisterQueueMetrics(a.A.Queue)
+	prometheus.MustRegister(metrics.RequestDuration())
+	a.Router = router
+
+	return router
+}
+
+func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
+	router := a.buildRouter()
+
+	// Ingestion API.
+	router.Route("/ingest", func(ingestRouter chi.Router) {
+		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
+		ingestRouter.Post("/{maskID}", a.IngestEvent)
+	})
+
+	handler := &handlers.Handler{A: a.A, RM: a.rm}
+
+	// Public API.
+	router.Route("/api", func(v1Router chi.Router) {
+		v1Router.Route("/v1", func(r chi.Router) {
+			r.Use(chiMiddleware.AllowContentType("application/json"))
+			r.Use(middleware.JsonResponse)
+			r.Use(middleware.RequireAuth())
+
+			r.Route("/projects", func(projectRouter chi.Router) {
+				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
+					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
+						// TODO(all): should the InstrumentPath change?
+						eventRouter.With(middleware.InstrumentPath("/events")).Post("/", handler.CreateEndpointEvent)
+						eventRouter.Post("/fanout", handler.CreateEndpointFanoutEvent)
+						eventRouter.Post("/broadcast", handler.CreateBroadcastEvent)
+						eventRouter.Post("/dynamic", handler.CreateDynamicEvent)
+						eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
+						eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
+
+						eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
+							eventSubRouter.Get("/", handler.GetEndpointEvent)
+							eventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
+						})
+					})
+
+					projectSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
+						eventDeliveryRouter.With(middleware.Pagination).Get("/", handler.GetEventDeliveriesPaged)
+						eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
+						eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
+
+						eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
+							eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
+							eventDeliverySubRouter.Put("/resend", handler.ResendEventDelivery)
+
+							eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
+								deliveryRouter.Get("/", handler.GetDeliveryAttempts)
+								deliveryRouter.Get("/{deliveryAttemptID}", handler.GetDeliveryAttempt)
+							})
+						})
+					})
+				})
+			})
+		})
+	})
+
+	// Dashboard API.
+	router.Route("/ui", func(uiRouter chi.Router) {
+		uiRouter.Use(middleware.JsonResponse)
+		uiRouter.Use(chiMiddleware.Maybe(middleware.RequireAuth(), shouldAuthRoute))
+
+		// TODO(subomi): added these back for the tests to pass.
+		// What should we do in the future?
+		uiRouter.Route("/auth", func(authRouter chi.Router) {
+			authRouter.Post("/login", handler.LoginUser)
+			authRouter.Post("/register", handler.RegisterUser)
+			authRouter.Post("/token/refresh", handler.RefreshToken)
+			authRouter.Post("/logout", handler.LogoutUser)
+		})
+
+		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
+			orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
+				orgSubRouter.Route("/projects", func(projectRouter chi.Router) {
+					projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
+						projectSubRouter.Route("/events", func(eventRouter chi.Router) {
+							eventRouter.Post("/", handler.CreateEndpointEvent)
+							eventRouter.Post("/fanout", handler.CreateEndpointFanoutEvent)
+							eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
+							eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
+							eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
+
+							eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
+								eventSubRouter.Get("/", handler.GetEndpointEvent)
+								eventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
+							})
+						})
+
+						projectSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
+							eventDeliveryRouter.With(middleware.Pagination).Get("/", handler.GetEventDeliveriesPaged)
+							eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
+							eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
+							eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
+
+							eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
+								eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
+								eventDeliverySubRouter.Put("/resend", handler.ResendEventDelivery)
+
+								eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
+									deliveryRouter.Get("/", handler.GetDeliveryAttempts)
+									deliveryRouter.Get("/{deliveryAttemptID}", handler.GetDeliveryAttempt)
+								})
+							})
+						})
+					})
+				})
+			})
+		})
+	})
+
+	// Portal Link API.
+	router.Route("/portal-api", func(portalLinkRouter chi.Router) {
+		portalLinkRouter.Use(middleware.JsonResponse)
+		portalLinkRouter.Use(middleware.SetupCORS)
+		portalLinkRouter.Use(middleware.RequireAuth())
+
+		portalLinkRouter.Route("/events", func(eventRouter chi.Router) {
+			eventRouter.Post("/", handler.CreateEndpointEvent)
+			eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
+			eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
+			eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
+
+			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
+				eventSubRouter.Get("/", handler.GetEndpointEvent)
+				eventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
+			})
 		})
 
 		portalLinkRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
@@ -406,12 +607,6 @@ func (a *ApplicationHandler) BuildRoutes() *chi.Mux {
 		})
 	})
 
-	router.Handle("/queue/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
-	router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
-	router.HandleFunc("/*", reactRootHandler)
-
-	metrics.RegisterQueueMetrics(a.A.Queue)
-	prometheus.MustRegister(metrics.RequestDuration())
 	a.Router = router
 
 	return router

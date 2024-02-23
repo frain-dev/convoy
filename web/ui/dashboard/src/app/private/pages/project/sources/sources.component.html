@@ -156,7 +156,7 @@
 
 	<div class="w-full h-full">
 		<div class="max-w-[770px] pt-24px m-auto">
-			<convoy-create-source showModal="true" showAction="true" (onAction)="closeCreateSourceModal($event)" [action]="action"></convoy-create-source>
+			<convoy-create-source [showModal]="privateService.getProjectDetails?.type === 'incoming' ? 'true' : 'false'" showAction="true" (onAction)="closeCreateSourceModal($event)" [action]="action"></convoy-create-source>
 		</div>
 	</div>
 </dialog>

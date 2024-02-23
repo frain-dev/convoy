@@ -50,8 +50,8 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 					Description:       "test_endpoint",
 					URL:               "https://fb.com",
 					RateLimit:         10000,
-					RateLimitDuration: "1m",
-					HttpTimeout:       "20s",
+					RateLimitDuration: 60,
+					HttpTimeout:       20,
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint2"},
 				project:  project,
@@ -61,8 +61,8 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				Description:       "test_endpoint",
 				TargetURL:         "https://fb.com",
 				RateLimit:         10000,
-				RateLimitDuration: "1m0s",
-				HttpTimeout:       "20s",
+				RateLimitDuration: 60,
+				HttpTimeout:       20,
 			},
 			dbFn: func(as *UpdateEndpointService) {
 				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
@@ -75,29 +75,6 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_error_for_invalid_rate_limit_duration",
-			args: args{
-				ctx: ctx,
-				e: models.UpdateEndpoint{
-					Name:              stringPtr("Endpoint 1"),
-					Description:       "test_endpoint",
-					URL:               "https://fb.com",
-					RateLimit:         10000,
-					RateLimitDuration: "m",
-					HttpTimeout:       "20s",
-				},
-				endpoint: &datastore.Endpoint{UID: "endpoint1"},
-				project:  project,
-			},
-			dbFn: func(as *UpdateEndpointService) {
-				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").
-					Times(1).Return(&datastore.Endpoint{UID: "endpoint1"}, nil)
-			},
-			wantErr:    true,
-			wantErrMsg: `time: invalid duration "m"`,
-		},
-		{
 			name: "should_fail_to_update_endpoint",
 			args: args{
 				ctx: ctx,
@@ -106,8 +83,8 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 					Description:       "test_endpoint",
 					URL:               "https://fb.com",
 					RateLimit:         10000,
-					RateLimitDuration: "1m",
-					HttpTimeout:       "20s",
+					RateLimitDuration: 60,
+					HttpTimeout:       20,
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint1"},
 				project:  project,
@@ -132,8 +109,8 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 					Description:       "test_endpoint",
 					URL:               "https://fb.com",
 					RateLimit:         10000,
-					RateLimitDuration: "1m",
-					HttpTimeout:       "20s",
+					RateLimitDuration: 60,
+					HttpTimeout:       20,
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint1"},
 				project:  project,

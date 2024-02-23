@@ -177,7 +177,7 @@
 			<convoy-select label="Source Type" name="type" formControlName="type" [options]="pubSubTypes" errorMessage="Select source type" [required]="true" className="mb-0" (selectedOption)="sourceForm.get('pub_sub.type')?.patchValue($event)"></convoy-select>
 
 			<convoy-input-field class="mt-24px">
-				<label for="workers" required="true" convoy-label required="true" tooltip="This specifies the number of consumers you want polling messages from your queue.">Workers</label>
+				<label for="workers" convoy-label required="true" tooltip="This specifies the number of consumers you want polling messages from your queue.">Workers</label>
 				<input type="number" id="workers" convoy-input autocomplete="workers" formControlName="workers" placeholder="Workers" />
 				<convoy-input-error *ngIf="sourceForm.get('pub_sub.workers')?.touched && sourceForm.get('pub_sub.workers')?.invalid">Enter number of workers</convoy-input-error>
 			</convoy-input-field>
@@ -188,18 +188,18 @@
 				<div formGroupName="google">
 					<div class="grid grid-cols-2 gap-6">
 						<convoy-input-field>
-							<label for="project_id" required="true" convoy-label required="true">Project ID</label>
+							<label for="project_id" convoy-label required="true">Project ID</label>
 							<input type="text" id="project_id" convoy-input autocomplete="project_id" formControlName="project_id" placeholder="Project ID goes here" />
 							<convoy-input-error *ngIf="sourceForm.get('pub_sub.google.project_id')?.touched && sourceForm.get('pub_sub.google.project_id')?.invalid">Enter your project ID</convoy-input-error>
 						</convoy-input-field>
 						<convoy-input-field>
-							<label for="subscription_id" required="true" convoy-label required="true">Subscription ID</label>
+							<label for="subscription_id" convoy-label required="true">Subscription ID</label>
 							<input type="text" id="subscription_id" convoy-input autocomplete="subscription_id" formControlName="subscription_id" placeholder="Subscription ID goes here" />
 							<convoy-input-error *ngIf="sourceForm.get('pub_sub.google.subscription_id')?.touched && sourceForm.get('pub_sub.google.subscription_id')?.invalid">Enter your subscription ID</convoy-input-error>
 						</convoy-input-field>
 					</div>
 					<convoy-input-field>
-						<label for="service_account" required="true" convoy-label required="true" tooltip="Service accounts provide a way to manage authentication into your Google Pub/Sub.">Service Account</label>
+						<label for="service_account" convoy-label required="true" tooltip="Service accounts provide a way to manage authentication into your Google Pub/Sub.">Service Account</label>
 						<convoy-file-input (selectedFile)="parseJsonFile($event)" (deleteFile)="deleteJsonFile()">
 							<p class="text-center text-12 text-neutral-11 max-w-[186px] mx-auto">
 								<span class="text-primary-100 font-bold">Click to {{ action === 'update' ? 'update' : 'upload' }}</span>
@@ -211,17 +211,105 @@
 				</div>
 			</ng-container>
 
+			<!-- AMQP-->
+			<ng-container formGroupName="amqp" *ngIf="sourceForm.value.pub_sub.type === 'amqp'">
+				<h2 class="text-16 text-new.gray-600 font-semibold mb-20px">Configure AMQP / RabbitMQ</h2>
+
+				<div class="grid grid-cols-2 gap-6 mt-24px">
+					<convoy-input-field [className]="'mb-0'">
+						<label for="schema" convoy-label required="true">Schema</label>
+						<input type="text" id="schema" convoy-input autocomplete="schema" formControlName="schema" placeholder="amqp" />
+						<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.schema')?.touched && sourceForm.get('pub_sub.amqp.schema')?.invalid">Enter Schema</convoy-input-error>
+					</convoy-input-field>
+
+					<convoy-input-field [className]="'mb-0'">
+						<label for="host" convoy-label required="true">Host</label>
+						<input type="text" id="host" convoy-input autocomplete="host" formControlName="host" placeholder="Host" />
+						<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.host')?.touched && sourceForm.get('pub_sub.amqp.host')?.invalid">Enter Host</convoy-input-error>
+					</convoy-input-field>
+				</div>
+
+				<div class="grid grid-cols-2 gap-6 mt-24px">
+					<convoy-input-field [className]="'mb-0'">
+						<label for="port" convoy-label required="true">Port</label>
+						<input type="text" id="port" convoy-input autocomplete="port" formControlName="port" placeholder="5672" />
+						<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.port')?.touched && sourceForm.get('pub_sub.amqp.port')?.invalid">Enter Port</convoy-input-error>
+					</convoy-input-field>
+
+					<convoy-input-field [className]="'mb-0'">
+						<label for="queue" convoy-label required="true">Queue</label>
+						<input type="text" id="queue" convoy-input autocomplete="queue" formControlName="queue" placeholder="Queue Name" />
+						<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.queue')?.touched && sourceForm.get('pub_sub.amqp.queue')?.invalid">Enter queue name</convoy-input-error>
+					</convoy-input-field>
+				</div>
+
+				<div [className]="'mt-24px'">
+					<convoy-input-field [className]="'mb-0'">
+						<label for="deadLetterExchange" convoy-label tooltip="In case of failure, the message will be published to the dlx, please note that this will not declare the dlx." required="false">Dead Letter Exchange</label>
+						<input type="text" id="deadLetterExchange" convoy-input autocomplete="deadLetterExchange" formControlName="deadLetterExchange" placeholder="Dead Letter Exchange" />
+						<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.deadLetterExchange')?.touched && sourceForm.get('pub_sub.amqp.deadLetterExchange')?.invalid">Enter dead letter exhange name</convoy-input-error>
+					</convoy-input-field>
+				</div>
+
+				<div class="border-l border-new.primary-25 pl-16px mt-24px">
+					<div class="flex justify-between items-center mb-24px">
+						<p class="text-14 text-gray-600 font-semibold">Authentication</p>
+						<convoy-toggle name="amqpAuth" [className]="'!mb-0'" (onChange)="addAmqpAuthentication = !addAmqpAuthentication"></convoy-toggle>
+					</div>
+
+					<ng-container formGroupName="auth" *ngIf="addAmqpAuthentication">
+						<div class="grid grid-cols-2 gap-6 mt-24px">
+							<convoy-input-field [className]="'mb-0'">
+								<label for="user" convoy-label>User</label>
+								<input type="text" id="user" convoy-input autocomplete="user" formControlName="user" placeholder="User" />
+								<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.auth.user')?.touched && sourceForm.get('pub_sub.amqp.auth.user')?.invalid">Enter User</convoy-input-error>
+							</convoy-input-field>
+		
+							<convoy-input-field [className]="'mb-0'">
+								<label for="password" convoy-label>Password</label>
+								<input type="password" id="password" convoy-input autocomplete="password" formControlName="password" placeholder="Password" />
+								<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.auth.password')?.touched && sourceForm.get('pub_sub.amqp.auth.password')?.invalid">Enter Password</convoy-input-error>
+							</convoy-input-field>
+						</div>
+					</ng-container>
+				</div>
+
+				<div class="border-l border-new.primary-25 pl-16px mt-24px">
+					<div class="flex justify-between items-center mb-24px">
+						<p class="text-14 text-gray-600 font-semibold">Bind Exchange</p>
+						<convoy-toggle name="amqpBindExchange" [className]="'!mb-0'" (onChange)="addAmqpQueueBinding = !addAmqpQueueBinding"></convoy-toggle>
+					</div>
+
+					<ng-container formGroupName="bindExchange" *ngIf="addAmqpQueueBinding">
+						<div class="grid grid-cols-2 gap-6 mt-24px">
+							<convoy-input-field [className]="'mb-0'">
+								<label for="exchange" convoy-label>Exchange</label>
+								<input type="text" id="exchange" convoy-input autocomplete="exchange" formControlName="exchange" placeholder="Exchange name" />
+								<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.exchange.exchange')?.touched && sourceForm.get('pub_sub.amqp.exchange.exchange')?.invalid">Enter exchange name</convoy-input-error>
+							</convoy-input-field>
+		
+							<convoy-input-field [className]="'mb-0'">
+								<label for="routingKey" convoy-label>Routing Key</label>
+								<input type="routingKey" id="routingKey" convoy-input autocomplete="routingKey" formControlName="routingKey" placeholder="Routing Key" />
+								<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.routingKey')?.touched && sourceForm.get('pub_sub.amqp.routingKey')?.invalid">Enter routing key</convoy-input-error>
+							</convoy-input-field>
+						</div>
+					</ng-container>
+				</div>
+			</ng-container>
+			<!-- AMQP-->
+			
 			<ng-container *ngIf="sourceForm.value.pub_sub.type === 'sqs'">
 				<h2 class="font-semibold mb-20px">Configure SQS</h2>
 
 				<div class="grid grid-cols-2 gap-6" formGroupName="sqs">
 					<convoy-input-field>
-						<label for="access_key_id" required="true" convoy-label required="true">AWS Access Key ID</label>
+						<label for="access_key_id" convoy-label required="true">AWS Access Key ID</label>
 						<input type="text" id="access_key_id" convoy-input autocomplete="access_key_id" formControlName="access_key_id" placeholder="Access Key ID" />
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.sqs.access_key_id')?.touched && sourceForm.get('pub_sub.sqs.access_key_id')?.invalid">Enter access key ID</convoy-input-error>
 					</convoy-input-field>
 					<convoy-input-field>
-						<label for="secret_key" required="true" convoy-label required="true">AWS Secret Access Key</label>
+						<label for="secret_key" convoy-label required="true">AWS Secret Access Key</label>
 						<input type="text" id="secret_key" convoy-input autocomplete="secret_key" formControlName="secret_key" placeholder="Secret Access Key" />
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.sqs.secret_key')?.touched && sourceForm.get('pub_sub.sqs.secret_key')?.invalid">Enter secret access key</convoy-input-error>
 					</convoy-input-field>
@@ -238,7 +326,7 @@
 						></convoy-select>
 					</convoy-input-field>
 					<convoy-input-field>
-						<label for="queue_name" required="true" convoy-label required="true">Queue Name</label>
+						<label for="queue_name" convoy-label required="true">Queue Name</label>
 						<input type="text" id="queue_name" convoy-input autocomplete="queue_name" formControlName="queue_name" placeholder="Queue name" />
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.sqs.queue_name')?.touched && sourceForm.get('pub_sub.sqs.queue_name')?.invalid">Enter queue name</convoy-input-error>
 					</convoy-input-field>
@@ -253,13 +341,13 @@
 
 				<div class="grid grid-cols-2 gap-6 mt-24px">
 					<convoy-input-field [className]="'mb-0'">
-						<label for="topic_name" required="true" convoy-label required="true">Topic Name</label>
+						<label for="topic_name" convoy-label required="true">Topic Name</label>
 						<input type="text" id="topic_name" convoy-input autocomplete="topic_name" formControlName="topic_name" placeholder="Topic name" />
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.topic_name')?.touched && sourceForm.get('pub_sub.kafka.topic_name')?.invalid">Enter topic name</convoy-input-error>
 					</convoy-input-field>
 
 					<convoy-input-field [className]="'mb-0'">
-						<label for="consumer_group_id" required="true" convoy-label required="true">Consumer ID</label>
+						<label for="consumer_group_id" convoy-label>Consumer ID</label>
 						<input type="text" id="consumer_group_id" convoy-input autocomplete="consumer_group_id" formControlName="consumer_group_id" placeholder="Consumer Group Id" />
 						<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.consumer_group_id')?.touched && sourceForm.get('pub_sub.kafka.consumer_group_id')?.invalid">Enter consumer group ID</convoy-input-error>
 					</convoy-input-field>

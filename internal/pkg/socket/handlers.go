@@ -67,7 +67,7 @@ func BuildRoutes(r *Repo) http.Handler {
 	router.Route("/stream", func(streamRouter chi.Router) {
 		streamRouter.Use(
 			middleware.RequireAuth(),
-			middleware.InstrumentRequests(),
+			middleware.InstrumentRequests("stream", router),
 			middleware.RequirePersonalAccessToken(),
 		)
 

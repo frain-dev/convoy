@@ -193,6 +193,7 @@ const (
 	SqsPubSub    PubSubType = "sqs"
 	GooglePubSub PubSubType = "google"
 	KafkaPubSub  PubSubType = "kafka"
+	AmqpPubSub   PubSubType = "amqp"
 )
 
 func (s SourceProvider) IsValid() bool {
@@ -397,12 +398,12 @@ type Endpoint struct {
 	SupportEmail       string  `json:"support_email,omitempty" db:"support_email"`
 	AppID              string  `json:"-" db:"app_id"` // Deprecated but necessary for backward compatibility
 
-	HttpTimeout string         `json:"http_timeout" db:"http_timeout"`
+	HttpTimeout uint64         `json:"http_timeout" db:"http_timeout"`
 	RateLimit   int            `json:"rate_limit" db:"rate_limit"`
 	Events      int64          `json:"events,omitempty" db:"event_count"`
 	Status      EndpointStatus `json:"status" db:"status"`
 
-	RateLimitDuration string                  `json:"rate_limit_duration" db:"rate_limit_duration"`
+	RateLimitDuration uint64                  `json:"rate_limit_duration" db:"rate_limit_duration"`
 	Authentication    *EndpointAuthentication `json:"authentication" db:"authentication"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
@@ -675,10 +676,21 @@ func (s *EndpointMetadata) Scan(v interface{}) error {
 	}
 
 	if string(b) == "null" {
+		*s = nil // Set the pointer to nil
 		return nil
 	}
 
-	return json.Unmarshal(b, s)
+	err := json.Unmarshal(b, s)
+	if err != nil {
+		return err
+	}
+
+	// Check if the slice only contains a nil element, and if so, set it to an empty slice
+	if len(*s) == 1 && (*s)[0] == nil {
+		*s = EndpointMetadata{}
+	}
+
+	return nil
 }
 
 // Event defines a payload to be sent to an application
@@ -1057,6 +1069,7 @@ type PubSubConfig struct {
 	Sqs     *SQSPubSubConfig    `json:"sqs" db:"sqs"`
 	Google  *GooglePubSubConfig `json:"google" db:"google"`
 	Kafka   *KafkaPubSubConfig  `json:"kafka" db:"kafka"`
+	Amqp    *AmqpPubSubConfig   `json:"amqp" db:"amqp"`
 }
 
 func (p *PubSubConfig) Scan(value interface{}) error {
@@ -1102,6 +1115,22 @@ type KafkaPubSubConfig struct {
 	ConsumerGroupID string     `json:"consumer_group_id" db:"consumer_group_id"`
 	TopicName       string     `json:"topic_name" db:"topic_name"`
 	Auth            *KafkaAuth `json:"auth" db:"auth"`
+}
+
+type AmqpPubSubConfig struct {
+	Schema             string           `json:"schema" db:"schema"`
+	Host               string           `json:"host" db:"host"`
+	Port               string           `json:"port" db:"port"`
+	Queue              string           `json:"queue" db:"queue"`
+	Auth               *AmqpCredentials `json:"auth" db:"auth"`
+	BindedExchange     *string          `json:"bindedExchange" db:"binded_exchange"`
+	RoutingKey         string           `json:"routingKey" db:"routing_key"`
+	DeadLetterExchange *string          `json:"deadLetterExchange" db:"dead_letter_exchange"`
+}
+
+type AmqpCredentials struct {
+	User     string `json:"user" db:"user"`
+	Password string `json:"password" db:"password"`
 }
 
 type KafkaAuth struct {

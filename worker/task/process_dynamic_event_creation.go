@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -35,26 +34,24 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 			}
 		}
 
-		var project *datastore.Project
-
-		project, err = projectRepo.FetchProjectByID(ctx, dynamicEvent.Event.ProjectID)
+		project, err := projectRepo.FetchProjectByID(ctx, dynamicEvent.ProjectID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
-		endpoint, err := findEndpoint(ctx, project, endpointRepo, &dynamicEvent.Endpoint)
+		endpoint, err := findEndpoint(ctx, project, endpointRepo, &dynamicEvent)
 		if err != nil {
 			return err
 		}
 
-		s, err := findDynamicSubscription(ctx, &dynamicEvent.Subscription, subRepo, project, endpoint)
+		s, err := findDynamicSubscription(ctx, &dynamicEvent, subRepo, project, endpoint)
 		if err != nil {
 			return err
 		}
 
 		var isDuplicate bool
-		if len(dynamicEvent.Event.IdempotencyKey) > 0 {
-			events, err := eventRepo.FindEventsByIdempotencyKey(ctx, dynamicEvent.Event.ProjectID, dynamicEvent.Event.IdempotencyKey)
+		if len(dynamicEvent.IdempotencyKey) > 0 {
+			events, err := eventRepo.FindEventsByIdempotencyKey(ctx, dynamicEvent.ProjectID, dynamicEvent.IdempotencyKey)
 			if err != nil {
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
@@ -64,14 +61,14 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 
 		event := &datastore.Event{
 			UID:              ulid.Make().String(),
-			EventType:        datastore.EventType(dynamicEvent.Event.EventType),
+			EventType:        datastore.EventType(dynamicEvent.EventType),
 			ProjectID:        project.UID,
 			Endpoints:        []string{endpoint.UID},
-			Headers:          getCustomHeaders(dynamicEvent.Event.CustomHeaders),
-			Data:             dynamicEvent.Event.Data,
-			IdempotencyKey:   dynamicEvent.Event.IdempotencyKey,
+			Data:             dynamicEvent.Data,
+			IdempotencyKey:   dynamicEvent.IdempotencyKey,
+			Headers:          getCustomHeaders(dynamicEvent.CustomHeaders),
 			IsDuplicateEvent: isDuplicate,
-			Raw:              string(dynamicEvent.Event.Data),
+			Raw:              string(dynamicEvent.Data),
 			CreatedAt:        time.Now(),
 			UpdatedAt:        time.Now(),
 		}
@@ -86,255 +83,53 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 			return nil
 		}
 
-		ec := &EventDeliveryConfig{project: project}
-
-		ec.subscription = s
-		headers := event.Headers
-
-		if s.Type == datastore.SubscriptionTypeAPI {
-			if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.APIKeyAuthentication {
-				headers = make(httpheader.HTTPHeader)
-				headers[endpoint.Authentication.ApiKey.HeaderName] = []string{endpoint.Authentication.ApiKey.HeaderValue}
-				headers.MergeHeaders(event.Headers)
-			}
-
-			s.Endpoint = endpoint
-		}
-
-		rc, err := ec.retryConfig()
-		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
-		}
-
-		raw := event.Raw
-		data := event.Data
-
-		if s.Function.Ptr() != nil && !util.IsStringEmpty(s.Function.String) {
-			var payload map[string]interface{}
-			err = json.Unmarshal(event.Data, &payload)
-			if err != nil {
-				return &EndpointError{Err: err, delay: 10 * time.Second}
-			}
-
-			mutated, _, err := subRepo.TransformPayload(ctx, s.Function.String, payload)
-			if err != nil {
-				return &EndpointError{Err: err, delay: 10 * time.Second}
-			}
-
-			bytes, err := json.Marshal(mutated)
-			if err != nil {
-				return &EndpointError{Err: err, delay: 10 * time.Second}
-			}
-
-			raw = string(bytes)
-			data = bytes
-		}
-
-		metadata := &datastore.Metadata{
-			Raw:             raw,
-			Data:            data,
-			Strategy:        rc.Type,
-			NextSendTime:    time.Now(),
-			IntervalSeconds: rc.Duration,
-			RetryLimit:      rc.RetryCount,
-		}
-
-		eventDelivery := &datastore.EventDelivery{
-			UID:            ulid.Make().String(),
-			SubscriptionID: s.UID,
-			Metadata:       metadata,
-			ProjectID:      project.UID,
-			EventID:        event.UID,
-			EndpointID:     s.EndpointID,
-			DeviceID:       s.DeviceID,
-			Headers:        headers,
-			IdempotencyKey: event.IdempotencyKey,
-
-			Status:           getEventDeliveryStatus(ctx, s, s.Endpoint, deviceRepo),
-			DeliveryAttempts: []datastore.DeliveryAttempt{},
-			CreatedAt:        time.Now(),
-			UpdatedAt:        time.Now(),
-		}
-
-		if s.Type == datastore.SubscriptionTypeCLI {
-			event.Endpoints = []string{}
-			eventDelivery.CLIMetadata = &datastore.CLIMetadata{
-				EventType: string(event.EventType),
-				SourceID:  event.SourceID,
-			}
-		}
-
-		err = eventDeliveryRepo.CreateEventDelivery(ctx, eventDelivery)
-		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
-		}
-
-		if eventDelivery.Status != datastore.DiscardedEventStatus {
-			payload := EventDelivery{
-				EventDeliveryID: eventDelivery.UID,
-				ProjectID:       eventDelivery.ProjectID,
-			}
-
-			data, err := msgpack.EncodeMsgPack(payload)
-			if err != nil {
-				return &EndpointError{Err: err, delay: 10 * time.Second}
-			}
-
-			job := &queue.Job{
-				ID:      eventDelivery.UID,
-				Payload: data,
-				Delay:   1 * time.Second,
-			}
-
-			if s.Type == datastore.SubscriptionTypeAPI {
-				err = eventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
-				if err != nil {
-					log.WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
-				}
-			}
-
-			if s.Type == datastore.SubscriptionTypeCLI {
-				err = eventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
-				if err != nil {
-					log.WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
-				}
-			}
-		}
-
-		return nil
+		return writeEventDeliveriesToQueue(
+			ctx, []datastore.Subscription{*s}, event, project, eventDeliveryRepo,
+			subRepo, eventQueue, deviceRepo, endpointRepo,
+		)
 	}
 }
 
-func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo datastore.EndpointRepository, newEndpoint *models.DynamicEndpoint) (*datastore.Endpoint, error) {
-	endpoint, err := endpointRepo.FindEndpointByTargetURL(ctx, project.UID, newEndpoint.URL)
+func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo datastore.EndpointRepository, dynamicEvent *models.DynamicEvent) (*datastore.Endpoint, error) {
+	endpoint, err := endpointRepo.FindEndpointByTargetURL(ctx, project.UID, dynamicEvent.URL)
+	if err == nil {
+		return endpoint, nil
+	}
 
 	switch {
-	case err == nil:
-		if !util.IsStringEmpty(newEndpoint.Description) {
-			endpoint.Description = newEndpoint.Description
-		}
-
-		if !util.IsStringEmpty(newEndpoint.Name) {
-			endpoint.Title = newEndpoint.Name
-		}
-
-		if !util.IsStringEmpty(newEndpoint.SupportEmail) {
-			endpoint.SupportEmail = newEndpoint.SupportEmail
-		}
-
-		if !util.IsStringEmpty(newEndpoint.SlackWebhookURL) {
-			endpoint.SlackWebhookURL = newEndpoint.SlackWebhookURL
-		}
-
-		if newEndpoint.RateLimit != 0 {
-			endpoint.RateLimit = newEndpoint.RateLimit
-		}
-
-		if !util.IsStringEmpty(newEndpoint.RateLimitDuration) {
-			duration, err := time.ParseDuration(newEndpoint.RateLimitDuration)
-			if err != nil {
-				return nil, err
-			}
-
-			endpoint.RateLimitDuration = duration.String()
-		}
-
-		if (newEndpoint.AdvancedSignatures != endpoint.AdvancedSignatures) && project.Type == datastore.OutgoingProject {
-			endpoint.AdvancedSignatures = newEndpoint.AdvancedSignatures
-		}
-
-		if !util.IsStringEmpty(newEndpoint.HttpTimeout) {
-			endpoint.HttpTimeout = newEndpoint.HttpTimeout
-		}
-
-		auth, err := ValidateEndpointAuthentication(newEndpoint.Authentication.Transform())
-		if err != nil {
-			return nil, err
-		}
-
-		endpoint.Authentication = auth
-
-		endpoint.UpdatedAt = time.Now()
-
-		if endpoint.Status == datastore.InactiveEndpointStatus {
-			endpoint.Status = datastore.PendingEndpointStatus
-		}
-
-		err = endpointRepo.UpdateEndpoint(ctx, endpoint, project.UID)
-		if err != nil {
-			log.WithError(err).Error("failed to update endpoint")
-			return nil, &EndpointError{Err: err, delay: 10 * time.Second}
-		}
 	case errors.Is(err, datastore.ErrEndpointNotFound):
-		if newEndpoint.RateLimit == 0 {
-			newEndpoint.RateLimit = convoy.RATE_LIMIT
-		}
-
-		if util.IsStringEmpty(newEndpoint.RateLimitDuration) {
-			newEndpoint.RateLimitDuration = convoy.RATE_LIMIT_DURATION
-		}
-
-		duration, err := time.ParseDuration(newEndpoint.RateLimitDuration)
-		if err != nil {
-			return nil, fmt.Errorf("an error occurred parsing the rate limit duration: %v", err)
-		}
-
+		uid := ulid.Make().String()
 		endpoint = &datastore.Endpoint{
-			UID:                ulid.Make().String(),
+			UID:                uid,
 			ProjectID:          project.UID,
-			OwnerID:            newEndpoint.OwnerID,
-			Title:              newEndpoint.Name,
-			SupportEmail:       newEndpoint.SupportEmail,
-			SlackWebhookURL:    newEndpoint.SlackWebhookURL,
-			TargetURL:          newEndpoint.URL,
-			Description:        newEndpoint.Description,
-			RateLimit:          newEndpoint.RateLimit,
-			HttpTimeout:        newEndpoint.HttpTimeout,
-			AdvancedSignatures: newEndpoint.AdvancedSignatures,
-			AppID:              newEndpoint.AppID,
-			RateLimitDuration:  duration.String(),
+			Title:              fmt.Sprintf("endpoint-%s", uid),
+			TargetURL:          dynamicEvent.URL,
+			RateLimit:          convoy.RATE_LIMIT,
+			HttpTimeout:        convoy.HTTP_TIMEOUT,
+			AdvancedSignatures: true,
+			RateLimitDuration:  convoy.RATE_LIMIT_DURATION,
 			Status:             datastore.ActiveEndpointStatus,
 			CreatedAt:          time.Now(),
 			UpdatedAt:          time.Now(),
 		}
 
-		if util.IsStringEmpty(endpoint.AppID) {
-			endpoint.AppID = endpoint.UID
-		}
-
-		if util.IsStringEmpty(endpoint.Title) {
-			endpoint.Title = uuid.NewString()
-		}
-
-		if util.IsStringEmpty(newEndpoint.Secret) {
-			sc, err := util.GenerateSecret()
+		sc := dynamicEvent.Secret
+		if util.IsStringEmpty(sc) {
+			sc, err = util.GenerateSecret()
 			if err != nil {
 				return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 			}
+		}
 
-			endpoint.Secrets = []datastore.Secret{
-				{
-					UID:       ulid.Make().String(),
-					Value:     sc,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-				},
-			}
-		} else {
-			endpoint.Secrets = append(endpoint.Secrets, datastore.Secret{
+		endpoint.Secrets = []datastore.Secret{
+			{
 				UID:       ulid.Make().String(),
-				Value:     newEndpoint.Secret,
+				Value:     sc,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
-			})
+			},
 		}
 
-		auth, err := ValidateEndpointAuthentication(endpoint.Authentication)
-		if err != nil {
-			return nil, err
-		}
-
-		endpoint.Authentication = auth
 		err = endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
 		if err != nil {
 			log.WithError(err).Error("failed to create endpoint")
@@ -345,27 +140,9 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 	default:
 		return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 	}
-
-	return endpoint, nil
 }
 
-func ValidateEndpointAuthentication(auth *datastore.EndpointAuthentication) (*datastore.EndpointAuthentication, error) {
-	if auth != nil && !util.IsStringEmpty(string(auth.Type)) {
-		if err := util.Validate(auth); err != nil {
-			return nil, err
-		}
-
-		if auth == nil && auth.Type == datastore.APIKeyAuthentication {
-			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("api key field is required"))
-		}
-
-		return auth, nil
-	}
-
-	return nil, nil
-}
-
-func findDynamicSubscription(ctx context.Context, newSubscription *models.DynamicSubscription, subRepo datastore.SubscriptionRepository, project *datastore.Project, endpoint *datastore.Endpoint) (*datastore.Subscription, error) {
+func findDynamicSubscription(ctx context.Context, dynamicEvent *models.DynamicEvent, subRepo datastore.SubscriptionRepository, project *datastore.Project, endpoint *datastore.Endpoint) (*datastore.Subscription, error) {
 	subscriptions, err := subRepo.FindSubscriptionsByEndpointID(ctx, project.UID, endpoint.UID)
 
 	var subscription *datastore.Subscription
@@ -377,85 +154,33 @@ func findDynamicSubscription(ctx context.Context, newSubscription *models.Dynami
 	switch {
 	case err == nil:
 		subscription = &subscriptions[0]
-
-		if newSubscription.AlertConfig != nil {
-			if subscription.AlertConfig == nil {
-				subscription.AlertConfig = &datastore.AlertConfiguration{}
+		if len(dynamicEvent.EventTypes) > 0 {
+			if subscription.FilterConfig == nil {
+				subscription.FilterConfig = &datastore.FilterConfiguration{}
 			}
+			subscription.FilterConfig.EventTypes = dynamicEvent.EventTypes
 
-			if newSubscription.AlertConfig.Count > 0 {
-				subscription.AlertConfig.Count = newSubscription.AlertConfig.Count
+			err = subRepo.UpdateSubscription(ctx, project.UID, subscription)
+			if err != nil {
+				return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 			}
-
-			if !util.IsStringEmpty(newSubscription.AlertConfig.Threshold) {
-				subscription.AlertConfig.Threshold = newSubscription.AlertConfig.Threshold
-			}
-		}
-
-		retryConfig, err := getRetryConfig(newSubscription.RetryConfig)
-		if err != nil {
-			return nil, util.NewServiceError(http.StatusBadRequest, err)
-		}
-
-		if retryConfig != nil {
-			if subscription.RetryConfig == nil {
-				subscription.RetryConfig = &datastore.RetryConfiguration{}
-			}
-
-			if !util.IsStringEmpty(string(retryConfig.Type)) {
-				subscription.RetryConfig.Type = retryConfig.Type
-			}
-
-			if !util.IsStringEmpty(newSubscription.RetryConfig.Duration) {
-				subscription.RetryConfig.Duration = retryConfig.Duration
-			}
-
-			if newSubscription.RetryConfig.RetryCount > 0 {
-				subscription.RetryConfig.RetryCount = retryConfig.RetryCount
-			}
-		}
-
-		if newSubscription.RateLimitConfig != nil {
-			if subscription.RateLimitConfig == nil {
-				subscription.RateLimitConfig = &datastore.RateLimitConfiguration{}
-			}
-
-			if newSubscription.RateLimitConfig.Count > 0 {
-				subscription.RateLimitConfig.Count = newSubscription.RateLimitConfig.Count
-			}
-
-			if newSubscription.RateLimitConfig.Duration > 0 {
-				subscription.RateLimitConfig.Duration = newSubscription.RateLimitConfig.Duration
-			}
-		}
-
-		err = subRepo.UpdateSubscription(ctx, project.UID, subscription)
-		if err != nil {
-			return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 	case errors.Is(err, datastore.ErrSubscriptionNotFound):
-		retryConfig, err := getRetryConfig(newSubscription.RetryConfig)
-		if err != nil {
-			return nil, util.NewServiceError(http.StatusBadRequest, err)
-		}
-
 		subscription = &datastore.Subscription{
 			UID:        ulid.Make().String(),
 			ProjectID:  project.UID,
-			Name:       newSubscription.Name,
+			Name:       fmt.Sprintf("subscription-%s", uuid.NewString()),
 			Type:       datastore.SubscriptionTypeAPI,
 			EndpointID: endpoint.UID,
-
-			RetryConfig:     retryConfig,
-			AlertConfig:     newSubscription.AlertConfig.Transform(),
-			RateLimitConfig: newSubscription.RateLimitConfig.Transform(),
+			FilterConfig: &datastore.FilterConfiguration{
+				EventTypes: dynamicEvent.EventTypes,
+			},
+			RetryConfig:     &datastore.DefaultRetryConfig,
+			AlertConfig:     &datastore.DefaultAlertConfig,
+			RateLimitConfig: &datastore.DefaultRateLimitConfig,
 
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
-		}
-
-		if util.IsStringEmpty(subscription.Name) {
-			subscription.Name = uuid.NewString()
 		}
 
 		err = subRepo.CreateSubscription(ctx, project.UID, subscription)
@@ -467,26 +192,6 @@ func findDynamicSubscription(ctx context.Context, newSubscription *models.Dynami
 	}
 
 	return subscription, nil
-}
-
-func getRetryConfig(cfg *models.RetryConfiguration) (*datastore.RetryConfiguration, error) {
-	if cfg == nil {
-		return nil, nil
-	}
-
-	strategyConfig := &datastore.RetryConfiguration{Type: cfg.Type, RetryCount: cfg.RetryCount}
-	if !util.IsStringEmpty(cfg.Duration) {
-		interval, err := time.ParseDuration(cfg.Duration)
-		if err != nil {
-			return nil, err
-		}
-
-		strategyConfig.Duration = uint64(interval.Seconds())
-		return strategyConfig, nil
-	}
-
-	strategyConfig.Duration = cfg.IntervalSeconds
-	return strategyConfig, nil
 }
 
 func getCustomHeaders(customHeaders map[string]string) httpheader.HTTPHeader {

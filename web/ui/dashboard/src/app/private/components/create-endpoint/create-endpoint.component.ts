@@ -14,10 +14,11 @@ import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.component';
 import { PermissionDirective } from '../permission/permission.directive';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { ENDPOINT } from 'src/app/models/endpoint.model';
+import { ENDPOINT, SECRET } from 'src/app/models/endpoint.model';
 import { EndpointsService } from '../../pages/project/endpoints/endpoints.service';
 import { NotificationComponent } from 'src/app/components/notification/notification.component';
 import { ConfigButtonComponent } from '../config-button/config-button.component';
+import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 
 @Component({
 	selector: 'convoy-create-endpoint',
@@ -37,7 +38,8 @@ import { ConfigButtonComponent } from '../config-button/config-button.component'
 		FormLoaderComponent,
 		PermissionDirective,
 		NotificationComponent,
-		ConfigButtonComponent
+		ConfigButtonComponent,
+		CopyButtonComponent
 	],
 	templateUrl: './create-endpoint.component.html',
 	styleUrls: ['./create-endpoint.component.scss']
@@ -75,6 +77,7 @@ export class CreateEndpointComponent implements OnInit {
 	enableMoreConfig = false;
 	configurations = [{ uid: 'http_timeout', name: 'Timeout ', show: false }];
 	endpointCreated: boolean = false;
+	endpointSecret?: SECRET;
 	private rbacService = inject(RbacService);
 
 	constructor(
@@ -89,7 +92,13 @@ export class CreateEndpointComponent implements OnInit {
 
 	async ngOnInit() {
 		if (this.type !== 'portal')
-			this.configurations.push({ uid: 'rate_limit', name: 'Rate Limit ', show: false }, { uid: 'alert_config', name: 'Notifications', show: false }, { uid: 'auth', name: 'Auth', show: false }, { uid: 'signature', name: 'Signature Format', show: false });
+			this.configurations.push(
+				{ uid: 'owner_id', name: 'Owner ID ', show: false },
+				{ uid: 'rate_limit', name: 'Rate Limit ', show: false },
+				{ uid: 'alert_config', name: 'Notifications', show: false },
+				{ uid: 'auth', name: 'Auth', show: false },
+				{ uid: 'signature', name: 'Signature Format', show: false }
+			);
 		if (this.endpointUid && this.editMode) this.getEndpointDetails();
 		if (!(await this.rbacService.userCanAccess('Endpoints|MANAGE'))) this.addNewEndpointForm.disable();
 	}
@@ -130,8 +139,6 @@ export class CreateEndpointComponent implements OnInit {
 		const endpointValue = structuredClone(this.addNewEndpointForm.value);
 
 		if (!this.addNewEndpointForm.value.authentication.api_key.header_name && !this.addNewEndpointForm.value.authentication.api_key.header_value) delete endpointValue.authentication;
-		if (this.addNewEndpointForm.get('http_timeout')?.value) endpointValue.http_timeout = endpointValue.http_timeout + 's';
-		if (this.addNewEndpointForm.get('rate_limit_duration')?.value) endpointValue.rate_limit_duration = endpointValue.rate_limit_duration + 's';
 
 		try {
 			const response = this.endpointUid && this.editMode ? await this.createEndpointService.editEndpoint({ endpointId: this.endpointUid || '', body: endpointValue }) : await this.createEndpointService.addNewEndpoint({ body: endpointValue });
@@ -153,21 +160,19 @@ export class CreateEndpointComponent implements OnInit {
 		try {
 			const response = await this.endpointService.getEndpoint(this.endpointUid);
 			const endpointDetails: ENDPOINT = response.data;
+
+			this.endpointSecret = endpointDetails?.secrets?.find(secret => !secret.expires_at);
 			if (endpointDetails.rate_limit_duration) this.toggleConfigForm('rate_limit');
-			const duration = this.getDurationInSeconds(endpointDetails.rate_limit_duration);
 			this.addNewEndpointForm.patchValue(endpointDetails);
 			this.addNewEndpointForm.patchValue({
 				name: endpointDetails.title,
-				url: endpointDetails.target_url,
-				rate_limit_duration: duration
+				url: endpointDetails.target_url
 			});
+			if (endpointDetails.owner_id) this.toggleConfigForm('owner_id');
 
 			if (endpointDetails.support_email) this.toggleConfigForm('alert_config');
 			if (endpointDetails.authentication.api_key.header_value || endpointDetails.authentication.api_key.header_name) this.toggleConfigForm('auth');
-			if (endpointDetails.http_timeout) {
-				this.toggleConfigForm('http_timeout');
-				this.addNewEndpointForm.patchValue({ http_timeout: endpointDetails.http_timeout.split('s')[0] });
-			}
+			if (endpointDetails.http_timeout) this.toggleConfigForm('http_timeout');
 
 			this.isLoadingEndpointDetails = false;
 		} catch {

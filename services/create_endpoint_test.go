@@ -57,6 +57,11 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				g: project,
 			},
 			dbFn: func(app *CreateEndpointService) {
+				p, _ := app.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(project, nil)
+
 				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
@@ -73,7 +78,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				Description:        "test_endpoint",
 				RateLimit:          5000,
 				Status:             datastore.ActiveEndpointStatus,
-				RateLimitDuration:  "1m0s",
+				RateLimitDuration:  60,
 			},
 			wantErr: false,
 		},
@@ -85,7 +90,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 					Name:              "endpoint",
 					Secret:            "1234",
 					RateLimit:         100,
-					RateLimitDuration: "1m",
+					RateLimitDuration: 60,
 					URL:               "https://google.com",
 					Description:       "test_endpoint",
 					Authentication: &models.EndpointAuthentication{
@@ -99,6 +104,11 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				g: project,
 			},
 			dbFn: func(app *CreateEndpointService) {
+				p, _ := app.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(project, nil)
+
 				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
@@ -113,7 +123,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				Description:        "test_endpoint",
 				RateLimit:          100,
 				Status:             datastore.ActiveEndpointStatus,
-				RateLimitDuration:  "1m0s",
+				RateLimitDuration:  60,
 				Authentication: &datastore.EndpointAuthentication{
 					Type: datastore.APIKeyAuthentication,
 					ApiKey: &datastore.ApiKey{
@@ -125,23 +135,6 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_error_for_invalid_rate_limit_duration",
-			args: args{
-				ctx: ctx,
-				e: models.CreateEndpoint{
-					Name:              "test_endpoint",
-					Secret:            "1234",
-					RateLimit:         100,
-					RateLimitDuration: "m",
-					URL:               "https://google.com",
-					Description:       "test_endpoint",
-				},
-				g: project,
-			},
-			wantErr:    true,
-			wantErrMsg: `an error occurred parsing the rate limit duration: time: invalid duration "m"`,
-		},
-		{
 			name: "should_fail_to_create_endpoint",
 			args: args{
 				ctx: ctx,
@@ -149,13 +142,18 @@ func TestCreateEndpointService_Run(t *testing.T) {
 					Name:              "test_endpoint",
 					Secret:            "1234",
 					RateLimit:         100,
-					RateLimitDuration: "1m",
+					RateLimitDuration: 60,
 					URL:               "https://google.com",
 					Description:       "test_endpoint",
 				},
 				g: project,
 			},
 			dbFn: func(app *CreateEndpointService) {
+				p, _ := app.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(project, nil)
+
 				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},

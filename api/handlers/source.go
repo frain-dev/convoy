@@ -257,7 +257,7 @@ func (h *Handler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			projectID	path		string					true	"Project ID"
 //	@Param			request		query		models.QueryListSource	false	"Query Params"
-//	@Success		200			{object}	util.ServerResponse{data=pagedResponse{content=[]models.SourceResponse}}
+//	@Success		200			{object}	util.ServerResponse{data=models.PagedResponse{content=[]models.SourceResponse}}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/sources [get]
@@ -306,7 +306,7 @@ func (h *Handler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	resp := models.NewListResponse(sources, func(source datastore.Source) models.SourceResponse {
 		return models.SourceResponse{Source: &source}
 	})
-	_ = render.Render(w, r, util.NewServerResponse("Sources fetched successfully", pagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Sources fetched successfully", models.PagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 func fillSourceURL(s *datastore.Source, baseUrl string, customDomain string) {
