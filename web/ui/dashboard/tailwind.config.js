@@ -32,6 +32,12 @@ module.exports = {
 	mode: 'jit',
 	content: ['./src/**/*.{html,ts}'],
 	safelist: [
+        'stroke-neutral-11',
+        'stroke-neutral-10',
+        'fill-neutral-10',
+        'text-neutral-11',
+		'bg-neutral-a3',
+
 		'bg-success-500',
 		'text-success-100',
 		'text-success-400',
@@ -42,21 +48,18 @@ module.exports = {
 		'text-warning-100',
 		'bg-danger-500',
 		'text-danger-100',
-		'text-grey-40',
-		'bg-grey-10',
 		'bg-primary-400',
 		'bg-danger-100',
 
 		'text-new.primary-400',
 		'bg-new.primary-25',
-		'bg-new.gray-50',
 		'text-new.error-400',
 		'bg-new.success-25',
 		'bg-new.success-50',
 		'text-new.success-400',
 		'bg-new.primary-50',
 		'bg-new.error-50',
-		'text-new.gray-400'
+		'text-neutral-10'
 	],
 	theme: {
 		extend: {
@@ -184,14 +187,6 @@ module.exports = {
 			},
 			neutral: generateColorScale('gray'),
 			error: generateColorScale('red'),
-			grey: {
-				100: '#000624',
-				80: '#31323D',
-				60: '#5F5F68',
-				40: '#737A91',
-				20: '#E8E8E9',
-				10: '#EDEDF5'
-			},
 			white: {
 				100: 'rgba(var(--color-white), 1)',
 				64: 'rgba(var(--color-white), 0.64)',

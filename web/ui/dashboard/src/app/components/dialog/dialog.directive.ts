@@ -8,7 +8,7 @@ import { ButtonComponent } from '../button/button.component';
 	imports: [CommonModule, ButtonComponent],
 	standalone: true,
 	template: `
-		<div class="px-20px pt-20px pb-16px border-y border-y-grey-10 bg-white-100 rounded-tr-16px rounded-tl-16px w-full ">
+		<div class="px-20px pt-20px pb-16px border-y border-y-neutral-4 bg-white-100 rounded-tr-16px rounded-tl-16px w-full ">
 			<div class="flex justify-between items-center max-w-[770px] m-auto">
 				<div class="flex items-center w-full" [ngClass]="{ 'justify-between': fullscreen === 'false' }">
 					<div class="w-full" [class]="fullscreen !== 'false' ? 'order-2' : 'order-1'">

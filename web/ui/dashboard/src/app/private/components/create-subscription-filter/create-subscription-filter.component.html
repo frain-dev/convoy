@@ -15,22 +15,22 @@
 
 <div class="max-w-[1312px] m-auto mt-40px" convoy-card>
 	<div class="rounded-8px pt-20px">
-		<ul class="flex flex-row justify-center w-full border-b-[.5px] border-grey-20">
+		<ul class="flex flex-row justify-center w-full border-b-[.5px] border-neutral-4">
 			<li *ngFor="let tab of tabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
 				<button class="pb-16px pt-10px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="toggleActiveTab(tab)">
-					<span class="text-14 text-left capitalize text-grey-60 tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
+					<span class="text-14 text-left capitalize text-neutral-11 tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
 				</button>
 			</li>
 		</ul>
 
 		<div [ngClass]="{ 'h-0 overflow-hidden': activeTab !== 'body' }">
 			<div class="flex">
-				<div class="flex flex-col w-full border-r border-r-new.gray-100">
-					<div class="text-14 border-b border-b-grey-20 pl-28px pt-20px pb-20px font-semibold rounded-tl-8px">Event Payload</div>
+				<div class="flex flex-col w-full border-r border-r-neutral-4">
+					<div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tl-8px">Event Payload</div>
 					<convoy-monaco [editorValue]="payload" #requestEditor></convoy-monaco>
 				</div>
 				<div class="flex flex-col w-full">
-					<div class="text-14 border-b border-b-grey-20 pl-28px pt-20px pb-20px font-semibold rounded-tr-8px">Filter Schema</div>
+					<div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tr-8px">Filter Schema</div>
 					<convoy-monaco [editorValue]="schema.body" #schemaEditor></convoy-monaco>
 				</div>
 			</div>
@@ -39,11 +39,11 @@
 		<div [ngClass]="{ 'h-0 overflow-hidden': activeTab === 'body' }">
 			<div class="flex">
 				<div class="flex flex-col w-full">
-					<div class="text-14 border-b border-b-grey-20 pl-28px pt-20px pb-20px font-semibold rounded-tl-8px">Event Headers</div>
+					<div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tl-8px">Event Headers</div>
 					<convoy-monaco [editorValue]="header" #requestHeaderEditor></convoy-monaco>
 				</div>
 				<div class="flex flex-col w-full">
-					<div class="text-14 border-b border-b-grey-20 pl-28px pt-20px pb-20px font-semibold rounded-tr-8px">Filter Schema</div>
+					<div class="text-14 border-b border-b-neutral-4 pl-28px pt-20px pb-20px font-semibold rounded-tr-8px">Filter Schema</div>
 					<convoy-monaco [editorValue]="schema.headers" #headerSchemaEditor></convoy-monaco>
 				</div>
 			</div>
