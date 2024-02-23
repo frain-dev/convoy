@@ -10,14 +10,14 @@ create unlogged table if not exists convoy.token_bucket (
 
 -- take_token should be run in a transaction to acquire a row lock, returns true is a token was taken
 -- +migrate StatementBegin
-create or replace function convoy.convoy.take_token(_key text, _rate integer, _bucket_size integer) returns boolean
+create or replace function convoy.take_token(_key text, _rate integer, _bucket_size integer) returns boolean
     language plpgsql
 as
 $$
 declare
     row record;
     next_min timestamptz;
-    tempRow record;
+    new_rate int;
 begin
     select * from convoy.token_bucket where key = _key for update into row;
     next_min := now() + make_interval(secs := _bucket_size);
@@ -33,17 +33,28 @@ begin
         return true;
     end if;
 
+    -- update the rate if it's different from what's in the db
+    new_rate = case when row.rate != _rate then _rate else row.rate end;
+
     -- this bucket has expired, reset it
     if now() > row.expires_at then
-        SELECT 1 FROM convoy.token_bucket WHERE key = _key FOR UPDATE into tempRow;
         UPDATE convoy.token_bucket
-        SET tokens = 1, expires_at = next_min, updated_at = default WHERE key = _key;
+        SET tokens = 1,
+            expires_at = next_min,
+            updated_at = default,
+            rate = new_rate
+        WHERE key = _key;
         return true;
     end if;
 
     -- take a token
-    if row.tokens < row.rate then
-        update convoy.token_bucket set tokens = row.tokens + 1, expires_at = next_min, updated_at = default where key = _key;
+    if row.tokens < new_rate then
+        update convoy.token_bucket
+        set tokens = row.tokens + 1,
+            expires_at = next_min,
+            updated_at = default,
+            rate = new_rate
+        where key = _key;
         return true;
     end if;
 

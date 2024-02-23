@@ -8,19 +8,23 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
-type PostgresRateLimiter struct {
+type TokenBucketRateLimiter struct {
 	db database.Database
 }
 
-func NewRateLimiter(db database.Database) *PostgresRateLimiter {
-	return &PostgresRateLimiter{db: db}
+func NewRateLimiter(db database.Database) *TokenBucketRateLimiter {
+	return &TokenBucketRateLimiter{db: db}
+}
+
+func (p *TokenBucketRateLimiter) Allow(ctx context.Context, key string, rate int, bucketSize int) error {
+	return p.takeToken(ctx, key, rate, bucketSize)
 }
 
 // TakeToken tries to take a token from the bucket.
 //
 // Creates the bucket if it doesn't exist and returns false if it is not successful.
 // Returns true otherwise
-func (p *PostgresRateLimiter) TakeToken(ctx context.Context, key string, rate int, bucketSize int) error {
+func (p *TokenBucketRateLimiter) takeToken(ctx context.Context, key string, rate int, bucketSize int) error {
 	tx, err := p.db.GetDB().BeginTxx(ctx, nil)
 	if err != nil {
 		return err
@@ -37,12 +41,11 @@ func (p *PostgresRateLimiter) TakeToken(ctx context.Context, key string, rate in
 	if err != nil {
 		fmt.Printf("%+v\n", err)
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			log.Fatalf("update failed: %v, unable to rollback: %v", err, rollbackErr)
+			log.Infof("update failed: %v, unable to rollback: %v", err, rollbackErr)
 		}
 		return err
 	}
 
-	fmt.Printf(">>>>>>>>>>>>> %+v\n", allowed)
 	if !allowed {
 		return errors.New("rate limit error")
 	}

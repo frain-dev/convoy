@@ -94,7 +94,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		ec := &EventDeliveryConfig{subscription: subscription, project: project, endpoint: endpoint}
 		rlc := ec.rateLimitConfig()
 
-		err = rateLimiter.TakeToken(ctx, endpoint.UID, rlc.Rate, rlc.BucketSize)
+		err = rateLimiter.Allow(ctx, endpoint.UID, rlc.Rate, rlc.BucketSize)
 		if err != nil {
 			log.FromContext(ctx).WithFields(map[string]interface{}{"id": data.EventDeliveryID}).
 				WithError(err).

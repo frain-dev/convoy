@@ -34,16 +34,16 @@ func (m *MockRateLimiter) EXPECT() *MockRateLimiterMockRecorder {
 	return m.recorder
 }
 
-// TakeToken mocks base method.
-func (m *MockRateLimiter) TakeToken(ctx context.Context, key string, rate, bucketSize int) error {
+// Allow mocks base method.
+func (m *MockRateLimiter) Allow(ctx context.Context, key string, rate, duration int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TakeToken", ctx, key, rate, bucketSize)
+	ret := m.ctrl.Call(m, "Allow", ctx, key, rate, duration)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// TakeToken indicates an expected call of TakeToken.
-func (mr *MockRateLimiterMockRecorder) TakeToken(ctx, key, rate, bucketSize interface{}) *gomock.Call {
+// Allow indicates an expected call of Allow.
+func (mr *MockRateLimiterMockRecorder) Allow(ctx, key, rate, duration interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TakeToken", reflect.TypeOf((*MockRateLimiter)(nil).TakeToken), ctx, key, rate, bucketSize)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Allow", reflect.TypeOf((*MockRateLimiter)(nil).Allow), ctx, key, rate, duration)
 }

@@ -78,7 +78,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{}, nil)
 
-				r.EXPECT().TakeToken(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				o.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Return(&datastore.Project{Config: &datastore.ProjectConfig{
 					RateLimit: &datastore.DefaultRateLimitConfig,
@@ -123,7 +123,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{}, nil)
 
-				r.EXPECT().TakeToken(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -203,7 +203,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{}, nil)
 
-				r.EXPECT().TakeToken(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -287,7 +287,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{}, nil)
 
-				r.EXPECT().TakeToken(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				a.EXPECT().
 					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.InactiveEndpointStatus).
@@ -371,7 +371,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{}, nil)
 
-				r.EXPECT().TakeToken(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -456,7 +456,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{}, nil)
 
-				r.EXPECT().TakeToken(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -541,7 +541,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{}, nil)
 
-				r.EXPECT().TakeToken(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -625,7 +625,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{}, nil)
 
-				r.EXPECT().TakeToken(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -715,7 +715,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				s.EXPECT().FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Subscription{}, nil)
 
-				r.EXPECT().TakeToken(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
