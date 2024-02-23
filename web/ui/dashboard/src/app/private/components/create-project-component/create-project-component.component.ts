@@ -172,7 +172,7 @@ export class CreateProjectComponent implements OnInit {
 		if (this.projectForm.get('name')?.invalid || this.projectForm.get('type')?.invalid) {
 			projectFormModal?.scroll({ top: 0 });
 			this.projectForm.markAllAsTouched();
-            return;
+			return;
 		}
 		const projectData = this.getProjectData();
 
@@ -245,7 +245,8 @@ export class CreateProjectComponent implements OnInit {
 		this.versions.at(i).patchValue(this.newSignatureForm.value);
 		await this.updateProject();
 		this.newSignatureForm.reset();
-		this.newSignatureDialog.nativeElement.showModal();
+		this.newSignatureDialog.nativeElement.close();
+		this.getProjectDetails();
 	}
 
 	getProjectData() {
