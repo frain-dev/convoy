@@ -6013,6 +6013,17 @@
                 }
             }
         },
+        "datastore.CatalogueType": {
+            "type": "string",
+            "enum": [
+                "events_data",
+                "openapi"
+            ],
+            "x-enum-varnames": [
+                "EventsDataCatalogueType",
+                "OpenAPICatalogueType"
+            ]
+        },
         "datastore.CustomResponse": {
             "type": "object",
             "properties": {
@@ -6325,7 +6336,7 @@
                     "type": "string"
                 },
                 "type": {
-                    "type": "string"
+                    "$ref": "#/definitions/datastore.CatalogueType"
                 },
                 "uid": {
                     "type": "string"

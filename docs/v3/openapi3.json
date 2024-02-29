@@ -85,6 +85,17 @@
 				},
 				"type": "object"
 			},
+			"datastore.CatalogueType": {
+				"enum": [
+					"events_data",
+					"openapi"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"EventsDataCatalogueType",
+					"OpenAPICatalogueType"
+				]
+			},
 			"datastore.CustomResponse": {
 				"properties": {
 					"body": {
@@ -396,7 +407,7 @@
 						"type": "string"
 					},
 					"type": {
-						"type": "string"
+						"$ref": "#/components/schemas/datastore.CatalogueType"
 					},
 					"uid": {
 						"type": "string"

@@ -54,6 +54,14 @@ definitions:
       source_id:
         type: string
     type: object
+  datastore.CatalogueType:
+    enum:
+    - events_data
+    - openapi
+    type: string
+    x-enum-varnames:
+    - EventsDataCatalogueType
+    - OpenAPICatalogueType
   datastore.CustomResponse:
     properties:
       body:
@@ -267,7 +275,7 @@ definitions:
       project_id:
         type: string
       type:
-        type: string
+        $ref: '#/definitions/datastore.CatalogueType'
       uid:
         type: string
       updated_at:

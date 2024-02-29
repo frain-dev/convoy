@@ -54,7 +54,7 @@ func (h *Handler) AddEventToCatalogue(w http.ResponseWriter, r *http.Request) {
 	adc := services.AddEventToCatalogueService{
 		CatalogueRepo:  postgres.NewEventCatalogueRepo(h.A.DB, h.A.Cache),
 		EventRepo:      postgres.NewEventRepo(h.A.DB, h.A.Cache),
-		CatalogueEvent: catalogueEvent,
+		CatalogueEvent: &catalogueEvent,
 		Project:        project,
 	}
 
@@ -148,7 +148,7 @@ func (h *Handler) UpdateCatalogue(w http.ResponseWriter, r *http.Request) {
 
 	uc := services.UpdateCatalogueService{
 		CatalogueRepo:   postgres.NewEventCatalogueRepo(h.A.DB, h.A.Cache),
-		UpdateCatalogue: updateCatalogue,
+		UpdateCatalogue: &updateCatalogue,
 		Project:         project,
 	}
 

@@ -22,7 +22,7 @@ type eventCatalogueRepo struct {
 const (
 	createEventCatalogue = `
 	INSERT INTO convoy.event_catalogues (id,project_id,
-	                           type,events,openapi_spec,created_at,updated_at)
+	                           type,events,open_api_spec,created_at,updated_at)
 	VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 
@@ -30,7 +30,7 @@ const (
 
 	deleteCatalogue = `UPDATE convoy.event_catalogues SET deleted_at = NOW() WHERE id = $1 AND project_id = $2`
 
-	updateCatalogue = `UPDATE convoy.event_catalogues SET events = $1, openapi_spec = $2 WHERE id = $3 AND project_id = $4`
+	updateCatalogue = `UPDATE convoy.event_catalogues SET events = $1, open_api_spec = $2 WHERE id = $3 AND project_id = $4`
 )
 
 var (

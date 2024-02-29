@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
@@ -10,12 +11,13 @@ import (
 
 type UpdateCatalogueService struct {
 	CatalogueRepo   datastore.EventCatalogueRepository
-	UpdateCatalogue models.UpdateCatalogue
+	UpdateCatalogue *models.UpdateCatalogue
 	Project         *datastore.Project
 }
 
 func (c *UpdateCatalogueService) Run(ctx context.Context) (*datastore.EventCatalogue, error) {
 	catalogue, err := c.CatalogueRepo.FindEventCatalogueByProjectID(ctx, c.Project.UID)
+	fmt.Println("3333", err)
 	if err != nil && !errors.Is(err, datastore.ErrCatalogueNotFound) {
 		return nil, &ServiceError{ErrMsg: "unable to fetch catalogue", Err: err}
 	}
@@ -28,6 +30,7 @@ func (c *UpdateCatalogueService) Run(ctx context.Context) (*datastore.EventCatal
 	}
 
 	err = c.CatalogueRepo.UpdateEventCatalogue(ctx, catalogue)
+	fmt.Println("3333", err)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: "failed to update catalogue", Err: err}
 	}

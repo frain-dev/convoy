@@ -13,7 +13,7 @@ import (
 type AddEventToCatalogueService struct {
 	CatalogueRepo  datastore.EventCatalogueRepository
 	EventRepo      datastore.EventRepository
-	CatalogueEvent models.AddEventToCatalogue
+	CatalogueEvent *models.AddEventToCatalogue
 	Project        *datastore.Project
 }
 
@@ -23,8 +23,8 @@ func (c *AddEventToCatalogueService) Run(ctx context.Context) (*datastore.EventC
 		return nil, &ServiceError{ErrMsg: "unable to fetch event catalogue", Err: err}
 	}
 
-	event, err := c.EventRepo.FindEventByID(ctx, c.Project.UID, c.CatalogueEvent.EventID)
-	if err != nil {
+	event, evErr := c.EventRepo.FindEventByID(ctx, c.Project.UID, c.CatalogueEvent.EventID)
+	if evErr != nil {
 		return nil, &ServiceError{ErrMsg: "failed to fetch event", Err: err}
 	}
 

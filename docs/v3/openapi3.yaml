@@ -54,6 +54,14 @@ components:
         source_id:
           type: string
       type: object
+    datastore.CatalogueType:
+      enum:
+      - events_data
+      - openapi
+      type: string
+      x-enum-varnames:
+      - EventsDataCatalogueType
+      - OpenAPICatalogueType
     datastore.CustomResponse:
       properties:
         body:
@@ -267,7 +275,7 @@ components:
         project_id:
           type: string
         type:
-          type: string
+          $ref: '#/components/schemas/datastore.CatalogueType'
         uid:
           type: string
         updated_at:

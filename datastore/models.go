@@ -1489,8 +1489,8 @@ func (m *MetaEventAttempt) Value() (driver.Value, error) {
 type CatalogueType string
 
 const (
-	EventsDataCatalogueType = "events_data"
-	OpenAPICatalogueType    = "openapi"
+	EventsDataCatalogueType CatalogueType = "events_data"
+	OpenAPICatalogueType    CatalogueType = "openapi"
 )
 
 type EventCatalogue struct {
@@ -1498,7 +1498,7 @@ type EventCatalogue struct {
 	ProjectID   string              `json:"project_id,omitempty" db:"project_id"`
 	Type        CatalogueType       `json:"type,omitempty" db:"type"`
 	Events      EventDataCatalogues `json:"events,omitempty" db:"events"`
-	OpenAPISpec []byte              `json:"open_api_spec,omitempty" db:"openapi_spec"`
+	OpenAPISpec []byte              `json:"open_api_spec,omitempty" db:"open_api_spec"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`

@@ -25,6 +25,6 @@ type CatalogueOpenAPISpec struct {
 func (ds *CatalogueOpenAPISpec) Validate() error { return util.Validate(ds) }
 
 type UpdateCatalogue struct {
-	Events      datastore.EventDataCatalogues
-	OpenAPISpec []byte `json:"open_api_spec"`
+	Events      datastore.EventDataCatalogues `json:"events"`
+	OpenAPISpec []byte                        `json:"open_api_spec"`
 }
