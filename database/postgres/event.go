@@ -328,14 +328,14 @@ func (e *eventRepo) FindFirstEventWithIdempotencyKey(ctx context.Context, projec
 }
 
 func (e *eventRepo) CountProjectMessages(ctx context.Context, projectID string) (int64, error) {
-	var count int64
+	var c int64
 
-	err := e.db.QueryRowxContext(ctx, countProjectMessages, projectID).Scan(&count)
+	err := e.db.QueryRowxContext(ctx, countProjectMessages, projectID).Scan(&c)
 	if err != nil {
-		return count, err
+		return c, err
 	}
 
-	return count, nil
+	return c, nil
 }
 
 func (e *eventRepo) CountEvents(ctx context.Context, projectID string, filter *datastore.Filter) (int64, error) {

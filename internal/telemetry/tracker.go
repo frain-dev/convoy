@@ -18,7 +18,7 @@ type TotalEventsTracker struct {
 	ProjectRepo datastore.ProjectRepository
 }
 
-func (te *TotalEventsTracker) Track(ctx context.Context, instanceID string) (metric, error) {
+func (te *TotalEventsTracker) track(ctx context.Context, instanceID string) (metric, error) {
 	if util.IsStringEmpty(instanceID) {
 		return metric{}, ErrInvalidInstanceID
 	}
@@ -55,7 +55,7 @@ type TotalActiveProjectTracker struct {
 	ProjectRepo datastore.ProjectRepository
 }
 
-func (ta *TotalActiveProjectTracker) Track(ctx context.Context, instanceID string) (metric, error) {
+func (ta *TotalActiveProjectTracker) track(ctx context.Context, instanceID string) (metric, error) {
 	if util.IsStringEmpty(instanceID) {
 		return metric{}, ErrInvalidInstanceID
 	}

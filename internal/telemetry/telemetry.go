@@ -29,7 +29,7 @@ type metric struct {
 }
 
 type tracker interface {
-	Track(ctx context.Context, instanceID string) (metric, error)
+	track(ctx context.Context, instanceID string) (metric, error)
 }
 
 type TelemetryOption func(*Telemetry)
@@ -66,14 +66,14 @@ func NewTelemetry(log *log.Logger, config *datastore.Configuration, opts ...Tele
 	return t
 }
 
-// on startup: telemetry.Identify(instanceId)
+// Identify on startup: telemetry.Identify(instanceId)
 func (t *Telemetry) Identify(ctx context.Context, instanceID string) error {
 	isEnabled := t.config.IsAnalyticsEnabled
 	if !isEnabled {
 		return nil
 	}
 
-	for _, b := range t.backends {
+	for i := range t.backends {
 		go func(b backend) {
 			err := b.Identify(ctx, instanceID)
 			if err != nil {
@@ -84,13 +84,13 @@ func (t *Telemetry) Identify(ctx context.Context, instanceID string) error {
 			if err != nil {
 				t.Logger.Error(err)
 			}
-		}(b)
+		}(t.backends[i])
 	}
 
 	return nil
 }
 
-// at an interval: telemetry.Track()
+// Capture at an interval: telemetry.Track()
 func (t *Telemetry) Capture(ctx context.Context) error {
 	isEnabled := t.config.IsAnalyticsEnabled
 	if !isEnabled {
@@ -101,19 +101,20 @@ func (t *Telemetry) Capture(ctx context.Context) error {
 
 	// generate metrics
 	for _, tr := range t.trackers {
-		metric, err := tr.Track(ctx, t.config.UID)
+		m, err := tr.track(ctx, t.config.UID)
 		if err != nil {
 			// what do we do when one tracker fails?
+			t.Logger.Error(err)
 			continue
 		}
 
-		metrics = append(metrics, metric)
+		metrics = append(metrics, m)
 	}
 
-	for _, b := range t.backends {
+	for i := range t.backends {
 		go func(b backend) {
-			for _, m := range metrics {
-				err := b.Capture(ctx, m)
+			for m := range metrics {
+				err := b.Capture(ctx, metrics[m])
 				if err != nil {
 					t.Logger.Error(err)
 				}
@@ -123,7 +124,7 @@ func (t *Telemetry) Capture(ctx context.Context) error {
 			if err != nil {
 				t.Logger.Error(err)
 			}
-		}(b)
+		}(t.backends[i])
 	}
 
 	return nil
