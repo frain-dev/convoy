@@ -639,7 +639,7 @@ var (
 	ErrSourceNotFound                = errors.New("source not found")
 	ErrEventNotFound                 = errors.New("event not found")
 	ErrProjectNotFound               = errors.New("project not found")
-	ErrCatalogueNotFound             = errors.New("event catalogue not ound")
+	ErrCatalogueNotFound             = errors.New("event catalogue not found")
 	ErrAPIKeyNotFound                = errors.New("api key not found")
 	ErrEndpointNotFound              = errors.New("endpoint not found")
 	ErrSubscriptionNotFound          = errors.New("subscription not found")
