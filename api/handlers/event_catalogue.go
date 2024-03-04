@@ -100,6 +100,11 @@ func (h *Handler) CreateOpenAPISpecCatalogue(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	if project.Type != datastore.OutgoingProject {
+		_ = render.Render(w, r, util.NewErrorResponse("event catalogue is only available to outgoing projects", http.StatusBadRequest))
+		return
+	}
+
 	catalogue := &datastore.EventCatalogue{
 		UID:         ulid.Make().String(),
 		ProjectID:   project.UID,
@@ -207,6 +212,11 @@ func (h *Handler) GetCatalogue(w http.ResponseWriter, r *http.Request) {
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if project.Type != datastore.OutgoingProject {
+		_ = render.Render(w, r, util.NewErrorResponse("event catalogue is only available to outgoing projects", http.StatusBadRequest))
 		return
 	}
 

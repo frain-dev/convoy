@@ -18,6 +18,10 @@ type AddEventToCatalogueService struct {
 }
 
 func (c *AddEventToCatalogueService) Run(ctx context.Context) (*datastore.EventCatalogue, error) {
+	if c.Project.Type != datastore.OutgoingProject {
+		return nil, &ServiceError{ErrMsg: "event catalogue is only available to outgoing projects"}
+	}
+
 	catalogue, err := c.CatalogueRepo.FindEventCatalogueByProjectID(ctx, c.Project.UID)
 	if err != nil && !errors.Is(err, datastore.ErrCatalogueNotFound) {
 		return nil, &ServiceError{ErrMsg: "unable to fetch event catalogue", Err: err}

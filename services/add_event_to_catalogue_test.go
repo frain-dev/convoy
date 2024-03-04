@@ -91,7 +91,7 @@ func TestAddEventToCatalogueService_Run(t *testing.T) {
 					EventID: "1234",
 					Name:    "invoice.paid",
 				},
-				Project: &datastore.Project{UID: "project_1"},
+				Project: &datastore.Project{UID: "project_1", Type: datastore.OutgoingProject},
 			},
 			want: &datastore.EventCatalogue{Events: datastore.EventDataCatalogues{
 				{
@@ -129,7 +129,7 @@ func TestAddEventToCatalogueService_Run(t *testing.T) {
 					EventID: "1234",
 					Name:    "invoice.paid",
 				},
-				Project: &datastore.Project{UID: "project_1"},
+				Project: &datastore.Project{UID: "project_1", Type: datastore.OutgoingProject},
 			},
 			want: &datastore.EventCatalogue{Events: datastore.EventDataCatalogues{
 				{
@@ -152,7 +152,7 @@ func TestAddEventToCatalogueService_Run(t *testing.T) {
 					EventID: "1234",
 					Name:    "invoice.paid",
 				},
-				Project: &datastore.Project{UID: "project_1"},
+				Project: &datastore.Project{UID: "project_1", Type: datastore.OutgoingProject},
 			},
 			wantErr:    true,
 			wantErrMsg: "unable to fetch event catalogue",
@@ -174,7 +174,7 @@ func TestAddEventToCatalogueService_Run(t *testing.T) {
 					EventID: "1234",
 					Name:    "invoice.paid",
 				},
-				Project: &datastore.Project{UID: "project_1"},
+				Project: &datastore.Project{UID: "project_1", Type: datastore.OutgoingProject},
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to fetch event",
@@ -207,10 +207,24 @@ func TestAddEventToCatalogueService_Run(t *testing.T) {
 					EventID: "1234",
 					Name:    "invoice.paid",
 				},
-				Project: &datastore.Project{UID: "project_1"},
+				Project: &datastore.Project{UID: "project_1", Type: datastore.OutgoingProject},
 			},
 			wantErr:    true,
 			wantErrMsg: "you cannot add event to an openapi catalogue",
+		},
+
+		{
+			name: "should_fail_for_wrong_project_type",
+			args: args{
+				ctx: context.Background(),
+				CatalogueEvent: &models.AddEventToCatalogue{
+					EventID: "1234",
+					Name:    "invoice.paid",
+				},
+				Project: &datastore.Project{UID: "project_1", Type: datastore.IncomingProject},
+			},
+			wantErr:    true,
+			wantErrMsg: "event catalogue is only available to outgoing projects",
 		},
 	}
 
