@@ -3,7 +3,6 @@ package pg
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/pkg/log"
 )
@@ -25,6 +24,11 @@ func (p *TokenBucketRateLimiter) Allow(ctx context.Context, key string, rate int
 // Creates the bucket if it doesn't exist and returns false if it is not successful.
 // Returns true otherwise
 func (p *TokenBucketRateLimiter) takeToken(ctx context.Context, key string, rate int, bucketSize int) error {
+	// if one of rate and bucket size if zero, we skip processing
+	if rate == 0 || bucketSize == 0 {
+		return nil
+	}
+
 	tx, err := p.db.GetDB().BeginTxx(ctx, nil)
 	if err != nil {
 		return err
@@ -33,13 +37,11 @@ func (p *TokenBucketRateLimiter) takeToken(ctx context.Context, key string, rate
 	var allowed bool
 	err = tx.QueryRowContext(ctx, `select convoy.take_token($1, $2, $3)::bool;`, key, rate, bucketSize).Scan(&allowed)
 	if err != nil {
-		fmt.Printf("TakeToken: %+v\n", err)
 		return err
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		fmt.Printf("%+v\n", err)
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
 			log.Infof("update failed: %v, unable to rollback: %v", err, rollbackErr)
 		}

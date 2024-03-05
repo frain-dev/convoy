@@ -64,10 +64,31 @@ end;
 $$;
 -- +migrate StatementEnd
 
+-- +migrate Up
+UPDATE convoy.endpoints
+SET
+    rate_limit = 0,
+    rate_limit_duration = 0
+WHERE
+    rate_limit = 5000 AND
+    rate_limit_duration = 60 AND
+    deleted_at IS NULL;
+
 -- +migrate Down
 drop function if exists convoy.take_token(_key text, _rate integer, _bucket_size integer);
 
 -- +migrate Down
 drop table if exists convoy.token_bucket;
+
+-- +migrate Down
+UPDATE convoy.endpoints
+SET
+    rate_limit = 5000,
+    rate_limit_duration = 60
+WHERE
+    rate_limit = 0 AND
+    rate_limit_duration = 0 AND
+    deleted_at IS NULL;
+
 
 
