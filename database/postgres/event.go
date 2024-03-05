@@ -73,7 +73,7 @@ const (
 	`
 
 	countProjectMessages = `
-	SELECT COUNT(*) FROM convoy.events WHERE project_id = $1 AND deleted_at IS NULL;
+    SELECT COUNT(project_id) FROM convoy.events WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 	countEvents = `
 	SELECT COUNT(DISTINCT(ev.id)) FROM convoy.events ev

@@ -10,37 +10,39 @@ import (
 
 const (
 	DailyEventCount         string = "Daily Event Count"
+	EventCounter            string = "Event Counter"
 	DailyActiveProjectCount string = "Daily Active Project Count"
 )
 
-type backend interface {
+type Backend interface {
 	io.Closer
-	Capture(ctx context.Context, metric metric) error
+	Capture(ctx context.Context, metric Metric) error
 	Identify(ctx context.Context, instanceID string) error
 }
 
 type metricName string
 
-type metric struct {
+type Metric struct {
 	Name       metricName
 	InstanceID string
 	Alias      string
 	Count      uint64
+	Version    string
 }
 
-type tracker interface {
-	track(ctx context.Context, instanceID string) (metric, error)
+type Tracker interface {
+	track(ctx context.Context, instanceID string) (Metric, error)
 }
 
 type TelemetryOption func(*Telemetry)
 
-func OptionTracker(tr tracker) func(*Telemetry) {
+func OptionTracker(tr Tracker) func(*Telemetry) {
 	return func(t *Telemetry) {
 		t.trackers = append(t.trackers, tr)
 	}
 }
 
-func OptionBackend(b backend) func(*Telemetry) {
+func OptionBackend(b Backend) func(*Telemetry) {
 	return func(t *Telemetry) {
 		t.backends = append(t.backends, b)
 	}
@@ -48,8 +50,8 @@ func OptionBackend(b backend) func(*Telemetry) {
 
 type Telemetry struct {
 	config   *datastore.Configuration
-	backends []backend
-	trackers []tracker
+	backends []Backend
+	trackers []Tracker
 	Logger   *log.Logger
 }
 
@@ -74,7 +76,7 @@ func (t *Telemetry) Identify(ctx context.Context, instanceID string) error {
 	}
 
 	for i := range t.backends {
-		go func(b backend) {
+		go func(b Backend) {
 			err := b.Identify(ctx, instanceID)
 			if err != nil {
 				t.Logger.Error(err)
@@ -97,13 +99,13 @@ func (t *Telemetry) Capture(ctx context.Context) error {
 		return nil
 	}
 
-	var metrics []metric
+	var metrics []Metric
 
 	// generate metrics
 	for _, tr := range t.trackers {
 		m, err := tr.track(ctx, t.config.UID)
 		if err != nil {
-			// what do we do when one tracker fails?
+			// what do we do when one Tracker fails?
 			t.Logger.Error(err)
 			continue
 		}
@@ -112,7 +114,7 @@ func (t *Telemetry) Capture(ctx context.Context) error {
 	}
 
 	for i := range t.backends {
-		go func(b backend) {
+		go func(b Backend) {
 			for m := range metrics {
 				err := b.Capture(ctx, metrics[m])
 				if err != nil {

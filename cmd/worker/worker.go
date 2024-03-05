@@ -99,21 +99,21 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				eventRepo,
 				eventDeliveryRepo,
 				rd,
-			))
+			), nil)
 
-			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Cache, a.Queue, rd))
+			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Cache, a.Queue, rd), nil)
 
-			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo))
+			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo), nil)
 
-			consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, a.DB, a.Cache, rd))
-			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
+			consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, a.DB, a.Cache, rd), nil)
+			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
 
-			consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, rd))
-			consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo))
+			consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, rd), nil)
+			consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo), nil)
 
-			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
-			consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo))
-			consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd))
+			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc), nil)
+			consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo), nil)
+			consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd), nil)
 
 			// start worker
 			lo.Infof("Starting Convoy workers...")
